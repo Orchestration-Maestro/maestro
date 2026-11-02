@@ -6,10 +6,8 @@ use maestro_app::{
 };
 use std::{cell::Cell, rc::Rc};
 
-#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
-pub mod manual_runtime;
-#[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
-pub mod recording_terminal;
+pub(crate) use maestro_tui::test_support::manual_runtime;
+pub(crate) use maestro_tui::test_support::recording_terminal;
 
 /// An interactive host that delivers one toggle followed by Escape to the actual view.
 struct Ui {

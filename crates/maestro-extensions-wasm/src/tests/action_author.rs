@@ -41,7 +41,12 @@ pub async fn run(api: &ExtensionAPI, method: &str, input: &Value) -> ExtensionRe
             input["label"]["present"]
                 .as_bool()
                 .unwrap_or(false)
-                .then(|| input["label"]["value"].as_str().unwrap()),
+                .then(|| {
+                    input["label"]["value"]
+                        .as_str()
+                        .ok_or("label is not a string")
+                })
+                .transpose()?,
         )?,
         "getActiveTools" => return Ok(json!(api.get_active_tools()?)),
         "setActiveTools" => api.set_active_tools(
@@ -147,9 +152,10 @@ fn commands(api: &ExtensionAPI, input: &Value) -> ExtensionResult<Value> {
         return serde_json::to_value(api.get_commands()?).map_err(|e| e.to_string());
     }
     let mut value = serde_json::to_value(api.get_commands()?).map_err(|e| e.to_string())?;
-    for command in value.as_array_mut().unwrap() {
-        if command["description"].is_null() {
-            command.as_object_mut().unwrap().shift_remove("description");
+    let commands = value.as_array_mut().ok_or("commands are not an array")?;
+    for command in commands.iter_mut().filter_map(Value::as_object_mut) {
+        if command.get("description").is_some_and(Value::is_null) {
+            command.shift_remove("description");
         }
     }
     Ok(value)

@@ -252,8 +252,8 @@ fn shell_expand_and_collapse_hints_close_in_the_muted_colour() {
         TerminalImage::default(),
         None,
     );
-    let theme = published::theme(0);
-    let (_state, live) = published::published(&theme);
+    let theme = published::theme(0).unwrap();
+    let (_state, live) = published::published(&theme).unwrap();
     let component = BashExecutionComponent::new("hint".into(), ui, live.clone(), false);
     component
         .append_output(

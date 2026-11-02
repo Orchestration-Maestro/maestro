@@ -6,7 +6,7 @@ mod brand_pack;
 mod brand_support;
 mod live;
 mod maestro_syntax_preserves_text_and_caller_policy;
-mod published;
+use maestro_theme::test_support::published;
 mod support;
 mod theme_colors;
 mod theme_css;

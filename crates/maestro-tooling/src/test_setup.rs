@@ -30,7 +30,6 @@ use base::{Base, Supplied};
 use compiled_code::CompiledCode;
 use inputs::Inputs;
 use plan::{Artifacts, component_inputs};
-use user_cache::user_cache_home;
 
 mod base;
 mod compiled_code;
@@ -39,10 +38,6 @@ pub(crate) mod native_fixture;
 mod plan;
 #[cfg(test)]
 mod tests;
-#[path = "../../maestro-test-process/src/cache.rs"]
-/// The user cache location the test-process owner names, shared so a shard installs the compiled
-/// code where its test children look for it.
-mod user_cache;
 
 /// The setup example that discovers, builds and warms the components.
 pub(crate) const EXAMPLE: &str = "prepare_author_component";
@@ -131,8 +126,8 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
         .collect()
 }
 
-/// Build the setup example in a build of its own, run it with a cache of its own and stage what
-/// it produces in `output`. Components and compiled code come from the first bundle in the path
+/// Build and run the setup example separately, then stage its output in `output`.
+/// Components and compiled code come from the first bundle in the path
 /// list `TEST_PREPARE_BASE` names that was prepared from the same shared inputs.
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
@@ -147,7 +142,10 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     let (supplied, seeded) = match &base {
         Some(base) => (
             base.supplied(checkout)?,
-            base.seed(&cache_home(target), &example)?,
+            base.seed(
+                &compiled_code::directory(&mut preparation_command(checkout, &example, target))?,
+                &example,
+            )?,
         ),
         None => (Vec::new(), None),
     };
@@ -174,7 +172,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     }
     remove_directory(&output.join(COMPILED))?;
     let compiled = CompiledCode::collect(
-        &cache_home(target),
+        &compiled_code::directory(&mut preparation_command(checkout, &example, target))?,
         &example,
         &output.join(COMPILED),
         seeded.as_deref(),
@@ -208,7 +206,7 @@ fn environment_file(target: &Path) -> PathBuf {
     target.join("nextest-env")
 }
 
-/// The user cache the setup example compiles into.
+/// The target-local XDG cache home supplied to the setup example on Linux.
 fn cache_home(target: &Path) -> PathBuf {
     target.join("cache-home")
 }
@@ -306,11 +304,9 @@ fn run_example(
     target: &Path,
     supplied: &[Supplied],
 ) -> io::Result<()> {
-    let mut run = Command::new(example);
-    run.current_dir(checkout)
-        .env("CARGO", cargo)
-        .env("NEXTEST_ENV", environment_file(target))
-        .env("XDG_CACHE_HOME", cache_home(target));
+    let mut run = preparation_command(checkout, example, target);
+    run.env("CARGO", cargo)
+        .env("NEXTEST_ENV", environment_file(target));
     for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
         run.env_remove(name);
     }
@@ -321,6 +317,15 @@ fn run_example(
     } else {
         Err(io::Error::other(format!("{EXAMPLE} failed: {status}")))
     }
+}
+
+/// Configure the setup example with the same cache isolation for preparation and path queries.
+fn preparation_command(checkout: &Path, example: &Path, target: &Path) -> Command {
+    let mut command = Command::new(example);
+    command
+        .current_dir(checkout)
+        .env("XDG_CACHE_HOME", cache_home(target));
+    command
 }
 
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
@@ -335,23 +340,11 @@ pub(crate) fn install_bundle(
     directory: &Path,
     environment: &Path,
 ) -> io::Result<()> {
-    export(
-        checkout,
-        output,
-        directory,
-        environment,
-        user_cache_home().as_deref(),
-    )
+    export(checkout, output, directory, environment)
 }
 
-/// Validate the bundle in `output` and install it, with the user cache named by `user_cache`.
-fn export(
-    checkout: &Path,
-    output: &Path,
-    directory: &Path,
-    environment: &Path,
-    user_cache: Option<&Path>,
-) -> io::Result<()> {
+/// Validate and install the bundle in the cache directory the installed example reports.
+fn export(checkout: &Path, output: &Path, directory: &Path, environment: &Path) -> io::Result<()> {
     let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
@@ -383,8 +376,10 @@ fn export(
     let installed = directory.join("examples").join(name);
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
-    if let (Some(code), Some(user_cache)) = (&manifest.compiled, user_cache) {
-        code.install(&compiled, user_cache, &installed)?;
+    if let Some(code) = &manifest.compiled {
+        let cache_directory =
+            compiled_code::directory(Command::new(&installed).current_dir(checkout))?;
+        code.install(&compiled, &cache_directory, &installed)?;
     }
     std::fs::write(environment, lines.concat())
 }

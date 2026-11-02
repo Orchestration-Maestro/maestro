@@ -22,7 +22,12 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
             if stage == "lockfile" {
                 browser.generate_lockfile();
             } else {
-                browser_support::cold_sources(&browser);
+                let status = recipe_support::setup_status(
+                    toolchain_support::command(env!("CARGO_BIN_EXE_development"))
+                        .args(["nextest-setup", "fixture-sources", "workspace"])
+                        .current_dir(browser.workspace.path()),
+                );
+                assert!(!status.success());
             }
         }
         panic!("setup must fail");
@@ -87,14 +92,23 @@ fn browser_resolution_never_reaches_the_shared_cargo_home() {
     if !recipe_support::without_shared_cargo_home() {
         recipe_support::rerun_without_shared_cargo_home(
             "browser_resolution_never_reaches_the_shared_cargo_home",
+            &[(
+                "MAESTRO_TEST_WORKSPACE_CARGO_SOURCES",
+                recipe_support::prepared_workspace_sources(),
+            )],
         );
         return;
     }
+    let sources = std::env::var_os("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES")
+        .expect("the parent must prepare workspace sources before isolating Cargo home");
+    assert!(std::path::Path::new(&sources).is_file());
     let browser = Browser::new();
     browser.generate_lockfile();
+    let (home, _) = browser_support::cold_sources(&browser);
     success(
         &browser
             .cargo()
+            .env("CARGO_HOME", home)
             .args([
                 "metadata",
                 "--offline",
@@ -106,6 +120,22 @@ fn browser_resolution_never_reaches_the_shared_cargo_home() {
             .output()
             .unwrap(),
     );
+}
+
+/// Source preparation also precedes Cargo-home isolation without nextest setup exports.
+#[test]
+fn browser_resolution_prepares_sources_outside_nextest() {
+    let output = maestro_test_process::TestProcess::named(
+        "browser_author_build::browser_resolution_never_reaches_the_shared_cargo_home",
+    )
+    .unwrap()
+    .env_remove("MAESTRO_TEST_CARGO_SOURCES")
+    .env_remove("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES")
+    .env_remove("MAESTRO_SHARED_CARGO_HOME_UNUSABLE")
+    .env_remove("NEXTEST_ENV")
+    .output()
+    .unwrap();
+    success(&output);
 }
 
 #[test]
@@ -1761,7 +1791,7 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
     let command = |recipe: &str| {
-        let mut command = browser.command(recipe);
+        let mut command = browser.cold_command(recipe);
         command
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)

@@ -789,6 +789,10 @@ while its files are unchanged in place of cached repository context, a packed-re
 search that skips an unreadable line, supplied user files and home directory, and a refresh
 that publishes its result when its task panics.
 
+The pane geometry with chrome, layout snapshots and pane topology handlers in
+`app/layout.rs` and `app/api/panes.rs` derive from the application API and interface
+modules, with one view-area owner instead of a view field.
+
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
 the agent resume, terminal state, terminal metadata, terminal title and terminal

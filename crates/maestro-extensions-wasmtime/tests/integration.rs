@@ -76,15 +76,11 @@ mod model_support;
 #[path = "../../maestro-extensions/tests/support/command_operations.rs"]
 mod context_actions;
 
-#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-mod manual_runtime;
+use maestro_tui::test_support::manual_runtime;
 
 mod authored_stream_lifetimes;
 mod authored_streams;
-#[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-mod recording_terminal;
+use maestro_tui::test_support::recording_terminal;
 
 mod model_streams;
 

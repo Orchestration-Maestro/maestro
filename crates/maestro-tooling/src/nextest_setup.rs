@@ -20,7 +20,7 @@ const BUNDLE: &str = "target/test-setup";
 mod author_component;
 /// Prepare the browser build the browser author tests share.
 pub(crate) mod browser_graph;
-/// Vendor the registry crates the tooling fixtures resolve.
+/// Vendor locked dependencies for tooling fixtures or the complete workspace.
 mod fixture_sources;
 /// Align the modification times of the executables the example warms code for.
 mod normalize;
@@ -34,7 +34,14 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     let checkout = normalize_native(&std::env::current_dir()?);
     match args.first().and_then(|name| name.to_str()) {
         Some("author-component") => author_component::run(&checkout),
-        Some("fixture-sources") => fixture_sources::run(&checkout),
+        Some("fixture-sources") => {
+            let scope = match args.get(1).and_then(|scope| scope.to_str()) {
+                None if args.len() == 1 => fixture_sources::Scope::Fixtures,
+                Some("workspace") if args.len() == 2 => fixture_sources::Scope::Workspace,
+                _ => return Err(io::Error::other("unknown fixture source scope")),
+            };
+            fixture_sources::run(&checkout, scope)
+        }
         Some("native-fixture") => native(&checkout),
         Some("browser-author") => browser_graph::run(&checkout),
         Some("normalize-component-cache") => normalize::run(

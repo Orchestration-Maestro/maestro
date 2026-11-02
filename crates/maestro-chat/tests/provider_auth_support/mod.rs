@@ -110,7 +110,7 @@ impl Replay {
         if let Some(key) = query.fallback.take() {
             storage.set_fallback_resolver(move |_| Ok(Some(key.clone())));
         }
-        let (theme, live) = super::published::published(&colors(0));
+        let (theme, live) = super::published::published(&colors(0)).unwrap();
         let caller = Rc::new(Caller::default());
         let resolver = query.statuses.take().map(|statuses| {
             caller.statuses.replace(statuses);
@@ -393,7 +393,7 @@ pub fn brand_roles() {
         let theme = Rc::new(
             maestro_theme::load_theme_from_path(&path, Some(ColorMode::Truecolor)).unwrap(),
         );
-        let (_state, live) = super::published::published(&theme);
+        let (_state, live) = super::published::published(&theme).unwrap();
         let panel = brand_panel(live);
         let lines = panel.render(80);
         assert_eq!(

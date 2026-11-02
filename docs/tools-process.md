@@ -146,6 +146,11 @@ the optional supplied numeric status and the optional artifact path, without too
 The signal is sampled after final output callbacks: an aborted signal selects cancellation
 and no status; nonzero status alone is not an error.
 
+Direct execution and the agent tool count a terminating LF as the end of the last
+line, not as another empty line. With 3,000 LF-terminated lines within the byte
+limit and the default 2,000-line tail limit, the selected text contains lines
+1001 through 3000. The artifact retains the untruncated output, including the final LF.
+
 An ordinary operation error returns unchanged without finalizing pending text or creating
 a line-only artifact. The first processing failure stops output updates and returns after
 the operation settles. Owned writers are flushed and closed; no durability is promised.

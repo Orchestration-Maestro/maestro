@@ -2,6 +2,7 @@
 
 mod agents;
 mod api;
+mod api_helpers;
 mod config;
 mod config_io;
 #[cfg(unix)]
@@ -22,6 +23,9 @@ pub mod terminal_targets;
 /// Shared launch inputs and daemon construction.
 pub mod construction;
 
+/// Pane geometry served from tile cells, the view area and pane chrome.
+pub mod layout;
+
 use crate::terminal::runtime_registry::TerminalRuntimeRegistry;
 use state::DaemonState;
 
@@ -41,6 +45,8 @@ pub struct App<C> {
     last_presentation_at: Option<std::time::Instant>,
     /// Earliest time to remove the current workspace notification.
     pub toast_deadline: Option<std::time::Instant>,
+    /// When the last API notification was delivered, for its one-second rate limit.
+    pub last_api_notification_at: Option<std::time::Instant>,
     /// Next automatic product check, absent when disabled or already requested.
     pub next_auto_update_check: Option<std::time::Instant>,
     /// Next automatic detection catalogue check.

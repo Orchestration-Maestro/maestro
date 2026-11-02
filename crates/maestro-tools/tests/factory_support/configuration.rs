@@ -96,10 +96,10 @@ fn native_shell_configuration() {
     let root = read_support::Scratch::new().unwrap();
     let search = read_support::Scratch::new().unwrap();
     let shell = root.path().join("chosen-shell");
-    find_support::executable(
-        &root,
+    find_support::alias(
+        root.path(),
         "chosen-shell",
-        "#!/bin/sh\nprintf 'chosen-shell\\n'\nexec /bin/bash \"$@\"\n",
+        &json!({"scenario":"chosen-shell"}),
     );
     for name in [
         "createTool",

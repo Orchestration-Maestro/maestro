@@ -8,6 +8,8 @@ use std::process::{Command, Output};
 
 use maestro_test_directory::Scratch;
 
+use crate::recipe_support::write_input;
+
 /// The fixture Cargo: it records its arguments, fails when asked and otherwise creates the
 /// vendor directory, its last argument, and prints the source configuration `vendor` prints.
 const CARGO: &str = "#!/bin/sh\n\
@@ -41,8 +43,8 @@ fn checkout(root: &Path) {
     fs::set_permissions(root.join("cargo"), fs::Permissions::from_mode(0o755)).unwrap();
 }
 
-/// Run the setup as nextest does, in `root`, and return what it did.
-fn setup(root: &Path, fails: bool) -> Output {
+/// Configure the setup command as nextest does, with isolated Cargo and export paths.
+fn setup(root: &Path, fails: bool) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command
         .args(["nextest-setup", "fixture-sources"])
@@ -54,7 +56,7 @@ fn setup(root: &Path, fails: bool) -> Output {
     if fails {
         command.env("VENDOR_FAILS", "1");
     }
-    command.output().unwrap()
+    command
 }
 
 /// The configuration path the setup printed.
@@ -75,7 +77,7 @@ fn fixture_sources_setup_vendors_the_closure_and_exports_the_configuration() {
     let root = scratch.path();
     checkout(root);
 
-    let config = printed(&setup(root, false));
+    let config = printed(&setup(root, false).output().unwrap());
 
     let directory = config.parent().unwrap();
     assert_eq!(
@@ -108,15 +110,15 @@ fn fixture_sources_setup_vendors_the_closure_and_exports_the_configuration() {
     );
 }
 
-/// A directory keyed by unchanged inputs is reused, and a changed lock selects another.
+/// Unchanged inputs reuse sources; changed locks or browser dependencies select fresh sources.
 #[test]
 fn fixture_sources_setup_reuses_a_directory_while_the_inputs_stay_the_same() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     checkout(root);
-    let first = printed(&setup(root, false));
+    let first = printed(&setup(root, false).output().unwrap());
 
-    assert_eq!(printed(&setup(root, false)), first);
+    assert_eq!(printed(&setup(root, false).output().unwrap()), first);
     assert_eq!(
         fs::read_to_string(root.join("calls"))
             .unwrap()
@@ -125,16 +127,26 @@ fn fixture_sources_setup_reuses_a_directory_while_the_inputs_stay_the_same() {
         1
     );
 
-    fs::write(root.join("Cargo.lock"), "changed lock").unwrap();
-    let second = printed(&setup(root, false));
-    assert_ne!(second, first);
-    assert_eq!(
-        fs::read_to_string(root.join("calls"))
-            .unwrap()
-            .lines()
-            .count(),
-        2
-    );
+    let mut previous = first;
+    for (index, input) in [
+        "Cargo.lock".to_owned(),
+        format!("{FIXTURES}/browser_author/Cargo.toml"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        fs::write(root.join(&input), "changed dependency input").unwrap();
+        let current = printed(&setup(root, false).output().unwrap());
+        assert_ne!(current, previous, "stale sources after editing {input}");
+        assert_eq!(
+            fs::read_to_string(root.join("calls"))
+                .unwrap()
+                .lines()
+                .count(),
+            index + 2
+        );
+        previous = current;
+    }
 }
 
 /// A failed vendor run shows its log, fails the setup and leaves no configuration to reuse.
@@ -144,7 +156,7 @@ fn fixture_sources_setup_reports_a_failed_vendor_run() {
     let root = scratch.path();
     checkout(root);
 
-    let output = setup(root, true);
+    let output = setup(root, true).output().unwrap();
 
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("vendor exploded"));
@@ -153,4 +165,111 @@ fn fixture_sources_setup_reports_a_failed_vendor_run() {
         .next();
     assert!(!keyed.unwrap().unwrap().path().join("config.toml").exists());
     assert!(!root.join("nextest-env").exists());
+}
+
+/// Dependency declarations and locks refresh the complete workspace source configuration.
+#[test]
+fn workspace_sources_refresh_when_dependency_inputs_change() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    checkout(root);
+    write_input(
+        root,
+        "Cargo.toml",
+        "[workspace]\nmembers = [\"crates/*\"]\n",
+    );
+    write_input(
+        root,
+        "crates/example/Cargo.toml",
+        "[dependencies]\nserde = \"=1.0.229\"\n",
+    );
+    let prepare = || printed(&setup(root, false).arg("workspace").output().unwrap());
+    let mut previous = prepare();
+    assert_eq!(prepare(), previous);
+    for (index, input) in [
+        "Cargo.toml".to_owned(),
+        "crates/example/Cargo.toml".to_owned(),
+        "Cargo.lock".to_owned(),
+        format!("{FIXTURES}/browser_author/Cargo.toml"),
+        format!("{FIXTURES}/browser_author/Cargo.lock"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let path = root.join(&input);
+        let text = fs::read_to_string(&path).unwrap();
+        fs::write(
+            path,
+            format!("{text}\n[dependencies.added]\nversion = \"=1.0.0\"\n"),
+        )
+        .unwrap();
+        let current = prepare();
+        assert_ne!(current, previous, "stale sources after editing {input}");
+        assert_eq!(prepare(), current);
+        assert_eq!(
+            fs::read_to_string(root.join("calls"))
+                .unwrap()
+                .lines()
+                .count(),
+            index + 2
+        );
+        previous = current;
+    }
+    let calls = fs::read_to_string(root.join("calls")).unwrap();
+    assert!(
+        calls
+            .lines()
+            .all(|call| call.starts_with("vendor --offline --locked --manifest-path "))
+    );
+    assert!(calls.contains(&format!(
+        "--manifest-path {}/Cargo.toml --sync",
+        root.display()
+    )));
+    assert!(
+        fs::read_to_string(root.join("nextest-env"))
+            .unwrap()
+            .contains("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES=")
+    );
+}
+
+/// Rust-only changes do not cause another vendoring operation.
+#[test]
+fn workspace_sources_reuse_after_rust_only_edits() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    checkout(root);
+    write_input(
+        root,
+        "Cargo.toml",
+        "[workspace]\nmembers = [\"crates/*\"]\n",
+    );
+    write_input(
+        root,
+        "crates/example/Cargo.toml",
+        "[package]\nname = \"example\"\n",
+    );
+    write_input(
+        root,
+        "crates/example/src/lib.rs",
+        "pub fn value() -> u8 { 1 }\n",
+    );
+    let first = printed(&setup(root, false).arg("workspace").output().unwrap());
+
+    fs::write(
+        root.join("crates/example/src/lib.rs"),
+        "pub fn value() -> u8 { 2 }\n",
+    )
+    .unwrap();
+
+    assert_eq!(
+        printed(&setup(root, true).arg("workspace").output().unwrap()),
+        first
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
 }

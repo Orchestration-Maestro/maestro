@@ -253,12 +253,7 @@ mod native {
 }
 
 #[cfg(all(test, any(unix, windows)))]
-#[allow(
-    dead_code,
-    reason = "Shared terminal controls also serve other scenarios."
-)]
-#[path = "../crates/maestro-test-terminal/src/recording_terminal.rs"]
-mod recording_terminal;
+use maestro_tui::test_support::recording_terminal;
 
 #[cfg(test)]
 #[cfg(any(unix, windows))]

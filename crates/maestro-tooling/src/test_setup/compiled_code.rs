@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::io;
 use std::path::{Component, Path, PathBuf};
+use std::process::Command;
 use std::time::UNIX_EPOCH;
 
 use serde::{Deserialize, Serialize};
@@ -25,22 +26,22 @@ pub(super) struct CompiledCode {
 }
 
 impl CompiledCode {
-    /// Stage the namespace that the example left under `cache_home` in `staged`.
+    /// Stage the namespace the example left in its reported `cache_directory`.
     ///
-    /// Returns nothing when the host kept no compiled code there, as a host with its own cache
-    /// location does. A namespace seeded from an earlier bundle is dropped when the example
-    /// wrote another one, which means the earlier bundle came from another engine.
+    /// Returns nothing when no compiled code was written. A namespace seeded from an earlier
+    /// bundle is dropped when the example wrote another one, which means the earlier bundle
+    /// came from another engine.
     ///
     /// # Errors
     /// Returns an error for more than one namespace, for a namespace that does not end in the
     /// example's modification time, and for a failed copy.
     pub(super) fn collect(
-        cache_home: &Path,
+        cache_directory: &Path,
         example: &Path,
         staged: &Path,
         seeded: Option<&Path>,
     ) -> io::Result<Option<Self>> {
-        let modules = cache_home.join("wasmtime/modules");
+        let modules = cache_directory.join("modules");
         let mut namespaces = directories(&modules)?;
         if let Some(seeded) = seeded.filter(|_| namespaces.len() > 1) {
             remove_directory(seeded)?;
@@ -110,10 +111,10 @@ impl CompiledCode {
     pub(super) fn install(
         &self,
         staged: &Path,
-        user_cache: &Path,
+        cache_directory: &Path,
         example: &Path,
     ) -> io::Result<PathBuf> {
-        let namespace = user_cache.join("wasmtime/modules").join(format!(
+        let namespace = cache_directory.join("modules").join(format!(
             "{}-{}",
             self.namespace,
             milliseconds(example)?
@@ -125,6 +126,36 @@ impl CompiledCode {
         Ok(namespace)
     }
 }
+
+/// Ask the setup example for the cache directory selected by the engine on this host.
+///
+/// # Errors
+/// Returns a failed command, unsuccessful exit or a reply without one absolute path.
+pub(super) fn directory(command: &mut Command) -> io::Result<PathBuf> {
+    let output = command.arg("--cache-directory").output()?;
+    if !output.status.success() {
+        return Err(io::Error::other(format!(
+            "cache directory query failed: {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        )));
+    }
+    reported_directory(&output.stdout)
+}
+
+/// Parse the engine's JSON reply as exactly one absolute native path.
+fn reported_directory(reply: &[u8]) -> io::Result<PathBuf> {
+    let directory: PathBuf = serde_json::from_slice(reply).map_err(io::Error::other)?;
+    if !directory.is_absolute() {
+        return Err(io::Error::other(
+            "the engine cache directory must be absolute",
+        ));
+    }
+    Ok(directory)
+}
+
+#[cfg(test)]
+mod tests;
 
 /// The directories directly under `parent`, none when it does not exist.
 fn directories(parent: &Path) -> io::Result<Vec<PathBuf>> {

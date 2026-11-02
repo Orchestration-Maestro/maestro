@@ -4,6 +4,7 @@
 #[cfg(target_os = "linux")]
 mod config_support;
 mod daemon_actions;
+mod daemon_api;
 mod daemon_base_settings;
 mod daemon_base_settings_save;
 mod daemon_capture;
@@ -17,6 +18,7 @@ mod daemon_git_status;
 mod daemon_home;
 mod daemon_ids;
 mod daemon_instances;
+mod daemon_layout;
 mod daemon_paths;
 mod daemon_runtime;
 mod daemon_session;
@@ -25,13 +27,17 @@ mod desktop_notification;
 mod event_replay;
 mod git_status;
 mod key_combo;
+mod pane_chrome;
+mod pane_commands;
 mod repository_discovery;
 mod repository_identity;
 mod repository_support;
 mod settings_routes;
 #[cfg(target_os = "linux")]
 mod support;
+mod tab_commands;
 mod tab_status;
 mod terminal_titles;
 mod window_title;
 mod workspace_aggregate;
+mod workspace_commands;
