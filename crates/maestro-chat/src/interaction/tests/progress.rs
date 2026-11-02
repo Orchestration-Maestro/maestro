@@ -2088,7 +2088,7 @@ fn idle_status_keeps_its_height_after_each_indicator_ends() {
                 "a clear with nothing shown keeps the rows"
             );
             agent_event(&world, agent_end());
-            world.mode.settings_clear_on_shrink(false);
+            world.mode.settings_clear_on_shrink(false).unwrap();
             assert!(
                 status(&world).is_empty(),
                 "turning the setting off removes them"

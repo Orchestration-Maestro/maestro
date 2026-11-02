@@ -49,7 +49,7 @@ fn lists_respect_rebound_key_precedence() {
                     Vec::new(),
                     1,
                     list_support::settings_theme(false, &calls),
-                    (Rc::new(|_, _| {}), Rc::new(|| {})),
+                    (Rc::new(|_, _| true), Rc::new(|| {})),
                     SettingsListOptions::default(),
                 );
                 json!({"select":[a.input_handler().is_some(),a.focusable().is_some()],"settings":[b.input_handler().is_some(),b.focusable().is_some()]})
@@ -103,7 +103,7 @@ fn lists_theme_closures_read_live_captured_state() {
             .collect(),
         3,
         settings_theme,
-        (Rc::new(|_, _| {}), Rc::new(|| {})),
+        (Rc::new(|_, _| true), Rc::new(|| {})),
         SettingsListOptions {
             enable_search: true,
         },
@@ -168,6 +168,7 @@ fn rebound_keys() -> serde_json::Value {
         (
             Rc::new(move |id, value| {
                 log.borrow_mut().push(json!(["change", id, value]));
+                true
             }),
             Rc::new(move || cancel.borrow_mut().push(json!(["cancel-setting"]))),
         ),
@@ -211,7 +212,7 @@ fn lists_preserve_fitting_theme_bytes() {
             vec![],
             1,
             theme,
-            (Rc::new(|_, _| {}), Rc::new(|| {})),
+            (Rc::new(|_, _| true), Rc::new(|| {})),
             SettingsListOptions::default(),
         );
         assert_eq!(list.render(80), [output]);
@@ -229,7 +230,7 @@ fn lists_preserve_fitting_theme_bytes() {
             }],
             1,
             theme,
-            (Rc::new(|_, _| {}), Rc::new(|| {})),
+            (Rc::new(|_, _| true), Rc::new(|| {})),
             SettingsListOptions::default(),
         );
         assert_eq!(list.render(80)[2], output);

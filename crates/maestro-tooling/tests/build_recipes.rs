@@ -23,7 +23,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -36,7 +36,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
         workspace.log(),
         "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\n"
     );
-    for phase in ["fmt", "hakari", "clippy", "doc", "test"] {
+    for phase in ["fmt", "run", "hakari", "clippy", "doc", "test"] {
         fs::remove_file(workspace.path().join("log")).unwrap();
         let output = workspace
             .command("ci")
@@ -1430,13 +1430,15 @@ fn maestro_offline_recipe_is_explicit_only() {
         ("test", "key=true auth=true flag=kept\n"),
         ("check", "key=true auth=true flag=kept\n"),
     ] {
-        let output = workspace
-            .command(recipe)
+        let mut command = workspace.command(recipe);
+        if recipe == "test-offline" {
+            command.env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"));
+        }
+        let output = command
             .env("HOME", &home)
             .env("OPENAI_API_KEY", "controlled")
             .env("MAESTRO_NO_LOCAL_LLM", "kept")
             .env("MAESTRO_ENV_RESULT", workspace.path().join("env-result"))
-            .env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"))
             .output()
             .unwrap();
         assert!(
@@ -1450,6 +1452,11 @@ fn maestro_offline_recipe_is_explicit_only() {
         );
         assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
     }
+    assert!(
+        workspace
+            .log()
+            .contains("development|--|example-index|--check")
+    );
     let output = workspace
         .command("test")
         .env("HOME", &home)

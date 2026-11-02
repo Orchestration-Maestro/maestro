@@ -86,6 +86,9 @@ pub async fn run(args: Vec<String>, local: Rc<LocalSet>) -> Result<i32, Box<dyn 
         themes,
         offline: Rc::clone(&offline),
         export: exports(themes, &installation, &package_dir),
+        terminal: Rc::new(RefCell::new(maestro_tui_crossterm::ProcessTerminal::new(
+            Rc::clone(&local),
+        ))),
     };
     startup(args, package, effects).await
 }
@@ -100,6 +103,8 @@ struct NativeStartup {
     offline: Rc<Cell<Option<bool>>>,
     /// Native supplied-bundle export adapter.
     export: Rc<dyn maestro_app::ExportOperations>,
+    /// The unstarted native terminal shared by component output and interactive frames.
+    terminal: Rc<RefCell<maestro_tui_crossterm::ProcessTerminal>>,
 }
 
 /// Bind the native presentations and input to the existing startup entry.
@@ -113,6 +118,7 @@ async fn startup(
         themes,
         offline,
         export,
+        terminal,
     } = effects;
     let now = || {
         (SystemTime::now()
@@ -132,8 +138,13 @@ async fn startup(
         sessions: crate::presentations::sessions(Rc::clone(&local), Rc::clone(themes)),
         missing_cwd: crate::presentations::missing_cwd(Rc::clone(&local), Rc::clone(themes)),
         local: Rc::clone(&local),
-        module_loader: module_loader(themes.theme(), &local),
-        modes: crate::modes::launchers(Rc::clone(&local), themes, Rc::clone(&export)),
+        module_loader: module_loader(themes.theme(), &local, &terminal.borrow()),
+        modes: crate::modes::launchers(
+            Rc::clone(&local),
+            themes,
+            Rc::clone(&export),
+            terminal.clone(),
+        ),
         stdin: &mut stdin,
         stdin_is_tty: &|| io::stdin().is_terminal(),
         now: &now,
@@ -158,7 +169,10 @@ async fn startup(
 fn module_loader(
     theme: maestro_theme::LiveTheme,
     local: &Rc<LocalSet>,
+    terminal: &maestro_tui_crossterm::ProcessTerminal,
 ) -> maestro_app::ModuleLoader<maestro_app::Local> {
+    let stdout = terminal.standard_output_writer();
+    let stdout_is_terminal = io::stdout().is_terminal();
     let widgets = Rc::new(std::cell::OnceCell::new());
     let io = maestro_app::extension_native_io::extension_native_io(local);
     Rc::new(move |path: &str| {
@@ -172,6 +186,10 @@ fn module_loader(
                         .map_err(|error| maestro_app::EventError::from(error.to_string()))?,
                 },
                 Rc::clone(&io),
+                Some(maestro_extensions_wasmtime::Stdout::new(
+                    Box::new(stdout.clone()),
+                    stdout_is_terminal,
+                )),
             )))
         });
         Box::pin(std::future::ready(factory))

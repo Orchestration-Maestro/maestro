@@ -228,7 +228,7 @@ fn native_start_after_a_failed_start_saves_standard_input_afresh() {
         isolated!(usize::from(replacing), &[], || {
             let rig = Rig::paused();
             let _input = pty_input();
-            let _output = pipe_output();
+            let output = pipe_output();
             let cooked = (stdin_attributes(), stdin_flags());
             rig.run(async {
                 let mut session = if replacing {
@@ -236,12 +236,16 @@ fn native_start_after_a_failed_start_saves_standard_input_afresh() {
                 } else {
                     unstarted(&rig)
                 };
+                let mut standard = session.terminal.standard_output_writer();
                 let limit = DescriptorLimit::reached();
                 let failed = session
                     .terminal
                     .start(session.inputs.callback(), session.resizes.callback());
                 drop(limit);
                 assert!(failed.is_err());
+                std::io::Write::write_all(&mut standard, b"after-failure").unwrap();
+                std::io::Write::flush(&mut standard).unwrap();
+                assert!(output.take().ends_with("after-failure"));
                 assert_eq!((stdin_attributes(), stdin_flags()), cooked);
                 let mut changed = attributes(stdin());
                 changed.local_modes.toggle(LocalModes::ECHOK);

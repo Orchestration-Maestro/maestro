@@ -449,6 +449,7 @@ fn settings_list(
             failure: &failure,
         };
         binding.call(&change, Event::Change(id.to_owned(), value.to_owned()));
+        true
     });
     let on_cancel = binding.notice(cancel, || Event::Cancel);
     let max_visible = usize::try_from(max_visible).map_err(|error| error.to_string())?;

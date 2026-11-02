@@ -259,6 +259,7 @@ async fn runner(io: Option<Rc<Process>>) -> ExtensionRunner<Local> {
                 agent_dir: "/controlled-agent".into(),
             },
             io,
+            None,
         ),
         None => crate::artifact(path.clone()),
     };
