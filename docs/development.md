@@ -1216,13 +1216,15 @@ defaults to a successful lookup.
 | --- | --- |
 | `Observed` | Writes the operands, the directory and, where the platform publishes them, the descriptor targets of standard input and standard error to `GIT_LOG`; writes one diagnostic, answers `feature/native` and ends with `GIT_EXIT`. |
 | `Reported` | Writes the operands and the directory to standard output, then ends with `GIT_EXIT`. |
-| `Exiting` | Writes an unterminated ` prefix` and starts the descendant named by `GIT_HOLDER` on the port in `holder-port`, then exits without waiting for it. |
-| `Retaining` | Reads its port from `GIT_PORT`, reports its own process identifier, waits for one release byte and adds ` tail` to the retained output. |
+| `Exiting` | Writes an unterminated ` prefix` and starts the descendant named by `GIT_HOLDER` on the port in `holder-port`, passing its own identifier as `GIT_PARENT`, then exits without waiting for it. |
+| `Retaining` | Reads its port from `GIT_PORT`, reports the identifier in `GIT_PARENT`, waits for one release byte and adds ` tail` to the retained output. |
 
 `Exiting` and `Retaining` keep the descriptor topology of a real linked
 descendant instead of a thread: the direct child ends while its own child still
 holds the output pipe, so the footer query completes only after the test releases
-it. Install both aliases in one disposable binary directory:
+it. The announced identifier is the direct child's, so a test that watches for
+process completion waits for the launched child rather than the descendant.
+Install both aliases in one disposable binary directory:
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {

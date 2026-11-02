@@ -12,6 +12,8 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 #[cfg(unix)]
+use maestro_process::child_process::process_exists;
+#[cfg(unix)]
 use maestro_test_process::git_command;
 use serde::Deserialize;
 use std::{
@@ -1257,6 +1259,10 @@ fn footer_pipe_child() {
         BufReader::new(&holder).read_line(&mut pid).unwrap();
         let pid = rustix::process::Pid::from_raw(pid.trim().parse().unwrap()).unwrap();
         footer_reaping_barrier(pid).await;
+        assert!(
+            !process_exists(u32::try_from(pid.as_raw_pid()).unwrap()),
+            "the announced direct child must be reaped"
+        );
         tokio::time::advance(Duration::from_secs(1)).await;
         tokio::task::yield_now().await;
         assert!(

@@ -1,7 +1,7 @@
 //! Native aliases receive backend operands without harness parsing or output.
 
 use std::ffi::OsString;
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -480,6 +480,44 @@ fn git_stand_in_reports_operands_directory_and_status() {
         directory.canonicalize().unwrap()
     );
     assert_eq!(lines.next(), None);
+}
+
+/// The retaining descendant announces the direct child's identifier, not its own.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_reports_the_direct_child_identifier() {
+    let root = Scratch::new().unwrap();
+    let alias = root.path().join("git");
+    let holder = root.path().join("git-holder");
+    maestro_test_process::git_command::install(
+        &alias,
+        maestro_test_process::git_command::Scenario::Exiting,
+    )
+    .unwrap();
+    maestro_test_process::git_command::install(
+        &holder,
+        maestro_test_process::git_command::Scenario::Retaining,
+    )
+    .unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    std::fs::write(
+        root.path().join("holder-port"),
+        listener.local_addr().unwrap().port().to_string(),
+    )
+    .unwrap();
+    let mut child = Command::new(&alias)
+        .current_dir(root.path())
+        .env("GIT_HOLDER", &holder)
+        .stdout(Stdio::null())
+        .spawn()
+        .unwrap();
+    let direct = child.id().to_string();
+    let mut control = listener.accept().unwrap().0;
+    let mut announced = String::new();
+    BufReader::new(&control).read_line(&mut announced).unwrap();
+    control.write_all(b"!").unwrap();
+    assert!(child.wait().unwrap().success());
+    assert_eq!(announced.trim(), direct);
 }
 
 /// Git stand-in records fail before the alias writes output or reads its inputs.

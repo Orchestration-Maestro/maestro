@@ -99,6 +99,7 @@ fn exiting() -> io::Result<()> {
     write_stdout(PREFIX)?;
     let port = std::fs::read_to_string("holder-port")?;
     Command::new(variable("GIT_HOLDER")?)
+        .env("GIT_PARENT", std::process::id().to_string())
         .env("GIT_PORT", port.trim())
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
@@ -107,13 +108,15 @@ fn exiting() -> io::Result<()> {
     leave(0)
 }
 
-/// Announce this descendant, then complete the retained output once released.
+/// Announce the parent whose exit the observer awaits, then complete the retained output once
+/// released.
 fn retaining() -> io::Result<()> {
+    let parent = variable("GIT_PARENT")?;
     let port = variable("GIT_PORT")?
         .parse::<u16>()
         .map_err(io::Error::other)?;
     let mut control = connect(port)?;
-    announce(&mut control, &std::process::id().to_string())?;
+    announce(&mut control, parent.trim())?;
     if receive(&mut control)? != Some(b'!') {
         return Err(io::Error::other("expected the footer release byte"));
     }

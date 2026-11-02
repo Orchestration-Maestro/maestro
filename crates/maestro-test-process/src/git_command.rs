@@ -22,8 +22,9 @@ pub fn install(entry: &Path, scenario: Scenario) -> io::Result<()> {
 ///
 /// The observed and reported scenarios answer one lookup and end with the status in
 /// `GIT_EXIT`, which defaults to zero. The exiting scenario writes an unterminated prefix and
-/// leaves a real descendant holding the same output descriptor; that descendant waits for one
-/// release byte. `GIT_LOG` names the observation file and `GIT_HOLDER` names the descendant.
+/// leaves a real descendant holding the same output descriptor; that descendant announces the
+/// exiting process's identifier and waits for one release byte. `GIT_LOG` names the observation
+/// file and `GIT_HOLDER` names the descendant.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Scenario {
     /// Log the operands, directory and descriptors, then answer a branch.
