@@ -11,6 +11,7 @@ use http_body_util::BodyExt;
 use super::super::{Auth, Settings, WireRequest, bridge, transport};
 use crate::providers::cloud::amazon_bedrock::proxy::Environment;
 use crate::tests::loopback;
+use url::Url;
 
 #[test]
 fn pac_bridge_scopes_globals_by_protocol_across_timeouts() {
@@ -85,14 +86,11 @@ async fn consume(source: &str, protocols: &[&str]) {
         profile: None,
         auth: Auth::Placeholder,
         http1: true,
-        proxy: true,
+        proxy: env
+            .proxy_for(&Url::parse("http://destination.invalid:8081/credentials").unwrap())
+            .unwrap(),
     };
-    let http = bridge(
-        None,
-        transport(&settings, env),
-        None,
-        Arc::new(Mutex::new(None)),
-    );
+    let http = bridge(None, transport(&settings), None, Arc::new(Mutex::new(None)));
     let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
     for (index, protocol) in protocols.iter().enumerate() {
         let settings = HttpConnectorSettings::builder()
@@ -205,22 +203,18 @@ async fn captured_environment(bypass: bool) {
 
 /// Compare retained and ambient routing through the same native SDK connector.
 async fn check_environment(captured: Environment, uri: &str) {
-    let settings = Settings {
-        endpoint: None,
-        region: None,
-        profile: None,
-        auth: Auth::Placeholder,
-        http1: true,
-        proxy: true,
-    };
     let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
     for (env, retained) in [(Environment::capture(), false), (captured, true)] {
-        let http = bridge(
-            None,
-            transport(&settings, env),
-            None,
-            Arc::new(Mutex::new(None)),
-        );
+        let chosen = env.proxy_for(&Url::parse(uri).unwrap()).unwrap();
+        let settings = Settings {
+            endpoint: None,
+            region: None,
+            profile: None,
+            auth: Auth::Placeholder,
+            http1: true,
+            proxy: chosen,
+        };
+        let http = bridge(None, transport(&settings), None, Arc::new(Mutex::new(None)));
         let connector = http.http_connector(&HttpConnectorSettings::builder().build(), &components);
         let mut request = WireRequest::new(SdkBody::empty());
         request.set_uri(uri).unwrap();
