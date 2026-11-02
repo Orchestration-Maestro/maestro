@@ -19,3 +19,7 @@ pub use credentials::resolve_config_value::{
     resolve_config_value_or_throw, resolve_config_value_uncached, resolve_headers,
     resolve_headers_or_throw,
 };
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

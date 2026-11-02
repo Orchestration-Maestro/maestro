@@ -1,6 +1,6 @@
 //! A controlled agent loop: plain user entries, standard history conversion and
 //! queued model responses, shared with other crates' loop tests.
-use maestro_agent::{AgentLoopConfig, AgentLoopOptions, AgentMessage, CustomAgentMessages};
+use crate::{AgentLoopConfig, AgentLoopOptions, AgentMessage, CustomAgentMessages};
 use maestro_models::{
     AssistantMessageEventStream, Context, JsonObject, Message, Model, ProviderObjects,
     SharedAssistantMessage, SimpleStreamOptions, UserContent, UserMessage,
@@ -38,19 +38,9 @@ pub fn config(model: Model) -> AgentLoopConfig {
         convert_to_llm: Arc::new(|history| {
             let messages = history
                 .read()
-                .unwrap()
-                .iter()
-                .map(|message| match message {
-                    AgentMessage::User(value) => Message::User(value.read().unwrap().clone()),
-                    AgentMessage::Assistant(value) => {
-                        Message::Assistant(value.read().unwrap().clone())
-                    }
-                    AgentMessage::ToolResult(value) => {
-                        Message::ToolResult(value.read().unwrap().clone())
-                    }
-                    AgentMessage::Custom(_) => unreachable!(),
-                })
-                .collect();
+                .map(|history| history.iter().filter_map(converted).collect::<Vec<_>>());
+            assert!(messages.is_ok());
+            let messages = messages.unwrap_or_default();
             Box::pin(async { Ok(messages) })
         }),
         transform_context: None,
@@ -61,7 +51,7 @@ pub fn config(model: Model) -> AgentLoopConfig {
         prepare_next_turn: None,
         get_steering_messages: None,
         get_follow_up_messages: None,
-        tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
+        tool_execution: Some(crate::ToolExecutionMode::Sequential),
     }
 }
 /// Publish one authoritative result for each requested turn.
@@ -74,16 +64,37 @@ pub fn responses(messages: Vec<SharedAssistantMessage>) -> AgentLoopOptions {
     AgentLoopOptions {
         signal: None,
         stream_fn: Some(Arc::new(move |_, _: Context, _, _| {
-            let message = messages
-                .lock()
-                .unwrap()
-                .pop_front()
-                .expect("unexpected turn");
+            let message = messages.lock().map(|mut messages| messages.pop_front());
+            assert!(message.is_ok());
+            let message = message.ok().flatten();
+            assert!(message.is_some(), "unexpected turn");
             Box::pin(async {
                 let stream = AssistantMessageEventStream::new();
-                stream.end(Some(message));
+                stream.end(message);
                 Ok(stream)
             })
         })),
     }
+}
+
+/// Convert one ordinary retained record without delaying a failed read.
+fn converted(message: &AgentMessage) -> Option<Message> {
+    assert!(!matches!(message, AgentMessage::Custom(_)));
+    let result = match message {
+        AgentMessage::User(value) => value
+            .read()
+            .map(|value| Message::User(value.clone()))
+            .map_err(|_| ()),
+        AgentMessage::Assistant(value) => value
+            .read()
+            .map(|value| Message::Assistant(value.clone()))
+            .map_err(|_| ()),
+        AgentMessage::ToolResult(value) => value
+            .read()
+            .map(|value| Message::ToolResult(value.clone()))
+            .map_err(|_| ()),
+        AgentMessage::Custom(_) => return None,
+    };
+    assert!(result.is_ok());
+    result.ok()
 }

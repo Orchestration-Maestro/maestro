@@ -13,7 +13,7 @@ mod capture_context_checks;
 mod capture_path_checks;
 mod component_entry_checks;
 #[cfg(not(target_arch = "wasm32"))]
-mod component_support;
+use maestro_packages::test_support::component_support;
 mod configured_resolution_checks;
 #[cfg(unix)]
 mod configured_resolution_support;

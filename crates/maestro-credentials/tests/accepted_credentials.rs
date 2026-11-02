@@ -636,7 +636,8 @@ mod tests {
         crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_keeps_result_domain",
             &std::env::var(CASE_ENV).unwrap_or_default(),
-        ));
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -657,6 +658,7 @@ mod tests {
         crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_short_circuits_earlier_sources",
             &std::env::var(CASE_ENV).unwrap_or_default(),
-        ));
+        ))
+        .unwrap();
     }
 }

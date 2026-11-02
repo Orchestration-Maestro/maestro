@@ -299,9 +299,9 @@ checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
-the required toolkit/text set. The scenario harness's recording terminal and
-manual runtime are the one shared test-effect owner, declared as a native
-development dependency by `maestro-cli` only.
+the required toolkit/text set. The scenario harness reexports the recording terminal and manual runtime from
+`maestro-tui::test_support`. The harness itself remains a native development
+dependency of `maestro-cli` only.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
@@ -620,3 +620,15 @@ as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
 crate dependency: both extension adapters already reach the request owner through
 their declared edges.
+
+Typed test helpers may use their type owner's non-default `test-support` feature.
+Enable it through development dependencies, including a feature-only self
+reference for the owner's own integration tests. Dedicated `maestro-test-*`
+libraries may enable it normally to retain public helper reexports. A product's
+own `test-support` feature may forward one hop to a normal dependency's matching
+feature; default/runtime activation and cross-product forwarding chains are
+forbidden. The Cargo-metadata conventions preserve cross-crate cycle checks.
+
+Chat may use credentials as a portable, non-optional development dependency only
+with `features = ["test-support"]` for shared selector diagnostics. The graph
+checker retains cycle checks for this edge.

@@ -1,7 +1,8 @@
 //! Live-theme scratch directories, state and shared fixture access.
-mod document;
+use maestro_theme::test_support::document;
 
 pub use crate::support::environment::{TRUECOLOR, in_child, per_environment};
+#[doc(inline)]
 pub use document::custom_json;
 use maestro_theme::{ThemeDirectories, ThemeState};
 use std::fs;

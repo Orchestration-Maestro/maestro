@@ -110,6 +110,19 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
+Compile each changed crate separately when checking helper availability:
+
+```sh
+~/.local/bin/capped cargo check --locked --tests \
+  --target wasm32-unknown-unknown -p maestro-tools
+```
+
+Checking one crate at a time prevents another crate's development features from
+hiding missing helper activation. Portable helper imports, owner modules and
+`test-support` development dependencies must all be available on browser targets.
+Keep native-only collaborators and their imports conditional. Library and example
+checks alone do not compile integration tests.
+
 Native socket, process and runtime fixtures stay with their native tests.
 Portable assertions remain in browser targets, with strictly parsed fixture
 records owned by their readers. A test that needs a Tokio runtime, a checked
@@ -1340,3 +1353,24 @@ policies.
 
 Select individual toolkit tests through `tui-test` using their module-qualified
 names, for example `just tui-test -- ansi_wrapping::name --exact`.
+
+### Typed test helpers
+
+Shared typed helpers can use an owner's non-default `test-support` feature.
+Consumers activate it through development dependencies. Owners can use a self
+development dependency with `path = "."` and `features = ["test-support"]` to keep
+integration tests runnable by default. Dedicated test libraries can also activate
+it on normal dependencies. A product's own opt-in `test-support` feature can
+forward one hop to a dependency's matching feature, but runtime/default features
+cannot activate it. The conventions checker reads Cargo metadata to enforce
+these boundaries while retaining cross-crate cycle detection.
+
+The terminal toolkit's `test_support` module owns controlled runtimes, recording
+terminals and input-global admission. The scenario library reexports the runtime
+and terminal helpers. Theme, tool, credential, agent, Markdown and package helpers
+live in their type owners. Native loopback servers, child probes and toolchain
+selection live in `maestro-test-process`. Fallible helpers return their errors to
+the test caller; fixed-output callbacks retain immediate assertions.
+
+Coverage probes reuse the prepared native target, workspace lock and build
+profiles. Only the parent program receives coverage instrumentation.

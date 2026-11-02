@@ -53,7 +53,7 @@ impl Peer {
         let source = scratch.join("peer.py");
         std::fs::write(&source, STUB).unwrap();
         let entry = scratch.join("peer");
-        install_executable(Path::new(&source), Path::new(&entry));
+        install_executable(Path::new(&source), Path::new(&entry)).expect("install starts");
         Self { scratch, entry }
     }
 

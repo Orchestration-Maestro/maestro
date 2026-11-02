@@ -40,7 +40,9 @@ pub fn registry(
         std::fs::create_dir_all(scratch.path().join("custom")).unwrap();
         std::fs::write(
             scratch.path().join(format!("custom/{name}.json")),
-            crate::theme_document::custom_json(name, "#123456").to_string(),
+            crate::theme_document::custom_json(name, "#123456")
+                .unwrap()
+                .to_string(),
         )
         .unwrap();
     }

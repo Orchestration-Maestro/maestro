@@ -58,7 +58,7 @@ const PUNCTUATION: u8 = 38;
 
 /// A live handle whose published theme colors key `i` of the fixtures with `i + 1`.
 fn live() -> (ThemeState, LiveTheme) {
-    published(&theme(0))
+    published(&theme(0).unwrap()).unwrap()
 }
 
 /// Terminal rows of `code` for `lang` through the production highlighter.
@@ -223,7 +223,7 @@ fn highlighting_reads_the_replaced_live_theme() {
             .collect()
     };
     assert_eq!(render(), [expect(0)]);
-    state.set_theme_instance(theme(100)).unwrap();
+    state.set_theme_instance(theme(100).unwrap()).unwrap();
     assert_eq!(render(), [expect(100)]);
 }
 

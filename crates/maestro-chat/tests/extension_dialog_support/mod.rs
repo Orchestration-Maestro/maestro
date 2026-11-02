@@ -415,7 +415,7 @@ fn replay(
         KEYBINDINGS.clone(),
         bindings(&query.bindings),
     ));
-    let (theme, live) = super::published::published(&colors(0));
+    let (theme, live) = super::published::published(&colors(0)).unwrap();
     let live = if test == "dialog_constructor_propagates_hint_theme_failure" {
         super::published::unpublished().theme()
     } else {
@@ -739,7 +739,7 @@ pub fn startup_host() -> StartupHost {
         TerminalImage::default(),
         Some(false),
     );
-    let live = LiveTheme::from_theme(published::theme(0));
+    let live = LiveTheme::from_theme(published::theme(0).unwrap());
     let actual_runtime = runtime.clone();
     let factory: ExtensionSelectorFactory = Rc::new(move |request| {
         let component = Rc::new(

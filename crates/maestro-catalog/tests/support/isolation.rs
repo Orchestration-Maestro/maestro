@@ -13,7 +13,8 @@ pub fn isolated(name: &str) -> bool {
             .unwrap()
             .case("*"),
         &[],
-    );
+    )
+    .unwrap();
     true
 }
 

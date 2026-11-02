@@ -3746,6 +3746,7 @@ name = "maestro-agent"
 version = "0.1.0"
 dependencies = [
  "futures-util",
+ "maestro-agent",
  "maestro-dependencies",
  "maestro-json",
  "maestro-listeners",
@@ -3866,6 +3867,7 @@ dependencies = [
  "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
+ "maestro-credentials",
  "maestro-dependencies",
  "maestro-models",
  "maestro-path",
@@ -3910,6 +3912,7 @@ name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [
  "indexmap 2.14.2",
+ "maestro-credentials",
  "maestro-dependencies",
  "maestro-lock",
  "maestro-models",
@@ -4224,6 +4227,7 @@ version = "0.1.0"
 dependencies = [
  "entities",
  "maestro-dependencies",
+ "maestro-markdown",
  "maestro-text",
  "regress",
  "serde",
@@ -4318,6 +4322,7 @@ dependencies = [
  "git-url-parse",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-packages",
  "maestro-path",
  "maestro-pattern",
  "maestro-process",
@@ -4593,6 +4598,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
+ "maestro-theme",
  "maestro-tui",
  "maestro-watch",
  "num-traits",
@@ -4655,6 +4661,7 @@ dependencies = [
  "maestro-text",
  "maestro-theme",
  "maestro-tool",
+ "maestro-tools",
  "maestro-tui",
  "num-traits",
  "owo-colors",
@@ -4685,6 +4692,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
+ "maestro-tui",
  "rand 0.10.3",
  "regress",
  "rustix",

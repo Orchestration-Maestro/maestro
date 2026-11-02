@@ -6,7 +6,7 @@ use std::io;
 use std::pin::Pin;
 use std::time::Duration;
 
-use maestro_tui::Terminal;
+use crate::Terminal;
 
 /// Callback delivering input chunks.
 pub type InputCallback = Box<dyn FnMut(&str)>;
@@ -35,6 +35,7 @@ pub struct Recording {
 
 impl Recording {
     /// Creates an adapter; `refuse_writes` makes every write fail.
+    #[must_use]
     pub fn new(refuse_writes: bool) -> Self {
         Self {
             log: Vec::new(),

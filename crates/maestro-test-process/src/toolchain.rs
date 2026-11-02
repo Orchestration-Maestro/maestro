@@ -1,4 +1,4 @@
-#![cfg(test)]
+//! Controlled toolchain declarations for child builds.
 
 use std::{ffi::OsStr, process::Command};
 
@@ -38,6 +38,7 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
 }
 
 /// The private Cargo home of a fixture rooted at `root`.
+#[must_use]
 pub fn home(root: &std::path::Path) -> std::path::PathBuf {
     root.join("cargo-home")
 }
@@ -103,11 +104,15 @@ fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::pat
 }
 
 /// The resolved toolchain that compiled this test, independent of runtime overrides.
+#[must_use]
 pub fn channel() -> Option<&'static str> {
     option_env!("RUSTUP_TOOLCHAIN")
 }
 
 /// Write the complete supplied toolchain declaration into a fixture root.
+///
+/// # Errors
+/// Returns failures writing the fixture declaration.
 pub fn declare_toolchain(root: &std::path::Path, declaration: &str) -> std::io::Result<()> {
     std::fs::write(root.join("rust-toolchain.toml"), declaration)
 }

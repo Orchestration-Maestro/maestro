@@ -503,8 +503,9 @@ fn replace_paths(value: &mut Value, paths: &[String]) {
     }
 }
 
-mod immediate;
+#[doc(inline)]
 pub use immediate::Immediate;
+use maestro_tools::test_support::immediate;
 
 /// Execute the retained failure-then-success hook sequence on one definition.
 pub fn hook_sequence() {

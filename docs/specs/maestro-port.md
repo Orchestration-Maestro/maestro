@@ -770,6 +770,8 @@ Repository tooling builds the host artifact once per input set, records its emit
 path, source freshness and digest, and exports an explicit absolute path for local,
 filtered and archive-remapped runs. Tests never compile or discover a fallback.
 See [Rust test children](test-processes.md) for the complete contract.
+Its native helpers also provide loopback servers, completed child probes,
+executable installation and child-build toolchain selection.
 
 On Unix the owner currently runs caller-supplied setup text in the interpreter the
 caller names by absolute path. Typed isolated native setup is planned; shell setup
@@ -909,8 +911,8 @@ consumers; the utility is delivered before its first consumer.
 ### Terminal scenario owner
 
 `maestro-test-terminal` is a dedicated, unpublished, native crate that drives the
-toolkit through its public interface. Its library owns the recording terminal and
-the manual runtime a controlled terminal scenario needs; its integration tests own
+toolkit through its public interface. Its library reexports the recording terminal
+and manual runtime from `maestro-tui::test_support`; its integration tests own
 the virtual terminal and the written scenarios. It requires `maestro-tui` and
 nothing else from the workspace, and it is excluded from the foundation utility
 permission. Its only incoming edge is a non-optional native development
@@ -1124,3 +1126,28 @@ as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
 crate dependency: both extension adapters already reach the request owner through
 their declared edges.
+
+### Opt-in test helpers
+
+Typed test helpers may live in their type owner's non-default `test-support`
+feature. Product consumers enable it only through development dependencies.
+An owner's self development dependency may enable this feature so its integration
+program remains runnable without command-line feature flags. That feature-only
+self edge adds no separate crate to the cycle graph; all cross-crate cycle checks
+still apply.
+
+Dedicated `maestro-test-*` libraries may enable a type owner's `test-support`
+feature on a normal dependency, preserving their existing public helper paths.
+A product's own non-default `test-support` feature may forward directly to a
+normal dependency's `test-support` feature. This is one hop only: the target
+feature must not itself forward to another product's test-support feature.
+Normal/build dependency feature lists and other product features, including
+`default`, may not enable test-support. Cargo-metadata conventions enforce these
+boundaries independently of dependency aliases and target predicates.
+
+Chat may declare a portable, non-optional development dependency on credentials
+solely with `features = ["test-support"]` for shared selector diagnostics. This
+edge does not authorize a production dependency or a pass-through helper in the
+application. Other type-owner activation on existing production edges adds no
+new crate relationship; the conventions checker validates those declarations
+without requiring a second development-policy row.
