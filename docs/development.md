@@ -134,30 +134,21 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
-Compile each changed crate separately when checking helper availability:
-
-```sh
-~/.local/bin/capped cargo check --locked --tests \
-  --target wasm32-unknown-unknown -p maestro-tools
-```
-
-Checking one crate at a time prevents another crate's development features from
-hiding missing helper activation. Portable helper imports, owner modules and
-`test-support` development dependencies must all be available on browser targets.
-Keep native-only collaborators and their imports conditional. Library and example
-checks alone do not compile integration tests.
-
-For model tests, lint every target, including the portable output-budget and
-stream-option assertions:
+Lint each changed browser crate separately, including all test and example targets:
 
 ```sh
 ~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
   --all-targets -p maestro-models -- -D warnings
 ```
 
-Build `Threaded` callbacks through `Execution::share`: it selects `Arc` on native
-targets and `Rc` on wasm32. Keep native-only helper predicates matched to their
-callers; pure thinking-budget assertions compile on both targets.
+`clippy --all-targets -D warnings` also rejects unused native-only helpers that
+`check --tests` leaves as warnings.
+
+Checking one crate at a time prevents another crate's development features from
+hiding missing helper activation. Portable helper imports, owner modules and
+`test-support` development dependencies must all be available on browser targets.
+Keep native-only collaborators and their imports conditional. Library and example
+checks alone do not compile integration tests.
 
 Native socket, process and runtime fixtures stay with their native tests.
 Portable assertions remain in browser targets, with strictly parsed fixture
