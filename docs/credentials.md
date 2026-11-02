@@ -211,7 +211,9 @@ selected backend until settlement.
 selected invocation. Synchronous metadata reads return the callback's actual value
 before returning to their caller. Native constructors and backend algorithms are
 unchanged. Component-backed native callbacks run on their creating local pump;
-they are not an off-thread credential backend. The registration facade does not
+they are not an off-thread credential backend. Stored presence checks (`has`) use
+the same callback-capable route as the other stored reads, so an authored backend
+can complete its reread before the check returns. The registration facade does not
 retain the bound session catalog. Acquired catalog and credential handles retain
 their owners; resolver captures release after their final owner and selected
 invocations end.

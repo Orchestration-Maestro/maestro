@@ -107,8 +107,9 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Result<bool, String>> {
-        Ok(self.table.get(&this)?.flag("has", &[json!(provider)]))
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.flag("has", &[json!(provider)]);
+        self.routed_value(result.map(host::RouteValue::Boolean))
     }
     fn has_auth(
         &mut self,

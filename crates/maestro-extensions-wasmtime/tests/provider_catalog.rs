@@ -137,7 +137,7 @@ fn credential_author_retains_callable_native_owner() {
         assert_eq!(
             observe(&runner, "credential callbacks").await,
             json!({
-                "keys":["changed-after-construction","accepted","original"],"errors":["write-first"],"drained":[],
+                "keys":["changed-after-construction","original","original"],"errors":["write-first"],"drained":[],
                 "raw":r#"{"shared":{"type":"api_key","key":"original"}}"#,
                 "fallback":{"has":true,"status":{"configured":false,"source":"fallback","label":"custom provider config"},"key":"fallback-key"}
             })
@@ -450,12 +450,17 @@ async fn assert_backend_update(
             *raw
         );
         if phase == "write" {
-            assert_eq!(update["accepted"]["access"], json!("refreshed-key"));
+            assert_eq!(
+                credential_value(&update["accepted"]),
+                credential_value(&raw["author-pending"])
+            );
             let replacement: Value =
                 serde_json::from_str(update["next"].as_str().unwrap()).unwrap();
             assert_eq!(
                 credential_value(&replacement["author-pending"]),
-                credential_value(&update["accepted"])
+                credential_value(
+                    &json!({"type":"oauth","refresh":"original-refresh","access":"refreshed-key","expires":4_102_444_800_000_i64})
+                )
             );
             assert_eq!(replacement["unknown"], json!([null, false, 2]));
         } else {
@@ -1720,8 +1725,8 @@ fn credentials_retained_owner_forwards_state_errors_and_key_precedence() {
         assert_eq!(
             answer,
             json!({
-                "accepted":{"list":["old","new"],"all":{"old":{"type":"api_key","key":"original"},"new":{"type":"api_key","key":"accepted"}},"has":true,"stored":{"type":"api_key","key":"accepted"},"key":"accepted"},
-                "retained":["new"], "errors":["write-first","acquire-second","reload-third"],"drained":[],
+                "accepted":{"list":["old"],"all":{"old":{"type":"api_key","key":"original"}},"has":false,"stored":null,"key":null},
+                "retained":[], "errors":["write-first","acquire-second","reload-third"],"drained":[],
                 "raw":r#"{"old":{"type":"api_key","key":"original"}}"#,
                 "recovered":["old"],"logout":[],
                 "precedence":{"keys":["fallback","runtime","stored","stored","fallback",null],

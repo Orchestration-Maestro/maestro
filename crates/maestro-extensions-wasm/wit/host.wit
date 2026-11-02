@@ -1065,7 +1065,7 @@ interface host {
         set: func(provider: string, credential: string) -> import-route;
         remove: func(provider: string) -> import-route;
         %list: func() -> import-route;
-        has: func(provider: string) -> result<bool, string>;
+        has: func(provider: string) -> import-route;
         has-auth: func(provider: string) -> import-route;
         get-auth-status: func(provider: string) -> import-route;
         get-all: func() -> import-route;
