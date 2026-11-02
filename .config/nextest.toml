@@ -15,6 +15,13 @@ command = "target/test-setup/development nextest-setup author-component"
 filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(startup_modes::) | test(model_streams::) | test(component_output_stays_between_complete_host_frames) | test(native_io::) | test(/_example::/)))"
 setup = "author-component"
 
+[scripts.setup.native-fixture]
+command = "target/test-setup/development nextest-setup native-fixture"
+
+[[profile.default.scripts]]
+filter = "package(maestro-test-process) | package(maestro-tooling)"
+setup = "native-fixture"
+
 [scripts.setup.fixture-sources]
 command = { command-line = "debug/development nextest-setup fixture-sources", relative-to = "target" }
 

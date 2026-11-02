@@ -1,7 +1,7 @@
 //! The packages that consume the prepared test setup, as declared for shared CI.
 
 /// The preparation job runs for exactly the packages that nextest gives the author-component
-/// or browser-author setup script, so a run that selects none of them skips the job.
+/// browser-author or native-fixture setup script, so a run that selects none of them skips the job.
 #[test]
 fn ci_declares_the_packages_that_read_the_prepared_setup() {
     let nextest: toml::Table = include_str!("../../../.config/nextest.toml")
@@ -13,7 +13,7 @@ fn ci_declares_the_packages_that_read_the_prepared_setup() {
         .filter(|rule| {
             matches!(
                 rule["setup"].as_str(),
-                Some("author-component" | "browser-author")
+                Some("author-component" | "browser-author" | "native-fixture")
             )
         })
         .flat_map(|rule| rule["filter"].as_str().unwrap().split("package(").skip(1))

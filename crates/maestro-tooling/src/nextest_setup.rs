@@ -11,7 +11,7 @@ use std::process::ExitCode;
 use maestro_path::normalize_native;
 
 use super::argument;
-use crate::test_setup::MANIFEST;
+use crate::test_setup::{MANIFEST, native_fixture};
 
 /// The bundle directory a run reads when it names none.
 const BUNDLE: &str = "target/test-setup";
@@ -35,6 +35,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     match args.first().and_then(|name| name.to_str()) {
         Some("author-component") => author_component::run(&checkout),
         Some("fixture-sources") => fixture_sources::run(&checkout),
+        Some("native-fixture") => native(&checkout),
         Some("browser-author") => browser_graph::run(&checkout),
         Some("normalize-component-cache") => normalize::run(
             &checkout.join(argument(args, 1, "directory")?),
@@ -42,6 +43,23 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
         ),
         _ => Err(io::Error::other("unknown nextest setup")),
     }
+}
+
+/// Export the validated host fixture, building only during local repository setup.
+fn native(checkout: &Path) -> io::Result<ExitCode> {
+    let path = match prepared_bundle(checkout) {
+        Some(bundle) => native_fixture::prepared(checkout, &bundle)?,
+        None => native_fixture::prepare(
+            Path::new(&cargo()),
+            checkout,
+            &checkout.join(BUNDLE),
+            &checkout.join("target/native-fixture"),
+        )?,
+    };
+    let mut entry = OsString::from(format!("{}=", native_fixture::VARIABLE));
+    entry.push(path);
+    export(&entry)?;
+    Ok(ExitCode::SUCCESS)
 }
 
 /// The bundle directory a prepared run reads: the one `TEST_PREPARE_OUTPUT` names while it holds

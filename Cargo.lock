@@ -4538,6 +4538,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
  "rustix",
+ "serde_json",
 ]
 
 [[package]]

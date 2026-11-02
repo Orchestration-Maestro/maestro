@@ -963,6 +963,56 @@ still reaches the shared home fails at once instead of waiting for another test.
 
 ### Child-process tests
 
+Stage the setup tool before a filtered native-fixture run:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-test-process
+```
+
+Use checked reruns when the test owns the invocation and harness framing. Use the
+prepared `native_fixture` example when a backend launches a program by name with
+literal operands, or when its protocol requires raw bytes. The complete contract
+is [Rust test children](specs/test-processes.md).
+
+#### Direct native fixtures
+
+Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
+currently served packages, `maestro-test-process` and `maestro-tooling`. Local
+setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
+`target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
+Prepared archive runs validate the staged copy and export its remapped absolute
+path without building. A missing or stale archive artifact fails setup. Re-run
+preparation instead of adding a target-directory search or a runtime compiler.
+
+Call `install_executable(artifact, destination)` with that explicit path. The
+caller's disposable directory owns the alias. Installation runs inside the same
+artifact and waits for the copy's writer to close; the test runner never opens a
+writable executable that a sibling child could inherit. Copies have independent
+modification times. Windows aliases use the native `.exe` suffix.
+
+The observation scenario reads `<alias>.fixture`, including the `.exe` suffix
+when present. The record has exactly three lines: `observe`, the parent's
+nonzero TCP port and an exit status from 0 to 255. It reports its actual PID, cwd,
+`MTP_VALUE` and each unmodified operand on that socket as length-prefixed native
+strings (eight-byte little-endian byte length). It closes the socket, writes
+`err` followed by NUL, byte FE and `!` on stderr, echoes stdin unchanged to stdout
+and exits with the supplied status. Neither output stream carries harness text.
+An unknown or malformed record fails before connecting or writing the optional
+`MTP_EFFECT` sentinel. Direct invocation uses `--maestro-observe <record> <operands>`;
+installed aliases leave all operands untouched. Add cohesive finite Rust fixture
+families to this one target, never a script evaluator or another launcher.
+
+The preparation tests also use a `tooling-cargo` record with the real Cargo path
+and an existing setup-example template path. That scenario forwards metadata,
+accepts the existing Clippy probe and stages the two preparation examples. The
+remaining setup-example templates still use their existing shell fixtures until
+their owning conversion lands. Typed isolated native setup is planned; current
+Unix `shell_setup` remains available during that conversion.
+
+#### Checked reruns
+
 A test that re-runs one test in a fresh process starts it through
 `maestro-test-process`, a native dev-dependency, instead of building a `Command`
 for the test executable. `TestProcess::current(leaf)` resolves the running test's
