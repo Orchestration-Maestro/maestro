@@ -77,18 +77,28 @@ impl FileAuthStorageBackend {
         })
     }
 
+    /// Acquire once, returning the next contention delay or the terminal acquisition error.
+    fn attempt(
+        &self,
+        delays: &mut impl Iterator<Item = Duration>,
+    ) -> Result<Result<WriteLock, Duration>, AuthStorageError> {
+        match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
+            Ok(holder) => Ok(Ok(holder)),
+            Err(error @ TryLockError::WouldBlock) => {
+                delays.next().map(Err).ok_or_else(|| lock_error(error))
+            }
+            Err(error) => Err(lock_error(error)),
+        }
+    }
+
     /// Lock the sidecar, blocking for scheduled delays while another holder has it.
     fn acquire_waiting(&self) -> Result<WriteLock, AuthStorageError> {
         self.create_parents()?;
         let mut delays = self.scheduled_delays();
         loop {
-            match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
+            match self.attempt(&mut delays)? {
                 Ok(holder) => return Ok(holder),
-                Err(error @ TryLockError::WouldBlock) => match delays.next() {
-                    Some(delay) => (self.wait)(delay),
-                    None => return Err(lock_error(error)),
-                },
-                Err(error) => return Err(lock_error(error)),
+                Err(delay) => (self.wait)(delay),
             }
         }
     }
@@ -98,13 +108,9 @@ impl FileAuthStorageBackend {
         self.create_parents()?;
         let mut delays = self.scheduled_delays();
         loop {
-            match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
+            match self.attempt(&mut delays)? {
                 Ok(holder) => return Ok(holder),
-                Err(error @ TryLockError::WouldBlock) => match delays.next() {
-                    Some(delay) => tokio::time::sleep(delay).await,
-                    None => return Err(lock_error(error)),
-                },
-                Err(error) => return Err(lock_error(error)),
+                Err(delay) => tokio::time::sleep(delay).await,
             }
         }
     }
