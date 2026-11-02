@@ -1,8 +1,9 @@
 name: CodeQL
-# Scans main after each merge and every Monday. Pull
-# requests and merge groups are not scanned, so scans never compete with the
-# merge queue for runners. Advisory: no ruleset requires this workflow.
+# Scans main after each merge and every Monday.
+# Pull-request and merge-group events start no scan.
+# Advisory: no ruleset requires this workflow.
 "on":
+  # Scan only main pushes and the weekly schedule.
   push:
     branches: [main]
   schedule:
