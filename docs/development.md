@@ -1135,6 +1135,11 @@ install it under the name the product resolves from `PATH`, so the shell
 evaluation under test stays real. An `echo` record prints the single line that
 follows it, which lets executable selection tests run a native program that
 prints the name their fixture authored. Neither family writes harness text.
+The editor writes the edited file's path to the file named by
+`MAESTRO_EDITOR_RESULT` and fails if that variable is unset. For example, with a
+`vi.fixture` record containing only `editor` and
+`MAESTRO_EDITOR_RESULT=/scratch/editor-result`, running `vi --custom notes.txt`
+writes `notes.txt` followed by a newline to `/scratch/editor-result` and exits 7.
 
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
