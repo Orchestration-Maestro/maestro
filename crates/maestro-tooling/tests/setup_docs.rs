@@ -136,9 +136,9 @@ fn development_guide_names_the_command_for_a_missing_setup_tool() {
     );
 }
 
-/// A command on a package that shared CI adds to the served list is checked like the others.
+/// A command on a package served by a nextest setup must stage the tool first.
 #[test]
-fn documented_nextest_commands_follow_the_packages_shared_ci_declares() {
+fn documented_nextest_commands_stage_the_tool_for_setup_consumers() {
     let served = vec!["maestro-app".to_owned()];
     let block = vec!["cargo nextest run --locked -p maestro-app".to_owned()];
 

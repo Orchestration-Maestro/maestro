@@ -13,7 +13,10 @@ fn ci_declares_every_setup_that_reads_the_prepared_bundle() {
         .iter()
         .map(|name| name.as_str().unwrap())
         .collect();
-    assert!(!ci.contains_key("test_prepare_packages"));
+    assert!(
+        !ci.contains_key("test_prepare_packages"),
+        "prepared consumers must come from nextest setup filters, not a package list"
+    );
     let setups = nextest["scripts"]["setup"].as_table().unwrap();
     let mut required: Vec<_> = setups
         .iter()
@@ -22,6 +25,7 @@ fn ci_declares_every_setup_that_reads_the_prepared_bundle() {
             let command = command
                 .as_str()
                 .unwrap_or_else(|| command["command-line"].as_str().unwrap());
+            // browser-author reads the bundle but runs debug/development instead of the staged tool.
             command.contains("target/test-setup/development") || *name == "browser-author"
         })
         .map(|(name, _)| name.as_str())

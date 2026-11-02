@@ -822,9 +822,8 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package
 matches a setup filter in `.config/nextest.toml` for one of the setups named by
-`test_prepare_setups` in `.github/ci.toml`: `author-component`, `browser-author`,
-`cargo-checks` and `native-fixture`. The consumer packages live only in those
-nextest filters. To give another package a prepared fixture, add it to the
+`test_prepare_setups` in `.github/ci.toml`. The consumer packages live only in
+those nextest filters. To give another package a prepared fixture, add it to the
 matching filter; no CI package list needs updating. A change to the nextest
 configuration runs the full test suite in CI.
 Shared CI caches the bundle under the contents of the files that
