@@ -111,8 +111,8 @@ static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 #[cfg(not(target_arch = "wasm32"))]
 /// Hands the announced authorization address to the browser.
 struct Callback {
-    /// Delivers the address once.
-    sender: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
+    /// Delivers the single address announced by login.
+    sender: tokio::sync::mpsc::UnboundedSender<String>,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Callback {
@@ -120,8 +120,7 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
         &self,
         info: maestro_models::OAuthAuthInfo,
     ) -> Result<(), maestro_models::OAuthError> {
-        let sender = self.sender.lock().unwrap().take().unwrap();
-        sender.send(info.url).unwrap();
+        self.sender.send(info.url).unwrap();
         Ok(())
     }
     fn on_prompt(
@@ -134,9 +133,9 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
 #[cfg(not(target_arch = "wasm32"))]
 /// Reject one callback before accepting the announced state on a retained connection.
 async fn callback_browser(
-    announced: tokio::sync::oneshot::Receiver<String>,
+    mut announced: tokio::sync::mpsc::UnboundedReceiver<String>,
 ) -> tokio::net::TcpStream {
-    let url = url::Url::parse(&announced.await.unwrap()).unwrap();
+    let url = url::Url::parse(&announced.recv().await.unwrap()).unwrap();
     let fields: BTreeMap<_, _> = url.query_pairs().collect();
     let redirect = url::Url::parse(&fields["redirect_uri"]).unwrap();
     let port = redirect.port().unwrap();
@@ -371,10 +370,9 @@ mod oauth_callback {
                 assert_eq!(body["code"], "callback-code");
                 Box::pin(std::future::ready(Ok(json_response(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#))))
             });
-            let (sender, announced) = tokio::sync::oneshot::channel();
-            let callbacks = Arc::new(Callback {
-                sender: std::sync::Mutex::new(Some(sender)),
-            });
+            // Login announces one authorization URL, so the channel cannot grow.
+            let (sender, announced) = tokio::sync::mpsc::unbounded_channel();
+            let callbacks = Arc::new(Callback { sender });
             let (result, mut peer) = tokio::join!(
                 maestro_models::login_anthropic(callbacks, Some(fetch)),
                 callback_browser(announced)

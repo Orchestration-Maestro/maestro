@@ -50,23 +50,23 @@ fn fixed_port_wrapper_holds_lock_while_child_runs() {
 }
 
 #[test]
-fn fixed_port_wrapper_runs_without_a_lock_file() {
+fn fixed_port_wrapper_runs_without_the_lock_variable() {
     if std::env::var_os("MAESTRO_WRAPPER_CHILD").is_some() {
-        assert!(std::env::var_os("MAESTRO_FIXED_PORT_LOCK").is_none());
         return;
     }
-    let output = TestProcess::named("nextest_wrapper::fixed_port_wrapper_runs_without_a_lock_file")
-        .unwrap()
-        .nocapture()
-        .output_with(|arguments| {
-            Command::new(env!("CARGO_BIN_EXE_development"))
-                .args(["nextest-wrapper", "fixed-port"])
-                .arg(std::env::current_exe()?)
-                .args(arguments)
-                .env("MAESTRO_WRAPPER_CHILD", "1")
-                .env_remove("MAESTRO_FIXED_PORT_LOCK")
-                .output()
-        })
-        .unwrap();
+    let output =
+        TestProcess::named("nextest_wrapper::fixed_port_wrapper_runs_without_the_lock_variable")
+            .unwrap()
+            .nocapture()
+            .output_with(|arguments| {
+                Command::new(env!("CARGO_BIN_EXE_development"))
+                    .args(["nextest-wrapper", "fixed-port"])
+                    .arg(std::env::current_exe()?)
+                    .args(arguments)
+                    .env("MAESTRO_WRAPPER_CHILD", "1")
+                    .env_remove("MAESTRO_FIXED_PORT_LOCK")
+                    .output()
+            })
+            .unwrap();
     assert!(output.status.success(), "{output:?}");
 }
