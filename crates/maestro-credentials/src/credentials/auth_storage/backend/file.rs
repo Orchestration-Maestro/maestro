@@ -1,6 +1,6 @@
 //! Native credential file guarded by a sidecar lock file.
 use super::{AsyncLockUpdate, AuthStorageBackend, AuthStorageError, AuthStorageFuture, LockUpdate};
-use maestro_lock::WriteLock;
+use maestro_lock::{CreationMode, WriteLock};
 use std::fs::{self, OpenOptions, TryLockError};
 use std::io::{self, ErrorKind};
 use std::path::Path;
@@ -129,7 +129,7 @@ pub fn write_auth_file(path: &str, text: &str) -> io::Result<()> {
         text.as_bytes(),
         maestro_lock::Replace {
             through_symlinks: true,
-            creation_mode: Some(0o600),
+            creation_mode: Some(CreationMode::AfterSync(0o600)),
         },
     )
     .map(|_| ())
@@ -150,7 +150,9 @@ fn narrow(path: &Path) -> io::Result<()> {
 fn publish(holder: WriteLock, text: &str) -> io::Result<()> {
     #[cfg(unix)]
     narrow(holder.path())?;
-    holder.replace(text.as_bytes(), Some(0o600)).map(|_| ())
+    holder
+        .replace(text.as_bytes(), Some(CreationMode::AfterSync(0o600)))
+        .map(|_| ())
 }
 
 impl AuthStorageBackend for FileAuthStorageBackend {

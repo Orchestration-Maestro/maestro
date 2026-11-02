@@ -1,5 +1,5 @@
 //! Durable roll-forward bytes for an exclusively held canonical target.
-use crate::WriteLock;
+use crate::{CreationMode, WriteLock};
 #[cfg(unix)]
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::{
@@ -8,14 +8,14 @@ use std::{
     path::Path,
 };
 
-/// Optional-mode flag and mode preceding the intended target bytes.
+/// Permission-policy tag and mode preceding the intended target bytes.
 const HEADER_LENGTH: usize = 5;
 
 /// Publishes intended bytes before touching the original file's identity or contents.
 pub(crate) fn replace(
     guard: &WriteLock,
     bytes: &[u8],
-    mode: Option<u32>,
+    mode: Option<CreationMode>,
 ) -> io::Result<crate::Committed> {
     let existing = existing_target(&guard.target)?;
     let mode = if existing.is_some() { None } else { mode };
@@ -47,17 +47,23 @@ pub(crate) fn replay(guard: &WriteLock) -> io::Result<()> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
         Err(error) => return Err(error),
     };
-    if bytes.len() < HEADER_LENGTH || bytes[0] > 1 {
+    if bytes.len() < HEADER_LENGTH || bytes[0] > 2 {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "invalid recovery header",
         ));
     }
-    let mode =
-        (bytes[0] == 1).then(|| u32::from_le_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]));
+    let bits = u32::from_le_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);
+    let mode = match bytes[0] {
+        1 => Some(CreationMode::AfterSync(bits)),
+        2 => Some(CreationMode::AtCreation(bits)),
+        _ => None,
+    };
     sync_root(recovery_root(guard)?)?;
     let intended = &bytes[HEADER_LENGTH..];
     if !finish_creation(&guard.target, intended, mode)? {
+        #[cfg(unix)]
+        let mode = prepare_readonly_replay(guard, intended, mode)?;
         write_target(
             &guard.target,
             existing_target(&guard.target)?,
@@ -69,8 +75,40 @@ pub(crate) fn replay(guard: &WriteLock) -> io::Result<()> {
     cleanup(guard)
 }
 
+/// Durably retains observed permissions before granting owner-write for read-only replay.
+#[cfg(unix)]
+fn prepare_readonly_replay(
+    guard: &WriteLock,
+    bytes: &[u8],
+    mode: Option<CreationMode>,
+) -> io::Result<Option<CreationMode>> {
+    let Some(mode) = mode else { return Ok(None) };
+    let metadata = match fs::symlink_metadata(&guard.target) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Some(mode)),
+        result => result?,
+    };
+    let observed = metadata.permissions().mode();
+    if !metadata.is_file() || observed & 0o200 != 0 {
+        return Ok(Some(mode));
+    }
+    let retained = match mode {
+        CreationMode::AtCreation(_) => {
+            let retained = CreationMode::AfterSync(observed);
+            stage(guard, bytes, Some(retained))?;
+            retained
+        }
+        CreationMode::AfterSync(_) => mode,
+    };
+    #[cfg(test)]
+    crate::replace::tests::effect("replay_chmod")?;
+    fs::set_permissions(&guard.target, fs::Permissions::from_mode(observed | 0o200))?;
+    #[cfg(test)]
+    crate::replace::tests::effect("replay_widened")?;
+    Ok(Some(retained))
+}
+
 /// Recognizes a completed read-only creation without requiring another writable open.
-fn finish_creation(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<bool> {
+fn finish_creation(path: &Path, bytes: &[u8], mode: Option<CreationMode>) -> io::Result<bool> {
     let Some(mode) = mode else {
         return Ok(false);
     };
@@ -78,7 +116,10 @@ fn finish_creation(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<b
     {
         return Ok(false);
     }
-    let mut file = File::open(path)?;
+    let mut file = match File::open(path) {
+        Err(error) if error.kind() == io::ErrorKind::PermissionDenied => return Ok(false),
+        result => result?,
+    };
     let mut current = Vec::new();
     file.read_to_end(&mut current)?;
     if current != bytes {
@@ -86,9 +127,12 @@ fn finish_creation(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<b
     }
     let permissions = file.metadata()?.permissions();
     #[cfg(unix)]
-    let matches = permissions.mode() & 0o7777 == mode & 0o7777;
+    let matches = match mode {
+        CreationMode::AfterSync(bits) => permissions.mode() & 0o7777 == bits & 0o7777,
+        CreationMode::AtCreation(bits) => permissions.mode() & 0o7777 & !bits == 0,
+    };
     #[cfg(windows)]
-    let matches = permissions.readonly() == (mode & 0o200 == 0);
+    let matches = permissions.readonly() == (mode.bits() & 0o200 == 0);
     #[cfg(not(any(unix, windows)))]
     let matches = {
         let _ = (permissions, mode);
@@ -148,7 +192,7 @@ fn existing_target(path: &Path) -> io::Result<Option<File>> {
 }
 
 /// Stages a private copy, then durably publishes its recovery name.
-fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
+fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<CreationMode>) -> io::Result<()> {
     let root = recovery_root(guard)?;
     let temporary = crate::atomic::temporary_path(&guard.recovery, crate::Temporary::Unique);
     #[cfg(test)]
@@ -173,11 +217,16 @@ fn stage(guard: &WriteLock, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
 }
 
 /// Writes and syncs the complete recovery record before its handle closes.
-fn stage_bytes(mut file: File, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
+fn stage_bytes(mut file: File, bytes: &[u8], mode: Option<CreationMode>) -> io::Result<()> {
     #[cfg(test)]
     crate::replace::tests::effect("write_all")?;
-    file.write_all(&[u8::from(mode.is_some())])?;
-    file.write_all(&mode.unwrap_or_default().to_le_bytes())?;
+    let tag = match mode {
+        None => 0,
+        Some(CreationMode::AfterSync(_)) => 1,
+        Some(CreationMode::AtCreation(_)) => 2,
+    };
+    file.write_all(&[tag])?;
+    file.write_all(&mode.map_or(0, CreationMode::bits).to_le_bytes())?;
     file.write_all(bytes)?;
     #[cfg(test)]
     crate::replace::tests::effect("file_sync")?;
@@ -189,7 +238,7 @@ fn write_target(
     path: &Path,
     existing: Option<File>,
     bytes: &[u8],
-    mode: Option<u32>,
+    mode: Option<CreationMode>,
 ) -> io::Result<()> {
     #[cfg(test)]
     crate::replace::tests::effect("target_write")?;
@@ -197,28 +246,40 @@ fn write_target(
         Some(file) => file,
         None => create_target(path, mode)?,
     };
+    #[cfg(test)]
+    crate::replace::tests::created();
     file.set_len(0)?;
+    #[cfg(test)]
+    crate::replace::tests::effect("target_truncated")?;
     file.write_all(bytes)?;
     #[cfg(test)]
     crate::replace::tests::effect("target_sync")?;
     file.sync_all()?;
-    if let Some(mode) = mode {
-        apply_creation_mode(&file, mode)?;
+    if let Some(mode) =
+        mode.filter(|mode| matches!(mode, CreationMode::AfterSync(_)) || !cfg!(unix))
+    {
+        apply_creation_mode(&file, mode.bits())?;
         sync_creation_mode(&file)?;
     }
     Ok(())
 }
 
-/// Creates explicit-mode targets privately and default-mode targets with native flags.
-fn create_target(path: &Path, mode: Option<u32>) -> io::Result<File> {
+/// Creates a target with open-time bits, private staging bits or native defaults.
+fn create_target(path: &Path, mode: Option<CreationMode>) -> io::Result<File> {
     if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
         fs::remove_file(path)?;
     }
     let mut open = OpenOptions::new();
     open.create_new(true).write(true);
     #[cfg(unix)]
-    if mode.is_some() {
-        open.mode(0o600);
+    match mode {
+        Some(CreationMode::AtCreation(bits)) => {
+            open.mode(bits);
+        }
+        Some(CreationMode::AfterSync(_)) => {
+            open.mode(0o600);
+        }
+        None => (),
     }
     #[cfg(not(unix))]
     let _ = mode;

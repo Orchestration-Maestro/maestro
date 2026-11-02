@@ -102,6 +102,16 @@ Use Wasmtime/wasmtime-wasi at unmodified upstream commit `ffff2e2db24a291f02429f
 
 The component SDK preserves every host capability: ordered live events/hooks, transforming and cancelling operations, tool schemas/validation/progress/results, commands and command-only context methods, flags, shortcuts, providers/OAuth/streams, source discovery, session queries/entries, messaging, exec/network/files, live getters, themes, renderers, custom editor/components, focusable overlays, status/footer/header/widgets and reload. UI render/input/invalidate calls remain synchronous where their callers require it; asynchronous work uses native async and owned resources, not JSON-only replies. UI-entering interactive execution and its synchronous callbacks share the caller-owned local executor. Independent native I/O and the default embedding SDK retain thread-safe execution; this adds no scheduler or runtime setting. Use shape A capability interfaces and typed resources; register handlers one by one so the host retains per-handler semantics. Messages, entries, provider payloads and tool arguments use session JSON losslessly. The domain owns the existing ExtensionRuntime action record, factory facade and local contexts. Only the Wasmtime adapter owns its engine/linker/bindings, one component instance per extension, stream pipes and trap diagnostics. Typed requests connect its thread-safe Store to the caller's local domain/UI owners; synchronous callbacks pump requests on the original local receiver. Callback emission retains the bus's emit-time listener snapshot in registration order. The guest invokes its own listeners locally and waits for each consecutive host-listener segment through a synchronous import before continuing; nested emissions repeat that walk. Each own listener keeps an independent native callback frame, error destination and tail boundary. Foreign instances retain the callback-return delivery rule. Internal callback exports are async-typed so synchronous host requests may wait on the dedicated Store thread; guest author callbacks and callback emission remain synchronous. This adds no second receiver or Store lifecycle. The guest owns one canonical WIT source checked against host code generation. Optional command and compaction options retain absence separately from a present empty record across that interface; model reads return owned values. Network operations use the WIT http interface backed by host reqwest, not a second WASI HTTP library. The shared interface hides runtime-library types.
 
+Component file saves use recoverable in-place `maestro_lock::replace` through
+application-owned native I/O. `CreationMode::AtCreation` applies requested Unix
+creation bits at open, filtered by umask, before any target bytes are written;
+rewrites retain existing permissions. File identity, hard links, ownership and
+ACLs survive. Unlocked readers may see partial bytes mid-save; the next coordinated
+acquisition completes interrupted writes from the recovery record. Final links,
+short adjacent recovery names, exclusion and committed durability warnings stay
+with the lock owner. The [component host contract](extension-host.md) records the
+operation set and runtime qualification still required.
+
 Extensions receive the user's full effective permissions through host operations. Add no capability grants, restriction policy, fuel, memory limits or deadlines. Preserve registration-specific collision behavior: same-extension replacement, cross-extension rules and individually diagnosed provider failures; there is no whole-owner atomic validation policy. Hooks iterate current collections in load/registration order. Presence of UI does not imply every mode implements the same methods, and every disposal/reload does not automatically settle dialogs.
 
 Application session operations own replacement ordering and context rebinding. Command contexts select bound command operations when called; admitted command futures retain their selected operation through completion. Registration retains its per-handler behavior without a separate generation-publication controller. Reconstruct new guest state through the same session state/hooks, not heap migration. Validate stale/foreign/disposed handles before Wasm entry; preserve operation-specific in-flight cancellation and reentrancy. Initially retain compiled components only in a process-local identity-bound cache; never deserialize native bytes from packages, users or disk. Compile the original component on a miss. A persistent native cache needs a separate integrity proof: full-user extensions can modify same-user files, so filesystem ownership alone is not a trust boundary. Stale or not-yet-bound context calls return recoverable, catchable errors, not traps; one caught stale call must not terminate another task. Traps are reserved for actual component faults and do not justify calling a poisoned instance again.
@@ -543,7 +553,8 @@ Move the existing matchers only after this contract lands, through
 `maestro-lock` is below layer 0 and depends only on `maestro-path` and the existing
 external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock. Application uses maestro-lock for recoverable file publication.
+may depend on lock. Application uses maestro-lock's recoverable in-place
+`replace` for component saves, preserving native identity.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -565,6 +576,14 @@ hard links survive. Settings and credentials hold this lock across read, update
 and replace, keeping their retry schedules. Session appends and rewrites and
 keybinding writes publish through it. Workspace snapshots and detection catalogs
 use the same owner's atomic publication because their readers hold no lock.
+Component saves use recoverable in-place publication with final-link following.
+Its optional `CreationMode` distinguishes umask-filtered `AtCreation` bits applied
+at open from exact `AfterSync` bits applied after syncing, retained for current
+callers. Existing target permissions take precedence in both cases. Recovery
+headers use 0 for native defaults, 1 for AfterSync and 2 for AtCreation. Unix
+read-only AtCreation replay durably stages the observed mode as AfterSync before
+adding owner-write, then restores and syncs that mode before removing the record.
+Ordinary creation never widens permissions; Windows retains its read-only mapping.
 Feature owners keep serialization and symbolic-link policy. Neither leaf
 introduces a common background runtime, scheduler, retry policy or listener
 framework. Feature-specific timing, process, subscription and teardown semantics

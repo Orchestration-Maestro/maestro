@@ -1634,8 +1634,53 @@ pub fn command_extension(
     })
 }
 
-/// Shell operations that record each execution, write the scripted chunks, then wait for
-/// `release` when holding, and settle with the scripted exit status.
+/// Runs native tool cases in a checked child with disposable temporary and home directories.
+/// Returns true when the parent has finished the child.
+pub fn run_native_tool_child(test: &str) -> bool {
+    if maestro_test_process::selection().is_child() {
+        return false;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let mut child = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .case("*")
+        .nocapture()
+        .temp_dir(root.path());
+    for key in ["HOME", "USERPROFILE", "XDG_CONFIG_HOME"] {
+        child = child.env(key, root.path());
+    }
+    for key in [
+        "BASH_ENV",
+        "ENV",
+        "GIT_CONFIG_PARAMETERS",
+        "GIT_CONFIG_COUNT",
+    ] {
+        child = child.env_remove(key);
+    }
+    let output = child
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", root.path().join("empty-gitconfig"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    true
+}
+
+/// A supplied shell's exceptional settlement after streaming its bytes.
+#[derive(Clone, Copy, Debug)]
+pub enum ShellFailure {
+    /// Settle as cancelled.
+    Aborted,
+    /// Report a timeout with the supplied seconds.
+    Timeout(f64),
+}
+
+/// Shell operations that record execution, stream supplied bytes, then optionally wait for release.
 pub struct ScriptedShell {
     /// Each execution's command and directory, in order.
     pub executed: Mutex<Vec<Value>>,
@@ -1643,17 +1688,23 @@ pub struct ScriptedShell {
     pub started: Arc<tokio::sync::Notify>,
     /// Lets a holding execution settle.
     pub release: Arc<tokio::sync::Notify>,
-    /// The output chunks.
-    chunks: Vec<String>,
+    /// The output chunks, including incomplete UTF-8 sequences.
+    chunks: Vec<Vec<u8>>,
     /// The exit status.
     exit_code: Option<f64>,
     /// Whether the execution waits for `release`.
     hold: bool,
+    /// Exceptional settlement instead of the exit status.
+    failure: Option<ShellFailure>,
 }
 
 impl ScriptedShell {
-    /// Operations writing `chunks` and settling with `exit_code` at once.
-    pub fn chunks(chunks: Vec<String>, exit_code: Option<f64>) -> Self {
+    /// Operations streaming `chunks` and settling with the supplied status or failure.
+    pub fn raw(
+        chunks: Vec<Vec<u8>>,
+        exit_code: Option<f64>,
+        failure: Option<ShellFailure>,
+    ) -> Self {
         Self {
             executed: Mutex::default(),
             started: Arc::default(),
@@ -1661,7 +1712,17 @@ impl ScriptedShell {
             chunks,
             exit_code,
             hold: false,
+            failure,
         }
+    }
+
+    /// Operations writing `chunks` and settling with `exit_code` at once.
+    pub fn chunks(chunks: Vec<String>, exit_code: Option<f64>) -> Self {
+        Self::raw(
+            chunks.into_iter().map(String::into_bytes).collect(),
+            exit_code,
+            None,
+        )
     }
 
     /// Operations writing `text`, or nothing when it is empty, and settling at once.
@@ -1681,6 +1742,33 @@ impl ScriptedShell {
             ..Self::chunks(chunks, exit_code)
         }
     }
+
+    /// Streams and acknowledges one execution, preserving local or thread-safe callback ownership.
+    async fn run<S: FnMut(&[u8]) + ?Sized>(
+        &self,
+        command: &str,
+        cwd: &str,
+        on_data: &mut S,
+    ) -> Result<maestro_tools::BashExecResult, maestro_tools::BashError> {
+        self.executed
+            .lock()
+            .unwrap()
+            .push(json!({"command":command,"cwd":cwd}));
+        for chunk in &self.chunks {
+            on_data(chunk);
+        }
+        self.started.notify_one();
+        if self.hold {
+            self.release.notified().await;
+        }
+        match self.failure {
+            Some(ShellFailure::Aborted) => Err(maestro_tools::BashError::Aborted),
+            Some(ShellFailure::Timeout(seconds)) => Err(maestro_tools::BashError::Timeout(seconds)),
+            None => Ok(maestro_tools::BashExecResult {
+                exit_code: self.exit_code,
+            }),
+        }
+    }
 }
 
 impl maestro_tools::BashOperations<Local> for ScriptedShell {
@@ -1689,29 +1777,25 @@ impl maestro_tools::BashOperations<Local> for ScriptedShell {
         command: &'a str,
         cwd: &'a str,
         options: maestro_tools::BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<
-                    Output = Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
-                > + 'a,
-        >,
+    ) -> <Local as Execution>::Future<
+        'a,
+        Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
     > {
-        Box::pin(async move {
-            self.executed
-                .lock()
-                .unwrap()
-                .push(json!({"command": command, "cwd": cwd}));
-            for chunk in &self.chunks {
-                (options.on_data)(chunk.as_bytes());
-            }
-            self.started.notify_one();
-            if self.hold {
-                self.release.notified().await;
-            }
-            Ok(maestro_tools::BashExecResult {
-                exit_code: self.exit_code,
-            })
-        })
+        Box::pin(self.run(command, cwd, options.on_data))
+    }
+}
+
+impl maestro_tools::BashOperations<Threaded> for ScriptedShell {
+    fn exec<'a>(
+        &'a self,
+        command: &'a str,
+        cwd: &'a str,
+        options: maestro_tools::BashExecOptions<'a>,
+    ) -> <Threaded as Execution>::Future<
+        'a,
+        Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
+    > {
+        Box::pin(self.run(command, cwd, options.on_data))
     }
 }
 
