@@ -7,6 +7,9 @@ use std::process::Command;
 
 use maestro_test_process::child::{leave, write_stdout};
 
+/// Offset from the Unix epoch to 2020-01-01T00:00Z for deterministic cache-age checks.
+const FIXTURE_MODIFIED_OFFSET: std::time::Duration = std::time::Duration::from_hours(438_288);
+
 /// Inputs of the preparation fixture, supplied beside its Cargo alias.
 pub(super) struct Record {
     /// Real Cargo used only for workspace metadata.
@@ -96,7 +99,9 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             }
         }
         Some("clippy") => Ok(()),
-        Some("build" | "run") => build(record, &Build::parse(args)?, args[0] == "run"),
+        Some(operation @ ("build" | "run")) => {
+            build(record, &Build::parse(args)?, operation == "run")
+        }
         _ => Err(io::Error::other("unknown fixture Cargo operation")),
     }
 }
@@ -122,7 +127,7 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
     std::fs::copy(source, &path)?;
     executable(&path)?;
     writeln!(
-        std::fs::OpenOptions::new()
+        std::fs::File::options()
             .append(true)
             .create(true)
             .open(log)?,
@@ -149,5 +154,5 @@ fn executable(path: &Path) -> io::Result<()> {
     std::fs::File::options()
         .write(true)
         .open(path)?
-        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_hours(438_288))
+        .set_modified(std::time::UNIX_EPOCH + FIXTURE_MODIFIED_OFFSET)
 }

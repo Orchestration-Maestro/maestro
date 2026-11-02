@@ -1,6 +1,6 @@
 //! The packages that consume the prepared test setup, as declared for shared CI.
 
-/// The preparation job runs for exactly the packages that nextest gives the author-component
+/// The preparation job runs for exactly the packages that nextest gives the author-component,
 /// browser-author or native-fixture setup script, so a run that selects none of them skips the job.
 #[test]
 fn ci_declares_the_packages_that_read_the_prepared_setup() {

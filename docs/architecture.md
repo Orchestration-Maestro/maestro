@@ -469,12 +469,11 @@ archive relocation. This adds no domain dependency or guest/browser native edge.
 Typed isolated native setup is planned; existing shell setup remains documented
 until every caller moves. See [child-process tests](development.md#child-process-tests).
 
-The conventions checker
-rejects Rust string tokens whose decoded value is `--exact` outside that exact
-Cargo package, reporting the source path and first violating line. It scans all
-loaded Rust sources, including macro tokens, disabled configurations and source
-fragments. Comments, larger fixture strings, byte strings and C strings are not
-selector tokens. This bounded rule does not expand macros, resolve constructed
+The conventions checker rejects Rust string tokens whose decoded value is
+`--exact` outside `maestro-test-process`, reporting the source path and first
+violating line. It scans all loaded Rust sources, including macro tokens,
+disabled configurations and source fragments. Comments, larger fixture strings,
+byte strings and C strings are not selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
 

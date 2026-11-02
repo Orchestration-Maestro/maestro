@@ -12,7 +12,7 @@ Confidence: **proven in source**. Evidence: #3768; `crates/maestro-test-process/
 
 Keep checked test reruns and raw native fixtures in `maestro-test-process`. Use checked reruns when the test owns the invocation and framing. Use one prepared harness-free Rust executable when product code must receive native operands or raw streams. Replace interpreted fixture setup with typed native effects at the beginning of the isolated Rust child. Repository preparation remains in `maestro-tooling`.
 
-Confidence: **proven requirement**, authorized by #3768. The Rust design is proposed, not measured or compiled. No product startup, search, shell, RPC or cancellation behavior changes.
+Confidence: **proven requirement**, authorized by #3768. The native fixture, `install_executable(artifact, destination)` and artifact preparation are implemented and tested. Typed native setup remains proposed, not measured or compiled. No product startup, search, shell, RPC or cancellation behavior changes.
 
 ## User stories
 
@@ -143,7 +143,7 @@ Extend the existing **Test process** definition in `CONTEXT.md` to include check
 
 **Confidence: unknown until qualified.**
 
-1. The installer and setup's final exported Rust spelling/signatures must compile and pass their behavior tests in the owning prerequisites before consumers use them. This specification fixes their required effects, not an uncompiled signature.
+1. Typed native setup's final exported Rust spelling/signatures must compile and pass their behavior tests before consumers use them. The installer is available as `maestro_test_process::install_executable(artifact, destination)`; this question remains open only for native setup.
 2. Native copying, archive path remapping, platform executable suffixes, signal handling and current-child file-size errors require actual platform evidence. A failed premise or library mismatch stops the affected delivery for a decision; it never authorizes an interpreter fallback or weaker assertion.
 3. Completion requires a sweep of then-current main and every open pull request. No static inventory or source graph is assumed complete across generated code and platform configurations.
 
