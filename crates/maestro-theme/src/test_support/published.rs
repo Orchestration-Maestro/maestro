@@ -1,5 +1,5 @@
 //! Published themes with distinct palette indexes, shared by the style and syntax tests.
-use maestro_theme::{
+use crate::{
     ColorMode, ColorValue, LiveTheme, Theme, ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,
 };
 use std::rc::Rc;
@@ -54,12 +54,18 @@ const KEYS: [&str; 45] = [
 ];
 
 /// Theme whose key at position `i` of [`KEYS`] has palette index `offset + i + 1`.
-pub fn theme(offset: u8) -> Rc<Theme> {
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn theme(offset: u8) -> Result<Rc<Theme>, crate::ThemeError> {
     named(offset, None)
 }
 
 /// The same palette, registered under `name` when one is supplied.
-pub fn named(offset: u8, name: Option<&str>) -> Rc<Theme> {
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn named(offset: u8, name: Option<&str>) -> Result<Rc<Theme>, crate::ThemeError> {
     let colors = KEYS
         .into_iter()
         .zip(offset + 1..)
@@ -68,10 +74,11 @@ pub fn named(offset: u8, name: Option<&str>) -> Rc<Theme> {
         name: name.map(str::to_owned),
         ..ThemeOptions::default()
     };
-    Rc::new(Theme::new(colors, [], ColorMode::Truecolor, options).unwrap())
+    Theme::new(colors, [], ColorMode::Truecolor, options).map(Rc::new)
 }
 
 /// A state that never published a theme and names no directories.
+#[must_use]
 pub fn unpublished() -> ThemeState {
     ThemeState::new(ThemeDirectories {
         themes_dir: String::new(),
@@ -80,9 +87,12 @@ pub fn unpublished() -> ThemeState {
 }
 
 /// A state with `first` published and a handle on its live slot.
-pub fn published(first: &Rc<Theme>) -> (ThemeState, LiveTheme) {
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn published(first: &Rc<Theme>) -> Result<(ThemeState, LiveTheme), crate::ThemeError> {
     let state = unpublished();
-    state.set_theme_instance(Rc::clone(first)).unwrap();
+    state.set_theme_instance(Rc::clone(first))?;
     let live = state.theme();
-    (state, live)
+    Ok((state, live))
 }

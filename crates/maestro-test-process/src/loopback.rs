@@ -53,7 +53,9 @@ impl Received {
 pub struct Loopback {
     /// Base URL of the server.
     pub url: String,
+    /// Captured request receiver.
     received: Receiver<Received>,
+    /// Join handle for the complete exchange.
     worker: JoinHandle<std::io::Result<()>>,
 }
 
@@ -207,8 +209,11 @@ pub struct Reply {
 pub struct Routed {
     /// Base URL of the server.
     pub url: String,
+    /// Listener address used to wake shutdown.
     address: std::net::SocketAddr,
+    /// Shared accept-loop shutdown signal.
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// Accept-loop join handle, consumed by finish or drop.
     worker: Option<JoinHandle<std::io::Result<()>>>,
 }
 

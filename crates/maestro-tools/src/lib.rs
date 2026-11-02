@@ -147,3 +147,7 @@ pub mod local {
     pub use crate::tools::local::*;
     pub use crate::types::local::*;
 }
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

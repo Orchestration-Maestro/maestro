@@ -1,53 +1,77 @@
 //! Recorded display palette, published environment and render context.
-#![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-#[allow(
-    dead_code,
-    reason = "This program uses part of the shared terminal runtime."
-)]
-#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
-pub mod manual_runtime;
+#[doc(inline)]
+pub use maestro_tui::test_support::manual_runtime;
 
-use crate::display_palette::palette_keys;
+use super::display_palette::palette_keys;
+use crate::{ToolRenderContext, ToolRenderPhase};
 use maestro_theme::{
     ColorMode, ColorValue, LiveTheme, SyntaxHighlighter, SyntectHighlighter, Theme, ThemeColor,
     ThemeDirectories, ThemeOptions, ThemeState,
 };
-use maestro_tools::{ToolRenderContext, ToolRenderPhase};
 use maestro_tui::{ImageProtocol, TerminalCapabilities, TerminalImage, tui::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 
 /// The theme keys of the display recording, in their recorded order.
-pub fn theme_keys() -> Vec<String> {
-    palette_keys(include_str!("fixtures/read_display_palette.json"))
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn theme_keys() -> Result<Vec<String>, serde_json::Error> {
+    palette_keys(include_str!(
+        "../../tests/fixtures/read_display_palette.json"
+    ))
 }
 
 /// A theme whose key `i` of the read corpus has palette color `i + 1 + shift`.
-pub fn palette(shift: u8) -> Theme {
-    palette_of(&theme_keys(), shift)
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn palette(shift: u8) -> Result<Theme, Box<dyn std::error::Error>> {
+    palette_of(&theme_keys()?, shift)
 }
 
 /// A theme whose key `i` of `keys` has palette color `i + 1 + shift`.
-pub fn palette_of(keys: &[String], shift: u8) -> Theme {
-    let colors = keys.iter().enumerate().map(|(index, key)| {
-        let color = ThemeColor::Named(key.clone());
-        (
-            color,
-            ColorValue::Index(u8::try_from(index + 1).unwrap() + shift),
-        )
-    });
-    Theme::new(colors, [], ColorMode::Color256, ThemeOptions::default()).unwrap()
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn palette_of(keys: &[String], shift: u8) -> Result<Theme, Box<dyn std::error::Error>> {
+    let colors = keys
+        .iter()
+        .enumerate()
+        .map(|(index, key)| {
+            let color = ThemeColor::Named(key.clone());
+            Ok((color, ColorValue::Index(u8::try_from(index + 1)? + shift)))
+        })
+        .collect::<Result<Vec<_>, std::num::TryFromIntError>>()?;
+    Ok(Theme::new(
+        colors,
+        [],
+        ColorMode::Color256,
+        ThemeOptions::default(),
+    )?)
 }
 
 /// The native highlighter, whose grammars load once per test thread.
-pub fn native_highlighter() -> Rc<SyntectHighlighter> {
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn native_highlighter() -> Result<Rc<SyntectHighlighter>, Box<dyn std::error::Error>> {
     thread_local! {
-        /// Grammars load once per test thread.
-        static NATIVE: Rc<SyntectHighlighter> = Rc::new(SyntectHighlighter::new().unwrap());
+        /// Grammars load once per test thread after successful initialization.
+        static NATIVE: RefCell<Option<Rc<SyntectHighlighter>>> = const { RefCell::new(None) };
     }
-    NATIVE.with(Rc::clone)
+    NATIVE.with(|slot| {
+        if let Some(highlighter) = slot.borrow().as_ref() {
+            return Ok(Rc::clone(highlighter));
+        }
+        let highlighter = Rc::new(
+            SyntectHighlighter::new().map_err(|error| error as Box<dyn std::error::Error>)?,
+        );
+        *slot.borrow_mut() = Some(Rc::clone(&highlighter));
+        Ok(highlighter)
+    })
 }
 
 /// The collaborators a renderer receives besides its arguments.
@@ -66,17 +90,29 @@ pub struct Env {
 
 impl Env {
     /// A published palette theme shifted by `shift`, the native highlighter and no image support.
-    pub fn new(shift: u8) -> Self {
-        Self::with(Rc::new(palette(shift)), native_highlighter())
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn new(shift: u8) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::with(Rc::new(palette(shift)?), native_highlighter()?)
     }
 
     /// The environment a recorded context lays its rows out in.
-    pub fn from_setup(setup: &Setup) -> Self {
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn from_setup(setup: &Setup) -> Result<Self, Box<dyn std::error::Error>> {
         Self::new(setup.shift)
     }
 
     /// An environment publishing `theme` and highlighting with `highlighter`.
-    pub fn with(theme: Rc<Theme>, highlighter: Rc<dyn SyntaxHighlighter>) -> Self {
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn with(
+        theme: Rc<Theme>,
+        highlighter: Rc<dyn SyntaxHighlighter>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let state = Rc::new(ThemeState::new(ThemeDirectories {
             themes_dir: String::new(),
             custom_themes_dir: String::new(),
@@ -89,13 +125,32 @@ impl Env {
             highlighter,
             terminal: TerminalImage::new(|_| None, || 1),
         };
-        env.publish(theme);
-        env
+        env.publish(theme)?;
+        Ok(env)
+    }
+
+    /// Build the palette from the supplied ordered keys.
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn for_keys(keys: &[String], shift: u8) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::with(Rc::new(palette_of(keys, shift)?), native_highlighter()?)
+    }
+
+    /// Publish a shifted palette as the renderers' theme.
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn republish(&self, shift: u8) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.publish(Rc::new(palette(shift)?))?)
     }
 
     /// Publish `theme` as the readers' theme.
-    pub fn publish(&self, theme: Rc<Theme>) {
-        self.state.set_theme_instance(theme).unwrap();
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn publish(&self, theme: Rc<Theme>) -> Result<(), maestro_theme::ThemeError> {
+        self.state.set_theme_instance(theme)
     }
 }
 
@@ -121,16 +176,22 @@ pub struct Setup {
 
 impl Setup {
     /// Decode a recorded context object.
-    pub fn from(context: &Value) -> Self {
+    ///
+    /// # Errors
+    /// Returns failures from the supplied values or collaborators.
+    pub fn from(context: &Value) -> Result<Self, Box<dyn std::error::Error>> {
         let flag = |name: &str| context.get(name).and_then(Value::as_bool).unwrap_or(false);
         let images = match context.get("images").and_then(Value::as_str) {
             Some("kitty") => Some(ImageProtocol::Kitty),
             Some("iterm2") => Some(ImageProtocol::Iterm2),
-            Some(other) => panic!("unknown image protocol {other}"),
+            Some(other) => return Err(format!("unknown image protocol {other}").into()),
             None => None,
         };
-        Self {
-            readme: context["readme"].as_str().unwrap().to_owned(),
+        Ok(Self {
+            readme: context["readme"]
+                .as_str()
+                .ok_or("recorded README missing")?
+                .to_owned(),
             expanded: flag("expanded"),
             cwd: context
                 .get("cwd")
@@ -151,12 +212,15 @@ impl Setup {
             shift: context
                 .get("themeShift")
                 .and_then(Value::as_u64)
-                .map_or(0, |shift| u8::try_from(shift).unwrap()),
-        }
+                .map(u8::try_from)
+                .transpose()?
+                .unwrap_or(0),
+        })
     }
 }
 
 /// A render context over `args` for the recorded setup.
+#[must_use]
 pub fn context<'a, S: Default>(
     args: &'a Value,
     setup: &Setup,
@@ -180,7 +244,7 @@ pub fn context<'a, S: Default>(
         expanded: setup.expanded,
         show_images: setup.show_images,
         is_error: setup.is_error,
-        environment: Rc::new(maestro_tools::ToolRenderEnvironment {
+        environment: Rc::new(crate::ToolRenderEnvironment {
             runtime: env.runtime.clone(),
             readme_path: setup.readme.clone(),
             live_theme: env.live.clone(),

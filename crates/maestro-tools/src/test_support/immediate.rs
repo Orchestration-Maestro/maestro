@@ -1,6 +1,5 @@
 //! Caller-supplied synchronous shell operation adapter for boundary tests.
-#![cfg(test)]
-use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations};
+use crate::{BashError, BashExecOptions, BashExecResult, BashOperations};
 use std::{future::Future, pin::Pin, sync::Arc};
 /// Immediate supplied operation for non-scripted boundary witnesses.
 pub struct Immediate(pub Arc<ImmediateCallback>);

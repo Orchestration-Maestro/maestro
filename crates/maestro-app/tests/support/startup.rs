@@ -272,6 +272,7 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
             envs,
             &[],
         )
+        .expect("child starts")
     };
     assert_eq!(lines.len(), 1);
     serde_json::from_str(&lines[0]).unwrap()

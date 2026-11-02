@@ -97,20 +97,20 @@ fn diff_live_theme_publication_and_failures_follow_the_shared_theme() {
         "Theme not initialized. Call initTheme() first."
     );
     let keys = ["toolDiffContext", "toolDiffRemoved", "toolDiffAdded"].map(str::to_owned);
-    let env = Env::with(Rc::new(palette_of(&keys, 0)), Rc::new(NoLanguages));
+    let env = Env::with(Rc::new(palette_of(&keys, 0).unwrap()), Rc::new(NoLanguages)).unwrap();
     assert_eq!(
         render_diff(diff, &options, &env.live).unwrap(),
         "\x1b[38;5;1mraw\x1b[39m\n\x1b[38;5;2m-1 \x1b[7mold\x1b[27m\x1b[39m\n\x1b[38;5;3m+1 \x1b[7mnew\x1b[27m\x1b[39m\n\x1b[38;5;1m 2 kept\x1b[39m"
     );
     env.state
-        .set_theme_instance(Rc::new(palette_of(&keys, 10)))
+        .set_theme_instance(Rc::new(palette_of(&keys, 10).unwrap()))
         .unwrap();
     assert_eq!(
         render_diff(diff, &options, &env.live).unwrap(),
         "\x1b[38;5;11mraw\x1b[39m\n\x1b[38;5;12m-1 \x1b[7mold\x1b[27m\x1b[39m\n\x1b[38;5;13m+1 \x1b[7mnew\x1b[27m\x1b[39m\n\x1b[38;5;11m 2 kept\x1b[39m"
     );
     env.state
-        .set_theme_instance(Rc::new(palette_of(&keys[..2], 0)))
+        .set_theme_instance(Rc::new(palette_of(&keys[..2], 0).unwrap()))
         .unwrap();
     assert_eq!(
         render_diff(diff, &options, &env.live)

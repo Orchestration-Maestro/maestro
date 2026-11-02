@@ -16,8 +16,7 @@ mod setup_docs;
 mod shared_ci_callers;
 mod tooling_commands;
 
-#[path = "fixtures/toolchain_support.rs"]
-mod toolchain_support;
+use maestro_test_process::toolchain as toolchain_support;
 
 #[path = "fixtures/recipe_support.rs"]
 mod recipe_support;

@@ -1369,7 +1369,8 @@ fn captured_subprocess_preserves_descriptors_and_environment_order() {
                 ("MAESTRO_CAPTURE_VALUE", Some("supplied")),
                 ("MAESTRO_CAPTURE_REMOVE", None),
             ],
-        );
+        )
+        .unwrap();
     } else {
         assert!(!selection.is_child(), "unknown capture stage");
         let input = support::File::new(b"finite nonempty input");

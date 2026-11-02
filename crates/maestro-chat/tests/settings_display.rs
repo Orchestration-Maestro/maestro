@@ -15,7 +15,7 @@ fn display_rows_follow_terminal_capabilities() {
     for (query, expected) in
         display_cases::<Protocol, Inventory>("display_rows_follow_terminal_capabilities")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
             config(),
@@ -33,7 +33,7 @@ fn display_booleans_notify_only_their_own_callback() {
     for (query, expected) in
         display_cases::<Boolean, Frames>("display_booleans_notify_only_their_own_callback")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let mut cfg = config();
         for field in BOOLEAN_FIELDS {
@@ -62,7 +62,7 @@ fn numeric_settings_cycle_fixed_choices_and_wrap() {
     for (query, expected) in
         display_cases::<Numeric, Frames>("numeric_settings_cycle_fixed_choices_and_wrap")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let mut cfg = config();
         set_numeric(&mut cfg, &query.field, &query.current);
@@ -88,7 +88,7 @@ fn numeric_constructor_values_keep_supplied_spelling() {
     for (query, expected) in
         display_cases::<Numeric, BeforeAfter>("numeric_constructor_values_keep_supplied_spelling")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let mut cfg = config();
         set_numeric(&mut cfg, &query.field, &query.current);
@@ -111,7 +111,7 @@ fn display_activation_updates_list_before_callback() {
     for (query, expected) in
         display_cases::<Id, BeforeAfter>("display_activation_updates_list_before_callback")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let mut callbacks = events.callbacks(true);
         let target = Target::default();
@@ -139,7 +139,7 @@ fn display_capabilities_are_sampled_once() {
     for (query, expected) in
         display_cases::<CapabilityChange, CapabilityFrames>("display_capabilities_are_sampled_once")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let terminal = terminal(query.initial.as_deref());
         let selector = maestro_chat::SettingsSelectorComponent::new(
@@ -178,7 +178,7 @@ fn display_search_uses_existing_keybindings() {
             maestro_tui::TUI_KEYBINDINGS.clone(),
             Vec::default(),
         ));
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
             config(),
@@ -210,7 +210,7 @@ fn display_rows_preserve_styles_and_wrapping() {
     for (query, expected) in
         display_cases::<StyledInput, StyledFrames>("display_rows_preserve_styles_and_wrapping")
     {
-        let (state, theme) = published::published(&colors(0));
+        let (state, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = maestro_chat::SettingsSelectorComponent::new(
             config(),

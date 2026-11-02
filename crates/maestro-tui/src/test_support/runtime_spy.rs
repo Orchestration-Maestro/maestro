@@ -21,13 +21,13 @@ pub struct Spy {
 /// A counted countdown continuation.
 struct SpyTimer {
     /// Original cancellation handle.
-    timer: Box<dyn maestro_tui::tui::RenderTimer>,
+    timer: Box<dyn crate::tui::RenderTimer>,
     /// Whether this callback is still pending.
     active: Rc<Cell<bool>>,
     /// Number of pending countdown callbacks.
     pending: Rc<Cell<usize>>,
 }
-impl maestro_tui::tui::RenderTimer for SpyTimer {
+impl crate::tui::RenderTimer for SpyTimer {
     fn cancel(&mut self) {
         if self.active.replace(false) {
             self.pending.set(self.pending.get() - 1);
@@ -35,15 +35,15 @@ impl maestro_tui::tui::RenderTimer for SpyTimer {
         self.timer.cancel();
     }
 }
-impl maestro_tui::tui::TuiRuntime for Spy {
+impl crate::tui::TuiRuntime for Spy {
     fn now(&self) -> std::time::Duration {
-        maestro_tui::tui::TuiRuntime::now(&self.clock)
+        crate::tui::TuiRuntime::now(&self.clock)
     }
     fn schedule(
         &self,
         delay: std::time::Duration,
-        callback: maestro_tui::tui::RenderCallback,
-    ) -> Box<dyn maestro_tui::tui::RenderTimer> {
+        callback: crate::tui::RenderCallback,
+    ) -> Box<dyn crate::tui::RenderTimer> {
         if delay != ms(1000) {
             self.events.borrow_mut().push(serde_json::json!(["render"]));
             return self.clock.schedule(delay, callback);
@@ -67,13 +67,13 @@ impl maestro_tui::tui::TuiRuntime for Spy {
             pending: self.pending.clone(),
         })
     }
-    fn spawn_local(&self, future: maestro_tui::tui::LocalFuture) {
+    fn spawn_local(&self, future: crate::tui::LocalFuture) {
         self.clock.spawn_local(future);
     }
     fn environment(&self, key: &str) -> Option<String> {
         self.clock.environment(key)
     }
-    fn log_context(&self) -> maestro_tui::tui::LogContext {
+    fn log_context(&self) -> crate::tui::LogContext {
         self.clock.log_context()
     }
     fn append_log(&self, path: &std::path::Path, contents: &str) -> std::io::Result<()> {

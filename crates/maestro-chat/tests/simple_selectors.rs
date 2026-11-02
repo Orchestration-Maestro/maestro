@@ -26,7 +26,7 @@ fn thinking_levels_keep_descriptions_and_current_selection() {
     for (input, expected) in
         cases::<ThinkingInput, Snapshot>("thinking_levels_keep_descriptions_and_current_selection")
     {
-        let (_, live) = published::published(&colors(0));
+        let (_, live) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = ThinkingSelectorComponent::new(
             input.current,
@@ -48,7 +48,7 @@ fn thinking_supplied_order_duplicates_and_missing_current() {
     for (query, expected) in cases::<AvailableInput, BeforeAfter>(
         "thinking_supplied_order_duplicates_and_missing_current",
     ) {
-        let (_, live) = published::published(&colors(0));
+        let (_, live) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = ThinkingSelectorComponent::new(
             query.current,
@@ -69,7 +69,7 @@ fn thinking_selection_reports_typed_levels() {
     for (query, expected) in
         cases::<CurrentLevel, EventOutput>("thinking_selection_reports_typed_levels")
     {
-        let (_, live) = published::published(&colors(0));
+        let (_, live) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let current: ThinkingLevel = query.current;
         let selector = ThinkingSelectorComponent::new(
@@ -92,7 +92,7 @@ fn image_choices_render_and_report_both_boolean_values() {
     for (query, expected) in
         cases::<ImageInput, BeforeAfter>("image_choices_render_and_report_both_boolean_values")
     {
-        let (_, live) = published::published(&colors(0));
+        let (_, live) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = maestro_chat::ShowImagesSelectorComponent::new(
             query.current,
@@ -141,7 +141,7 @@ fn select_list_layout_uses_bounded_primary_columns() {
     for (query, expected) in
         cases::<LayoutInput, Rows>("select_list_layout_uses_bounded_primary_columns")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let (_scratch, state) = registry(&["dark".into(), "light".into(), "a".repeat(50)]);
         let component: Rc<dyn Component> = match query.kind {
             Kind::Thinking => Rc::new(ThinkingSelectorComponent::new(
@@ -267,7 +267,7 @@ fn message_initial_identity_defaults_to_newest() {
     for (query, expected) in
         cases::<MessageInitial, Frame>("message_initial_identity_defaults_to_newest")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let runtime = manual_runtime::ManualRuntime::new();
         let messages = messages(query.messages);
@@ -299,7 +299,7 @@ fn message_initial_duplicate_uses_first_and_empty_id_is_absent() {
     for (query, expected) in cases::<MessageInitial, Frame>(
         "message_initial_duplicate_uses_first_and_empty_id_is_absent",
     ) {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = message_selector(
             messages(query.messages),
@@ -325,7 +325,7 @@ fn message_text_replaces_only_lf_and_trims_defined_whitespace() {
     for (query, expected) in
         cases::<TextInput, Rows>("message_text_replaces_only_lf_and_trims_defined_whitespace")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let records = vec![
             maestro_chat::components::user_message_selector::UserMessageItem {
                 id: "a".into(),
@@ -350,7 +350,7 @@ fn message_clipping_preserves_cells_graphemes_and_escape_sequences() {
     for (query, expected) in
         cases::<ClipInput, Rows>("message_clipping_preserves_cells_graphemes_and_escape_sequences")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let records = vec![
             maestro_chat::components::user_message_selector::UserMessageItem {
                 id: "a".into(),
@@ -378,7 +378,7 @@ fn message_window_centers_and_clamps_ten_rows() {
     for (query, expected) in
         cases::<MessageWindow, Rows>("message_window_centers_and_clamps_ten_rows")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let initial = query.messages[query.index].id.clone();
         let selector = message_selector(
             messages(query.messages),
@@ -398,7 +398,7 @@ fn message_navigation_wraps_and_empty_confirmation_is_inert() {
     for (query, expected) in
         cases::<Navigation, Frames>("message_navigation_wraps_and_empty_confirmation_is_inert")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = message_selector(
             entries(query.n),
@@ -425,7 +425,7 @@ fn message_navigation_wraps_and_empty_confirmation_is_inert() {
 fn message_binding_collision_prefers_navigation() {
     let _bindings = bindings_guard();
     for (_, expected) in cases::<Empty, Frame>("message_binding_collision_prefers_navigation") {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = message_selector(
             entries(3),
@@ -457,7 +457,7 @@ fn message_callbacks_are_replaceable_clearable_and_reentrant() {
     for (_, expected) in
         cases::<Empty, Frame>("message_callbacks_are_replaceable_clearable_and_reentrant")
     {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let selector = message_selector(
             entries(3),
@@ -598,7 +598,7 @@ fn empty_message_auto_cancel_uses_one_original_delayed_callback() {
     for (query, expected) in cases::<TimerInput, TimerOutput>(
         "empty_message_auto_cancel_uses_one_original_delayed_callback",
     ) {
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let events = Events::default();
         let transcript = events.clone();
         let on_cancel: Rc<dyn Fn()> = Rc::new(move || transcript.push("original-cancel", None));
@@ -693,7 +693,7 @@ fn selector_focus_handles_outlive_chrome_without_retaining_it() {
 #[cfg(not(target_arch = "wasm32"))]
 fn empty_callback_releases_captures() {
     let runtime = manual_runtime::ManualRuntime::new();
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     let capture = Rc::new(std::cell::Cell::new(0));
     let weak_capture = Rc::downgrade(&capture);
     let callback: Rc<dyn Fn()> = Rc::new(move || capture.set(capture.get() + 1));

@@ -1,27 +1,27 @@
 //! Recorded theme preparation.
-use maestro_theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
+use crate::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
 use std::rc::Rc;
 /// Synthetic palettes use the same key order as the shipped theme.
-pub fn palette(variant: &str) -> Rc<Theme> {
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn palette(variant: &str) -> Result<Rc<Theme>, Box<dyn std::error::Error>> {
     if matches!(variant, "dark" | "light") {
-        return Rc::new(
-            maestro_theme::load_theme_from_path(
-                &format!(
-                    "{}/../maestro-theme/assets/theme/{variant}.json",
-                    env!("CARGO_MANIFEST_DIR")
-                ),
-                Some(ColorMode::Truecolor),
-            )
-            .unwrap(),
-        );
+        return Ok(Rc::new(crate::load_theme_from_path(
+            &format!("{}/assets/theme/{variant}.json", env!("CARGO_MANIFEST_DIR")),
+            Some(ColorMode::Truecolor),
+        )?));
     }
-    let doc: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../maestro-theme/assets/theme/dark.json"
-    ))
-    .unwrap();
+    let doc: serde_json::Value =
+        serde_json::from_str(include_str!("../../assets/theme/dark.json"))?;
     let mut fg = Vec::new();
     let mut bg = Vec::new();
-    for (index, (key, _)) in doc["colors"].as_object().unwrap().iter().enumerate() {
+    for (index, (key, _)) in doc["colors"]
+        .as_object()
+        .ok_or("theme colors are an object")?
+        .iter()
+        .enumerate()
+    {
         let rgb = if variant == "a" {
             0x0020_4060 + index * 0x0002_0101
         } else {
@@ -42,5 +42,10 @@ pub fn palette(variant: &str) -> Rc<Theme> {
             fg.push((ThemeColor::Named(key.clone()), color));
         }
     }
-    Rc::new(Theme::new(fg, bg, ColorMode::Truecolor, ThemeOptions::default()).unwrap())
+    Ok(Rc::new(Theme::new(
+        fg,
+        bg,
+        ColorMode::Truecolor,
+        ThemeOptions::default(),
+    )?))
 }

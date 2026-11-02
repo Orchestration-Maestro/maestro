@@ -4,7 +4,6 @@ use super::super::share::ShareArtifact;
 use super::transfer::{assert_last_row_holds, bundle, layout_dir, rows, themed};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{World, cases as recorded_cases, started};
-use crate::components::session_selector::list::tests::session_picker::native_child as child;
 use maestro_app::configuration::config::{
     APP_NAME, ENV_AGENT_DIR, SERVICE_ORIGIN, get_share_viewer_url,
 };
@@ -195,8 +194,8 @@ fn run(
         }
         return None;
     }
-    let scratch = child::Scratch::new();
-    let root = scratch.0.path().to_path_buf();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let root = scratch.path().to_path_buf();
     let package = root.join("package");
     let programs = root.join("programs");
     let state = root.join("state");

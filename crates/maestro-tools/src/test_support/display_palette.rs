@@ -1,5 +1,4 @@
 //! Recorded display palette.
-#![cfg(test)]
 use serde::Deserialize;
 
 /// The committed palette of the display recording.
@@ -11,6 +10,9 @@ struct Palette {
 }
 
 /// Return the recorded palette keys in their recorded order.
-pub fn palette_keys(source: &str) -> Vec<String> {
-    serde_json::from_str::<Palette>(source).unwrap().theme_keys
+///
+/// # Errors
+/// Returns failures from the supplied values or collaborators.
+pub fn palette_keys(source: &str) -> Result<Vec<String>, serde_json::Error> {
+    Ok(serde_json::from_str::<Palette>(source)?.theme_keys)
 }

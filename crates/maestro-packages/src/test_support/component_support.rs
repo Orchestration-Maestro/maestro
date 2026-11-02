@@ -1,6 +1,5 @@
 //! Typed, complete resource observations shared by component workflow tests.
-#![cfg(test)]
-use maestro_packages::{ResolvedPaths, ResolvedResource};
+use crate::{ResolvedPaths, ResolvedResource};
 use maestro_resources::{SourceOrigin, SourceScope};
 use serde::Deserialize;
 /// Recorded resource collections, including empty siblings.
@@ -42,6 +41,9 @@ struct ExpectedMetadata {
 }
 impl ExpectedPaths {
     /// Compare every native field in discovery order without JSON serialization.
+    ///
+    /// # Panics
+    /// Panics if any discovered resource differs from its recorded expectation.
     pub fn check(&self, actual: ResolvedPaths, root: &str) {
         for (expected, actual) in [
             (&self.extensions, actual.extensions),

@@ -977,7 +977,8 @@ fn native_command_probe(root: &native::Scratch) {
     native::install_executable(
         std::path::Path::new(&root.join("git.sh")),
         std::path::Path::new(&root.join("bin/git")),
-    );
+    )
+    .expect("install starts");
     let output = native::probe(
         maestro_test_process::TestProcess::current(
             "footer_native_async_lookup_runs_selected_command",
@@ -990,7 +991,8 @@ fn native_command_probe(root: &native::Scratch) {
             ("PATH", &root.join("bin")),
         ],
         &[],
-    );
+    )
+    .expect("child starts");
     assert_eq!(
         output,
         [
@@ -1014,7 +1016,8 @@ fn native_command_probe(root: &native::Scratch) {
             ("FOOTER_ASYNC_EXIT", "1"),
         ],
         &[],
-    );
+    )
+    .expect("child starts");
     assert_eq!(
         failed,
         ["absent"],
@@ -1228,7 +1231,8 @@ os._exit(0)
     native::install_executable(
         std::path::Path::new(&root.join("git.py")),
         std::path::Path::new(&root.join("bin/git")),
-    );
+    )
+    .expect("install starts");
     assert!(
         native::probe(
             maestro_test_process::TestProcess::current(
@@ -1240,6 +1244,7 @@ os._exit(0)
             &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
             &[]
         )
+        .expect("child starts")
         .is_empty()
     );
 }
