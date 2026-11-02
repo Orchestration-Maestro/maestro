@@ -8,7 +8,7 @@ use crate::{
 };
 
 /// Selected subtree identity: result arrival replaces the pending body.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::tools) enum Phase {
     /// Streamed parameters without a result.
     Pending,
@@ -18,7 +18,7 @@ pub(in crate::tools) enum Phase {
     Artifact(ArtifactTemplate),
 }
 /// Artifact templates which retain the same header and disclosure subtree.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::tools) enum ArtifactTemplate {
     /// No selected command.
     Preparing,
@@ -46,13 +46,6 @@ pub(in crate::tools) enum ArtifactTemplate {
     ErrorPlain,
 }
 /// Owned body operands, independent of the preparation call; `C` is the retained child representation.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) struct Body<C = PreparedContent> {
     /// Pending or completed subtree.
     pub(in crate::tools) phase: Phase,
@@ -70,13 +63,6 @@ pub(in crate::tools) struct Body<C = PreparedContent> {
     pub(in crate::tools) fallback: Option<&'static str>,
 }
 /// One immutable card recipe shared by document tools.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) struct CollapsibleCard<C = PreparedContent> {
     /// Result status takes precedence over streaming.
     pub(in crate::tools) state: ToolHeaderState,
@@ -94,13 +80,6 @@ pub(in crate::tools) struct CollapsibleCard<C = PreparedContent> {
     pub(in crate::tools) error: Option<String>,
 }
 /// Renderer-specific erased identity for one shared implementation per representation.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) struct Content<R, C = PreparedContent> {
     /// Owned selected card operands.
     card: CollapsibleCard<C>,
@@ -116,20 +95,12 @@ impl<R, C> From<CollapsibleCard<C>> for Content<R, C> {
     }
 }
 /// Original download with its tool-selected text-preview policy.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) struct Download {
     /// Original encoded record, before decoding a preview.
     pub(in crate::tools) attachment: Attachment,
     /// Whether this MIME type supports extracted text.
     pub(in crate::tools) text: bool,
 }
-#[cfg(any(target_arch = "wasm32", test))]
 impl Download {
     /// Decode only when the retained tile first observes changed original bytes.
     pub(in crate::tools) fn record(&self) -> Attachment {
@@ -153,3 +124,6 @@ impl<C: CardOutput> CollapsibleCard<C> {
 }
 #[cfg(target_arch = "wasm32")]
 mod dom;
+/// Rendered-value projections for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub(in crate::tools) mod view;

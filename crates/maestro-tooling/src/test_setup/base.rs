@@ -56,16 +56,20 @@ impl Base {
         Ok(supplied)
     }
 
-    /// Install the compiled code of the bundle in the user cache `cache_home`, for the modification
+    /// Install the bundle's compiled code in the engine-reported `cache_directory`, for the modification
     /// time of `example`, and return the namespace it went to.
     ///
     /// # Errors
     /// Returns a failed copy.
-    pub(super) fn seed(&self, cache_home: &Path, example: &Path) -> io::Result<Option<PathBuf>> {
+    pub(super) fn seed(
+        &self,
+        cache_directory: &Path,
+        example: &Path,
+    ) -> io::Result<Option<PathBuf>> {
         let staged = self.directory.join(COMPILED);
         match &self.manifest.compiled {
             Some(code) if code.verify(&staged).is_ok() => {
-                code.install(&staged, cache_home, example).map(Some)
+                code.install(&staged, cache_directory, example).map(Some)
             }
             _ => Ok(None),
         }

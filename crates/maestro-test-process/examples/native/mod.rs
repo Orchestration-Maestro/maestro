@@ -4,6 +4,7 @@ use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
+mod author;
 mod cargo;
 #[cfg(unix)]
 mod command;
@@ -24,6 +25,8 @@ enum Request {
     Command(command::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Run a copied preparation example against its checkout-local declaration.
+    Author(author::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     #[cfg(unix)]
     Rpc(rpc::Record),
@@ -36,6 +39,14 @@ impl Request {
     /// Parse a private operation or the installed alias's sibling record.
     fn read(args: Vec<OsString>) -> io::Result<Self> {
         let executable = std::env::current_exe()?;
+        // Copied preparation examples receive their record through an explicit caller selector.
+        if executable
+            .file_stem()
+            .is_some_and(|name| name == "prepare_author_component")
+            && let Some(record) = std::env::var_os("MAESTRO_NATIVE_RECORD")
+        {
+            return Self::record(Path::new(&record), args);
+        }
         if executable
             .file_stem()
             .is_none_or(|name| name != "native_fixture")
@@ -65,6 +76,7 @@ impl Request {
             #[cfg(unix)]
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
@@ -82,6 +94,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Command(record, operands) => command::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        Request::Author(record, operands) => author::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]

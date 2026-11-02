@@ -102,8 +102,8 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
 /// while it runs, and writes no manifest.
 #[test]
 fn prepare_rejects_bad_requests_and_unstable_inputs() {
-    let malformed = "#!/bin/sh\necho invalid > \"$NEXTEST_ENV\"\n";
-    let unstable = format!("{EXAMPLE}echo edited > crates/maestro-extensions-wasm/src/lib.rs\n");
+    let malformed = r#"{"scenario":"malformed"}"#;
+    let unstable = r#"{"scenario":"unstable"}"#;
     for (name, example, command, output, reason) in [
         ("checkout", EXAMPLE, "prepare", ".", "needs a path"),
         (
@@ -122,7 +122,7 @@ fn prepare_rejects_bad_requests_and_unstable_inputs() {
         ),
         (
             "inputs",
-            &unstable,
+            unstable,
             "prepare",
             "target/test-setup",
             "inputs changed",
@@ -343,20 +343,11 @@ fn archived_author_setup_aligns_executable_times() {
     }
 }
 
-/// How a shard's `HOME` is set: left to the fixture's `XDG_CACHE_HOME`, absolute or relative.
-#[derive(Clone, Copy)]
-enum Home {
-    Unset,
-    Absolute,
-    Relative,
-}
-
 /// The bundle carries the code the setup example compiled, and a shard installs it for the
-/// modification time its executables share, in whichever directory the user cache is found,
-/// a relative `HOME` included, as the test-process owner finds it.
+/// modification time its executables share, in the directory the example reports.
 #[test]
 fn archived_author_setup_installs_the_prepared_compiled_code() {
-    for home in [Home::Unset, Home::Absolute, Home::Relative] {
+    for home in [None, Some("home")] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
@@ -365,20 +356,13 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
         assert!(!staged.join("key.stats").exists());
         let mut command = export_command(root, &root.join("target/test-setup"), true);
-        let value = match home {
-            Home::Unset => None,
-            Home::Absolute => Some(root.join("home")),
-            Home::Relative => Some(PathBuf::from("home")),
-        };
+        let value = home.map(|home| root.join(home));
         if let Some(value) = &value {
             command.env_remove("XDG_CACHE_HOME").env("HOME", value);
         }
-        assert_success(&command.output().unwrap());
-        let cache = if value.is_some() {
-            root.join("home/.cache")
-        } else {
-            root.join("cache-home")
-        };
+        let output = command.output().unwrap();
+        assert_success(&output);
+        let cache = value.map_or_else(|| root.join("cache-home"), |home| home.join(".cache"));
         let milliseconds =
             fs::metadata(root.join("target/debug/examples/prepare_author_component"))
                 .unwrap()
@@ -394,6 +378,25 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         );
         assert!(!installed.join("key.stats").exists());
     }
+}
+
+/// A relative `HOME` without an absolute XDG cache stops setup before cache installation.
+#[test]
+fn relative_home_stops_author_setup_before_installation() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let mut command = export_command(root, &root.join("target/test-setup"), true);
+    command.env_remove("XDG_CACHE_HOME").env("HOME", "home");
+
+    let output = command.output().unwrap();
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("cache directory query failed"));
+    assert!(!root.join("nextest-env").exists());
+    assert!(!root.join("home").exists());
+    assert!(!root.join("cache-home").exists());
 }
 
 /// An archived shard that is given no output directory reads the bundle at `target/test-setup`.
@@ -414,8 +417,7 @@ fn archived_author_setup_defaults_to_the_target_bundle() {
     )));
 }
 
-/// A host whose compiled code the preparation cannot collect still prepares and exports, and
-/// installs no cache.
+/// An example that writes no compiled code still prepares and exports without installing a cache.
 #[test]
 fn archived_author_setup_without_compiled_code_installs_none() {
     let scratch = Scratch::new().unwrap();
@@ -538,25 +540,7 @@ fn each_setup_checks_only_the_artifact_it_installs() {
 /// it is given from its environment and builds the others. Building records the variable, writes
 /// the component and writes the dependency file Cargo leaves beside it, naming the example
 /// sources it read: the two marked components share a helper module and one library file.
-const FOUR_COMPONENTS_EXAMPLE: &str = r#"#!/bin/sh
-examples="$PWD/crates/maestro-extensions-wasm/../../examples/extensions"
-library="$PWD/crates/maestro-extensions-wasm/src/lib.rs"
-for variable in MAESTRO_AUTHOR_COMPONENT MAESTRO_CONTEXT_COMPONENT MAESTRO_SUBAGENT_COMPONENT MAESTRO_ALPHA_COMPONENT MAESTRO_BETA_COMPONENT; do
-    eval "value=\${$variable-}"
-    if [ -z "$value" ]; then
-        echo "$variable" >> "$PWD/built"
-        value="$PWD/$variable.wasm"
-        cp "$PWD/component.wasm" "$value"
-        case "$variable" in
-            MAESTRO_ALPHA_COMPONENT) sources="$library $examples/alpha.rs $examples/support/tail.rs" ;;
-            MAESTRO_BETA_COMPONENT) sources="$library $examples/beta.rs $examples/support/tail.rs" ;;
-            *) sources="$library" ;;
-        esac
-        { echo "$value: $sources"; echo; for source in $sources; do echo "$source:"; done; } > "$PWD/$variable.d"
-    fi
-    echo "$variable=$value" >> "$NEXTEST_ENV"
-done
-"#;
+const FOUR_COMPONENTS_EXAMPLE: &str = r#"{"scenario":"marked"}"#;
 
 /// A checkout with two source-marked components beside the fixed author and context ones.
 fn marked_fixture(root: &Path) {
@@ -819,7 +803,7 @@ fn prepare_drops_compiled_code_of_another_engine() {
     fixture(root);
     prepare(root);
     let base = root.join("target/test-setup");
-    fixture_with(root, &EXAMPLE.replace("wasmtime-fixture", "wasmtime-newer"));
+    fixture_with(root, &EXAMPLE.replace("\"fixture\"", "\"newer\""));
     assert_success(&prepare_as_child(
         "prepare_drops_compiled_code_of_another_engine",
         root,
@@ -902,55 +886,23 @@ fn prepare_reuses_a_base_in_its_own_output_directory() {
 /// The fixture setup example: it records the author component it was given and writes
 /// nextest's environment file from the components it was given, or from the checkout. It
 /// also exports `MAESTRO_COMPONENT`, a name source discovery accepts.
-const EXAMPLE: &str = r#"#!/bin/sh
-echo "${MAESTRO_AUTHOR_COMPONENT-unset}" >> "$PWD/seen"
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\nMAESTRO_COMPONENT=%s\n' \
-    "${MAESTRO_AUTHOR_COMPONENT:-$PWD/component.wasm}" \
-    "${MAESTRO_CONTEXT_COMPONENT:-$PWD/component.wasm}" \
-    "${MAESTRO_SUBAGENT_COMPONENT:-$PWD/component.wasm}" \
-    "${MAESTRO_COMPONENT:-$PWD/component.wasm}" > "$NEXTEST_ENV"
-if [ -n "${XDG_CACHE_HOME-}" ]; then
-    seconds=$(stat -c %Y "$0" 2>/dev/null || stat -f %m "$0")
-    modules="$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000"
-    mkdir -p "$modules"
-    entry=compiled
-    if [ -n "${MAESTRO_AUTHOR_COMPONENT-}" ]; then entry=recompiled; fi
-    [ -e "$modules/key" ] || { printf %s "$entry" > "$modules/key"; printf stats > "$modules/key.stats"; }
-fi
-"#;
+const EXAMPLE: &str = r#"{"scenario":"cached","engine":"fixture"}"#;
 
-/// A setup example that compiles nothing into a user cache, as on a host whose cache the
-/// preparation cannot move.
-const PLAIN_EXAMPLE: &str = r#"#!/bin/sh
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\n' \
-    "$PWD/component.wasm" "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
-"#;
+/// A setup example that exports components without populating the cache.
+const PLAIN_EXAMPLE: &str = r#"{"scenario":"plain"}"#;
 
 /// A setup example whose compiled code sits in a namespace that does not follow its own time.
-const MISPLACED_CACHE_EXAMPLE: &str = r#"#!/bin/sh
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\n' \
-    "$PWD/component.wasm" "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
-mkdir -p "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-1"
-echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-1/key"
-"#;
+const MISPLACED_CACHE_EXAMPLE: &str = r#"{"scenario":"misplaced"}"#;
 
 /// A setup example whose compiled code sits in two namespaces.
-const SPLIT_CACHE_EXAMPLE: &str = r#"#!/bin/sh
-printf 'MAESTRO_AUTHOR_COMPONENT=%s\nMAESTRO_CONTEXT_COMPONENT=%s\nMAESTRO_SUBAGENT_COMPONENT=%s\n' \
-    "$PWD/component.wasm" "$PWD/component.wasm" "$PWD/component.wasm" > "$NEXTEST_ENV"
-seconds=$(stat -c %Y "$0" 2>/dev/null || stat -f %m "$0")
-mkdir -p "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000" \
-    "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000"
-echo x > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-fixture-${seconds}000/key"
-echo y > "$XDG_CACHE_HOME/wasmtime/modules/wasmtime-other-${seconds}000/key"
-"#;
+const SPLIT_CACHE_EXAMPLE: &str = r#"{"scenario":"split"}"#;
 
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {
     fixture_with(root, EXAMPLE);
 }
 
-/// Like `fixture`, with the setup example script the fixture Cargo builds.
+/// Like `fixture`, with the finite setup-example declaration the fixture Cargo installs.
 fn fixture_with(root: &Path, example: &str) {
     workspace(root);
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
@@ -965,7 +917,11 @@ fn fixture_with(root: &Path, example: &str) {
     fs::write(root.join("justfile"), BROWSER_RECIPES).unwrap();
     executable(&root.join("target/debug/deps/older"), 100);
     executable(&root.join("target/debug/deps/newer"), 200);
-    fs::write(root.join("example-source"), example).unwrap();
+    fs::write(
+        root.join("example-source"),
+        format!("tooling-author\n{example}\n"),
+    )
+    .unwrap();
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("nextest native-fixture setup supplies the artifact");
     maestro_test_process::install_executable(Path::new(&artifact), &root.join("cargo")).unwrap();
@@ -1094,6 +1050,7 @@ fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: b
     command
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
+        .env("MAESTRO_NATIVE_RECORD", root.join("example-source"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))
