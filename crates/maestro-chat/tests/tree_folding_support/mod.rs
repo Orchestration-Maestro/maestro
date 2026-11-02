@@ -78,7 +78,8 @@ fn frame(list: &TreeList, input: &Input, expected: &Frame, events: &RefCell<Vec<
     assert_eq!(list.get_search_query(), expected.query);
     assert_eq!(*events.borrow(), expected.events);
     let host = manual_runtime::ManualRuntime::new();
-    let (state, live) = published::published(&palette::palette(&input.palettes[0]));
+    let (state, live) =
+        published::published(&palette::palette(&input.palettes[0]).unwrap()).unwrap();
     assert_eq!(
         expected.rendered.len(),
         input.palettes.len() * input.widths.len()
@@ -91,7 +92,7 @@ fn frame(list: &TreeList, input: &Input, expected: &Frame, events: &RefCell<Vec<
     ) {
         assert_eq!((&record.palette, record.width), (palette, *width));
         state
-            .set_theme_instance(self::palette::palette(palette))
+            .set_theme_instance(self::palette::palette(palette).unwrap())
             .unwrap();
         assert_eq!(
             list.render(*width, &live, &host, true).unwrap(),

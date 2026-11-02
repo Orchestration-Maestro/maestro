@@ -258,10 +258,7 @@ fn string_domain(field: &str, source: Option<&str>, text: Option<&str>) {
     let (skills, prompts) = native_load(&yaml);
     let valid_skill = field != "description" || text.is_some_and(|t| !t.is_empty());
     assert_eq!(skills.skills.len(), usize::from(valid_skill));
-    assert_eq!(
-        skills.diagnostics.len(),
-        usize::from(!valid_skill || field == "name" && text == Some("authored"))
-    );
+    assert_eq!(skills.diagnostics.len(), usize::from(!valid_skill));
     if valid_skill {
         let skill = &skills.skills[0];
         assert_eq!(

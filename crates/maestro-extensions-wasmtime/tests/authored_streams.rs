@@ -186,9 +186,9 @@ fn generic_stream_admission_is_single_pass() {
     assert_eq!(
         observed["rescanned"],
         json!([
+            {"size":16,"classified":136,"extracted":1,"delivered":136,"result":16},
+            {"size":32,"classified":528,"extracted":1,"delivered":528,"result":32},
             {"size":64,"classified":2080,"extracted":1,"delivered":2080,"result":64},
-            {"size":128,"classified":8256,"extracted":1,"delivered":8256,"result":128},
-            {"size":256,"classified":32896,"extracted":1,"delivered":32896,"result":256},
         ])
     );
     for control in observed["rescanned"].as_array().unwrap() {

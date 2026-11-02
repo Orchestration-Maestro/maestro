@@ -16,9 +16,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/tool install -g @old/agent"
+        "display": "npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -64,9 +65,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "pnpm install -g @old/agent"
+        "display": "pnpm install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -112,9 +114,10 @@
         "args": [
           "global",
           "add",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "yarn global add @old/agent"
+        "display": "yarn global add --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -165,9 +168,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "bun install -g @old/agent"
+        "display": "bun install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -240,7 +244,7 @@
       "executable": "C:\\Users\\Admin\\pnpm-repository\\global\\5\\.pnpm\\agent\\node_modules\\@old\\agent\\dist\\cli.js"
     },
     "expected": {
-      "value": "Run: pnpm install -g @old/agent"
+      "value": "Run: pnpm install -g --ignore-scripts @old/agent"
     },
     "trace": []
   }

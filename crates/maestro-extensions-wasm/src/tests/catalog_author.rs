@@ -324,7 +324,9 @@ async fn catalog(
                 model.cost.input = f64::INFINITY;
             }
             match registry.get_api_key_and_headers(model).await? {
-                ResolvedRequestAuth::Ok { api_key, headers } => Ok(
+                ResolvedRequestAuth::Ok {
+                    api_key, headers, ..
+                } => Ok(
                     json!({"apiKey":api_key,"headers":headers.map(|h|h.into_iter().collect::<Vec<_>>())}),
                 ),
                 ResolvedRequestAuth::Error { error } => Ok(json!({"error":error})),

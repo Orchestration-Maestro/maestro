@@ -235,7 +235,8 @@ SDK definitions `<sdk:name>` provenance. Supply a prompt snippet when the tool
 should appear in the available-tool description. Custom implementations keep
 responsibility for their own path resolution and effects. The
 [native tool factories](../tools.md) take an explicit directory; a host-created
-tool does not inherit a later session directory change.
+tool does not inherit a later session directory change. See
+[application tools](tools.md) for executable factories and direct-shell history.
 
 After construction, `get_all_tools` exposes definitions and sources, and
 `set_active_tools_by_name` changes the active selection and rebuilds the system
@@ -417,16 +418,48 @@ already exist: their directories, credentials, catalog, preferences and loader.
 ## Requests
 
 Each provider request takes the catalog's key and headers for the model; a
-credential failure fails the request with its message. The provider retry
+credential failure fails the request with its message. Next, the request reads
+`httpIdleTimeoutMs`; an invalid stored value fails with
+`Invalid httpIdleTimeoutMs setting: <value>`, even when the request supplies a
+timeout. The provider retry
 settings supply the timeout, the retry limit and the longest retry delay where
-the request sets none. Headers merge in order: attribution headers, then the
+the request sets none, and the `httpIdleTimeoutMs` setting supplies the timeout
+when neither the request nor the provider retry settings set one; its `0` or
+`disabled` asks for the largest timeout a request carries, `i32::MAX` milliseconds, so
+every provider that reads the timeout stops limiting the wait. Headers merge in order: attribution headers, then the
 credential headers, then the request's own, later names replacing earlier
 values.
+
+The shared native HTTP client starts with a 300,000 ms idle limit on headers and
+body chunks. Embedders apply their setting to this client explicitly:
+
+```rust
+# #[cfg(not(target_arch = "wasm32"))]
+# fn apply_http_limit(settings: &maestro_app::SettingsManager) -> Result<(), Box<dyn std::error::Error>> {
+maestro_app::configure_http_dispatcher(settings.get_http_idle_timeout_ms()?)?;
+# Ok(())
+# }
+```
+
+The change applies to subsequent requests; existing requests keep their client.
+Zero disables both shared-client limits. Header waiting includes connecting and
+sending the request; the body limit restarts after each chunk. Private clients
+and browser transport keep their own policies. A finite setting too large to
+represent as a duration returns a conversion error.
 
 While install telemetry is on, requests to `openrouter` or an `openrouter.ai`
 address carry `HTTP-Referer: https://github.com/Orchestration-Maestro/maestro`,
 `X-OpenRouter-Title: maestro` and `X-OpenRouter-Categories: cli-agent`. Requests
-to Cloudflare's providers or addresses carry `User-Agent: maestro-coding-agent`.
+to `nvidia` or an `integrate.api.nvidia.com` address carry
+`X-BILLING-INVOKE-ORIGIN: maestro`. Requests to Cloudflare's providers or to
+`api.cloudflare.com` and `gateway.ai.cloudflare.com` addresses carry
+`User-Agent: maestro-coding-agent`. Requests to `opencode`, `opencode-go` or an
+`opencode.ai` address that carry a session ID also send `x-opencode-session` and
+`x-opencode-client: maestro`, whatever the telemetry setting.
+
+An address matches by its parsed host, ignoring case. A path or query that only
+names a host, such as `https://proxy.example/api.cloudflare.com/v1`, matches
+nothing.
 
 Extensions can replace each request payload through `before_provider_request`,
 hear each response status and headers through `after_provider_response`, and

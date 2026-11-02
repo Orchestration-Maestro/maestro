@@ -18,7 +18,7 @@ pub(super) fn select<'a>(addresses: impl IntoIterator<Item = (&'a str, IpAddr)>)
         .unwrap_or(Ipv4Addr::LOCALHOST)
 }
 
-/// Read interface observations only after the reachability probe fails.
+/// Read interface observations only after the UDP route lookup fails.
 pub(super) fn address() -> std::io::Result<Ipv4Addr> {
     Ok(select(if_addrs::get_if_addrs()?.iter().map(|interface| {
         (interface.name.as_str(), interface.ip())

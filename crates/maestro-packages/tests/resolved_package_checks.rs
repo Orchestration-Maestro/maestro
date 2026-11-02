@@ -33,7 +33,12 @@ fn resolved_packages_keep_project_pin_and_empty_filtered_roots() {
     assert_eq!(selected.source, "https://example.test/team/repo@v2");
     assert_eq!(selected.identity, "git:example.test/team/repo");
     assert_eq!(selected.scope, SourceScope::Project);
-    assert_eq!(selected.installed_path, project.to_str().unwrap());
+    let expected = fixture.scratch.path().join(
+        ["project", ".maestro", "git", "example.test", "team", "repo"]
+            .iter()
+            .collect::<std::path::PathBuf>(),
+    );
+    assert_eq!(selected.installed_path, expected.to_str().unwrap());
     assert_eq!(result.packages[1].scope, SourceScope::User);
     assert_eq!(result.packages[1].source, "./empty");
     assert_eq!(
@@ -67,7 +72,15 @@ fn explicit_descriptors_keep_npm_pins_and_temporary_local_scope() {
     assert_eq!(result.packages[0].identity, "npm:example");
     assert_eq!(result.packages[0].source, "npm:example@1.2.3");
     assert_eq!(result.packages[0].scope, SourceScope::Project);
-    assert_eq!(result.packages[0].installed_path, npm.to_str().unwrap());
+    let expected = fixture.scratch.path().join(
+        ["project", ".maestro", "npm", "node_modules", "example"]
+            .iter()
+            .collect::<std::path::PathBuf>(),
+    );
+    assert_eq!(
+        result.packages[0].installed_path,
+        expected.to_str().unwrap()
+    );
     let local = npm.to_str().unwrap().to_owned();
     let result = block_on(
         fixture
@@ -76,5 +89,8 @@ fn explicit_descriptors_keep_npm_pins_and_temporary_local_scope() {
     )
     .unwrap();
     assert_eq!(result.packages[0].scope, SourceScope::Temporary);
-    assert_eq!(result.packages[0].installed_path, local);
+    assert_eq!(
+        result.packages[0].installed_path,
+        expected.to_str().unwrap()
+    );
 }

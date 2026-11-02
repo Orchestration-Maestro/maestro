@@ -1,15 +1,24 @@
 //! The single daemon event loop and its completion-owned shutdown phase.
 
 use super::super::App;
-use crate::paths::DaemonPaths;
+use crate::{api::RequestMessage, paths::DaemonPaths};
+use maestro_settings::SettingsManager;
 use maestro_workspace::terminal_id::TerminalId;
 use std::{future::Future, time::Instant};
 
 impl<C: FnMut() -> u128> App<C> {
-    /// Runs current daemon producers over one channel selection and one deadline timer.
+    /// Runs current daemon producers over one channel selection and one deadline timer,
+    /// answering each workspace command from `requests` in arrival order.
     ///
     /// The caller supplies shutdown readiness; transport and frontend arms share this loop.
-    pub async fn run(&mut self, paths: &DaemonPaths, shutdown: impl Future<Output = ()>) {
+    /// `settings` is the retained settings owner a configuration reload reads through.
+    pub async fn run(
+        &mut self,
+        paths: &DaemonPaths,
+        requests: &mut tokio::sync::mpsc::UnboundedReceiver<RequestMessage>,
+        settings: &mut SettingsManager,
+        shutdown: impl Future<Output = ()>,
+    ) {
         tokio::pin!(shutdown);
         while !self.state.should_quit.0 {
             self.drain_internal_events();
@@ -23,6 +32,11 @@ impl<C: FnMut() -> u128> App<C> {
                 event = self.event_rx.recv() => {
                     if let Some(event) = event { self.handle_internal_event(event); }
                     else { self.state.should_quit.0 = true; }
+                }
+                Some(request) = requests.recv() => {
+                    let response =
+                        self.handle_api_request(request.command, settings, paths).await;
+                    let _ = request.respond_to.send(response);
                 }
                 () = self.launch.render_notify.notified() => {}
                 () = wait_for_deadline(deadline) => {}
@@ -50,7 +64,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Releases detached owners after the event batch has released topology borrows.
-    async fn shutdown_detached_terminal_runtimes(&mut self) {
+    pub(in crate::app) async fn shutdown_detached_terminal_runtimes(&mut self) {
         for terminal in std::mem::take(&mut self.state.terminal_runtime_shutdowns) {
             self.shutdown_terminal_runtime(&terminal).await;
         }

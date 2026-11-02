@@ -16,7 +16,8 @@ collection. The result owns its optional `common_ancestor_id`, not its entries.
 
 `prepare_branch_entries(&entries, token_budget)` returns owned raw message snapshots,
 `file_ops` and `total_tokens`. It scans all built-in branch-summary file details first,
-then visits content newest to oldest. Tool results and metadata are excluded. Each
+then visits content newest to oldest. Tool results, metadata and an empty branch
+summary, which puts nothing in context, are excluded. Each
 visited assistant's file operations are extracted before its budget check. Omitted,
 zero and negative budgets are unlimited. At the first crossing, a compaction or branch
 summary is included only if the accumulated estimate is strictly below 90% of budget;
@@ -37,6 +38,13 @@ the registered completion before returning an owned future. Caller operands can 
 dropped immediately. `GenerateBranchSummaryOptions` supplies the model, explicit API
 key (including empty), optional ordered headers, shared cancellation, optional custom
 instructions, replacement flag and optional reserve. No reasoning or retry is added.
+
+A session sets `stream_fn` to its own stream function, so tree navigation with a summary
+applies the request timeouts, retries and attribution of the session's other requests. The
+function receives the model, the context and the invocation options (key, headers, cancellation
+and the 2048-token output limit); without one the registered completion answers.
+`GenerateBranchSummaryOptions` is generic over the execution family of that function and
+defaults to the threaded one.
 
 Reserve defaults to 16384; a zero context window uses 128000. The preparation budget
 is context window minus reserve, without rounding or clamping. Output `maxTokens` is
@@ -65,7 +73,7 @@ live, but an aborted signal alone does not override the provider's returned outc
 This completion is local and makes no network request:
 
 ```rust
-use maestro_models::{ApiProvider, AssistantMessageEventStream, Cancellation, Model};
+use maestro_models::{ApiProvider, AssistantMessageEventStream, Cancellation, Model, Threaded};
 use maestro_session::{BranchSummaryResult, GenerateBranchSummaryOptions,
     generate_branch_summary};
 use serde_json::json;
@@ -105,9 +113,10 @@ let model: Model = serde_json::from_value(json!({
     "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
     "contextWindow":200000, "maxTokens":8192
 }))?;
-let options = GenerateBranchSummaryOptions {
+let options = GenerateBranchSummaryOptions::<Threaded> {
     model, api_key: String::new(), headers: None, signal: Cancellation::new(),
     custom_instructions: None, replace_instructions: false, reserve_tokens: None,
+    stream_fn: None,
 };
 let entries = vec![json!({"type":"message",
     "message":{"role":"user","content":"Continue work"}})];

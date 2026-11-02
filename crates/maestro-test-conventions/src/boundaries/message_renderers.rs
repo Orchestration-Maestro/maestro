@@ -3,7 +3,11 @@ use std::collections::BTreeMap;
 
 use syn::{ext::IdentExt, visit::Visit};
 
-use crate::source::{Member, Source, inherit_test_context, test_scope};
+use crate::source::{
+    Member, Source,
+    imports::{Import, flatten},
+    inherit_test_context, test_scope,
+};
 
 /// Crate that owns the projected call and the callbacks it retains.
 const OWNER: &str = "maestro-extensions";
@@ -66,14 +70,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     }
 }
 
-/// One item a use tree imports.
-struct Import<'a> {
-    /// Path segments as written, ending with the imported item.
-    path: Vec<&'a syn::Ident>,
-    /// Local name the import binds, absent for a glob.
-    binding: Option<&'a syn::Ident>,
-}
-
 impl Import<'_> {
     /// Name of the item the import binds, where `self` names the module above it.
     fn item(&self) -> Option<&syn::Ident> {
@@ -83,58 +79,6 @@ impl Import<'_> {
         } else {
             Some(last)
         }
-    }
-}
-
-/// Every item one use tree imports, whatever nesting or aliasing it writes.
-fn flatten(tree: &syn::UseTree) -> Vec<Import<'_>> {
-    let mut imports = Vec::new();
-    collect(tree, &mut Vec::new(), &mut imports);
-    imports
-}
-
-/// Appends the items of one use tree below the segments already written.
-fn collect<'a>(
-    tree: &'a syn::UseTree,
-    above: &mut Vec<&'a syn::Ident>,
-    imports: &mut Vec<Import<'a>>,
-) {
-    match tree {
-        syn::UseTree::Path(path) => {
-            above.push(&path.ident);
-            collect(&path.tree, above, imports);
-            above.pop();
-        }
-        syn::UseTree::Name(name) => {
-            let bound = if name.ident == "self" {
-                above.last().copied()
-            } else {
-                Some(&name.ident)
-            };
-            above.push(&name.ident);
-            imports.push(Import {
-                path: above.clone(),
-                binding: bound,
-            });
-            above.pop();
-        }
-        syn::UseTree::Rename(rename) => {
-            above.push(&rename.ident);
-            imports.push(Import {
-                path: above.clone(),
-                binding: Some(&rename.rename),
-            });
-            above.pop();
-        }
-        syn::UseTree::Group(group) => {
-            for tree in &group.items {
-                collect(tree, above, imports);
-            }
-        }
-        syn::UseTree::Glob(_) => imports.push(Import {
-            path: above.clone(),
-            binding: None,
-        }),
     }
 }
 

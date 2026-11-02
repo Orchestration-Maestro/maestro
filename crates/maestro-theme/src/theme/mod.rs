@@ -39,6 +39,8 @@ pub use lifecycle::{LiveTheme, ThemeChangeResult};
 pub use loading::{load_theme_from_path, supports_color};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_text::collation::Collator;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_text::date_time_format::LocaleDateTimeFormat;
 pub use registry::{ThemeDirectories, ThemeInfo, ThemeState};
 
 /// Terminal color conversion mode.

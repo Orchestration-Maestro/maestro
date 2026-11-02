@@ -139,25 +139,44 @@ impl InteractiveMode {
         }
     }
 
-    /// Reads the key `dialog` asks for and saves it, trimmed, on the current session.
+    /// Save the trimmed key and required account values only after every prompt succeeds.
     ///
     /// # Errors
-    /// Returns the prompt's failure, its cancellation, or an empty key.
+    /// Returns a prompt failure, cancellation, or an empty required value.
     async fn save_api_key(
         &self,
         dialog: &LoginDialogComponent,
         provider_id: &str,
     ) -> Result<(), Box<dyn Error>> {
-        let entered = dialog.show_prompt("Enter API key:", None)?.await?;
-        let key = entered.trim_matches(is_whitespace_scalar);
-        if key.is_empty() {
-            return Err("API key cannot be empty.".into());
+        let key = prompt_value(dialog, "Enter API key:", "API key").await?;
+        let mut env = indexmap::IndexMap::new();
+        if matches!(
+            provider_id,
+            "cloudflare-workers-ai" | "cloudflare-ai-gateway"
+        ) {
+            let account = prompt_value(
+                dialog,
+                "Enter Cloudflare account ID:",
+                "Cloudflare account ID",
+            )
+            .await?;
+            env.insert("CLOUDFLARE_ACCOUNT_ID".into(), account);
+            if provider_id == "cloudflare-ai-gateway" {
+                let gateway = prompt_value(
+                    dialog,
+                    "Enter Cloudflare AI Gateway ID:",
+                    "Cloudflare AI Gateway ID",
+                )
+                .await?;
+                env.insert("CLOUDFLARE_GATEWAY_ID".into(), gateway);
+            }
         }
         let session = self.runtime_host.session();
         session.model_registry().auth_storage().set(
             provider_id,
             AuthCredential::ApiKey(ApiKeyCredential {
-                key: key.to_owned(),
+                env: (!env.is_empty()).then_some(env),
+                key,
             }),
         );
         Ok(())
@@ -202,9 +221,24 @@ impl InteractiveMode {
                 timeout: None,
                 runtime: Rc::clone(&self.tool_environment.runtime),
                 theme: self.themes.theme(),
+                on_toggle_tools_expanded: None,
             },
         )?);
         self.show_panel(selector.clone(), selector);
         Ok(async move { answered.await.ok().flatten() })
     }
+}
+
+/// Read a required prompt value with the same whitespace boundaries as stored keys.
+async fn prompt_value(
+    dialog: &LoginDialogComponent,
+    prompt: &str,
+    name: &str,
+) -> Result<String, Box<dyn Error>> {
+    let entered = dialog.show_prompt(prompt, None)?.await?;
+    let value = entered.trim_matches(is_whitespace_scalar);
+    if value.is_empty() {
+        return Err(format!("{name} cannot be empty.").into());
+    }
+    Ok(value.to_owned())
 }

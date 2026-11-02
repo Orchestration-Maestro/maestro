@@ -1,7 +1,8 @@
 //! Directory observations preserve their native spelling and binding time.
 use super::PaneRuntime;
-use maestro_process::pty::foreground;
+use maestro_process::pty::foreground::{self, ProcessDetectionMode};
 use std::{path::PathBuf, sync::atomic::Ordering};
+use tokio::task::JoinError;
 
 /// Reads an absolute native process directory without a filesystem traversal check.
 fn absolute_process_cwd(pid: u32) -> Option<PathBuf> {
@@ -14,6 +15,24 @@ impl PaneRuntime {
     pub fn child_pid(&self) -> Option<u32> {
         let pid = self.shared.child_pid.load(Ordering::Acquire);
         (pid > 0).then_some(pid)
+    }
+
+    /// Runs `read` over the direct child on the blocking pool, where the synchronous process
+    /// reads belong; the answer is `None` while the pane has no child.
+    ///
+    /// # Errors
+    /// Returns the join error when `read` panics or the runtime shuts down first.
+    pub async fn observe_processes<T: Send + 'static>(
+        &self,
+        read: impl FnOnce(u32, ProcessDetectionMode) -> T + Send + 'static,
+    ) -> Result<Option<T>, JoinError> {
+        let Some(pid) = self.child_pid() else {
+            return Ok(None);
+        };
+        let mode = self.shared.process_detection_mode;
+        tokio::task::spawn_blocking(move || read(pid, mode))
+            .await
+            .map(Some)
     }
 
     /// Returns an admitted report first, without checking that directory again.

@@ -781,6 +781,10 @@ The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config
 and its submodules derives from the repository configuration module under the same
 license. Changes include one include walk in place of three, wildcard matching with path
 rules in bounded time, and supplied user files and home directory.
+The worktree names, checkout paths and Git operations in
+`crates/maestro-daemon/src/git/worktree.rs` derive from the worktree module under the
+same license. Changes include literal command operands, native path bytes,
+shared home expansion and repository discovery, and link-aware leftover cleanup.
 The status snapshots, fingerprints and cache keys in
 `crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
 `crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and
@@ -788,6 +792,16 @@ refresh modules under the same license. Changes include a tracking-configuration
 while its files are unchanged in place of cached repository context, a packed-reference
 search that skips an unreadable line, supplied user files and home directory, and a refresh
 that publishes its result when its task panics.
+
+The pane geometry with chrome, layout snapshots, pane topology handlers, pane
+mutation handlers (split, resize, swap, zoom, move and close), pane input, rename,
+read and agent report handlers, and the layout export, apply and split ratio handlers
+in `app/layout.rs`, `app/api/panes.rs`, `app/api/panes/`, `app/api/reads.rs` and
+`app/api/layouts/`, and the zoom, close and move-recovery state
+operations and report events in `app/actions/` and `events.rs`, derive from the
+application API and interface modules, with one view-area owner instead of a view field,
+one read service instead of a copy for each reader and one launch record for every new
+root process.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
@@ -1235,6 +1249,23 @@ authorization of the copyright holder.
 
 SPDX-License-Identifier: Unicode-3.0
 ```
+
+## Local date-time data
+
+The locale recipes and recorded inputs in `crates/maestro-text/data/date-time/`
+derive from Unicode CLDR JSON 48.2.0. The Persian calendar conversion in
+`crates/maestro-text/src/date_time_calendar.rs` derives from Unicode ICU.
+Their copyright notices are:
+
+```text
+Copyright © 2004-2026 Unicode, Inc.
+© 2016 and later: Unicode, Inc. and others;
+Copyright (C) 2003–2013, International Business Machines Corporation and others.
+All Rights Reserved.
+```
+
+The [Unicode-3.0 licence](crates/maestro-text/data/date-time/LICENSE) applies to
+the data and translated calendar code.
 
 ## Development skill content
 

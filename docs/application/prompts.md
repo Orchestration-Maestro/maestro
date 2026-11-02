@@ -37,8 +37,10 @@ ends the prompt:
 5. Shell results recorded during the previous response are appended.
 6. A model without configured credentials is refused with the login help for its
    provider.
-7. When the history holds a response, the compaction check runs before sending.
-8. The user message (the text, then the images), the custom messages kept for the
+7. An invalid stored `httpIdleTimeoutMs` refuses the prompt with
+   `Invalid httpIdleTimeoutMs setting: <value>`, before a turn or retry starts.
+8. When the history holds a response, the compaction check runs before sending.
+9. The user message (the text, then the images), the custom messages kept for the
    next turn and the messages the `before_agent_start` handlers add are sent
    together. A system prompt from those handlers replaces the base prompt for this
    turn; otherwise the base prompt is restored.
@@ -57,6 +59,19 @@ The base prompt is the system prompt construction built, or the one
 
 A failure supplied by an extension handler or listener, by shell operations or by a
 credential lookup keeps its name, code and stack when the session returns it.
+
+## Default system prompt
+
+The documentation section says:
+
+> - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
+
+Documentation and example paths use the directories named in that section, not
+the session's working directory.
+
+With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
+is `- Use bash for file operations like ls, rg, find`. When any of those search
+tools is selected, or `bash` is absent, no exploration guideline is emitted.
 
 ## Queues
 

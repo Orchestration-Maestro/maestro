@@ -1,5 +1,5 @@
 //! Controlled native command helpers.
-use std::{path::Path, process::Command};
+use std::process::Command;
 
 use crate::child;
 pub use child::{Scratch, probe};
@@ -26,16 +26,7 @@ pub fn git(dir: &str, args: &[&str]) -> String {
 }
 
 #[cfg(unix)]
-/// Copy `source` to `target` as an executable through a child process.
-pub fn install_executable(source: &Path, target: &Path) {
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(source)
-        .arg(target)
-        .status()
-        .expect("install starts");
-    assert!(status.success(), "install failed");
-}
+pub use maestro_test_process::native::install_executable;
 
 #[cfg(unix)]
 /// Whether this process is refused access that a mode takes away; a privileged run is not.

@@ -460,3 +460,195 @@ fn user_block_text_output_keeps_empty_repeated_and_literal_text() {
         assert_eq!(UserBlock::text_output(&blocks), expected);
     }
 }
+
+use serde_json::json;
+
+/// A saved assistant turn holding `blocks` as its content.
+fn assistant_with(blocks: serde_json::Value) -> serde_json::Value {
+    let mut message = saved_assistant_without_total();
+    message["content"] = blocks;
+    message
+}
+
+/// A messages list holding one user turn with the supplied content.
+fn user_turn(content: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!([{"role": "user", "content": content, "timestamp": 1}])
+}
+
+#[test]
+fn model_request_leaves_out_unknown_roles_and_blocks() {
+    use maestro_request::types::{Context, Message, UserBlock, UserContent};
+
+    let kept = assistant_with(json!([{"type": "text", "text": "answer"}]));
+    let mut annotated = kept.clone();
+    annotated["content"] = json!([
+        {"type": "text", "text": "answer"},
+        {"type": "unknown", "text": "unknown"}
+    ]);
+    let request = json!({"messages": [
+        {"role": "other", "content": "unknown role", "timestamp": 1},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "hello"},
+                {"type": "unknown", "text": "unknown"}
+            ],
+            "timestamp": 1
+        },
+        annotated
+    ]});
+    let expected = json!({"messages": [
+        {"role": "user", "content": [{"type": "text", "text": "hello"}], "timestamp": 1},
+        kept
+    ]});
+    let context: Context = serde_json::from_value(request).unwrap();
+    assert_eq!(
+        context,
+        serde_json::from_value::<Context>(expected).unwrap()
+    );
+    match &context.messages[0] {
+        Message::User(user) => {
+            assert_eq!(
+                user.content,
+                UserContent::Blocks(vec![UserBlock::Text(
+                    maestro_request::types::TextContent::new("hello".into())
+                )])
+            );
+        }
+        other => panic!("expected a user turn, got {other:?}"),
+    }
+}
+
+#[test]
+fn all_unknown_blocks_decode_empty() {
+    use maestro_request::types::{Context, Message, UserContent};
+
+    let request = json!({"messages": [
+        {"role": "user", "content": [{"type": "unknown"}], "timestamp": 1},
+        assistant_with(json!([{"type": "unknown"}]))
+    ]});
+    let context: Context = serde_json::from_value(request).unwrap();
+    assert!(matches!(
+        &context.messages[0],
+        Message::User(user) if user.content == UserContent::Blocks(Vec::new())
+    ));
+    assert!(matches!(
+        &context.messages[1],
+        Message::Assistant(message) if message.content.is_empty()
+    ));
+}
+
+#[test]
+fn malformed_tags_and_bodies_still_fail() {
+    use maestro_request::types::Context;
+
+    let rows = [
+        (
+            "tool result",
+            json!([{"role": "toolResult", "toolCallId": "c", "toolName": "t", "content": [{"type": "unknown"}], "isError": false, "timestamp": 1}]),
+        ),
+        (
+            "known block without its body",
+            user_turn(&json!([{"type": "text"}])),
+        ),
+        (
+            "tag that is not a string",
+            user_turn(&json!([{"type": 5, "text": "hello"}])),
+        ),
+        (
+            "block without a tag",
+            user_turn(&json!([{"text": "hello"}])),
+        ),
+        (
+            "message without a role",
+            json!([{"content": "hello", "timestamp": 1}]),
+        ),
+    ];
+    for (row, messages) in rows {
+        assert!(
+            serde_json::from_value::<Context>(json!({"messages": messages})).is_err(),
+            "{row} decoded"
+        );
+    }
+}
+
+#[test]
+fn open_json_and_ignored_fields_keep_their_duplicate_member_policy() {
+    use maestro_request::types::{Context, Message};
+
+    let assistant = assistant_with(json!([{
+        "type": "toolCall", "id": "c", "name": "t", "arguments": null
+    }]));
+    let assistant = serde_json::to_string(&assistant).unwrap().replace(
+        "\"arguments\":null",
+        r#""arguments":{"x":1,"x":2,"nested":[{"k":0,"k":3}]}"#,
+    );
+    let result = r#"{"role":"toolResult","toolCallId":"c","toolName":"t","content":[],"details":{"x":1,"x":2,"nested":[{"k":0,"k":3}]},"isError":false,"timestamp":1}"#;
+    let user = r#"{"role":"user","content":[{"type":"text","text":"kept","extra":{"x":1,"x":2}}],"timestamp":1,"extra":{"x":1,"x":2},"extra":false}"#;
+    for text in [assistant, result.into(), user.into()] {
+        // Ordinary JSON values retain the last occurrence of each open-object key.
+        let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let expected: Message = serde_json::from_value(value).unwrap();
+        let request = format!(r#"{{"messages":[{text}]}}"#);
+        let context: Context = serde_json::from_str(&request).unwrap();
+        assert_eq!(context.messages, vec![expected.clone()]);
+        let value: serde_json::Value = serde_json::from_str(&request).unwrap();
+        let context: Context = serde_json::from_value(value).unwrap();
+        assert_eq!(context.messages, vec![expected]);
+    }
+}
+
+#[test]
+fn unknown_entries_with_repeated_body_members_are_left_out() {
+    use maestro_request::types::Context;
+
+    let request = r#"{"messages":[{"role":"other","extra":{"x":1,"x":2}},{"role":"user","content":[{"type":"unknown","extra":{"x":1,"x":2}},{"type":"text","text":"kept"}],"timestamp":1}]}"#;
+    let expected: Context = serde_json::from_value(json!({"messages": [{
+        "role": "user", "content": [{"type": "text", "text": "kept"}], "timestamp": 1
+    }]}))
+    .unwrap();
+
+    assert_eq!(serde_json::from_str::<Context>(request).unwrap(), expected);
+    assert_eq!(
+        serde_json::from_value::<Context>(serde_json::from_str(request).unwrap()).unwrap(),
+        expected
+    );
+}
+
+#[test]
+fn repeated_members_still_fail_when_the_request_is_read_from_text() {
+    use maestro_request::types::Context;
+
+    let rows = [
+        (
+            "repeated timestamp",
+            r#"{"messages": [{"role": "user", "content": "hello", "timestamp": 0, "timestamp": 1}]}"#,
+        ),
+        (
+            "repeated content",
+            r#"{"messages": [{"role": "user", "content": "first", "content": "second", "timestamp": 1}]}"#,
+        ),
+        (
+            "repeated block text",
+            r#"{"messages": [{"role": "user", "content": [{"type": "text", "text": "one", "text": "two"}], "timestamp": 1}]}"#,
+        ),
+        (
+            "repeated usage member",
+            r#"{"messages": [{"role": "assistant", "content": [], "api": "chat", "provider": "faux", "model": "test", "usage": {"input": 7.0, "input": 8.0, "output": 3.0, "cacheRead": 2.0, "cacheWrite": 1.0, "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 0.0}}, "stopReason": "stop", "timestamp": 0.0}]}"#,
+        ),
+    ];
+    for (row, text) in rows {
+        assert!(
+            serde_json::from_str::<Context>(text).is_err(),
+            "{row} decoded"
+        );
+    }
+    // JSON values keep the last member, giving each row a nonduplicate control.
+    for (row, text) in rows {
+        let control: serde_json::Value = serde_json::from_str(text).unwrap();
+        assert!(
+            serde_json::from_value::<Context>(control).is_ok(),
+            "{row} failed without repetition"
+        );
+    }
+}

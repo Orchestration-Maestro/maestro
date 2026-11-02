@@ -19,12 +19,15 @@ impl InteractiveMode {
         self.ui.request_render(false);
     }
 
-    /// Appends an error notice to the transcript and schedules a frame.
+    /// Appends an error notice followed by a blank row to the transcript and schedules a
+    /// frame.
     ///
     /// # Errors
     /// Returns the failure of the published theme's error colour.
     pub fn show_error(&self, message: &str) -> Result<(), ThemeError> {
-        self.notice(&ThemeColor::Error, &format!("Error: {message}"))
+        self.notice(&ThemeColor::Error, &format!("Error: {message}"))?;
+        self.chat_container.add_child(Rc::new(Spacer::new(1)));
+        Ok(())
     }
 
     /// Appends a warning notice to the transcript and schedules a frame.

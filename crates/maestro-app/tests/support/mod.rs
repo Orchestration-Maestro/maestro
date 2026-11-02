@@ -141,7 +141,7 @@ pub fn plain(head: Entry) -> BTreeMap<String, Entry> {
 #[cfg(unix)]
 use crate::native;
 #[cfg(unix)]
-pub use native::{Scratch, git, install_executable, probe};
+pub use native::{Scratch, git, probe};
 
 impl maestro_watch::fs_watch::WatchOperations for MetadataEffects {
     fn watch(

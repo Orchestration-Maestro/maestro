@@ -533,3 +533,38 @@ fn daemon_unchanged_git_status_drain_has_no_render_impact() {
     assert!(!app.drain_internal_events());
     assert!(!app.git_refresh.in_flight);
 }
+
+/// Git reads HOME as set on every platform and never substitutes the account home.
+#[test]
+fn git_config_home_uses_only_home_variable() {
+    let cases = [
+        (None, None, ""),
+        (None, Some(""), ""),
+        (None, Some("x"), "x/git/config"),
+        (Some(""), None, "/.config/git/config\n/.gitconfig"),
+        (Some(""), Some(""), "/.config/git/config\n/.gitconfig"),
+        (Some(""), Some("x"), "x/git/config\n/.gitconfig"),
+        (Some("h"), None, "h/.config/git/config\nh/.gitconfig"),
+        (Some("h"), Some(""), "h/.config/git/config\nh/.gitconfig"),
+        (Some("h"), Some("x"), "x/git/config\nh/.gitconfig"),
+    ];
+    let Some(cases) = maestro_test_process::run_per_environment(
+        "app::git_refresh::tests::git_config_home_uses_only_home_variable",
+        cases,
+        |(home, xdg, _)| {
+            [("HOME", *home), ("XDG_CONFIG_HOME", *xdg)]
+                .into_iter()
+                .filter_map(|(key, value)| value.map(|value| (key, value)))
+                .collect()
+        },
+    )
+    .unwrap() else {
+        return;
+    };
+    for (home, _, files) in cases {
+        let environment = git_config_environment();
+        assert_eq!(environment.home, home.map(PathBuf::from), "{home:?}");
+        let expected: Vec<_> = files.lines().map(PathBuf::from).collect();
+        assert_eq!(environment.user_files, expected);
+    }
+}

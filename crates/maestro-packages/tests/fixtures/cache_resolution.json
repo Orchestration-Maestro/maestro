@@ -8525,10 +8525,13 @@
       "second": true
     },
     "expected": {
-      "result": null,
-      "error": {
-        "message": "invalid resource list"
+      "result": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
       },
+      "error": null,
       "secondResult": null,
       "commands": [
         {
@@ -8537,6 +8540,16 @@
           "args": [
             "install",
             "pkg",
+            "--prefix",
+            "$ROOT/temp/maestro-extensions/npm/f35b2129"
+          ]
+        },
+        {
+          "mode": "run",
+          "command": "npm",
+          "args": [
+            "install",
+            "second",
             "--prefix",
             "$ROOT/temp/maestro-extensions/npm/f35b2129"
           ]
@@ -8550,6 +8563,11 @@
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/prompt.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/skill.md": "new",
         "temp/maestro-extensions/npm/f35b2129/node_modules/pkg/theme.json": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/entry.ts": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/package.json": "{\"maestro\":{\"extensions\":[7]}}",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/prompt.md": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/skill.md": "new",
+        "temp/maestro-extensions/npm/f35b2129/node_modules/second/theme.json": "new",
         "temp/maestro-extensions/npm/f35b2129/package.json": "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}"
       }
     }

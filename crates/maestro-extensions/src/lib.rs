@@ -229,3 +229,5 @@ pub mod widgets {
     };
 }
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};
+
+pub use loader::host_operations;

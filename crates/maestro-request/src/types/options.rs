@@ -82,6 +82,9 @@ pub struct StreamOptions<E: StreamOptionSlots, F = <E as StreamOptionSlots>::Fet
     /// Api key.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
+    /// Request endpoint override applied to the dispatched descriptor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base_url: Option<String>,
     /// Transport.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transport: Option<Transport>,
@@ -123,6 +126,7 @@ impl<E: StreamOptionSlots, F> Default for StreamOptions<E, F> {
             max_tokens: None,
             signal: None,
             api_key: None,
+            base_url: None,
             transport: None,
             cache_retention: None,
             session_id: None,

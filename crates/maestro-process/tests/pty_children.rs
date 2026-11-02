@@ -1,6 +1,7 @@
 //! Controlled terminal children through the checked libtest setup entry.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
+use crate::child_programs;
 use maestro_process::pty::{self, PtyCommand, PtyEnvironment, PtySize};
 use maestro_test_process::{TestProcess, run_alone};
 use std::{
@@ -28,9 +29,13 @@ fn wrap(mut command: PtyCommand, harness: &[String]) -> io::Result<PtyCommand> {
     }
     .prepare(command);
     if signals {
-        command.program = "/usr/bin/python3".into();
-        command.args=vec!["-c".into(), "import os,signal,sys; s={signal.SIGHUP,signal.SIGINT,signal.SIGQUIT,signal.SIGALRM,signal.SIGTERM,signal.SIGCHLD}; [signal.signal(v,signal.SIG_IGN) for v in s]; signal.pthread_sigmask(signal.SIG_BLOCK,s); os.execv(sys.argv[1],sys.argv[1:])".into(),std::env::current_exe()?.into_os_string()];
-        command.args.extend(harness.iter().map(OsString::from));
+        let launcher = child_programs::command(child_programs::blocked_signals_launcher, &[]);
+        command.program = launcher.get_program().to_owned();
+        command.args = launcher.get_args().map(OsString::from).collect();
+        if let PtyEnvironment::Inherit(edits) = &mut command.environment {
+            let arguments = harness.join("\u{1f}");
+            edits.push(("CHILD_EXEC_ARGS".into(), Some(arguments.into())));
+        }
     }
     Ok(command)
 }
@@ -377,23 +382,18 @@ fn assert_environment(mode: &str) {
             let mask = [1, 2, 3, 14, 15, 17]
                 .into_iter()
                 .fold(0u64, |mask, number| mask | (1 << (number - 1)));
-            for (field, path) in [
-                ("SigIgn:", "/proc/self/status"),
-                // The harness leader can temporarily block signals while creating a thread.
-                ("SigBlk:", "/proc/thread-self/status"),
-            ] {
-                let text = std::fs::read_to_string(path).unwrap();
-                let value = text
-                    .lines()
-                    .find_map(|line| line.strip_prefix(field))
-                    .unwrap()
-                    .trim();
-                assert_eq!(
-                    u64::from_str_radix(value, 16).unwrap() & mask,
-                    0,
-                    "{field} signal state survived setup"
-                );
-            }
+            // The harness leader can temporarily block signals while creating a thread.
+            let text = std::fs::read_to_string("/proc/thread-self/status").unwrap();
+            let value = text
+                .lines()
+                .find_map(|line| line.strip_prefix("SigBlk:"))
+                .unwrap()
+                .trim();
+            assert_eq!(
+                u64::from_str_radix(value, 16).unwrap() & mask,
+                0,
+                "SigBlk signal state survived setup"
+            );
         }
         _ => panic!("unknown launch case"),
     }

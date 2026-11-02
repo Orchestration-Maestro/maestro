@@ -18,9 +18,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm install -g @old/agent"
+        "display": "npm install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [
@@ -75,9 +76,10 @@
         "args": [
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm install -g @old/agent"
+        "display": "npm install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

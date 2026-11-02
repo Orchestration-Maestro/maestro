@@ -169,7 +169,7 @@ pub const RAW: &[Row] = &[
     Row::new(Both, "\x1f", Some("ctrl+-"), &["ctrl+-"]),
     Row::new(Both, " ", Some("space"), &["space"]),
     Row::new(Both, "!", Some("!"), &["!"]),
-    Row::new(Both, "\"", Some("\""), &[]),
+    Row::new(Both, "\"", Some("\""), &["\""]),
     Row::new(Both, "#", Some("#"), &["#"]),
     Row::new(Both, "$", Some("$"), &["$"]),
     Row::new(Both, "%", Some("%"), &["%"]),

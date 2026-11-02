@@ -1,5 +1,8 @@
 //! Existing models owners exposed at the application root.
 
+#[cfg(not(target_arch = "wasm32"))]
+#[doc(inline)]
+pub use maestro_models::configure_http_dispatcher;
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
 /// The conversation owner and its construction, state, input and subscription records.

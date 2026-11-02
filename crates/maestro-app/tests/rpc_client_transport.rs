@@ -1,7 +1,7 @@
 //! The RPC client's commands on the wire, the answers they return and the records that
 //! reach its event callbacks.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, next_of};
+use crate::rpc_peer::{Peer, Scenario, events, next_of, release as release_peer};
 use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::on_task_set;
 use maestro_app::{Presence, RpcClient, RpcClientError};
@@ -161,9 +161,9 @@ fn default_args(method: &str) -> Vec<Value> {
     }
 }
 
-/// A started client of `peer` running `script` with `PEER_ANSWERS` set to `answers`.
-async fn started(peer: &Peer, script: &str, answers: &Value) -> RpcClient {
-    let mut options = peer.options(script);
+/// A started client of `peer` running `scenario` with `PEER_ANSWERS` set to `answers`.
+async fn started(peer: &Peer, scenario: Scenario, answers: &Value) -> RpcClient {
+    let mut options = peer.options(scenario);
     options
         .env
         .insert("PEER_ANSWERS".into(), answers.to_string());
@@ -178,7 +178,7 @@ fn client_methods_match_the_command_corpus() {
         serde_json::from_str(include_str!("fixtures/rpc_client/commands.json")).unwrap();
     let peer = Peer::new();
     on_task_set(|_| async {
-        let client = started(&peer, SERVE, &fixture["answers"]).await;
+        let client = started(&peer, Scenario::Serve, &fixture["answers"]).await;
         let mut events = events(&client);
         let cases = fixture["cases"].as_array().unwrap();
         for (index, case) in cases.iter().enumerate() {
@@ -206,9 +206,8 @@ fn client_methods_match_the_command_corpus() {
 #[test]
 fn no_data_commands_reject_correlated_failure() {
     let peer = Peer::new();
-    let refusing = "for line in commands():\n    command = json.loads(line)\n    respond(command, error='Denied ' + command['type'] + ' \\u00e9')";
     on_task_set(|_| async {
-        let client = started(&peer, refusing, &json!({})).await;
+        let client = started(&peer, Scenario::Refuse, &json!({})).await;
         for method in NO_DATA
             .into_iter()
             .chain(["get_state", "cycle_model", "clone"])
@@ -220,7 +219,7 @@ fn no_data_commands_reject_correlated_failure() {
             assert_eq!(error.to_string(), format!("Denied {method} \u{e9}"));
         }
         client.stop().await.unwrap();
-        let client = started(&peer, SERVE, &json!({})).await;
+        let client = started(&peer, Scenario::Serve, &json!({})).await;
         for method in NO_DATA {
             assert_eq!(
                 call(&client, method, &default_args(method)).await.unwrap(),
@@ -258,10 +257,9 @@ fn returned_records_keep_their_complete_fields() {
         .iter()
         .map(|case| serde_json::from_str(case["raw"].as_str().unwrap()).unwrap())
         .collect();
-    let replay = "for line, reply in zip(commands(), json.loads(os.environ['PEER_REPLIES'])):\n    reply['id'] = json.loads(line)['id']\n    emit(reply)\nsys.stdin.read()";
     let peer = Peer::new();
     on_task_set(|_| async {
-        let mut options = peer.options(replay);
+        let mut options = peer.options(Scenario::Replay);
         options
             .env
             .insert("PEER_REPLIES".into(), json!(answers).to_string());
@@ -301,16 +299,21 @@ fn cycles_keep_null_and_selected_values() {
             ("cycle_thinking_level", Value::Null),
             ("cycle_thinking_level", json!({"level": "low"})),
         ] {
-            let client = started(&peer, SERVE, &json!({ method: data })).await;
+            let client = started(&peer, Scenario::Serve, &json!({ method: data })).await;
             assert_eq!(call(&client, method, &[]).await.unwrap(), Some(data));
             client.stop().await.unwrap();
         }
-        let client = started(&peer, SERVE, &json!({"cycle_model": cycle})).await;
+        let client = started(&peer, Scenario::Serve, &json!({"cycle_model": cycle})).await;
         let selected = client.cycle_model().await.unwrap().unwrap();
         assert!(selected.is_scoped);
         assert_eq!(selected.model.read().unwrap().id, "m");
         client.stop().await.unwrap();
-        let client = started(&peer, SERVE, &json!({"cycle_thinking_level": null})).await;
+        let client = started(
+            &peer,
+            Scenario::Serve,
+            &json!({"cycle_thinking_level": null}),
+        )
+        .await;
         assert!(client.cycle_thinking_level().await.unwrap().is_none());
         client.stop().await.unwrap();
     });
@@ -325,7 +328,7 @@ fn available_models_keep_complete_descriptors() {
     second["reasoning"] = json!(false);
     on_task_set(|_| async {
         let answers = json!({"get_available_models": {"models": [first, second, first]}});
-        let client = started(&peer, SERVE, &answers).await;
+        let client = started(&peer, Scenario::Serve, &answers).await;
         let models: Vec<maestro_app::ModelInfo> = client
             .get_available_models()
             .await
@@ -371,7 +374,12 @@ fn last_assistant_text_keeps_missing_null_and_text() {
                 Presence::Present("text".to_owned()),
             ),
         ] {
-            let client = started(&peer, SERVE, &json!({"get_last_assistant_text": data})).await;
+            let client = started(
+                &peer,
+                Scenario::Serve,
+                &json!({"get_last_assistant_text": data}),
+            )
+            .await;
             assert_eq!(client.get_last_assistant_text().await.unwrap(), expected);
             client.stop().await.unwrap();
         }
@@ -382,7 +390,12 @@ fn last_assistant_text_keeps_missing_null_and_text() {
 fn clone_round_trip_uses_the_active_branch_command() {
     let peer = Peer::new();
     on_task_set(|_| async {
-        let client = started(&peer, SERVE, &json!({"clone": {"cancelled": false}})).await;
+        let client = started(
+            &peer,
+            Scenario::Serve,
+            &json!({"clone": {"cancelled": false}}),
+        )
+        .await;
         let seen = Rc::new(RefCell::new(Vec::new()));
         let record = Rc::clone(&seen);
         let _remove = client.on_event(Rc::new(move |event: &Value| {
@@ -405,17 +418,8 @@ fn clone_round_trip_uses_the_active_branch_command() {
 #[test]
 fn responses_correlate_out_of_order() {
     let peer = Peer::new();
-    let reversed = r"
-lines = commands()
-first, second = json.loads(next(lines)), json.loads(next(lines))
-respond(second, {'path': 'second.html'})
-respond(first, {'cancelled': True})
-respond(first, {'cancelled': False})
-emit({'type': 'done'})
-sys.stdin.read()
-";
     on_task_set(|_| async {
-        let client = started(&peer, reversed, &json!({})).await;
+        let client = started(&peer, Scenario::Reversed, &json!({})).await;
         let mut events = events(&client);
         let (cloned, exported) = tokio::join!(client.clone(), client.export_html(None));
         assert!(cloned.unwrap().cancelled);
@@ -433,18 +437,8 @@ sys.stdin.read()
 #[test]
 fn pending_calls_ignore_null_and_malformed_lines_before_a_matching_reply() {
     let peer = Peer::new();
-    let delayed = r"
-lines = commands()
-state = json.loads(next(lines))
-sys.stdout.write('null\n{not json\n'); sys.stdout.flush()
-emit({'type': 'barrier'})
-abort = json.loads(next(lines))
-respond(state, {'thinkingLevel': 'off', 'isStreaming': False, 'isCompacting': False, 'steeringMode': 'all', 'followUpMode': 'all', 'sessionId': 's', 'autoCompactionEnabled': False, 'messageCount': 0, 'pendingMessageCount': 0})
-respond(abort)
-sys.stdin.read()
-";
     on_task_set(|_| async {
-        let client = started(&peer, delayed, &json!({})).await;
+        let client = started(&peer, Scenario::Malformed, &json!({})).await;
         let mut events = events(&client);
         let mut state = pin!(client.get_state());
         assert!(poll_once(state.as_mut()).is_pending());
@@ -472,9 +466,8 @@ fn unmatched_and_nonresponse_values_reach_listeners() {
         json!({"type": "message_update", "nested": {"deep": [1, {"x": null}]}}),
         json!({"type": "done"}),
     ];
-    let script = "for record in json.loads(os.environ['PEER_RECORDS']):\n    sys.stdout.write('null\\n')\n    emit(record)\nsys.stdin.read()";
     on_task_set(|_| async {
-        let mut options = peer.options(script);
+        let mut options = peer.options(Scenario::Records);
         options
             .env
             .insert("PEER_RECORDS".into(), json!(records).to_string());
@@ -491,18 +484,20 @@ fn unmatched_and_nonresponse_values_reach_listeners() {
 #[test]
 fn fragmented_utf8_and_jsonl_tails_keep_records() {
     let peer = Peer::new();
-    let fragments = r#"
-for chunk in [b'{"type":"a","text":"\xc3', b'\xa9\xf0\x9f', b'\x99\x82"}\r',
-              b'\n{"type":"b","text":"\xe2\x80\xa8\xe2\x80\xa9"}\n{"type":"c"}\n{"type":',
-              b'"tail"}']:
-    os.write(1, chunk); time.sleep(0.01)
-os.close(1)
-sys.stdin.read()
-"#;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(fragments));
+        let client = RpcClient::new(peer.options(Scenario::Fragments));
         let mut events = events(&client);
         client.start().await.unwrap();
+        let control = peer.control();
+        let writing = std::thread::spawn(move || {
+            let mut control = std::io::BufReader::new(control);
+            for _ in 0..5 {
+                let mut acknowledgement = String::new();
+                std::io::BufRead::read_line(&mut control, &mut acknowledgement).unwrap();
+                assert_eq!(acknowledgement, "written\n");
+                release_peer(control.get_mut());
+            }
+        });
         for expected in [
             json!({"type": "a", "text": "\u{e9}\u{1f642}"}),
             json!({"type": "b", "text": "\u{2028}\u{2029}"}),
@@ -511,6 +506,7 @@ sys.stdin.read()
         ] {
             assert_eq!(events.recv().await.unwrap(), expected);
         }
+        writing.join().unwrap();
         client.stop().await.unwrap();
     });
 }

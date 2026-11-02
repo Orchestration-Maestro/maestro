@@ -10,7 +10,7 @@
       "op": "instruction"
     },
     "expected": {
-      "value": "Run: npm --prefix /opt/tool install -g @old/agent"
+      "value": "Run: npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
     },
     "trace": []
   },
@@ -26,7 +26,7 @@
       "op": "instruction"
     },
     "expected": {
-      "value": "Run: pnpm install -g @old/agent"
+      "value": "Run: pnpm install -g --ignore-scripts @old/agent"
     },
     "trace": []
   },
@@ -42,7 +42,7 @@
       "op": "instruction"
     },
     "expected": {
-      "value": "Run: yarn global add @old/agent"
+      "value": "Run: yarn global add --ignore-scripts @old/agent"
     },
     "trace": []
   },
@@ -58,7 +58,7 @@
       "op": "instruction"
     },
     "expected": {
-      "value": "Run: bun install -g @old/agent"
+      "value": "Run: bun install -g --ignore-scripts @old/agent"
     },
     "trace": []
   },
