@@ -221,6 +221,15 @@ fn options() -> crate::StreamOptions {
     }
 }
 
+/// Supplies default simple options with the shared subscription credentials.
+fn default_options() -> crate::StreamOptionsInput {
+    crate::SimpleStreamOptions {
+        common: options(),
+        ..crate::SimpleStreamOptions::default()
+    }
+    .into()
+}
+
 /// Supplies the shared subscription credentials with a caller's cancellation signal.
 fn with_signal(signal: crate::AbortSignal) -> crate::StreamOptionsInput {
     crate::SimpleStreamOptions {
@@ -503,11 +512,7 @@ fn custom_message_provider_keeps_last_tool_arguments_when_truncated() -> Extensi
 
         let (output, result) = stream(
             &host,
-            crate::SimpleStreamOptions {
-                common: options(),
-                ..crate::SimpleStreamOptions::default()
-            }
-            .into(),
+            default_options(),
         )?;
 
         let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
@@ -638,11 +643,7 @@ fn custom_message_provider_stream_failure_keeps_status_when_body_fails() -> Exte
     let host = Controlled::default();
     host.observe().native_http.status = 503;
     host.observe().native_http.read_error = Some("body interrupted".into());
-    let options = crate::SimpleStreamOptions {
-        common: options(),
-        ..crate::SimpleStreamOptions::default()
-    };
-    let (_, result) = stream(&host, options.into())?;
+    let (_, result) = stream(&host, default_options())?;
     let value = serde_json::to_value(&*result.read().unwrap()).unwrap();
     assert_eq!(value["stopReason"], "error");
     assert_eq!(value["errorMessage"], "HTTP 503 body interrupted");

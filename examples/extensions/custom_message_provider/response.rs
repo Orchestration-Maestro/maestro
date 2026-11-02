@@ -9,7 +9,7 @@ use maestro_extensions_wasm::{
 use serde_json::Value;
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock, RwLockWriteGuard},
 };
 
 /// The native content position and unfinished JSON for one open wire block.
@@ -110,10 +110,7 @@ impl ResponseState {
             "content_block_stop" => self.end(event),
             "message_delta" => {
                 if let Some(reason) = event["delta"]["stop_reason"].as_str() {
-                    self.output
-                        .write()
-                        .map_err(|_| "Assistant message lock poisoned")?
-                        .stop_reason = match reason {
+                    write(&self.output)?.stop_reason = match reason {
                         "end_turn" | "pause_turn" | "stop_sequence" => StopReason::Stop,
                         "max_tokens" => StopReason::Length,
                         "tool_use" => StopReason::ToolUse,
@@ -136,10 +133,7 @@ impl ResponseState {
 
     /// Updates only usage fields the event actually supplies.
     fn usage(&self, incoming: &Value) -> ExtensionResult<()> {
-        let mut output = self
-            .output
-            .write()
-            .map_err(|_| "Assistant message lock poisoned")?;
+        let mut output = write(&self.output)?;
         let usage = &mut output.usage;
         for (name, count) in [
             ("input_tokens", &mut usage.input),
@@ -161,10 +155,7 @@ impl ResponseState {
     fn start(&mut self, event: &Value) -> ExtensionResult<()> {
         let wire = wire_index(event)?;
         let block = &event["content_block"];
-        let mut output = self
-            .output
-            .write()
-            .map_err(|_| "Assistant message lock poisoned")?;
+        let mut output = write(&self.output)?;
         let index = output.content.len();
         let partial = Arc::clone(&self.output);
         let start = match block["type"].as_str().unwrap_or_default() {
@@ -242,10 +233,7 @@ impl ResponseState {
         match delta["type"].as_str().unwrap_or_default() {
             "text_delta" | "thinking_delta" => self.append(index, delta),
             "signature_delta" => {
-                let mut output = self
-                    .output
-                    .write()
-                    .map_err(|_| "Assistant message lock poisoned")?;
+                let mut output = write(&self.output)?;
                 if let Some(AssistantContent::Thinking(thinking)) = output.content.get_mut(index) {
                     thinking
                         .thinking_signature
@@ -262,10 +250,7 @@ impl ResponseState {
     /// Appends text before publishing the corresponding delta.
     fn append(&self, index: usize, incoming: &Value) -> ExtensionResult<()> {
         let update = {
-            let mut output = self
-                .output
-                .write()
-                .map_err(|_| "Assistant message lock poisoned")?;
+            let mut output = write(&self.output)?;
             let partial = Arc::clone(&self.output);
             match (incoming["type"].as_str(), output.content.get_mut(index)) {
                 (Some("text_delta"), Some(AssistantContent::Text(text))) => {
@@ -299,10 +284,7 @@ impl ResponseState {
         };
         let delta = field(incoming, "partial_json")?;
         json.push_str(&delta);
-        let mut output = self
-            .output
-            .write()
-            .map_err(|_| "Assistant message lock poisoned")?;
+        let mut output = write(&self.output)?;
         if let Some(AssistantContent::ToolCall(tool)) = output.content.get_mut(*index)
             && let Ok(arguments) = serde_json::from_str(json)
         {
@@ -380,10 +362,7 @@ impl ResponseState {
     /// Retains partial content when the request fails.
     fn fail(&self, error: String, reason: ErrorReason) -> ExtensionResult<()> {
         {
-            let mut output = self
-                .output
-                .write()
-                .map_err(|_| "Assistant message lock poisoned")?;
+            let mut output = write(&self.output)?;
             output.stop_reason = match &reason {
                 ErrorReason::Error => StopReason::Error,
                 ErrorReason::Aborted => StopReason::Aborted,
@@ -396,6 +375,15 @@ impl ResponseState {
         })?;
         self.stream.end(None)
     }
+}
+
+/// Borrows the shared message for mutation, reporting poisoned locks to the caller.
+fn write(
+    output: &SharedAssistantMessage,
+) -> ExtensionResult<RwLockWriteGuard<'_, AssistantMessage>> {
+    output
+        .write()
+        .map_err(|_| "Assistant message lock poisoned".into())
 }
 
 /// Requires a nonnegative integral wire index before indexing retained blocks.

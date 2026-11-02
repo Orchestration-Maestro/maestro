@@ -1,6 +1,16 @@
 //! Client retry policy observed through the existing controlled native transport.
 use super::*;
 
+/// Reads only native waits from the controlled host's transcript.
+fn waits(observed: &super::super::observed::Observed) -> Vec<&str> {
+    observed
+        .transcript
+        .iter()
+        .filter(|line| line.starts_with("native-wait"))
+        .map(String::as_str)
+        .collect()
+}
+
 #[test]
 fn custom_message_provider_retries_only_transient_failures_twice() -> ExtensionResult<()> {
     for (status, hint, attempts) in [
@@ -22,11 +32,7 @@ fn custom_message_provider_retries_only_transient_failures_twice() -> ExtensionR
 
         let (_, result) = stream(
             &host,
-            crate::SimpleStreamOptions {
-                common: options(),
-                ..crate::SimpleStreamOptions::default()
-            }
-            .into(),
+            default_options(),
         )?;
 
         let observed = host.observed();
@@ -44,14 +50,8 @@ fn custom_message_provider_retries_only_transient_failures_twice() -> ExtensionR
                 crate::StopReason::Error
             }
         );
-        let waits = observed
-            .transcript
-            .iter()
-            .filter(|line| line.starts_with("native-wait"))
-            .cloned()
-            .collect::<Vec<_>>();
         assert_eq!(
-            waits,
+            waits(&observed),
             if attempts == 3 {
                 vec!["native-wait 0 500000000", "native-wait 1 0"]
             } else {
@@ -69,11 +69,7 @@ fn custom_message_provider_retries_connection_errors_twice() -> ExtensionResult<
 
     let (_, result) = stream(
         &host,
-        crate::SimpleStreamOptions {
-            common: options(),
-            ..crate::SimpleStreamOptions::default()
-        }
-        .into(),
+        default_options(),
     )?;
 
     assert_eq!(host.observed().native_http.requests.len(), 3);
@@ -146,22 +142,13 @@ fn check_retry_hint(
 
     stream_provider(
         &provider,
-        crate::SimpleStreamOptions {
-            common: options(),
-            ..crate::SimpleStreamOptions::default()
-        }
-        .into(),
+        default_options(),
     )?;
 
     let observed = host.observed();
     assert_eq!(observed.native_http.requests.len(), 3);
     assert_eq!(
-        observed
-            .transcript
-            .iter()
-            .filter(|line| line.starts_with("native-wait"))
-            .map(String::as_str)
-            .collect::<Vec<_>>(),
+        waits(&observed),
         expected
     );
     Ok(())
@@ -258,12 +245,7 @@ fn custom_message_provider_times_out_headers_after_ten_minutes_and_retries() -> 
         "caller forwarding must be removed"
     );
     assert_eq!(
-        observed
-            .transcript
-            .iter()
-            .filter(|line| line.starts_with("native-wait"))
-            .map(String::as_str)
-            .collect::<Vec<_>>(),
+        waits(&observed),
         ["native-wait 600 0", "native-wait 0 500000000"]
     );
     Ok(())
