@@ -235,7 +235,10 @@ async fn dispatch<E: ProviderExecution>(
     }
     let mut started = false;
     match invoke_socket(prepared, model, options, (output, events), &mut started).await {
-        Ok(()) => return Ok(()),
+        Ok(()) => {
+            super::debug::record_web_socket_completion(session);
+            return Ok(());
+        }
         Err(super::CodexError::Transport(error))
             if !options
                 .common
