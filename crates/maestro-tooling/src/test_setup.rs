@@ -139,13 +139,12 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     build_example(cargo, checkout, target, "dev")?;
     let name = executable(EXAMPLE, EXE_EXTENSION);
     let example = target.join("debug/examples").join(&name);
+    let cache_directory =
+        compiled_code::directory(&mut preparation_command(checkout, &example, target))?;
     let (supplied, seeded) = match &base {
         Some(base) => (
             base.supplied(checkout)?,
-            base.seed(
-                &compiled_code::directory(&mut preparation_command(checkout, &example, target))?,
-                &example,
-            )?,
+            base.seed(&cache_directory, &example)?,
         ),
         None => (Vec::new(), None),
     };
@@ -172,7 +171,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     }
     remove_directory(&output.join(COMPILED))?;
     let compiled = CompiledCode::collect(
-        &compiled_code::directory(&mut preparation_command(checkout, &example, target))?,
+        &cache_directory,
         &example,
         &output.join(COMPILED),
         seeded.as_deref(),

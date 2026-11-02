@@ -343,20 +343,11 @@ fn archived_author_setup_aligns_executable_times() {
     }
 }
 
-/// How a shard's `HOME` is set: left to the fixture's `XDG_CACHE_HOME`, absolute or relative.
-#[derive(Clone, Copy)]
-enum Home {
-    Unset,
-    Absolute,
-    Relative,
-}
-
 /// The bundle carries the code the setup example compiled, and a shard installs it for the
 /// modification time its executables share, in the directory the example reports.
-/// A relative `HOME` without an absolute XDG cache stops setup before cache installation.
 #[test]
 fn archived_author_setup_installs_the_prepared_compiled_code() {
-    for home in [Home::Unset, Home::Absolute, Home::Relative] {
+    for home in [None, Some("home")] {
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         fixture(root);
@@ -365,25 +356,11 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
         assert!(!staged.join("key.stats").exists());
         let mut command = export_command(root, &root.join("target/test-setup"), true);
-        let value = match home {
-            Home::Unset => None,
-            Home::Absolute => Some(root.join("home")),
-            Home::Relative => Some(PathBuf::from("home")),
-        };
+        let value = home.map(|home| root.join(home));
         if let Some(value) = &value {
             command.env_remove("XDG_CACHE_HOME").env("HOME", value);
         }
         let output = command.output().unwrap();
-        if matches!(home, Home::Relative) {
-            assert!(!output.status.success());
-            assert!(
-                String::from_utf8_lossy(&output.stderr).contains("cache directory query failed")
-            );
-            assert!(!root.join("nextest-env").exists());
-            assert!(!root.join("home").exists());
-            assert!(!root.join("cache-home").exists());
-            continue;
-        }
         assert_success(&output);
         let cache = value.map_or_else(|| root.join("cache-home"), |home| home.join(".cache"));
         let milliseconds =
@@ -401,6 +378,25 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         );
         assert!(!installed.join("key.stats").exists());
     }
+}
+
+/// A relative `HOME` without an absolute XDG cache stops setup before cache installation.
+#[test]
+fn relative_home_stops_author_setup_before_installation() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let mut command = export_command(root, &root.join("target/test-setup"), true);
+    command.env_remove("XDG_CACHE_HOME").env("HOME", "home");
+
+    let output = command.output().unwrap();
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("cache directory query failed"));
+    assert!(!root.join("nextest-env").exists());
+    assert!(!root.join("home").exists());
+    assert!(!root.join("cache-home").exists());
 }
 
 /// An archived shard that is given no output directory reads the bundle at `target/test-setup`.

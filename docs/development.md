@@ -795,15 +795,15 @@ records it in the bundle manifest, so a shard validates the same files without C
 preparation fingerprints is not matched or a pattern names anything else, so a new
 dependency of a built crate needs its pattern. Markdown that crates embed only as
 documentation changes no staged file, so no pattern names it. The command runs the existing
-component-discovery example from a separate build directory with a user cache of its own, then stages the
-component files, the compiled code the example left in that cache, that built example,
+component-discovery example from a separate build directory, then stages the
+component files, the compiled code the example left in the engine's cache, that built example,
 the browser graph described under [Browser author build](#browser-author-build), the
 development tool itself and a content manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
 namespace that does not end in that time or on more than one. The setup example's
 `--cache-directory` mode reports the engine's selected cache directory as one absolute
-JSON path without building or warming components. Preparation queries that directory on
-its host after warming; installation queries it again on the test host. A failed query,
+JSON path without building or warming components. Preparation queries that directory once
+on its host before seeding or warming; installation queries it again on the test host. A failed query,
 empty reply or nonabsolute path stops setup. Host paths are not stored in the bundle.
 `XDG_CACHE_HOME` still isolates preparation's Linux cache under its target directory;
 Windows and macOS use the locations the engine reports. Shared CI transfers

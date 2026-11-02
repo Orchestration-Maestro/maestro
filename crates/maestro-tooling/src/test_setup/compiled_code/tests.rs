@@ -19,7 +19,11 @@ fn cache_directory_reply_requires_one_absolute_path() {
         b"null",
         b"[]",
     ] {
-        assert!(reported_directory(reply).is_err(), "reply: {reply:?}");
+        let error = reported_directory(reply).unwrap_err().to_string();
+        assert!(
+            error.contains("cache directory"),
+            "reply: {reply:?}: {error}"
+        );
     }
 }
 

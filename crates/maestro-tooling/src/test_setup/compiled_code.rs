@@ -145,7 +145,8 @@ pub(super) fn directory(command: &mut Command) -> io::Result<PathBuf> {
 
 /// Parse the engine's JSON reply as exactly one absolute native path.
 fn reported_directory(reply: &[u8]) -> io::Result<PathBuf> {
-    let directory: PathBuf = serde_json::from_slice(reply).map_err(io::Error::other)?;
+    let directory: PathBuf = serde_json::from_slice(reply)
+        .map_err(|error| io::Error::other(format!("cache directory reply: {error}")))?;
     if !directory.is_absolute() {
         return Err(io::Error::other(
             "the engine cache directory must be absolute",
@@ -153,9 +154,6 @@ fn reported_directory(reply: &[u8]) -> io::Result<PathBuf> {
     }
     Ok(directory)
 }
-
-#[cfg(test)]
-mod tests;
 
 /// The directories directly under `parent`, none when it does not exist.
 fn directories(parent: &Path) -> io::Result<Vec<PathBuf>> {
@@ -183,3 +181,6 @@ fn milliseconds(path: &Path) -> io::Result<u128> {
         .map(|time| time.as_millis())
         .map_err(|error| at(path, &error))
 }
+
+#[cfg(test)]
+mod tests;

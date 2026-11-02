@@ -78,19 +78,12 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
 
 /// Resolve the fixture's absolute XDG or home-based cache without creating it during a query.
 fn cache_directory() -> io::Result<PathBuf> {
-    if let Some(cache) = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-    {
-        return Ok(cache.join("wasmtime"));
-    }
-    let home = PathBuf::from(
-        std::env::var_os("HOME").ok_or_else(|| io::Error::other("missing fixture cache home"))?,
-    );
-    if !home.is_absolute() {
+    let cache = maestro_test_process::user_cache_home()
+        .ok_or_else(|| io::Error::other("missing fixture cache home"))?;
+    if !cache.is_absolute() {
         return Err(io::Error::other("fixture cache home must be absolute"));
     }
-    Ok(home.join(".cache/wasmtime"))
+    Ok(cache.join("wasmtime"))
 }
 
 /// Export the ordinary fixed components, retaining prebuilt values where the scenario uses them.
