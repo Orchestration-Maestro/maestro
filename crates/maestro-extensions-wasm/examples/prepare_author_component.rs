@@ -2,7 +2,8 @@
 //!
 //! Nextest runs this example from the test run's own build output, so preparing the components
 //! compiles no second host. It builds the components in one Cargo invocation, warms their
-//! compilation cache and exports every component's path to the tests.
+//! compilation cache and exports every component's path to the tests. With `--cache-directory`,
+//! it writes the engine's native cache directory as one JSON path and performs no preparation.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -21,9 +22,25 @@ use build::cargo::components;
 #[path = "../../maestro-tooling/src/example_files/preparation.rs"]
 mod example_files;
 
-/// Builds the components in one Cargo invocation, warms their compilation cache, then hands their
-/// paths to nextest's environment file.
+/// Reports the native engine cache directory or prepares the components for nextest.
 fn main() -> Result<(), String> {
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    match arguments.as_slice() {
+        [] => prepare(),
+        [argument] if argument == "--cache-directory" => {
+            let cache = wasmtime::Cache::from_file(None).map_err(|error| error.to_string())?;
+            println!(
+                "{}",
+                serde_json::to_string(cache.directory()).map_err(|error| error.to_string())?
+            );
+            Ok(())
+        }
+        _ => Err("unknown component preparation arguments".into()),
+    }
+}
+
+/// Builds the components, warms their cache and writes their paths to nextest's environment file.
+fn prepare() -> Result<(), String> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let folders = [
         root.join("examples"),

@@ -771,14 +771,19 @@ component files, the compiled code the example left in that cache, that built ex
 the browser graph described under [Browser author build](#browser-author-build), the
 development tool itself and a content manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
-namespace that does not end in that time or on more than one, and stages none when the host
-keeps its cache elsewhere. Shared CI transfers
+namespace that does not end in that time or on more than one. The setup example's
+`--cache-directory` mode reports the engine's selected cache directory as one absolute
+JSON path without building or warming components. Preparation queries that directory on
+its host after warming; installation queries it again on the test host. A failed query,
+empty reply or nonabsolute path stops setup. Host paths are not stored in the bundle.
+`XDG_CACHE_HOME` still isolates preparation's Linux cache under its target directory;
+Windows and macOS use the locations the engine reports. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
 compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
-modification time that copy of the example has, and writes the component paths to
+installs the compiled code in the engine-reported cache under the modification time that
+copy of the example has, and writes the component paths to
 `NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
