@@ -2,9 +2,8 @@
 
 use std::ffi::{OsStr, OsString};
 use std::io::{self, Read, Write};
+use std::os::unix::net::UnixStream;
 use std::os::unix::process::CommandExt;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use maestro_test_process::child::{leave, read_input, variable, write_stderr, write_stdout};
 use rustix::process::{Signal, getpid, kill_process};
@@ -369,23 +368,21 @@ impl Hold {
         if let Some(append) = &self.append {
             append_to(append)?;
         }
-        if let (Some(flag), Some(terminate)) = (termination.as_ref(), &self.terminate) {
-            // The terminating signal sets the flag; yielding keeps this wait cheap.
-            while !flag.load(Ordering::SeqCst) {
-                std::thread::yield_now();
-            }
+        if let (Some(mut signal), Some(terminate)) = (termination, &self.terminate) {
+            // The handler writes into the pipe, so this wait blocks until SIGTERM arrives.
+            signal.read_exact(&mut [0; 1])?;
             append_to(terminate)?;
         }
         leave(0)
     }
 }
 
-/// A flag this process's terminator sets when it sends SIGTERM.
-fn termination() -> io::Result<Arc<AtomicBool>> {
-    let flag = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&flag))
+/// A read end that becomes readable when this process's SIGTERM handler writes one byte.
+fn termination() -> io::Result<UnixStream> {
+    let (reader, writer) = UnixStream::pair()?;
+    signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)
         .map_err(io::Error::other)?;
-    Ok(flag)
+    Ok(reader)
 }
 
 /// Blocks until the test writes one byte, which is the only release a gate waits for.
