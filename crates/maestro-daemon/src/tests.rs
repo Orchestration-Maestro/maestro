@@ -10,3 +10,14 @@ pub(crate) fn block_on<T>(future: impl Future<Output = T>) -> T {
         .unwrap()
         .block_on(future)
 }
+
+thread_local! {
+    /// Resolution and reorder visits on the current test's thread.
+    pub(crate) static WORKSPACE_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Counts a workspace resolution or reorder visit without affecting production builds.
+#[cfg(target_os = "linux")]
+pub(crate) fn record_workspace_work() {
+    WORKSPACE_WORK.set(WORKSPACE_WORK.get() + 1);
+}

@@ -1,5 +1,6 @@
 //! Shared daemon state admission and invariant observations.
 
+pub mod api;
 pub mod launch;
 pub mod runtime;
 

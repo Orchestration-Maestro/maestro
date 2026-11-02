@@ -1089,8 +1089,9 @@ fn responses_can_finish_out_of_order() {
     });
 }
 
-/// A recognized command with members of the wrong kind keeps its id and type and answers
-/// the decoder's failure; a wrong-kind id is dropped.
+/// A recognized session command with members of the wrong kind keeps its id and type and
+/// answers the decoder's failure; a wrong-kind id is dropped. A recognized workspace command
+/// answers in the workspace envelope, with an empty id and `invalid_request`.
 #[test]
 fn recognized_invalid_fields_keep_correlation() {
     on_task_set(|_| async {
@@ -1124,8 +1125,9 @@ fn recognized_invalid_fields_keep_correlation() {
             ),
             (
                 r#"{"id":"w","type":"workspace.get"}"#,
-                json!({"id": "w", "type": "response", "command": "workspace.get",
-                    "success": false, "error": "missing field `workspace_id`"}),
+                json!({"id": "", "type": "response", "command": "workspace.get",
+                    "success": false, "error": "invalid request: missing field `workspace_id`",
+                    "code": "invalid_request"}),
             ),
         ] {
             assert_eq!(client.ask(line).await, expected, "{line}");
