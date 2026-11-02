@@ -602,6 +602,13 @@ The workflow scans each push to `main` and runs every Monday at 04:17 UTC on
 GitHub-hosted Linux. It covers Actions, JavaScript/TypeScript and Rust with the
 default query suite. Pull requests and merge groups start no scan.
 
+The Rust scan excludes `crates/*/tests/**` through its matrix configuration's
+`paths-ignore` setting. Assertion diagnostics in those directories format
+controlled fixture values, not credentials. Keep those assertions and
+diagnostics intact. Rust files outside those test directories,
+including production code, examples and unit tests under `src`, retain the default
+queries. Actions and JavaScript/TypeScript scans have no path exclusions.
+
 CodeQL is advisory: no ruleset requires its checks. Scan failures and alerts
 remain visible in GitHub but do not block the merge queue.
 

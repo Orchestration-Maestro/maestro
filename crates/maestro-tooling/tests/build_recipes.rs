@@ -1872,4 +1872,19 @@ fn maestro_codeql_scans_only_main_and_weekly() {
         languages.len()
     );
     assert!(!workflow.contains("queries:"));
+    let rust = workflow
+        .split("          - language: rust\n")
+        .nth(1)
+        .unwrap()
+        .split("    steps:\n")
+        .next()
+        .unwrap();
+    assert_eq!(
+        rust,
+        "            build-mode: none\n            config: |\n              paths-ignore:\n                - crates/*/tests/**\n"
+    );
+    assert!(workflow.contains("          config: ${{ matrix.config }}\n"));
+    assert_eq!(workflow.matches("paths-ignore:").count(), 1);
+    assert!(!workflow.contains("disable-default-queries"));
+    assert!(!workflow.contains("query-filters:"));
 }
