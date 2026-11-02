@@ -575,7 +575,7 @@ fn local_bash_sink_uses_native_child_waiter() {
     use std::io::Write;
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
-    let root = crate::read_support::Scratch::new().unwrap();
+    let (root, _parent) = crate::read_support::spaced_scratch();
     crate::runtime::run(async {
         let tool = maestro_tools::local::create_bash_tool_definition::<()>(
             root.text(),
@@ -592,7 +592,7 @@ fn local_bash_sink_uses_native_child_waiter() {
             "exchange",
             &json!({"scenario": "exchange", "port": port}),
         );
-        let command = payload.to_str().unwrap().to_owned();
+        let command = crate::read_support::shell_operand(&payload);
         let mut future = (tool.execute)(
             "id".into(),
             maestro_tools::BashToolInput {

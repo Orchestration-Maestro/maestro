@@ -291,11 +291,16 @@ fn exec_timeout_is_opt_in_and_released_after_completion() {
             signal: None,
             timeout: Some(Duration::from_millis(50)),
         };
+        let started = std::time::Instant::now();
         let result = run(&waiting, &[], options).await;
         assert_eq!(
             (result.code, result.killed),
             (0, true),
             "positive timeout terminates"
+        );
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "the child finished after one termination request, without the escalation"
         );
     });
 }

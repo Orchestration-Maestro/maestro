@@ -180,15 +180,14 @@ pub(super) fn tree_leaf(port: u16) -> io::Result<()> {
     receive(&mut socket).map(|_| ())
 }
 
-/// Wait for a termination signal without polling or a deadline.
+/// Finish after one termination signal, without polling or a deadline.
 pub(super) fn blocked() -> io::Result<()> {
     use std::os::unix::net::UnixStream;
     let (mut notifications, writer) = UnixStream::pair()?;
     let _registration =
         signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
     let mut byte = [0];
-    while notifications.read(&mut byte)? == 1 {}
-    Ok(())
+    notifications.read_exact(&mut byte)
 }
 
 /// Write grace bytes into another process's output descriptor.

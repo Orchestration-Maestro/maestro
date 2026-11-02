@@ -444,6 +444,21 @@ pub fn payload(root: &std::path::Path, name: &str, record: &Value) -> std::path:
     program
 }
 
+/// A scratch root whose own path holds a space, with the owner that created it.
+#[cfg(unix)]
+pub fn spaced_scratch() -> (Scratch, Scratch) {
+    let parent = Scratch::new().unwrap();
+    let spaced = parent.path().join("spaced dir");
+    std::fs::create_dir(&spaced).unwrap();
+    (Scratch::new_in(&spaced).unwrap(), parent)
+}
+
+/// The text of `path` as one shell operand, quoting an embedded apostrophe.
+#[cfg(unix)]
+pub fn shell_operand(path: &std::path::Path) -> String {
+    format!("'{}'", path.to_str().unwrap().replace('\'', "'\\''"))
+}
+
 /// Install a process that writes grace bytes into `pid`'s output descriptor.
 #[cfg(target_os = "linux")]
 pub fn grace_holder(root: &std::path::Path, pid: u32) -> std::path::PathBuf {

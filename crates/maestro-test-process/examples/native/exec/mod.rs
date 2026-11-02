@@ -62,7 +62,7 @@ pub(super) enum Record {
         /// Parent-owned control channel.
         port: u16,
     },
-    /// Wait for a termination signal without polling or a deadline.
+    /// Finish after one termination signal, without polling or a deadline.
     Blocked {},
     /// Write grace bytes into another process's output descriptor.
     Grace {

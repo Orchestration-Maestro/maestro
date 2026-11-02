@@ -358,7 +358,7 @@ fn local_bash_errors_keep_exact_authored_messages() {
 #[test]
 fn local_bash_has_its_own_session_and_process_group() {
     run(async {
-        let root = Scratch::new().unwrap();
+        let (root, _parent) = read_support::spaced_scratch();
         let identity =
             read_support::payload(root.path(), "identity", &json!({"scenario": "identity"}));
         let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
@@ -369,7 +369,7 @@ fn local_bash_has_its_own_session_and_process_group() {
                 // Not every `ps` names the session column, so the payload reads both ids.
                 &format!(
                     "printf '%s\\n' \"$$\"; {}; if ( : </dev/tty ) 2>/dev/null; then exit 9; fi",
-                    identity.display()
+                    read_support::shell_operand(&identity)
                 ),
                 "/",
                 BashExecOptions {
