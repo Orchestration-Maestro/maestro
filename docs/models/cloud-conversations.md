@@ -149,7 +149,7 @@ with placeholder credentials and ignores both bearer sources, which is for proxi
 authenticate; any other value of that variable has no effect. No `api_key` is read.
 
 Login refresh, role assumption, web identity, SSO credentials and named-session OIDC refresh use
-conversation routing, including a supplied sender and [destination-specific proxy selection](#proxy-routing).
+conversation routing, including a supplied sender and [the conversation's proxy](#proxy-routing).
 Container and instance metadata stay direct, including named role sources, and do not use the
 supplied sender. Default connectors retain connection pools by SDK timeout settings and apply the SDK's
 connection and response-header deadlines, not a body-read deadline;
@@ -157,15 +157,17 @@ a supplied sender retains its own timeout policy.
 
 ## Proxy routing
 
-Proxying is on when any of `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` or their lowercase spellings
-is nonempty. Then the proxy of each destination is the first nonempty of
+The proxy is chosen once for each request, from the model's base URL: the first nonempty of
 `npm_config_<scheme>_proxy`, `<scheme>_proxy`, `npm_config_proxy` and `all_proxy`, each read as
-its lowercase spelling and then its uppercase one. A proxy written without a scheme takes the
-destination's scheme. The first nonempty of `npm_config_no_proxy` and `no_proxy`, read the same
-way, excludes destinations from proxying: `*` excludes all, `host` that host only, `.suffix` and
-`*suffix` hosts ending so, and a `:port` limits an entry; entries are separated by commas or
-JavaScript whitespace. With proxying off, no proxy is used whatever other variables say. A proxy
-or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection speak HTTP/1 only. HTTP and HTTPS proxies
+its lowercase spelling and then its uppercase one, where the scheme is the base URL's. A proxy
+written without a scheme takes the base URL's scheme. The first nonempty of
+`npm_config_no_proxy` and `no_proxy`, read the same way, excludes base URLs from proxying: `*`
+excludes all, `host` that host only, `.suffix` and `*suffix` hosts ending so, and a `:port`
+limits an entry; entries are separated by commas or JavaScript whitespace. A base URL that does
+not parse, or has no host, chooses no proxy; one the exclusion list leaves out reads no proxy
+variable. The chosen proxy then carries every request the conversation's client sends, whatever
+its destination. A chosen proxy or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection
+speak HTTP/1 only; without either, the default client is used. HTTP and HTTPS proxies
 are supported, as are `socks`, `socks4`, `socks4a`, `socks5` and `socks5h`. `socks4` and
 `socks5` resolve destination names locally; the other SOCKS schemes send names to the proxy.
 SOCKS4 sends IPv6 destinations as names; SOCKS5 retains their address family.
@@ -181,14 +183,13 @@ after local destination lookup and before destination TLS. Each SOCKS request ow
 connection through response-body consumption; cancellation or a header deadline closes
 pending connection work. Request preparation and response conversion use the
 [shared HTTP transport](chat-completions.md#transport).
-A selected proxy that is not a URL or has an unsupported scheme ends the stream with an error
-before the destination is contacted; a destination the exclusion list leaves out never reads
-its proxy. The default sender returns redirects without following them.
+A chosen proxy that is not a URL or has an unsupported scheme ends the stream with an error
+before any connection is made. The default sender returns redirects without following them.
 
 ### Proxy scripts
 
-A selected `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
-proxy script instead of opening a direct destination connection. Both opaque
+A chosen `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
+proxy script for the conversation instead of opening direct destination connections. Both opaque
 `pac+data:,script` and hierarchical `pac+data://,script` spellings are accepted.
 The script receives the complete destination URL and its canonical host, including
 a nondefault port in the URL, before choosing ordered DIRECT, HTTP, HTTPS or SOCKS

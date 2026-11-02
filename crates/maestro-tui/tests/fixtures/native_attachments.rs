@@ -155,23 +155,19 @@ pub(crate) async fn native_cases(group: &str) {
     }
 }
 
-/// An owned child script, invoked directly without adapter shell interpolation.
+/// Install the prepared native fixture as one controlled completion child.
 ///
-/// The executable is created by a child `install`, so this process never holds a
-/// writable descriptor to a file it later runs (a concurrent fork would otherwise
-/// make `exec` fail with "Text file busy").
+/// The sibling record selects a finite search-family scenario, so the executable
+/// receives no adapter shell interpolation and no interpreted program.
 #[cfg(unix)]
-pub(crate) fn child_script(tree: &Tree, source: &str) -> String {
-    let text = tree.path().join("child.py");
-    let path = tree.path().join("child");
-    std::fs::write(&text, format!("#!/usr/bin/env python3\n{source}\n")).unwrap();
-    let status = std::process::Command::new("install")
-        .args(["-m", "0700"])
-        .arg(&text)
-        .arg(&path)
-        .status()
-        .unwrap();
-    assert!(status.success());
+pub(crate) fn child(tree: &Tree, name: &str, record: &serde_json::Value) -> String {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
+    let path = tree.path().join(name);
+    let mut sibling = path.as_os_str().to_owned();
+    sibling.push(".fixture");
+    std::fs::write(sibling, format!("search\n{record}")).unwrap();
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &path).unwrap();
     path.to_str().unwrap().into()
 }
 
