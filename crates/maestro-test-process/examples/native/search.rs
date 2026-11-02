@@ -178,7 +178,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     }
 }
 
-/// Discovery only cares whether a native program could be launched, not its version status.
+/// Logs operands, requires `--version`, writes supplied bytes and exits with the supplied status.
 fn probe(
     log: Option<&str>,
     name: &str,

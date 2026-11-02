@@ -17,13 +17,13 @@ use std::{
 use tokio::io::AsyncReadExt;
 
 /// Install a native probe that records its literal version operands.
-fn probe(root: &Path, name: &str, code: i32) {
+fn probe(root: &Path, name: &str, stdout: &[u8], code: i32) {
     crate::find_support::alias(
         root,
         name,
         &serde_json::json!({
             "scenario":"probe", "log":root.join("probes.log"), "name":name,
-            "stdout":[], "code":code
+            "stdout":stdout, "code":code
         }),
     );
 }
@@ -286,24 +286,17 @@ fn offline_flag_stops_a_missing_install_with_advice() {
 /// Configure one ordered probe scenario.
 fn probe_aliases(root: &Path, mode: &str) {
     match mode {
-        "alias" => probe(root, "fdfind", 0),
+        "alias" => probe(root, "fdfind", &[], 0),
         "failed-fd" | "fd" | "entries" => {
-            probe(root, "fd", if mode == "fd" { 0 } else { 7 });
-            probe(root, "fdfind", 0);
+            probe(root, "fd", &[], if mode == "fd" { 0 } else { 7 });
+            probe(root, "fdfind", &[], 0);
         }
-        "rg" => probe(root, "rg", 9),
-        "mismatch" | "nonutf8" => crate::find_support::alias(
-            root,
-            "fd",
-            &serde_json::json!({
-                "scenario":"probe", "log":root.join("probes.log"), "name":"fd",
-                "stdout":if mode == "mismatch" {b"fd 0.0.1\n".as_slice()} else {b"fd \xff\n".as_slice()},
-                "code":0
-            }),
-        ),
+        "rg" => probe(root, "rg", &[], 9),
+        "mismatch" => probe(root, "fd", b"fd 0.0.1\n", 0),
+        "nonutf8" => probe(root, "fd", b"fd \xff\n", 0),
         "denied" => {
             std::fs::write(root.join("fd"), b"not executable").unwrap();
-            probe(root, "fdfind", 0);
+            probe(root, "fdfind", &[], 0);
         }
         _ => {}
     }

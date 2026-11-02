@@ -1090,22 +1090,24 @@ For example, a controlled `fd` response records the tool's operands and returns
 one NUL-terminated path:
 
 ```rust,no_run
-let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-    .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-let directory = maestro_test_directory::Scratch::new()?;
-let record = serde_json::json!({
-    "scenario": "response",
-    "args": directory.path().join("args.json"),
-    "stdout": b"/work/a\0",
-    "stderr": [],
-    "code": 0,
-    "signal": null
-});
-std::fs::write(directory.path().join("fd.fixture"), format!("search\n{record}"))?;
-maestro_test_process::install_executable(
-    std::path::Path::new(&artifact), &directory.path().join("fd"),
-)?;
-# Ok::<(), std::io::Error>(())
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({
+        "scenario": "response",
+        "args": directory.path().join("args.json"),
+        "stdout": b"/work/a\0",
+        "stderr": [],
+        "code": 0,
+        "signal": null
+    });
+    std::fs::write(directory.path().join("fd.fixture"), format!("search\n{record}"))?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("fd"),
+    )?;
+    Ok(())
+}
 ```
 
 The finite scenarios use these fields:

@@ -76,7 +76,7 @@ before the wait. Rustix sends native termination to the current process for
 signal-exit cases. The fixture-source manifest includes the same closure so
 private Cargo homes retain offline builds. Its installer uses standard-library
 process and file operations; repository tooling reuses its existing SHA-256 input and content
-fingerprints to stage that host artifact. No new library or feature is enabled,
-and the offline fixture-source manifest already declares and imports `serde_json`.
+fingerprints to stage that host artifact. No new locked package or workspace feature
+is enabled, and the offline fixture-source manifest already declares and imports `serde_json`.
 Typed native isolated setup remains planned; the existing shell-setup API is not
 removed by the raw-fixture preparation.
