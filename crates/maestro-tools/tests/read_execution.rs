@@ -180,6 +180,7 @@ fn read_numeric_slices_match_finite_number_rules() {
             "case {index}"
         );
     }
+    assert_eq!(read_text(b"a\nb", None, Some(2.0)).unwrap(), "a\nb");
 }
 
 #[test]
@@ -214,7 +215,6 @@ fn read_keeps_real_trailing_empty_lines() {
         read_text(file, Some(3.0), None).unwrap_err(),
         "Offset 3 is beyond end of file (2 lines total)"
     );
-    assert_eq!(read_text(b"a\nb", None, Some(2.0)).unwrap(), "a\nb");
 }
 
 #[test]
