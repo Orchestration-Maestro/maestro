@@ -67,15 +67,18 @@ fn only_name() -> &'static str {
     if cfg!(windows) { "only.CMD" } else { "only" }
 }
 
-/// Creates a small nonrecursive native executable.
+/// Creates a small nonrecursive native executable that prints `text`.
 fn write_wrapper(path: &Path, text: &str) {
     #[cfg(windows)]
     std::fs::write(path, format!("@echo {text}\r\n")).unwrap();
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::write(path, format!("#!/bin/sh\nprintf '%s\\n' '{text}'\n")).unwrap();
-        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let artifact =
+            std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
+        maestro_test_process::install_executable(std::path::Path::new(&artifact), path).unwrap();
+        let mut record = path.as_os_str().to_owned();
+        record.push(".fixture");
+        std::fs::write(record, format!("echo\n{text}\n")).unwrap();
     }
 }
 

@@ -1,9 +1,11 @@
 //! Process discovery, parsing and bounded child-group selection.
 use super::*;
+use crate::child_process::tests::children;
+use maestro_test_process::HARNESS_START;
 use std::{
     io::{Read, Write},
     os::unix::ffi::OsStringExt,
-    process::{Command, Stdio},
+    process::Stdio,
 };
 
 #[test]
@@ -437,17 +439,16 @@ fn assert_native_process_values() {
     std::fs::create_dir(&target).unwrap();
     let authored = tree.path().join("alias");
     std::os::unix::fs::symlink(&target, &authored).unwrap();
-    let mut child = Command::new("/bin/sh")
-        .args(["-c", "printf READY; read -r ignored"])
+    let mut child = children::command(children::ready_then_drain, &[])
         .env("MAESTRO_PROCESS_VALUE", "")
         .current_dir(authored)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
-    let mut ready = [0; 5];
+    let mut ready = vec![0; HARNESS_START.len() + 5];
     child.stdout.take().unwrap().read_exact(&mut ready).unwrap();
-    assert_eq!(&ready, b"READY");
+    assert_eq!(&ready[HARNESS_START.len()..], b"READY");
     assert_eq!(process_cwd(child.id()), Some(target));
     assert_eq!(
         process_environment_value(child.id(), "MAESTRO_PROCESS_VALUE").as_deref(),
