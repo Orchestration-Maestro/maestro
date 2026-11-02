@@ -64,10 +64,7 @@ function tools(env = process.env) {
   assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'package.json'))).version, '1.64.1', 'Playwright version');
   const cli = command('wasm-bindgen', ['--version'], {env}).trim();
   assert.equal(cli, 'wasm-bindgen 0.2.129', 'wasm-bindgen CLI version');
-  const locked = command('python3', ['-c',
-    "import sys,tomllib; print(next(p['version'] for p in tomllib.load(open(sys.argv[1], 'rb'))['package'] if p['name']=='wasm-bindgen'))",
-    path.resolve(__dirname, '../../../../Cargo.lock')], {env}).trim();
-  assert.equal(cli, `wasm-bindgen ${locked}`, 'CLI must match locked binding');
+  setup('binding-version', cli, path.resolve(__dirname, '../../../..'), {env});
   const chromiumVersion = command(env.CHROMIUM_PATH, ['--version'], {env}).trim();
   assert(/\b156\.0\.8078\.4\b/.test(chromiumVersion), 'Chromium version');
   console.log(`TOOLS Node ${process.versions.node} Playwright 1.64.1 ${chromiumVersion} ${cli}`);
@@ -83,6 +80,11 @@ function artifact(output, kind, name) {
   return files[0];
 }
 
+function setup(operation, value, checkout, options = {}) {
+  return command('cargo', ['run', '--quiet', '--locked', '-p', 'maestro-tooling', '--bin', 'development', '--',
+    'browser-export-setup', operation, value], {cwd: checkout, ...options});
+}
+
 function packageBrowser(checkout, output) {
   const metadata = JSON.parse(command('cargo', ['metadata', '--locked', '--no-deps', '--format-version=1'], {cwd: checkout}));
   const target = metadata.target_directory;
@@ -90,56 +92,11 @@ function packageBrowser(checkout, output) {
   artifact(compiled, 'test', 'integration');
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-browser-test-'));
   try {
-    // TOML stays data: resolve inherited dependencies, dev feature unions and current patches.
-    command('python3', ['-c', String.raw`
-import json, pathlib, shutil, sys, tomllib
-root, scratch = map(pathlib.Path, sys.argv[1:])
-workspace = tomllib.loads((root/'Cargo.toml').read_text())
-member = tomllib.loads((root/'crates/maestro-web/Cargo.toml').read_text())
-def absolute(d, base):
-    if isinstance(d, str): return {'version':d}
-    d = dict(d)
-    if d.pop('workspace', False):
-        extra = d
-        d = absolute(workspace['workspace']['dependencies'][extra.get('package', name)], root)
-        d['features'] = list(dict.fromkeys(d.get('features', []) + extra.get('features', [])))
-        d.update({k:v for k,v in extra.items() if k!='features'})
-    elif 'path' in d: d['path'] = str((base/d['path']).resolve())
-    return d
-deps = {}
-sections = [member['dependencies'],member['target']['cfg(target_arch = "wasm32")']['dependencies'],member['dev-dependencies']]
-for section in sections:
-    for name, dep in section.items():
-        dep = absolute(dep, root/'crates/maestro-web')
-        if name in deps: dep['features'] = list(dict.fromkeys(deps[name].get('features', []) + dep.get('features', [])))
-        deps[name] = dep
-deps['maestro-web'] = {'path':str(root/'crates/maestro-web')}
-def toml(v):
-    if isinstance(v,dict): return '{'+', '.join(json.dumps(k)+' = '+toml(x) for k,x in v.items())+'}'
-    return json.dumps(v)
-text = '[package]\nname="maestro-browser-test"\nversion="0.0.0"\nedition="2024"\npublish=false\n[workspace]\n[lib]\ncrate-type=["cdylib"]\npath='+json.dumps(str(root/'crates/maestro-web/tests/integration.rs'))+'\n[dependencies]\n'
-text += '\n'.join(json.dumps(k)+' = '+toml(v) for k,v in deps.items())+'\n'
-for registry, patches in workspace.get('patch',{}).items():
-    text += '[patch.'+json.dumps(registry)+']\n'
-    text += '\n'.join(json.dumps(k)+' = '+toml(absolute(v, root)) for k,v in patches.items())+'\n'
-text += '[profile.dev]\ndebug="line-tables-only"\n[profile.dev.package."*"]\ndebug=false\n'
-(scratch/'Cargo.toml').write_text(text)
-shutil.copy(root/'Cargo.lock', scratch/'Cargo.lock')
-shutil.copy(root/'rust-toolchain.toml', scratch/'rust-toolchain.toml')
-(scratch/'tests').symlink_to(root/'crates/maestro-web/tests', target_is_directory=True)
-`, checkout, scratch]);
+    setup('prepare', scratch, checkout);
     const env = {...process.env, CARGO_TARGET_DIR: target};
     command('cargo', ['fetch', '--locked'], {cwd: checkout});
     command('cargo', ['metadata', '--offline', '--format-version=1'], {cwd: scratch, env});
-    process.stdout.write(command('python3', ['-c', String.raw`
-import pathlib, sys, tomllib
-root, scratch = map(pathlib.Path, sys.argv[1:])
-def identities(p):
-    return {(v['name'],v['version'],v.get('source'),v.get('checksum')) for v in tomllib.loads(p.read_text())['package'] if 'source' in v}
-a,b=identities(root/'Cargo.lock'),identities(scratch/'Cargo.lock')
-assert not b-a, 'scratch introduced external dependency identities: '+repr(b-a)
-print('LOCK external identity additions: 0')
-`, checkout, scratch]));
+    process.stdout.write(setup('check-lock', scratch, checkout));
     const runtime = artifact(command('cargo', ['rustc', '--lib', '--target', 'wasm32-unknown-unknown', '--offline', '--locked', '--message-format=json', '--', '--cfg', 'test'], {cwd: scratch, env}), 'cdylib', 'maestro_browser_test');
     fs.mkdirSync(output, {recursive: true});
     command('wasm-bindgen', [runtime, '--target', 'web', '--split-linked-modules', '--out-dir', output, '--out-name', 'sandbox']);
