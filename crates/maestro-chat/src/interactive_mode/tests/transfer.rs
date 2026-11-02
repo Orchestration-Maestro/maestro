@@ -1385,27 +1385,36 @@ fn transfer_import_retains_mode_only_until_completion() {
     );
 }
 
-/// Releases the in-flight mode once a retry's replacement failure has propagated.
-async fn import_retry_failure_release(directory: &Path) {
-    let offered = directory.join("released");
+/// Starts a retryable import with a replacement factory that rejects the new session.
+async fn import_retry_world(directory: &Path, name: &str) -> (World, std::path::PathBuf) {
+    let offered = directory.join(name);
     std::fs::create_dir_all(&offered).unwrap();
-    let path = import_file(directory, "released.jsonl", &directory.join("gone"));
-    let World {
-        mode,
-        terminal,
-        runtime,
-        themes,
-        host,
-        loader,
-    } = Setup {
+    let path = import_file(directory, &format!("{name}.jsonl"), &directory.join("gone"));
+    let world = Setup {
         cwd: Some(offered.to_str().unwrap().to_owned()),
         create: Some(import_failed_factory()),
         session_history: Some(directory.join("destination")),
         ..Setup::default()
     }
     .build(directory);
-    mode.init().await.unwrap();
-    runtime.settle().unwrap();
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    (world, path)
+}
+
+/// Releases the in-flight mode once a retry's replacement failure has propagated.
+async fn import_retry_failure_release(directory: &Path) {
+    let (
+        World {
+            mode,
+            terminal,
+            runtime,
+            themes,
+            host,
+            loader,
+        },
+        path,
+    ) = import_retry_world(directory, "released").await;
     let weak = Rc::downgrade(&mode);
     let editor = Rc::clone(&mode.editor);
     editor.on_submit().unwrap()(&format!("/import {}", path.display()));
@@ -1455,17 +1464,7 @@ async fn import_busy_submission(directory: &Path) {
 /// Exercises one real retry producer through the installed submit callback.
 async fn import_retry_failure(directory: &Path, failure: &str) {
     let offered = directory.join("offered");
-    std::fs::create_dir_all(&offered).unwrap();
-    let path = import_file(directory, "retry-failure.jsonl", &directory.join("gone"));
-    let world = Setup {
-        cwd: Some(offered.to_str().unwrap().to_owned()),
-        create: Some(import_failed_factory()),
-        session_history: Some(directory.join("destination")),
-        ..Setup::default()
-    }
-    .build(directory);
-    world.mode.init().await.unwrap();
-    world.runtime.settle().unwrap();
+    let (world, path) = import_retry_world(directory, "offered").await;
     let mut waiter = waiting(&world.mode);
     submit(&world.mode, &format!("/import {}", path.display()));
     import_settle(&world);

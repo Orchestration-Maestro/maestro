@@ -209,12 +209,17 @@ fn authentication_completion_reports_default_selection_failure() {
                 let world = started_with(directory, None).await;
                 register(&world, "openai", &[&default]);
                 refuse_recording(&world, directory);
+                let cause = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(world.host.session().session_file().unwrap())
+                    .unwrap_err();
                 complete(&world, "openai", kind, placeholder(&world))
                     .await
                     .unwrap();
                 let reported = format!(
                     "Error: {label}, but selecting its default model failed: \
-                     No such file or directory (os error 2). Use /model to select a model."
+                     {cause}. Use /model to select a model."
                 );
                 assert!(notes(&world, &reported), "the setter's failure is reported");
                 assert!(notes(&world, &saved(label)));

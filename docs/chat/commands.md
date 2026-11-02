@@ -609,9 +609,8 @@ and the provider receives the identifier of the first option with the chosen lab
 Each callback is shown before it returns, so a callback that cannot be shown
 returns that failure to the provider, which ends the sign-in before any credential
 is saved. Once the sign-in ends, a callback the provider kept can no longer show
-anything and returns an error, but a kept request for the pasted redirect still
-reads the answer it already had. Escape cancels without a message; any other
-failure shows
+anything and returns an error. Escape cancels without a message; any other failure
+shows
 `Error: Failed to login to <name>: <error>` after the editor comes back.
 
 ### After signing in
