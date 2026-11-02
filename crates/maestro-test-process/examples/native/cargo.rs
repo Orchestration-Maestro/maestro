@@ -99,6 +99,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             }
         }
         Some("clippy") => Ok(()),
+        Some("build") if args.iter().any(|arg| arg == "--target") => build_wasm(args),
         Some(operation @ ("build" | "run")) => {
             build(record, &Build::parse(args)?, operation == "run")
         }
@@ -154,6 +155,26 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
         leave(Command::new(path).status()?.code().unwrap_or(1));
     }
     Ok(())
+}
+
+/// Report the two finite cross-target artifacts used by build-check preparation tests.
+fn build_wasm(args: &[OsString]) -> io::Result<()> {
+    let name = match option(args, "--target")?.to_str() {
+        Some("wasm32-unknown-unknown") if option(args, "--example")? == "browser_import_check" => {
+            "browser_import_check"
+        }
+        Some("wasm32-wasip2") if args.iter().any(|arg| arg == "--lib") => "hello_extension",
+        _ => return Err(io::Error::other("unknown cross-target preparation build")),
+    };
+    let target = Path::new(option(args, "--target-dir")?);
+    std::fs::create_dir_all(target)?;
+    let artifact = target.join(format!("{name}.wasm"));
+    std::fs::write(&artifact, b"\0asmfixture")?;
+    let message = serde_json::json!({
+        "reason": "compiler-artifact", "target": {"name": name}, "filenames": [artifact]
+    });
+    write_stdout(&serde_json::to_vec(&message)?)?;
+    write_stdout(b"\n")
 }
 
 /// Give the staged example its original permissions and deterministic cache age.

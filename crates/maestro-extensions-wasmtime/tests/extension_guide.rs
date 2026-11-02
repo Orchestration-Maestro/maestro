@@ -13,7 +13,7 @@ use std::{
 #[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
 pub(super) mod cargo;
 
-/// Creates the independent project using the guide's manifest and the shipped source.
+/// Check the guide's manifest and obtain its independently built component from setup.
 fn project() -> (Scratch, PathBuf) {
     let checkout = Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -31,31 +31,26 @@ fn project() -> (Scratch, PathBuf) {
             .unwrap(),
         manifest
     );
+    let component = std::env::var_os("MAESTRO_GUIDE_COMPONENT")
+        .expect("nextest cargo-checks setup supplies the standalone guide build");
+    (Scratch::new().unwrap(), component.into())
+}
+
+/// The prepared guide still loads and invokes its tool when no build toolchain is available.
+#[test]
+fn prepared_extension_guide_runs_without_a_build_toolchain() {
     let scratch = Scratch::new().unwrap();
-    let root = scratch.path();
-    std::fs::create_dir(root.join("src")).unwrap();
-    let manifest = manifest.replace(
-        "\"../maestro/crates/maestro-extensions-wasm\"",
-        &serde_json::to_string(&checkout.join("crates/maestro-extensions-wasm")).unwrap(),
-    );
-    std::fs::write(root.join("Cargo.toml"), manifest).unwrap();
-    std::fs::write(
-        root.join("Cargo.lock"),
-        include_str!("fixtures/hello-extension/Cargo.lock"),
+    let missing = scratch.path().join("missing-toolchain");
+    let output = maestro_test_process::TestProcess::named(
+        "extension_guide::extension_guide_builds_and_loads_from_a_clean_folder",
     )
+    .unwrap()
+    .env("CARGO", &missing)
+    .env("RUSTC", &missing)
+    .env("CARGO_TARGET_DIR", scratch.path())
+    .output()
     .unwrap();
-    std::fs::copy(
-        checkout.join("examples/extensions/hello.rs"),
-        root.join("src/lib.rs"),
-    )
-    .unwrap();
-    std::fs::copy(
-        checkout.join("rust-toolchain.toml"),
-        root.join("rust-toolchain.toml"),
-    )
-    .unwrap();
-    let component = cargo::component(root, &["--lib"], "hello_extension").unwrap();
-    (scratch, component)
+    assert!(output.status.success(), "{output:?}");
 }
 
 /// The guide's project builds outside the workspace and registers a live greeting tool.
@@ -100,5 +95,5 @@ fn extension_guide_builds_and_loads_from_a_clean_folder() {
         );
         assert_eq!(result.details, Some(json!({"greeted":"Ada"})));
     });
-    eprintln!("standalone build and native load: {:?}", started.elapsed());
+    eprintln!("native discovery and invocation: {:?}", started.elapsed());
 }

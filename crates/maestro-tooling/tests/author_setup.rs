@@ -905,6 +905,27 @@ fn fixture(root: &Path) {
 /// Like `fixture`, with the finite setup-example declaration the fixture Cargo installs.
 fn fixture_with(root: &Path, example: &str) {
     workspace(root);
+    let guide = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
+    fs::create_dir_all(&guide).unwrap();
+    fs::write(
+        guide.join("Cargo.toml.in"),
+        include_str!(
+            "../../maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.toml.in"
+        ),
+    )
+    .unwrap();
+    fs::write(guide.join("Cargo.lock"), "locked guide dependencies").unwrap();
+    fs::write(
+        root.join("rust-toolchain.toml"),
+        include_str!("../../../rust-toolchain.toml"),
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("examples/extensions")).unwrap();
+    fs::write(
+        root.join("examples/extensions/hello.rs"),
+        "pub fn hello() {}\n",
+    )
+    .unwrap();
     fs::write(root.join("component.wasm"), "component bytes").unwrap();
     fs::write(
         root.join("component.d"),
@@ -955,7 +976,9 @@ fn workspace(root: &Path) {
     .unwrap();
     fs::write(
         root.join("Cargo.lock"),
-        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
+        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"maestro-extensions-wasmtime\",\n \"maestro-models\",\n \"shared\",\n]\n\n\
+         [[package]]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-models\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-test-process\"\nversion = \"0.0.0\"\n\n\
@@ -967,8 +990,10 @@ fn workspace(root: &Path) {
     for (name, dependency) in [
         (
             "maestro-extensions-wasm",
-            "\n[dependencies]\nshared = { path = \"../shared\" }\n",
+            "\n[dependencies]\nshared = { path = \"../shared\" }\n\n[dev-dependencies]\nmaestro-extensions-wasmtime = { path = \"../maestro-extensions-wasmtime\" }\nmaestro-models = { path = \"../maestro-models\" }\n",
         ),
+        ("maestro-extensions-wasmtime", ""),
+        ("maestro-models", ""),
         ("maestro-subagents", ""),
         ("maestro-tooling", ""),
         ("maestro-test-process", ""),
@@ -1221,6 +1246,75 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
         fs::read_to_string(root.join("native-builds")).unwrap(),
         "build\n"
     );
+}
+
+/// Cargo checks retain their built artifacts after relocation without calling Cargo in a shard.
+#[test]
+fn prepared_cargo_checks_relocate_without_a_build_toolchain() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let moved = root.join("archive space é");
+    fs::rename(root.join("target/test-setup"), &moved).unwrap();
+    let environment = root.join("cargo-checks-env");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "cargo-checks"])
+        .current_dir(root)
+        .env("CARGO", root.join("missing-cargo"))
+        .env("TEST_ARCHIVE", "1")
+        .env("TEST_PREPARE_OUTPUT", &moved)
+        .env("NEXTEST_ENV", &environment)
+        .output()
+        .unwrap();
+
+    assert_success(&output);
+    let entries = fs::read_to_string(environment).unwrap();
+    for variable in ["MAESTRO_BROWSER_IMPORT_CHECK", "MAESTRO_GUIDE_COMPONENT"] {
+        let path = entries
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
+            .unwrap();
+        assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(&moved));
+        assert_eq!(fs::read(path).unwrap(), b"\0asmfixture");
+    }
+}
+
+/// Incomplete or stale Cargo checks fail before exporting paths or attempting compilation.
+#[test]
+fn prepared_cargo_checks_refuse_stale_inputs_and_artifacts() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let bundle = root.join("target/test-setup");
+    let artifact = bundle.join("MAESTRO_GUIDE_COMPONENT.wasm");
+    let original = fs::read(&artifact).unwrap();
+    let source = root.join("examples/extensions/hello.rs");
+    let original_source = fs::read(&source).unwrap();
+    for change in ["missing", "bytes", "source"] {
+        match change {
+            "missing" => fs::remove_file(&artifact).unwrap(),
+            "bytes" => fs::write(&artifact, b"changed").unwrap(),
+            "source" => fs::write(&source, "changed").unwrap(),
+            _ => unreachable!(),
+        }
+        let environment = root.join("cargo-checks-env");
+        let output = Command::new(env!("CARGO_BIN_EXE_development"))
+            .args(["nextest-setup", "cargo-checks"])
+            .current_dir(root)
+            .env("CARGO", root.join("missing-cargo"))
+            .env("TEST_ARCHIVE", "1")
+            .env("TEST_PREPARE_OUTPUT", &bundle)
+            .env("NEXTEST_ENV", &environment)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {change}");
+        assert!(!environment.exists());
+        fs::write(&artifact, &original).unwrap();
+        fs::write(&source, &original_source).unwrap();
+    }
 }
 
 /// Archive setup refuses missing, changed or foreign native artifacts without a build or export.

@@ -15,6 +15,13 @@ command = "target/test-setup/development nextest-setup author-component"
 filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(/_example::/)))"
 setup = "author-component"
 
+[scripts.setup.cargo-checks]
+command = "target/test-setup/development nextest-setup cargo-checks"
+
+[[profile.default.scripts]]
+filter = "(package(maestro-models) & test(/^browser_build::/)) | (package(maestro-extensions-wasmtime) & test(/^extension_guide::/))"
+setup = "cargo-checks"
+
 [scripts.setup.native-fixture]
 command = "target/test-setup/development nextest-setup native-fixture"
 

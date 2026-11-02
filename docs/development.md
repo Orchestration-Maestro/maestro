@@ -808,7 +808,7 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component`, `browser-author` and `native-fixture` setups serve. Shared CI
+`author-component`, `browser-author`, `cargo-checks` and `native-fixture` setups serve. Shared CI
 caches the bundle under the contents of the files that `test_prepare_inputs`
 matches and restores it instead of preparing again. Those patterns name the
 crates the preparation builds, `maestro-extensions-wasm`, `maestro-tooling` and
@@ -824,7 +824,8 @@ documentation changes no staged file, so no pattern names it. The command runs t
 component-discovery example from a separate build directory, then stages the
 component files, the compiled code the example left in the engine's cache, that built example,
 the browser graph described under [Browser author build](#browser-author-build), the
-development tool itself and a content manifest. The compiled code is the one cache
+development tool itself, the [prepared Cargo checks](#prepared-cargo-checks) and a content
+manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
 namespace that does not end in that time or on more than one. The setup example's
 `--cache-directory` mode reports the engine's selected cache directory as one absolute
@@ -1103,6 +1104,37 @@ workspace, a browser resolution and a consumer workspace in a child whose shared
 `CARGO_HOME` holds a directory where Cargo expects its lock file. A fixture that
 still reaches the shared home fails at once instead of waiting for another test.
 
+### Prepared Cargo checks
+
+Run the browser import and extension-guide checks with their setup:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-models -p maestro-extensions-wasmtime \
+    -E 'test(/^browser_build::/) | test(/^extension_guide::/)'
+```
+
+The `cargo-checks` setup builds `browser_import_check` for
+`wasm32-unknown-unknown` with the locked development profile. It also creates a
+clean, independent author project from the extension guide's manifest fixture,
+its lock, the shipped greeting source and the pinned toolchain, then builds its
+library for `wasm32-wasip2` with the locked release profile. Both builds use
+Cargo's reported artifact paths and remove host coverage instrumentation through
+the browser setup's command policy.
+
+Preparation stages those outputs in the existing `target/test-setup` bundle and
+records their digests and the tool-input fingerprint in `cargo-checks.json`.
+Local nextest setup reuses current outputs or builds them before any test body.
+Archived runs validate both outputs before exporting their relocated absolute
+paths as `MAESTRO_BROWSER_IMPORT_CHECK` and `MAESTRO_GUIDE_COMPONENT`. Missing,
+edited or stale archived outputs fail setup without invoking Cargo.
+
+The browser test reads the real build's WebAssembly artifact. The guide test
+checks its documented manifest, discovers the independently built extension in a
+clean runtime directory and invokes its greeting tool. Neither test body starts
+a compiler. Re-run preparation when the bundle is stale; do not add a fallback
+build to a test body.
+
 ### Child-process tests
 
 Stage the setup tool before a filtered native-fixture run:
@@ -1150,7 +1182,8 @@ families to this one target, never a script evaluator or another launcher.
 
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
-and stages native copies of both preparation examples. On Unix, metadata replaces
+and stages native copies of both preparation examples. It also reports the two
+finite WebAssembly artifacts used by the Cargo-check preparation fixtures. On Unix, metadata replaces
 the fixture process, keeping its native PID and signal delivery.
 
 The author example reads a `tooling-author` line followed by one JSON scenario.
