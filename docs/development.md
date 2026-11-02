@@ -1120,10 +1120,15 @@ clean, independent author project from the extension guide's manifest fixture,
 its lock, the shipped greeting source and the pinned toolchain, then builds its
 library for `wasm32-wasip2` with the locked release profile. Both builds use
 Cargo's reported artifact paths and remove host coverage instrumentation through
-the browser setup's command policy.
+the browser setup's command policy. A failed build reports the compiler's
+diagnostics.
 
 Preparation stages those outputs in the existing `target/test-setup` bundle and
-records their digests and the tool-input fingerprint in `cargo-checks.json`.
+records their digests in `cargo-checks.json`. Its source fingerprint covers the
+`maestro-models` and `maestro-extensions-wasm` package closures, the workspace
+manifest, Cargo configuration, toolchain and lock, the guide fixture directory
+and `examples/extensions/hello.rs`. Edits outside those inputs, including tooling
+source changes, leave these outputs current.
 Local nextest setup reuses current outputs or builds them before any test body.
 Archived runs validate both outputs before exporting their relocated absolute
 paths as `MAESTRO_BROWSER_IMPORT_CHECK` and `MAESTRO_GUIDE_COMPONENT`. Missing,

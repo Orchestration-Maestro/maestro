@@ -976,7 +976,7 @@ fn workspace(root: &Path) {
     .unwrap();
     fs::write(
         root.join("Cargo.lock"),
-        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"maestro-extensions-wasmtime\",\n \"maestro-models\",\n \"shared\",\n]\n\n\
+        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-models\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
@@ -990,7 +990,7 @@ fn workspace(root: &Path) {
     for (name, dependency) in [
         (
             "maestro-extensions-wasm",
-            "\n[dependencies]\nshared = { path = \"../shared\" }\n\n[dev-dependencies]\nmaestro-extensions-wasmtime = { path = \"../maestro-extensions-wasmtime\" }\nmaestro-models = { path = \"../maestro-models\" }\n",
+            "\n[dependencies]\nshared = { path = \"../shared\" }\n",
         ),
         ("maestro-extensions-wasmtime", ""),
         ("maestro-models", ""),
@@ -1279,6 +1279,82 @@ fn prepared_cargo_checks_relocate_without_a_build_toolchain() {
         assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(&moved));
         assert_eq!(fs::read(path).unwrap(), b"\0asmfixture");
     }
+}
+
+/// Each Cargo-check package and its independent guide inputs invalidate the archived outputs.
+#[test]
+fn prepared_cargo_checks_track_their_package_inputs() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let bundle = root.join("target/test-setup");
+    for source in [
+        "crates/maestro-models/src/lib.rs",
+        "crates/maestro-extensions-wasm/src/lib.rs",
+        "crates/shared/src/lib.rs",
+        "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.toml.in",
+        "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.lock",
+        "examples/extensions/hello.rs",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+    ] {
+        let path = root.join(source);
+        let original = fs::read(&path).unwrap();
+        fs::write(&path, b"changed input").unwrap();
+        let environment = root.join("cargo-checks-env");
+        let output = Command::new(env!("CARGO_BIN_EXE_development"))
+            .args(["nextest-setup", "cargo-checks"])
+            .current_dir(root)
+            .env("CARGO", root.join("missing-cargo"))
+            .env("TEST_ARCHIVE", "1")
+            .env("TEST_PREPARE_OUTPUT", &bundle)
+            .env("NEXTEST_ENV", &environment)
+            .output()
+            .unwrap();
+
+        assert!(!output.status.success(), "accepted changed {source}");
+        let diagnostic = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            diagnostic.contains("stale prepared component inputs"),
+            "{diagnostic}"
+        );
+        assert!(!environment.exists());
+        fs::write(&path, original).unwrap();
+    }
+}
+
+/// Tooling and unrelated package edits leave the separate Cargo-check artifacts current.
+#[test]
+fn prepared_cargo_checks_ignore_packages_outside_their_closure() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    for source in [
+        "crates/maestro-tooling/src/lib.rs",
+        "crates/unrelated/src/lib.rs",
+    ] {
+        fs::write(root.join(source), b"changed source").unwrap();
+    }
+    let output = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "cargo-checks"])
+        .current_dir(root)
+        .env("CARGO", root.join("missing-cargo"))
+        .env("TEST_ARCHIVE", "1")
+        .env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"))
+        .env("NEXTEST_ENV", root.join("cargo-checks-env"))
+        .output()
+        .unwrap();
+
+    assert_success(&output);
+    assert_eq!(
+        fs::read_to_string(root.join("cargo-checks-env"))
+            .unwrap()
+            .lines()
+            .count(),
+        2
+    );
 }
 
 /// Incomplete or stale Cargo checks fail before exporting paths or attempting compilation.

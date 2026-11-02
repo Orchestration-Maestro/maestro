@@ -1,6 +1,6 @@
 //! Prepare the browser import witness and the independent extension-guide build before tests.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -8,8 +8,8 @@ use std::process::Command;
 use serde::{Deserialize, Serialize};
 
 use super::inputs::Inputs;
-use super::plan::Artifacts;
-use super::{at, copy, digest, remove_directory, verify};
+use super::plan::closure_directories;
+use super::{SHARED_INPUTS, at, copy, digest, remove_directory, verify};
 use crate::nextest_setup::browser_graph;
 
 /// The two cross-target outputs exported to their native test consumers.
@@ -22,7 +22,7 @@ const GUIDE: &str = "crates/maestro-extensions-wasmtime/tests/fixtures/hello-ext
 /// Source fingerprints and staged bytes of the two real Cargo builds.
 #[derive(Serialize, Deserialize)]
 struct Prepared {
-    /// The existing tool-input closure, including the checked examples and their locks.
+    /// The checked packages' input closure, shared configuration and independent guide sources.
     inputs: Inputs,
     /// Content digests indexed by the fixed export names.
     files: BTreeMap<String, String>,
@@ -64,7 +64,7 @@ pub(crate) fn prepare(
     if let Ok(paths) = prepared(checkout, output) {
         return Ok(paths);
     }
-    let inputs = Artifacts::read(cargo, checkout)?.tool;
+    let inputs = inputs(cargo, checkout)?;
     let project = target.join("guide-project");
     project_files(checkout, &project)?;
     let mut browser = command(cargo, checkout, target);
@@ -95,6 +95,19 @@ pub(crate) fn prepare(
     prepared(checkout, output)
 }
 
+/// Fingerprint the checked package closures and the independent guide's authored inputs.
+fn inputs(cargo: &Path, checkout: &Path) -> io::Result<Inputs> {
+    let metadata = crate::locked_metadata(cargo, checkout)?;
+    let mut paths = closure_directories(&metadata, &["maestro-models", "maestro-extensions-wasm"])?;
+    paths.extend(
+        SHARED_INPUTS
+            .into_iter()
+            .chain(["Cargo.lock", GUIDE, "examples/extensions/hello.rs"])
+            .map(str::to_owned),
+    );
+    Inputs::new(checkout, paths, BTreeSet::new())
+}
+
 /// Create a clean independent author project from the checked manifest, lock and shipped source.
 fn project_files(checkout: &Path, root: &Path) -> io::Result<()> {
     remove_directory(root)?;
@@ -120,7 +133,12 @@ fn command(cargo: &Path, directory: &Path, target: &Path) -> Command {
     let mut command = browser_graph::command(cargo, directory, target);
     command
         .env_remove("RUSTC_WORKSPACE_WRAPPER")
-        .args(["build", "--locked", "--message-format=json", "--target-dir"])
+        .args([
+            "build",
+            "--locked",
+            "--message-format=json-render-diagnostics",
+            "--target-dir",
+        ])
         .arg(target);
     command
 }
@@ -160,4 +178,34 @@ fn build(mut command: Command, name: &str) -> io::Result<PathBuf> {
     Err(io::Error::other(format!(
         "Cargo reported no WebAssembly artifact for {name}"
     )))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Failed Cargo checks retain the compiler's code and offending import in their error.
+    #[test]
+    fn failed_cargo_check_reports_compiler_diagnostics() {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path();
+        std::fs::write(
+            root.join("Cargo.toml"),
+            "[workspace]\n[package]\nname = \"broken-import\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[lib]\npath = \"lib.rs\"\n",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Cargo.lock"),
+            "version = 4\n[[package]]\nname = \"broken-import\"\nversion = \"0.0.0\"\n",
+        )
+        .unwrap();
+        std::fs::write(root.join("lib.rs"), "use std::maestro_missing_import;\n").unwrap();
+        let mut cargo = command(Path::new(env!("CARGO")), root, &root.join("target"));
+        cargo.args(["--lib", "--offline"]);
+
+        let error = build(cargo, "broken_import").unwrap_err().to_string();
+
+        assert!(error.contains("E0432"), "{error}");
+        assert!(error.contains("maestro_missing_import"), "{error}");
+    }
 }
