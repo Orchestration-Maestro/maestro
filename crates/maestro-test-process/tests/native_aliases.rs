@@ -158,6 +158,44 @@ fn invalid_native_requests_leave_the_effect_sentinel_absent() {
     assert!(!sentinel.exists());
 }
 
+/// Malformed search records fail before operand logs or injection sentinels are written.
+#[cfg(unix)]
+#[test]
+fn malformed_search_records_have_no_partial_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let sentinel = root.path().join("effect");
+    let response = json!({"scenario":"response", "args":sentinel,
+        "stdout":[], "stderr":[], "code":0, "signal":null});
+    let mut invalid = vec![
+        json!({"scenario":"marker", "path":sentinel,
+            "text":"executed", "copy_input":false, "unknown":true}),
+        json!({"scenario":"chosen-shell", "unknown":true}),
+    ];
+    for (field, value) in [
+        ("stdout", json!([256])),
+        ("code", json!(256)),
+        ("signal", json!("unknown")),
+        ("scenario", json!("unknown")),
+    ] {
+        let mut record = response.clone();
+        record[field] = value;
+        invalid.push(record);
+    }
+    for record in invalid {
+        let path = root.path().join("record");
+        std::fs::write(&path, format!("search\n{record}")).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {record}");
+        assert!(output.stdout.is_empty());
+        assert!(!sentinel.exists(), "partial effects for {record}");
+    }
+}
+
 /// Concurrent installations leave launchable copies with independently mutable ages.
 #[test]
 fn parallel_installs_launch_independent_copies_while_siblings_are_live() {

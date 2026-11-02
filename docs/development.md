@@ -97,6 +97,12 @@ cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests
 
 ## Platform test qualification
 
+Native path assertions use the host's separators. Build expected paths from
+individual components with `std::path`, or state Windows and Unix literals
+explicitly. Keep expectations independent of the production path formatter;
+leave authored path inputs unchanged. A passing Linux run does not qualify a
+Windows assertion: run it on native Windows too.
+
 Compile every declared browser crate's test and example targets without running them:
 
 ```sh
@@ -1012,7 +1018,9 @@ lock selects, together with the browser fixture's crates. It runs once per run,
 writes `target/fixture-sources/<hash>/`, and reuses that directory while the
 inputs stay unchanged. The set stays small because Cargo reads every vendored
 package on each run; a test checks that every registry crate the tooling crates
-declare is named in that manifest. The setup exports the configuration path as
+declare is named in that manifest. Keep an anonymous import for each declared
+crate in `fixtures/registry_sources/src/lib.rs`. The dependency scan checks this
+standalone fixture too. The setup exports the configuration path as
 `MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
 the same command. A fixture opts in with `Workspace::use_prepared_sources` or
 `Browser::cargo`, which copy the configuration into its private home. A fixture
@@ -1065,9 +1073,10 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
-currently served packages: `maestro-test-process`, `maestro-tooling` and the
-application RPC client tests. Local setup builds the example with the locked host
-`dev` profile and reads Cargo's emitted executable path. It records source inputs, content digest and host in
+currently served packages: `maestro-test-process`, `maestro-tooling`,
+`maestro-tools` and the application RPC client tests. Local setup builds the example
+with the locked host `dev` profile and reads Cargo's emitted executable path. It
+records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1131,6 +1140,58 @@ interrupt peer reads commands on one thread and records TERM through a native
 signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
+
+#### Search aliases
+
+On Unix, install the same artifact as `fd`, `fdfind` or `rg` to control search
+output while exercising native lookup and process handling. Write `search` on
+the first line of `<alias>.fixture`, followed by a JSON object with a `scenario`
+field. The fixture parses the entire record before effects and rejects unknown
+fields, invalid byte values and exit codes outside 0 to 255. Operands remain
+native command arguments, never source text.
+
+For example, a controlled `fd` response records the tool's operands and returns
+one NUL-terminated path:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({
+        "scenario": "response",
+        "args": directory.path().join("args.json"),
+        "stdout": b"/work/a\0",
+        "stderr": [],
+        "code": 0,
+        "signal": null
+    });
+    std::fs::write(directory.path().join("fd.fixture"), format!("search\n{record}"))?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("fd"),
+    )?;
+    Ok(())
+}
+```
+
+The finite scenarios use these fields:
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `response` | `args` records the JSON operand array; `stdout` and `stderr` are byte arrays. `code` selects the status; optional `signal: "SIGTERM"` ends by native signal instead. |
+| `probe` | `name`, optional `log`, `stdout` byte array and `code`. Appends `name` and the operands to the log, requires exactly `--version`, then returns the version bytes and status. Discovery checks launchability, not version compatibility. |
+| `marker` | Writes `text` to `path`. With `copy_input: true`, copies the first operand's file to stdout, like a search preprocessor. Execute it once as a positive control, remove the sentinel, then assert hostile search operands never recreate it. |
+| `probe-wait` | Connects to Unix `socket`, writes `ready`, then waits for a byte or EOF. Dropping discovery must stop this real process. |
+| `find-term` | Registers TERM before readiness, writes `ready` on `socket`, reads the queued TERM notification, writes `term`, then retains its output pipes until release. |
+| `grep-term` | On `socket`, writes `R`, requires `x`, writes `event` bytes to stdout, optionally writes `S` when `started` is true, waits for TERM, writes `T`, requires another `x`, then exits 9. |
+| `chunks` | On `socket`, writes `R` and requires `x` before each entry of `chunks`. Each entry has `stream: "stdout"` or `"stderr"` and a `bytes` array. Exits with `code` after the final write. |
+| `chosen-shell` | Writes `chosen-shell` and a newline, then replaces itself with `/bin/bash`, passing the original operands unchanged. This keeps configured-shell qualification on the real shell. |
+
+Keep these aliases in each test's disposable binary directory. Isolated discovery
+and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
+cases still use the provisioned real tools. Run the complete `maestro-tools`
+nextest selection to qualify both routes. A missing real tool fails the native
+cases; the fixture never replaces or downloads it.
 
 #### Checked reruns
 

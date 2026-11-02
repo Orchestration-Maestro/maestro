@@ -9,20 +9,29 @@
     clippy::excessive_nesting
 )]
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::fmt::Write as _;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../src/tests/build.rs"]
 mod build;
 
 // The preparation module below reaches source discovery through this import, and so does the
 // listing of component names.
+#[cfg(not(target_arch = "wasm32"))]
 use build::cargo::components;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../../maestro-tooling/src/example_files/preparation.rs"]
 mod example_files;
 
+/// Preparation runs the native host, which a WebAssembly build does not have.
+#[cfg(target_arch = "wasm32")]
+fn main() {}
+
 /// Builds the components in one Cargo invocation, warms their compilation cache, then hands their
 /// paths to nextest's environment file.
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), String> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let folders = [

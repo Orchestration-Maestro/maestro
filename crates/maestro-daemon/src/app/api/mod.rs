@@ -1,17 +1,101 @@
-//! Internal observations applied through daemon state and live process context.
+//! Internal observations applied through daemon state and live process context, and the
+//! dispatch of workspace commands to their handlers.
 
+mod env;
+mod manifests;
+mod notifications;
 mod overlay;
 mod respawn;
+mod responses;
 mod state_events;
+mod tabs;
+mod workspaces;
 
 use super::{
     App,
     actions::{PaneStateUpdate, notification_context},
     state::ToastNotification,
 };
-use crate::{events::AppEvent, settings::model::ToastDelivery};
+use crate::{events::AppEvent, paths::DaemonPaths, settings::model::ToastDelivery};
+use maestro_protocol::{
+    rpc_types::RpcCommand,
+    schema::{ErrorBody, ResponseResult},
+};
+use maestro_settings::SettingsManager;
+use responses::api_error;
 
 impl<C: FnMut() -> u128> App<C> {
+    /// Answers one workspace command after applying every queued internal observation.
+    ///
+    /// A command that changes what a view shows marks render work. `settings` and `paths`
+    /// serve the configuration and detection-catalog commands.
+    ///
+    /// # Errors
+    /// Returns the command's failure: `not_implemented` for a command without a handler.
+    pub async fn handle_api_request(
+        &mut self,
+        command: RpcCommand,
+        settings: &mut SettingsManager,
+        paths: &DaemonPaths,
+    ) -> Result<ResponseResult, ErrorBody> {
+        self.drain_all_internal_events();
+        self.sync_pending_terminal_titles().await;
+        if crate::api::request_changes_ui(&command) {
+            self.launch.render_dirty.request_generic();
+        }
+        match command {
+            RpcCommand::ServerStop(_) => {
+                self.state.should_quit.0 = true;
+                Ok(ResponseResult::Ok {})
+            }
+            RpcCommand::ServerReloadConfig(_) => {
+                let agent_dir = std::path::Path::new(paths.agent_dir());
+                let (report, errors) = self.reload_config(settings, agent_dir).await;
+                for error in errors {
+                    tracing::warn!(%error.error, "failed to read workspace preferences");
+                }
+                Ok(ResponseResult::ConfigReload {
+                    status: report.status,
+                    diagnostics: report.diagnostics,
+                })
+            }
+            RpcCommand::ServerAgentManifests(_) => Ok(self.agent_manifest_status(paths)),
+            RpcCommand::ServerReloadAgentManifests(_) => self.reload_agent_manifests(paths),
+            RpcCommand::NotificationShow(params) => self.handle_notification_show(&params),
+            command => self.dispatch_topology_request(command).await,
+        }
+    }
+
+    /// Routes workspace and tab commands to their handlers; unhandled families return an error.
+    async fn dispatch_topology_request(
+        &mut self,
+        command: RpcCommand,
+    ) -> Result<ResponseResult, ErrorBody> {
+        match command {
+            RpcCommand::WorkspaceList(_) => Ok(self.handle_workspace_list()),
+            RpcCommand::WorkspaceGet(target) => self.handle_workspace_get(&target.workspace_id),
+            RpcCommand::WorkspaceCreate(params) => self.handle_workspace_create(params).await,
+            RpcCommand::WorkspaceFocus(target) => self.handle_workspace_focus(&target.workspace_id),
+            RpcCommand::WorkspaceRename(params) => self.handle_workspace_rename(params),
+            RpcCommand::WorkspaceMove(params) => self.handle_workspace_move(&params),
+            RpcCommand::WorkspaceMoveBlock(params) => self.handle_workspace_move_block(&params),
+            RpcCommand::WorkspaceReportMetadata(params) => {
+                self.handle_workspace_report_metadata(params)
+            }
+            RpcCommand::WorkspaceClose(target) => {
+                self.handle_workspace_close(&target.workspace_id).await
+            }
+            RpcCommand::TabList(params) => self.handle_tab_list(params.workspace_id.as_deref()),
+            RpcCommand::TabGet(target) => self.handle_tab_get(&target.tab_id),
+            RpcCommand::TabCreate(params) => self.handle_tab_create(params).await,
+            RpcCommand::TabFocus(target) => self.handle_tab_focus(&target.tab_id),
+            RpcCommand::TabRename(params) => self.handle_tab_rename(params),
+            RpcCommand::TabMove(params) => self.handle_tab_move(&params),
+            RpcCommand::TabClose(target) => self.handle_tab_close(&target.tab_id).await,
+            _ => Err(api_error("not_implemented", "method not implemented yet")),
+        }
+    }
+
     /// Applies a background observation through the retained state transition owner.
     pub fn handle_internal_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
         self.apply_internal_event(event).0

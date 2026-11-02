@@ -66,12 +66,19 @@ composition tests inherit the same workspace pin and `signal` feature. Their che
 children block termination before replacing themselves with the test executable, then
 wait with `sigwait` after reporting readiness. No package version changes.
 
-The test-process owner's single harness-free native fixture also inherits the
-existing workspace `serde_json` pin, including `float_roundtrip`, for its controlled
-Cargo artifact records. Its installer uses standard-library process and file
-operations; repository tooling reuses its existing SHA-256 input and content
-fingerprints to stage that host artifact. No new library or feature is enabled,
-and the offline fixture-source manifest already declares and imports `serde_json`.
+The test-process owner's single harness-free native fixture inherits the existing
+workspace `serde` and `serde_json` pins, including `float_roundtrip`, for its
+controlled Cargo and search records. Unix fixture development dependencies inherit
+the workspace `signal-hook =0.3.18` and `rustix =1.1.5` pins, both with defaults off;
+the fixture enables rustix's `process` feature.
+The signal handler queues TERM notifications in a retained socket pair before
+search readiness; a blocking read consumes that byte even when TERM arrives
+before the wait. Rustix sends native termination to the current process for
+signal-exit cases. The fixture-source manifest includes the same closure so
+private Cargo homes retain offline builds. Its installer uses standard-library
+process and file operations; repository tooling reuses its existing SHA-256 input and content
+fingerprints to stage that host artifact. No new locked package or workspace feature
+is enabled, and the offline fixture-source manifest already declares and imports `serde_json`.
 Typed native isolated setup remains planned; the existing shell-setup API is not
 removed by the raw-fixture preparation.
 

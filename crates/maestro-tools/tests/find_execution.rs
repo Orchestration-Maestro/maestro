@@ -89,12 +89,14 @@ fn find_custom_route_never_probes_native_programs() {
     let marker = root.path().join("probed");
     let test = "find_custom_route_never_probes_native_programs";
     if !maestro_test_process::selection().is_child() {
-        let script = format!(
-            "#!/usr/bin/python3\nfrom pathlib import Path\nPath({}).write_text('probed')\n",
-            serde_json::json!(marker.to_str().unwrap())
-        );
         for name in ["fd", "fdfind"] {
-            find_support::executable(&root, name, &script);
+            find_support::alias(
+                root.path(),
+                name,
+                &serde_json::json!({
+                    "scenario":"marker", "path":marker, "text":"probed", "copy_input":false
+                }),
+            );
         }
         assert!(
             std::process::Command::new(root.path().join("fd"))
@@ -495,11 +497,13 @@ fn find_native_abort_terminates_child_without_waiting_for_exit() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let root = read_support::Scratch::new().unwrap();
     let socket_path = root.path().join("native.sock");
-    let script = format!(
-        "#!/usr/bin/python3\nimport socket,signal\ns=socket.socket(socket.AF_UNIX)\ns.connect({})\nsignal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'ready')\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'term')\ns.recv(1)\n",
-        serde_json::json!(socket_path.to_str().unwrap())
+    find_support::alias(
+        root.path(),
+        "fd",
+        &serde_json::json!({
+            "scenario":"find-term", "socket":socket_path
+        }),
     );
-    find_support::executable(&root, "fd", &script);
     runtime::run(async {
         let listener = tokio::net::UnixListener::bind(socket_path).unwrap();
         let signal = maestro_models::Cancellation::new();
@@ -554,13 +558,12 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
             ),
         );
         let sock = root.path().join("probe.sock");
-        find_support::executable(
-            &root,
+        find_support::alias(
+            root.path(),
             "fd",
-            &format!(
-                "#!/usr/bin/python3\nimport socket\ns=socket.socket(socket.AF_UNIX)\ns.connect({})\ns.sendall(b'ready')\ns.recv(1)\n",
-                serde_json::json!(sock.to_str().unwrap())
-            ),
+            &serde_json::json!({
+                "scenario":"probe-wait", "socket":sock
+            }),
         );
         assert_silent_child(
             test,

@@ -983,3 +983,187 @@ fn detection_reset_ready(runtime: &PaneRuntime) -> bool {
         .poll(&mut Context::from_waker(Waker::noop()))
         .is_ready()
 }
+
+#[test]
+fn reload_manifests_resets_each_retained_detector() {
+    let name = "reload_manifests_resets_each_retained_detector";
+    with_manifest_app(name, async |app, runtime, paths| {
+        let mut settings =
+            maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
+        let status = maestro_protocol::rpc_types::RpcCommand::ServerAgentManifests(
+            maestro_protocol::schema::EmptyParams {},
+        );
+        let reported = app.handle_api_request(status, &mut settings, paths).await;
+        let Ok(maestro_protocol::schema::ResponseResult::AgentManifestStatus { manifests, .. }) =
+            reported
+        else {
+            panic!("expected the manifest status: {reported:?}")
+        };
+        assert!(!manifests.is_empty());
+        assert!(!detection_reset_ready(
+            app.terminal_runtimes.get(runtime).unwrap()
+        ));
+        let codex = paths.detection_override(maestro_detection::agents::Agent::Codex);
+        std::fs::write(
+            &codex,
+            CODEX_OVERRIDE.replace("2026.10.21.1", "2026.10.22.1"),
+        )
+        .unwrap();
+        let reload = maestro_protocol::rpc_types::RpcCommand::ServerReloadAgentManifests(
+            maestro_protocol::schema::EmptyParams {},
+        );
+        let reloaded = app.handle_api_request(reload, &mut settings, paths).await;
+        let Ok(maestro_protocol::schema::ResponseResult::AgentManifestReload { manifests }) =
+            reloaded
+        else {
+            panic!("expected the reloaded manifests: {reloaded:?}")
+        };
+        let codex = manifests.iter().find(|info| info.agent == "codex").unwrap();
+        assert_eq!(codex.source_kind, "local override");
+        assert_eq!(codex.active_version.as_deref(), Some("2026.10.22.1"));
+        assert!(detection_reset_ready(
+            app.terminal_runtimes.get(runtime).unwrap()
+        ));
+        assert_eq!(app.state.agent_manifest_summaries.len(), manifests.len());
+    });
+}
+
+#[test]
+fn manifest_status_keeps_detector_state() {
+    let name = "manifest_status_keeps_detector_state";
+    with_manifest_app(name, async |app, runtime, paths| {
+        std::fs::create_dir_all(paths.detection_catalog()).unwrap();
+        std::fs::write(
+            paths.detection_status(),
+            "last_check_unix = 1700000000\nlast_result = \"checked\"\n\n[agents.codex]\nlast_checked_unix = 1700000001\nlast_result = \"failed: offline\"\nlast_error = \"offline\"\n",
+        )
+        .unwrap();
+        app.state
+            .manifests
+            .write()
+            .unwrap()
+            .reload_manifests()
+            .unwrap();
+        let mut settings =
+            maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
+        let status = maestro_protocol::rpc_types::RpcCommand::ServerAgentManifests(
+            maestro_protocol::schema::EmptyParams {},
+        );
+        let reported = app.handle_api_request(status, &mut settings, paths).await;
+        let Ok(maestro_protocol::schema::ResponseResult::AgentManifestStatus {
+            last_check_unix,
+            last_result,
+            manifests,
+        }) = reported
+        else {
+            panic!("expected the manifest status: {reported:?}")
+        };
+        assert_eq!(
+            (last_check_unix, last_result.as_deref()),
+            (Some(1_700_000_000), Some("checked"))
+        );
+        let codex = manifests.iter().find(|info| info.agent == "codex").unwrap();
+        assert_codex_status(app, paths, codex);
+        assert!(!detection_reset_ready(
+            app.terminal_runtimes.get(runtime).unwrap()
+        ));
+    });
+}
+
+/// The codex record a status request reports: the retained summary's fields, the local
+/// override's path and version, and the agent's last remote update.
+fn assert_codex_status(
+    app: &crate::app::App<fn() -> u128>,
+    paths: &crate::paths::DaemonPaths,
+    codex: &maestro_protocol::schema::AgentManifestInfo,
+) {
+    let summary = app
+        .state
+        .agent_manifest_summaries
+        .iter()
+        .find(|summary| summary.agent == maestro_detection::agents::Agent::Codex)
+        .unwrap();
+    assert_eq!(codex.source, summary.active_source.label());
+    assert_eq!(
+        codex.source,
+        paths.detection_override(maestro_detection::agents::Agent::Codex)
+    );
+    assert_eq!(codex.source_kind, "local override");
+    assert_eq!(codex.active_version.as_deref(), Some("2026.10.21.1"));
+    assert_eq!(codex.cached_remote_version, summary.cached_remote_version);
+    assert_eq!(
+        codex.local_override_shadowing_remote,
+        summary.local_override_shadowing_remote
+    );
+    assert_eq!(codex.warning, summary.warning);
+    assert_eq!(
+        codex.remote_update_result.as_deref(),
+        Some("failed: offline")
+    );
+    assert_eq!(codex.remote_update_error.as_deref(), Some("offline"));
+    assert_eq!(codex.remote_last_checked_unix, Some(1_700_000_001));
+}
+
+/// A local codex detection document.
+const CODEX_OVERRIDE: &str = "id = \"codex\"\nversion = \"2026.10.21.1\"\n[[rules]]\nid = \"working\"\nstate = \"working\"\ncontains = [\"controlled working\"]\n";
+
+/// Runs `body` alone against a daemon with one live pane, whose detection catalogue reads
+/// local overrides from its agent directory; the codex override exists before the body.
+fn with_manifest_app(
+    name: &str,
+    body: impl AsyncFnOnce(
+        &mut crate::app::App<fn() -> u128>,
+        &maestro_workspace::terminal_id::TerminalId,
+        &crate::paths::DaemonPaths,
+    ),
+) {
+    if run_alone(name).unwrap() {
+        return;
+    }
+    TestProcess::named("pane::runtime::tests::setup_entry")
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .invoke_with(|args| {
+            let directory = maestro_test_directory::Scratch::new().unwrap();
+            let paths =
+                crate::paths::DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
+            let codex = paths.detection_override(maestro_detection::agents::Agent::Codex);
+            std::fs::create_dir_all(std::path::Path::new(&codex).parent().unwrap()).unwrap();
+            std::fs::write(&codex, CODEX_OVERRIDE).unwrap();
+            let (mut runtime_config, receiver, _) = config(args);
+            runtime_config.manifests = Arc::new(std::sync::RwLock::new(
+                ManifestCache::new(
+                    Some(std::path::Path::new(&codex).parent().unwrap().to_path_buf()),
+                    Some(paths.detection_catalog().into()),
+                )
+                .unwrap(),
+            ));
+            runtime_config.agent_detection = AgentDetection::Disabled;
+            let mut app = manifest_test_app(&runtime_config, receiver);
+            let (pane, ()) = app
+                .state
+                .topology
+                .new_with_tab("/tmp".into(), None, |_, _| Ok(()))
+                .unwrap();
+            runtime_config.pane_id = pane;
+            let id = app.state.topology.workspaces[0]
+                .terminal_id(pane)
+                .unwrap()
+                .clone();
+            crate::tests::block_on(async {
+                let runtime = PaneRuntime::spawn_shell_command(
+                    runtime_config,
+                    "read -r line",
+                    temporary_root(),
+                    &PaneLaunchEnv::default(),
+                )
+                .unwrap();
+                app.terminal_runtimes.insert(id.clone(), runtime);
+                body(&mut app, &id, &paths).await;
+                app.terminal_runtimes.remove(&id).unwrap().shutdown().await;
+            });
+            Ok::<_, io::Error>(())
+        })
+        .unwrap();
+}

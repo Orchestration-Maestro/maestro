@@ -3291,8 +3291,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "069323743400cb7ab06a8fe5c1ed911d36b6919ec531661d034c89083629595b"
 dependencies = [
  "doctest-file",
+ "futures-core",
  "libc",
  "recvmsg",
+ "tokio",
  "widestring",
  "windows-sys 0.61.2",
 ]
@@ -4023,7 +4025,6 @@ dependencies = [
  "simd-adler32",
  "slab",
  "smallvec",
- "socket2",
  "stable_deref_trait",
  "syn 2.0.119",
  "syn 3.0.6",
@@ -4434,6 +4435,7 @@ dependencies = [
  "maestro-tui-crossterm",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

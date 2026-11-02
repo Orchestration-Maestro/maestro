@@ -445,7 +445,12 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     block_on(app.handle_scheduled_tasks(Instant::now(), &paths));
     assert!(app.session_save_thread.is_none());
     assert!(!Path::new(&paths.history_path()).exists());
-    block_on(app.run(&paths, std::future::ready(())));
+    block_on(app.run(
+        &paths,
+        &mut tokio::sync::mpsc::unbounded_channel().1,
+        &mut crate::support::api::settings(),
+        std::future::ready(()),
+    ));
     assert!(!Path::new(&paths.history_path()).exists());
     assert_eq!(
         std::fs::read_to_string(paths.snapshot_path()).unwrap(),
@@ -480,7 +485,12 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
             }
         );
         assert!(app.config.experimental.pane_history.0);
-        block_on(app.run(&paths, std::future::ready(())));
+        block_on(app.run(
+            &paths,
+            &mut tokio::sync::mpsc::unbounded_channel().1,
+            &mut crate::support::api::settings(),
+            std::future::ready(()),
+        ));
         assert_eq!(
             std::fs::read_to_string(paths.history_path()).unwrap(),
             "retained history"
@@ -514,7 +524,12 @@ fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_sn
         if route == "shutdown" {
             block_on(app.shutdown(&paths));
         } else {
-            block_on(app.run(&paths, std::future::ready(())));
+            block_on(app.run(
+                &paths,
+                &mut tokio::sync::mpsc::unbounded_channel().1,
+                &mut crate::support::api::settings(),
+                std::future::ready(()),
+            ));
         }
         assert!(!Path::new(&paths.history_path()).exists());
         assert_eq!(
