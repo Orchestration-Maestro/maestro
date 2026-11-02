@@ -38,6 +38,7 @@ pub(super) async fn session(
                 agent_dir: root.path("agent").display().to_string(),
             },
             io,
+            None,
         ));
     crate::support::session::resource_session(root, resources, Some(maestro_app::NoTools::Builtin))
         .await

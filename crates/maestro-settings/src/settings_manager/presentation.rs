@@ -7,7 +7,7 @@ use std::io;
 
 use super::conversion::number;
 use super::vocabulary::{DoubleEscapeAction, TreeFilterMode};
-use super::{Change, SettingsManager, SettingsScope};
+use super::{SettingsEdit, SettingsManager, SettingsScope};
 
 /// Environment variable that enables clearing empty rows when the preference is
 /// neither a boolean nor `null`.
@@ -68,13 +68,22 @@ impl SettingsManager {
     /// Sets the inline image width in cells, rounded down with a minimum of 1;
     /// `NaN` and positive infinity are stored as `null`.
     pub fn set_image_width_cells(&mut self, value: f64) {
+        match self.admit_settings_edit(Self::prepare_image_width_cells(value)) {
+            Ok(edit) => self.apply_prepared_edit(edit),
+            Err(message) => self.report_refusal(SettingsScope::Global, message),
+        }
+    }
+
+    /// Prepares the normalized value without publishing it.
+    #[must_use]
+    pub fn prepare_image_width_cells(value: f64) -> SettingsEdit {
         let width = value.floor();
         let width = if width.is_nan() {
             width
         } else {
             width.max(1.0)
         };
-        self.set_global_key("terminal", "imageWidthCells", number(width));
+        SettingsEdit::new(&["terminal", "imageWidthCells"], number(width))
     }
 
     /// Returns whether empty rows are cleared when content shrinks: a stored
@@ -186,19 +195,18 @@ impl SettingsManager {
     /// Sets the editor's horizontal padding, rounded down into 0 to 3; `NaN` is
     /// kept as the typed result and stored as `null`.
     pub fn set_editor_padding_x(&mut self, value: f64) {
-        if self.refuse_changes(
-            SettingsScope::Global,
-            &[Change::field("editorPaddingX", None)],
-        ) {
-            return;
+        match self.admit_settings_edit(Self::prepare_editor_padding_x(value)) {
+            Ok(edit) => self.apply_prepared_edit(edit),
+            Err(message) => self.report_refusal(SettingsScope::Global, message),
         }
+    }
+
+    /// Prepares the normalized value without publishing it.
+    #[must_use]
+    pub fn prepare_editor_padding_x(value: f64) -> SettingsEdit {
         let padding = clamp_floor(value, 0.0, 3.0);
-        let changes = vec![Change::field("editorPaddingX", Some(number(padding)))];
-        if self.refuse_edit(SettingsScope::Global, &changes) {
-            return;
-        }
-        self.accepted_nan.editor_padding_x = padding.is_nan();
-        self.edit_accepted(SettingsScope::Global, changes);
+        SettingsEdit::new(&["editorPaddingX"], number(padding))
+            .numeric("editorPaddingX", padding.is_nan())
     }
 
     /// Returns the visible autocomplete rows: `NaN` while a `NaN` setter result is
@@ -218,19 +226,18 @@ impl SettingsManager {
     /// Sets the visible autocomplete rows, rounded down into 3 to 20; `NaN` is kept
     /// as the typed result and stored as `null`.
     pub fn set_autocomplete_max_visible(&mut self, value: f64) {
-        if self.refuse_changes(
-            SettingsScope::Global,
-            &[Change::field("autocompleteMaxVisible", None)],
-        ) {
-            return;
+        match self.admit_settings_edit(Self::prepare_autocomplete_max_visible(value)) {
+            Ok(edit) => self.apply_prepared_edit(edit),
+            Err(message) => self.report_refusal(SettingsScope::Global, message),
         }
+    }
+
+    /// Prepares the normalized value without publishing it.
+    #[must_use]
+    pub fn prepare_autocomplete_max_visible(value: f64) -> SettingsEdit {
         let rows = clamp_floor(value, 3.0, 20.0);
-        let changes = vec![Change::field("autocompleteMaxVisible", Some(number(rows)))];
-        if self.refuse_edit(SettingsScope::Global, &changes) {
-            return;
-        }
-        self.accepted_nan.autocomplete_max_visible = rows.is_nan();
-        self.edit_accepted(SettingsScope::Global, changes);
+        SettingsEdit::new(&["autocompleteMaxVisible"], number(rows))
+            .numeric("autocompleteMaxVisible", rows.is_nan())
     }
 
     /// Returns the code block indentation (two spaces when unset or not a string).

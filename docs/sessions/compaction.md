@@ -12,6 +12,8 @@ Commands, event dispatch, navigation and persistence are caller responsibilities
 session-library operations. The [compaction API](../compaction.md),
 [branch API](../branch_summary.md), [session records](session_format.md) and
 [extension records](../extensions/guest.md) describe the delivered interfaces.
+For complete-session calls, persistence and events, use the
+[application compaction guide](../application/compaction.md).
 
 ## Compaction lifecycle
 

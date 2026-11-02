@@ -9,7 +9,7 @@ use super::records::{
     ResolvedProviderRetrySettings, ResolvedRetrySettings, ThinkingBudgetsSettings, get_member,
 };
 use super::vocabulary::{MessageDeliveryMode, ThinkingLevel, TransportSetting};
-use super::{Change, SettingsManager, SettingsScope};
+use super::{Change, SettingsEdit, SettingsManager, SettingsScope};
 
 /// The HTTP idle timeout, in milliseconds, when none is stored.
 const DEFAULT_HTTP_IDLE_TIMEOUT_MS: f64 = 300_000.0;
@@ -338,9 +338,20 @@ impl SettingsManager {
     /// Stores the HTTP header or body idle timeout in whole milliseconds; 0 disables it.
     /// A negative or non-finite value is ignored.
     pub fn set_http_idle_timeout_ms(&mut self, value: f64) {
-        if value.is_finite() && value >= 0.0 {
-            self.set_global("httpIdleTimeoutMs", number(value.floor()));
+        let Some(edit) = Self::prepare_http_idle_timeout_ms(value) else {
+            return;
+        };
+        match self.admit_settings_edit(edit) {
+            Ok(edit) => self.apply_prepared_edit(edit),
+            Err(message) => self.report_refusal(SettingsScope::Global, message),
         }
+    }
+
+    /// Prepares whole milliseconds without effects; negative or non-finite values return none.
+    #[must_use]
+    pub fn prepare_http_idle_timeout_ms(value: f64) -> Option<SettingsEdit> {
+        (value.is_finite() && value >= 0.0)
+            .then(|| SettingsEdit::new(&["httpIdleTimeoutMs"], number(value.floor())))
     }
 
     /// Returns whether thinking blocks are hidden (default false).
