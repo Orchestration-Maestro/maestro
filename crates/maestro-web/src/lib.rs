@@ -120,21 +120,36 @@ pub use tools::artifacts::{TextArtifact, image_artifact::ImageArtifact};
 
 /// Editable document artifact views.
 pub use tools::artifacts::{MarkdownArtifact, SvgArtifact};
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
+pub use tools::render_tool;
+#[cfg(target_arch = "wasm32")]
 pub use tools::renderer_registry::{render_collapsible_header, render_header};
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use tools::renderers::default_renderer::DefaultRenderer;
 pub use tools::types::{ToolRenderResult, ToolRenderer};
-pub use tools::{get_tool_renderer, register_tool_renderer, render_tool, set_show_json_mode};
+pub use tools::{get_tool_renderer, register_tool_renderer, set_show_json_mode};
 
 pub use components::console_block::ConsoleBlock;
 
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use components::expandable_section::ExpandableSection;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use tools::renderers::bash_renderer::BashRenderer;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use tools::renderers::calculate_renderer::CalculateRenderer;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
 
-pub use tools::artifacts::{ArtifactsToolRenderer, artifact_pill::artifact_pill};
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
+pub use tools::artifacts::ArtifactsToolRenderer;
+#[cfg(target_arch = "wasm32")]
+pub use tools::artifacts::artifact_pill::artifact_pill;
 
 mod ui_error;
+
+/// Rendered-value projections of prepared page content for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub mod test_support;
 
 #[cfg(target_arch = "wasm32")]
 pub use tools::artifacts::NativeArtifact;

@@ -2,13 +2,6 @@
 use crate::dom::PreparedContent;
 
 /// Disclosure with a literal summary over children captured once at construction.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub struct ExpandableSection {
     /// Caller-authored literal summary.
     pub summary: String,
@@ -35,3 +28,6 @@ mod browser;
 #[cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
 mod tests;
+/// Rendered-value projections for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub(crate) mod view;

@@ -62,8 +62,9 @@ pub(super) struct Settings {
     pub(super) auth: Auth,
     /// Whether the connection must speak HTTP/1.
     pub(super) http1: bool,
-    /// Whether the environment turns proxying on.
-    pub(super) proxy: bool,
+    /// Proxy chosen once for the model's base URL, which carries every request of the
+    /// conversation.
+    pub(super) proxy: Option<Url>,
 }
 
 /// The region of a standard runtime endpoint, or none for any other URL.
@@ -99,7 +100,7 @@ impl Settings {
     /// Decide configuration from the model, the options and the environment.
     ///
     /// # Errors
-    /// Fails when the endpoint the SDK must use is not a URL.
+    /// Fails when the SDK endpoint or chosen proxy is not a URL, or the proxy scheme is unsupported.
     pub(super) fn resolve<E: crate::ProviderExecution>(
         model: &Model,
         options: &BedrockOptions<E>,
@@ -127,7 +128,12 @@ impl Settings {
             Some(token) => Auth::Bearer(token.to_owned()),
             None => Auth::Chain,
         };
-        let proxy = env.names_proxy();
+        let proxy = Url::parse(&model.base_url)
+            .ok()
+            .map(|base| env.proxy_for(&base))
+            .transpose()
+            .map_err(RequestFailure::new)?
+            .flatten();
         let endpoint = explicit
             .then(|| Url::parse(&model.base_url).map(String::from))
             .transpose()
@@ -137,7 +143,7 @@ impl Settings {
             region,
             profile,
             auth,
-            http1: proxy || env.get("AWS_BEDROCK_FORCE_HTTP1") == Some("1"),
+            http1: proxy.is_some() || env.get("AWS_BEDROCK_FORCE_HTTP1") == Some("1"),
             proxy,
         })
     }
@@ -249,12 +255,13 @@ pub(super) struct Service {
     observed: Arc<Mutex<Option<Observed>>>,
 }
 
-/// Default client routing shaped by the settings.
-fn transport(settings: &Settings, env: Environment) -> Route {
-    let env = Arc::new(env);
-    let proxy: Option<ProxySelector> = settings
+/// Default client routing shaped by the settings: the chosen proxy carries every destination,
+/// and a proxy script still picks one per request.
+pub(super) fn transport(settings: &Settings) -> Route {
+    let proxy = settings
         .proxy
-        .then(|| Arc::new(move |url: &Url| env.proxy_for(url)) as ProxySelector);
+        .clone()
+        .map(|chosen| Arc::new(move |_: &Url| Ok(Some(chosen.clone()))) as ProxySelector);
     Route {
         proxy,
         http1_only: settings.http1,
@@ -305,7 +312,7 @@ pub(super) async fn connect<E: crate::ProviderExecution>(
     let empty_profile = env.0.get("AWS_PROFILE").is_some_and(String::is_empty);
     let http = bridge(
         options.common.fetch.clone(),
-        transport(settings, env),
+        transport(settings),
         options.common.signal.clone(),
         Arc::clone(&observed),
     );
