@@ -168,16 +168,31 @@ fn assert_library(manifest: &toml::Value, root: &Path) {
 fn browser_manifest_rejects_malformed_dependencies() {
     let scratch = Scratch::new().unwrap();
     checkout(scratch.path());
-    for member in [
-        "bad=[",
-        "dependencies=[]",
-        "target=[]",
-        "[target]\n'cfg(target_arch = \"wasm32\")'=[]",
-        "[dependencies]\nbad=3",
-        "[dependencies]\nmissing.workspace=true",
-        "[dependencies]\nalias={workspace=true,features=3}",
-        "[dependencies]\nlocal={path=3}",
-        "[dependencies]\nalias={workspace='true'}",
+    for (member, reason) in [
+        ("bad=[", "unclosed array"),
+        ("dependencies=[]", "expected a dependency table"),
+        ("target=[]", "expected a dependency table"),
+        (
+            "[target]\n'cfg(target_arch = \"wasm32\")'=[]",
+            "expected a dependency table",
+        ),
+        ("[dependencies]\nbad=3", "expected a dependency table"),
+        (
+            "[dependencies]\nmissing.workspace=true",
+            "missing workspace dependency missing",
+        ),
+        (
+            "[dependencies]\nalias={workspace=true,features=3}",
+            "dependency features must be an array",
+        ),
+        (
+            "[dependencies]\nlocal={path=3}",
+            "dependency path must be a string",
+        ),
+        (
+            "[dependencies]\nalias={workspace='true'}",
+            "dependency workspace must be a boolean",
+        ),
     ] {
         fs::write(scratch.path().join("crates/maestro-web/Cargo.toml"), member).unwrap();
         let error = run(
@@ -187,8 +202,8 @@ fn browser_manifest_rejects_malformed_dependencies() {
         )
         .unwrap_err();
         assert!(
-            error.to_string().contains("Cargo.toml"),
-            "{member}: {error}"
+            error.to_string().contains(reason),
+            "{member}: expected {reason}: {error}"
         );
         assert!(
             !scratch.path().join("output/Cargo.toml").exists(),

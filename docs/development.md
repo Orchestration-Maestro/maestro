@@ -203,10 +203,11 @@ The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
 execution uses an unregistered temporary cdylib pointing at the unchanged
 `tests/integration.rs`, with `--cfg test` applied only to its root crate. Scratch
-dependencies come from the current manifests. Packaging first fetches the
-checkout's locked dependencies, which may require network access on a cold cache.
-Rust repository tooling prepares the scratch manifest and compares its resolved
-lock with the checkout lock. It resolves workspace dependency aliases, combines
+dependencies come from the current manifests. Packaging builds the Rust setup
+command before fetching the checkout's locked dependencies. Either operation may
+require network access on a cold cache. Rust repository tooling prepares the
+scratch manifest and compares its resolved lock with the checkout lock. It resolves
+workspace dependency aliases, combines
 normal, WebAssembly and development features, anchors dependency and patch paths
 to the checkout, and retains the library source and development profile. Native-only
 dependencies stay outside the browser library. Preparation copies `Cargo.lock`
@@ -216,9 +217,10 @@ The driver's `browser-export-setup` operations use the existing `development`
 command. `binding-version` checks the observed CLI version against the single
 locked `wasm-bindgen` package. `prepare` takes a scratch directory; `check-lock`
 takes that same directory after offline Cargo resolution. Missing or malformed
-manifest/lock data fails with the filename. An inherited dependency missing from
-the workspace fails with its alias. External identities include name, version,
-source and checksum; any addition fails before compilation. The authored manifests
+manifest/lock data fails preparation. Lock errors and manifest parse errors include
+the filename. An inherited dependency missing from the workspace fails with its
+alias. External identities include name, version, source and checksum; any addition
+fails before compilation. The authored manifests
 and lock stay unchanged. Build outputs remain in Cargo's resolved target directory.
 
 Bindings use `--target web --split-linked-modules` to retain local snippets,
