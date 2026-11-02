@@ -102,6 +102,16 @@ Use Wasmtime/wasmtime-wasi at unmodified upstream commit `ffff2e2db24a291f02429f
 
 The component SDK preserves every host capability: ordered live events/hooks, transforming and cancelling operations, tool schemas/validation/progress/results, commands and command-only context methods, flags, shortcuts, providers/OAuth/streams, source discovery, session queries/entries, messaging, exec/network/files, live getters, themes, renderers, custom editor/components, focusable overlays, status/footer/header/widgets and reload. UI render/input/invalidate calls remain synchronous where their callers require it; asynchronous work uses native async and owned resources, not JSON-only replies. UI-entering interactive execution and its synchronous callbacks share the caller-owned local executor. Independent native I/O and the default embedding SDK retain thread-safe execution; this adds no scheduler or runtime setting. Use shape A capability interfaces and typed resources; register handlers one by one so the host retains per-handler semantics. Messages, entries, provider payloads and tool arguments use session JSON losslessly. The domain owns the existing ExtensionRuntime action record, factory facade and local contexts. Only the Wasmtime adapter owns its engine/linker/bindings, one component instance per extension, stream pipes and trap diagnostics. Typed requests connect its thread-safe Store to the caller's local domain/UI owners; synchronous callbacks pump requests on the original local receiver. Callback emission retains the bus's emit-time listener snapshot in registration order. The guest invokes its own listeners locally and waits for each consecutive host-listener segment through a synchronous import before continuing; nested emissions repeat that walk. Each own listener keeps an independent native callback frame, error destination and tail boundary. Foreign instances retain the callback-return delivery rule. Internal callback exports are async-typed so synchronous host requests may wait on the dedicated Store thread; guest author callbacks and callback emission remain synchronous. This adds no second receiver or Store lifecycle. The guest owns one canonical WIT source checked against host code generation. Optional command and compaction options retain absence separately from a present empty record across that interface; model reads return owned values. Network operations use the WIT http interface backed by host reqwest, not a second WASI HTTP library. The shared interface hides runtime-library types.
 
+Component file saves use recoverable in-place `maestro_lock::replace` through
+application-owned native I/O. `CreationMode::AtCreation` applies requested Unix
+creation bits at open, filtered by umask, before any target bytes are written;
+rewrites retain existing permissions. File identity, hard links, ownership and
+ACLs survive. Unlocked readers may see partial bytes mid-save; the next coordinated
+acquisition completes interrupted writes from the recovery record. Final links,
+short adjacent recovery names, exclusion and committed durability warnings stay
+with the lock owner. The [component host contract](extension-host.md) records the
+operation set and runtime qualification still required.
+
 Extensions receive the user's full effective permissions through host operations. Add no capability grants, restriction policy, fuel, memory limits or deadlines. Preserve registration-specific collision behavior: same-extension replacement, cross-extension rules and individually diagnosed provider failures; there is no whole-owner atomic validation policy. Hooks iterate current collections in load/registration order. Presence of UI does not imply every mode implements the same methods, and every disposal/reload does not automatically settle dialogs.
 
 Application session operations own replacement ordering and context rebinding. Command contexts select bound command operations when called; admitted command futures retain their selected operation through completion. Registration retains its per-handler behavior without a separate generation-publication controller. Reconstruct new guest state through the same session state/hooks, not heap migration. Validate stale/foreign/disposed handles before Wasm entry; preserve operation-specific in-flight cancellation and reentrancy. Initially retain compiled components only in a process-local identity-bound cache; never deserialize native bytes from packages, users or disk. Compile the original component on a miss. A persistent native cache needs a separate integrity proof: full-user extensions can modify same-user files, so filesystem ownership alone is not a trust boundary. Stale or not-yet-bound context calls return recoverable, catchable errors, not traps; one caught stale call must not terminate another task. Traps are reserved for actual component faults and do not justify calling a poisoned instance again.
@@ -318,6 +328,17 @@ Default tests run on Linux with deterministic fake providers/clock/terminal/brow
 
 
 CI must be equal or stronger step by step. Install rg and fd and require real-binary search tests, not just fakes. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Keep strict Clippy, public rustdoc, conventions, full action-SHA pins and merge-queue validation. The full suite includes terminal tests.
+
+The private `_check` recipe runs native Clippy followed by Clippy for
+`x86_64-pc-windows-gnu`, forwarding the same explicit Cargo package selection to
+both passes with `--all-targets --locked -- -D warnings`. It adds no reverse
+dependents or workspace fallback. `just check` explicitly selects the workspace
+for both passes on every development host. The pinned toolchain target list
+includes the Windows-GNU standard library; hosts also need a working MinGW-w64
+C toolchain. Missing prerequisites fail the check, without a native-only fallback.
+The staged-crate commit hook remains native-only. Windows-GNU checks platform
+configuration boundaries, not MSVC-specific code or ABI behavior; required native
+Windows-MSVC CI and native runtime qualification remain unchanged.
 
 Define the caller-driven wasm32-unknown-unknown build gate in foundation tooling and activate it for the model library at its first re-port; every later browser-used crate opts in when created. The first real web application slice builds its actual wasm application and a working embedding example immediately. Full browser application/example builds remain required thereafter; cargo check, native-only compilation and empty examples do not qualify. Release builds cover darwin arm64/x64, linux x64/arm64 and windows x64, with matching notes/assets.
 
@@ -544,7 +565,8 @@ Move the existing matchers only after this contract lands, through
 `maestro-lock` is below layer 0 and depends only on `maestro-path` and the existing
 external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock. Application uses maestro-lock for recoverable file publication.
+may depend on lock. Application uses maestro-lock's recoverable in-place
+`replace` for component saves, preserving native identity.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -566,6 +588,14 @@ hard links survive. Settings and credentials hold this lock across read, update
 and replace, keeping their retry schedules. Session appends and rewrites and
 keybinding writes publish through it. Workspace snapshots and detection catalogs
 use the same owner's atomic publication because their readers hold no lock.
+Component saves use recoverable in-place publication with final-link following.
+Its optional `CreationMode` distinguishes umask-filtered `AtCreation` bits applied
+at open from exact `AfterSync` bits applied after syncing, retained for current
+callers. Existing target permissions take precedence in both cases. Recovery
+headers use 0 for native defaults, 1 for AfterSync and 2 for AtCreation. Unix
+read-only AtCreation replay durably stages the observed mode as AfterSync before
+adding owner-write, then restores and syncs that mode before removing the record.
+Ordinary creation never widens permissions; Windows retains its read-only mapping.
 Feature owners keep serialization and symbolic-link policy. Neither leaf
 introduces a common background runtime, scheduler, retry policy or listener
 framework. Feature-specific timing, process, subscription and teardown semantics
@@ -753,6 +783,8 @@ Repository tooling builds the host artifact once per input set, records its emit
 path, source freshness and digest, and exports an explicit absolute path for local,
 filtered and archive-remapped runs. Tests never compile or discover a fallback.
 See [Rust test children](test-processes.md) for the complete contract.
+Its native helpers also provide loopback servers, completed child probes,
+executable installation and child-build toolchain selection.
 
 On Unix the owner currently runs caller-supplied setup text in the interpreter the
 caller names by absolute path. Typed isolated native setup is planned; shell setup
@@ -892,8 +924,8 @@ consumers; the utility is delivered before its first consumer.
 ### Terminal scenario owner
 
 `maestro-test-terminal` is a dedicated, unpublished, native crate that drives the
-toolkit through its public interface. Its library owns the recording terminal and
-the manual runtime a controlled terminal scenario needs; its integration tests own
+toolkit through its public interface. Its library reexports the recording terminal
+and manual runtime from `maestro-tui::test_support`; its integration tests own
 the virtual terminal and the written scenarios. It requires `maestro-tui` and
 nothing else from the workspace, and it is excluded from the foundation utility
 permission. Its only incoming edge is a non-optional native development
@@ -1114,3 +1146,28 @@ specializes the former with resource scope, and guest authoring with operation
 scope. Runtime resolution, acquisition and Git effects remain in `maestro-packages`.
 Only packages and guest authoring may depend on this leaf, apart from the native
 feature unifier exception. It has no foundation path utility permission.
+
+### Opt-in test helpers
+
+Typed test helpers may live in their type owner's non-default `test-support`
+feature. Product consumers enable it only through development dependencies.
+An owner's self development dependency may enable this feature so its integration
+program remains runnable without command-line feature flags. That feature-only
+self edge adds no separate crate to the cycle graph; all cross-crate cycle checks
+still apply.
+
+Dedicated `maestro-test-*` libraries may enable a type owner's `test-support`
+feature on a normal dependency, preserving their existing public helper paths.
+A product's own non-default `test-support` feature may forward directly to a
+normal dependency's `test-support` feature. This is one hop only: the target
+feature must not itself forward to another product's test-support feature.
+Normal/build dependency feature lists and other product features, including
+`default`, may not enable test-support. Cargo-metadata conventions enforce these
+boundaries independently of dependency aliases and target predicates.
+
+Chat may declare a portable, non-optional development dependency on credentials
+solely with `features = ["test-support"]` for shared selector diagnostics. This
+edge does not authorize a production dependency or a pass-through helper in the
+application. Other type-owner activation on existing production edges adds no
+new crate relationship; the conventions checker validates those declarations
+without requiring a second development-policy row.

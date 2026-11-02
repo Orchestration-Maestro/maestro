@@ -130,7 +130,8 @@ pub fn group(name: &str) {
                     .unwrap()
                     .case("*"),
                 &[("TZ", Some(tz))],
-            );
+            )
+            .unwrap();
         }
         return;
     }

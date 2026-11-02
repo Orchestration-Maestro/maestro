@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod agent_session_auto_compaction_queue_checks;
+mod agent_session_bash_persistence_checks;
 mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
 mod agent_session_compaction_checks;
@@ -232,6 +233,11 @@ mod support {
     pub mod spreadsheet_native;
 }
 mod theme_selection;
+mod tools_bash_checks;
+mod tools_edit_checks;
+mod tools_read_checks;
+mod tools_search_checks;
+mod tools_write_checks;
 mod tree_cancel_compacting_checks;
 mod tree_interface;
 mod tree_traversal_checks;

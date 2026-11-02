@@ -62,11 +62,7 @@ pub fn diff(props: DiffProps) -> PreparedContent {
     Box::new(DiffContent(Rc::new(normalize(props))))
 }
 /// Immutable recipe; native roots belong to each mounted root.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 struct DiffContent(Rc<Normalized>);
+/// Rendered-value projections for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub(crate) mod view;

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use maestro_test_directory::Scratch;
+use maestro_test_process::credentials::{self, Scenario};
 use maestro_test_process::install_executable;
 
 /// The explicit artifact supplied by repository preparation, never a target-directory search.
@@ -113,6 +114,46 @@ fn path_aliases_keep_native_operands_pid_environment_and_raw_streams() {
     }
 }
 
+/// A copied preparation example reports its cache without exporting components or writing logs.
+#[test]
+fn author_cache_query_has_no_preparation_effects() {
+    let root = Scratch::new().unwrap();
+    let alias = root.path().join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    install_executable(&artifact(), &alias).unwrap();
+    std::fs::write(
+        root.path().join("author-record"),
+        "tooling-author\n{\"scenario\":\"cached\",\"engine\":\"fixture\"}\n",
+    )
+    .unwrap();
+    let cache = root.path().join("private cache");
+    let environment = root.path().join("nextest-env");
+
+    let output = Command::new(alias)
+        .arg("--cache-directory")
+        .current_dir(root.path())
+        .env("MAESTRO_NATIVE_RECORD", root.path().join("author-record"))
+        .env("XDG_CACHE_HOME", &cache)
+        .env("NEXTEST_ENV", &environment)
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        serde_json::from_slice::<PathBuf>(&output.stdout).unwrap(),
+        cache.join("wasmtime")
+    );
+    assert!(!environment.exists());
+    assert!(!cache.exists());
+    assert!(!root.path().join("seen").exists());
+}
+
 /// Invalid selectors and records fail before fixture or installation effects.
 #[test]
 fn invalid_native_requests_leave_the_effect_sentinel_absent() {
@@ -156,6 +197,44 @@ fn invalid_native_requests_leave_the_effect_sentinel_absent() {
     assert!(install_executable(&root.path().join("missing"), &sentinel).is_err());
     assert!(install_executable(&artifact(), &root.path().join("missing/alias")).is_err());
     assert!(!sentinel.exists());
+}
+
+/// Malformed search records fail before operand logs or injection sentinels are written.
+#[cfg(unix)]
+#[test]
+fn malformed_search_records_have_no_partial_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let sentinel = root.path().join("effect");
+    let response = json!({"scenario":"response", "args":sentinel,
+        "stdout":[], "stderr":[], "code":0, "signal":null});
+    let mut invalid = vec![
+        json!({"scenario":"marker", "path":sentinel,
+            "text":"executed", "copy_input":false, "unknown":true}),
+        json!({"scenario":"chosen-shell", "unknown":true}),
+    ];
+    for (field, value) in [
+        ("stdout", json!([256])),
+        ("code", json!(256)),
+        ("signal", json!("unknown")),
+        ("scenario", json!("unknown")),
+    ] {
+        let mut record = response.clone();
+        record[field] = value;
+        invalid.push(record);
+    }
+    for record in invalid {
+        let path = root.path().join("record");
+        std::fs::write(&path, format!("search\n{record}")).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {record}");
+        assert!(output.stdout.is_empty());
+        assert!(!sentinel.exists(), "partial effects for {record}");
+    }
 }
 
 /// Concurrent installations leave launchable copies with independently mutable ages.
@@ -275,4 +354,208 @@ fn cargo_metadata_forwarding_keeps_the_native_child_pid() {
     assert!(output.status.success());
     assert_eq!(output.stderr, b"err\0\xfe!");
     assert_eq!(reported_pid, pid.to_string().as_bytes());
+}
+
+/// RPC family inputs fail before protocol bytes or launch markers can escape.
+#[cfg(unix)]
+#[test]
+fn rpc_peer_inputs_fail_before_protocol_output_or_marker_creation() {
+    let root = Scratch::new().unwrap();
+    let record = root.path().join("record");
+    let marker = root.path().join("marker");
+    for (text, answers, records, replies) in [
+        ("rpc-peer\nunknown\n", "{}", "[]", "[]"),
+        ("rpc-peer\n", "{}", "[]", "[]"),
+        ("rpc-peer\nLaunch\nextra\n", "{}", "[]", "[]"),
+        ("rpc-peer\nServe\n", "[]", "[]", "[]"),
+        ("rpc-peer\nBurst\n", "{}", "{}", "[]"),
+        ("rpc-peer\nReplay\n", "{}", "[]", "[null]"),
+        ("rpc-peer\nTick\n", "{}", "[]", "[]"),
+    ] {
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .env("PEER_MARKER", &marker)
+            .env("PEER_ANSWERS", answers)
+            .env("PEER_RECORDS", records)
+            .env("PEER_REPLIES", replies)
+            .env("PEER_PORT", "0")
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(
+            output.stdout.is_empty(),
+            "emitted protocol output for {text:?}"
+        );
+        assert!(!marker.exists(), "wrote a launch marker for {text:?}");
+    }
+}
+
+/// Idle peers distinguish TERM before EOF from plain EOF without waiting for a signal.
+#[cfg(unix)]
+#[test]
+fn rpc_idle_peer_observes_term_and_eof_independently() {
+    use std::io::{BufRead, BufReader};
+    let root = Scratch::new().unwrap();
+    let path = root.path().join("idle");
+    install_executable(&artifact(), &path).unwrap();
+    std::fs::write(
+        root.path().join("idle.fixture"),
+        "rpc-peer\nIdleInterrupt\n",
+    )
+    .unwrap();
+    for terminate in [false, true] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let marker = root.path().join(format!("marker-{terminate}"));
+        let mut child = Command::new(&path)
+            .env(
+                "PEER_PORT",
+                listener.local_addr().unwrap().port().to_string(),
+            )
+            .env("PEER_MARKER", &marker)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut report = BufReader::new(listener.accept().unwrap().0);
+        let mut line = String::new();
+        if terminate {
+            rustix::process::kill_process(
+                rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap(),
+                rustix::process::Signal::TERM,
+            )
+            .unwrap();
+        }
+        drop(child.stdin.take());
+        if terminate {
+            report.read_line(&mut line).unwrap();
+            assert_eq!(line, "terminated\n");
+            assert_eq!(std::fs::read_to_string(&marker).unwrap(), "terminated");
+            line.clear();
+        }
+        report.read_line(&mut line).unwrap();
+        assert_eq!(line, "input closed\n");
+        line.clear();
+        assert_eq!(report.read_line(&mut line).unwrap(), 0);
+        assert!(child.wait_with_output().unwrap().status.success());
+        assert_eq!(marker.exists(), terminate);
+    }
+}
+
+/// An installed alias of the credential scenarios, with its record already written.
+fn credential_alias(root: &Path, name: &str, scenario: Scenario) -> PathBuf {
+    let path = root.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    credentials::install(&path, scenario).unwrap();
+    path
+}
+
+/// The runs an installed credential process counted beside itself.
+fn counted_runs(root: &Path) -> usize {
+    std::fs::read_to_string(root.join("process-count"))
+        .unwrap_or_default()
+        .lines()
+        .count()
+}
+
+/// A complete credential document names the controlled key, secret and token.
+fn assert_credential_document(variant: &str, stdout: &[u8]) {
+    let document: serde_json::Value = serde_json::from_slice(stdout).unwrap();
+    assert_eq!(document["Version"], 1, "{variant}: version");
+    assert_eq!(document["AccessKeyId"], "process-key", "{variant}: key");
+    assert_eq!(
+        document["SessionToken"], "process-token",
+        "{variant}: token"
+    );
+    assert_eq!(
+        document["SecretAccessKey"], "controlled-secret",
+        "{variant}: secret"
+    );
+    assert!(document.get("Expiration").is_none(), "{variant}: expiry");
+}
+
+/// Each unusable document carries exactly one defect the reader must refuse.
+fn assert_unusable_documents(process: &Path) {
+    let answer = |variant: &str| Command::new(process).arg(variant).output().unwrap();
+    assert_eq!(answer("invalid_json").stdout, b"broken", "unusable text");
+    let wrong: serde_json::Value = serde_json::from_slice(&answer("wrong_version").stdout).unwrap();
+    assert_eq!(wrong["Version"], 2, "refused version");
+    let missing: serde_json::Value = serde_json::from_slice(&answer("missing_key").stdout).unwrap();
+    assert!(missing.get("SecretAccessKey").is_none(), "missing secret");
+    let expired: serde_json::Value = serde_json::from_slice(&answer("expired").stdout).unwrap();
+    assert_eq!(
+        expired["Expiration"], "2000-01-01T00:00:00Z",
+        "expired document"
+    );
+}
+
+/// An AWS credential process answers every variant and counts each run.
+#[test]
+fn credential_process_answers_variants_and_counts_runs() {
+    let root = Scratch::new().unwrap();
+    let process = credential_alias(root.path(), "process", Scenario::AwsProcess);
+    for (variant, status) in [("once", 7), ("once", 0), ("ok", 0), ("fail", 7)] {
+        let output = Command::new(&process).arg(variant).output().unwrap();
+        assert_eq!(output.status.code(), Some(status), "{variant}: status");
+        assert!(output.stderr.is_empty(), "{variant}: diagnostics");
+        if status == 0 {
+            assert_credential_document(variant, &output.stdout);
+        } else {
+            assert!(output.stdout.is_empty(), "{variant}: failing output");
+        }
+    }
+    assert_unusable_documents(&process);
+    assert_eq!(counted_runs(root.path()), 8, "counted runs");
+}
+
+/// A Google executable source answers one success document and takes no operand.
+#[test]
+fn google_executable_source_answers_one_success_document() {
+    let root = Scratch::new().unwrap();
+    let source = credential_alias(root.path(), "source", Scenario::GoogleExecutable);
+    let output = Command::new(&source).output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let document: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["version"], 1);
+    assert_eq!(document["success"], true);
+    assert_eq!(document["id_token"], "subject-exec");
+    assert_eq!(document["expiration_time"], 4_102_444_800_u64);
+    assert!(!root.path().join("process-count").exists(), "counted a run");
+    assert!(
+        !Command::new(&source)
+            .arg("extra")
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+}
+
+/// Records and variants outside the compiled set fail before any output or count.
+#[test]
+fn credential_records_and_variants_fail_before_output() {
+    let root = Scratch::new().unwrap();
+    for text in [
+        "credentials\nunknown\n",
+        "credentials\n",
+        "credentials\nAwsProcess\nextra\n",
+    ] {
+        let record = root.path().join("record");
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(output.stdout.is_empty(), "answered for {text:?}");
+    }
+    let process = credential_alias(root.path(), "process", Scenario::AwsProcess);
+    for operands in [vec!["unknown"], vec!["ok", "ok"]] {
+        let output = Command::new(&process).args(&operands).output().unwrap();
+        assert!(!output.status.success(), "accepted {operands:?}");
+        assert!(output.stdout.is_empty(), "answered for {operands:?}");
+    }
+    assert_eq!(counted_runs(root.path()), 0, "counted a rejected run");
 }

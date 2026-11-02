@@ -269,7 +269,8 @@ fn replay(name: &str, case: Case<Input, Expected>) {
                 ("MAESTRO_CODING_AGENT_DIR", &agent),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(lines.len(), 1);
         let actual: Outcome = serde_json::from_str(&lines[0]).unwrap();
         assert_eq!(actual.result, expected.result);
@@ -294,12 +295,7 @@ fn replay(name: &str, case: Case<Input, Expected>) {
             );
         }
     }
-    for name in case.input.permissions.keys() {
-        let path = scratch.0.path().join(name);
-        if path.exists() {
-            fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
-        }
-    }
+    restore_permissions(scratch.0.path(), case.input.permissions.keys());
 }
 
 /// A scratch directory for a scenario this host can author, with the spellings it cannot store
@@ -398,4 +394,14 @@ fn normalize_output(output: &str, denied: bool) -> String {
             }
         })
         .collect()
+}
+
+/// Restore authored modes before the scratch owner removes its directory.
+fn restore_permissions<'a>(root: &Path, names: impl Iterator<Item = &'a String>) {
+    for name in names {
+        let path = root.join(name);
+        if path.exists() {
+            fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
+        }
+    }
 }

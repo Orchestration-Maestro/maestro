@@ -5,7 +5,7 @@
 use crate::fixtures;
 use fixtures::completion_native::Tree;
 #[cfg(unix)]
-use fixtures::native_attachments::{child_script, native_cases};
+use fixtures::native_attachments::{child, native_cases};
 use fixtures::native_attachments::{entries, executable, paths, query, runtime};
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
@@ -280,12 +280,11 @@ fn native_child_abort_waits_for_cleanup() {
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
         .await
         .unwrap();
-    let script = child_script(
+    let port = listener.local_addr().unwrap().port();
+    let script = child(
         &tree,
-        &format!(
-            "import socket,sys\nsys.stdout.buffer.write(b'partial\\0'); sys.stdout.flush()\ns=socket.create_connection(('127.0.0.1',{}))\ns.sendall(b'READY')\ns.recv(1)",
-            listener.local_addr().unwrap().port()
-        ),
+        "child",
+        &serde_json::json!({"scenario": "completion-wait", "stdout": b"partial\0", "port": port}),
     );
     let operations = NativeAutocompleteOperations::default();
     let signal = Cancellation::new();
@@ -304,34 +303,56 @@ fn native_child_abort_waits_for_cleanup() {
     let cancelled = result.unwrap_err();
     assert_eq!(cancelled.kind(), std::io::ErrorKind::Interrupted);
     assert_eq!(cancelled.to_string(), "search cancelled");
-    let preaborted = Cancellation::new();
-    preaborted.abort();
-    assert_eq!(
-        operations
-            .run_fd("missing-executable", &[], &preaborted)
-            .await
-            .unwrap_err()
-            .kind(),
-        std::io::ErrorKind::Interrupted
-    );
-    assert!(
-        operations
-            .run_fd("missing-executable", &[], &Cancellation::new())
-            .await
-            .is_err()
-    );
-    let failure = child_script(
-        &tree,
-        "import sys\nsys.stdout.buffer.write(b'partial\\0')\nsys.exit(7)",
-    );
-    assert_eq!(
-        operations
-            .run_fd(&failure, &[], &Cancellation::new())
-            .await
-            .unwrap_err()
-            .to_string(),
-        "search process failed"
-    );
+    });
+}
+
+#[cfg(unix)]
+#[test]
+fn native_preaborted_search_never_launches() {
+    runtime().block_on(async {
+        use maestro_tui::autocomplete::AutocompleteOperations;
+        let operations = NativeAutocompleteOperations::default();
+        let preaborted = Cancellation::new();
+        preaborted.abort();
+        assert_eq!(
+            operations
+                .run_fd("missing-executable", &[], &preaborted)
+                .await
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::Interrupted
+        );
+        assert!(
+            operations
+                .run_fd("missing-executable", &[], &Cancellation::new())
+                .await
+                .is_err()
+        );
+    });
+}
+
+#[cfg(unix)]
+#[test]
+fn native_failed_search_reports_process_failure() {
+    runtime().block_on(async {
+        use maestro_tui::autocomplete::AutocompleteOperations;
+        let tree = Tree::new().unwrap();
+        let args = tree.path().join("args.json");
+        let failure = child(
+            &tree,
+            "failure",
+            &serde_json::json!({"scenario": "response", "args": &args,
+            "stdout": b"partial\0", "stderr": [], "code": 7, "signal": null}),
+        );
+        assert_eq!(
+            NativeAutocompleteOperations::default()
+                .run_fd(&failure, &[], &Cancellation::new())
+                .await
+                .unwrap_err()
+                .to_string(),
+            "search process failed"
+        );
+        assert!(args.exists(), "the failed child never ran");
     });
 }
 
@@ -339,57 +360,65 @@ fn native_child_abort_waits_for_cleanup() {
 #[test]
 fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
     runtime().block_on(async {
-    use maestro_tui::autocomplete::AutocompleteOperations;
-    use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
-    use std::task::Poll;
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    let tree = Tree::new().unwrap();
-    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
-        .await
-        .unwrap();
-    // The direct child reports its process id, leaves a descendant holding both pipes and exits.
-    let script = child_script(
-        &tree,
-        &format!(
-            "import os,socket\ndef connect(greeting):\n    s=socket.create_connection(('127.0.0.1',{}))\n    s.sendall(greeting); return s\nconnect(b'%d' % os.getpid()).close()\nif os.fork()==0:\n    connect(b'D').recv(1); os._exit(0)",
-            listener.local_addr().unwrap().port()
-        ),
-    );
-    let operations = NativeAutocompleteOperations::default();
-    let signal = Cancellation::new();
-    let run = operations.run_fd(&script, &[], &signal);
-    tokio::pin!(run);
-    let greetings = async {
-        let (mut child, _) = listener.accept().await.unwrap();
-        let mut pid = String::new();
-        child.read_to_string(&mut pid).await.unwrap();
-        let (mut descendant, _) = listener.accept().await.unwrap();
-        assert_eq!(descendant.read_u8().await.unwrap(), b'D');
-        (pid.parse().unwrap(), descendant)
-    };
-    let (pid, mut descendant) = tokio::select! {
-        _ = &mut run => panic!("search ended before cancellation"),
-        greetings = greetings => greetings,
-    };
-    // Once the direct child has exited, cancellation reaps it without waiting, so one poll
-    // after the abort settles a search that ignores the descendant's pipes. ECHILD means the
-    // search already reaped the child.
-    match waitid(
-        WaitId::Pid(Pid::from_raw(pid).unwrap()),
-        WaitIdOptions::EXITED | WaitIdOptions::NOWAIT,
-    ) {
-        Ok(_) | Err(rustix::io::Errno::CHILD) => {}
-        Err(error) => panic!("waiting for the direct child: {error}"),
-    }
-    signal.abort();
-    let polled = std::future::poll_fn(|cx| Poll::Ready(run.as_mut().poll(cx))).await;
-    descendant.write_all(b"g").await.unwrap();
-    let mut rest = vec![];
-    descendant.read_to_end(&mut rest).await.unwrap();
-    let Poll::Ready(result) = polled else {
-        panic!("cancellation waited for the descendant's pipes");
-    };
-    assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::Interrupted);
+        use maestro_tui::autocomplete::AutocompleteOperations;
+        use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
+        use std::task::Poll;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let tree = Tree::new().unwrap();
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        // The direct child reports its process id, leaves a descendant holding both pipes and exits.
+        let port = listener.local_addr().unwrap().port();
+        let holder = child(
+            &tree,
+            "child-holder",
+            &serde_json::json!({"scenario": "completion-holder", "port": port}),
+        );
+        let script = child(
+            &tree,
+            "child",
+            &serde_json::json!({
+                "scenario": "completion-descendant",
+                "port": port,
+                "holder": holder,
+            }),
+        );
+        let operations = NativeAutocompleteOperations::default();
+        let signal = Cancellation::new();
+        let run = operations.run_fd(&script, &[], &signal);
+        tokio::pin!(run);
+        let greetings = async {
+            let (mut child, _) = listener.accept().await.unwrap();
+            let mut pid = String::new();
+            child.read_to_string(&mut pid).await.unwrap();
+            let (mut descendant, _) = listener.accept().await.unwrap();
+            assert_eq!(descendant.read_u8().await.unwrap(), b'D');
+            (pid.parse().unwrap(), descendant)
+        };
+        let (pid, mut descendant) = tokio::select! {
+            _ = &mut run => panic!("search ended before cancellation"),
+            greetings = greetings => greetings,
+        };
+        // Once the direct child has exited, cancellation reaps it without waiting, so one poll
+        // after the abort settles a search that ignores the descendant's pipes. ECHILD means the
+        // search already reaped the child.
+        match waitid(
+            WaitId::Pid(Pid::from_raw(pid).unwrap()),
+            WaitIdOptions::EXITED | WaitIdOptions::NOWAIT,
+        ) {
+            Ok(_) | Err(rustix::io::Errno::CHILD) => {}
+            Err(error) => panic!("waiting for the direct child: {error}"),
+        }
+        signal.abort();
+        let polled = std::future::poll_fn(|cx| Poll::Ready(run.as_mut().poll(cx))).await;
+        descendant.write_all(b"g").await.unwrap();
+        let mut rest = vec![];
+        descendant.read_to_end(&mut rest).await.unwrap();
+        let Poll::Ready(result) = polled else {
+            panic!("cancellation waited for the descendant's pipes");
+        };
+        assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::Interrupted);
     });
 }
 
@@ -397,19 +426,24 @@ fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
 #[test]
 fn native_child_drains_stderr_before_returning_stdout() {
     runtime().block_on(async {
-    use maestro_tui::autocomplete::AutocompleteOperations;
-    let tree = Tree::new().unwrap();
-    let script = child_script(
-        &tree,
-        "import sys\nassert sys.stdin.buffer.read()==b''\nsys.stderr.buffer.write(b'x'*1048576); sys.stderr.flush()\nsys.stdout.buffer.write(b'sentinel\\0')",
-    );
-    let operations = NativeAutocompleteOperations::default();
-    assert_eq!(
-        operations
-            .run_fd(&script, &[], &Cancellation::new())
-            .await
-            .unwrap(),
-        b"sentinel\0"
-    );
+        use maestro_tui::autocomplete::AutocompleteOperations;
+        let tree = Tree::new().unwrap();
+        let script = child(
+            &tree,
+            "child",
+            &serde_json::json!({
+                "scenario": "completion-stream",
+                "stdout": b"sentinel\0",
+                "stderr": 1_048_576,
+            }),
+        );
+        let operations = NativeAutocompleteOperations::default();
+        assert_eq!(
+            operations
+                .run_fd(&script, &[], &Cancellation::new())
+                .await
+                .unwrap(),
+            b"sentinel\0"
+        );
     });
 }

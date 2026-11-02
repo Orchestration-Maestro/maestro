@@ -12,11 +12,11 @@ use std::{cell::Cell, rc::Rc};
 
 #[test]
 fn native_renderer_keeps_typed_details_without_serializing() {
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let args = json!({});
     let ctx = context::<()>(
         &args,
-        &Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]})),
+        &Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]})).unwrap(),
         &env,
         None,
     );
@@ -99,8 +99,8 @@ fn raw(details: Option<&serde_json::Value>) -> ToolRenderResultLike<'_, serde_js
 /// A standalone context and controlled display environment.
 fn environment() -> (Env, Setup) {
     (
-        Env::new(0),
-        Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]})),
+        Env::new(0).unwrap(),
+        Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]})).unwrap(),
     )
 }
 /// A callback observation independent of details representation.
@@ -426,10 +426,12 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         let env = Env::with(
             Rc::new(crate::edit_render_support::palette(0)),
             Rc::new(crate::display_support::NoLanguages),
-        );
+        )
+        .unwrap();
         let setup = Setup::from(
             &json!({"readme":"/docs/README.md","bindings":[],"cwd":dir.text(),"argsComplete":true}),
-        );
+        )
+        .unwrap();
         let args = json!({"path":"file","oldText":"alpha","newText":"beta"});
         let mut row = context::<ToolRendererState>(&args, &setup, &env, None);
         let custom = wrapped_edit(&dir.text());
@@ -648,9 +650,10 @@ fn retained_edit_malformed_line_uses_absent_fallback() {
     let env = Env::with(
         Rc::new(crate::edit_render_support::palette(0)),
         Rc::new(crate::display_support::NoLanguages),
-    );
+    )
+    .unwrap();
     let args = json!({"path":"notes.txt"});
-    let setup = Setup::from(&json!({"readme":"/docs/README.md","bindings":[]}));
+    let setup = Setup::from(&json!({"readme":"/docs/README.md","bindings":[]})).unwrap();
     let native = maestro_tools::create_edit_tool_definition::<()>(
         "/work".into(),
         maestro_tools::EditToolOptions::default(),

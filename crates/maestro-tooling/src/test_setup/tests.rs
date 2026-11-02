@@ -105,7 +105,7 @@ fn bundle_export_installs_the_native_example() {
     let artifacts = root.join("debug");
     let environment = root.join("nextest-env");
 
-    export(root, &bundle, &artifacts, &environment, None).unwrap();
+    export(root, &bundle, &artifacts, &environment).unwrap();
 
     assert_eq!(
         std::fs::read(artifacts.join("examples").join(native)).unwrap(),

@@ -194,14 +194,23 @@ fn grep_global_limit_includes_requested_context() {
 #[test]
 fn grep_flag_like_pattern_never_runs_commands() {
     let root = crate::grep_support::tree();
-    crate::find_support::executable(
-        &root,
+    let marker = root.path().join("injection-marker");
+    crate::find_support::alias(
+        root.path(),
         "payload.sh",
-        &format!(
-            "#!/bin/sh\necho executed > '{}'\ncat \"$1\"\n",
-            root.path().join("injection-marker").display()
-        ),
+        &serde_json::json!({
+            "scenario":"marker", "path":marker, "text":"executed\n", "copy_input":true
+        }),
     );
+    let probe = root.file("probe-input", b"sentinel input\0\xff");
+    let output = std::process::Command::new(root.path().join("payload.sh"))
+        .arg(probe)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stdout, b"sentinel input\0\xff");
+    assert_eq!(std::fs::read(&marker).unwrap(), b"executed\n");
+    std::fs::remove_file(marker).unwrap();
     for c in crate::grep_support::cases("grep_flag_like_pattern_never_runs_commands") {
         crate::grep_support::check_native(&c, &root);
     }
@@ -400,11 +409,8 @@ fn grep_cancellation_stops_live_child() {
             let event=serde_json::json!({"type":"match","data":{"path":{"text":root.path().join("file.txt").to_str().unwrap()},"line_number":1,"lines":{"text":"hit\n"}}}).to_string()+"\n";
             let listener = g::session(
                 &root,
-                &format!(
-                    "signal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write(1,{}.encode())\n{}\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'T')\nassert s.recv(1)==b'x'\nsys.exit(9)",
-                    serde_json::json!(event),
-                    if limited { "" } else { "s.sendall(b'S')" }
-                ),
+                serde_json::json!({"scenario":"grep-term", "event":event.into_bytes(),
+                    "started":!limited}),
             );
             let signal = Cancellation::new();
             let execution = g::invocation(
@@ -448,10 +454,8 @@ fn grep_limit_terminates_before_later_results() {
         let event=serde_json::json!({"type":"match","data":{"path":{"text":root.path().join("first").to_str().unwrap()},"line_number":1}}).to_string()+"\n";
         let listener = g::session(
             &root,
-            &format!(
-                "signal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write(1,{}.encode())\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'T')\nassert s.recv(1)==b'x'\nsys.exit(9)",
-                serde_json::json!(event)
-            ),
+            serde_json::json!({"scenario":"grep-term", "event":event.into_bytes(),
+                "started":false}),
         );
         let execution = g::invocation(
             &root,
@@ -511,13 +515,13 @@ fn grep_stdout_framing_ignores_stderr() {
                     (2, b"\xa9nied \r\n".to_vec()),
                 ]
             };
-            let writes = chunks.iter().fold(String::new(), |mut script,(fd,bytes)| {
-                use std::fmt::Write;
-                let encoded=base64::Engine::encode(&base64::prelude::BASE64_STANDARD,bytes);
-                writeln!(script,"s.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write({fd},__import__('base64').b64decode('{encoded}'))").unwrap();
-                script
-            });
-            let listener = g::session(&root, &format!("{writes}\nsys.exit({code})"));
+            let chunks: Vec<_> = chunks.into_iter().map(|(fd, bytes)| {
+                serde_json::json!({"stream":if fd == 1 {"stdout"} else {"stderr"}, "bytes":bytes})
+            }).collect();
+            let listener = g::session(
+                &root,
+                serde_json::json!({"scenario":"chunks", "chunks":chunks, "code":code}),
+            );
             let execution = g::invocation(&root, serde_json::json!({"pattern":"hit"}), None);
             tokio::pin!(execution);
             let (mut socket, _) = tokio::select! {r=&mut execution=>panic!("ended before readiness: {}",r.is_ok()),s=listener.accept()=>s.unwrap()};

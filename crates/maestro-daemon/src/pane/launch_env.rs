@@ -25,6 +25,10 @@ const OUTER_TERMINAL_MARKERS: [&str; 12] = [
     "ZELLIJ_PANE_ID",
 ];
 
+/// The variable through which a starting server learns the directory its first workspace
+/// opens in; panes never inherit it.
+pub const STARTUP_CWD_ENV: &str = "MAESTRO_STARTUP_CWD";
+
 /// Extra user environment pairs and the pane identity policy.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PaneLaunchEnv {
@@ -98,6 +102,7 @@ impl PaneLaunchEnv {
             ("TERM".into(), Some("xterm-256color".into())),
             ("COLORTERM".into(), Some("truecolor".into())),
             ("CODEX_THREAD_ID".into(), None),
+            (STARTUP_CWD_ENV.into(), None),
             (
                 maestro_tui::TERM_PROGRAM.into(),
                 Some(maestro_tui::PANE_TERM_PROGRAM.into()),

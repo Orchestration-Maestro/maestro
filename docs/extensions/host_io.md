@@ -1,5 +1,16 @@
 # Component operating environment
 
+## Quick start
+
+Use the component's standard filesystem calls for ordinary native access. For
+native host code saving files, use
+[`maestro_lock::replace`](../locking.md#recoverable-byte-publication) with
+`CreationMode::AtCreation` for requested creation permissions. The component
+save/mode facade remains undelivered; the
+[host contract](../specs/extension-host.md) describes its required behavior.
+
+## Reference
+
 The native host supplies one owned WASI context and resource table to both the
 standard-library 0.2 interfaces and the native asynchronous 0.3 interfaces.
 The existing Store thread runs their I/O and timer drivers; application
@@ -22,9 +33,11 @@ native directory that holds the path with the user's own access and finishes
 the operation there. The operating system therefore resolves every directory
 on the way, as it does for a native process: a drive mounted after the
 extension loads, any network share, junctions, and links with absolute
-targets. On Unix a user may be allowed to search a directory but not list it.
-The host cannot open such a directory, so a path below it is resolved one name
-at a time from the root, where an absolute link is refused.
+targets. A directory's search permission allows access to a known file without
+permission to list that directory. On Linux and macOS, the host opens a denied
+parent with a path-only or search-only handle, so direct paths and absolute
+links through that parent keep native file access. Removing search permission
+still denies access; the handle does not grant permission to list the directory.
 
 The host supplies the native current directory when it can observe it. Guest
 export startup applies that observation once to Rust’s standard-library cwd
@@ -73,9 +86,15 @@ passes paths through the root. A directory that a 0.3 caller opens itself
 keeps the standard rules for paths below it, so an absolute link there is
 refused; pass the whole path through the root instead. WASI paths are strings: a
 followed link whose final native name is not UTF-8 returns `illegal-byte-sequence`
-rather than opening a replacement-character spelling. Atomic saves and file modes remain
-undelivered. Final application-mode output routing remains separate from these
-host capabilities.
+rather than opening a replacement-character spelling. Some filesystems, including
+the default macOS filesystem, reject such names before a target can be created.
+The native recoverable publisher supports requested Unix creation modes at open,
+filtered by umask, before writing bytes. Existing modes take precedence on rewrite;
+`None` keeps native defaults. Saves preserve identity, hard links, owner and ACLs.
+Unlocked readers may see partial bytes mid-save; the next coordinated acquisition
+completes an interrupted write from its recovery record.
+This publisher support does not deliver component saves or mode operations.
+Final application-mode output routing remains separate from these host capabilities.
 
 ## Link checks
 
@@ -90,7 +109,8 @@ loading and callback dispatch. On an unprivileged Linux host:
 | Later target update through the same links | Updated bytes | Updated bytes | Updated bytes |
 | Dangling absolute link | Not found | `NoEntry` | Not found |
 | Genuinely unreadable direct target | Permission denied | `Access` | Permission denied |
-| File below a directory the user may search but not list | Exact bytes | Exact bytes | Not separately exercised |
+| File below a directory the user may search but not list, directly or through an absolute directory link | Exact bytes | Exact bytes | Exact bytes; listing denied |
+| Same file after search permission is removed | Permission denied | `Access` | Permission denied |
 | Target of an absolute link | Component spelling | Component spelling | Native target |
 | New link with an absolute or relative target | Not exercised | Native target, exact bytes | Native target |
 
@@ -102,8 +122,12 @@ reads a file through a drive mounted with `subst`, an administrative share in
 the plain and `\\?\UNC\` spellings, a junction on each of those drives, a
 path that starts at the drive root, an absolute file link and a path longer
 than 260 characters through a directory link, in both generations. It also
-reads and creates link targets as in the last two rows above. macOS behavior is
-not separately qualified.
+reads and creates link targets as in the last two rows above.
+
+On macOS, the same checks cover direct paths and absolute directory links below a
+search-only parent, denial after search permission is removed, and the native
+filesystem's refusal of a non-Unicode target name. Both WASI 0.2 and 0.3 keep
+native access through the search-only parent.
 
 ## Detached children
 
@@ -179,3 +203,10 @@ The shipped stdout route is qualified on Linux with both output generations,
 including blocked output, reload, suspend/resume and separate native exec streams.
 Windows and macOS runtime behavior remains unqualified and is tracked in the
 [native-platform checks](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/286).
+
+## Examples
+
+Convert native paths only at the standard-library boundary, as shown above. Native
+hosts saving private bytes follow the
+[in-place save example](../locking.md#examples); that operation preserves file
+identity and hard links.

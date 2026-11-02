@@ -49,8 +49,15 @@ pub struct HistoryOutput {
     pub responses: Value,
     pub message: Value,
     pub content: Value,
-    pub cloud: Value,
+    /// The cloud call's input, or `None` when the request omits the field.
+    #[serde(default, deserialize_with = "present")]
+    pub cloud: Option<Value>,
     pub reasoning: Value,
+}
+
+/// Reads a recorded field, keeping an explicit null apart from an omitted field.
+fn present<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<Value>, D::Error> {
+    Value::deserialize(deserializer).map(Some)
 }
 
 pub fn recorded() -> TestResult<Routes> {

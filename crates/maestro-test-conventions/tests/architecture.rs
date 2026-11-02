@@ -3546,3 +3546,108 @@ fn guest_engine_edge_is_native_development_only() {
 fn final_link_consumers_may_use_the_path_utility() {
     native_consumers_may_declare_the_utility(&["maestro-lock", "maestro-extensions-wasmtime"]);
 }
+
+#[test]
+fn product_dependencies_cannot_enable_test_support() {
+    for kind in ["dependencies", "build-dependencies"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-tools", "maestro-tui"]);
+        workspace.member(
+            "maestro-tui",
+            "maestro-tui",
+            "[features]\ntest-support = []",
+        );
+        workspace.member(
+            "maestro-tools",
+            "maestro-tools",
+            &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\", features = [\"test-support\"] }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into())
+        );
+    }
+}
+
+#[test]
+fn test_support_self_activation_keeps_default_tests_available() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui", "maestro-test-terminal"]);
+    workspace.member(
+        "maestro-tui",
+        "maestro-tui",
+        "[features]\ntest-support = []\n[dev-dependencies]\nmaestro-tui = { path = \".\", features = [\"test-support\"] }",
+    );
+    workspace.member(
+        "maestro-test-terminal",
+        "maestro-test-terminal",
+        "[dependencies]\nmaestro-tui = { path = \"../maestro-tui\", features = [\"test-support\"] }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn test_support_forwarding_stays_opt_in_and_one_hop() {
+    for feature in ["default", "runtime", "test-support"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-tools", "maestro-tui"]);
+        workspace.member(
+            "maestro-tui",
+            "maestro-tui",
+            "[features]\ntest-support = []",
+        );
+        workspace.member(
+            "maestro-tools",
+            "maestro-tools",
+            &format!("[dependencies]\nkit = {{ package = \"maestro-tui\", path = \"../maestro-tui\" }}\n[features]\n{feature} = [\"kit/test-support\"]"),
+        );
+        let expected = if feature == "test-support" {
+            Ok(())
+        } else {
+            Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into())
+        };
+        assert_eq!(check_workspace(workspace.root.path()), expected);
+    }
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-agent", "maestro-models"]);
+    workspace.member(
+        "maestro-models",
+        "maestro-models",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-agent", "maestro-agent", "[dependencies]\nmaestro-models = { path = \"../maestro-models\" }\n[features]\ntest-support = [\"maestro-models/test-support\"]");
+    workspace.member("maestro-tools", "maestro-tools", "[dependencies]\nmaestro-agent = { path = \"../maestro-agent\" }\n[features]\ntest-support = [\"maestro-agent/test-support\"]");
+    assert_eq!(check_workspace(workspace.root.path()), Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into()));
+}
+
+#[test]
+fn development_features_activate_an_existing_type_owner_edge() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    workspace.member(
+        "maestro-tui",
+        "maestro-tui",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-tools", "maestro-tools", "[dependencies]\nkit = { package = \"maestro-tui\", path = \"../maestro-tui\" }\n[dev-dependencies]\nkit = { package = \"maestro-tui\", path = \"../maestro-tui\", features = [\"test-support\"] }");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn chat_credentials_helpers_require_opt_in_development_activation() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-credentials"]);
+    workspace.member(
+        "maestro-credentials",
+        "maestro-credentials",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-chat", "maestro-chat", "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n[dev-dependencies]\nmaestro-credentials = { path = \"../maestro-credentials\", features = [\"test-support\"] }");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n[dev-dependencies]\nmaestro-credentials = { path = \"../maestro-credentials\" }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Err("maestro-chat: credential test helpers require non-optional test-support development activation".into()));
+}

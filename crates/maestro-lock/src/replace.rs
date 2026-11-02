@@ -7,13 +7,32 @@ use std::{
     path::Path,
 };
 
+/// Permission timing for a newly created target; existing access controls always win.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreationMode {
+    /// Apply Unix bits at open, filtered by umask, without a later chmod.
+    /// Other platforms retain native creation and owner-write/read-only mapping.
+    AtCreation(u32),
+    /// Create privately, then apply exact bits after syncing the complete bytes.
+    AfterSync(u32),
+}
+
+impl CreationMode {
+    /// Returns the native permission bits without changing their timing policy.
+    pub(crate) const fn bits(self) -> u32 {
+        match self {
+            Self::AtCreation(bits) | Self::AfterSync(bits) => bits,
+        }
+    }
+}
+
 /// Symbolic-link and creation policy selected by the calling feature.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Replace {
     /// Follow final symbolic links, including dangling targets.
     pub through_symlinks: bool,
-    /// Creation bits for missing files; existing access controls remain unchanged.
-    pub creation_mode: Option<u32>,
+    /// Creation policy for missing files; existing access controls remain unchanged.
+    pub creation_mode: Option<CreationMode>,
 }
 /// Successful publication with an optional postcommit durability warning.
 #[derive(Debug)]

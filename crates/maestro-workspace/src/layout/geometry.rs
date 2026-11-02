@@ -51,6 +51,35 @@ impl Borders {
     pub const LEFT: Self = Self(8);
     /// Every edge.
     pub const ALL: Self = Self(15);
+
+    /// Whether every edge of `other` is set.
+    #[must_use]
+    pub const fn contains(self, other: Self) -> bool {
+        self.0 & other.0 == other.0
+    }
+
+    /// Whether no edge is set.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+
+    /// Edges set in either flag set.
+    #[must_use]
+    pub const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
+
+    /// Edges of `self` that `other` does not set.
+    #[must_use]
+    pub const fn without(self, other: Self) -> Self {
+        Self(self.0 & !other.0)
+    }
+}
+/// Whether two spans of cells share at least one cell, saturating at the coordinate limit.
+#[must_use]
+pub fn ranges_overlap(a_start: u16, a_len: u16, b_start: u16, b_len: u16) -> bool {
+    a_start < b_start.saturating_add(b_len) && a_start.saturating_add(a_len) > b_start
 }
 /// Split cells using multiply-then-round for the first extent.
 pub(super) fn split_rect(area: Rect, direction: &SplitDirection, ratio: f32) -> (Rect, Rect) {

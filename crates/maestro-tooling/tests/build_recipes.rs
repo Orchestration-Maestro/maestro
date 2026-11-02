@@ -23,7 +23,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo clippy|--workspace|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -79,7 +79,7 @@ fn maestro_scoped_check_consumes_package_selection() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -92,6 +92,24 @@ fn maestro_scoped_check_consumes_package_selection() {
     assert_eq!(
         workspace.log(),
         "cargo hakari|verify\ncargo clippy|-p|maestro-models|--all-targets|--locked|--|-D|warnings\n"
+    );
+}
+
+/// A foreign-target failure must stop the check before documentation or conventions.
+#[test]
+fn maestro_scoped_check_stops_on_windows_failure() {
+    let workspace = Workspace::new();
+    let result = workspace
+        .command("_check")
+        .args(["-p", "maestro-path"])
+        .env("MAESTRO_FAIL_ARG", "x86_64-pc-windows-gnu")
+        .output()
+        .unwrap();
+
+    assert!(!result.status.success());
+    assert_eq!(
+        workspace.log(),
+        "cargo hakari|verify\ncargo clippy|-p|maestro-path|--all-targets|--locked|--|-D|warnings\ncargo clippy|-p|maestro-path|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\n"
     );
 }
 
@@ -1812,4 +1830,61 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     assert!(transcript.contains("watch phase: compiling\n"));
     assert!(transcript.contains("watch phase: ready\n"));
     assert!(transcript.contains("phase: blocked waiting for controller\n"));
+}
+
+#[test]
+fn maestro_codeql_scans_only_main_and_weekly() {
+    let workflow = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),
+    )
+    .unwrap();
+    let permissions: Vec<&str> = workflow
+        .lines()
+        .skip_while(|line| *line != "    permissions:")
+        .skip(1)
+        .take_while(|line| line.starts_with("      "))
+        .map(str::trim)
+        .collect();
+    assert_eq!(permissions, ["security-events: write", "contents: read"]);
+    assert!(
+        !workflow
+            .lines()
+            .any(|line| line.trim().starts_with("concurrency:"))
+    );
+    let triggers: Vec<&str> = workflow
+        .lines()
+        .skip_while(|line| *line != "\"on\":")
+        .skip(1)
+        .take_while(|line| line.starts_with("  "))
+        .filter(|line| !line.starts_with("   ") && !line.trim().starts_with('#'))
+        .map(str::trim)
+        .collect();
+    assert_eq!(triggers, ["push:", "schedule:"]);
+    assert!(workflow.contains("\n  push:\n    branches: [main]\n"));
+    assert!(workflow.contains("\n  schedule:\n    - cron: \"17 4 * * 1\""));
+    let languages: Vec<&str> = workflow
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("- language: "))
+        .collect();
+    assert_eq!(languages, ["actions", "javascript-typescript", "rust"]);
+    assert_eq!(
+        workflow.matches("build-mode: none").count(),
+        languages.len()
+    );
+    assert!(!workflow.contains("queries:"));
+    let rust = workflow
+        .split("          - language: rust\n")
+        .nth(1)
+        .unwrap()
+        .split("    steps:\n")
+        .next()
+        .unwrap();
+    assert_eq!(
+        rust,
+        "            build-mode: none\n            config: |\n              paths-ignore:\n                - crates/*/tests/**\n"
+    );
+    assert!(workflow.contains("          config: ${{ matrix.config }}\n"));
+    assert_eq!(workflow.matches("paths-ignore:").count(), 1);
+    assert!(!workflow.contains("disable-default-queries"));
+    assert!(!workflow.contains("query-filters:"));
 }

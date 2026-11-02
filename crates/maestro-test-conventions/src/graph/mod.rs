@@ -10,6 +10,8 @@ pub(crate) mod metadata;
 pub(crate) mod packages;
 /// Scoped crate ownership and direct-dependency rules.
 mod policy;
+/// Opt-in helper activation boundaries.
+mod test_support;
 use metadata::{canonical, check_kind, members};
 use policy::{TEST_FIXTURES, UTILITY, rule, test_support_callers, uses_utility};
 pub(crate) use policy::{TEST_TRACING, UNIFIER};
@@ -55,6 +57,7 @@ const NATIVE: &str = "cfg(not(target_arch = \"wasm32\"))";
 pub(crate) fn check(root: &Path) -> Result<(Metadata, BTreeSet<String>), String> {
     let declared = metadata::load(root, None)?;
     metadata::identities(&declared)?;
+    test_support::check(&declared)?;
     let packages = inventory(root, &declared)?;
     let mut edges = declared_edges(&declared)?;
     validate(&declared, &edges, &packages)?;
@@ -247,6 +250,9 @@ fn validate(
         .collect();
     let mut test = production.clone();
     for edge in edges {
+        if edge.from == edge.to && edge.kind == Kind::Development {
+            continue;
+        }
         if !test.contains_key(&edge.to) {
             return Err(format!(
                 "invalid cargo metadata: unknown graph target {}",
@@ -270,7 +276,11 @@ fn validate(
         }
     }
     for edge in edges {
-        validate_edge(edge, packages)?;
+        if (edge.from != edge.to || edge.kind != Kind::Development)
+            && !test_support::activates_existing(metadata, edge)
+        {
+            validate_edge(edge, packages)?;
+        }
     }
     Ok(())
 }

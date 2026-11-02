@@ -1,7 +1,8 @@
 //! Shared status icons, rich captions and collapsible header controls.
-use super::ToolHeaderState;
-use crate::{dom::PreparedContent, icons::IconNode};
+use crate::dom::PreparedContent;
 use std::{cell::RefCell, rc::Rc};
+#[cfg(target_arch = "wasm32")]
+use {super::ToolHeaderState, crate::icons::IconNode};
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod dom;
@@ -22,6 +23,7 @@ pub struct ToolHeaderRefs {
     pub chevron: Rc<RefCell<Option<web_sys::HtmlElement>>>,
 }
 /// Prepare a plain status header with literal or native child content.
+#[cfg(target_arch = "wasm32")]
 #[must_use]
 pub fn render_header(
     state: ToolHeaderState,
@@ -36,6 +38,7 @@ pub fn render_header(
     })
 }
 /// Prepare a native toggle; initial expansion selects icons, never rewrites the body.
+#[cfg(target_arch = "wasm32")]
 #[must_use]
 pub fn render_collapsible_header(
     state: ToolHeaderState,
@@ -52,13 +55,7 @@ pub fn render_collapsible_header(
     })
 }
 /// Immutable header recipe.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
+#[cfg(target_arch = "wasm32")]
 struct Header {
     /// Current result state.
     state: ToolHeaderState,

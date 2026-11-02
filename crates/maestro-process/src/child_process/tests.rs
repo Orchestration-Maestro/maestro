@@ -20,11 +20,11 @@ use std::{
     task::{Context, Poll},
     time::Duration,
 };
-use tokio::io::{AsyncRead, AsyncReadExt, ReadBuf};
+use tokio::io::{AsyncRead, ReadBuf};
 use tokio::net::TcpListener;
 use tokio::process::Command;
 
-pub(super) mod children;
+pub(crate) mod children;
 
 /// A reader that hands the consumer exactly one chunk per read.
 struct Chunks<'a>(std::vec::IntoIter<&'a [u8]>);
@@ -123,29 +123,27 @@ fn pipe_failures_preserve_the_original_io_error() {
     }
 }
 
-/// Control files that gate a shell and the background reader it leaves behind.
+/// The control file that gates a held child and the descendant it leaves behind.
 struct Held {
-    /// The shell, not yet reaped.
+    /// The direct child, not yet reaped.
     child: CapturedChild,
-    /// The process id of the background reader holding both pipes.
+    /// The process id of the descendant holding both pipes.
     pid: String,
-    /// Opening this file for writing lets the background reader end.
-    hold: PathBuf,
-    /// Opening this file for writing lets the shell exit.
+    /// Opening this file for writing lets the direct child exit.
     gate: PathBuf,
-    /// Whether the background reader was released.
+    /// Whether the descendant was released.
     released: bool,
 }
 
 impl Held {
-    /// Lets the shell exit.
+    /// Lets the direct child exit.
     fn open_gate(&self) {
         std::fs::write(&self.gate, b"").unwrap();
     }
 
-    /// Lets the background reader end.
+    /// Ends the descendant holding the pipes.
     fn release(&mut self) {
-        std::fs::write(&self.hold, b"").unwrap();
+        end_process(&self.pid).unwrap();
         self.released = true;
     }
 }
@@ -153,11 +151,20 @@ impl Held {
 impl Drop for Held {
     fn drop(&mut self) {
         if !self.released {
-            let _ = std::process::Command::new("kill").arg(&self.pid).status();
+            let _ = end_process(&self.pid);
         }
-        let _ = std::fs::remove_file(&self.hold);
         let _ = std::fs::remove_file(&self.gate);
     }
+}
+
+/// Ends the process `pid` names with a termination request.
+fn end_process(pid: &str) -> io::Result<()> {
+    let number = pid.parse().map_err(|error| {
+        io::Error::new(io::ErrorKind::InvalidInput, format!("{pid:?}: {error}"))
+    })?;
+    let pid = rustix::process::Pid::from_raw(number)
+        .ok_or_else(|| io::Error::from(io::ErrorKind::InvalidInput))?;
+    rustix::process::kill_process(pid, rustix::process::Signal::TERM).map_err(io::Error::from)
 }
 
 /// A fresh named pipe in the temporary directory.
@@ -178,40 +185,35 @@ fn fifo(label: &str) -> PathBuf {
     path
 }
 
-/// Starts a shell that writes `diag` to stderr, leaves a background reader holding
-/// both pipes, reports the reader's process id and exits once its gate opens.
-async fn held_shell() -> Held {
-    let (hold, gate) = (fifo("hold"), fifo("gate"));
-    let mut command = Command::new("sh");
-    command
-        .args([
-            "-c",
-            "echo diag >&2; read r < \"$1\" & echo $!; read g < \"$2\"; exit 0",
-        ])
-        .arg("sh")
-        .arg(&hold)
-        .arg(&gate)
-        .kill_on_drop(true);
-    let mut child = CapturedChild::spawn(&mut command).unwrap();
-    let mut stdout = child.stdout.take().unwrap();
-    let mut pid = [0; 16];
-    let mut length = 0;
-    while !pid[..length].ends_with(b"\n") {
-        length += stdout.read(&mut pid[length..]).await.unwrap();
-    }
-    child.stdout = Some(stdout);
+/// Starts a held child that leaves a descendant holding both pipes, reports the
+/// descendant's process id and exits once its gate opens.
+fn held_shell() -> Held {
+    let gate = fifo("gate");
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port().to_string();
+    let mut command = async_command(
+        children::pipe_holder,
+        &[
+            ("CHILD_GATE", gate.to_str().unwrap()),
+            ("CHILD_PORT", &port),
+        ],
+    );
+    command.kill_on_drop(true);
+    let child = CapturedChild::spawn(&mut command).unwrap();
+    let (mut socket, _) = listener.accept().unwrap();
+    let mut pid = String::new();
+    std::io::BufRead::read_line(&mut std::io::BufReader::new(&mut socket), &mut pid).unwrap();
     Held {
         child,
-        pid: String::from_utf8(pid[..length - 1].to_vec()).unwrap(),
-        hold,
+        pid: pid.trim().to_owned(),
         gate,
         released: false,
     }
 }
 
-/// Like [`held_shell`], with the shell already exited.
+/// Like [`held_shell`], with the direct child already exited.
 async fn held_pipes() -> Held {
-    let mut held = held_shell().await;
+    let mut held = held_shell();
     held.open_gate();
     held.child.child.wait().await.unwrap();
     held
@@ -252,7 +254,7 @@ fn grace_deadline_begins_after_child_exit() {
     // when its grace timer, armed by the exit, fires.
     paused_runtime().block_on(async {
         for grace in [Duration::from_millis(100), Duration::from_millis(250)] {
-            let mut held = held_shell().await;
+            let mut held = held_shell();
             let options = WaitOptions {
                 post_exit_grace: Some(grace),
                 ..WaitOptions::default()
@@ -308,8 +310,10 @@ fn discard_drops_stderr_retained_by_an_earlier_dropped_wait() {
 #[test]
 fn ready_termination_is_observed_even_when_the_child_already_finished() {
     runtime().block_on(async {
-        let mut command = Command::new("sh");
-        command.args(["-c", "echo out; echo err >&2"]);
+        let mut command = async_command(
+            children::output_writer,
+            &[("CHILD_OUT", "6f75740a"), ("CHILD_ERR", "6572720a")],
+        );
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         child.child.wait().await.unwrap();
         let polled = Rc::new(Cell::new(false));
@@ -324,7 +328,7 @@ fn ready_termination_is_observed_even_when_the_child_already_finished() {
         assert!(polled.get(), "termination polled before completion");
         assert_eq!(
             (output.stdout, output.stderr),
-            (b"out\n".to_vec(), b"err\n".to_vec())
+            (harness(b"out\n"), b"err\n".to_vec())
         );
     });
 }
@@ -332,7 +336,7 @@ fn ready_termination_is_observed_even_when_the_child_already_finished() {
 #[test]
 fn termination_is_polled_while_a_stream_stays_ready() {
     runtime().block_on(async {
-        let mut command = Command::new("yes");
+        let mut command = async_command(children::endless_writer, &[]);
         command.kill_on_drop(true);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         let polls = Rc::new(Cell::new(0));
@@ -373,7 +377,8 @@ impl Drop for Observed {
 fn settled_wait_releases_timers_and_stop_future() {
     paused_runtime().block_on(async {
         let dropped = Rc::new(Cell::new(false));
-        let mut child = CapturedChild::spawn(&mut Command::new("true")).unwrap();
+        let mut child =
+            CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
         wait_for_child_process(
             &mut child,
             WaitOptions::default(),
@@ -397,7 +402,8 @@ fn settled_wait_releases_timers_and_stop_future() {
         held.release();
 
         let dropped = Rc::new(Cell::new(false));
-        let mut child = CapturedChild::spawn(&mut Command::new("true")).unwrap();
+        let mut child =
+            CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
         child.child.wait().await.unwrap();
         child.stderr = Some(unreadable_stderr().await);
         wait_for_child_process(
@@ -429,8 +435,7 @@ async fn unreadable_stderr() -> tokio::process::ChildStderr {
 #[test]
 fn failed_wait_leaves_consumed_bytes_available() {
     runtime().block_on(async {
-        let mut command = Command::new("printf");
-        command.arg("prefix");
+        let mut command = async_command(children::output_writer, &[("CHILD_OUT", "707265666978")]);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         child.child.wait().await.unwrap();
         child.stderr = Some(unreadable_stderr().await);
@@ -444,7 +449,7 @@ fn failed_wait_leaves_consumed_bytes_available() {
         .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::ConnectionReset);
         assert!(child.stderr.is_none(), "failed pipe closed");
-        assert_eq!(child.take_output(), (b"prefix".to_vec(), vec![]));
+        assert_eq!(child.take_output(), (harness(b"prefix"), vec![]));
         assert_eq!(child.take_output(), (vec![], vec![]));
     });
 }
@@ -452,8 +457,10 @@ fn failed_wait_leaves_consumed_bytes_available() {
 #[test]
 fn streamed_failure_preserves_prior_bytes_without_replay() {
     runtime().block_on(async {
-        let mut command = Command::new("printf");
-        command.arg("new-bytes");
+        let mut command = async_command(
+            children::output_writer,
+            &[("CHILD_OUT", "6e65772d6279746573")],
+        );
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         child.child.wait().await.unwrap();
         child.out.extend_from_slice(b"prior-out");
@@ -478,7 +485,7 @@ fn streamed_failure_preserves_prior_bytes_without_replay() {
         )
         .await
         .unwrap();
-        assert_eq!(delivered, b"new-bytes");
+        assert_eq!(delivered, harness(b"new-bytes"));
         assert_eq!(output.stdout, b"prior-out");
         assert_eq!(output.stderr, b"prior-err");
     });
@@ -546,7 +553,8 @@ fn escalation_checks_live_state_before_forced_kill() {
             "the killed child's end closed"
         );
 
-        let mut exited = CapturedChild::spawn(&mut Command::new("true")).unwrap();
+        let mut exited =
+            CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
         exited.child.wait().await.unwrap();
         let terminate = exited.terminate(Termination::TerminateThenKill { after });
         tokio::pin!(terminate);
@@ -560,7 +568,8 @@ fn escalation_checks_live_state_before_forced_kill() {
 #[test]
 fn termination_requests_signal_only_a_running_child() {
     runtime().block_on(async {
-        let mut reaped = CapturedChild::spawn(&mut Command::new("true")).unwrap();
+        let mut reaped =
+            CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
         reaped.child.wait().await.unwrap();
         assert!(
             !reaped.request_termination(),
@@ -597,8 +606,8 @@ fn wait_escalation_timer_kills_exactly_after_the_selected_delay() {
 #[test]
 fn wait_consumes_the_termination_decision_once() {
     runtime().block_on(async {
-        let mut command = Command::new("sh");
-        command.args(["-c", "exec sleep 60"]).kill_on_drop(true);
+        let mut command = async_command(children::prefix_then_wait, &[]);
+        command.kill_on_drop(true);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         let polled = Rc::new(Cell::new(false));
         let seen = polled.clone();

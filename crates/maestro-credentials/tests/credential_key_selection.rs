@@ -424,7 +424,8 @@ mod tests {
         block_on(crate::fallback_support::replay(
             "fallback_keys_and_presence_keep_result_domains",
             &scenario(),
-        ));
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -445,7 +446,8 @@ mod tests {
         block_on(crate::fallback_support::replay(
             "earlier_sources_skip_failing_fallback",
             &scenario(),
-        ));
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -459,6 +461,7 @@ mod tests {
         block_on(crate::fallback_support::replay(
             "fallback_option_false_avoids_callback",
             &scenario(),
-        ));
+        ))
+        .unwrap();
     }
 }

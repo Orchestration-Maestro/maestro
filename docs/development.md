@@ -38,14 +38,32 @@ paths under `crates/maestro-test-conventions/`, guarding the checker itself.
 Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
 the browser entry is present, guarding targets outside native Clippy.
 
-CI checks dependents and workspace-wide inputs. `just check` keeps the full
-workspace gate: its private `_check` recipe verifies feature unification, runs
-Clippy, builds strict public documentation and checks workspace conventions.
+For changed crates, run `just _check -p <package>` with repeated `-p` arguments
+for multiple crates. `_check` verifies feature unification, runs native Clippy
+followed by Windows-GNU Clippy, builds strict public documentation and checks
+workspace conventions. Both Clippy passes use the same package selection with
+`--all-targets --locked -- -D warnings`; they add no reverse dependents.
+CI checks dependents and workspace-wide inputs. `just check` explicitly selects
+`--workspace` for both passes on every development host. The commit hook stays
+native-only.
+
+The pinned `rust-toolchain.toml` provisions `x86_64-pc-windows-gnu`. To repair a
+missing standard library, run `rustup target add x86_64-pc-windows-gnu` from the
+checkout. Install MinGW-w64 too: on Ubuntu use
+`sudo apt-get install gcc-mingw-w64-x86-64-posix`; on macOS use
+`brew install mingw-w64`; on Windows use a MinGW-w64 development shell with its
+compiler on `PATH`. Cross-builds need `x86_64-w64-mingw32-gcc` on `PATH`, or Cargo's
+C dependencies need `CC_x86_64_pc_windows_gnu` set to that host's MinGW-w64 compiler.
+Missing prerequisites fail the check; there is no native-only fallback.
+Windows-GNU checks `cfg(windows)` and `cfg(unix)` boundaries, not MSVC-specific
+code or ABI behavior. Required native Windows-MSVC CI and native runtime
+qualification remain in place.
 
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
 Cargo's dependency graph. See [catalog generation](models/generation.md). `check`
-formats hand-written Rust, verifies feature unification, runs Clippy, builds strict public documentation and verifies workspace
+formats hand-written Rust, verifies feature unification, runs native and
+Windows-GNU Clippy, builds strict public documentation and verifies workspace
 conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`, `build`
 and `check`; it never publishes. `clean` removes Cargo outputs, not source files.
 
@@ -89,13 +107,19 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 
 ```powershell
 $env:CARGO_BUILD_JOBS = '3'
-cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 just prepare-tests
+cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
 
 ## Platform test qualification
+
+Native path assertions use the host's separators. Build expected paths from
+individual components with `std::path`, or state Windows and Unix literals
+explicitly. Keep expectations independent of the production path formatter;
+leave authored path inputs unchanged. A passing Linux run does not qualify a
+Windows assertion: run it on native Windows too.
 
 Compile every declared browser crate's test and example targets without running them:
 
@@ -109,6 +133,19 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
   --tests --examples --keep-going --message-format=json
 ```
+
+Compile each changed crate separately when checking helper availability:
+
+```sh
+~/.local/bin/capped cargo check --locked --tests \
+  --target wasm32-unknown-unknown -p maestro-tools
+```
+
+Checking one crate at a time prevents another crate's development features from
+hiding missing helper activation. Portable helper imports, owner modules and
+`test-support` development dependencies must all be available on browser targets.
+Keep native-only collaborators and their imports conditional. Library and example
+checks alone do not compile integration tests.
 
 Native socket, process and runtime fixtures stay with their native tests.
 Portable assertions remain in browser targets, with strictly parsed fixture
@@ -558,6 +595,23 @@ program uses only the common peer. Check both programs for unused support:
 cargo clippy -p maestro-models --all-targets --locked -- -D warnings
 ```
 
+### Code scanning
+
+Open the repository's **Security > Code scanning** page to inspect CodeQL alerts.
+The workflow scans each push to `main` and runs every Monday at 04:17 UTC on
+GitHub-hosted Linux. It covers Actions, JavaScript/TypeScript and Rust with the
+default query suite. Pull requests and merge groups start no scan.
+
+The Rust scan excludes `crates/*/tests/**` through its matrix configuration's
+`paths-ignore` setting. Assertion diagnostics in those directories format
+controlled fixture values, not credentials. Keep those assertions and
+diagnostics intact. Rust files outside those test directories,
+including production code, examples and unit tests under `src`, retain the default
+queries. Actions and JavaScript/TypeScript scans have no path exclusions.
+
+CodeQL is advisory: no ruleset requires its checks. Scan failures and alerts
+remain visible in GitHub but do not block the merge queue.
+
 ### Slowest-first test order
 
 The 64 tests that took more than 30 seconds in the baseline merge group have
@@ -754,31 +808,37 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component` and `browser-author` setups serve. Shared CI caches the bundle under the
-contents of the files that `test_prepare_inputs` matches and restores it instead of preparing
-again. Those patterns name the crates the preparation builds, `maestro-extensions-wasm`,
-`maestro-tooling` and `maestro-web`, and every workspace crate they depend on through a path
-dependency of any kind, plus the fixed inputs, so a change to any other crate keeps the cached
-bundle.
+`author-component`, `browser-author` and `native-fixture` setups serve. Shared CI
+caches the bundle under the contents of the files that `test_prepare_inputs`
+matches and restores it instead of preparing again. Those patterns name the
+crates the preparation builds, `maestro-extensions-wasm`, `maestro-tooling` and
+`maestro-web`, and every workspace crate they depend on through a path
+dependency of any kind, plus the fixed inputs, so a change to any other crate
+keeps the cached bundle.
 The preparation reads that closure from the workspace metadata, compiling nothing, and
 records it in the bundle manifest, so a shard validates the same files without Cargo.
 `ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
 preparation fingerprints is not matched or a pattern names anything else, so a new
 dependency of a built crate needs its pattern. Markdown that crates embed only as
 documentation changes no staged file, so no pattern names it. The command runs the existing
-component-discovery example from a separate build directory with a user cache of its own, then stages the
-component files, the compiled code the example left in that cache, that built example,
+component-discovery example from a separate build directory, then stages the
+component files, the compiled code the example left in the engine's cache, that built example,
 the browser graph described under [Browser author build](#browser-author-build), the
 development tool itself and a content manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
-namespace that does not end in that time or on more than one, and stages none when the host
-keeps its cache elsewhere. Shared CI transfers
+namespace that does not end in that time or on more than one. The setup example's
+`--cache-directory` mode reports the engine's selected cache directory as one absolute
+JSON path without building or warming components. Preparation queries that directory once
+on its host before seeding or warming; installation queries it again on the test host. A failed query,
+empty reply or nonabsolute path stops setup. Host paths are not stored in the bundle.
+`XDG_CACHE_HOME` still isolates preparation's Linux cache under its target directory;
+Windows and macOS use the locations the engine reports. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
 compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
-modification time that copy of the example has, and writes the component paths to
+installs the compiled code in the engine-reported cache under the modification time that
+copy of the example has, and writes the component paths to
 `NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
@@ -989,12 +1049,30 @@ lock selects, together with the browser fixture's crates. It runs once per run,
 writes `target/fixture-sources/<hash>/`, and reuses that directory while the
 inputs stay unchanged. The set stays small because Cargo reads every vendored
 package on each run; a test checks that every registry crate the tooling crates
-declare is named in that manifest. The setup exports the configuration path as
+declare is named in that manifest. Keep an anonymous import for each declared
+crate in `fixtures/registry_sources/src/lib.rs`. The dependency scan checks this
+standalone fixture too. The setup exports the configuration path as
 `MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
 the same command. A fixture opts in with `Workspace::use_prepared_sources` or
 `Browser::cargo`, which copy the configuration into its private home. A fixture
-without registry dependencies copies nothing. The cold browser build still
-vendors the whole workspace for itself, because it compiles every dependency.
+without registry dependencies copies nothing.
+
+The Unix-only cold browser test uses `nextest-setup fixture-sources workspace`,
+which prepares the whole workspace's locked dependencies before the test. Its
+source-preparation helper is also Unix-only; Windows compiles the shared fixture
+helpers without the browser tests. The setup exports
+`MAESTRO_TEST_WORKSPACE_CARGO_SOURCES` from `target/workspace-sources/<hash>/`.
+This uses the same vendor operation with a wider dependency set, including Git
+sources. The key covers the workspace and member manifests, the browser manifest
+and both lockfiles. Dependency changes select a new directory; Rust-only edits
+reuse it because workspace sources are read from the checkout. Outside nextest,
+the first cold-source caller runs the same setup. The browser shared-home isolation
+test prepares both source sets in its parent and forwards their configuration paths to
+the child before making the shared Cargo home unusable. The cold test copies only
+the source configuration into its initially empty Cargo home. Its Cargo target
+directory also starts empty, so the recipes still prove compilation from clean state.
+The cold recipe uses `fixture_command` to keep its private home out of the
+compiler wrapper's cache keys.
 
 Cargo builds that share one target directory with other builds, the test build's or the
 one the browser author setup prepares, keep the shared home.
@@ -1031,7 +1109,7 @@ Stage the setup tool before a filtered native-fixture run:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-test-process
+cargo nextest run --locked -p maestro-test-process -p maestro-process
 ```
 
 Use checked reruns when the test owns the invocation and harness framing. Use the
@@ -1042,9 +1120,12 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
-currently served packages, `maestro-test-process` and `maestro-tooling`. Local
-setup builds the example with the locked host `dev` profile and reads Cargo's
-emitted executable path. It records source inputs, content digest and host in
+currently served packages: `maestro-test-process`, `maestro-tooling`,
+`maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
+attachment-completion tests and the application RPC client tests. Local setup
+builds the example
+with the locked host `dev` profile and reads Cargo's emitted executable path. It
+records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1068,13 +1149,195 @@ An unknown or malformed record fails before connecting or writing the optional
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
 
-The preparation tests also use a `tooling-cargo` record with the real Cargo path
-and an existing setup-example template path. That scenario forwards metadata,
-accepts the existing Clippy probe and stages the two preparation examples. On Unix,
-metadata replaces the fixture process, keeping its native PID and signal delivery. The
-remaining setup-example templates still use their existing shell fixtures until
-their owning conversion lands. Typed isolated native setup is planned; current
-Unix `shell_setup` remains available during that conversion.
+Two further families stand in for a program the product itself launches. An
+`editor` record reports the file the controlled editor was asked to edit, skips
+the editor's own `--custom` option and ends with status 7. The process tests
+install it under the name the product resolves from `PATH`, so the shell
+evaluation under test stays real. An `echo` record prints the single line that
+follows it, which lets executable selection tests run a native program that
+prints the name their fixture authored. Neither family writes harness text.
+The editor writes the edited file's path to the file named by
+`MAESTRO_EDITOR_RESULT` and fails if that variable is unset. For example, with a
+`vi.fixture` record containing only `editor` and
+`MAESTRO_EDITOR_RESULT=/scratch/editor-result`, running `vi --custom notes.txt`
+writes `notes.txt` followed by a newline to `/scratch/editor-result` and exits 7.
+
+The preparation tests use a `tooling-cargo` record with the real Cargo path and
+an author-record template path. It forwards metadata, accepts the Clippy probe
+and stages native copies of both preparation examples. On Unix, metadata replaces
+the fixture process, keeping its native PID and signal delivery.
+
+The author example reads a `tooling-author` line followed by one JSON scenario.
+For example:
+
+```text
+tooling-author
+{"scenario":"cached","engine":"fixture"}
+```
+
+`cached` exports supplied component paths and writes compiled-code observations;
+`engine` is `fixture` or `newer`. `plain` exports without writing compiled code.
+`malformed` writes an invalid environment entry, and `unstable` changes a source
+after export. `misplaced` writes a cache namespace with the wrong executable time;
+`split` writes two namespaces. `marked` builds only unsupplied components and
+writes their dependency files. Unknown scenarios, engines and fields fail before
+preparation effects.
+
+`prepare_author_component --cache-directory` reports one absolute JSON path and
+creates no environment file, component, cache entry or observation log. The fixture
+uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
+fails the query and stops setup before cache installation. The built alias has a
+sibling record. When a test exercises product copying or relocation,
+set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
+explicitly; the product does not copy fixture sidecars. Only the author-example
+alias reads this selector, so nested Cargo and other aliases retain their own
+records. Other tooling fixture families and Unix `shell_setup` keep their existing
+contracts.
+
+#### Application RPC peers
+
+Run the client corpus with its prepared native peers:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-app -E 'test(/rpc_client/)'
+```
+
+On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer
+behavior. Call `maestro_test_process::rpc_peer::install(entry, scenario)` to copy
+the prepared artifact and write its sibling `<alias>.fixture` record, then launch
+the alias through the existing `RpcClient`. The record contains `rpc-peer` and
+`scenario.name()` on separate lines. For example, `rpc-peer\nServe\n` captures
+each raw request line before answering it. `PEER_ANSWERS` supplies an object keyed
+by command type. A missing key omits response data; a JSON null stays null. The application tests' `Peer::options`
+writes this record and passes the release socket and descendant alias paths.
+
+`PEER_RECORDS` supplies arrays for event bursts or unmatched JSON values;
+`PEER_REPLIES` supplies full response objects for replay. Launch observations use
+`PEER_MARKER`. Raw fragments, ticks and descendant-held pipes use `PEER_PORT` for
+acknowledged writes or release, without fixture sleeps. The descendant announces
+readiness before its parent exits and retains the actual inherited descriptors
+until released. Startup failures, closed input and termination resistance remain
+native process observations. Unknown scenarios, malformed records and invalid
+input shapes fail before protocol output. These peers emit no test-harness text.
+
+The interactive client example uses `PEER_STATE` for its session state. Its idle
+interrupt peer reads commands on one thread and records TERM through a native
+signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
+by `input closed` over the release socket. Plain EOF exits without waiting for a
+signal. To check both paths, send TERM before closing input, or close input alone.
+
+#### Search and completion aliases
+
+On Unix, install the same artifact as `fd`, `fdfind` or `rg` to control search
+output while exercising native lookup and process handling. Write `search` on
+the first line of `<alias>.fixture`, followed by a JSON object with a `scenario`
+field. The fixture parses the entire record before effects and rejects unknown
+fields, invalid byte values and exit codes outside 0 to 255. Operands remain
+native command arguments, never source text.
+
+For example, a controlled `fd` response records the tool's operands and returns
+one NUL-terminated path:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({
+        "scenario": "response",
+        "args": directory.path().join("args.json"),
+        "stdout": b"/work/a\0",
+        "stderr": [],
+        "code": 0,
+        "signal": null
+    });
+    std::fs::write(directory.path().join("fd.fixture"), format!("search\n{record}"))?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("fd"),
+    )?;
+    Ok(())
+}
+```
+
+The finite scenarios use these fields:
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `response` | `args` records the JSON operand array; `stdout` and `stderr` are byte arrays. `code` selects the status; optional `signal: "SIGTERM"` ends by native signal instead. |
+| `probe` | `name`, optional `log`, `stdout` byte array and `code`. Appends `name` and the operands to the log, requires exactly `--version`, then returns the version bytes and status. Discovery checks launchability, not version compatibility. |
+| `marker` | Writes `text` to `path`. With `copy_input: true`, copies the first operand's file to stdout, like a search preprocessor. Execute it once as a positive control, remove the sentinel, then assert hostile search operands never recreate it. |
+| `probe-wait` | Connects to Unix `socket`, writes `ready`, then waits for a byte or EOF. Dropping discovery must stop this real process. |
+| `find-term` | Registers TERM before readiness, writes `ready` on `socket`, reads the queued TERM notification, writes `term`, then retains its output pipes until release. |
+| `grep-term` | On `socket`, writes `R`, requires `x`, writes `event` bytes to stdout, optionally writes `S` when `started` is true, waits for TERM, writes `T`, requires another `x`, then exits 9. |
+| `chunks` | On `socket`, writes `R` and requires `x` before each entry of `chunks`. Each entry has `stream: "stdout"` or `"stderr"` and a `bytes` array. Exits with `code` after the final write. |
+| `chosen-shell` | Writes `chosen-shell` and a newline, then replaces itself with `/bin/bash`, passing the original operands unchanged. This keeps configured-shell qualification on the real shell. |
+| `completion-wait` | `stdout` bytes and a parent-owned `port`. Writes the bytes, connects, writes `READY`, then waits for a byte or EOF, so a cancelled search must end this child without further output. |
+| `completion-stream` | `stderr`, a count of repeating `x` bytes, and `stdout` bytes. Fails unless standard input is already closed, fills the diagnostic pipe, then writes standard output. |
+| `completion-descendant` | `port` and `holder`, the alias whose record runs `completion-holder`. Reports its process id, starts the holder with inherited pipes, then exits zero while the holder keeps them. |
+| `completion-holder` | `port`. Writes `D` on the parent's port and holds both inherited pipes until the test releases it with one byte. |
+
+Attachment completion uses the four `completion-*` scenarios under any name the
+test owns. The child is launched through the product operation that owns it, so
+the test observes real pipes, a real status and a real cancellation. Install the
+holder under a second name and put that path in the parent's `holder` field: the
+descendant is a linked process, never a thread, and the search must not wait for
+the pipes it keeps.
+
+Keep these aliases in each test's disposable binary directory. Isolated discovery
+and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
+cases still use the provisioned real tools. Run the complete `maestro-tools`
+nextest selection to qualify both routes. A missing real tool fails the native
+cases; the fixture never replaces or downloads it.
+
+#### Credential processes
+
+Run the model credential rows against their prepared program:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-models -E 'test(/cloud_profile_credentials/)'
+```
+
+Install the same artifact as the program that an AWS profile names in
+`credential_process`, or as the executable source of a Google external account
+credential. Write `credentials` on the first line of `<alias>.fixture`, followed
+by the scenario name. The fixture parses the whole record before it counts a run
+or writes output, so an unknown record fails with no document.
+
+| Scenario | Behavior |
+| --- | --- |
+| `AwsProcess` | Counts the run in `process-count` beside the alias, then answers as its single operand says. No operand and `ok` print a complete credential document. `fail` ends with status 7 and no output; `once` fails the first run only; `invalid_json` prints unusable text; `wrong_version`, `missing_key` and `expired` print a document the reader must refuse. |
+| `GoogleExecutable` | Prints one success document naming a subject token and takes no operand. |
+
+Call `maestro_test_process::credentials::install(entry, scenario)` from the
+parent test, which holds `MAESTRO_NATIVE_FIXTURE`. The alias path is anything the
+backend can launch; an AWS profile field names it with one variant, such as
+`credential_process = /scratch/process once`. Read `process-count` back after the
+run to state how often the backend started the program.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    use maestro_test_process::credentials::{Scenario, install};
+    let directory = maestro_test_directory::Scratch::new()?;
+    let process = directory
+        .path()
+        .join(format!("process{}", std::env::consts::EXE_SUFFIX));
+    install(&process, Scenario::AwsProcess)?;
+    std::fs::write(directory.path().join("process-count"), "")?;
+    std::fs::write(
+        directory.path().join("config"),
+        format!("[profile selected]\ncredential_process = {} once\n", process.display()),
+    )?;
+    Ok(())
+}
+```
+
+The model profile rows install an `AwsProcess` alias named `process` in each
+row's directory and read its count beside the file they compare. The Google
+credential tests install a `GoogleExecutable` alias as the executable source of
+an external account credential. Neither program needs an interpreter or an
+`install` command.
 
 #### Checked reruns
 
@@ -1330,3 +1593,24 @@ policies.
 
 Select individual toolkit tests through `tui-test` using their module-qualified
 names, for example `just tui-test -- ansi_wrapping::name --exact`.
+
+### Typed test helpers
+
+Shared typed helpers can use an owner's non-default `test-support` feature.
+Consumers activate it through development dependencies. Owners can use a self
+development dependency with `path = "."` and `features = ["test-support"]` to keep
+integration tests runnable by default. Dedicated test libraries can also activate
+it on normal dependencies. A product's own opt-in `test-support` feature can
+forward one hop to a dependency's matching feature, but runtime/default features
+cannot activate it. The conventions checker reads Cargo metadata to enforce
+these boundaries while retaining cross-crate cycle detection.
+
+The terminal toolkit's `test_support` module owns controlled runtimes, recording
+terminals and input-global admission. The scenario library reexports the runtime
+and terminal helpers. Theme, tool, credential, agent, Markdown and package helpers
+live in their type owners. Native loopback servers, child probes and toolchain
+selection live in `maestro-test-process`. Fallible helpers return their errors to
+the test caller; fixed-output callbacks retain immediate assertions.
+
+Coverage probes reuse the prepared native target, workspace lock and build
+profiles. Only the parent program receives coverage instrumentation.

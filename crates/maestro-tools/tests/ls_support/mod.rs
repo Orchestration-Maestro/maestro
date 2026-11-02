@@ -699,9 +699,10 @@ fn environment(input: &ContextInput, keys: &[String]) -> (Setup, Env) {
     (
         input.setup(),
         Env::with(
-            Rc::new(palette_of(keys, input.theme_shift)),
+            Rc::new(palette_of(keys, input.theme_shift).unwrap()),
             Rc::new(NoLanguages),
-        ),
+        )
+        .unwrap(),
     )
 }
 
@@ -887,7 +888,7 @@ pub fn render_slot_as<D: serde::Serialize>(
     env: &Env,
     previous: &ComponentHandle,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
-    let setup = Setup::from(&json!({"readme": "", "bindings": []}));
+    let setup = Setup::from(&json!({"readme": "", "bindings": []})).unwrap();
     let (tool, result, args) = input;
     if slot == "call" {
         let ctx = context(args, &setup, env, Some(Rc::clone(previous)));
@@ -917,7 +918,7 @@ pub fn check_reuse_as<D: serde::Serialize>(
     args: &Value,
 ) {
     let input: SlotInput = serde_json::from_value(case.input.clone()).unwrap();
-    let env = Env::with(Rc::new(palette_of(keys, 0)), Rc::new(NoLanguages));
+    let env = Env::with(Rc::new(palette_of(keys, 0).unwrap()), Rc::new(NoLanguages)).unwrap();
     let previous: ComponentHandle = Rc::new(Text::new("before".into(), 0, 0, None));
     let row = render_slot_as(
         (tool, result, args),
@@ -955,7 +956,7 @@ pub fn check_theme_error_as<D: serde::Serialize>(
         "toolOutput"
     };
     let keys: Vec<String> = keys.iter().filter(|&key| key != missing).cloned().collect();
-    let env = Env::with(Rc::new(palette_of(&keys, 0)), Rc::new(NoLanguages));
+    let env = Env::with(Rc::new(palette_of(&keys, 0).unwrap()), Rc::new(NoLanguages)).unwrap();
     let previous: ComponentHandle = Rc::new(Text::new("before".into(), 0, 0, None));
     let Err(error) = render_slot_as(
         (tool, result, args),

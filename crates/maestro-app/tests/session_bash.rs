@@ -192,7 +192,7 @@ fn configured_shell_path_runs_the_command() {
         let source = scratch.path().join("marker-source.sh");
         std::fs::write(&source, "#!/bin/sh\necho marker-shell\n").unwrap();
         let shell = project.join("marker.sh");
-        crate::native::install_executable(&source, &shell);
+        crate::native::install_executable(&source, &shell).expect("install starts");
         let (h, t) = transcribed(HarnessOptions {
             settings: json!({"shellPath": shell.display().to_string()}),
             scratch: Some(scratch),

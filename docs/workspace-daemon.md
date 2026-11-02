@@ -551,6 +551,147 @@ original diagnostic. `platform::current_process_is_detached_server_daemon`
 reports whether the process leads its own session, which is how a detached
 daemon runs.
 
+## Server mode
+
+`maestro_rpc::daemon::run_server` takes the daemon's `App`, its `SettingsManager`, its
+`DaemonPaths` and a shutdown future. It installs the file log for the `daemon` role,
+filtered by a valid `MAESTRO_LOG` directive, and binds the API socket at
+`DaemonPaths::api_socket_path`.
+The socket is readable and writable by its owner only. A stale socket is replaced; a
+live one fails the start as address-in-use, and a file that is not a socket is kept.
+After binding, a daemon without workspaces opens one in the directory
+`MAESTRO_STARTUP_CWD` names, focused; a daemon that already has workspaces ignores it.
+Panes never inherit the variable. The server then logs `maestro server started` and
+writes three lines to standard error:
+
+```text
+maestro server running; you can use any maestro CLI command in another terminal.
+api socket: <path>
+logs: <daemon log path>
+```
+
+A start against a running daemon writes `error: maestro server is already running`
+and the socket path instead. No startup record goes on the socket, and no status
+file is written. The daemon loop then runs beside the socket until the shutdown
+future resolves or a client sends `server.stop`. Afterwards the server removes its
+socket, unless another file has replaced it. Ping reports live handoff as
+unavailable, and the detached capability is the process's own session check.
+
+`App::run` takes the request queue the socket feeds and the settings owner a
+configuration reload reads through. `App::handle_api_request` applies every queued
+internal event before it answers, and marks render work for a command that changes
+what a view shows. It sets the quit flag for `server.stop`, answers the server,
+notification, workspace, tab and pane topology commands, and answers every other command
+with `not_implemented`. Creating a workspace from the view goes through the same
+`workspace.create` handler.
+The [socket server](daemon-protocol.md#socket-server) section describes the
+connection rules.
+
+## Panes and layouts
+
+The pane commands and the `layout_updated` event read one projection of a tab,
+`maestro_daemon::app::layout`, available to attached clients. It combines the tab's
+split tree, the view area and the pane chrome.
+
+- **View area.** `DaemonState::view_area` is the region panes are laid out in. With no
+  client attached it is the headless surface, `daemon.headlessCols` by
+  `daemon.headlessRows` (120 by 40 by default). Everything that needs the area asks
+  this one function.
+- **Chrome.** `PaneChrome::from_config` reads `paneBorders`, `paneGaps` and
+  `paneOuterBorders` from the accepted preferences. `apply_pane_chrome` turns tile cells
+  into the cells a client draws. With borders and no gaps, neighbours share one
+  divider. With borders and gaps, each pane keeps all four borders. With gaps and no
+  borders, a pane gives up one cell next to each neighbour, unless that would leave it
+  with none. Without `paneOuterBorders`, edges on the outside of the pane area are
+  dropped. A tab with one pane has no chrome. `pane_inner_rect` removes one cell for
+  each drawn border, and each chrome cell carries its inner rectangle.
+- **Snapshot.** `App::pane_layout_snapshot` lists a tab's panes with their public ids,
+  focus and chrome cells, and its dividers. A divider id is `split_<index>_<path>`:
+  the index counts dividers from the root, and the path is `root` or a string of
+  `0` (first child) and `1` (second child). A workspace or tab that does not exist
+  has no snapshot.
+- **Neighbours.** `App::directional_pane_target` picks the neighbour from the tile
+  cells before chrome, so a gap never changes which pane is next. Ties go to the
+  pane that comes first in the tree.
+- **Events.** `layout_updated` carries a snapshot. A created workspace or tab publishes
+  it after its created records, and `layout_update_target_after_pane_removal` names the
+  tab that still has panes after a removal.
+
+`maestro-workspace` keeps the split math and the border flag sets. The view area and the
+preferences stay in the daemon.
+
+### Pane mutations
+
+Split, resize, swap, zoom, move and close change one tab's tree and nothing else. Each
+handler lives in `app/api/panes/`, resolves its pane through the same target rules as
+the reads, and then calls the topology owners in `maestro-workspace`, so the split math,
+the leaf swap and the pane transfer have one implementation.
+
+- **Focus history.** A split with focus, a swap and a move record the pane that had focus
+  before them (`DaemonState::record_pane_focus_change`), so last-pane navigation returns
+  to it. A zoom focuses through `focus_pane_in_workspace`.
+- **Zoom.** `DaemonState::apply_pane_zoom` is the one place a tab's zoom changes;
+  `toggle_zoom` calls it.
+- **Close.** `DaemonState::close_pane_in_workspace` closes a pane, its records and its
+  terminal, and closes the workspace when the pane was its last. The focused-pane close
+  uses it too.
+- **Move.** The pane's terminal never restarts. The source is captured first
+  (`PaneMoveRecovery`): the workspace's label, its tab's label, worktree provenance and
+  identity directory. If the destination refuses the pane,
+  `DaemonState::recover_failed_pane_move` adds it back as a tab of the surviving
+  workspace, or rebuilds the removed workspace with its old identity at its old place.
+  `remove_emptied_workspace` keeps the active and selected workspaces on the workspaces
+  they were on.
+
+### Pane input, reads and reports
+
+The handlers in `app/api/panes/` for input, rename, read and the agent reports resolve
+their pane like the reads do, and hand the work to the owners that already exist.
+
+- **Keys.** A request key goes through `key_combo::parse_key_combo` after the legacy
+  `C-c`, `c-c` and `+` spellings are mapped, then through the pane's terminal encoder, so
+  the live keyboard modes decide the bytes. All keys are encoded before the first write.
+  Text is framed by `PaneRuntime::paste_payload`, the same framing a paste uses.
+- **Reads.** `app/api/reads.rs` is the one conversion from a source, format and line
+  count to screen text. Viewport and detection reads clip with
+  `TerminalReadSnapshot::limited`; recent reads use the runtime's own row budget. Any
+  command that reads a resolved pane calls `App::read_pane`.
+- **Reports.** A report becomes an `AppEvent` (`HookStateReported`, `AgentSessionReported`,
+  `HookMetadataReported`, `HookAuthorityCleared` or `HookAgentReleased`) and goes through
+  `handle_internal_event`, so the terminal state owner, the status events and the runtime
+  detection controls see it as they see any other observation. Metadata tokens are
+  admitted and patched on the terminal state, and a changed token set publishes the
+  pane with `emit_pane_updated`.
+- **Rename.** The label lives on the terminal state. A changed label is published with
+  `emit_pane_updated`.
+
+### Layouts
+
+The layout commands in `app/api/layouts.rs` read and change one tab's split tree through
+the same owners as the pane commands. These handlers are available only on Linux,
+where the daemon application and native PTY runtime are built.
+
+- **Export.** `App::layout_description` turns the tree into the portable description. A
+  leaf takes its label and launch command from the terminal state and its directory from
+  `crate::tab::cwd_for_pane`, the same lookup a pane record uses.
+- **Ratio.** `TileLayout::set_ratio_at` finds the split and keeps the ratio in range; the
+  handler only checks that the ratio is finite and publishes the tab with
+  `emit_layout_updated_event`.
+- **Launch.** `RootLaunch` in `app/creation.rs` is what a new root process runs: its
+  directory, extra environment and, for a layout leaf with a `command`, a literal argv.
+  `spawn_root` starts either through `PaneRuntime`, records the argv on the terminal state,
+  and serves new workspaces, tabs, splits and layout leaves alike.
+- **Apply.** `handle_layout_apply` checks the limits in `layouts/tree.rs` before it creates
+  anything, adds the new tab with the first leaf, then splits leaf by leaf in layout order
+  through `spawn_split`, as `pane.split` does. A failure removes the new tab with
+  `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
+  and plugin records and stops their processes. The replaced tab is retired only after the
+  new tab stands. Stopping its processes applies the events that arrive meanwhile, which can
+  close or move workspaces, so the apply looks its workspace up again by identity and fails
+  with `layout_apply_failed` when the new tab is gone. `emit_tab_created_events` publishes every pane of the
+  new tab, which for a tab with one pane is its root; a new workspace publishes its first
+  tab through it too.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and

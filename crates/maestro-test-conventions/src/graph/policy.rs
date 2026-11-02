@@ -14,6 +14,7 @@ pub(crate) struct Rule {
 
 /// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-chat", "maestro-credentials"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions-wasm", "maestro-listing"),
 ];

@@ -308,7 +308,8 @@ Every hint spells its keys from the live registry through `key_text`, `key_displ
 `format_key_text`, and none writes a key by hand. `key_text` joins the keys bound to an action
 with `/` as written. `key_display_text` also starts each part with a capital letter
 (`Ctrl+Option+X`), and `format_key_text(key, capitalize)` applies the
-same spelling to a key list that is not a registry action, such as an extension shortcut. The
+same spelling to a key list that is not a registry action, such as an extension shortcut.
+`plain_key_hint` uses the same platform spelling without theme colors. The
 settings list, the hotkey list, the startup help and the model-scope line printed before the
 interactive mode starts all use them, so a remapped key shows as configured. The model-scope
 line names the key bound to the next-model action and leaves its hint out when none is bound.

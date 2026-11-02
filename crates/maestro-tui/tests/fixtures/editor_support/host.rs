@@ -1,18 +1,8 @@
 #![cfg(test)]
 //! Shared controlled editor construction.
 use crate::input_support;
-#[allow(
-    dead_code,
-    reason = "Shared controlled host supports other terminal tests."
-)]
-#[path = "../../../../maestro-test-terminal/src/manual_runtime.rs"]
-pub mod manual_runtime;
-#[allow(
-    dead_code,
-    reason = "Shared controlled terminal supports other terminal tests."
-)]
-#[path = "../../../../maestro-test-terminal/src/recording_terminal.rs"]
-pub mod recording_terminal;
+pub use maestro_tui::test_support::manual_runtime;
+pub use maestro_tui::test_support::recording_terminal;
 use maestro_tui::{EditorTheme, SelectListTheme, TUI, TerminalImage};
 use std::rc::Rc;
 

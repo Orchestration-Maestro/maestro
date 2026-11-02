@@ -1,10 +1,8 @@
-//! Vendors the registry crates the tooling fixtures resolve, so their private Cargo homes never
-//! touch the shared package cache.
+//! Vendors locked dependencies for private fixture Cargo homes.
 //!
-//! Cargo reads every vendored package on each run, so the set holds only the fixture closure:
-//! the crates named by the registry-sources manifest, at the versions the workspace lock
-//! selects, and the browser fixture's crates. A directory keyed by those inputs is reused across
-//! runs; one preparation per checkout runs at a time.
+//! Most fixtures use the small registry closure because Cargo reads every vendored package.
+//! The cold browser build resolves the whole workspace instead. Both sets retain stable source
+//! paths while their dependency inputs stay unchanged; compiled output is not shared here.
 
 use std::ffi::OsString;
 use std::io;
@@ -20,55 +18,104 @@ use crate::test_setup::hex;
 /// The directory of the tooling fixtures, from the checkout root.
 const FIXTURES: &str = "crates/maestro-tooling/tests/fixtures";
 
-/// Vendor the closure unless this input set already has a directory, then export and print the
-/// path of its source configuration.
+/// The dependency closure a fixture resolves.
+#[derive(Clone, Copy, Debug)]
+pub(super) enum Scope {
+    /// Only registry dependencies declared by the tooling fixtures.
+    Fixtures,
+    /// Every dependency selected by the workspace and browser locks.
+    Workspace,
+}
+
+/// Reuse or vendor the selected closure, then export and print its source configuration.
 ///
 /// # Errors
 /// Returns a failed copy or write, or the log of a failed `cargo vendor`.
-pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
-    let fixtures = checkout.join(FIXTURES);
-    let browser = fixtures.join("browser_author");
-    let mut hash = Sha256::new();
-    for input in [
-        checkout.join("Cargo.lock"),
-        browser.join("Cargo.lock"),
-        fixtures.join("registry_sources/Cargo.toml"),
-    ] {
-        hash.update(Sha256::digest(std::fs::read(input)?));
-    }
-    let key = hex(&hash.finalize());
-    let directory = checkout.join("target/fixture-sources").join(&key[..16]);
+pub(super) fn run(checkout: &Path, scope: Scope) -> io::Result<ExitCode> {
+    let (name, variable) = match scope {
+        Scope::Fixtures => ("fixture-sources", "MAESTRO_TEST_CARGO_SOURCES"),
+        Scope::Workspace => ("workspace-sources", "MAESTRO_TEST_WORKSPACE_CARGO_SOURCES"),
+    };
+    let key = key(checkout, scope)?;
+    let directory = checkout.join("target").join(name).join(&key[..16]);
     let config = directory.join("config.toml");
     if !config.is_file() {
         if directory.exists() {
             std::fs::remove_dir_all(&directory)?;
         }
         std::fs::create_dir_all(&directory)?;
-        let closure = directory.join("closure");
-        copy_tree(&fixtures.join("registry_sources"), &closure)?;
-        std::fs::copy(checkout.join("Cargo.lock"), closure.join("Cargo.lock"))?;
-        let vendored = Command::new(cargo())
-            .current_dir(checkout)
-            .args(["vendor", "--offline", "--manifest-path"])
-            .arg(closure.join("Cargo.toml"))
-            .arg("--sync")
-            .arg(browser.join("Cargo.toml"))
-            .arg(directory.join("vendor"))
-            .output()?;
-        if !vendored.status.success() {
-            eprint!("{}", String::from_utf8_lossy(&vendored.stderr));
-            return Err(io::Error::other(format!(
-                "cargo vendor failed: {}",
-                vendored.status
-            )));
-        }
-        let mut source = vendored.stdout;
-        source.extend_from_slice(b"\n[net]\noffline = true\n");
-        std::fs::write(&config, source)?;
+        vendor(checkout, &directory, scope)?;
     }
-    let mut entry = OsString::from("MAESTRO_TEST_CARGO_SOURCES=");
+    let mut entry = OsString::from(format!("{variable}="));
     entry.push(&config);
     export(&entry)?;
     println!("{}", config.display());
     Ok(ExitCode::SUCCESS)
+}
+
+/// Hash names and contents of the files that determine the selected dependency set.
+fn key(checkout: &Path, scope: Scope) -> io::Result<String> {
+    let fixtures = checkout.join(FIXTURES);
+    let mut inputs = vec![
+        checkout.join("Cargo.lock"),
+        fixtures.join("browser_author/Cargo.lock"),
+        fixtures.join("browser_author/Cargo.toml"),
+    ];
+    match scope {
+        Scope::Fixtures => inputs.push(fixtures.join("registry_sources/Cargo.toml")),
+        Scope::Workspace => {
+            inputs.push(checkout.join("Cargo.toml"));
+            // Workspace membership is crates/*; fixture manifests below members are separate.
+            for entry in std::fs::read_dir(checkout.join("crates"))? {
+                let manifest = entry?.path().join("Cargo.toml");
+                if manifest.is_file() {
+                    inputs.push(manifest);
+                }
+            }
+        }
+    }
+    inputs.sort();
+    let mut hash = Sha256::new();
+    for input in inputs {
+        hash.update(input.as_os_str().as_encoded_bytes());
+        hash.update([0]);
+        hash.update(Sha256::digest(std::fs::read(input)?));
+    }
+    Ok(hex(&hash.finalize()))
+}
+
+/// Stage one source set and publish its configuration only after Cargo succeeds.
+fn vendor(checkout: &Path, directory: &Path, scope: Scope) -> io::Result<()> {
+    let fixtures = checkout.join(FIXTURES);
+    let mut command = Command::new(cargo());
+    command.current_dir(checkout).args(["vendor", "--offline"]);
+    let manifest = match scope {
+        Scope::Fixtures => {
+            let closure = directory.join("closure");
+            copy_tree(&fixtures.join("registry_sources"), &closure)?;
+            std::fs::copy(checkout.join("Cargo.lock"), closure.join("Cargo.lock"))?;
+            closure.join("Cargo.toml")
+        }
+        Scope::Workspace => {
+            command.arg("--locked");
+            checkout.join("Cargo.toml")
+        }
+    };
+    let vendored = command
+        .arg("--manifest-path")
+        .arg(manifest)
+        .arg("--sync")
+        .arg(fixtures.join("browser_author/Cargo.toml"))
+        .arg(directory.join("vendor"))
+        .output()?;
+    if !vendored.status.success() {
+        eprint!("{}", String::from_utf8_lossy(&vendored.stderr));
+        return Err(io::Error::other(format!(
+            "cargo vendor failed: {}",
+            vendored.status
+        )));
+    }
+    let mut source = vendored.stdout;
+    source.extend_from_slice(b"\n[net]\noffline = true\n");
+    std::fs::write(directory.join("config.toml"), source)
 }

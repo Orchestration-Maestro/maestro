@@ -1,8 +1,9 @@
 //! JSONL framing through the public synchronous codec.
 #![cfg(test)]
 
-use maestro_json::jsonl::serialize_json_line;
+use maestro_json::jsonl::{JsonlLineSplitter, serialize_json_line};
 use serde_json::json;
+use std::io;
 
 #[test]
 fn json_line_keeps_unicode_separators() {
@@ -160,4 +161,85 @@ fn native_json_line_preserves_integer_boundaries() {
         serde_json::from_str::<serde_json::Value>(&line).unwrap()["seq"],
         value["seq"]
     );
+}
+
+/// A strict walk's lines over `chunks`, ending at the first failure, as its kind and text.
+fn strict(chunks: &[&[u8]], max_bytes: usize) -> Vec<Result<String, (io::ErrorKind, String)>> {
+    let mut splitter = JsonlLineSplitter::default();
+    let mut lines = Vec::new();
+    for chunk in chunks {
+        for line in splitter.push_strict(chunk, max_bytes) {
+            let failed = line.is_err();
+            lines.push(line.map_err(|error| (error.kind(), error.to_string())));
+            if failed {
+                return lines;
+            }
+        }
+    }
+    lines
+}
+
+/// `bytes` read whole, one byte at a time, and in two reads cut at every position.
+fn partitions(bytes: &[u8]) -> Vec<Vec<&[u8]>> {
+    let mut partitions = vec![vec![bytes], bytes.chunks(1).collect()];
+    partitions.extend((1..bytes.len()).map(|cut| vec![&bytes[..cut], &bytes[cut..]]));
+    partitions
+}
+
+#[test]
+fn strict_lines_preserve_prior_records_before_failure() {
+    let invalid = String::from_utf8(vec![0xff]).unwrap_err().to_string();
+    let too_large = "line is too large".to_owned();
+    for (bytes, failure) in [
+        (&b"{\"a\":1}\n\xff\n{\"b\":2}\n"[..], invalid),
+        (&b"{\"a\":1}\n123456789\n{\"b\":2}\n"[..], too_large.clone()),
+        (&b"{\"a\":1}\n123456789"[..], too_large),
+    ] {
+        for partition in partitions(bytes) {
+            assert_eq!(
+                strict(&partition, 8),
+                [
+                    Ok("{\"a\":1}".to_owned()),
+                    Err((io::ErrorKind::InvalidData, failure.clone()))
+                ],
+                "{partition:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn strict_lines_count_raw_payload_bytes() {
+    const LIMIT: usize = 1024 * 1024;
+    let too_large = Err((io::ErrorKind::InvalidData, "line is too large".to_owned()));
+    for (payload, line) in [
+        ("a".repeat(LIMIT - 1), Ok("a".repeat(LIMIT - 1))),
+        ("a".repeat(LIMIT), Ok("a".repeat(LIMIT))),
+        ("a".repeat(LIMIT + 1), too_large.clone()),
+        (
+            format!("{}\r", "a".repeat(LIMIT - 1)),
+            Ok("a".repeat(LIMIT - 1)),
+        ),
+        (format!("{}\r", "a".repeat(LIMIT)), too_large.clone()),
+        (
+            format!("{}é", "a".repeat(LIMIT - 2)),
+            Ok(format!("{}é", "a".repeat(LIMIT - 2))),
+        ),
+        (format!("{}é", "a".repeat(LIMIT - 1)), too_large.clone()),
+    ] {
+        assert_eq!(strict(&[payload.as_bytes(), b"\n"], LIMIT), [line]);
+    }
+    assert_eq!(
+        strict(&["a".repeat(LIMIT + 1).as_bytes()], LIMIT),
+        [too_large]
+    );
+    // The scalar, its CR and the LF arrive split across reads; CR fills the limit exactly.
+    let line = format!("{}é\r\n", "a".repeat(LIMIT - 3));
+    let bytes = line.as_bytes();
+    for cut in [LIMIT - 2, LIMIT - 1, LIMIT] {
+        assert_eq!(
+            strict(&[&bytes[..cut], &bytes[cut..]], LIMIT),
+            [Ok(format!("{}é", "a".repeat(LIMIT - 3)))]
+        );
+    }
 }

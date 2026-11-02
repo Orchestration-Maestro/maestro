@@ -12,12 +12,7 @@ mod catalog_provider_registration;
 mod catalog_reentry;
 mod catalog_request_auth;
 mod cloudflare_auth;
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared credential fallback corpus."
-)]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
+use maestro_credentials::test_support::fallback_support as credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
 #[path = "support/dynamic.rs"]
@@ -40,6 +35,6 @@ mod saved_model_owner;
 #[path = "selection/scopes.rs"]
 mod scopes;
 mod selection;
-#[path = "support/subprocess.rs"]
-mod subprocess;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_test_process::subprocess;
 mod support;

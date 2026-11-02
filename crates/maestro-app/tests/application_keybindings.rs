@@ -386,7 +386,8 @@ fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
             dir.0.path(),
             &[("MAESTRO_CODING_AGENT_DIR", "decoy")],
             &[],
-        );
+        )
+        .expect("child starts");
     }
 }
 #[derive(Deserialize)]
