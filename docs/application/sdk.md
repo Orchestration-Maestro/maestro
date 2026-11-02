@@ -234,7 +234,8 @@ SDK definitions `<sdk:name>` provenance. Supply a prompt snippet when the tool
 should appear in the available-tool description. Custom implementations keep
 responsibility for their own path resolution and effects. The
 [native tool factories](../tools.md) take an explicit directory; a host-created
-tool does not inherit a later session directory change.
+tool does not inherit a later session directory change. See
+[application tools](tools.md) for executable factories and direct-shell history.
 
 After construction, `get_all_tools` exposes definitions and sources, and
 `set_active_tools_by_name` changes the active selection and rebuilds the system
