@@ -66,9 +66,20 @@ fn candidate_reads_alternate_pins_without_installing_or_mutating_active_files() 
 
 /// Lets the fixture's existing native Git transport also execute the configured dependency installer.
 fn enable_native_dependencies(fixture: &RetryFixture) {
+    let installer = crate::native_support::command(
+        fixture.repo.scratch.path(),
+        "lifecycle",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": [],
+            "stderr": [],
+            "code": 0,
+            "append": {"path": "sentinel", "cwd": false, "bytes": b"installed"}
+        }),
+    );
     fixture.settings.borrow_mut().set_npm_command(Some(
-        ["/bin/sh", "lifecycle.sh"]
-            .map(|arg| maestro_settings::SettingsListEntry::String(arg.into()))
+        [installer.to_string_lossy()]
+            .map(|arg| maestro_settings::SettingsListEntry::String(arg.into_owned()))
             .to_vec(),
     ));
     let hook = fixture.effects.run_hook.borrow().clone().unwrap();
@@ -164,16 +175,11 @@ fn candidate_inspection_offline_starts_no_command() {
     assert!(effects.calls.borrow().is_empty());
 }
 
-/// Publishes two tagged candidates with a real install-script sentinel.
+/// Publishes two tagged candidates and a native installer sentinel.
 fn seed_candidate_releases(fixture: &RetryFixture) {
-    let manifest = r#"{"name":"candidate-fixture","version":"1.0.0","private":true,"scripts":{"preinstall":"sh lifecycle.sh"}}"#;
+    let manifest = r#"{"name":"candidate-fixture","version":"1.0.0","private":true}"#;
     std::fs::write(fixture.repo.seed.join("package.json"), manifest).unwrap();
-    std::fs::write(
-        fixture.repo.seed.join("lifecycle.sh"),
-        "printf installed > sentinel\n",
-    )
-    .unwrap();
-    git(&fixture.repo.seed, &["add", "package.json", "lifecycle.sh"]);
+    git(&fixture.repo.seed, &["add", "package.json"]);
     fixture.repo.commit("first candidate");
     git(&fixture.repo.seed, &["tag", "v1"]);
     std::fs::write(fixture.repo.seed.join("content"), [0, 255, 10, 13]).unwrap();
@@ -244,7 +250,6 @@ fn candidate_pin_cannot_resolve_only_to_a_tracked_path() {
 
 #[test]
 fn candidate_inspection_disables_inherited_checkout_hooks() {
-    use std::os::unix::fs::PermissionsExt;
     let Some(tree) = crate::resolution_support::case_in_child("hooks", |base| {
         vec![
             ("GIT_CONFIG_COUNT", Some("1".into())),
@@ -259,12 +264,18 @@ fn candidate_inspection_disables_inherited_checkout_hooks() {
     let hooks = tree.join("hooks");
     std::fs::create_dir(&hooks).unwrap();
     let hook = hooks.join("post-checkout");
-    std::fs::write(
-        &hook,
-        "#!/bin/sh\nprintf ran >> \"$MAESTRO_TEST_TREE/hook-sentinel\"\n",
-    )
-    .unwrap();
-    std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755)).unwrap();
+    crate::native_support::command(
+        &hooks,
+        "post-checkout",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": [],
+            "stderr": [],
+            "code": 0,
+            "append": {"path": tree.join("hook-sentinel"), "cwd": false, "bytes": b"ran"}
+        }),
+    );
+    assert!(hook.is_file());
     let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
     assert_eq!(
         fixture

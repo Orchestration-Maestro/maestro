@@ -1029,32 +1029,22 @@ fn check_settings_case(case: &SettingsCase, index: usize) {
 }
 
 #[cfg(unix)]
-/// Installs a finite upload-pack shim through a child, not a writable executable descriptor.
+/// Installs a finite upload-pack stand-in through the prepared fixture, not a writable descriptor.
 fn install_transport(
     fixture: &crate::native_git::retry::RetryFixture,
     common: &Path,
 ) -> std::path::PathBuf {
     use crate::native_git::git;
     let marker = fixture.repo.scratch.path().join("transport-called");
-    let source = fixture.repo.scratch.path().join("transport-source");
-    let executable = fixture.repo.scratch.path().join("transport");
     assert!(Path::new("/usr/bin/git-upload-pack").is_file());
-    std::fs::write(
-        &source,
-        format!(
-            "#!/bin/sh\nprintf called >> '{}'\nexec /usr/bin/git-upload-pack \"$@\"\n",
-            marker.display()
-        ),
-    )
-    .unwrap();
-    assert!(
-        std::process::Command::new("/usr/bin/install")
-            .args(["-m", "0700"])
-            .arg(&source)
-            .arg(&executable)
-            .status()
-            .unwrap()
-            .success()
+    let executable = crate::native_support::command(
+        fixture.repo.scratch.path(),
+        "transport",
+        &serde_json::json!({
+            "scenario": "forward",
+            "marker": {"path": marker, "cwd": false, "bytes": b"called"},
+            "program": "/usr/bin/git-upload-pack"
+        }),
     );
     std::fs::write(
         common.join("transport.conf"),
