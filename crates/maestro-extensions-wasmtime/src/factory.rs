@@ -173,10 +173,21 @@ async fn execute(
 ) -> wasmtime::Result<()> {
     // The user cache is optional; unavailable storage must not prevent loading.
     boundary("engine create begin");
-    let engine = component_engine(Cache::from_file(None).ok())?;
+    let cache = Cache::from_file(None);
+    boundary(&format!(
+        "cache selected {:?}",
+        cache.as_ref().map(Cache::directory)
+    ));
+    let cache = cache.ok();
+    let engine = component_engine(cache.clone())?;
     boundary("component from file begin");
     let component = Component::from_file(&engine, path)?;
-    boundary("component from file returned");
+    boundary(&format!(
+        "component from file returned cache counts {:?}",
+        cache
+            .as_ref()
+            .map(|cache| (cache.cache_hits(), cache.cache_misses()))
+    ));
     let mut linker = Linker::new(&engine);
     lifecycle::link(&mut linker)?;
     let mut store = Store::new(&engine, state);

@@ -42,6 +42,11 @@ impl CompiledCode {
         seeded: Option<&Path>,
     ) -> io::Result<Option<Self>> {
         let modules = cache_directory.join("modules");
+        eprintln!(
+            "BOUNDARY {:?} collect compiled modules {}",
+            std::time::SystemTime::now(),
+            modules.display()
+        );
         let mut namespaces = directories(&modules)?;
         if let Some(seeded) = seeded.filter(|_| namespaces.len() > 1) {
             remove_directory(seeded)?;
@@ -76,6 +81,12 @@ impl CompiledCode {
                 );
             }
         }
+        eprintln!(
+            "BOUNDARY {:?} collected compiled files {} from {}",
+            std::time::SystemTime::now(),
+            files.len(),
+            namespace.display()
+        );
         Ok((!files.is_empty()).then(|| Self {
             namespace: prefix.to_owned(),
             files,
@@ -119,6 +130,12 @@ impl CompiledCode {
             self.namespace,
             milliseconds(example)?
         ));
+        eprintln!(
+            "BOUNDARY {:?} install compiled files {} into {}",
+            std::time::SystemTime::now(),
+            self.files.len(),
+            namespace.display()
+        );
         std::fs::create_dir_all(&namespace)?;
         for name in self.files.keys() {
             copy(&staged.join(name), &namespace.join(name))?;
@@ -140,7 +157,12 @@ pub(super) fn directory(command: &mut Command) -> io::Result<PathBuf> {
             String::from_utf8_lossy(&output.stderr)
         )));
     }
-    reported_directory(&output.stdout)
+    let directory = reported_directory(&output.stdout);
+    eprintln!(
+        "BOUNDARY {:?} queried engine cache {directory:?}",
+        std::time::SystemTime::now()
+    );
+    directory
 }
 
 /// Parse the engine's JSON reply as exactly one absolute native path.
