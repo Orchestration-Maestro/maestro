@@ -32,6 +32,9 @@ the backend's exclusion and change only that provider in it; records other write
 added stay in the file, and a successful write accepts the document it wrote. A
 persistence failure is recorded and nothing is rolled back; the change stays in accepted
 memory until the next successful read. `logout` removes the stored record only.
+If a login or logout write fails, the next successful read follows the unchanged
+file: a refused addition is absent and a refused removal is still present. The
+write failure remains available through `drain_errors`.
 
 Text this owner writes is two-space JSON without a trailing newline; reloading
 existing text never rewrites it. Accepted records keep their order: a replaced
