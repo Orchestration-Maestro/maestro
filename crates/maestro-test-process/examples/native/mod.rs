@@ -5,6 +5,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 mod cargo;
+#[cfg(unix)]
+mod command;
 mod observe;
 #[cfg(unix)]
 mod rpc;
@@ -17,6 +19,9 @@ enum Request {
     Install(PathBuf),
     /// Report the native launch and exchange raw streams.
     Observe(observe::Record, Vec<OsString>),
+    /// Stand in for a controlled native program.
+    #[cfg(unix)]
+    Command(command::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
@@ -57,6 +62,8 @@ impl Request {
         let text = std::fs::read_to_string(path)?;
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
@@ -72,6 +79,8 @@ pub(super) fn run() -> io::Result<()> {
     match Request::read(std::env::args_os().skip(1).collect())? {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Command(record, operands) => command::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),

@@ -1097,7 +1097,7 @@ is [Rust test children](specs/test-processes.md).
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools` and the application RPC client tests. Local setup builds the example
+`maestro-tools` and `maestro-app`. Local setup builds the example
 with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1122,6 +1122,42 @@ An unknown or malformed record fails before connecting or writing the optional
 `MTP_EFFECT` sentinel. Direct invocation uses `--maestro-observe <record> <operands>`;
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
+
+#### Command stand-ins
+
+On Unix, the `command` family replaces an interpreted stand-in for a program the
+product launches by name. Install the artifact under the name the product uses,
+then write `command` on the first line of `<alias>.fixture` followed by a JSON
+object whose `scenario` selects one finite behaviour. The fixture parses the whole
+record before any effect and rejects an unknown scenario or field.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal: "SIGTERM"` ends by that native signal instead. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
+| `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
+| `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+
+A controlled package command for the package manager settings records its
+acquisitions without a package manager:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("controlled-npm");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+    let mut record = alias.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, "command\n{\"scenario\":\"package\"}")?;
+    Ok(())
+}
+```
+
+Keep each alias in a test's disposable directory and pass its absolute path as the
+configured command. The stand-in inherits the child's environment, so the two
+`MAESTRO_*` variables above belong to the process that launches it.
 
 The preparation tests also use a `tooling-cargo` record with the real Cargo path
 and an existing setup-example template path. That scenario forwards metadata,

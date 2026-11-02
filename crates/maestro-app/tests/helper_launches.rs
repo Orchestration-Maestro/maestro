@@ -4,12 +4,34 @@ use maestro_app::{
     ExecOptions, ExecResult, OutputMode, SpawnSyncError, SpawnSyncOptions, exec_command, spawn,
     spawn_sync,
 };
+use maestro_test_directory::Scratch;
+use serde_json::json;
 use tokio::process::Command;
+
+/// One controlled program reporting `record`.
+fn program(
+    directory: &std::path::Path,
+    name: &str,
+    record: &serde_json::Value,
+) -> std::path::PathBuf {
+    crate::native::command(directory, name, record)
+}
 
 #[test]
 fn application_launches_use_the_shared_process_interfaces() {
-    let mut command = Command::new("sh");
-    command.args(["-c", "printf out; printf err >&2; exit 7"]);
+    let scratch = Scratch::new().unwrap();
+    let selected = program(
+        scratch.path(),
+        "launch",
+        &json!({"scenario": "output", "stdout": b"out", "stderr": b"err", "code": 7}),
+    );
+    let quiet = program(
+        scratch.path(),
+        "quiet",
+        &json!({"scenario": "output", "stdout": [], "stderr": [], "code": 0}),
+    );
+    let mut command = Command::new(&selected);
+    command.args(["literal operand", "", "a b"]);
     let options: maestro_process::SpawnSyncOptions<'_> = SpawnSyncOptions::Capture {
         max_buffer_bytes: None,
         stdout: OutputMode::Capture,
@@ -23,27 +45,24 @@ fn application_launches_use_the_shared_process_interfaces() {
     assert_eq!(output.stdout, b"out");
     assert_eq!(output.stderr, b"err");
     assert_eq!(output.status.code(), Some(7));
-    let output = spawn_sync(&mut Command::new("true"), SpawnSyncOptions::Inherit).unwrap();
+    let output = spawn_sync(&mut Command::new(&quiet), SpawnSyncOptions::Inherit).unwrap();
     assert!(output.status.success());
     assert!(output.stdout.is_empty());
     assert!(output.stderr.is_empty());
-    spawn(Command::new("true"), None).unwrap().join().unwrap();
+    spawn(Command::new(&quiet), None).unwrap().join().unwrap();
     let runtime = crate::support::io_runtime();
     let options: maestro_tools::process::exec::ExecOptions<'_> = ExecOptions::default();
     let output: ExecResult = runtime
         .block_on(exec_command(
-            "sh",
-            &[
-                "-c".into(),
-                "printf async-out; printf async-err >&2; exit 7".into(),
-            ],
+            selected.to_str().unwrap(),
+            &["literal operand".into()],
             ".",
             options,
         ))
         .unwrap();
     let output: maestro_tools::process::exec::ExecResult = output;
-    assert_eq!(output.stdout, "async-out");
-    assert_eq!(output.stderr, "async-err");
+    assert_eq!(output.stdout, "out");
+    assert_eq!(output.stderr, "err");
     assert_eq!(output.code, 7);
     assert!(!output.killed);
 }
