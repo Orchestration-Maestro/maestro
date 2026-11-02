@@ -1239,17 +1239,17 @@ The finite scenarios use these fields:
 | `grep-term` | On `socket`, writes `R`, requires `x`, writes `event` bytes to stdout, optionally writes `S` when `started` is true, waits for TERM, writes `T`, requires another `x`, then exits 9. |
 | `chunks` | On `socket`, writes `R` and requires `x` before each entry of `chunks`. Each entry has `stream: "stdout"` or `"stderr"` and a `bytes` array. Exits with `code` after the final write. |
 | `chosen-shell` | Writes `chosen-shell` and a newline, then replaces itself with `/bin/bash`, passing the original operands unchanged. This keeps configured-shell qualification on the real shell. |
-| `completion-wait` | `stdout` bytes and a parent-owned `port`. Writes the bytes, connects, writes `READY`, then waits for a byte or EOF. Cancellation must end this child; it sends nothing more. |
+| `completion-wait` | `stdout` bytes and a parent-owned `port`. Writes the bytes, connects, writes `READY`, then waits for a byte or EOF, so a cancelled search must end this child without further output. |
 | `completion-stream` | `stderr`, a count of repeating `x` bytes, and `stdout` bytes. Fails unless standard input is already closed, fills the diagnostic pipe, then writes standard output. |
 | `completion-descendant` | `port` and `holder`, the alias whose record runs `completion-holder`. Reports its process id, starts the holder with inherited pipes, then exits zero while the holder keeps them. |
 | `completion-holder` | `port`. Writes `D` on the parent's port and holds both inherited pipes until the test releases it with one byte. |
 
-Attachment completion uses the four `completion-*` scenarios under any alias name
-the test owns. The child is launched through the product operation that owns it,
-so the test observes real pipes, a real status and a real cancellation. Install
-the holder under a second name and put that path in the parent's `holder` field:
-the descendant is a linked process, never a thread, and the search must not wait
-for the pipes it keeps.
+Attachment completion uses the four `completion-*` scenarios under any name the
+test owns. The child is launched through the product operation that owns it, so
+the test observes real pipes, a real status and a real cancellation. Install the
+holder under a second name and put that path in the parent's `holder` field: the
+descendant is a linked process, never a thread, and the search must not wait for
+the pipes it keeps.
 
 Keep these aliases in each test's disposable binary directory. Isolated discovery
 and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
