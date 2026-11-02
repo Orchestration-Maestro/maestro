@@ -97,6 +97,12 @@ cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests
 
 ## Platform test qualification
 
+Native path assertions use the host's separators. Build expected paths from
+individual components with `std::path`, or state Windows and Unix literals
+explicitly. Keep expectations independent of the production path formatter;
+leave authored path inputs unchanged. A passing Linux run does not qualify a
+Windows assertion: run it on native Windows too.
+
 Compile every declared browser crate's test and example targets without running them:
 
 ```sh

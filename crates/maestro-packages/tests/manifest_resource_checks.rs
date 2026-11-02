@@ -356,7 +356,13 @@ fn malformed_resource_lists_are_ignored_while_valid_lists_load() {
             let prompts: Vec<_> = result.prompts.iter().map(|p| p.path.as_str()).collect();
             assert_eq!(
                 prompts,
-                [format!("{package}/prompts/a.md")],
+                [scratch
+                    .path()
+                    .join("pkg")
+                    .join("prompts")
+                    .join("a.md")
+                    .to_str()
+                    .unwrap()],
                 "filtered: {filtered}"
             );
         });
