@@ -89,8 +89,8 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 
 ```powershell
 $env:CARGO_BUILD_JOBS = '3'
-cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 just prepare-tests
+cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
@@ -1089,10 +1089,10 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
-currently served packages, `maestro-test-process`, `maestro-tooling` and
-`maestro-tools`. Local
-setup builds the example with the locked host `dev` profile and reads Cargo's
-emitted executable path. It records source inputs, content digest and host in
+currently served packages: `maestro-test-process`, `maestro-tooling`,
+`maestro-tools` and the application RPC client tests. Local setup builds the example
+with the locked host `dev` profile and reads Cargo's emitted executable path. It
+records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1123,6 +1123,39 @@ metadata replaces the fixture process, keeping its native PID and signal deliver
 remaining setup-example templates still use their existing shell fixtures until
 their owning conversion lands. Typed isolated native setup is planned; current
 Unix `shell_setup` remains available during that conversion.
+
+#### Application RPC peers
+
+Run the client corpus with its prepared native peers:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-app -E 'test(/rpc_client/)'
+```
+
+On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer
+behavior. Call `maestro_test_process::rpc_peer::install(entry, scenario)` to copy
+the prepared artifact and write its sibling `<alias>.fixture` record, then launch
+the alias through the existing `RpcClient`. The record contains `rpc-peer` and
+`scenario.name()` on separate lines. For example, `rpc-peer\nServe\n` captures
+each raw request line before answering it. `PEER_ANSWERS` supplies an object keyed
+by command type. A missing key omits response data; a JSON null stays null. The application tests' `Peer::options`
+writes this record and passes the release socket and descendant alias paths.
+
+`PEER_RECORDS` supplies arrays for event bursts or unmatched JSON values;
+`PEER_REPLIES` supplies full response objects for replay. Launch observations use
+`PEER_MARKER`. Raw fragments, ticks and descendant-held pipes use `PEER_PORT` for
+acknowledged writes or release, without fixture sleeps. The descendant announces
+readiness before its parent exits and retains the actual inherited descriptors
+until released. Startup failures, closed input and termination resistance remain
+native process observations. Unknown scenarios, malformed records and invalid
+input shapes fail before protocol output. These peers emit no test-harness text.
+
+The interactive client example uses `PEER_STATE` for its session state. Its idle
+interrupt peer reads commands on one thread and records TERM through a native
+signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
+by `input closed` over the release socket. Plain EOF exits without waiting for a
+signal. To check both paths, send TERM before closing input, or close input alone.
 
 #### Search aliases
 

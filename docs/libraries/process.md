@@ -81,3 +81,12 @@ fingerprints to stage that host artifact. No new locked package or workspace fea
 is enabled, and the offline fixture-source manifest already declares and imports `serde_json`.
 Typed native isolated setup remains planned; the existing shell-setup API is not
 removed by the raw-fixture preparation.
+
+The native fixture's Unix development dependencies inherit the existing
+`signal-hook =0.3.18` pin with default features disabled, plus rustix's existing
+`process` feature. A retained `UnixStream` queues TERM notifications before the
+peer reports readiness; the idle peer uses a signal-hook flag to observe TERM
+before input closes. Rustix delivers the native kill signal used by startup
+checks. Typed peer inputs reuse the workspace `serde` pin. The offline fixture
+source manifest includes signal-hook's locked closure. The locked library closure
+is unchanged.

@@ -314,3 +314,91 @@ fn cargo_metadata_forwarding_keeps_the_native_child_pid() {
     assert_eq!(output.stderr, b"err\0\xfe!");
     assert_eq!(reported_pid, pid.to_string().as_bytes());
 }
+
+/// RPC family inputs fail before protocol bytes or launch markers can escape.
+#[cfg(unix)]
+#[test]
+fn rpc_peer_inputs_fail_before_protocol_output_or_marker_creation() {
+    let root = Scratch::new().unwrap();
+    let record = root.path().join("record");
+    let marker = root.path().join("marker");
+    for (text, answers, records, replies) in [
+        ("rpc-peer\nunknown\n", "{}", "[]", "[]"),
+        ("rpc-peer\n", "{}", "[]", "[]"),
+        ("rpc-peer\nLaunch\nextra\n", "{}", "[]", "[]"),
+        ("rpc-peer\nServe\n", "[]", "[]", "[]"),
+        ("rpc-peer\nBurst\n", "{}", "{}", "[]"),
+        ("rpc-peer\nReplay\n", "{}", "[]", "[null]"),
+        ("rpc-peer\nTick\n", "{}", "[]", "[]"),
+    ] {
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .env("PEER_MARKER", &marker)
+            .env("PEER_ANSWERS", answers)
+            .env("PEER_RECORDS", records)
+            .env("PEER_REPLIES", replies)
+            .env("PEER_PORT", "0")
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(
+            output.stdout.is_empty(),
+            "emitted protocol output for {text:?}"
+        );
+        assert!(!marker.exists(), "wrote a launch marker for {text:?}");
+    }
+}
+
+/// Idle peers distinguish TERM before EOF from plain EOF without waiting for a signal.
+#[cfg(unix)]
+#[test]
+fn rpc_idle_peer_observes_term_and_eof_independently() {
+    use std::io::{BufRead, BufReader};
+    let root = Scratch::new().unwrap();
+    let path = root.path().join("idle");
+    install_executable(&artifact(), &path).unwrap();
+    std::fs::write(
+        root.path().join("idle.fixture"),
+        "rpc-peer\nIdleInterrupt\n",
+    )
+    .unwrap();
+    for terminate in [false, true] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let marker = root.path().join(format!("marker-{terminate}"));
+        let mut child = Command::new(&path)
+            .env(
+                "PEER_PORT",
+                listener.local_addr().unwrap().port().to_string(),
+            )
+            .env("PEER_MARKER", &marker)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut report = BufReader::new(listener.accept().unwrap().0);
+        let mut line = String::new();
+        if terminate {
+            rustix::process::kill_process(
+                rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap(),
+                rustix::process::Signal::TERM,
+            )
+            .unwrap();
+        }
+        drop(child.stdin.take());
+        if terminate {
+            report.read_line(&mut line).unwrap();
+            assert_eq!(line, "terminated\n");
+            assert_eq!(std::fs::read_to_string(&marker).unwrap(), "terminated");
+            line.clear();
+        }
+        report.read_line(&mut line).unwrap();
+        assert_eq!(line, "input closed\n");
+        line.clear();
+        assert_eq!(report.read_line(&mut line).unwrap(), 0);
+        assert!(child.wait_with_output().unwrap().status.success());
+        assert_eq!(marker.exists(), terminate);
+    }
+}
