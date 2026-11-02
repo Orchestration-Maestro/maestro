@@ -1,6 +1,10 @@
 //! Session peers for the interactive client example's existing integration tests.
 
 use std::io::{self, Read};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use maestro_test_process::child::{announce, connect, leave, write_stderr};
 use serde_json::{Value, json};
@@ -57,24 +61,22 @@ pub(super) fn session(state: &Value) -> io::Result<()> {
     Ok(())
 }
 
-/// Observe TERM and input closure separately after the client's executor ends.
+/// Report TERM only when observed before input closes, exiting immediately on plain EOF.
 pub(super) fn idle(state: &Value, marker: &str, port: u16) -> io::Result<()> {
+    let terminated = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&terminated))?;
     let mut signals = super::lifecycle::termination_pipe()?;
     let mut control = connect(port)?;
-    let state = state.clone();
-    let commands = std::thread::Builder::new().spawn(move || -> io::Result<()> {
-        let mut commands = Commands::new();
-        while let Some((_, command)) = commands.next()? {
-            respond(&command, Some(&state))?;
-        }
-        Ok(())
-    })?;
-    signals.read_exact(&mut [0])?;
-    std::fs::write(marker, "terminated")?;
-    announce(&mut control, "terminated")?;
-    commands
-        .join()
-        .map_err(|_| io::Error::other("command reader failed"))??;
+    let mut commands = Commands::new();
+    while let Some((_, command)) = commands.next()? {
+        respond(&command, Some(state))?;
+    }
+    // This sole thread handles pending TERM before read returns EOF; the flag carries no payload.
+    if terminated.load(Ordering::Relaxed) {
+        signals.read_exact(&mut [0])?;
+        std::fs::write(marker, "terminated")?;
+        announce(&mut control, "terminated")?;
+    }
     announce(&mut control, "input closed")?;
     leave(0)
 }

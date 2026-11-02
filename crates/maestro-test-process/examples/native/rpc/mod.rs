@@ -17,8 +17,12 @@ pub(super) enum Record {
     Session(Value),
     /// State, marker and release socket for an idle interrupt.
     IdleInterrupt(Value, String, u16),
-    /// A compiled scenario without additional data.
-    Plain(Scenario),
+    /// A lifecycle exchange without additional data.
+    Lifecycle(lifecycle::Kind),
+    /// An event exchange without additional data.
+    Events(events::Kind),
+    /// A transport exchange without additional data.
+    Transport(transport::Kind),
     /// Raw commands answered with the supplied data, preserving absent fields.
     Serve(Map<String, Value>),
     /// Event records emitted after each reply.
@@ -28,9 +32,9 @@ pub(super) enum Record {
     /// Arbitrary JSON values emitted without a request.
     Records(Vec<Value>),
     /// A native launch observation with its marker path.
-    Marked(Scenario, String),
+    Marked(lifecycle::Marked, String),
     /// A raw-stream scenario released over an observation socket.
-    Controlled(Scenario, u16),
+    Controlled(lifecycle::Controlled, u16),
 }
 
 impl Record {
@@ -40,33 +44,63 @@ impl Record {
         let ["rpc-peer", scenario] = fields.as_slice() else {
             return Err(io::Error::other("expected rpc-peer and a scenario"));
         };
-        match scenario.parse()? {
-            Scenario::Session => Ok(Self::Session(Value::Object(environment_json(
-                "PEER_STATE",
-                "{}",
-            )?))),
-            Scenario::IdleInterrupt => Ok(Self::IdleInterrupt(
-                Value::Object(environment_json("PEER_STATE", "{}")?),
-                variable("PEER_MARKER")?,
-                peer_port()?,
-            )),
-            Scenario::Serve => Ok(Self::Serve(environment_json("PEER_ANSWERS", "{}")?)),
-            Scenario::Burst => Ok(Self::Burst(environment_json("PEER_RECORDS", "[]")?)),
-            Scenario::Replay => Ok(Self::Replay(environment_json("PEER_REPLIES", "[]")?)),
-            Scenario::Records => Ok(Self::Records(environment_json("PEER_RECORDS", "[]")?)),
-            scenario @ (Scenario::Launch | Scenario::Report) => {
-                Ok(Self::Marked(scenario, variable("PEER_MARKER")?))
-            }
-            scenario @ (Scenario::Tick
-            | Scenario::Fragments
-            | Scenario::Descendant
-            | Scenario::PipeHolder) => {
-                let port = peer_port()?;
-                Ok(Self::Controlled(scenario, port))
-            }
-            scenario => Ok(Self::Plain(scenario)),
-        }
+        Self::from_scenario(scenario.parse()?)
     }
+
+    /// Construct only the input states each module can execute.
+    fn from_scenario(scenario: Scenario) -> io::Result<Self> {
+        use events::{Delayed, Kind as Event, Response};
+        use lifecycle::{Controlled, Kind as Lifecycle, Marked};
+        use transport::Kind as Transport;
+
+        Ok(match scenario {
+            Scenario::Session => Self::Session(session_state()?),
+            Scenario::IdleInterrupt => {
+                Self::IdleInterrupt(session_state()?, variable("PEER_MARKER")?, peer_port()?)
+            }
+            Scenario::Serve => Self::Serve(environment_json("PEER_ANSWERS", "{}")?),
+            Scenario::Burst => Self::Burst(environment_json("PEER_RECORDS", "[]")?),
+            Scenario::Replay => Self::Replay(environment_json("PEER_REPLIES", "[]")?),
+            Scenario::Records => Self::Records(environment_json("PEER_RECORDS", "[]")?),
+            Scenario::Launch => Self::Marked(Marked::Launch, variable("PEER_MARKER")?),
+            Scenario::Report => Self::Marked(Marked::Report, variable("PEER_MARKER")?),
+            Scenario::Tick => Self::Controlled(Controlled::Tick, peer_port()?),
+            Scenario::Fragments => Self::Controlled(Controlled::Fragments, peer_port()?),
+            Scenario::Descendant => Self::Controlled(Controlled::Descendant, peer_port()?),
+            Scenario::PipeHolder => Self::Controlled(Controlled::PipeHolder, peer_port()?),
+            Scenario::Entry => Self::Lifecycle(Lifecycle::Entry),
+            Scenario::BootFailure => Self::Lifecycle(Lifecycle::BootFailure),
+            Scenario::Kill => Self::Lifecycle(Lifecycle::Kill),
+            Scenario::Booting => Self::Lifecycle(Lifecycle::Booting),
+            Scenario::ForwardStderr => Self::Lifecycle(Lifecycle::ForwardStderr),
+            Scenario::DeliverStderr => Self::Lifecycle(Lifecycle::DeliverStderr),
+            Scenario::SplitStderr => Self::Lifecycle(Lifecycle::SplitStderr),
+            Scenario::Resist => Self::Lifecycle(Lifecycle::Resist),
+            Scenario::Restart => Self::Lifecycle(Lifecycle::Restart),
+            Scenario::ClosedInput => Self::Lifecycle(Lifecycle::ClosedInput),
+            Scenario::Refuse => Self::Transport(Transport::Refuse),
+            Scenario::Reversed => Self::Transport(Transport::Reversed),
+            Scenario::Malformed => Self::Transport(Transport::Malformed),
+            Scenario::LateState => Self::Events(Event::Delayed(Delayed::State)),
+            Scenario::LateEnd => Self::Events(Event::Delayed(Delayed::End)),
+            Scenario::LateAnswers => Self::Events(Event::Delayed(Delayed::Answers)),
+            Scenario::LateExit => Self::Events(Event::Delayed(Delayed::Exit)),
+            Scenario::Answered => Self::Events(Event::Answered),
+            Scenario::Collections => Self::Events(Event::Collections),
+            Scenario::Prompt => Self::Events(Event::Responding(Response::Prompt)),
+            Scenario::RejectPrompt => Self::Events(Event::Responding(Response::RejectPrompt)),
+            Scenario::Cancelled => Self::Events(Event::Responding(Response::Cancelled)),
+            Scenario::Settle => Self::Events(Event::Responding(Response::Settle)),
+            Scenario::Linear => Self::Events(Event::Responding(Response::Linear)),
+            Scenario::Received => Self::Events(Event::Received),
+            Scenario::Withhold => Self::Events(Event::Withhold),
+        })
+    }
+}
+
+/// Parse the interactive session's object state before starting its readers.
+fn session_state() -> io::Result<Value> {
+    environment_json("PEER_STATE", "{}").map(Value::Object)
 }
 
 /// Require a nonzero release port before any connection or stream output.
@@ -165,21 +199,8 @@ pub(super) fn run(record: &Record) -> io::Result<()> {
         Record::Records(records) => transport::records(records),
         Record::Marked(scenario, marker) => lifecycle::marked(*scenario, marker),
         Record::Controlled(scenario, port) => lifecycle::controlled(*scenario, *port),
-        Record::Plain(scenario) => match scenario {
-            Scenario::Entry
-            | Scenario::BootFailure
-            | Scenario::Kill
-            | Scenario::Booting
-            | Scenario::ForwardStderr
-            | Scenario::DeliverStderr
-            | Scenario::SplitStderr
-            | Scenario::Resist
-            | Scenario::Restart
-            | Scenario::ClosedInput => lifecycle::run(*scenario),
-            Scenario::Refuse | Scenario::Reversed | Scenario::Malformed => {
-                transport::run(*scenario)
-            }
-            _ => events::run(*scenario),
-        },
+        Record::Lifecycle(scenario) => lifecycle::run(*scenario),
+        Record::Transport(scenario) => transport::run(*scenario),
+        Record::Events(scenario) => events::run(*scenario),
     }
 }

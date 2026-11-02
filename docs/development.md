@@ -23,14 +23,24 @@ x64 hosts, independently of the compilation target. A successful `mise lock` can
 still skip unresolved hosts; check its platform inventory. Follow the
 [repository setup guidance](../AGENTS.md#checks) when installing pinned tools.
 
-The commit hook formats and re-stages the staged files, announces `Selected
-crates: ...`, then verifies the staged crates and every workspace crate that
-depends on them. A staged workspace-wide input runs the full workspace check
-instead: a manifest, the lockfile, `.cargo/`, the toolchain, the justfile, Clippy
-or mise settings, the hook configuration, the workspace inventory, CI files, root
-documentation or assets, or the conventions crate. `_check` is the private recipe
-that receives either `--workspace` or repeated `-p <package>` arguments, so the
-hook and `check` share one command list; `check` passes `--workspace`.
+The commit hook selects only the crates holding staged files, including member
+manifests. It runs `cargo fmt -p <package>` for those crates, re-stages the captured
+files that remain on disk, announces `Selected crates: ...`, then runs
+`cargo clippy -p <package> --all-targets --locked -- -D warnings`. Multiple crates
+use repeated `-p` arguments. Formatting failures and Clippy warnings block the
+commit. Files changed by formatting but absent from the captured index stay
+unstaged.
+
+Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
+no crates. They never widen a mixed change's selection. With no staged crate, the
+hook skips formatting and Clippy. The full conventions suite runs only for staged
+paths under `crates/maestro-test-conventions/`, guarding the checker itself.
+Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
+the browser entry is present, guarding targets outside native Clippy.
+
+CI checks dependents and workspace-wide inputs. `just check` keeps the full
+workspace gate: its private `_check` recipe verifies feature unification, runs
+Clippy, builds strict public documentation and checks workspace conventions.
 
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
@@ -790,14 +800,15 @@ digest, so a change to the tooling or the application leaves the components vali
 names in the bundle follow component discovery's own rule and fixed author and context pair.
 
 `TEST_PREPARE_BASE` names the directories of earlier bundles in the platform's path-list
-syntax (`:` on Unix, `;` on Windows). The preparation reads them in order and uses the first
-one it accepts; a single directory is a list of one. A base prepared from the same shared
-digest, so the same toolchain, supplies every component whose example files are unchanged: the
-preparation hands those to the setup example through the component variables, and the example
-builds only the others in its one Cargo call. The base's compiled code seeds the build's cache,
-and is dropped again when the example writes another engine's namespace. A base that is missing,
-unreadable or prepared from other shared inputs is skipped, and when none is accepted everything
-is built; the base directory may be the output directory.
+syntax (`:` on Unix, `;` on Windows). The preparation ignores empty entries, reads the
+remaining directories in order and uses the first one it accepts; a single directory is a list
+of one. A base prepared from the same shared digest, so the same toolchain, supplies every
+component whose example files are unchanged: the preparation hands those to the setup example
+through the component variables, and the example builds only the others in its one Cargo call.
+The base's compiled code seeds the build's cache, and is dropped again when the example writes
+another engine's namespace. A base that is missing, unreadable or prepared from other shared
+inputs is skipped, and when none is accepted everything is built; the base directory may be the
+output directory.
 After a successful preparation, the command reports how many components came from the base
 and how many it built, for example:
 
@@ -828,7 +839,10 @@ nextest prints the missing path `target/test-setup/development`; run `just prepa
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
 runs a staged copy that is outdated without a word. The tooling entries run
 `debug/development` from the target directory, which every `maestro-tooling` test build
-produces.
+produces. On Windows the staged tool is `development.exe`; the configured command
+resolves that native executable. Preparation also copies, hashes and restores the setup
+example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
+names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
@@ -1089,8 +1103,10 @@ native process observations. Unknown scenarios, malformed records and invalid
 input shapes fail before protocol output. These peers emit no test-harness text.
 
 The interactive client example uses `PEER_STATE` for its session state. Its idle
-interrupt peer reports TERM and input closure separately over the release socket;
-it does not assume which native notification runs first.
+interrupt peer reads commands on one thread and records TERM through a native
+signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
+by `input closed` over the release socket. Plain EOF exits without waiting for a
+signal. To check both paths, send TERM before closing input, or close input alone.
 
 #### Checked reruns
 

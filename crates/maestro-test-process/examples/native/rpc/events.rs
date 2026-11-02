@@ -3,10 +3,54 @@
 use std::io;
 
 use maestro_test_process::child::{leave, write_stderr};
-use maestro_test_process::rpc_peer::Scenario;
 use serde_json::{Value, json};
 
 use super::{Commands, drain, emit, refuse, respond, state};
+
+/// Event exchanges selected before any protocol output.
+#[derive(Clone, Copy)]
+pub(in crate::native) enum Kind {
+    /// Hold a reply or event behind the next request.
+    Delayed(Delayed),
+    /// Mark a completed terminal event and reply.
+    Answered,
+    /// Emit past and future terminal events.
+    Collections,
+    /// Reply while emitting a selected event sequence.
+    Responding(Response),
+    /// Acknowledge receipt without answering.
+    Received,
+    /// Leave a received request unanswered.
+    Withhold,
+}
+
+/// Outcomes released by the second request.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::native) enum Delayed {
+    /// Answer the state request after the second reply.
+    State,
+    /// Emit the terminal event before both replies.
+    End,
+    /// Exit with diagnostics instead of replying.
+    Exit,
+    /// Reply to both requests in order.
+    Answers,
+}
+
+/// Event sequences emitted while responding to commands.
+#[derive(Clone, Copy)]
+pub(in crate::native) enum Response {
+    /// Refuse the prompt before its terminal event.
+    RejectPrompt,
+    /// Emit a turn unless the prompt asks for quiet.
+    Prompt,
+    /// End a turn only when aborted.
+    Cancelled,
+    /// Keep calls pending until abort or native exit.
+    Settle,
+    /// Emit the requested number of indexed records.
+    Linear,
+}
 
 /// Answer a request before emitting every supplied event in order.
 pub(super) fn burst(records: &[Value]) -> io::Result<()> {
@@ -21,8 +65,8 @@ pub(super) fn burst(records: &[Value]) -> io::Result<()> {
 }
 
 /// Hold a first response or terminal event until the caller sends another command.
-fn delayed(scenario: Scenario) -> io::Result<()> {
-    if scenario == Scenario::LateState {
+fn delayed(scenario: Delayed) -> io::Result<()> {
+    if scenario == Delayed::State {
         write_stderr(b"diag\n")?;
     }
     emit(&json!({"type": "peer_ready"}))?;
@@ -31,24 +75,23 @@ fn delayed(scenario: Scenario) -> io::Result<()> {
     emit(&json!({"type": "received"}))?;
     let second = commands.required()?;
     match scenario {
-        Scenario::LateState => {
+        Delayed::State => {
             respond(&second, None)?;
             respond(&first, Some(&state()))?;
         }
-        Scenario::LateEnd => {
+        Delayed::End => {
             emit(&json!({"type": "agent_end"}))?;
             respond(&first, None)?;
             respond(&second, None)?;
         }
-        Scenario::LateExit => {
+        Delayed::Exit => {
             write_stderr(b"late\n")?;
             leave(0);
         }
-        Scenario::LateAnswers => {
+        Delayed::Answers => {
             respond(&first, None)?;
             respond(&second, None)?;
         }
-        _ => return Err(io::Error::other("not a delayed scenario")),
     }
     drain()
 }
@@ -83,29 +126,29 @@ fn collections() -> io::Result<()> {
 }
 
 /// Serve prompt, cancellation and linear-dispatch event sequences.
-fn responding(scenario: Scenario) -> io::Result<()> {
+fn responding(scenario: Response) -> io::Result<()> {
     if matches!(
         scenario,
-        Scenario::RejectPrompt | Scenario::Cancelled | Scenario::Settle
+        Response::RejectPrompt | Response::Cancelled | Response::Settle
     ) {
         emit(&json!({"type": "peer_ready"}))?;
     }
     let mut commands = Commands::new();
     while let Some((_, command)) = commands.next()? {
         match scenario {
-            Scenario::RejectPrompt => {
+            Response::RejectPrompt => {
                 refuse(&command, "Rejected prompt")?;
                 emit(&json!({"type": "agent_end"}))?;
                 continue;
             }
-            Scenario::Prompt if command["message"] != "quiet" => {
+            Response::Prompt if command["message"] != "quiet" => {
                 emit(&json!({"type": "agent_start"}))?;
                 emit(&json!({"type": "agent_end", "messages": []}))?;
             }
-            Scenario::Cancelled if command["type"] == "abort" => {
+            Response::Cancelled if command["type"] == "abort" => {
                 emit(&json!({"type": "agent_end"}))?;
             }
-            Scenario::Settle => {
+            Response::Settle => {
                 emit(&json!({"type": "received", "command": command["type"]}))?;
                 if command["type"] == "bash" {
                     leave(3);
@@ -114,8 +157,8 @@ fn responding(scenario: Scenario) -> io::Result<()> {
                     continue;
                 }
             }
-            Scenario::Linear => linear(&command)?,
-            _ => {}
+            Response::Linear => linear(&command)?,
+            Response::Prompt | Response::Cancelled => {}
         }
         respond(&command, None)?;
     }
@@ -136,27 +179,19 @@ fn linear(command: &Value) -> io::Result<()> {
 }
 
 /// Run event scenarios whose control comes from native command input.
-pub(super) fn run(scenario: Scenario) -> io::Result<()> {
+pub(super) fn run(scenario: Kind) -> io::Result<()> {
     match scenario {
-        Scenario::Burst => Err(io::Error::other("burst records are missing")),
-        Scenario::LateState | Scenario::LateEnd | Scenario::LateAnswers | Scenario::LateExit => {
-            delayed(scenario)
-        }
-        Scenario::Answered => answered(),
-        Scenario::Collections => collections(),
-        Scenario::Prompt
-        | Scenario::RejectPrompt
-        | Scenario::Cancelled
-        | Scenario::Settle
-        | Scenario::Linear => responding(scenario),
-        Scenario::Received | Scenario::Withhold => {
+        Kind::Delayed(scenario) => delayed(scenario),
+        Kind::Answered => answered(),
+        Kind::Collections => collections(),
+        Kind::Responding(scenario) => responding(scenario),
+        Kind::Received | Kind::Withhold => {
             emit(&json!({"type": "peer_ready"}))?;
             Commands::new().required()?;
-            if scenario == Scenario::Received {
+            if matches!(scenario, Kind::Received) {
                 emit(&json!({"type": "received"}))?;
             }
             drain()
         }
-        _ => Err(io::Error::other("not an event scenario")),
     }
 }

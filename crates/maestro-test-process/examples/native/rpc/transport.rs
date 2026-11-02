@@ -3,10 +3,20 @@
 use std::io;
 
 use maestro_test_process::child::{connect, receive, write_stdout};
-use maestro_test_process::rpc_peer::Scenario;
 use serde_json::{Map, Value, json};
 
 use super::{Commands, drain, emit, refuse, respond, state};
+
+/// Correlated transport exchanges without additional fixture data.
+#[derive(Clone, Copy)]
+pub(in crate::native) enum Kind {
+    /// Refuse every request with a correlated diagnostic.
+    Refuse,
+    /// Reply out of order with a duplicate response.
+    Reversed,
+    /// Emit malformed input before a matching reply.
+    Malformed,
+}
 
 /// Capture every raw request before answering with its selected data.
 pub(super) fn serve(answers: &Map<String, Value>) -> io::Result<()> {
@@ -100,11 +110,10 @@ pub(super) fn fragments(port: u16) -> io::Result<()> {
 }
 
 /// Select the finite transport variants without interpreting source text.
-pub(super) fn run(scenario: Scenario) -> io::Result<()> {
+pub(super) fn run(scenario: Kind) -> io::Result<()> {
     match scenario {
-        Scenario::Refuse => refusing(),
-        Scenario::Reversed => reversed(),
-        Scenario::Malformed => malformed(),
-        _ => Err(io::Error::other("not a transport scenario")),
+        Kind::Refuse => refusing(),
+        Kind::Reversed => reversed(),
+        Kind::Malformed => malformed(),
     }
 }

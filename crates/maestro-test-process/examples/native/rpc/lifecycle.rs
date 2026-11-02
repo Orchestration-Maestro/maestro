@@ -8,29 +8,75 @@ use std::process::{Command, Stdio};
 use maestro_test_process::child::{
     Stream, announce, close_streams, connect, leave, receive, write_stderr,
 };
-use maestro_test_process::rpc_peer::Scenario;
 use serde_json::json;
 
 use super::{Commands, drain, emit, respond, variable};
+
+/// Lifecycle scenarios that require no additional input.
+#[derive(Clone, Copy)]
+pub(in crate::native) enum Kind {
+    /// Report the native executable path.
+    Entry,
+    /// Exit before startup with diagnostics.
+    BootFailure,
+    /// End through a native kill signal.
+    Kill,
+    /// Retain the startup diagnostic.
+    Booting,
+    /// Forward a full diagnostic stream.
+    ForwardStderr,
+    /// Drain diagnostics before stop completes.
+    DeliverStderr,
+    /// Split a diagnostic character across writes.
+    SplitStderr,
+    /// Record TERM without exiting on it.
+    Resist,
+    /// Capture commands across a client restart.
+    Restart,
+    /// Close input while retaining output.
+    ClosedInput,
+}
+
+/// Launch observations that write a marker.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::native) enum Marked {
+    /// Record entry into the native peer.
+    Launch,
+    /// Report native operands and environment.
+    Report,
+}
+
+/// Native stream scenarios released over a socket.
+#[derive(Clone, Copy)]
+pub(in crate::native) enum Controlled {
+    /// Write acknowledged raw fragments.
+    Fragments,
+    /// Exit while a real descendant retains output.
+    Descendant,
+    /// Retain inherited output until released.
+    PipeHolder,
+    /// Write acknowledged ticks until termination.
+    Tick,
+}
 
 /// More diagnostic bytes than an unread native pipe holds.
 const FILL: usize = 1 << 20;
 
 /// Report a launch without altering the native operands or environment.
-pub(super) fn marked(scenario: Scenario, marker: &str) -> io::Result<()> {
+pub(super) fn marked(scenario: Marked, marker: &str) -> io::Result<()> {
     writeln!(
         std::fs::File::options()
             .create(true)
             .append(true)
             .open(marker)?,
         "{}",
-        if scenario == Scenario::Launch {
+        if scenario == Marked::Launch {
             "launched"
         } else {
             "started"
         }
     )?;
-    if scenario == Scenario::Launch {
+    if scenario == Marked::Launch {
         emit(&json!({"type": "peer_ready"}))?;
     } else {
         emit(
@@ -155,59 +201,57 @@ fn ticking(port: u16) -> io::Result<()> {
 }
 
 /// Run socket-released native stream scenarios.
-pub(super) fn controlled(scenario: Scenario, port: u16) -> io::Result<()> {
+pub(super) fn controlled(scenario: Controlled, port: u16) -> io::Result<()> {
     match scenario {
-        Scenario::Fragments => super::transport::fragments(port),
-        Scenario::Descendant => descendant(port),
-        Scenario::PipeHolder => pipe_holder(port),
-        Scenario::Tick => ticking(port),
-        _ => Err(io::Error::other("not a socket-controlled scenario")),
+        Controlled::Fragments => super::transport::fragments(port),
+        Controlled::Descendant => descendant(port),
+        Controlled::PipeHolder => pipe_holder(port),
+        Controlled::Tick => ticking(port),
     }
 }
 
 /// Run native lifecycle variants without a shell or interpreted payload.
-pub(super) fn run(scenario: Scenario) -> io::Result<()> {
+pub(super) fn run(scenario: Kind) -> io::Result<()> {
     match scenario {
-        Scenario::Entry => {
+        Kind::Entry => {
             emit(&json!({"type": "peer_ready", "entry": std::env::current_exe()?}))?;
             drain()
         }
-        Scenario::BootFailure => {
+        Kind::BootFailure => {
             write_stderr(b"boot failed\n")?;
             leave(7)
         }
-        Scenario::Kill => {
+        Kind::Kill => {
             rustix::process::kill_process(
                 rustix::process::getpid(),
                 rustix::process::Signal::KILL,
             )?;
             Err(io::Error::other("kill did not terminate the peer"))
         }
-        Scenario::Booting => {
+        Kind::Booting => {
             write_stderr(b"booting\n")?;
             emit(&json!({"type": "peer_ready"}))?;
             drain()
         }
-        Scenario::ForwardStderr => forwarding(),
-        Scenario::DeliverStderr => {
+        Kind::ForwardStderr => forwarding(),
+        Kind::DeliverStderr => {
             write_stderr(&vec![b'x'; FILL])?;
             write_stderr(b"end\n")?;
             emit(&json!({"type": "peer_ready", "pid": std::process::id()}))?;
             drain()
         }
-        Scenario::SplitStderr => split_stderr(),
-        Scenario::Resist => {
+        Kind::SplitStderr => split_stderr(),
+        Kind::Resist => {
             termination(&[b"terminating\n"])?;
             emit(&json!({"type": "peer_ready", "pid": std::process::id()}))?;
             drain()
         }
-        Scenario::Restart => restarting(),
-        Scenario::ClosedInput => {
+        Kind::Restart => restarting(),
+        Kind::ClosedInput => {
             close_streams(&[Stream::Input])?;
             emit(&json!({"type": "peer_ready"}))?;
             let (_release, held) = std::sync::mpsc::channel::<()>();
             held.recv().map_err(io::Error::other)
         }
-        _ => Err(io::Error::other("not a lifecycle scenario")),
     }
 }
