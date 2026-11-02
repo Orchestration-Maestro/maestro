@@ -1136,9 +1136,9 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests and the application RPC client tests. Local setup
-builds the example
-with the locked host `dev` profile and reads Cargo's emitted executable path. It
+attachment-completion tests and the application's RPC client and footer tests.
+Local setup builds the example with the locked host `dev` profile and reads
+Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
@@ -1240,6 +1240,58 @@ interrupt peer reads commands on one thread and records TERM through a native
 signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
+
+#### Footer Git aliases
+
+Run the footer observation tests with their prepared native Git aliases:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-app -E 'test(/footer_/)'
+```
+
+On Unix, `maestro_test_process::git_command::Scenario` selects a compiled stand-in
+behavior. Call `maestro_test_process::git_command::install(entry, scenario)` to copy
+the prepared artifact and write its sibling `<alias>.fixture` record, which holds
+`git` and `scenario.name()` on separate lines. Install the alias in a disposable
+binary directory and put that directory first on the `PATH` of the test child that
+reaches the footer operations. The two lookup scenarios answer the operands and
+the physical directory their launch supplied; `GIT_EXIT` selects their status and
+defaults to a successful lookup.
+
+| Scenario | Behavior |
+| --- | --- |
+| `Observed` | Writes the operands, the directory and, where the platform publishes them, the descriptor targets of standard input and standard error to `GIT_LOG`; writes one diagnostic, answers `feature/native` and ends with `GIT_EXIT`. |
+| `Reported` | Writes the operands and the directory to standard output, then ends with `GIT_EXIT`. |
+| `Exiting` | Writes an unterminated ` prefix` and starts the descendant named by `GIT_HOLDER` on the port in `holder-port`, passing its own identifier as `GIT_PARENT`, then exits without waiting for it. |
+| `Retaining` | Reads its port from `GIT_PORT`, reports the identifier in `GIT_PARENT`, waits for one release byte and adds ` tail` to the retained output. |
+
+`Exiting` and `Retaining` keep the descriptor topology of a real linked
+descendant instead of a thread: the direct child ends while its own child still
+holds the output pipe, so the footer query completes only after the test releases
+it. The announced identifier is the direct child's, so a test that watches for
+process completion waits for the launched child rather than the descendant.
+Install both aliases in one disposable binary directory:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let directory = maestro_test_directory::Scratch::new()?;
+    let bin = directory.path().join("bin");
+    std::fs::create_dir(&bin)?;
+    maestro_test_process::git_command::install(
+        &bin.join("git"),
+        maestro_test_process::git_command::Scenario::Exiting,
+    )?;
+    maestro_test_process::git_command::install(
+        &bin.join("git-holder"),
+        maestro_test_process::git_command::Scenario::Retaining,
+    )?;
+    Ok(())
+}
+```
+
+The installed aliases read their record instead of harness arguments, so the
+product keeps its own operands, working directory and standard descriptors.
 
 #### Search and completion aliases
 
