@@ -29,17 +29,22 @@ impl InteractiveMode {
     /// Configures the default editor before a distinct current editor.
     ///
     /// # Errors
-    /// Returns an unusable HTTP idle limit, a cursor-hiding failure or the current editor's
-    /// original failure; the settings before it stay applied.
+    /// Returns an unusable HTTP idle limit before changing the presentation. A cursor-hiding
+    /// or current-editor failure keeps the settings already applied.
     pub(super) fn apply_runtime_settings(&self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.runtime_host.session();
+        maestro_app::configure_http_dispatcher(
+            session
+                .settings_manager()
+                .borrow()
+                .get_http_idle_timeout_ms()?,
+        )?;
         self.footer.set_session(Rc::clone(&session));
         self.footer
             .set_auto_compact_enabled(session.auto_compaction_enabled());
         let cwd = session.session_manager().borrow().get_cwd().to_owned();
         self.footer_data_provider.set_cwd(cwd);
         let settings = session.settings_manager().borrow();
-        maestro_app::configure_http_dispatcher(settings.get_http_idle_timeout_ms()?)?;
         self.hide_thinking_block
             .set(settings.get_hide_thinking_block());
         self.ui

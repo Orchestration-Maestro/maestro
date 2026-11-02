@@ -3,8 +3,8 @@ use super::{Setup, World, cases, isolated, roles, started};
 use crate::interactive_mode::InteractiveMode;
 use maestro_app::{
     DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
-    Local, ReadonlyFooterDataProvider, ReadonlySessionManager, ResourcesDiscoverEvent,
-    ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
+    Local, NewSessionCommandOptions, ReadonlyFooterDataProvider, ReadonlySessionManager,
+    ResourcesDiscoverEvent, ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
 };
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
 use maestro_tui::{Component, tui::InputHandler};
@@ -306,6 +306,64 @@ fn runtime_settings_follow_the_current_session_without_crossing_policies() {
             assert_eq!(changes.get(), moved + 1, "an unchanged cwd notifies nobody");
         }
     });
+}
+
+#[test]
+fn invalid_replacement_http_settings_leave_footer_unchanged() {
+    isolated(
+        "invalid_replacement_http_settings_leave_footer_unchanged",
+        async |directory| {
+            let cwd = directory.join("replacement");
+            std::fs::create_dir(&cwd).unwrap();
+            let world = Setup {
+                create: Some(Rc::new(move |_| {
+                    let replacement =
+                        super::session::session(cwd.to_str().unwrap(), None, |inner| inner);
+                    replacement.session.model().write().unwrap().id = "rejected-model".into();
+                    *replacement.session.settings_manager().borrow_mut() =
+                        maestro_app::SettingsManager::in_memory(
+                            serde_json::from_value(json!({
+                                "httpIdleTimeoutMs": -5,
+                                "compaction": {"enabled": false}
+                            }))
+                            .unwrap(),
+                        );
+                    Box::pin(async { Ok(replacement) })
+                })),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let previous = world.host.session();
+            previous.model().write().unwrap().id = "retained-model".into();
+            previous.set_auto_compaction_enabled(true).unwrap();
+            world.mode.apply_runtime_settings().unwrap();
+            let before = world.mode.footer.render(120);
+            assert!(auto_marker(&world));
+            let changes = cwd_changes(&world);
+
+            let error = world
+                .host
+                .new_session(NewSessionCommandOptions::default())
+                .await
+                .unwrap_err();
+
+            assert!(
+                error
+                    .to_string()
+                    .contains("Invalid httpIdleTimeoutMs setting: -5")
+            );
+            assert!(!Rc::ptr_eq(&previous, &world.host.session()));
+            assert_eq!(world.mode.footer.render(120), before);
+            assert_eq!(
+                changes.get(),
+                0,
+                "rejected settings must not change the cwd"
+            );
+            assert!(auto_marker(&world));
+        },
+    );
 }
 
 #[test]

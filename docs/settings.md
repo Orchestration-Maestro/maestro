@@ -446,8 +446,13 @@ Both accessors return `Result` with `InvalidHttpIdleTimeout` as the error.
 
 The shared native HTTP client starts with a 300,000 ms idle limit. Startup,
 session replacement, a settings-panel change and reload apply the current
-setting to subsequent shared-client requests. The limit covers the wait for
-headers, including connecting and sending, and restarts after each body chunk.
+setting to subsequent shared-client requests. Session replacement checks and
+applies this setting before updating the footer session, automatic-compaction
+marker or working directory. An invalid value leaves those unchanged and does
+not notify branch-change subscribers.
+
+The limit covers the wait for headers, including connecting and sending, and
+restarts after each body chunk.
 Private clients, including the cloud conversation transport and proxy-script
 fetches, keep their own limits. Browser requests use the platform client. Embedders apply
 the setting with [`configure_http_dispatcher`](application/sdk.md#requests).
