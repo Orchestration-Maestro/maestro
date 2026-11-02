@@ -13,7 +13,7 @@ slow-timeout = { period = "30s", terminate-after = 4 }
 command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(/_example::/)))"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(host_operations::) | test(/_example::/)))"
 setup = "author-component"
 
 [scripts.setup.cargo-checks]

@@ -4135,6 +4135,7 @@ dependencies = [
  "maestro-json",
  "maestro-listing",
  "maestro-models",
+ "maestro-package",
  "maestro-request",
  "maestro-test-directory",
  "maestro-text",
@@ -4317,12 +4318,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-package"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
  "git-url-parse",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-package",
  "maestro-packages",
  "maestro-path",
  "maestro-pattern",
