@@ -1129,11 +1129,12 @@ On Unix, the `command` family replaces an interpreted stand-in for a program the
 product launches by name. Install the artifact under the name the product uses,
 then write `command` on the first line of `<alias>.fixture` followed by a JSON
 object whose `scenario` selects one finite behaviour. The fixture parses the whole
-record before any effect and rejects an unknown scenario or field.
+record before any effect and rejects an unknown scenario or field, including in the
+`labelled` and `package` scenarios that declare no fields of their own.
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal: "SIGTERM"` ends by that native signal instead. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |

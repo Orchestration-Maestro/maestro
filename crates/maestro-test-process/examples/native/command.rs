@@ -13,7 +13,15 @@ pub(super) enum ExitSignal {
     /// Terminate with the native SIGTERM.
     #[serde(rename = "SIGTERM")]
     Terminate,
+    /// Terminate with a Linux real-time signal, which no shared name reports.
+    #[cfg(target_os = "linux")]
+    #[serde(rename = "SIGRTMAX")]
+    Realtime,
 }
+
+/// The last Linux real-time signal, which ends a process without a name.
+#[cfg(target_os = "linux")]
+const REALTIME_SIGNAL: i32 = 64;
 
 /// One append a stand-in performs before it reports.
 #[derive(Deserialize)]
@@ -57,7 +65,7 @@ pub(super) enum Record {
         argv_log: Option<ArgvLog>,
     },
     /// Report the first operand on both streams, then echo one line of input.
-    Labelled,
+    Labelled {},
     /// Answer a package-manager root query for the first operand.
     Query {
         /// Bytes written before the reported value.
@@ -70,7 +78,7 @@ pub(super) enum Record {
         code: u8,
     },
     /// Record one package-manager command and answer it.
-    Package,
+    Package {},
 }
 
 impl Record {
@@ -102,19 +110,24 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             }
             write_stdout(stdout)?;
             write_stderr(stderr)?;
-            if let Some(ExitSignal::Terminate) = signal {
-                kill_process(getpid(), Signal::TERM)?;
+            match signal {
+                Some(ExitSignal::Terminate) => kill_process(getpid(), Signal::TERM)?,
+                #[cfg(target_os = "linux")]
+                Some(ExitSignal::Realtime) => {
+                    signal_hook::low_level::raise(REALTIME_SIGNAL).map_err(io::Error::other)?;
+                }
+                None => {}
             }
             leave(i32::from(*code))
         }
-        Record::Labelled => labelled(operands),
+        Record::Labelled {} => labelled(operands),
         Record::Query {
             prefix,
             denied,
             error,
             code,
         } => query(operands, prefix, denied, error, *code),
-        Record::Package => package(operands),
+        Record::Package {} => package(operands),
     }
 }
 

@@ -151,6 +151,22 @@ fn self_update_step_errors_keep_status_and_signal() {
         failure(&signalled),
         "signalled terminated by signal SIGTERM"
     );
+    #[cfg(target_os = "linux")]
+    assert_eq!(
+        failure(&command(
+            directory,
+            "realtime",
+            "realtime",
+            &json!({
+                "scenario": "output",
+                "stdout": [],
+                "stderr": [],
+                "code": 0,
+                "signal": "SIGRTMAX"
+            }),
+        )),
+        "realtime exited with code unknown"
+    );
     let failing = failing_steps(directory, Path::new(&log));
     assert_eq!(failure(&failing), "%s exited with code 3");
     assert!(!Path::new(&log).exists());

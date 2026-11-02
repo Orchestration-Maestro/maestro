@@ -213,6 +213,7 @@ fn malformed_command_records_have_no_partial_effects() {
     let mut invalid = vec![
         json!({"scenario": "unknown"}),
         json!({"scenario": "package", "unknown": true}),
+        json!({"scenario": "labelled", "unknown": true}),
     ];
     for (field, value) in [
         ("code", json!(256)),
@@ -229,9 +230,14 @@ fn malformed_command_records_have_no_partial_effects() {
     for record in invalid {
         let path = root.path().join("record");
         std::fs::write(&path, format!("command\n{record}")).unwrap();
+        // The operands and both variables admit an unmodified run, so only a
+        // rejected record keeps the append, the package log and both streams empty.
         let run = Command::new(artifact())
             .arg("--maestro-observe")
             .arg(path)
+            .args(["--quiet", "root"])
+            .env("MAESTRO_COMMAND_LOG", &sentinel)
+            .env("MAESTRO_NPM_ROOT", root.path())
             .output()
             .unwrap();
         assert!(!run.status.success(), "accepted {record}");
