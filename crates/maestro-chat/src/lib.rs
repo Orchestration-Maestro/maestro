@@ -62,6 +62,9 @@ pub use components::login_dialog::{
 pub use components::session_selector::*;
 
 #[cfg(test)]
+pub(crate) use components::session_selector::list::tests::platform_keys;
+
+#[cfg(test)]
 extern crate self as maestro_chat;
 pub use components::bash_execution::BashExecutionComponent;
 

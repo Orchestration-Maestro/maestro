@@ -1128,6 +1128,18 @@
         "tui.select.cancel": "q"
       }
     },
+    "expected_macos": {
+      "normal": [
+        "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m◉ Current Folder\u001b[39m\u001b[38;5;33m | ○ All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",
+        "\u001b[38;5;34mctrl+x/option+t\u001b[39m\u001b[38;5;33m scope\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;33mre:<pattern> regex · \"phrase\" exact\u001b[39m",
+        "\u001b[38;5;34ms\u001b[39m\u001b[38;5;33m sort\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[38;5;33m named\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34md\u001b[39m\u001b[38;5;33m delete\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mp\u001b[39m\u001b[38;5;33m path (off)\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mr\u001b[39m\u001b[38;5;33m rename\u001b[39m"
+      ],
+      "confirmation": [
+        "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m◉ Current Folder\u001b[39m\u001b[38;5;33m | ○ All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",
+        "\u001b[38;5;35mDelete session? \u001b[38;5;34mx\u001b[39m\u001b[38;5;33m confirm\u001b[39m · \u001b[38;5;34mq\u001b[39m\u001b[38;5;33m cancel\u001b[39m\u001b[39m",
+        ""
+      ]
+    },
     "expected": {
       "normal": [
         "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m\u25c9 Current Folder\u001b[39m\u001b[38;5;33m | \u25cb All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",

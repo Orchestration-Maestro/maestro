@@ -737,6 +737,10 @@ impl crate::component_adapter::NativeImports for Controlled {
             if signal.is_some_and(|signal| self.aborted(signal)) {
                 return Err("Aborted".into());
             }
+            self.observe()
+                .native_http
+                .signals
+                .push(signal.map(|signal| signal.flag.shared()));
             let hold = self.observe().take_hold();
             pause(hold).await;
             if signal.is_some_and(|signal| self.aborted(signal)) {

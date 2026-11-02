@@ -3,6 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::display_support::{Env, NoLanguages, Setup, bind, context, padded_to, palette_of};
+use crate::edit_render_support::for_this_platform;
 use crate::runtime::run;
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
@@ -79,6 +80,10 @@ pub fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            case
+        })
         .collect();
     assert!(!selected.is_empty(), "empty test group {test}");
     selected

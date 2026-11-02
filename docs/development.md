@@ -518,6 +518,17 @@ An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 
+### FTP peer support
+
+The models tests share the scripted peer in
+`crates/maestro-models/tests/support/ftp_server.rs`. Library tests also load
+`ftp_server_timing.rs` for `Peer::reached` and `Peer::written`; the integration
+program uses only the common peer. Check both programs for unused support:
+
+```sh
+cargo clippy -p maestro-models --all-targets --locked -- -D warnings
+```
+
 ### Slowest-first test order
 
 The 64 tests that took more than 30 seconds in the baseline merge group have
