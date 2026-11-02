@@ -266,10 +266,15 @@ fn forced_update_uses_configured_manager_without_release_fetch() {
     std::fs::create_dir_all(package.join("bin")).unwrap();
     let binary = package.join("bin/maestro");
     std::fs::copy(env!("CARGO_BIN_EXE_maestro"), &binary).unwrap();
-    let script = root.path("fake-npm.sh");
-    std::fs::write(&script, "if [ \"$3\" = root ]; then printf '%s/lib/node_modules\\n' \"$2\"; else printf '%s\\n' \"$@\" > \"$RECORD\"; fi\n").unwrap();
-    let settings =
-        |base: &std::path::Path| json!({"npmCommand":["/bin/sh",script,"--prefix",base]});
+    let script = root.path("bin/npm");
+    crate::support::native::install(
+        &root.path("bin"),
+        "npm",
+        "command",
+        &json!({"scenario":"prefixed","suffix":"/lib/node_modules",
+            "log":root.path("record")}),
+    );
+    let settings = |base: &std::path::Path| json!({"npmCommand":[script,"--prefix",base]});
     std::fs::write(
         root.path("agent/settings.json"),
         settings(&prefix).to_string(),
@@ -290,7 +295,6 @@ fn forced_update_uses_configured_manager_without_release_fetch() {
                 .filter_map(|(key, value)| value.map(|value| (key, value))),
         )
         .env("MAESTRO_PACKAGE_DIR", &package)
-        .env("RECORD", root.path("record"))
         .current_dir(root.path("project"))
         .args(["update", "--self", "--force"])
         .output()

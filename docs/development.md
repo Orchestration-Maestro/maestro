@@ -1181,8 +1181,10 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests and `maestro-app`. Local setup builds the example
-with the locked host `dev` profile and reads Cargo's emitted executable path. It
+attachment-completion tests, `maestro-app`, and the composition root's
+`native_io`, `truncated_tool_example` and `entry_routes` tests. Local setup builds
+the example with the locked host `dev` profile and reads Cargo's emitted
+executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
@@ -1235,6 +1237,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `prefixed` | Requires `--prefix` and a prefix operand first. A `root` command answers the prefix followed by `suffix` and a newline; any other invocation appends every operand to `log`, one per line. |
 
 A controlled package command for the package manager settings records its
 acquisitions without a package manager:
@@ -1414,6 +1417,7 @@ The finite scenarios use these fields:
 | Scenario | Fields and behavior |
 | --- | --- |
 | `response` | `args` records the JSON operand array; `stdout` and `stderr` are byte arrays. `code` selects the status; optional `signal: "SIGTERM"` ends by native signal instead. |
+| `supplied` | `observation` receives `{"argv": [...], "cwd": ...}`. `stdout`, `stderr` and `code` name the files that supply the two streams and the numeric status, so a test can change the outcome between searches. When `marker` names an existing file, the alias removes its own executable before it reports, like an installation replaced under it. |
 | `probe` | `name`, optional `log`, `stdout` byte array and `code`. Appends `name` and the operands to the log, requires exactly `--version`, then returns the version bytes and status. Discovery checks launchability, not version compatibility. |
 | `marker` | Writes `text` to `path`. With `copy_input: true`, copies the first operand's file to stdout, like a search preprocessor. Execute it once as a positive control, remove the sentinel, then assert hostile search operands never recreate it. |
 | `probe-wait` | Connects to Unix `socket`, writes `ready`, then waits for a byte or EOF. Dropping discovery must stop this real process. |
@@ -1438,6 +1442,49 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Native IO children
+
+On Unix, install the same artifact as the program a byte-level operation launches.
+Write `child` on the first line of `<alias>.fixture` and a JSON object whose
+`scenario` selects one finite behavior. The fixture parses the whole record before
+any stream, socket or descendant effect, and it rejects an unknown scenario or
+field.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. |
+| `pending` | Writes `00 ff e2` on standard output and `error` with a NUL on standard error, releases when one input byte arrives, then writes `82 ac` followed by that byte, writes `last` on standard error and relays the rest of standard input. Every write is acknowledged by the bytes the test reads, so no chunk boundary is assumed. |
+| `arguments` | Reports the working directory and the untouched operands as one JSON array. |
+| `relay` | Writes `ready` when its `ready` field is true, relays standard input to standard output until it ends, then writes the `tail` bytes on standard error. |
+| `announce` | Sends its process id, eight bytes big-endian, on the parent's `port`, waits for one release byte, then writes the `stdout` and `stderr` byte arrays. |
+| `grouped` | Sends its process id and group id on the parent's `port`, then waits for the release byte. |
+| `challenge` | Sends its process id and session id, reads a 16-byte challenge, answers with its process id and that challenge, waits for the release byte, then exits with status 23. |
+| `early` | Writes the `stdout` and `stderr` byte arrays, starts `holder` with both pipes inherited, then exits with `code` while that descendant keeps them. |
+| `identity` | Writes `[process id, group id, session id]` and a newline, starts `holder` when one is named, then waits for one input byte. |
+
+A controlled child that reports a prefix before its caller releases it:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("child");
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &alias,
+    )?;
+    let record = serde_json::json!({"scenario": "announce", "port": 5091,
+        "stdout": [], "stderr": []});
+    std::fs::write(directory.path().join("child.fixture"), format!("child\n{record}"))?;
+    Ok(())
+}
+```
+
+Pass the alias absolute path as the command the native operation launches, and
+seed the record with the port the parent test listens on. The `early` and
+`identity` scenarios name a second alias in `holder`; install that one with a
+`grouped`, `announce` or `relay` record so the descendant has its own protocol.
 
 #### Credential processes
 
