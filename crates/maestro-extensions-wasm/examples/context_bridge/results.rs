@@ -95,12 +95,14 @@ pub(super) async fn compact(
     let options = match options {
         "absent" => None,
         "empty" => Some(CompactOptions::default()),
-        failing if failing.starts_with("fail:") => Some(rejecting(&failing[5..])),
-        _ => Some(CompactOptions {
-            custom_instructions: Some("keep".into()),
-            on_complete: Some(completed(api)),
-            on_error: Some(failed(api)),
-        }),
+        _ => Some(options.strip_prefix("fail:").map_or_else(
+            || CompactOptions {
+                custom_instructions: Some("keep".into()),
+                on_complete: Some(completed(api)),
+                on_error: Some(failed(api)),
+            },
+            rejecting,
+        )),
     };
     context.compact(options)?;
     let label = super::ordering::label(api)?;

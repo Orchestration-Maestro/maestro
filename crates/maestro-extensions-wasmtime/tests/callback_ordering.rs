@@ -149,7 +149,7 @@ impl Instance {
         .unwrap();
     }
 
-    /// Reports whether this instance released the retained view named `name`.
+    /// Reports whether this instance released the retained view or capture named `name`.
     pub(super) fn released(&self, name: &str) -> bool {
         self.owner
             .read()

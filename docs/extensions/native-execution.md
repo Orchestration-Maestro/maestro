@@ -49,13 +49,11 @@ Calls into other components are unaffected.
 Component callbacks follow the [event bus](event_bus.md) delivery rules. These
 callbacks include listener prefixes, tool argument preparation, message renderers,
 retained view render, input, key-release and invalidate methods, and compaction
-notifications. While a callback runs, its own instance's listeners run immediately.
-Other instances' listeners run when it returns, before the native caller continues.
-An authored error keeps its exact text and those deliveries. Returned values reach
-their native consumer unchanged; prepared arguments pass model argument validation
-before the tool executes. A returned view keeps its state, outlives a replaced
-renderer and is released by its last owner. Removing a subscription leaves an
-admitted tail and its captures running until the tail settles.
+notifications. Returned values reach their native consumer unchanged; prepared
+arguments pass model argument validation before the tool executes. A returned view
+keeps its state, outlives a replaced renderer and is released by its last owner.
+Removing a subscription leaves an admitted tail and its captures running until
+the tail settles.
 
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,

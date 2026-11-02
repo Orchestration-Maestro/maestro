@@ -223,7 +223,7 @@ fn prepared_arguments_reach_validation_before_execution() {
 }
 
 #[test]
-fn prepare_callbacks_drain_before_execution_and_release() {
+fn prepare_callbacks_drain_before_execution() {
     local(async {
         let pair = echo_pair().await;
         let foreign =
@@ -346,6 +346,7 @@ fn compaction_callbacks_preserve_results_errors_and_return_order() {
         );
     });
 }
+
 #[test]
 fn callback_failures_keep_authored_errors_and_healthy_delivery() {
     local(async {

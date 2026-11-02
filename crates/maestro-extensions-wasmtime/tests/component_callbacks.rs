@@ -163,6 +163,7 @@ fn component_methods_share_retained_state_and_callback_scope() {
 }
 
 /// Each method's same-instance listener runs inside it; the other instance's after it returns.
+/// The view releases only after its last owner drops.
 async fn each_method_returns_before_delivery_ends(pair: &mut Pair) {
     pair.a
         .program(r#"[{"op":"on","channel":"component-foreign","id":"same","name":"same"}]"#)
