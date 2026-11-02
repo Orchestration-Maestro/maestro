@@ -82,8 +82,18 @@ impl Build {
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
     match args.first().and_then(|value| value.to_str()) {
         Some("metadata") => {
-            let status = Command::new(&record.cargo).args(args).status()?;
-            leave(status.code().unwrap_or(1));
+            let mut command = Command::new(&record.cargo);
+            command.args(args);
+            #[cfg(unix)]
+            {
+                use std::os::unix::process::CommandExt;
+                Err(command.exec())
+            }
+            #[cfg(not(unix))]
+            {
+                let status = command.status()?;
+                leave(status.code().unwrap_or(1));
+            }
         }
         Some("clippy") => Ok(()),
         Some("build" | "run") => build(record, &Build::parse(args)?, args[0] == "run"),

@@ -1006,7 +1006,8 @@ families to this one target, never a script evaluator or another launcher.
 
 The preparation tests also use a `tooling-cargo` record with the real Cargo path
 and an existing setup-example template path. That scenario forwards metadata,
-accepts the existing Clippy probe and stages the two preparation examples. The
+accepts the existing Clippy probe and stages the two preparation examples. On Unix,
+metadata replaces the fixture process, keeping its native PID and signal delivery. The
 remaining setup-example templates still use their existing shell fixtures until
 their owning conversion lands. Typed isolated native setup is planned; current
 Unix `shell_setup` remains available during that conversion.

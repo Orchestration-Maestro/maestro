@@ -234,3 +234,38 @@ fn native_handle_stops_the_observed_child_by_signal() {
     child.kill().unwrap();
     assert_eq!(child.wait_with_output().unwrap().status.signal(), Some(9));
 }
+
+#[cfg(unix)]
+#[test]
+fn cargo_metadata_forwarding_keeps_the_native_child_pid() {
+    let root = Scratch::new().unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let observer = alias(
+        root.path(),
+        "metadata-observer",
+        listener.local_addr().unwrap().port(),
+        "0",
+    );
+    let cargo = root.path().join("cargo");
+    install_executable(&artifact(), &cargo).unwrap();
+    std::fs::write(
+        root.path().join("cargo.fixture"),
+        format!("tooling-cargo\n{}\nunused-template\n", observer.display()),
+    )
+    .unwrap();
+    let child = Command::new(cargo)
+        .arg("metadata")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let pid = child.id();
+    let mut report = listener.accept().unwrap().0;
+    let reported_pid = field(&mut report);
+    std::io::copy(&mut report, &mut std::io::sink()).unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stderr, b"err\0\xfe!");
+    assert_eq!(reported_pid, pid.to_string().as_bytes());
+}
