@@ -1097,7 +1097,8 @@ is [Rust test children](specs/test-processes.md).
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools` and the application RPC client tests. Local setup builds the example
+`maestro-tools`, `maestro-chat` and the application RPC client tests. Local setup
+builds the example
 with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1215,6 +1216,42 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Viewer, editor and trash aliases
+
+Install the same artifact as `open`, `xdg-open`, `explorer.exe`, an editor name
+or `trash` when a test observes a desktop viewer launch, an edit or a session
+deletion. Write the family on the first line of `<alias>.fixture`, followed by a
+JSON object that the fixture parses before any effect; unknown fields and
+malformed values fail at once. The chat tests install these aliases through one
+helper in `tests/support/native_alias.rs`.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let editor = directory.path().join("ed");
+    std::fs::write(
+        editor.with_file_name("ed.fixture"),
+        format!("editor\n{}", serde_json::json!({
+            "argv": directory.path().join("argv"),
+            "before": directory.path().join("before"),
+            "content": b"edited\n",
+        })),
+    )?;
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor)?;
+    Ok(())
+}
+```
+
+The families use these fields:
+
+| Family | Fields and behavior |
+| --- | --- |
+| `browser_launch` | `port` names the parent's loopback listener. The viewer writes its own launched name and its literal operands as one JSON array, waits for the parent's `!` byte, answers `done` and exits 1. A viewer that never connects leaves the parent waiting, so install the alias before the product launch. |
+| `editor` | `argv` receives the launched name and every operand, each ending at a NUL. `before` receives the file's original bytes, `content` the new bytes, and `copy` a mode-preserving copy. `remove` deletes the file, `directory` replaces it with a directory, `read_only_parent` makes its directory read-only. `descriptors` records the three standard descriptors' device, inode, mode and device number on Linux. `code` selects the status; `signal: "SIGTERM"` ends by the native signal instead. |
+| `trash` | `log` receives each literal operand on its own line, `remove` deletes the first operand, `stderr` supplies the captured diagnostic bytes and `code` the status. Install no alias at all to observe a missing program. |
 
 #### Checked reruns
 

@@ -4,12 +4,18 @@ use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
+#[cfg(unix)]
+mod browser_launch;
 mod cargo;
+#[cfg(unix)]
+mod editor;
 mod observe;
 #[cfg(unix)]
 mod rpc;
 #[cfg(unix)]
 mod search;
+#[cfg(unix)]
+mod trash;
 
 /// A fully parsed fixture request, before any observable effect.
 enum Request {
@@ -19,12 +25,21 @@ enum Request {
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Announce a desktop viewer launch and wait for its release.
+    #[cfg(unix)]
+    BrowserLaunch(browser_launch::Record, Vec<OsString>),
+    /// Edit a caller-owned file through the recorded effects.
+    #[cfg(unix)]
+    Editor(editor::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     #[cfg(unix)]
     Rpc(rpc::Record),
     /// Produce controlled search bytes without interpreting native operands.
     #[cfg(unix)]
     Search(search::Record, Vec<OsString>),
+    /// Move or remove caller-owned files on the trash program's behalf.
+    #[cfg(unix)]
+    Trash(trash::Record, Vec<OsString>),
 }
 
 impl Request {
@@ -59,9 +74,18 @@ impl Request {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             #[cfg(unix)]
+            Some("browser_launch") => Ok(Self::BrowserLaunch(
+                browser_launch::Record::parse(&text)?,
+                operands,
+            )),
+            #[cfg(unix)]
+            Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("trash") => Ok(Self::Trash(trash::Record::parse(&text)?, operands)),
             _ => Err(io::Error::other("unknown native fixture record")),
         }
     }
@@ -74,9 +98,15 @@ pub(super) fn run() -> io::Result<()> {
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         #[cfg(unix)]
+        Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Editor(record, operands) => editor::run(&record, &operands),
+        #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Trash(record, operands) => trash::run(&record, &operands),
     }
 }
 
