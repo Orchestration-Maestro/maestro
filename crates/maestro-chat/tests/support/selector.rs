@@ -1,4 +1,5 @@
 //! Shared strict selector queries and complete output records.
+use crate::platform_keys::for_this_platform;
 use maestro_app::ThinkingLevel;
 use maestro_tui::Component;
 use serde::{Deserialize, de::DeserializeOwned};
@@ -46,12 +47,8 @@ pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|row| {
             (
                 serde_json::from_value(row.input).unwrap(),
-                serde_json::from_value(if cfg!(target_os = "macos") {
-                    row.expected_macos.unwrap_or(row.expected)
-                } else {
-                    row.expected
-                })
-                .unwrap(),
+                serde_json::from_value(for_this_platform(row.expected, row.expected_macos))
+                    .unwrap(),
             )
         })
         .collect();

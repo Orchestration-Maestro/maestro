@@ -1,4 +1,5 @@
 //! Strict recorded whole-frame session widget replay.
+use crate::platform_keys::for_this_platform;
 use maestro_tui::tui::InputHandler;
 #[allow(
     dead_code,
@@ -59,12 +60,7 @@ pub(crate) fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|c| {
             (
                 serde_json::from_value(c.input).unwrap(),
-                serde_json::from_value(if cfg!(target_os = "macos") {
-                    c.expected_macos.unwrap_or(c.expected)
-                } else {
-                    c.expected
-                })
-                .unwrap(),
+                serde_json::from_value(for_this_platform(c.expected, c.expected_macos)).unwrap(),
             )
         })
         .collect();

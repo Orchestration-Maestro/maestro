@@ -2,6 +2,7 @@
 mod input;
 mod summaries;
 use crate::palette;
+use crate::platform_keys::for_this_platform;
 use crate::published;
 pub use summaries::{summary_controls, user_styles};
 mod widget;
@@ -104,9 +105,7 @@ pub fn group(name: &str) {
         for row in raw {
             assert!(queries.insert(serde_json::to_string(&row["input"]).unwrap()));
             let mut case: Case = serde_json::from_value(row).unwrap();
-            if cfg!(target_os = "macos") {
-                case.expected = case.expected_macos.take().unwrap_or(case.expected);
-            }
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
             cases.push(case);
         }
     }

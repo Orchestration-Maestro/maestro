@@ -1,5 +1,6 @@
 //! Recorded display cases and their strict corpus validation.
 #![cfg(test)]
+use crate::edit_render_support::for_this_platform;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
@@ -56,9 +57,7 @@ pub fn search_cases(source: &str, test: &str) -> Vec<Case> {
         .into_iter()
         .filter(|case| case.test == test)
         .map(|mut case| {
-            if cfg!(target_os = "macos") {
-                case.expected = case.expected_macos.take().unwrap_or(case.expected);
-            }
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
             case
         })
         .collect();
@@ -241,9 +240,7 @@ pub fn cases(test: &str) -> Vec<Case> {
         .into_iter()
         .filter(|case| case.test == test)
         .map(|mut case| {
-            if cfg!(target_os = "macos") {
-                case.expected = case.expected_macos.take().unwrap_or(case.expected);
-            }
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
             case
         })
         .collect();

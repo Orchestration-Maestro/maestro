@@ -1,6 +1,7 @@
 //! Strict recorded queries and controlled renderer callbacks.
 mod callbacks;
 pub(crate) use crate::manual_runtime;
+use crate::platform_keys::for_this_platform;
 use crate::published;
 mod records;
 use crate::registry::REGISTRY;
@@ -177,9 +178,7 @@ pub fn group(name: &str) {
         .cases
         .into_iter()
         .map(|mut case| {
-            if cfg!(target_os = "macos") {
-                case.expected = case.expected_macos.take().unwrap_or(case.expected);
-            }
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
             case
         })
         .collect();

@@ -3,6 +3,7 @@ use crate::{
     bindings::{self, Binding},
     manual_runtime::ManualRuntime,
     model_selector_support::Descriptor,
+    platform_keys::for_this_platform,
     published,
 };
 use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
@@ -332,9 +333,7 @@ pub fn replay(name: &str) {
     let selected: Vec<_> = cases.into_iter().filter(|case| case.test == name).collect();
     assert!(!selected.is_empty());
     for mut case in selected {
-        if cfg!(target_os = "macos") {
-            case.expected = case.expected_macos.take().unwrap_or(case.expected);
-        }
+        case.expected = for_this_platform(case.expected, case.expected_macos.take());
         assert_eq!(case.expected.branch, "success");
         let Query {
             ops, width, focus, ..

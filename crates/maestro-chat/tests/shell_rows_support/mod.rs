@@ -1,6 +1,7 @@
 //! Strict public-operation recording replay.
 pub mod runtime;
 use super::{manual_runtime, published, recording_terminal};
+use crate::platform_keys::for_this_platform;
 use maestro_chat::BashExecutionComponent;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, TUI, TerminalImage};
@@ -193,9 +194,7 @@ pub fn replay(name: &str) {
 }
 /// Executes a case using the public component and controlled host.
 fn run(mut case: Case, palettes: &BTreeMap<String, Palette>) {
-    if cfg!(target_os = "macos") {
-        case.expected = case.expected_macos.take().unwrap_or(case.expected);
-    }
+    case.expected = for_this_platform(case.expected, case.expected_macos.take());
     let input = case.input;
     let runtime_requested = case.expected.runtime.is_some();
     bindings(&input.bindings.unwrap_or_default());

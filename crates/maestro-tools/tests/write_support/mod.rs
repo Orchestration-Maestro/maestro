@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::edit_render_support::for_this_platform;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use maestro_tools::{WriteOperations, WriteToolInput};
 use serde::Deserialize;
@@ -85,9 +86,7 @@ pub fn rows(test: &str) -> Vec<Row> {
         .unwrap_or_default()
         .into_iter()
         .map(|mut row| {
-            if cfg!(target_os = "macos") {
-                row.expected = row.expected_macos.take().unwrap_or(row.expected);
-            }
+            row.expected = for_this_platform(row.expected, row.expected_macos.take());
             row
         })
         .collect::<Vec<_>>();

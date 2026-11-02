@@ -1,5 +1,6 @@
 //! Strict recorded replay for custom-message and skill-invocation widgets.
 use crate::palette;
+use crate::platform_keys::for_this_platform;
 use crate::registry::REGISTRY;
 use crate::registry::Restore;
 use maestro_app::{
@@ -248,9 +249,7 @@ fn cases() -> Vec<Case> {
         .into_iter()
         .map(|row| {
             let mut case: Case = serde_json::from_value(row).expect("recorded case is strict");
-            if cfg!(target_os = "macos") {
-                case.expected = case.expected_macos.take().unwrap_or(case.expected);
-            }
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
             case
         })
         .collect();
