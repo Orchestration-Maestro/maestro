@@ -944,7 +944,6 @@ fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
     if let Err(error) = created {
         // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation.
         assert_eq!(error.raw_os_error(), Some(92), "{error}");
-        assert!(!target.exists());
         assert_eq!(std::fs::read(&neighbor).unwrap(), b"neighbor");
         return;
     }

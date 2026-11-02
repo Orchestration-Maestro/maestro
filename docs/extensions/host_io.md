@@ -110,7 +110,7 @@ loading and callback dispatch. On an unprivileged Linux host:
 | Dangling absolute link | Not found | `NoEntry` | Not found |
 | Genuinely unreadable direct target | Permission denied | `Access` | Permission denied |
 | File below a directory the user may search but not list, directly or through an absolute directory link | Exact bytes | Exact bytes | Exact bytes; listing denied |
-| Same file after search permission is removed | Permission denied | Permission denied | Access denied |
+| Same file after search permission is removed | Permission denied | `Access` | Permission denied |
 | Target of an absolute link | Component spelling | Component spelling | Native target |
 | New link with an absolute or relative target | Not exercised | Native target, exact bytes | Native target |
 
@@ -124,10 +124,10 @@ path that starts at the drive root, an absolute file link and a path longer
 than 260 characters through a directory link, in both generations. It also
 reads and creates link targets as in the last two rows above.
 
-Hosted macOS checks also cover direct paths and absolute directory links below a
+On macOS, the same checks cover direct paths and absolute directory links below a
 search-only parent, denial after search permission is removed, and the native
-filesystem's refusal of a non-Unicode target name. Both standard filesystem
-generations retain native access through the search-only parent.
+filesystem's refusal of a non-Unicode target name. Both WASI 0.2 and 0.3 keep
+native access through the search-only parent.
 
 ## Detached children
 
