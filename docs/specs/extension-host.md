@@ -2,7 +2,7 @@
 
 ## Problem
 
-Extensions need the user's filesystem, environment, standard streams and native asynchronous operations. Import registration alone does not prove that a loaded component can use them. File saves also need secure creation and atomic reader visibility, and interactive output must use the terminal's existing ordered queue.
+Extensions need the user's filesystem, environment, standard streams and native asynchronous operations. Import registration alone does not prove that a loaded component can use them. File saves need secure creation, preserved native identity and crash recovery; interactive output must use the terminal's existing ordered queue.
 
 This specification completes the [component extension contract](maestro-port.md#r07--one-component-extension-system) and [guest network and processes](packages.md#guest-network-and-processes). It preserves working capabilities while completing native file operations, shipped output routing and real-host qualification.
 
@@ -25,7 +25,7 @@ Each capability below has a proven contract, cited to Maestro's existing specifi
 | Item | Contract and acceptance observation | Confidence and public evidence |
 | --- | --- | --- |
 | S01: native paths | Both standard generations read and write exact bytes by absolute and parent-relative paths outside cwd, follow allowed file/directory links and later target updates, and retain ordinary native errors. Compare native controls with both guest paths, including an absolute intermediate directory link below a search-only parent. Establish that native known-leaf reading succeeds while listing its parent fails. A privileged bypass does not qualify that premise. Keep native Windows drive/share, junction and cwd behavior. | Proven contract; combined-link and platform runtime results unknown. [Operating environment](../extensions/host_io.md), runtime `wasi::root`. |
-| S02: files and modes | Host files save empty/binary bytes atomically, create a requested 0600 file without a wider exposure window, preserve an existing 0640 rewrite mode, create a 0700 directory, read/change native file/directory modes and accept native-valid 255-byte leaves. Follow the existing final-link policy, including missing link targets. Failed precommit leaves prior bytes/mode intact; postcommit durability warnings remain distinguishable. Native permission semantics must be qualified on each platform, not replaced with invented POSIX bits. | Proven requested contract; delivery and platform results unknown. [File publication](../locking.md), application `extension_native_io`, component extension contract. |
+| S02: files and modes | Host files save empty/binary bytes in place, create a requested 0600 file without a wider exposure window, preserve an existing 0640 rewrite mode, create a 0700 directory, read/change native file/directory modes and accept native-valid 255-byte leaves. Follow the existing final-link policy, including missing link targets. Preserve file identity, hard links, owner and ACLs. Unlocked readers may see partial bytes during a save. A durable recovery record completes an interrupted write on the next coordinated acquisition; postcommit durability warnings remain distinguishable. Native permission semantics must be qualified on each platform, not replaced with invented POSIX bits. | Proven requested contract; delivery and platform results unknown. [File publication](../locking.md), application `extension_native_io`, component extension contract. |
 | S03: environment | Inherit ambient entries, including empty values, without a filter. An isolated child host receives a nonsecret sentinel; actual guest standard-library lookup returns it unchanged. Keep documented native-string conversion and native cwd, home and platform observations. | Proven implementation; fresh execution unknown. [Operating environment](../extensions/host_io.md). |
 | S04: artifact-relative assets | Each instance observes its selected artifact path through `MAESTRO_EXTENSION_PATH`, even with a conflicting inherited value or unrelated cwd. Copies loaded from two locations and reload resolve their own adjacent assets. This does not promise heap persistence across reload. | Proven implementation; fresh execution unknown. Runtime `wasi::build`, `lifecycle::State::new`, [operating environment](../extensions/host_io.md). |
 | S05: separate standard streams | Actual guest reads supplied stdin and writes exact binary sentinels to separately captured inherited stdout/stderr. Check EOF and explicit flush. Print, JSON, RPC and synchronous regular-file destinations retain stdout; do not suppress or redirect guest output to protect a protocol. | Proven implementation; fresh execution unknown. [Supplied stdout](../extensions/host_io.md#supplied-stdout), runtime `wasi`. |
@@ -56,13 +56,15 @@ Each capability below has a proven contract, cited to Maestro's existing specifi
 
 ### One files publisher
 
-The complete save path is guest files facade -> canonical WIT -> existing typed imports/resource admission -> domain native-I/O port -> application files -> `maestro_lock::atomic_replace`. Standard native calls implement mode inspection/change and directory creation. Authored paths remain strings until application I/O. Blocking publication runs outside the local pump.
+The complete save path is guest files facade -> canonical WIT -> existing typed imports/resource admission -> domain native-I/O port -> application files -> `maestro_lock::replace`. Standard native calls implement mode inspection/change and directory creation. Authored paths remain strings until application I/O. Blocking publication runs outside the local pump.
 
-First extend the existing atomic operation with `Option<u32>` creation mode as its fifth argument. Existing workspace/detection callers pass `None`, keeping their default creation, final-link and temporary policies. Application saves pass the requested mode, follow final links and use the existing unique temporary policy. Reuse the lock owner's bounded adjacent-name function. Publication, exclusion, temporary cleanup and committed-warning handling stay lock-owned.
+`Replace.creation_mode` selects one of two creation policies. Component saves use `CreationMode::AtCreation(bits)`: Unix applies the bits at open, filtered by umask, before any bytes are written. Existing targets keep their permissions. Current exact-mode callers use `CreationMode::AfterSync(bits)`, retaining private writable creation followed by exact chmod after byte sync. `None` keeps native defaults. Windows keeps the existing owner-write/read-only mapping. Application saves follow final links. Reuse the lock owner's bounded adjacent-name function, exclusion, recovery staging, cleanup and committed-warning handling.
 
-Recoverable in-place `replace` remains a separate operation for its existing callers; it preserves native identity but does not promise whole-file visibility to unlocked readers. Atomic publication replaces the directory entry and keeps its documented hard-link/ownership/ACL differences. Do not globally change intentional in-place callers.
+In-place saves preserve native file identity, hard links, ownership and ACLs. Unlocked readers may see partial bytes mid-save. The next coordinated acquisition completes an interrupted write from its recovery record. During Unix replay of a read-only AtCreation target, stage its observed mode as AfterSync before temporarily adding owner-write; restore and sync that mode before retiring the record. This keeps a second interrupted replay recoverable. Ordinary creation never widens the requested mode.
 
-Evidence: proven existing split in [locking](../locking.md), atomic publisher and workspace/detection callers; requested-mode delivery is unknown. The native application-to-lock edge already exists. No new crate, library, feature or dependency edge is required.
+`atomic_replace` and its workspace/detection callers remain unchanged. Their unlocked readers still receive whole old or new files; this is not the component-save contract.
+
+Evidence: existing recoverable publication in [locking](../locking.md). The native application-to-lock edge already exists. No new crate, library, feature or dependency edge is required. The guest facade and native platform qualification remain undelivered.
 
 ### One terminal admission path
 
@@ -84,7 +86,7 @@ Use existing unit seams for immediate publication effects and the single `tests/
 
 | Checkpoint | Required evidence |
 | --- | --- |
-| Atomic publisher | Before-write creation-mode observation, unchanged existing modes/default callers, complete old/new bytes for unlocked readers, native-valid long names, final links, failed precommit preservation and committed-warning distinction. A final stat alone cannot prove secure first creation. |
+| Recoverable publisher | Immediate target creation-mode observation, umask-filtered open-time modes, unchanged exact-mode/default callers, retained identity/hard links/owner/access controls, native-valid long names, final links, interrupted-write replay and committed-warning distinction. Cover read-only creation and interrupted replay, including a failed owner-write change. A final stat alone cannot prove secure first creation. |
 | Native files | The real component performs the complete S02 operation set through the shipped adapter, alongside existing native effects and factory operations. No recorder or source inspection substitutes for execution. |
 | Shipped output | Whole guest escape/binary writes between frames through actual executable startup/reload/suspend/resume/drain, both output generations, retained handles and concurrent native exec; separate inherited-mode controls. Test children and acknowledgements are Rust. |
 | Capability reconciliation | Map S01-S17 to named distinguishing assertions and saved receipts. A single component runs 0.2 standard-library basics beside a genuinely pending 0.3 operation. Retain existing HTTP/process/watch/provider/OAuth/fault regressions and final workload-owned application tests. |
@@ -101,7 +103,7 @@ Run `just check`, changed crate unit/integration tests and reverse dependents, `
 | A sent termination signal is not an exited child. | Process owner; resistant child/descendant actually terminate and reap, with separate partial output. |
 | OAuth callback state must be present and match the flow. | Gateway package; reject missing/mismatched state before token exchange. |
 | Direct-access reuse must be keyed by credential. | Gateway package; changing credentials cannot reuse another credential's token. |
-| A private file must not expose bytes before chmod. | Atomic publisher; observe restrictive temporary creation before any bytes, preserving rewrite mode. |
+| A private file must not expose bytes before chmod. | Recoverable publisher; observe requested target permissions at creation before any bytes, preserving rewrite mode. |
 
 These corrections do not introduce second owners. Their contract evidence is the requested native outcomes and existing process/files/OAuth owners; fresh results remain unknown.
 
@@ -111,7 +113,7 @@ Do not copy foreign module-loader/event-loop behavior, engine/string/stack limit
 
 Update this contract, the existing package/component contracts, [host-I/O guide](../extensions/host_io.md) and [locking guide](../locking.md) in the owning change. Feature pages open with a quick start, then reference and examples. Document every Rust item, private included. Run the humanizer on edited prose in Maestro's voice before commit.
 
-Add one glossary term when the atomic prerequisite lands: **Atomic publication:** lock-owned temporary-file publication for unlocked readers to see complete old or new bytes; distinct from recoverable in-place publication. Existing native-I/O, runtime-adapter, PKCE and output-backlog terms remain unchanged. Review `AGENTS.md`; no rule or graph permission changes, so record why no edit is needed. Do not edit README or CHANGELOG.
+Use the existing **Recoverable publication** glossary term for component saves; no atomic-publication term is added. Existing native-I/O, runtime-adapter, PKCE and output-backlog terms remain unchanged. Review `AGENTS.md`; no rule or graph permission changes, so record why no edit is needed. Do not edit README or CHANGELOG.
 
 ## Assumptions, boundaries and open questions
 

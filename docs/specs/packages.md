@@ -150,11 +150,12 @@ Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery
 ### Guest files
 
 Component saves delegate through application native I/O to
-`maestro_lock::atomic_replace`, with final-link following and unique adjacent
-temporaries. Requested private creation modes apply before bytes are written;
-rewrites preserve existing modes. The lock owner keeps exclusion, cleanup and
-committed durability warnings. Existing recoverable in-place callers keep their
-native identity contract. The [component host contract](extension-host.md)
+recoverable in-place `maestro_lock::replace`, with final-link following.
+Requested Unix creation modes apply at open, filtered by umask, before bytes are
+written; rewrites preserve existing modes. File identity, hard links, owner and
+ACLs survive. Unlocked readers may see partial bytes mid-save. The lock owner
+keeps exclusion, recovery, cleanup and committed durability warnings. Existing
+exact-mode callers retain their chmod-after-sync behavior. The [component host contract](extension-host.md)
 describes the file operations and qualification required before the guest facade
 is delivered.
 

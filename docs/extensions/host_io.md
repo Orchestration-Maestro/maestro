@@ -3,9 +3,9 @@
 ## Quick start
 
 Use the component's standard filesystem calls for ordinary native access. For
-native host code that needs whole-file visibility, use
-[`maestro_lock::atomic_replace`](../locking.md#atomic-byte-publication) with a
-requested creation mode. The component save/mode facade remains undelivered;
+native host code saving files, use
+[`maestro_lock::replace`](../locking.md#recoverable-byte-publication) with
+`CreationMode::AtCreation` for requested creation permissions. The component save/mode facade remains undelivered;
 the [host contract](../specs/extension-host.md) describes its required behavior.
 
 ## Reference
@@ -82,17 +82,20 @@ passes paths through the root. A directory that a 0.3 caller opens itself
 keeps the standard rules for paths below it, so an absolute link there is
 refused; pass the whole path through the root instead. WASI paths are strings: a
 followed link whose final native name is not UTF-8 returns `illegal-byte-sequence`
-rather than opening a replacement-character spelling. The native atomic publisher
-supports requested Unix creation modes before writing bytes, with existing modes
-taking precedence on rewrite. Its `None` creation mode keeps native defaults.
-This publisher support does not deliver component atomic saves or mode operations.
+rather than opening a replacement-character spelling. The native recoverable
+publisher supports requested Unix creation modes at open, filtered by umask,
+before writing bytes. Existing modes take precedence on rewrite; `None` keeps
+native defaults. Saves preserve identity, hard links, owner and ACLs. Unlocked
+readers may see partial bytes mid-save; the next coordinated acquisition completes
+an interrupted write from its recovery record.
+This publisher support does not deliver component saves or mode operations.
 Final application-mode output routing remains separate from these host capabilities.
 
 ## Examples
 
 Convert native paths only at the standard-library boundary, as shown above. Native
-hosts saving private bytes follow the [atomic save example](../locking.md#examples);
-that operation replaces the directory entry rather than preserving hard links.
+hosts saving private bytes follow the [in-place save example](../locking.md#examples);
+that operation preserves file identity and hard links.
 
 ## Link checks
 

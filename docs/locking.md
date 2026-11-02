@@ -47,8 +47,9 @@ the process ID and nanoseconds.
 Before admitting a holder, acquisition replays any pending `<target>.recovery`
 record beside the target. The record is bound by its name, so moving or copying
 a directory with a pending record does not prevent replay. Its five-byte header
-holds a creation-mode flag and a little-endian mode; an incomplete header or an
-unknown flag is refused. A clean read-only guard does not sync the directory.
+holds a creation-mode tag and a little-endian mode: 0 selects native defaults,
+1 selects exact AfterSync permissions and 2 selects AtCreation permissions. An
+incomplete header or an unknown tag is refused. A clean read-only guard does not sync the directory.
 Each holder performs at most one caller-requested write. `WriteLock::append`
 syncs recovery absence before opening the target, so an older record cannot
 resurrect after later appends. Replacement's staged-record directory sync gives
@@ -69,9 +70,22 @@ complete, not roll back.
 In-place writing preserves ownership, ACLs, native permissions and hard links.
 Existing read-only targets still refuse writable opens. Creation mode applies
 only to missing targets. Default creation permissions are unchanged. With an
-explicit creation mode, a new target starts owner-only and writable. Its bytes
-are synced before the requested mode is applied and synced. Replay skips the
-target write when a staged read-only creation's bytes and mode already match;
+explicit `CreationMode::AfterSync(bits)`, a new target starts owner-only and
+writable. Its bytes are synced before the exact requested mode is applied and
+synced. `CreationMode::AtCreation(bits)` instead applies Unix creation bits at
+open, filtered by umask, before any bytes reach the target. It never chmods a
+normal Unix creation. `None` keeps native creation defaults. Both policies leave
+existing targets' permissions unchanged. On Windows both retain the owner-write
+to read-only mapping after byte sync.
+
+Unix replay of a read-only AtCreation target first durably stages its observed
+mode as AfterSync, then adds only owner-write while completing the recorded bytes.
+It restores and syncs the observed mode before retiring the record. Failure leaves
+the record for another acquisition, including an interruption after adding
+owner-write. Normal creation never widens the requested bits.
+
+Replay skips the
+target write when a staged read-only exact-mode creation's bytes and mode already match;
 it syncs the verified mode before syncing the parent and removing the record.
 On Windows, this verified creation temporarily becomes writable for flushing,
 then regains read-only before another flush. A failure restores read-only and
@@ -98,13 +112,10 @@ fixed temporary extension or a hidden name containing the target name, process
 ID and nanoseconds. Writers hold canonical target exclusion through publication.
 A stale fixed temporary is unlinked without following it, then the new temporary
 is created exclusively. An intervening creator is left untouched and publication
-fails. The fifth argument, `creation_mode: Option<u32>`, selects missing-target
-creation bits on Unix. `None` uses 0666 filtered by the process umask. A requested
-mode is also filtered by the umask when the temporary is exclusively created,
-before any bytes are written. Existing target permissions take precedence over
-the requested creation mode: the temporary starts with no broader access and
-retains the target's exact permissions before writing bytes. Other platforms
-keep native creation semantics; this argument does not emulate Unix modes.
+fails. Missing targets use native default creation permissions, filtered by the
+process umask. Existing target permissions take precedence: the temporary starts
+with no broader access and retains the target's exact permissions before writing
+bytes. Other platforms keep native creation semantics.
 Renaming replaces the inode: hard links keep their old bytes, while ownership and
 ACLs are not preserved. Lock acquisition completes any pending recovery record
 before atomic publication begins; the new atomic write does not stage one.
@@ -116,15 +127,16 @@ before an update. A session rewrite waits for exclusion, compares the current
 bytes with its expected hash, then publishes through the held lock. Session
 appends consume the guard through `append`, which owns prewrite synchronization.
 A snapshot save uses atomic publication because its readers do not acquire a lock.
-A native private-file save uses the same publisher:
+A native private-file save uses recoverable in-place publication:
 
 ```rust,ignore
-let committed = maestro_lock::atomic_replace(
+let committed = maestro_lock::replace(
     path,
     bytes,
-    maestro_lock::Symlinks::Follow,
-    maestro_lock::Temporary::Unique,
-    Some(0o600),
+    maestro_lock::Replace {
+        through_symlinks: true,
+        creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+    },
 )?;
 if let Some(warning) = committed.dir_sync {
     // The bytes are committed; report the durability warning without retrying.
@@ -132,6 +144,5 @@ if let Some(warning) = committed.dir_sync {
 }
 ```
 
-The component files facade uses this atomic contract, not recoverable in-place
-publication. Its guest operations remain undelivered; see the
+The component files facade uses this recoverable in-place contract. Its guest operations remain undelivered; see the
 [component host contract](specs/extension-host.md).
