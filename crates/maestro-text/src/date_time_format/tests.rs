@@ -1,5 +1,5 @@
 //! Committed recipe and index validation at the data-loading boundary.
-use super::{load, recipe};
+use super::{load, recipe, representative};
 
 /// One complete numeric recipe with all required fields.
 const VALID: &str = "gregory\tlatn\th12\t%M/%d/%y, %H:%2m:%2s %p\tAM\tPM\t";
@@ -39,6 +39,30 @@ fn committed_date_time_data_rejects_malformed_records() {
         assert!(
             load(VALID, index).is_err(),
             "accepted malformed index: {index:?}"
+        );
+    }
+}
+
+/// Calendar rows refuse missing fields, unknown calendars and repeated regions.
+#[test]
+fn committed_date_time_calendars_reject_malformed_records() {
+    let locale = "en-US".parse().unwrap();
+    for calendars in ["US", "US\tgregory", "US\tpersian\nUS\tbuddhist"] {
+        assert!(
+            representative(&locale, calendars, "001\th23").is_err(),
+            "accepted malformed calendars: {calendars:?}"
+        );
+    }
+}
+
+/// Hour rows refuse missing fields, unknown cycles, repeated regions and missing defaults.
+#[test]
+fn committed_date_time_hours_reject_malformed_records() {
+    let locale = "en-US".parse().unwrap();
+    for hours in ["US", "US\th25", "US\th12\nUS\th23", "FR\th23"] {
+        assert!(
+            representative(&locale, "", hours).is_err(),
+            "accepted malformed hours: {hours:?}"
         );
     }
 }

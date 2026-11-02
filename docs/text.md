@@ -98,7 +98,7 @@ pinned archive hashes, recorded pattern choices, licence, and the Rust
 regeneration/check commands. The generator verifies the recorded JSON inputs
 before writing any asset. Builds and data generation need neither Node nor
 network access. Output follows that pinned data version; other platform releases can
-choose different defaults. Arbitrary locale extensions and combinations outside
-the measured regional closure are not a claim of full platform equivalence.
+choose different defaults. Maestro does not claim full platform equivalence for
+arbitrary locale extensions or locale and region combinations outside the recorded data.
 
 Dependencies are listed in [text libraries](libraries/text.md).

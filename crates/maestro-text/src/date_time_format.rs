@@ -228,13 +228,17 @@ fn load(
 }
 
 /// Selects a preference representative while retaining the supplied territory.
-fn representative(locale: &Locale) -> io::Result<Option<&'static str>> {
+fn representative(
+    locale: &Locale,
+    calendar_data: &str,
+    hour_data: &str,
+) -> io::Result<Option<&'static str>> {
     let Some(region) = locale.id.region else {
         return Ok(None);
     };
     let region = region.to_string();
     let mut calendars = BTreeMap::new();
-    for line in include_str!("../data/date-time/calendars.tsv").lines() {
+    for line in calendar_data.lines() {
         let (region, calendar) = line.split_once('\t').ok_or_else(invalid)?;
         if !["persian", "buddhist"].contains(&calendar)
             || calendars.insert(region, calendar).is_some()
@@ -248,7 +252,7 @@ fn representative(locale: &Locale) -> io::Result<Option<&'static str>> {
         _ => {}
     }
     let mut hours = BTreeMap::new();
-    for line in include_str!("../data/date-time/hours.tsv").lines() {
+    for line in hour_data.lines() {
         let (region, cycle) = line.split_once('\t').ok_or_else(invalid)?;
         if !["h12", "h23"].contains(&cycle) || hours.insert(region, cycle).is_some() {
             return Err(invalid());
@@ -270,7 +274,11 @@ fn select_recipe(locale: &Locale) -> io::Result<Recipe> {
         include_str!("../data/date-time/index.tsv"),
     )?;
     let mut found = index.get(locale.id.to_string().as_str()).copied();
-    let representative = representative(locale)?;
+    let representative = representative(
+        locale,
+        include_str!("../data/date-time/calendars.tsv"),
+        include_str!("../data/date-time/hours.tsv"),
+    )?;
     let fallbacker = LocaleFallbacker::new().for_config(LocaleFallbackConfig::default());
     let mut parents = fallbacker.fallback_for(locale.clone().into());
     while found.is_none() {

@@ -12,6 +12,7 @@ impl Extension for FeedTick {
     fn load(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         Box::pin(async move {
             overlay_qa_tests::factory(api.clone()).await?;
+            // Return the feed line as an error so the test can observe it through start.
             Err(overlay_qa_tests::panels::feed_line(
                 &api,
                 1_793_090_707_000,

@@ -119,6 +119,21 @@ fn assets(inputs: &BTreeMap<String, Vec<u8>>) -> io::Result<BTreeMap<&'static st
         return Err(io::Error::other("invalid recorded locale domain"));
     }
     let hours: BTreeMap<String, Hour> = json(inputs, "timeData.json", "/supplemental/timeData")?;
+    let hours = hours
+        .into_iter()
+        .map(|(region, hour)| {
+            let cycle = match hour.preferred.as_str() {
+                "h" => "h12",
+                "H" => "h23",
+                value => {
+                    return Err(io::Error::other(format!(
+                        "{region}: unsupported preferred hour {value:?}"
+                    )));
+                }
+            };
+            Ok(vec![region, cycle.into()])
+        })
+        .collect::<io::Result<Vec<_>>>()?;
     Ok(BTreeMap::from([
         (
             "index.tsv",
@@ -131,15 +146,7 @@ fn assets(inputs: &BTreeMap<String, Vec<u8>>) -> io::Result<BTreeMap<&'static st
             "recipes.tsv",
             tsv(oracle.records.into_iter().map(Vec::from))?,
         ),
-        (
-            "hours.tsv",
-            tsv(hours.into_iter().map(|(region, hour)| {
-                vec![
-                    region,
-                    if hour.preferred == "h" { "h12" } else { "h23" }.into(),
-                ]
-            }))?,
-        ),
+        ("hours.tsv", tsv(hours)?),
         ("calendars.tsv", calendars(inputs)?),
         (
             "LICENSE",
@@ -185,3 +192,6 @@ fn tsv(rows: impl IntoIterator<Item = Vec<String>>) -> io::Result<Vec<u8>> {
     }
     Ok(output.into_bytes())
 }
+
+#[cfg(test)]
+mod tests;
