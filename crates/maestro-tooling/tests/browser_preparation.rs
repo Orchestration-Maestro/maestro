@@ -99,7 +99,7 @@ fn recording_config() -> String {
     );
     let profile = config["profile"]["default"].as_table_mut().unwrap();
     let rules = profile["scripts"].as_array_mut().unwrap();
-    rules.retain(|rule| rule["setup"].as_str() == Some("browser-author"));
+    rules.retain(|rule| rule.get("setup").and_then(toml::Value::as_str) == Some("browser-author"));
     assert_eq!(rules.len(), 1, "one rule selects the browser setup");
     profile.remove("overrides");
     toml::to_string(&config).unwrap()

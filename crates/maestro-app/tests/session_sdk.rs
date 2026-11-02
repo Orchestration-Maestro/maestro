@@ -873,6 +873,11 @@ fn attributes_routed_provider_with_or_without_a_matching_url() {
 }
 
 #[test]
+fn attributes_openrouter_anywhere_in_the_base_url() {
+    check_attribution_cases(&["routed_url_in_subdomain", "routed_url_in_path"]);
+}
+
+#[test]
 fn merges_attribution_auth_and_caller_headers() {
     check_attribution_cases(&["routed_url", "routed_url_defaults"]);
 }
@@ -898,6 +903,7 @@ fn sends_opencode_session_headers_by_provider_or_host() {
         "opencode_host_session",
         "opencode_provider_session",
         "opencode_without_session",
+        "opencode_empty_session",
         "opencode_session_ignores_telemetry_setting",
         "caller_overrides_session_headers",
     ]);
@@ -907,6 +913,7 @@ fn sends_opencode_session_headers_by_provider_or_host() {
 fn leaves_unmatched_requests_without_attribution() {
     check_attribution_cases(&[
         "unmatched_preserves_headers",
+        "routed_url_match_is_case_sensitive",
         "provider_comparison_is_exact",
         "empty_unmatched_url",
         "cloudflare_path_is_not_the_host",

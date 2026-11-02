@@ -8,6 +8,11 @@ supplying an adapter's API key. Configured credentials are not a successful logi
 or a prediction of request success. Neither helper makes network requests, reads
 credential contents or validates a login.
 
+Stored request-key selection and configured-auth status reread the credential file,
+so a key another process stores or removes reaches the next request or status read.
+See [stored credentials](credentials.md#stored-credentials) for acquisition waits
+and the accepted-record fallback when a reread fails.
+
 ## Environment credentials
 
 `find_env_keys(provider)` returns all populated, nonempty API-key variable names

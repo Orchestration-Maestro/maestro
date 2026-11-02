@@ -41,6 +41,22 @@ pub type AsyncLockUpdate<'a> =
 
 /// Raw credential text guarded by the adapter's exclusion.
 pub trait AuthStorageBackend: ThreadBound {
+    /// Read stored text under exclusion, waiting as the adapter's asynchronous acquisition waits.
+    ///
+    /// The default captures the text through [`Self::with_lock`] without writing it.
+    /// File adapters block the calling thread on the scheduled acquisition.
+    ///
+    /// # Errors
+    /// Returns the adapter's acquisition, read or release failure.
+    fn read_waiting(&self) -> Result<Option<String>, AuthStorageError> {
+        let mut seen = None;
+        self.with_lock(&mut |current| {
+            seen = current.map(str::to_owned);
+            Ok(None)
+        })?;
+        Ok(seen)
+    }
+
     /// Run `update` once with the current text, then store its replacement.
     ///
     /// `None` means nothing has been stored. Acquisition and read failures

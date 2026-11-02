@@ -269,7 +269,7 @@ fn oauth_credential_login_persists_through_the_native_owner() {
         assert_eq!(unknown["events"], json!([]));
         let write = super::call(&runner, "storage write-failure").await;
         assert_eq!(write["storage"]["result"], json!({"ok":true}));
-        assert_eq!(write["storage"]["accepted"], expected);
+        assert_eq!(write["storage"]["accepted"], json!(null));
         assert_eq!(write["storage"]["raw"], json!({"neighbor":[null,false]}));
         assert_eq!(write["storage"]["errors"], json!(["write-login"]));
         assert_eq!(write["storage"]["reloaded"], json!(null));

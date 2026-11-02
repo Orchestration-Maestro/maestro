@@ -14,23 +14,27 @@ source names; it is not the stored-file writer, which stays with `AuthStorage`.
 
 ## Stored credentials
 
-`AuthStorage` accepts the stored records when it is created, on `reload`, before each
-`get`, `get_all`, `list`, `has_auth`, `get_auth_status` and `get_api_key`, and when a
-locked refresh rereads the document, adopting a newer one, so a long-lived storage sees
-what another process wrote and a request uses the key stored now. A read whose document
-is unchanged keeps the accepted records, and one that cannot read or parse the document
-keeps them too, recording nothing; `has` answers from that accepted snapshot. Missing or
-empty stored text is an empty store. Text that is not a JSON object, or cannot be read,
-locked or parsed, is a load failure: the accepted records are kept, the failure
-is recorded for `drain_errors` (oldest first), and `set`/`remove` change only
-accepted memory until a `reload`, a locked refresh reread or a read that adopts a changed
-document succeeds. Construction never fails.
+`AuthStorage` loads stored records when it is created and on `reload`. Every stored
+read (`get`, `get_all`, `list`, `has`, `has_auth`, `get_auth_status` and `get_api_key`)
+rereads the document under exclusion. A successful reread replaces the accepted
+records, even when the text is unchanged, so a long-lived storage follows what
+another process stores or removes. An acquisition, read or parse failure keeps
+the accepted records and records nothing. Missing or empty text is an empty store;
+a non-object JSON value is unparsable.
+
+A reread never clears a recorded load failure. Only a successful `reload` or locked
+refresh reread clears it. A failed load keeps the accepted records, records the
+failure for `drain_errors` (oldest first), and blocks persistence by `set` and
+`remove`; they change accepted memory only. Construction never fails.
 
 `set` and `remove` change accepted memory first, then reread the stored text under
 the backend's exclusion and change only that provider in it; records other writers
 added stay in the file, and a successful write accepts the document it wrote. A
 persistence failure is recorded and nothing is rolled back; the change stays in accepted
-memory until the stored text changes. `logout` removes the stored record only.
+memory until the next successful read. `logout` removes the stored record only.
+If a login or logout write fails, the next successful read follows the unchanged
+file: a refused addition is absent and a refused removal is still present. The
+write failure remains available through `drain_errors`.
 
 Text this owner writes is two-space JSON without a trailing newline; reloading
 existing text never rewrites it. Accepted records keep their order: a replaced
@@ -83,8 +87,9 @@ an empty fallback key, while request lookup preserves `Some("")`.
 
 An expired token is refreshed through the backend's `with_lock_async` (the file adapter
 holds the write lock beside the canonical file meanwhile; the memory adapter
-holds nothing, see below). The stored
-text is reread and accepted, publishing it and clearing a recorded load failure.
+serializes awaited callbacks, see below). Lock acquisition uses the same randomly
+lengthened schedule as stored rereads. The stored text is reread and its records
+are accepted, clearing a recorded load failure.
 A record that is then absent, no longer `oauth` or no longer complete gives an empty
 result, and the lookup continues with the environment and the fallback resolver as
 they are at that moment. A token with `now < expires` is reused. Otherwise the
@@ -127,13 +132,24 @@ link to the file sees the new bytes. A file its owner made read-only is refused 
 unchanged. A write cut short is completed, not rolled back, by the next coordinated writer.
 The startup conversion of legacy credentials and the standalone account file use
 `write_auth_file`, which shares the same permission narrowing and publication.
-Synchronous acquisition delegates to
-[the shared bounded file-lock operation](locking.md). The lock file is removed
-after every outcome, including when a pending asynchronous operation is dropped. File bytes are read as
-lossy UTF-8. The asynchronous operation `with_lock_async` instead tries the lock
-immediately and after waits of 100, 200, 400, 800, 1600, 3200, 6400 and then three of
-10000 ms (11 attempts, 42,700 ms), returning the lock-held error when the last attempt
-also finds it taken; other lock errors return at once. `InMemoryAuthStorageBackend` runs a synchronous callback on an owned copy of the
+Construction, `reload`, `set` and `remove` use
+[the shared bounded file-lock operation](locking.md): ten attempts, 20 ms apart.
+The lock file is removed after every outcome, including when a pending asynchronous
+operation is dropped. File bytes are read as lossy UTF-8.
+
+`AuthStorageBackend::read_waiting` reads text under the adapter's exclusion without
+writing. Its provided implementation captures the text through `with_lock`, so
+existing adapters need no additional method. The file adapter overrides it to wait
+on the same schedule as `with_lock_async` before initializing and reading the file.
+The first attempt is immediate. After contended attempt n, for n from 0 to 9, the
+wait is `min(round((1 + u) * 100 * 2^n), 10000)` ms, using a fresh draw u in `[0, 1)`.
+Random lengthening comes before rounding and the cap. An eleventh contended attempt
+returns the lock-held error; any other acquisition error returns immediately.
+The ten waits total 42,700 to 52,600 ms. `with_lock_async` awaits them;
+`read_waiting` blocks the calling thread, including a current-thread async runtime,
+for up to 52.6 s.
+
+`InMemoryAuthStorageBackend` runs a synchronous callback on an owned copy of the
 text with nothing held, so it may reenter the backend and the last write wins. The
 asynchronous operation `with_lock_async` runs callbacks one at a time: each reads
 the text the previous one stored, so two providers changed at once both stay. An
@@ -195,7 +211,9 @@ selected backend until settlement.
 selected invocation. Synchronous metadata reads return the callback's actual value
 before returning to their caller. Native constructors and backend algorithms are
 unchanged. Component-backed native callbacks run on their creating local pump;
-they are not an off-thread credential backend. The registration facade does not
+they are not an off-thread credential backend. Stored presence checks (`has`) use
+the same callback-capable route as the other stored reads, so an authored backend
+can complete its reread before the check returns. The registration facade does not
 retain the bound session catalog. Acquired catalog and credential handles retain
 their owners; resolver captures release after their final owner and selected
 invocations end.
