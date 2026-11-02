@@ -10,6 +10,20 @@ use std::str::FromStr;
 /// Launch the alias where the product launches Git: the stand-in answers the operands, the
 /// working directory and the standard descriptors that launch supplies.
 ///
+/// # Examples
+///
+/// After preparing the native fixture, install an alias in a disposable directory:
+///
+/// ```no_run
+/// use maestro_test_process::git_command::{self, Scenario};
+///
+/// # fn main() -> std::io::Result<()> {
+/// let directory = maestro_test_directory::Scratch::new()?;
+/// git_command::install(&directory.path().join("git"), Scenario::Observed)?;
+/// # Ok(())
+/// # }
+/// ```
+///
 /// # Errors
 ///
 /// Returns an error when preparation is missing, executable installation fails or the record

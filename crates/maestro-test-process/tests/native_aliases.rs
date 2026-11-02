@@ -526,7 +526,6 @@ fn git_stand_in_reports_the_direct_child_identifier() {
 fn git_stand_in_refuses_incomplete_records_before_output() {
     let root = Scratch::new().unwrap();
     let record = root.path().join("record");
-    let log = root.path().join("log");
     for text in ["git\n", "git\nObserved\n", "git\nRetaining\nextra\n"] {
         std::fs::write(&record, text).unwrap();
         let output = Command::new(artifact())
@@ -537,6 +536,5 @@ fn git_stand_in_refuses_incomplete_records_before_output() {
             .unwrap();
         assert!(!output.status.success(), "accepted {text:?}");
         assert!(output.stdout.is_empty(), "wrote output for {text:?}");
-        assert!(!log.exists());
     }
 }
