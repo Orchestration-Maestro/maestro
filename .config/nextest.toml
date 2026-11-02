@@ -2,8 +2,9 @@ experimental = ["setup-scripts"]
 
 # Every setup entry runs the development tool. The tooling setups serve only `maestro-tooling`
 # tests, whose build always produces the tool in the target directory. The author-component
-# setup also serves other packages, so it runs the tool from `target/test-setup`: a shard finds
-# it in the downloaded bundle, and `just prepare-tests` installs it there first.
+# and cargo-checks setups also serve other packages, so they run the tool from
+# `target/test-setup`: a shard finds it in the downloaded bundle, and
+# `just prepare-tests` installs it there first.
 
 [profile.default]
 slow-timeout = { period = "30s", terminate-after = 4 }
@@ -14,6 +15,13 @@ command = "target/test-setup/development nextest-setup author-component"
 [[profile.default.scripts]]
 filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(/_example::/)))"
 setup = "author-component"
+
+[scripts.setup.cargo-checks]
+command = "target/test-setup/development nextest-setup cargo-checks"
+
+[[profile.default.scripts]]
+filter = "(package(maestro-models) & test(/^browser_build::/)) | (package(maestro-extensions-wasmtime) & test(/^extension_guide::/))"
+setup = "cargo-checks"
 
 [scripts.setup.native-fixture]
 command = "target/test-setup/development nextest-setup native-fixture"
