@@ -572,12 +572,3 @@ since the Unix epoch, as the host's local time in the en-US twelve-hour form,
 Use this helper for time-only labels, as the overlay stream does. Date-time
 punctuation depends on the locale, so splitting date-time text does not reliably
 isolate the time.
-
-```rust,ignore
-let timestamp = i64::try_from(
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_millis(),
-)?;
-let time = utils::local_time_string(&api, timestamp)?;
-```
