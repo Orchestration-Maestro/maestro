@@ -1,7 +1,9 @@
 //! Native aliases receive backend operands without harness parsing or output.
 
 use std::ffi::OsString;
-use std::io::{BufRead, BufReader, Read, Write};
+#[cfg(unix)]
+use std::io::{BufRead, BufReader};
+use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
