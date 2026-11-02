@@ -131,6 +131,14 @@ impl Browser {
         command
     }
 
+    /// Run a cold recipe with private Cargo state excluded from compiler-cache keys.
+    pub fn cold_command(&self, recipe: &str) -> Command {
+        let mut command = self.workspace.toolchain_command("just");
+        command.arg(recipe);
+        self.configure(&mut command);
+        command
+    }
+
     /// Execute the built native helper without instrumenting its compiler children.
     pub fn native_command(&self, operation: &str) -> Command {
         let mut command = super::toolchain_support::command(env!("CARGO_BIN_EXE_development"));
@@ -145,7 +153,7 @@ impl Browser {
     }
 
     /// Share output ownership and native tool settings between recipe and helper calls.
-    pub fn configure(&self, command: &mut Command) {
+    fn configure(&self, command: &mut Command) {
         command
             .current_dir(self.workspace.path())
             .env("CARGO_BUILD_JOBS", "3")

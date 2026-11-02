@@ -20,7 +20,7 @@ const BUNDLE: &str = "target/test-setup";
 mod author_component;
 /// Prepare the browser build the browser author tests share.
 pub(crate) mod browser_graph;
-/// Vendor the registry crates the tooling fixtures resolve.
+/// Vendor locked dependencies for tooling fixtures or the complete workspace.
 mod fixture_sources;
 /// Align the modification times of the executables the example warms code for.
 mod normalize;

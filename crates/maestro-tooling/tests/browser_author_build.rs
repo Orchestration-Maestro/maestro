@@ -1791,9 +1791,7 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
     let command = |recipe: &str| {
-        let mut command = browser.workspace.toolchain_command("just");
-        command.arg(recipe);
-        browser.configure(&mut command);
+        let mut command = browser.cold_command(recipe);
         command
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)

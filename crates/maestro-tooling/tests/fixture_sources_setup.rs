@@ -110,7 +110,7 @@ fn fixture_sources_setup_vendors_the_closure_and_exports_the_configuration() {
     );
 }
 
-/// A directory keyed by unchanged inputs is reused, and a changed lock selects another.
+/// Unchanged inputs reuse sources; changed locks or browser dependencies select fresh sources.
 #[test]
 fn fixture_sources_setup_reuses_a_directory_while_the_inputs_stay_the_same() {
     let scratch = Scratch::new().unwrap();
@@ -127,16 +127,26 @@ fn fixture_sources_setup_reuses_a_directory_while_the_inputs_stay_the_same() {
         1
     );
 
-    fs::write(root.join("Cargo.lock"), "changed lock").unwrap();
-    let second = printed(&setup(root, false).output().unwrap());
-    assert_ne!(second, first);
-    assert_eq!(
-        fs::read_to_string(root.join("calls"))
-            .unwrap()
-            .lines()
-            .count(),
-        2
-    );
+    let mut previous = first;
+    for (index, input) in [
+        "Cargo.lock".to_owned(),
+        format!("{FIXTURES}/browser_author/Cargo.toml"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        fs::write(root.join(&input), "changed dependency input").unwrap();
+        let current = printed(&setup(root, false).output().unwrap());
+        assert_ne!(current, previous, "stale sources after editing {input}");
+        assert_eq!(
+            fs::read_to_string(root.join("calls"))
+                .unwrap()
+                .lines()
+                .count(),
+            index + 2
+        );
+        previous = current;
+    }
 }
 
 /// A failed vendor run shows its log, fails the setup and leaves no configuration to reuse.
@@ -183,10 +193,10 @@ fn workspace_sources_refresh_when_dependency_inputs_change() {
         format!("{FIXTURES}/browser_author/Cargo.toml"),
         format!("{FIXTURES}/browser_author/Cargo.lock"),
     ]
-    .iter()
+    .into_iter()
     .enumerate()
     {
-        let path = root.join(input);
+        let path = root.join(&input);
         let text = fs::read_to_string(&path).unwrap();
         fs::write(
             path,
