@@ -443,15 +443,15 @@ fn proxy_variables_and_bypass_reach_selected_route() -> TestResult {
             Route {
                 id: "ALL_PROXY alone",
                 env: &[("ALL_PROXY", "PROXY")],
-                proxied: false,
+                proxied: true,
             },
             Route {
-                id: "ALL_PROXY after the gate",
+                id: "ALL_PROXY with an excluded other host",
                 env: &[BYPASS_OTHER, ("ALL_PROXY", "PROXY")],
                 proxied: true,
             },
             Route {
-                id: "npm protocol variable after the gate",
+                id: "npm protocol variable with an excluded other host",
                 env: &[BYPASS_OTHER, ("npm_config_http_proxy", "PROXY")],
                 proxied: true,
             },

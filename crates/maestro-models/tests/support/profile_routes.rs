@@ -209,7 +209,7 @@ fn peer(
     }
 }
 
-/// Add destination-specific proxy variables and distinct service/conversation endpoints.
+/// Add the conversation's proxy variables and distinct service/conversation endpoints.
 fn environment(row: &Row, work: &Workdir, input: &Input, urls: [&str; 3]) -> Vec<(String, String)> {
     let [credentials, conversation, proxy] = urls;
     let mut vars = work.environment(input, credentials);
@@ -237,15 +237,15 @@ fn environment(row: &Row, work: &Workdir, input: &Input, urls: [&str; 3]) -> Vec
         }
         "lowercase" => vars.push(("http_proxy".to_owned(), proxy.to_owned())),
         "https" => {
-            vars.push(("HTTPS_PROXY".to_owned(), proxy.to_owned()));
-            vars.push(("HTTP_PROXY".to_owned(), "http://127.0.0.1:1".to_owned()));
+            vars.push(("HTTP_PROXY".to_owned(), proxy.to_owned()));
+            vars.push(("HTTPS_PROXY".to_owned(), "http://127.0.0.1:1".to_owned()));
         }
         _ => vars.push(("HTTP_PROXY".to_owned(), proxy.to_owned())),
     }
     let excluded = match row.input.mode.as_str() {
         "bypass" => Some("*".to_owned()),
-        "credentials_only" => Some(conversation.trim_start_matches("http://").to_owned()),
-        "bedrock_only" => Some(credentials.trim_start_matches("http://").to_owned()),
+        "conversation_excluded" => Some(conversation.trim_start_matches("http://").to_owned()),
+        "credentials_excluded" => Some(credentials.trim_start_matches("http://").to_owned()),
         _ => None,
     };
     if let Some(excluded) = excluded {
