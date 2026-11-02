@@ -13,7 +13,7 @@ use recording_terminal::RecordingTerminal;
 use runtime_spy::Spy;
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
-use std::{cell::RefCell, io::Write, path::Path, rc::Rc};
+use std::{cell::RefCell, io::Write, rc::Rc};
 
 /// An attributed recording with strict membership.
 #[derive(Deserialize)]
@@ -1107,7 +1107,7 @@ fn install_fault(visual: &str, fault: &str) {
 }
 /// Asserts whether a refusing directory left the edit's temporary file behind.
 #[cfg(unix)]
-fn assert_temporary_file(root: &Path, survived: bool) {
+fn assert_temporary_file(root: &std::path::Path, survived: bool) {
     let path = root.join("maestro-extension-editor-1767323045006.md");
     assert_eq!(path.is_file(), survived);
 }

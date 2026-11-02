@@ -61,9 +61,9 @@ not live services or real credentials. Python 3 is needed by the Unix terminatio
 peer; the component case also needs the target installed above.
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-chat --example rpc_extension_ui
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- rpc_demo_companion_
 ```
