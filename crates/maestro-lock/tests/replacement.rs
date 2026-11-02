@@ -293,7 +293,7 @@ fn rewrite_refuses_an_existing_read_only_target() {
 }
 
 #[test]
-fn atomic_publication_accepts_full_length_native_leaves() {
+fn requested_publication_accepts_full_length_native_leaves() {
     #[cfg(windows)]
     let unicode = "𝄞".repeat(127) + "x";
     #[cfg(not(windows))]
@@ -307,12 +307,13 @@ fn atomic_publication_accepts_full_length_native_leaves() {
             continue;
         }
         for bytes in [b"rewritten".as_slice(), b"\0\xffcreated"] {
-            maestro_lock::atomic_replace(
+            replace(
                 &target,
                 bytes,
-                maestro_lock::Symlinks::Follow,
-                maestro_lock::Temporary::Unique,
-                Some(0o600),
+                Replace {
+                    through_symlinks: true,
+                    creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+                },
             )
             .unwrap();
             assert_eq!(fs::read(&target).unwrap(), bytes);
@@ -324,7 +325,7 @@ fn atomic_publication_accepts_full_length_native_leaves() {
 
 #[cfg(unix)]
 #[test]
-fn atomic_requested_mode_follows_existing_and_dangling_final_links() {
+fn requested_mode_follows_existing_and_dangling_final_links() {
     use std::os::unix::fs::{PermissionsExt, symlink};
     for existing in [false, true] {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -335,16 +336,14 @@ fn atomic_requested_mode_follows_existing_and_dangling_final_links() {
             fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
         }
         symlink("target", &link).unwrap();
-        for temporary in [
-            maestro_lock::Temporary::Fixed("tmp"),
-            maestro_lock::Temporary::Unique,
-        ] {
-            maestro_lock::atomic_replace(
+        {
+            replace(
                 &link,
                 b"followed",
-                maestro_lock::Symlinks::Follow,
-                temporary,
-                Some(0o600),
+                Replace {
+                    through_symlinks: true,
+                    creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+                },
             )
             .unwrap();
             assert_eq!(fs::read(&target).unwrap(), b"followed");
@@ -354,12 +353,13 @@ fn atomic_requested_mode_follows_existing_and_dangling_final_links() {
                 if existing { 0o640 } else { 0o600 }
             );
         }
-        maestro_lock::atomic_replace(
+        replace(
             &link,
             b"entry",
-            maestro_lock::Symlinks::Replace,
-            maestro_lock::Temporary::Unique,
-            Some(0o600),
+            Replace {
+                through_symlinks: false,
+                creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+            },
         )
         .unwrap();
         assert!(

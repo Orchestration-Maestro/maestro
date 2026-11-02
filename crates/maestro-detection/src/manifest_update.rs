@@ -217,7 +217,6 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
         bytes,
         maestro_lock::Symlinks::Replace,
         maestro_lock::Temporary::Unique,
-        None,
     )
     .map_err(|error| error.to_string())?;
     if let Some(error) = committed.dir_sync {

@@ -13,7 +13,6 @@ struct Effects {
     collision: bool,
     before_sync: Option<Box<dyn FnOnce()>>,
     before_write: Option<Box<dyn FnOnce()>>,
-    before_rename: Option<Box<dyn FnOnce()>>,
     temporary_path: Option<PathBuf>,
     acquisition: Option<Acquisition>,
     #[cfg(unix)]
@@ -42,12 +41,6 @@ pub(crate) fn effect(phase: &'static str) -> io::Result<()> {
     }
     if phase == "write_all" {
         let callback = EFFECTS.with_borrow_mut(|effects| effects.before_write.take());
-        if let Some(callback) = callback {
-            callback();
-        }
-    }
-    if phase == "rename" {
-        let callback = EFFECTS.with_borrow_mut(|effects| effects.before_rename.take());
         if let Some(callback) = callback {
             callback();
         }
@@ -158,6 +151,7 @@ fn replacement_syncs_before_and_after_commit() {
         "rename",
         "recovery_sync",
         "target_write",
+        "target_truncated",
         "target_sync",
     ];
     assert_eq!(
@@ -310,7 +304,7 @@ fn creation_mode_is_private_before_publication() {
         &target,
         b"secret",
         Replace {
-            creation_mode: Some(mode),
+            creation_mode: Some(crate::CreationMode::AfterSync(mode)),
             ..Replace::default()
         },
     )
@@ -326,7 +320,7 @@ fn creation_mode_is_private_before_publication() {
         &target,
         b"rewritten",
         Replace {
-            creation_mode: Some(0o777),
+            creation_mode: Some(crate::CreationMode::AfterSync(0o777)),
             ..Replace::default()
         },
     )
@@ -351,7 +345,7 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
             target,
             b"secret",
             Replace {
-                creation_mode: Some(0o600),
+                creation_mode: Some(crate::CreationMode::AfterSync(0o600)),
                 ..Replace::default()
             },
         );
@@ -400,7 +394,7 @@ fn creation_mode_maps_only_owner_write_to_windows_readonly() {
             &target,
             b"secret",
             Replace {
-                creation_mode: Some(mode),
+                creation_mode: Some(crate::CreationMode::AfterSync(mode)),
                 ..Replace::default()
             },
         )
@@ -430,7 +424,7 @@ fn creation_mode_maps_only_owner_write_to_windows_readonly() {
             &target,
             b"secret",
             Replace {
-                creation_mode: Some(0o400),
+                creation_mode: Some(crate::CreationMode::AfterSync(0o400)),
                 ..Replace::default()
             }
         )
@@ -477,7 +471,7 @@ fn recovery_refuses_a_record_with_an_unknown_mode_flag() {
     assert!(replace(&target, b"intended", Replace::default()).is_err());
     EFFECTS.take();
     let recovery = scratch.path().join("session.recovery");
-    fs::write(&recovery, [2, 0, 0, 0, 0]).unwrap();
+    fs::write(&recovery, [3, 0, 0, 0, 0]).unwrap();
     assert_eq!(
         crate::acquire_write(&target, true).unwrap_err().kind(),
         io::ErrorKind::InvalidData
@@ -568,7 +562,7 @@ fn new_target_mode(mode: Option<u32>, interrupted: bool) {
         &target,
         b"intended",
         Replace {
-            creation_mode: mode,
+            creation_mode: mode.map(crate::CreationMode::AfterSync),
             ..Replace::default()
         },
     );
@@ -628,7 +622,7 @@ fn completed_readonly_creation_recovers_after_parent_sync_failure() {
             &target,
             b"intended",
             Replace {
-                creation_mode: Some(0o400),
+                creation_mode: Some(crate::CreationMode::AfterSync(0o400)),
                 ..Replace::default()
             }
         )
@@ -741,7 +735,7 @@ fn writable_creation_replays_even_when_unsynced_bytes_and_mode_match() {
             &target,
             b"intended",
             Replace {
-                creation_mode: Some(0o600),
+                creation_mode: Some(crate::CreationMode::AfterSync(0o600)),
                 ..Replace::default()
             }
         )
@@ -768,7 +762,7 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
             &target,
             b"intended",
             Replace {
-                creation_mode: Some(0o400),
+                creation_mode: Some(crate::CreationMode::AfterSync(0o400)),
                 ..Replace::default()
             }
         )
@@ -815,7 +809,6 @@ fn atomic_publication_failures_remove_temporary_and_keep_previous_bytes() {
             b"next",
             crate::Symlinks::Follow,
             crate::Temporary::Fixed("json.tmp"),
-            None,
         );
 
         assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
@@ -842,7 +835,6 @@ fn atomic_linked_temporary_failure_keeps_previous_bytes() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
-        None,
     );
 
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
@@ -876,7 +868,6 @@ fn atomic_temporary_is_private_at_creation() {
         b"secret",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
-        None,
     )
     .unwrap();
 
@@ -916,7 +907,6 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
             b"competitor-long",
             crate::Symlinks::Follow,
             crate::Temporary::Fixed("json.tmp"),
-            None,
         )
         .unwrap();
         stream.write_all(b"done").unwrap();
@@ -951,7 +941,6 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
-        None,
     );
 
     EFFECTS.take();
@@ -977,7 +966,6 @@ fn atomic_creation_collision_keeps_competing_bytes() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json.tmp"),
-        None,
     );
 
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::AlreadyExists);
@@ -1000,7 +988,6 @@ fn atomic_temporary_cannot_name_the_target() {
         b"next",
         crate::Symlinks::Follow,
         crate::Temporary::Fixed("json"),
-        None,
     );
 
     assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidInput);
@@ -1200,182 +1187,178 @@ fn append_syncs_recovery_absence_once_before_writing() {
 
 #[cfg(unix)]
 #[test]
-fn atomic_requested_creation_mode_is_private_before_bytes() {
-    use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases("atomic_requested_creation_mode_is_private_before_bytes") {
+fn requested_creation_mode_is_private_before_bytes() {
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    if launch_umask_cases("requested_creation_mode_is_private_before_bytes") {
         return;
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let control = scratch.path().join("control");
-    fs::write(&control, b"control").unwrap();
-    assert_eq!(
-        fs::metadata(&control).unwrap().permissions().mode() & 0o777,
-        if std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077" {
-            0o600
-        } else {
-            0o666
-        }
-    );
-    for temporary in [crate::Temporary::Fixed("tmp"), crate::Temporary::Unique] {
+    for mode in [0o600, 0o640, 0o400] {
         for bytes in [b"".as_slice(), b"\0\xffprivate"] {
             let target = scratch.path().join("private");
+            let control = scratch.path().join("control");
+            fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .mode(mode)
+                .open(&control)
+                .unwrap();
+            let expected = fs::metadata(&control).unwrap().permissions().mode() & 0o777;
+            let observed = target.clone();
             EFFECTS.set(Effects::default());
-            CREATED.set(Some(Box::new(|| {
-                let path = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
-                let metadata = fs::metadata(path).unwrap();
+            CREATED.set(Some(Box::new(move || {
+                let metadata = fs::metadata(observed).unwrap();
                 assert_eq!(metadata.len(), 0);
-                assert_eq!(metadata.permissions().mode() & 0o777, 0o600);
+                assert_eq!(metadata.permissions().mode() & 0o777, expected);
             })));
 
-            let committed = crate::atomic_replace(
+            replace(
                 &target,
                 bytes,
-                crate::Symlinks::Follow,
-                temporary,
-                Some(0o600),
+                Replace {
+                    creation_mode: Some(crate::CreationMode::AtCreation(mode)),
+                    ..Replace::default()
+                },
             )
             .unwrap();
 
-            assert!(committed.dir_sync.is_none());
-            assert_eq!(EFFECTS.take().temporary_mode, Some(0o600));
+            assert!(CREATED.take().is_none());
             assert_eq!(fs::read(&target).unwrap(), bytes);
             assert_eq!(
                 fs::metadata(&target).unwrap().permissions().mode() & 0o777,
-                0o600
+                expected
             );
+            EFFECTS.take();
             fs::remove_file(target).unwrap();
-            assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+            fs::remove_file(control).unwrap();
         }
     }
 }
 
 #[cfg(unix)]
 #[test]
-fn atomic_rewrite_retains_existing_mode_before_bytes() {
-    use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases("atomic_rewrite_retains_existing_mode_before_bytes") {
-        return;
-    }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let target = scratch.path().join("session.json");
-    fs::write(&target, b"previous").unwrap();
-    fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
-    EFFECTS.set(Effects::default());
-    CREATED.set(Some(Box::new(|| {
-        let path = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
-        let metadata = fs::metadata(path).unwrap();
-        assert_eq!(metadata.len(), 0);
-        let expected = if std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077" {
-            0o600
-        } else {
-            0o640
-        };
-        assert_eq!(metadata.permissions().mode() & 0o777, expected);
-    })));
-
-    crate::atomic_replace(
-        &target,
-        b"next",
-        crate::Symlinks::Follow,
-        crate::Temporary::Unique,
-        Some(0o600),
-    )
-    .unwrap();
-
-    assert_eq!(EFFECTS.take().temporary_mode, Some(0o640));
-    assert_eq!(
-        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
-        0o640
-    );
-    assert_eq!(fs::read(target).unwrap(), b"next");
-}
-
-#[cfg(unix)]
-#[test]
-fn atomic_default_creation_retains_umask_permissions() {
-    use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases("atomic_default_creation_retains_umask_permissions") {
-        return;
-    }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let control = scratch.path().join("control");
-    fs::write(&control, b"").unwrap();
-    let mode = fs::metadata(control).unwrap().permissions().mode() & 0o777;
-    for temporary in [crate::Temporary::Fixed("tmp"), crate::Temporary::Unique] {
-        let target = scratch.path().join("session");
-        EFFECTS.set(Effects::default());
-        CREATED.set(Some(Box::new(move || {
-            let path = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
-            assert_eq!(
-                fs::metadata(path).unwrap().permissions().mode() & 0o777,
-                mode
-            );
-        })));
-
-        crate::atomic_replace(
-            &target,
-            b"default",
-            crate::Symlinks::Follow,
-            temporary,
-            None,
-        )
-        .unwrap();
-
-        EFFECTS.take();
-        assert_eq!(
-            fs::metadata(&target).unwrap().permissions().mode() & 0o777,
-            mode
-        );
-        assert_eq!(fs::read(&target).unwrap(), b"default");
-        fs::remove_file(target).unwrap();
-    }
-}
-
-#[test]
-fn atomic_unlocked_readers_observe_whole_files_at_publication() {
+fn requested_rewrite_retains_existing_mode_before_bytes() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target = scratch.path().join("session");
-    let previous = vec![b'a'; 131_072];
-    let next = vec![b'b'; 262_144];
-    fs::write(&target, &previous).unwrap();
-    let before_write = target.clone();
-    let before_rename = target.clone();
-    let old = previous.clone();
-    let intended = next.clone();
+    let alias = scratch.path().join("alias");
+    fs::write(&target, b"previous").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+    fs::hard_link(&target, &alias).unwrap();
+    let before = fs::metadata(&target).unwrap();
+    let observed = target.clone();
     EFFECTS.set(Effects {
         before_write: Some(Box::new(move || {
-            assert_eq!(fs::read(before_write).unwrap(), previous);
-        })),
-        before_rename: Some(Box::new(move || {
-            assert_eq!(fs::read(before_rename).unwrap(), old);
-            let temporary = EFFECTS.with_borrow(|effects| effects.temporary_path.clone().unwrap());
-            assert_eq!(fs::read(temporary).unwrap(), intended);
+            assert_eq!(
+                fs::metadata(&observed).unwrap().permissions().mode() & 0o777,
+                0o640
+            );
+            assert_eq!(fs::read(observed).unwrap(), b"previous");
         })),
         ..Effects::default()
     });
 
-    crate::atomic_replace(
+    replace(
         &target,
-        &next,
-        crate::Symlinks::Follow,
-        crate::Temporary::Unique,
-        Some(0o600),
+        b"next",
+        Replace {
+            creation_mode: Some(crate::CreationMode::AtCreation(0o600)),
+            ..Replace::default()
+        },
     )
     .unwrap();
 
-    let effects = EFFECTS.take();
-    assert!(effects.before_write.is_none());
-    assert!(effects.before_rename.is_none());
-    assert_eq!(fs::read(target).unwrap(), next);
-    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+    let after = fs::metadata(&target).unwrap();
+    assert_eq!(after.permissions().mode() & 0o777, 0o640);
+    assert_eq!(
+        (after.ino(), after.uid(), after.gid()),
+        (before.ino(), before.uid(), before.gid())
+    );
+    assert_eq!(fs::read(alias).unwrap(), b"next");
+    assert!(EFFECTS.take().before_write.is_none());
 }
 
 #[cfg(unix)]
 #[test]
-fn atomic_requested_mode_failures_preserve_previous_state() {
+fn default_creation_retains_umask_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+    if launch_umask_cases("default_creation_retains_umask_permissions") {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let control = scratch.path().join("control");
+    fs::write(&control, b"").unwrap();
+    let expected = fs::metadata(control).unwrap().permissions().mode() & 0o777;
+    let observed = target.clone();
+    EFFECTS.set(Effects::default());
+    CREATED.set(Some(Box::new(move || {
+        assert_eq!(
+            fs::metadata(observed).unwrap().permissions().mode() & 0o777,
+            expected
+        );
+    })));
+
+    replace(&target, b"default", Replace::default()).unwrap();
+
+    assert!(CREATED.take().is_none());
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        expected
+    );
+    assert_eq!(fs::read(target).unwrap(), b"default");
+    EFFECTS.take();
+}
+
+#[test]
+fn in_place_readers_observe_truncation_and_recovery() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let alias = scratch.path().join("alias");
+    fs::write(&target, b"previous").unwrap();
+    fs::hard_link(&target, &alias).unwrap();
+    EFFECTS.set(Effects {
+        fault: Some(("target_truncated", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+
+    assert!(
+        replace(
+            &target,
+            b"complete",
+            Replace {
+                creation_mode: Some(crate::CreationMode::AtCreation(0o600)),
+                ..Replace::default()
+            }
+        )
+        .is_err()
+    );
+
+    assert_eq!(fs::read(&target).unwrap(), b"");
+    assert_eq!(fs::read(&alias).unwrap(), b"");
+    assert!(scratch.path().join("session.recovery").is_file());
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(target).unwrap(), b"complete");
+    assert_eq!(fs::read(alias).unwrap(), b"complete");
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 2);
+}
+
+#[cfg(unix)]
+#[test]
+fn requested_mode_failures_preserve_state_or_replay() {
     use std::os::unix::fs::PermissionsExt;
     for existing in [false, true] {
-        for phase in ["create", "write_all", "file_sync", "rename"] {
+        for phase in [
+            "create",
+            "write_all",
+            "file_sync",
+            "rename",
+            "target_write",
+            "target_truncated",
+            "target_sync",
+        ] {
             let scratch = maestro_test_directory::Scratch::new().unwrap();
             let target = scratch.path().join("session");
             if existing {
@@ -1387,59 +1370,368 @@ fn atomic_requested_mode_failures_preserve_previous_state() {
                 ..Effects::default()
             });
 
-            let result = crate::atomic_replace(
+            let result = replace(
                 &target,
                 b"next",
-                crate::Symlinks::Follow,
-                crate::Temporary::Unique,
-                Some(0o600),
+                Replace {
+                    creation_mode: Some(crate::CreationMode::AtCreation(0o600)),
+                    ..Replace::default()
+                },
             );
 
             assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
             EFFECTS.take();
-            assert_eq!(
-                fs::read_dir(scratch.path()).unwrap().count(),
-                usize::from(existing)
-            );
-            if existing {
-                assert_eq!(fs::read(&target).unwrap(), b"previous");
+            let staged = phase.starts_with("target_");
+            if !staged || phase == "target_write" {
+                assert_eq!(
+                    fs::read(&target).ok(),
+                    existing.then(|| b"previous".to_vec())
+                );
+            }
+            assert_eq!(scratch.path().join("session.recovery").exists(), staged);
+            if staged {
+                drop(crate::acquire_write(&target, true).unwrap());
+                assert_eq!(fs::read(&target).unwrap(), b"next");
+            }
+            if target.exists() {
                 assert_eq!(
                     fs::metadata(&target).unwrap().permissions().mode() & 0o777,
-                    0o640
+                    if existing { 0o640 } else { 0o600 }
                 );
-            } else {
-                assert!(!target.exists());
             }
+            assert_eq!(
+                fs::read_dir(scratch.path()).unwrap().count(),
+                usize::from(existing || staged)
+            );
         }
     }
 }
 
 #[test]
-fn atomic_parent_sync_failure_reports_committed_bytes() {
+fn requested_parent_sync_failure_reports_committed_bytes() {
     for &phase in sync_phases() {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let target = scratch.path().join("session");
-        fs::write(&target, b"previous").unwrap();
         EFFECTS.set(Effects {
             fault: Some((phase, io::ErrorKind::Interrupted)),
             ..Effects::default()
         });
 
-        let committed = crate::atomic_replace(
+        let committed = replace(
             &target,
             b"next",
-            crate::Symlinks::Follow,
-            crate::Temporary::Unique,
-            Some(0o600),
+            Replace {
+                creation_mode: Some(crate::CreationMode::AtCreation(0o600)),
+                ..Replace::default()
+            },
         )
         .unwrap();
 
-        EFFECTS.take();
         assert_eq!(
             committed.dir_sync.unwrap().kind(),
             io::ErrorKind::Interrupted
         );
+        assert_eq!(fs::read(&target).unwrap(), b"next");
+        assert!(scratch.path().join("session.recovery").is_file());
+        EFFECTS.take();
+        drop(crate::acquire_write(&target, true).unwrap());
         assert_eq!(fs::read(target).unwrap(), b"next");
         assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn readonly_creation_interrupted_after_truncation_replays_full_bytes() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    EFFECTS.set(Effects {
+        fault: Some(("target_truncated", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+
+    let result = replace(
+        &target,
+        b"complete",
+        Replace {
+            creation_mode: Some(crate::CreationMode::AtCreation(0o400)),
+            ..Replace::default()
+        },
+    );
+
+    assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
+    assert_eq!(fs::read(&target).unwrap(), b"");
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"complete");
+    assert_eq!(
+        fs::metadata(target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+}
+
+/// Leaves a mode-zero target and its durable record at the policy's interruption point.
+#[cfg(unix)]
+fn interrupted_unreadable_creation(
+    mode: crate::CreationMode,
+) -> (maestro_test_directory::Scratch, PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let phase = match mode {
+        crate::CreationMode::AtCreation(_) => "target_truncated",
+        crate::CreationMode::AfterSync(_) => "mode_sync",
+    };
+    EFFECTS.set(Effects {
+        fault: Some((phase, io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+    let result = replace(
+        &target,
+        b"complete",
+        Replace {
+            creation_mode: Some(mode),
+            ..Replace::default()
+        },
+    );
+    assert_eq!(result.unwrap_err().kind(), io::ErrorKind::Interrupted);
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0
+    );
+    EFFECTS.take();
+    (scratch, target)
+}
+
+#[cfg(unix)]
+#[test]
+fn unreadable_creation_interruption_replays_recorded_bytes() {
+    use std::os::unix::fs::PermissionsExt;
+    for mode in [
+        crate::CreationMode::AtCreation(0),
+        crate::CreationMode::AfterSync(0),
+    ] {
+        let (scratch, target) = interrupted_unreadable_creation(mode);
+
+        drop(crate::acquire_write(&target, true).unwrap());
+
+        assert_eq!(
+            fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            0
+        );
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o400)).unwrap();
+        assert_eq!(fs::read(target).unwrap(), b"complete");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn unreadable_creation_replay_retries_chmod_and_write_interruptions() {
+    use std::os::unix::fs::PermissionsExt;
+    for mode in [
+        crate::CreationMode::AtCreation(0),
+        crate::CreationMode::AfterSync(0),
+    ] {
+        let (scratch, target) = interrupted_unreadable_creation(mode);
+        for phase in ["replay_chmod", "replay_widened"] {
+            EFFECTS.set(Effects {
+                fault: Some((phase, io::ErrorKind::Interrupted)),
+                ..Effects::default()
+            });
+            assert_eq!(
+                crate::acquire_write(&target, true).unwrap_err().kind(),
+                io::ErrorKind::Interrupted
+            );
+            assert!(scratch.path().join("session.recovery").is_file());
+            assert_eq!(
+                fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+                if phase == "replay_chmod" { 0 } else { 0o200 }
+            );
+            EFFECTS.take();
+        }
+
+        drop(crate::acquire_write(&target, true).unwrap());
+
+        assert_eq!(
+            fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            0
+        );
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o400)).unwrap();
+        assert_eq!(fs::read(target).unwrap(), b"complete");
+    }
+}
+
+/// Creates an interrupted native read-only save with an open-time mode record.
+#[cfg(unix)]
+fn interrupted_readonly_creation() -> (maestro_test_directory::Scratch, PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    fs::write(&target, b"partial").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o400)).unwrap();
+    let mut record = vec![2];
+    record.extend_from_slice(&0o440_u32.to_le_bytes());
+    record.extend_from_slice(b"complete");
+    fs::write(scratch.path().join("session.recovery"), record).unwrap();
+    EFFECTS.set(Effects::default());
+    (scratch, target)
+}
+
+#[cfg(unix)]
+#[test]
+fn readonly_creation_replay_restores_observed_mode() {
+    use std::os::unix::fs::PermissionsExt;
+    let (scratch, target) = interrupted_readonly_creation();
+
+    drop(crate::acquire_write(&target, true).unwrap());
+
+    assert_eq!(fs::read(&target).unwrap(), b"complete");
+    assert_eq!(
+        fs::metadata(target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn readonly_creation_is_never_widened_during_normal_save() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session");
+    let observed = target.clone();
+    EFFECTS.set(Effects {
+        before_sync: Some(Box::new(move || {
+            assert_eq!(
+                fs::metadata(observed).unwrap().permissions().mode() & 0o777,
+                0o400
+            );
+        })),
+        ..Effects::default()
+    });
+
+    replace(
+        &target,
+        b"complete",
+        Replace {
+            creation_mode: Some(crate::CreationMode::AtCreation(0o400)),
+            ..Replace::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(fs::read(&target).unwrap(), b"complete");
+    assert_eq!(
+        fs::metadata(target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    assert!(EFFECTS.take().before_sync.is_none());
+}
+
+#[cfg(unix)]
+#[test]
+fn readonly_replay_chmod_failure_keeps_recovery() {
+    use std::os::unix::fs::PermissionsExt;
+    let (scratch, target) = interrupted_readonly_creation();
+    EFFECTS.set(Effects {
+        fault: Some(("replay_chmod", io::ErrorKind::PermissionDenied)),
+        ..Effects::default()
+    });
+
+    assert_eq!(
+        crate::acquire_write(&target, true).unwrap_err().kind(),
+        io::ErrorKind::PermissionDenied
+    );
+
+    assert!(scratch.path().join("session.recovery").is_file());
+    assert_eq!(fs::read(&target).unwrap(), b"partial");
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"complete");
+    assert_eq!(
+        fs::metadata(target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn interrupted_widened_replay_restores_recorded_mode() {
+    use std::os::unix::fs::PermissionsExt;
+    let (scratch, target) = interrupted_readonly_creation();
+    EFFECTS.set(Effects {
+        fault: Some(("replay_widened", io::ErrorKind::Interrupted)),
+        ..Effects::default()
+    });
+
+    assert_eq!(
+        crate::acquire_write(&target, true).unwrap_err().kind(),
+        io::ErrorKind::Interrupted
+    );
+
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert!(scratch.path().join("session.recovery").is_file());
+    EFFECTS.take();
+    drop(crate::acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"complete");
+    assert_eq!(
+        fs::metadata(target).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn existing_recovery_records_retain_default_and_exact_modes() {
+    #[cfg(unix)]
+    if launch_umask_cases("existing_recovery_records_retain_default_and_exact_modes") {
+        return;
+    }
+    for tag in [0, 1] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join("session");
+        let mut record = vec![tag];
+        record.extend_from_slice(&0o640_u32.to_le_bytes());
+        record.extend_from_slice(b"original record");
+        fs::write(scratch.path().join("session.recovery"), record).unwrap();
+        EFFECTS.set(Effects::default());
+
+        drop(crate::acquire_write(&target, true).unwrap());
+
+        assert_eq!(fs::read(&target).unwrap(), b"original record");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let expected = if tag == 1 {
+                0o640
+            } else {
+                let control = scratch.path().join("control");
+                fs::write(&control, b"").unwrap();
+                let mode = fs::metadata(&control).unwrap().permissions().mode() & 0o777;
+                fs::remove_file(control).unwrap();
+                mode
+            };
+            assert_eq!(
+                fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+                expected
+            );
+        }
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+        EFFECTS.take();
     }
 }

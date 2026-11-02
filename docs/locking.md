@@ -82,10 +82,12 @@ Unix replay of a read-only AtCreation target first durably stages its observed
 mode as AfterSync, then adds only owner-write while completing the recorded bytes.
 It restores and syncs the observed mode before retiring the record. Failure leaves
 the record for another acquisition, including an interruption after adding
-owner-write. Normal creation never widens the requested bits.
+owner-write. Normal creation never widens the requested bits. If permissions
+prevent reading the target to verify completion, both policies replay the recorded
+bytes with only owner-write temporarily enabled, then restore the exact mode.
+Other read errors still propagate.
 
-Replay skips the
-target write when a staged read-only exact-mode creation's bytes and mode already match;
+Replay skips the target write when a staged read-only creation's bytes and mode match;
 it syncs the verified mode before syncing the parent and removing the record.
 On Windows, this verified creation temporarily becomes writable for flushing,
 then regains read-only before another flush. A failure restores read-only and

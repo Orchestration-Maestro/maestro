@@ -31,10 +31,7 @@ pub enum Temporary<'a> {
 /// parent-sync failures after rename are returned as a committed warning.
 /// Writers share canonical target exclusion. Stale fixed temporaries are unlinked
 /// before exclusive creation. Existing permission bits are retained from creation
-/// on Unix. For a missing target, `creation_mode` selects Unix creation bits,
-/// filtered by umask before any bytes are written; `None` uses native defaults.
-/// Other platforms keep native creation semantics. Hard links, ownership and
-/// ACLs are not preserved.
+/// on Unix. Hard links, ownership and ACLs are not preserved.
 ///
 /// # Errors
 /// Returns native resolution, lock, recovery, creation, write, sync or rename errors.
@@ -44,7 +41,6 @@ pub fn atomic_replace(
     bytes: &[u8],
     symlinks: Symlinks,
     temporary: Temporary<'_>,
-    creation_mode: Option<u32>,
 ) -> io::Result<Committed> {
     let target = match symlinks {
         Symlinks::Follow => resolve_write_target(path)?,
@@ -59,7 +55,7 @@ pub fn atomic_replace(
     let temporary = prepare_temporary(&target, temporary)?;
     #[cfg(test)]
     crate::replace::tests::before_create(&temporary)?;
-    let file = create_temporary(&temporary, &target, creation_mode)?;
+    let file = create_temporary(&temporary, &target)?;
     #[cfg(test)]
     crate::replace::tests::created();
     let result = retain_permissions(&file, &target)
@@ -97,12 +93,8 @@ fn prepare_temporary(target: &Path, policy: Temporary<'_>) -> io::Result<PathBuf
     Ok(temporary)
 }
 
-/// Exclusively creates a temporary using existing or requested Unix permission bits.
-fn create_temporary(
-    temporary: &Path,
-    target: &Path,
-    creation_mode: Option<u32>,
-) -> io::Result<File> {
+/// Exclusively creates a temporary with no initial Unix access beyond the target's.
+fn create_temporary(temporary: &Path, target: &Path) -> io::Result<File> {
     let mut open = OpenOptions::new();
     open.write(true).create_new(true);
     #[cfg(unix)]
@@ -110,13 +102,13 @@ fn create_temporary(
         use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
         let mode = match fs::metadata(target) {
             Ok(metadata) => metadata.permissions().mode(),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => creation_mode.unwrap_or(0o666),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => 0o666,
             Err(error) => return Err(error),
         };
         open.mode(mode);
     }
     #[cfg(not(unix))]
-    let _ = (target, creation_mode);
+    let _ = target;
     open.open(temporary)
 }
 
