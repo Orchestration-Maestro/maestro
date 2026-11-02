@@ -121,14 +121,9 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
     let mut pid = [0; 4];
     stream.read_exact(&mut pid).unwrap();
     let blocked = observe_waiter(u32::from_be_bytes(pid), &stream);
-    fs::OpenOptions::new()
-        .append(true)
-        .open(path)
-        .unwrap()
-        .write_all(b"{\"type\":\"custom\",\"id\":\"concurrent\",\"parentId\":null}\n")
-        .unwrap();
-    let before_replace = fs::read(path).unwrap();
-    drop(holder);
+    let concurrent = b"{\"type\":\"custom\",\"id\":\"concurrent\",\"parentId\":null}\n";
+    let before_replace = [original.as_slice(), concurrent.as_slice()].concat();
+    holder.append(concurrent).unwrap();
     let output = child.wait_with_output().unwrap();
     assert!(
         output.status.success(),

@@ -207,6 +207,8 @@ retains the first publisher. There is no chain of deciders.
 | `RuntimeOverrides` | Runtime settings before the one-level merge |
 | `Model` | Provider, model ID and requested thinking before capability clamping |
 | `ThinkingLevel` | Requested thinking before capability clamping |
+| `Tools` | Requested active names, or one candidate during automatic refresh |
+| `PackageInstall`, `PackageRemove` | Authored source and selected configuration scope |
 
 A refused edit changes no accepted scope, runtime override, pending edit or
 saved file. Runtime model and thinking refusal also leaves active state,
@@ -221,7 +223,9 @@ locks, and when applying an admitted runtime override. It restores locked values
 again after the callback, so resolution cannot weaken a lock. The callback may
 change the view but never receives the raw scopes or persistence queue. Its messages
 use the existing settings error channel. Reads and resolution never rewrite
-stored conflicting values.
+stored conflicting values. `resolve_stored_values` resolves a restored settings
+fragment over the current view through that same composition pipeline. It reports
+conflicts without changing raw preferences, pending writes or saved sessions.
 
 The [decision tests](../crates/maestro-settings/tests/settings_decisions.rs)
 show a refusing publisher and a stored-value resolver through the public
@@ -233,7 +237,8 @@ An owner whose operation has effects before its settings save calls
 `prepare_operation`. It supplies the request, scope and all derived settings
 paths before the first effect. The settings owner asks the decider and checks
 base locks, then returns a `PreparedSettingsEdit` without publishing or queuing
-anything.
+anything. `has_decider` lets an owner retain its ordinary late-validation order
+when neither a publisher nor a base layer governs its operation.
 
 Keep the token with that operation and consume it with `apply_prepared_edit` at
 the original save position. `split_at` separates admitted edits when an operation
@@ -313,22 +318,23 @@ agent directory, and the working directory with the configuration directory, wit
 `settings.json` through the shared `maestro-path` functions, giving the runtime's
 join results, then works in place. Its legacy `with_lock` operation behaves as follows:
 
-1. For an existing file it locks the stable `settings.json.lock` sidecar before
-   reading, keeps the lock through the callback and the write, and releases it on
-   every outcome. The sidecar is never removed.
+1. For an existing file it locks `settings.json.lock` beside the canonical target
+   before reading, keeps that lock through the callback and the write, and removes
+   it on every outcome. A symbolic link is followed before choosing the lock path.
 2. For a missing file it runs the callback first without creating anything. Only a
    replacement creates the directory, takes the lock and writes, without reading again.
-3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md).
+3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md):
+   up to ten attempts, with 20 ms only between contended attempts.
 
 Manager saves use `with_write_lock`. The native adapter creates the parent as
-needed and takes the same stable sidecar lock before reading, including when the
+needed and takes the same write lock before reading, including when the
 settings file is absent. It holds exclusion through the single callback and
 optional write. Independent manager edits survive concurrent first writes and
 existing-file saves when the holder finishes within the writer's attempts; a
 writer that runs out reports the contention and writes nothing. Acquire/read
 failures skip the callback; callback and write failures release exclusion.
 `Ok(None)` and callback errors leave settings bytes untouched, but may leave a
-new parent and sidecar. Locking alone never creates a settings file.
+new parent. Locking alone never creates a settings file.
 
 Raw callers that merge concurrent first writes must choose write intent too:
 

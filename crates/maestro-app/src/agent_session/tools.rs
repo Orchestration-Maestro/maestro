@@ -86,31 +86,50 @@ impl<E: ExtensionExecution> AgentSession<E> {
             let wrapped = wrap_registered_tool(tool, Rc::clone(&runner));
             registry.insert(name.clone(), Rc::new(RwLock::new(wrapped)));
         }
+        let next = self.refreshed_tool_names(
+            options,
+            &registry,
+            extension_tool_names,
+            previous_active_tool_names,
+        );
         let mut state = self.state.borrow_mut();
-        let previous_registry = std::mem::replace(&mut state.tool_registry, registry);
+        state.tool_registry = registry;
         state.tool_definitions = definitions;
         state.tool_prompt_snippets = snippets;
         state.tool_prompt_guidelines = guidelines;
+        drop(state);
+        self.activate_tools(&next)
+    }
+
+    /// Admits refresh candidates before publishing registry or active-state changes.
+    fn refreshed_tool_names(
+        &self,
+        options: RefreshToolRegistryOptions,
+        registry: &IndexMap<String, maestro_agent::SharedAgentTool<maestro_models::Local>>,
+        extension_tool_names: Vec<String>,
+        previous: Vec<String>,
+    ) -> Vec<String> {
         let requested = options.active_tool_names.is_some();
-        let mut next = options
-            .active_tool_names
-            .unwrap_or(previous_active_tool_names);
+        let mut next = options.active_tool_names.unwrap_or(previous);
         next.retain(|name| self.is_allowed_tool(name));
         if self.allowed_tool_names.is_some() {
-            next.extend(state.tool_registry.keys().cloned());
+            next.extend(registry.keys().cloned());
         } else if options.include_all_extension_tools {
             next.extend(extension_tool_names);
         } else if !requested {
-            let added = state.tool_registry.keys();
+            let state = self.state.borrow();
             next.extend(
-                added
-                    .filter(|name| !previous_registry.contains_key(*name))
+                registry
+                    .keys()
+                    .filter(|name| !state.tool_registry.contains_key(*name))
                     .cloned(),
             );
         }
-        drop(state);
-        let next: IndexSet<String> = next.into_iter().collect();
-        self.set_active_tools_by_name(&Vec::from_iter(next))
+        let names: IndexSet<String> = next.into_iter().collect();
+        names
+            .into_iter()
+            .filter(|name| self.admit_tools(std::slice::from_ref(name)).is_ok())
+            .collect()
     }
 
     /// The allowed built-in definitions with their built-in sources, then the allowed
@@ -157,11 +176,18 @@ impl<E: ExtensionExecution> AgentSession<E> {
     /// prompt for them; unknown names are skipped.
     ///
     /// # Errors
-    /// Returns the documentation-path failure of the default prompt.
+    /// Returns publisher admission refusals or the documentation-path failure of
+    /// the default prompt.
     pub fn set_active_tools_by_name(
         &self,
         tool_names: &[String],
     ) -> Result<(), DiagnosticErrorInfo> {
+        self.admit_tools(tool_names)?;
+        self.activate_tools(tool_names)
+    }
+
+    /// Installs an already admitted active set at the original prompt rebuild position.
+    fn activate_tools(&self, tool_names: &[String]) -> Result<(), DiagnosticErrorInfo> {
         let (tools, valid): (Vec<_>, Vec<_>) = {
             let state = self.state.borrow();
             tool_names

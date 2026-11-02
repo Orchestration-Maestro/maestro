@@ -10,8 +10,8 @@ pub use settings_manager::{
     InvalidHttpIdleTimeout, MarkdownSettings, MessageDeliveryMode, PackageSource,
     PreparedSettingsEdit, ProviderRetrySettings, ResolvedBranchSummarySettings,
     ResolvedCompactionSettings, ResolvedProviderRetrySettings, ResolvedRetrySettings,
-    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsDeciderHandle, SettingsError,
-    SettingsErrorKind, SettingsListEntry, SettingsManager, SettingsScope, SettingsStorage,
-    SettingsStorageError, SettingsStorageHandle, SettingsUpdate, TerminalSettings,
+    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsDeciderHandle, SettingsEdit,
+    SettingsError, SettingsErrorKind, SettingsListEntry, SettingsManager, SettingsScope,
+    SettingsStorage, SettingsStorageError, SettingsStorageHandle, SettingsUpdate, TerminalSettings,
     ThinkingBudgetsSettings, ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
 };

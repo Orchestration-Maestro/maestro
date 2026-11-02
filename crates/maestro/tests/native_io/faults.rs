@@ -121,6 +121,7 @@ fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local>
                     agent_dir: "/controlled-agent".into(),
                 },
                 Rc::clone(&io),
+                None,
             ),
         ))))
     })

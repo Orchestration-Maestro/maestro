@@ -1495,8 +1495,8 @@ fn toggles_persist_to_the_settings() {
     let expected = case("retry_behaviour", "toggles_write_settings");
     on_paused_task_set(|_| async {
         let h = harness(HarnessOptions::default()).await;
-        h.session.set_auto_retry_enabled(false);
-        h.session.set_auto_compaction_enabled(false);
+        h.session.set_auto_retry_enabled(false).unwrap();
+        h.session.set_auto_compaction_enabled(false).unwrap();
         let settings = h.session.settings_manager();
         let settings = settings.borrow();
         assert_eq!(

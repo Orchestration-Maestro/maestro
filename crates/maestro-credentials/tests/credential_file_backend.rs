@@ -139,7 +139,66 @@ mod tests {
         assert_eq!(mode(&dir.path("nested/agent")), 0o700);
         assert!(storage.list().is_empty());
         assert!(storage.drain_errors().is_empty());
-        assert!(std::path::Path::new(&format!("{path}.lock")).exists());
+        assert!(!std::path::Path::new(&format!("{path}.lock")).exists());
+    }
+
+    #[test]
+    fn credential_write_succeeds_without_a_home() {
+        const TEST: &str =
+            "credential_file_backend::tests::credential_write_succeeds_without_a_home";
+        if is_child() {
+            let storage = AuthStorage::create("auth.json");
+            storage.set("openai", api_key("saved"));
+            assert!(storage.drain_errors().is_empty());
+            return;
+        }
+        let dir = TempDir::new("no-home");
+        let home = dir.path("missing-home");
+        run_child(
+            TestProcess::named(TEST).unwrap().env_clear().case("*"),
+            dir.root(),
+            &[("HOME", &home)],
+        );
+        assert!(!std::path::Path::new(&home).exists());
+        assert_eq!(
+            std::fs::read_to_string(dir.path("auth.json")).unwrap(),
+            pretty(&[("openai", "saved")])
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn linked_credentials_lock_beside_the_linked_file() {
+        let dir = TempDir::without_forks("linked-lock");
+        let target = dir.path("actual.json");
+        let path = dir.path("auth.json");
+        std::fs::write(&target, "{}").unwrap();
+        std::os::unix::fs::symlink(&target, &path).unwrap();
+        let backend = FileAuthStorageBackend::new(&path);
+        let check = || {
+            assert!(std::path::Path::new(&format!("{target}.lock")).is_file());
+            assert!(!std::path::Path::new(&format!("{path}.lock")).exists());
+            let file = File::options()
+                .write(true)
+                .open(format!("{target}.lock"))
+                .unwrap();
+            assert!(matches!(file.try_lock(), Err(TryLockError::WouldBlock)));
+        };
+        backend
+            .with_lock(&mut |_| {
+                check();
+                Ok(Some("sync".into()))
+            })
+            .unwrap();
+        block_on(backend.with_lock_async(Box::new(|_| {
+            Box::pin(async {
+                check();
+                Ok(Some("async".into()))
+            })
+        })))
+        .unwrap();
+        assert_eq!(std::fs::read_to_string(target).unwrap(), "async");
+        assert!(!std::path::Path::new(&format!("{path}.lock")).exists());
     }
 
     #[cfg(unix)]
@@ -303,13 +362,7 @@ mod tests {
         let dir = TempDir::without_forks("release");
         let path = dir.path("auth.json");
         let backend = FileAuthStorageBackend::new(&path);
-        let free = || {
-            let sidecar = File::options()
-                .write(true)
-                .open(format!("{path}.lock"))
-                .unwrap();
-            assert!(sidecar.try_lock().is_ok());
-        };
+        let free = || assert!(sidecar_is_free(&path));
         let error = backend
             .with_lock(&mut |_| Err("callback failed".into()))
             .unwrap_err();
@@ -688,13 +741,7 @@ mod tests {
             let dir = TempDir::without_forks("async-release");
             let path = dir.path("auth.json");
             let backend = FileAuthStorageBackend::new(&path);
-            let free = || {
-                let sidecar = File::options()
-                    .write(true)
-                    .open(format!("{path}.lock"))
-                    .unwrap();
-                assert!(sidecar.try_lock().is_ok());
-            };
+            let free = || assert!(sidecar_is_free(&path));
             let error = backend
                 .with_lock_async(failing("callback failed"))
                 .await
@@ -735,11 +782,11 @@ mod tests {
 
     /// Whether the sidecar of `path` can be locked right now.
     fn sidecar_is_free(path: &str) -> bool {
-        let sidecar = File::options()
-            .write(true)
-            .open(format!("{path}.lock"))
-            .unwrap();
-        sidecar.try_lock().is_ok()
+        match File::options().write(true).open(format!("{path}.lock")) {
+            Ok(sidecar) => sidecar.try_lock().is_ok(),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => true,
+            Err(error) => panic!("cannot probe sidecar: {error}"),
+        }
     }
 
     /// Sets a flag when dropped.

@@ -250,6 +250,8 @@ struct Fingerprints {
     executables: Vec<PathBuf>,
     /// Library records keyed by their compiled-build fingerprint.
     libraries: HashMap<u64, Vec<PathBuf>>,
+    /// The fingerprints of build-script runs, whose results no executable links.
+    scripts: HashSet<u64>,
 }
 
 /// The fingerprint JSON files Cargo has written under one profile directory.
@@ -266,7 +268,16 @@ fn fingerprint_files(directory: &Path) -> io::Result<Fingerprints> {
             if path.extension().is_none_or(|extension| extension != "json") {
                 continue;
             }
-            if !file_name(&path).starts_with("lib-") {
+            let name = file_name(&path);
+            // Cargo names a build script's crate after the script's file, so only the record
+            // kind identifies its run.
+            if name.starts_with("run-") {
+                files
+                    .scripts
+                    .extend(fingerprint_hash(&path.with_extension(""))?);
+                continue;
+            }
+            if !name.starts_with("lib-") {
                 files.executables.push(path);
                 continue;
             }
@@ -405,9 +416,9 @@ fn linked_libraries(
     let mut linked = HashSet::new();
     let mut pending = record.deps;
     let mut seen = HashSet::new();
-    while let Some((_, alias, _, hash)) = pending.pop() {
+    while let Some((_, _, _, hash)) = pending.pop() {
         // Build-script results influence compilation but are not linked library outputs.
-        if alias == "build_script_build" || !seen.insert(hash) {
+        if fingerprints.scripts.contains(&hash) || !seen.insert(hash) {
             continue;
         }
         let Some(records) = fingerprints.libraries.get(&hash) else {
