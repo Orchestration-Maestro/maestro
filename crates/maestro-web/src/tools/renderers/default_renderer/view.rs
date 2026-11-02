@@ -7,7 +7,7 @@ use std::any::Any;
 pub(in crate::tools) fn prepared(content: &dyn Any) -> Option<Value> {
     content.downcast_ref::<DefaultContent>().map(|content| {
         json!({
-            "state": format!("{:?}", content.state),
+            "state": super::super::card_content::view::state(content.state),
             "input": content.params,
             "output": content.output,
         })

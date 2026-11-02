@@ -20,6 +20,12 @@ fn expandable_section_preparation_retains_original_child_owner() {
     drop(value);
     assert_eq!(weak.upgrade().unwrap().get(), 19);
     assert_eq!(section.summary, "Literal <b>");
+    assert_eq!(
+        crate::test_support::prepared_view(&section),
+        Some(serde_json::json!({
+            "summary": "Literal <b>", "expanded": true, "children": [null]
+        }))
+    );
     // The section mounts the caller's own child, not a wrapper or a copy.
     let [captured] = section.children.as_slice() else {
         panic!("one captured child")

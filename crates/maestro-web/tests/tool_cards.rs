@@ -107,10 +107,7 @@ fn tool_card_recipes_own_borrowed_fields_without_reading_details() {
     assert!(owned.iter().all(|recipe| !recipe.is_custom));
     // The failed result paints each tool's glyph in the error state, with the borrowed command,
     // expression and time zone kept after their owners were dropped.
-    let views: Vec<_> = owned
-        .iter()
-        .map(|recipe| maestro_web::test_support::prepared_view(recipe.content.as_ref()).unwrap())
-        .collect();
+    let views: Vec<_> = owned.iter().map(recipes::view).collect();
     assert_eq!(
         views,
         [

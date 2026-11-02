@@ -294,7 +294,7 @@ fn json_mode_bypasses_custom_renderers_without_unregistering() {
     )
     .unwrap();
     assert_eq!(
-        maestro_web::test_support::prepared_view(shown.content.as_ref()).unwrap(),
+        crate::recipes::view(&shown),
         serde_json::json!({"state": "Error", "input": "{\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}",
             "output": "one\ntwo"})
     );

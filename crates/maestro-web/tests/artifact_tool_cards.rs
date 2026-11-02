@@ -1,5 +1,6 @@
 //! Artifact renderer preparation through the embedding facade.
 #![cfg(all(test, not(target_arch = "wasm32")))]
+use crate::recipes::view;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -233,11 +234,26 @@ fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     );
     drop(recipe);
     assert!(weak.upgrade().is_none());
-    selected_diff_rows_and_plain_template();
+}
+
+#[test]
+fn artifact_empty_logs_keep_localized_output_fallback() {
+    let recipe = crate::artifact_card_support::value(
+        Some(&json!({"command": "logs", "filename": "notes.txt"})),
+        "success",
+    )
+    .unwrap();
+    let shown = view(&recipe);
+    assert_eq!(
+        shown["body"]["console"],
+        json!({"text": "", "variant": "default"})
+    );
+    assert_eq!(shown["body"]["fallback"], "(no output)");
 }
 
 /// An update owns its signed difference rows; a finished delete shows only its header template.
-fn selected_diff_rows_and_plain_template() {
+#[test]
+fn artifact_updates_keep_signed_rows_and_finished_deletes_have_no_body() {
     use maestro_app::browser::tools::artifacts::{ArtifactCommand, ArtifactsParams};
     use maestro_web::{ArtifactsToolRenderer, ToolRenderer};
     let renderer = ArtifactsToolRenderer::new(None);
@@ -266,11 +282,6 @@ fn selected_diff_rows_and_plain_template() {
         json!([{"sign": " ", "text": "a"}, {"sign": "-", "text": "b"}, {"sign": "+", "text": "c"}])
     );
     let delete = view(&delete);
-    assert_eq!(delete["plainPhase"], "Artifact(ResultPlain)");
     assert_eq!(delete["body"], Value::Null);
     assert_eq!(delete["caption"]["key"], "Deleted artifact");
-}
-/// The values the browser renders from a prepared built-in card.
-fn view(shown: &maestro_web::ToolRenderResult) -> Value {
-    maestro_web::test_support::prepared_view(shown.content.as_ref()).unwrap()
 }

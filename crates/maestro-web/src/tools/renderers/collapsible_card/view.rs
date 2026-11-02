@@ -1,15 +1,38 @@
 //! Rendered values of a prepared disclosure card, projected for native tests.
-use super::{Body, CollapsibleCard, Content, Download};
+use super::{ArtifactTemplate, Body, CollapsibleCard, Content, Download, Phase};
 use crate::{
     dom::PreparedContent,
     tools::{
-        artifacts::ArtifactsToolRenderer, extract_document::ExtractDocumentRenderer,
-        javascript_repl::JavaScriptReplRenderer, renderers::card_content::view::variant,
+        artifacts::ArtifactsToolRenderer,
+        extract_document::ExtractDocumentRenderer,
+        javascript_repl::JavaScriptReplRenderer,
+        renderers::card_content::view::{state, variant},
     },
 };
 use serde_json::{Value, json};
 use std::any::Any;
 
+/// Selected visible template, independent of Rust variant names.
+fn phase(phase: Phase) -> &'static str {
+    match phase {
+        Phase::Pending => "pending",
+        Phase::Result => "result",
+        Phase::Artifact(template) => match template {
+            ArtifactTemplate::Preparing => "preparing",
+            ArtifactTemplate::PendingCode => "pending code",
+            ArtifactTemplate::PendingDiff => "pending difference",
+            ArtifactTemplate::PendingEmpty => "pending empty",
+            ArtifactTemplate::PendingPlain => "pending header",
+            ArtifactTemplate::ResultCode => "result code",
+            ArtifactTemplate::ResultDiff => "result difference",
+            ArtifactTemplate::ResultGet => "result file",
+            ArtifactTemplate::ResultLogs => "result logs",
+            ArtifactTemplate::ResultPlain => "result header",
+            ArtifactTemplate::ErrorEdit => "error edit",
+            ArtifactTemplate::ErrorPlain => "error header",
+        },
+    }
+}
 impl Download {
     /// The tile's file name and the text preview it opens with.
     fn view(&self) -> Value {
@@ -21,7 +44,7 @@ impl Body<PreparedContent> {
     /// Template identity and every subsection the disclosure shows.
     fn view(&self) -> Value {
         json!({
-            "phase": format!("{:?}", self.phase),
+            "phase": phase(self.phase),
             "url": self.url,
             "code": self.code.as_ref().map(|(code, language)| json!({"code": code, "language": language})),
             "console": self.console.as_ref().map(|(text, color)| json!({"text": text, "variant": variant(*color)})),
@@ -35,12 +58,12 @@ impl CollapsibleCard<PreparedContent> {
     /// Header status, glyph and caption with the disclosure, file tiles and plain output.
     fn view(&self) -> Value {
         json!({
-            "state": format!("{:?}", self.state),
+            "state": state(self.state),
             "glyph": self.glyph,
             "caption": self.caption.view(),
             "body": self.body.as_ref().map(Body::view),
             "attachments": self.attachments.iter().map(Download::view).collect::<Vec<_>>(),
-            "plainPhase": self.plain_phase.map(|phase| format!("{phase:?}")),
+            "plainPhase": self.plain_phase.map(phase),
             "error": self.error,
         })
     }
