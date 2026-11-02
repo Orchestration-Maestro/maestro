@@ -634,7 +634,7 @@ fn repeated_members_still_fail_when_the_request_is_read_from_text() {
         ),
         (
             "repeated usage member",
-            r#"{"messages": [{"role": "assistant", "content": [], "api": "chat", "provider": "faux", "model": "test", "usage": {"input": 7.0, "input": 8.0, "output": 3.0, "cacheRead": 2.0, "cacheWrite": 1.0}, "stopReason": "stop", "timestamp": 0.0}]}"#,
+            r#"{"messages": [{"role": "assistant", "content": [], "api": "chat", "provider": "faux", "model": "test", "usage": {"input": 7.0, "input": 8.0, "output": 3.0, "cacheRead": 2.0, "cacheWrite": 1.0, "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0, "cacheWrite": 0.0, "total": 0.0}}, "stopReason": "stop", "timestamp": 0.0}]}"#,
         ),
     ];
     for (row, text) in rows {
@@ -643,11 +643,12 @@ fn repeated_members_still_fail_when_the_request_is_read_from_text() {
             "{row} decoded"
         );
     }
-    // A single member still reads, so the refusal above is about the repetition alone.
-    assert!(
-        serde_json::from_str::<Context>(
-            r#"{"messages": [{"role": "user", "content": "hello", "timestamp": 1}]}"#
-        )
-        .is_ok()
-    );
+    // JSON values keep the last member, giving each row a nonduplicate control.
+    for (row, text) in rows {
+        let control: serde_json::Value = serde_json::from_str(text).unwrap();
+        assert!(
+            serde_json::from_value::<Context>(control).is_ok(),
+            "{row} failed without repetition"
+        );
+    }
 }
