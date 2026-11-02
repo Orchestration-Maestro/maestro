@@ -13,14 +13,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         if source == target {
             return false;
         }
-        let active = self
-            .active
-            .map(|index| self.topology.workspaces[index].id.clone());
-        let selected = self
-            .topology
-            .workspaces
-            .get(self.selected)
-            .map(|workspace| workspace.id.clone());
+        let (active, selected) = self.selection_identities();
         let workspace = self.topology.workspaces.remove(source);
         self.topology.workspaces.insert(target, workspace);
         self.restore_workspace_selection(active.as_deref(), selected.as_deref());
@@ -28,8 +21,23 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         true
     }
 
+    /// The identities of the active and the selected workspace, to restore them after the
+    /// list of workspaces changes.
+    pub(crate) fn selection_identities(&self) -> (Option<String>, Option<String>) {
+        let identity = |index: Option<usize>| {
+            index
+                .and_then(|index| self.topology.workspaces.get(index))
+                .map(|workspace| workspace.id.clone())
+        };
+        (identity(self.active), identity(Some(self.selected)))
+    }
+
     /// Rebinds positional selection after moving the original logical workspaces.
-    fn restore_workspace_selection(&mut self, active: Option<&str>, selected: Option<&str>) {
+    pub(crate) fn restore_workspace_selection(
+        &mut self,
+        active: Option<&str>,
+        selected: Option<&str>,
+    ) {
         self.active = active.and_then(|id| {
             self.topology
                 .workspaces

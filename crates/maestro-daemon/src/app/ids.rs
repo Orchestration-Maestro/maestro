@@ -90,6 +90,11 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         self.find_pane(pane).map(|_| pane)
     }
 
+    /// Forgets the historical numeric spelling that a newly admitted pane identity reuses.
+    pub fn remove_alias_shadowed_by_new_pane(&mut self, pane: PaneId) {
+        self.pane_id_aliases.remove(&pane.raw());
+    }
+
     /// Resolves stable pane numbers and historical raw or public aliases.
     #[must_use]
     pub fn parse_pane_id(&self, id: &str) -> Option<(usize, PaneId)> {
