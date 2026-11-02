@@ -69,8 +69,10 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
         .build()
         .unwrap()
         .block_on(async {
-            let mut command = Command::new("printf");
-            command.arg("nested");
+            let mut command = async_command(
+                child_programs::output_writer,
+                &[("CHILD_OUT", "6e6573746564")],
+            );
             assert_eq!(
                 spawn_sync(
                     &mut command,
@@ -84,12 +86,15 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
                 )
                 .unwrap()
                 .stdout,
-                b"nested"
+                harness(b"nested")
             );
-            maestro_process::spawn(Command::new("true"), None)
-                .unwrap()
-                .join()
-                .unwrap();
+            maestro_process::spawn(
+                child_programs::async_command(child_programs::output_writer, &[]),
+                None,
+            )
+            .unwrap()
+            .join()
+            .unwrap();
         });
 }
 
@@ -119,8 +124,10 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
         assert_eq!(source.raw_os_error(), native.raw_os_error());
         assert!(matches!(error, SpawnSyncError::Spawn(ref e) if e.kind() == kind));
     }
-    let mut command = Command::new("sh");
-    command.args(["-c", "printf done; exit 7"]);
+    let mut command = async_command(
+        child_programs::output_writer,
+        &[("CHILD_OUT", "646f6e65"), ("CHILD_EXIT", "7")],
+    );
     let output = spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
@@ -133,7 +140,7 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     )
     .unwrap();
     assert_eq!(output.status.code(), Some(7));
-    assert_eq!(output.stdout, b"done");
+    assert_eq!(output.stdout, harness(b"done"));
 }
 
 /// Source-observed combined buffer boundaries.

@@ -1,26 +1,32 @@
 //! Startup marker defaults through the existing native process owners.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::child_programs;
 use maestro_process::shell::Launch;
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
+use maestro_test_process::child::without_harness;
 use std::path::Path;
-use tokio::process::Command;
 
-/// A shell launch printing the marker, an unrelated entry, one literal argument and its
-/// working directory.
-fn probe() -> Launch {
+/// A launch of `program` from this test executable, with `operands` after the harness
+/// arguments.
+fn launch(program: impl Fn(), operands: &[&str]) -> Launch {
+    let command = child_programs::command(program, &[]);
+    let mut args: Vec<String> = command
+        .get_args()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect();
+    args.extend(operands.iter().map(|operand| (*operand).to_owned()));
     Launch {
-        executable: "sh".into(),
-        args: [
-            "-c",
-            "printf '%s|%s|%s|%s' \"$MAESTRO_CODING_AGENT\" \"$KEPT\" \"$1\" \"$PWD\"",
-            "sh",
-            "literal $HOME",
-        ]
-        .map(String::from)
-        .to_vec(),
+        executable: command.get_program().to_string_lossy().into_owned(),
+        args,
         verbatim: false,
     }
+}
+
+/// A launch of the environment probe, which prints the marker, an unrelated entry, one
+/// literal argument and its working directory.
+fn probe() -> Launch {
+    launch(child_programs::environment_probe, &["literal $HOME"])
 }
 
 /// Captured stdout of `launch` over `environment` in `cwd`.
@@ -30,7 +36,7 @@ fn output(launch: Launch, environment: &[(&str, &str)], cwd: Option<&Path>) -> S
         .output()
         .unwrap();
     assert!(output.status.success());
-    String::from_utf8(output.stdout).unwrap()
+    String::from_utf8(without_harness(&output.stdout)).unwrap()
 }
 
 #[test]
@@ -56,9 +62,8 @@ fn startup_child_default_keeps_explicit_marker_overlay() {
 /// The fixture supplies the unrelated `ONLY` itself and then removes it, so an edit that
 /// sets the key still shows through while the caller's own `ONLY` value cannot leak into
 /// the child.
-fn edited(edit: impl FnOnce(&mut Command)) -> String {
-    let mut command = Command::new("sh");
-    command.args(["-c", "printf '%s|%s' \"$MAESTRO_CODING_AGENT\" \"$ONLY\""]);
+fn edited(edit: impl FnOnce(&mut tokio::process::Command)) -> String {
+    let mut command = child_programs::async_command(child_programs::marker_probe, &[]);
     command.env("MAESTRO_CODING_AGENT", "true");
     command.env("ONLY", "ambient");
     command.env_remove("ONLY");
@@ -74,7 +79,7 @@ fn edited(edit: impl FnOnce(&mut Command)) -> String {
         },
     )
     .unwrap();
-    String::from_utf8_lossy(&output.stdout).into_owned()
+    String::from_utf8_lossy(&without_harness(&output.stdout)).into_owned()
 }
 
 #[test]
@@ -149,7 +154,10 @@ fn sdk_children_keep_ambient_marker() {
         .await
         .unwrap()
     });
-    assert_eq!(String::from_utf8(captured.stdout).unwrap(), expected);
+    assert_eq!(
+        String::from_utf8(without_harness(&captured.stdout)).unwrap(),
+        expected
+    );
 }
 
 #[test]
@@ -160,23 +168,17 @@ fn startup_child_default_keeps_launch_context() {
         .unwrap();
     assert_eq!(captured.status.code(), Some(0));
     assert_eq!(captured.stderr, Vec::<u8>::new());
-    let stdin_eof = Launch {
-        executable: "sh".into(),
-        args: vec![
-            "-c".into(),
-            "if read line; then printf 'data'; else printf 'eof'; fi".into(),
-        ],
-        verbatim: false,
-    };
-    assert_eq!(output(stdin_eof, &[], None), "eof");
-    let status = Launch {
-        executable: "sh".into(),
-        args: vec!["-c".into(), "exit 7".into()],
-        verbatim: false,
-    }
-    .with_context([("MAESTRO_CODING_AGENT", "true")], None)
-    .output()
-    .unwrap();
+    assert_eq!(
+        output(launch(child_programs::input_state, &[]), &[], None),
+        "eof"
+    );
+    let status = launch(child_programs::output_writer, &[])
+        .with_context(
+            [("MAESTRO_CODING_AGENT", "true"), ("CHILD_EXIT", "7")],
+            None,
+        )
+        .output()
+        .unwrap();
     assert_eq!(status.status.code(), Some(7));
     let missing = Launch {
         executable: "/nonexistent/maestro-child".into(),
@@ -212,8 +214,10 @@ fn executable_marker_default_precedes_explicit_child_edits() {
         (Some(None), ""),
         (Some(Some("custom")), "custom"),
     ] {
-        let mut command = maestro_process::command("/bin/sh");
-        command.args(["-c", "printf %s \"$MAESTRO_CODING_AGENT\""]);
+        let fixture = child_programs::command(child_programs::marker_value, &[]);
+        let mut command =
+            maestro_process::command(fixture.get_program().to_string_lossy().as_ref());
+        command.args(fixture.get_args());
         match edit {
             Some(None) => {
                 command.env_remove("MAESTRO_CODING_AGENT");
@@ -235,6 +239,9 @@ fn executable_marker_default_precedes_explicit_child_edits() {
         )
         .unwrap();
         assert!(output.status.success());
-        assert_eq!(String::from_utf8(output.stdout).unwrap(), expected);
+        assert_eq!(
+            String::from_utf8(without_harness(&output.stdout)).unwrap(),
+            expected
+        );
     }
 }

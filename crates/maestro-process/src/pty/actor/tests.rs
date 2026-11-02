@@ -5,6 +5,8 @@ use super::{
     controls::Admission,
     unix::{Owner, ReadCallback, ReaderExitCallback},
 };
+use crate::child_process::tests::children;
+use maestro_test_process::child::without_harness;
 use std::os::fd::AsRawFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -1424,19 +1426,59 @@ fn exit_hook_cancellation_releases_master() {
 #[test]
 fn restored_master_is_not_inherited_by_children() {
     crate::child_process::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("restored_master_is_not_inherited_by_children").unwrap(){return;}
-        let (master,_slave)=terminal_pair();
-        rustix::io::fcntl_setfd(&master,rustix::io::FdFlags::empty()).unwrap();
-        assert!(!rustix::io::fcntl_getfd(&master).unwrap().contains(rustix::io::FdFlags::CLOEXEC));
-        let number=master.as_raw_fd();
-        let handle=PtyIoActor::spawn(PtyIoActorConfig {pane_id:5,master_fd:master,initially_quiesced:true,
-            on_read:Box::new(|_|PtyReadResult::default()),on_reader_exit:None}).unwrap();
-        let info=std::fs::read_to_string(format!("/proc/self/fdinfo/{number}")).unwrap();
-        let flags=info.lines().find_map(|line|line.strip_prefix("flags:")).unwrap().trim();
-        let cloexec=u64::from_str_radix(flags,8).unwrap() & u64::from(rustix::fs::OFlags::CLOEXEC.bits()) != 0;
-        let output=std::process::Command::new("/bin/sh").args(["-c",r#"if [ -e "/proc/self/fd/$MAESTRO_TEST_MASTER_FD" ]; then printf leaked; else printf closed; fi"#])
-            .env("MAESTRO_TEST_MASTER_FD",number.to_string()).output().unwrap();
-        assert!(output.status.success());handle.release_after_commit().await.unwrap();
-        assert_eq!((cloexec,output.stdout),(true,b"closed".to_vec()));
+        if maestro_test_process::run_alone("restored_master_is_not_inherited_by_children").unwrap()
+        {
+            return;
+        }
+        let (master, _slave) = terminal_pair();
+        rustix::io::fcntl_setfd(&master, rustix::io::FdFlags::empty()).unwrap();
+        assert!(
+            !rustix::io::fcntl_getfd(&master)
+                .unwrap()
+                .contains(rustix::io::FdFlags::CLOEXEC)
+        );
+        let number = master.as_raw_fd();
+        let handle = PtyIoActor::spawn(PtyIoActorConfig {
+            pane_id: 5,
+            master_fd: master,
+            initially_quiesced: true,
+            on_read: Box::new(|_| PtyReadResult::default()),
+            on_reader_exit: None,
+        })
+        .unwrap();
+        let info = std::fs::read_to_string(format!("/proc/self/fdinfo/{number}")).unwrap();
+        let flags = info
+            .lines()
+            .find_map(|line| line.strip_prefix("flags:"))
+            .unwrap()
+            .trim();
+        let cloexec = u64::from_str_radix(flags, 8).unwrap()
+            & u64::from(rustix::fs::OFlags::CLOEXEC.bits())
+            != 0;
+        let output = children::command(master_descriptor_probe, &[])
+            .env("MAESTRO_TEST_MASTER_FD", number.to_string())
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        handle.release_after_commit().await.unwrap();
+        assert_eq!(
+            (cloexec, without_harness(&output.stdout)),
+            (true, b"closed".to_vec())
+        );
     });
+}
+
+/// Reports whether the descriptor `MAESTRO_TEST_MASTER_FD` names reached this process.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn master_descriptor_probe() {
+    let number = maestro_test_process::child::variable("MAESTRO_TEST_MASTER_FD").unwrap();
+    let descriptor = format!("/proc/self/fd/{number}");
+    let answer = if std::path::Path::new(&descriptor).exists() {
+        &b"leaked"[..]
+    } else {
+        b"closed"
+    };
+    maestro_test_process::child::write_stdout(answer).unwrap();
+    maestro_test_process::child::leave(0)
 }
