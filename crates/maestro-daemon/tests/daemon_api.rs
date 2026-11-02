@@ -56,7 +56,6 @@ fn undelivered_families_use_one_source_fallback() {
         json!({"type": "session.snapshot"}),
         json!({"type": "worktree.list"}),
         json!({"type": "agent.list"}),
-        json!({"type": "layout.export"}),
         json!({"type": "events.wait", "match_event": {"event": "workspace_created"}}),
         json!({"type": "integration.install", "target": "pi"}),
         json!({"type": "action.list"}),
