@@ -286,12 +286,23 @@ fn exec_timeout_is_opt_in_and_released_after_completion() {
                 "{timeout:?}"
             );
         }
-        let (_root, waiting) = payload(&json!({"scenario": "blocked", "code": 7}));
+    });
+    runtime::run_paused(async {
+        let timeout = Duration::from_millis(50);
+        let (listener, port) = blocking_listener();
+        let (_root, waiting) = payload(&json!({"scenario": "blocked", "code": 7, "port": port}));
         let options = ExecOptions {
             signal: None,
-            timeout: Some(Duration::from_secs(1)),
+            timeout: Some(timeout),
         };
-        let result = run(&waiting, &[], options).await;
+        let exec = run(&waiting, &[], options);
+        tokio::pin!(exec);
+        assert!(poll_once(&mut exec).await.is_pending(), "spawned");
+        let _socket = accept_ready(&listener);
+        tokio::time::advance(timeout).await;
+        // Keep native exit delivery from racing an automatically advanced escalation clock.
+        tokio::time::resume();
+        let result = exec.await;
         assert_eq!(
             (result.code, result.killed),
             (7, true),

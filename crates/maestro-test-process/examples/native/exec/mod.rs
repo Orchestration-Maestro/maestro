@@ -66,6 +66,8 @@ pub(super) enum Record {
     Blocked {
         /// Exit code to report once the termination signal was handled.
         code: Option<i32>,
+        /// Optional parent-owned channel announcing that TERM is registered.
+        port: Option<u16>,
     },
     /// Write grace bytes into another process's output descriptor.
     Grace {
@@ -159,7 +161,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         Record::Yielding { port } => payloads::yielding(*port),
         Record::TreeRoot { port } => payloads::tree_root(*port),
         Record::TreeLeaf { port } => payloads::tree_leaf(*port),
-        Record::Blocked { code } => payloads::blocked(*code),
+        Record::Blocked { code, port } => payloads::blocked(*code, *port),
         Record::Grace { pid } => payloads::grace(*pid),
     }
 }

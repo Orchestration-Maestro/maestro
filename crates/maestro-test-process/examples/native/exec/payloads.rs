@@ -180,13 +180,17 @@ pub(super) fn tree_leaf(port: u16) -> io::Result<()> {
     receive(&mut socket).map(|_| ())
 }
 
-/// Finish after one termination signal, without polling or a deadline, reporting that
-/// signal with `code` when one is asked for.
-pub(super) fn blocked(code: Option<i32>) -> io::Result<()> {
+/// Finish after one termination signal, reporting it with `code` when supplied.
+/// Announce readiness on `port`, when supplied, only after registering TERM.
+pub(super) fn blocked(code: Option<i32>, port: Option<u16>) -> io::Result<()> {
     use std::os::unix::net::UnixStream;
     let (mut notifications, writer) = UnixStream::pair()?;
     let _registration =
         signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
+    let mut socket = port.map(connect).transpose()?;
+    if let Some(socket) = &mut socket {
+        announce(socket, "READY")?;
+    }
     let mut byte = [0];
     notifications.read_exact(&mut byte)?;
     match code {
