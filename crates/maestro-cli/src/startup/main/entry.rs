@@ -188,6 +188,14 @@ async fn run_entry(
         (&host, offline, &mut timings),
     )
     .await?;
+    maestro_app::configure_http_dispatcher(
+        prepared
+            .runtime
+            .services()
+            .settings_manager
+            .borrow()
+            .get_http_idle_timeout_ms()?,
+    )?;
     if show_metadata(&prepared, &host)? {
         return Ok(0);
     }

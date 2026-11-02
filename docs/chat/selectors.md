@@ -183,8 +183,11 @@ image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
 autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`, and the HTTP idle
 timeout through `30 sec`, `1 min`, `2 min`, `5 min` and `disabled` (reported as
 `30000`, `60000`, `120000`, `300000` and `0` milliseconds; an unmatched value
-displays as its seconds). Interactive mode saves the chosen limit and
-shows `HTTP idle timeout: <label>` in the transcript. An unmatched value
+displays as its seconds). Interactive mode saves the chosen limit, applies it to
+the next shared-client request and shows `HTTP idle timeout: <label>` in the
+transcript. An invalid stored limit prevents the panel from opening and reports
+`Invalid httpIdleTimeoutMs setting: <value>`; invalid edits leave storage unchanged.
+An unmatched value
 advances to the first choice. These fixed decimal choices report `f64` values;
 boolean choices report `bool` values.
 

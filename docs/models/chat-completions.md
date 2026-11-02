@@ -201,8 +201,8 @@ need no retry policy; replace it with `StreamOptions::fetch`, a function from
 timeout elapses, or the response status is 408, 409, 429 or at least 500;
 `x-should-retry: true` or `false` overrides the status. A 2xx response is accepted as it
 is: neither `x-should-retry` nor the retry hints below are read for it. The default is
-two retries and a 600,000-millisecond timeout that ends when the response headers arrive,
-so a slow body is not cut short. Before a retry of a response, the wait comes from
+two retries and a 600,000-millisecond setup timeout that ends when the response
+headers arrive. The shared native client's separate idle limit covers body chunks too. Before a retry of a response, the wait comes from
 `retry-after-ms` when it is nonzero, else from `retry-after` as seconds or an HTTP date (a
 past date means no wait), else from a zero `retry-after-ms`; with no usable hint, and after
 a connection failure or a timeout, it is `min(0.5 * 2^n, 8)` seconds reduced by up to a
@@ -213,6 +213,14 @@ is sent, including a retry count beyond what a 64-bit integer holds. The retry c
 exact integer budget, so even a very large count is used up one retry at a time. Aborting
 the signal interrupts a pending request, the read of an error body or a retry wait, and on
 browser targets the timers of requests that finish, fail or are aborted are cleared.
+
+The shared native client starts with a 300,000 ms idle limit for response headers
+and the gap between body chunks. `configure_http_dispatcher(timeout_ms)` replaces
+the client for subsequent requests. Fractional milliseconds are floored; `0`
+disables both limits. Header waiting
+includes connecting and sending. This setting does not change private clients
+or browser transport, and disabling it leaves the provider's setup timeout in
+place.
 
 HTTP responses carry `status_text`; see [`default_fetch`](https://docs.rs/maestro-models/latest/maestro_models/fn.default_fetch.html) for the default client's platform policy.
 

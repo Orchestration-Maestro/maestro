@@ -428,7 +428,23 @@ save:
 | `retry.provider.timeoutMs` | number | unset | Optional timeout passed to the model provider |
 | `retry.provider.maxRetries` | number | unset | Optional retry limit passed to the model provider |
 | `retry.provider.maxRetryDelayMs` | number | `60000` | Largest accepted provider retry delay in milliseconds |
-| `httpIdleTimeoutMs` | number or `disabled` | `300000` | Longest wait, in whole milliseconds, for HTTP response headers or the next body chunk; `0` and `disabled` remove the limit; a negative or unusable value reads as the default; the setter ignores a negative or non-finite value |
+| `httpIdleTimeoutMs` | number or string | `300000` | Longest wait, in whole milliseconds, for HTTP response headers or the next body chunk; `0` and `disabled` remove the limit |
+
+The HTTP idle timeout accepts nonnegative finite numbers, numeric strings with
+optional surrounding whitespace, and `disabled` in any letter case. Numbers are
+floored. An absent setting takes `300000`; an invalid stored value returns
+`Invalid httpIdleTimeoutMs setting: <value>`. Strings appear as their text;
+other rejected values appear as compact JSON. The setter returns the same error
+for a negative or non-finite number without changing memory or the settings file.
+Both accessors return `Result` with `InvalidHttpIdleTimeout` as the error.
+
+The shared native HTTP client starts with a 300,000 ms idle limit. Startup,
+session replacement, a settings-panel change and reload apply the current
+setting to subsequent shared-client requests. The limit covers the wait for
+headers, including connecting and sending, and restarts after each body chunk.
+Private clients, including the cloud conversation transport and proxy-script
+fetches, keep their own limits. Browser requests use the platform client. Embedders apply
+the setting with [`configure_http_dispatcher`](application/sdk.md#requests).
 
 The crate stores and returns these values; applying them belongs to the callers.
 

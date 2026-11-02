@@ -4,7 +4,10 @@ pub use maestro_settings::{
     DoubleEscapeAction, MessageDeliveryMode, TransportSetting, TreeFilterMode, WarningSettings,
 };
 
-pub use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};
+#[doc(inline)]
+pub use maestro_settings::{
+    InvalidHttpIdleTimeout, PackageSource, Settings, SettingsListEntry, SettingsManager,
+};
 
 pub use maestro_settings::SettingsScope;
 

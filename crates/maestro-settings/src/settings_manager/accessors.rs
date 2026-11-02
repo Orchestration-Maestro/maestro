@@ -26,6 +26,25 @@ fn idle_timeout(value: &Value) -> Option<f64> {
     (milliseconds.is_finite() && milliseconds >= 0.0).then(|| milliseconds.floor())
 }
 
+/// An idle timeout setting that is not a nonnegative finite number or `disabled`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InvalidHttpIdleTimeout {
+    /// The rejected value as authored text or compact JSON.
+    value: String,
+}
+
+impl std::fmt::Display for InvalidHttpIdleTimeout {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "Invalid httpIdleTimeoutMs setting: {}",
+            self.value
+        )
+    }
+}
+
+impl std::error::Error for InvalidHttpIdleTimeout {}
+
 impl SettingsManager {
     /// Borrows a top-level string.
     pub(super) fn text(&self, field: &str) -> Option<&str> {
@@ -326,21 +345,33 @@ impl SettingsManager {
     /// Returns the HTTP header or body idle timeout in milliseconds (default 300000).
     ///
     /// A stored number is floored; the text `disabled` and the number 0 mean no limit.
-    /// A negative, non-numeric or wrong-typed value reads as the default.
-    #[must_use]
-    pub fn get_http_idle_timeout_ms(&self) -> f64 {
-        self.effective
-            .get("httpIdleTimeoutMs")
-            .and_then(idle_timeout)
-            .unwrap_or(DEFAULT_HTTP_IDLE_TIMEOUT_MS)
+    ///
+    /// # Errors
+    /// Returns the rejected value when the stored setting is unusable.
+    pub fn get_http_idle_timeout_ms(&self) -> Result<f64, InvalidHttpIdleTimeout> {
+        let Some(value) = self.effective.get("httpIdleTimeoutMs") else {
+            return Ok(DEFAULT_HTTP_IDLE_TIMEOUT_MS);
+        };
+        idle_timeout(value).ok_or_else(|| InvalidHttpIdleTimeout {
+            value: value.as_str().map_or_else(
+                || maestro_json::compact_json(value).unwrap_or_else(|error| error.to_string()),
+                str::to_owned,
+            ),
+        })
     }
 
     /// Stores the HTTP header or body idle timeout in whole milliseconds; 0 disables it.
-    /// A negative or non-finite value is ignored.
-    pub fn set_http_idle_timeout_ms(&mut self, value: f64) {
-        if value.is_finite() && value >= 0.0 {
-            self.set_global("httpIdleTimeoutMs", number(value.floor()));
+    ///
+    /// # Errors
+    /// Refuses a negative or non-finite value without changing memory or storage.
+    pub fn set_http_idle_timeout_ms(&mut self, value: f64) -> Result<(), InvalidHttpIdleTimeout> {
+        if !value.is_finite() || value < 0.0 {
+            return Err(InvalidHttpIdleTimeout {
+                value: ryu_js::Buffer::new().format(value).to_owned(),
+            });
         }
+        self.set_global("httpIdleTimeoutMs", number(value.floor()));
+        Ok(())
     }
 
     /// Returns whether thinking blocks are hidden (default false).

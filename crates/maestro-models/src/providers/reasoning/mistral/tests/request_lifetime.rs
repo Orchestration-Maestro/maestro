@@ -113,22 +113,13 @@ async fn setup_lifetime() {
     for supplied in [false, true] {
         let signal = supplied.then(crate::Cancellation::new);
         let (fetch, producer) = delayed_fetch();
-        let mut send = Box::pin(request::send(prepared(fetch, signal.clone()).await));
+        let mut send = Box::pin(request::send(prepared(fetch, signal).await));
         pending(send.as_mut()).await;
-        tokio::time::advance(Duration::from_secs(31)).await;
-        if let Some(signal) = signal {
-            pending(send.as_mut()).await;
-            signal.abort();
-        }
+        tokio::time::advance(Duration::from_millis(59_999)).await;
+        pending(send.as_mut()).await;
+        tokio::time::advance(Duration::from_millis(1)).await;
         let error = ready(send.as_mut()).await.err().unwrap().message;
-        assert!(
-            error.starts_with(if supplied {
-                "Request aborted by client"
-            } else {
-                "Request timed out"
-            }),
-            "{error}"
-        );
+        assert_eq!(error, "Request timed out.", "supplied signal: {supplied}");
         assert!(
             producer.is_closed(),
             "completed send must drop pending client work"
@@ -145,7 +136,7 @@ async fn body_lifetime() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Caller signals disable the deadline, then end the same body on abort.
+/// A caller signal ends the body before the default deadline.
 async fn supplied_body_and_teardown() {
     let signal = crate::Cancellation::new();
     let (fetch, producer) = delayed_fetch();
@@ -156,7 +147,7 @@ async fn supplied_body_and_teardown() {
     let mut body = send.await.unwrap();
     let mut next = Box::pin(body.next());
     pending(next.as_mut()).await;
-    tokio::time::advance(Duration::from_secs(60)).await;
+    tokio::time::advance(Duration::from_secs(1)).await;
     pending(next.as_mut()).await;
     signal.abort();
     assert_eq!(next.await, Some(Err(crate::FetchError::Aborted)));
@@ -197,7 +188,7 @@ async fn hook_lifetime() {
         let mut send = Box::pin(request::send(prepare.await.unwrap()));
         if !aborted {
             pending(send.as_mut()).await;
-            tokio::time::advance(Duration::from_secs(29)).await;
+            tokio::time::advance(Duration::from_secs(59)).await;
             pending(send.as_mut()).await;
             tokio::time::advance(Duration::from_secs(1)).await;
         }
@@ -232,7 +223,7 @@ async fn immediate_headers() {
         Box::pin(async { Ok(response) })
     });
     let mut body = request::send(prepared(fetch, None).await).await.unwrap();
-    tokio::time::advance(Duration::from_secs(31)).await;
+    tokio::time::advance(Duration::from_secs(61)).await;
     assert_eq!(
         ready(Box::pin(body.next()).as_mut()).await,
         Some(Err(crate::FetchError::Timeout))
@@ -275,9 +266,9 @@ async fn body_deadline(late_chunk: bool) {
     let remaining = if late_chunk {
         chunks.send(Ok(b"late".to_vec())).unwrap();
         assert_eq!(body.next().await.unwrap().unwrap(), b"late");
-        30
+        60
     } else {
-        10
+        40
     };
     let mut next = Box::pin(body.next());
     times_out_after(next.as_mut(), remaining).await;
@@ -372,7 +363,7 @@ async fn error_body_lifetime() {
     error_response.status = 500;
     producer.send(error_response).ok().unwrap();
     pending(send.as_mut()).await;
-    tokio::time::advance(Duration::from_secs(30)).await;
+    tokio::time::advance(Duration::from_secs(60)).await;
     assert_eq!(
         ready(send.as_mut()).await.err().unwrap().message,
         "Request timed out."

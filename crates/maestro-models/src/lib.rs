@@ -44,6 +44,8 @@ pub use providers::chat::openai_completions::{
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
+#[cfg(not(target_arch = "wasm32"))]
+pub use providers::http::configure_http_dispatcher;
 pub use providers::http::{
     Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
 };
