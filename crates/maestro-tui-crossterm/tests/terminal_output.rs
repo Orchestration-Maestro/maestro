@@ -1004,3 +1004,118 @@ fn assert_closed_writer(writer: &mut maestro_tui_crossterm::terminal::output::Ou
         std::io::ErrorKind::BrokenPipe
     );
 }
+
+#[test]
+fn native_standard_output_writer_follows_terminal_lifecycle() {
+    isolated!(1, &[], standard_output_to_regular_file);
+    isolated!(&[], || {
+        use std::io::Write;
+        let rig = Rig::paused();
+        let _input = pipe_input();
+        let output = pipe_output();
+        let mut terminal = ProcessTerminal::new(rig.local());
+        let mut standard = terminal.standard_output_writer();
+        send_sync(&standard);
+        standard.write_all(b"before").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(output.take(), "before");
+        assert!(terminal.start(Box::new(|_| {}), Box::new(|| {})).is_err());
+        standard.write_all(b"failed-start").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(output.take(), "failed-start");
+        rig.run(async {
+            for _ in 0..2 {
+                terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+                output.written(START_BYTES).await;
+                let mut generation = terminal.output_writer().unwrap();
+                terminal.write("frame-a").unwrap();
+                let mut foreign = standard.clone();
+                std::thread::spawn(move || {
+                    foreign.write_all(b"guest").unwrap();
+                    foreign.flush().unwrap();
+                })
+                .join()
+                .unwrap();
+                terminal.write("frame-b").unwrap();
+                assert!(
+                    output.take().is_empty(),
+                    "guest bypassed queued host frames"
+                );
+                terminal.stop().unwrap();
+                assert_eq!(output.take(), "frame-aguestframe-b\x1b[?2004l\x1b[<u");
+                assert_closed_writer(&mut generation);
+                standard.write_all(b"suspended").unwrap();
+                standard.flush().unwrap();
+                assert_eq!(output.take(), "suspended");
+            }
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            output.written(START_BYTES).await;
+            standard.write_all(b"last").unwrap();
+            drop(terminal);
+            assert_eq!(output.take(), "last\x1b[?2004l\x1b[<u");
+        });
+        standard.write_all(b"after-drop").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(output.take(), "after-drop");
+        drop(output);
+        standard.write_all(b"refused").unwrap();
+        assert_eq!(
+            standard.flush().unwrap_err().kind(),
+            std::io::ErrorKind::BrokenPipe
+        );
+    });
+}
+
+/// A synchronous destination is visible before stop and keeps the caller's byte errors.
+fn standard_output_to_regular_file() {
+    use std::io::Write;
+    let rig = Rig::paused();
+    let _input = pipe_input();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("regular");
+    let file = fs::File::create(&path).unwrap();
+    rustix::stdio::dup2_stdout(&file).unwrap();
+    let mut terminal = ProcessTerminal::new(rig.local());
+    let mut standard = terminal.standard_output_writer();
+    rig.run(async {
+        terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+        standard.write_all(b"regular").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            format!("{START_BYTES}regular").as_bytes()
+        );
+        assert!(terminal.output_writer().is_none());
+        terminal.stop().unwrap();
+        standard.write_all(b"after").unwrap();
+        standard.flush().unwrap();
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            format!("{START_BYTES}regular\x1b[?2004l\x1b[<uafter").as_bytes()
+        );
+    });
+}
+
+#[test]
+fn standard_output_preserves_partial_progress_and_reports_flush_failure() {
+    isolated!(&[], || {
+        use std::io::Write;
+        let _rig = Rig::paused();
+        let output = pipe_output();
+        fcntl_setfl(stdout(), fcntl_getfl(stdout()).unwrap() | OFlags::NONBLOCK).unwrap();
+        let mut standard = maestro_tui_crossterm::terminal::output::StandardOutput::default();
+        let bytes = vec![b'x'; 2 * 1024 * 1024];
+        let written = standard
+            .write(&bytes)
+            .expect("partial progress is successful");
+        assert!(written > 0 && written < bytes.len());
+        assert_eq!(standard.write(b"tail").unwrap(), 4);
+        assert_eq!(
+            standard.flush().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+        assert_eq!(output.take().as_bytes(), &bytes[..written]);
+        standard.flush().unwrap();
+        assert_eq!(output.take(), "tail");
+    });
+}

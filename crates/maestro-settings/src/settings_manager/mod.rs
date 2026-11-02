@@ -29,6 +29,7 @@ use persistence::Queue;
 pub use base_layer::BaseSettingsLayer;
 pub use decision::{
     DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsDecider, SettingsDeciderHandle,
+    SettingsEdit,
 };
 pub use entries::{FilteredPackage, PackageSource, SettingsListEntry};
 #[cfg(not(target_arch = "wasm32"))]

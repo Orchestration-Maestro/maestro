@@ -45197,6 +45197,25 @@
         },
         "width": 80
       },
+      "expected_macos": [
+        "                                                                                ",
+        "\u001b[38;5;3mfile 0\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 1\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 2\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 3\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 4\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 5\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 6\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 7\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 8\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 9\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 10\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 11\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 12\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 13\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 14\u001b[39m\u001b[38;5;4m                                                                         ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7moption+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m                                          "
+      ],
       "expected": [
         "                                                                                ",
         "\u001b[38;5;3mfile 0\u001b[39m                                                                          ",
@@ -45244,6 +45263,25 @@
         },
         "width": 80
       },
+      "expected_macos": [
+        "                                                                                ",
+        "\u001b[38;5;3mfile 0\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 1\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 2\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 3\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 4\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 5\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 6\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 7\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 8\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 9\u001b[39m                                                                          ",
+        "\u001b[38;5;3mfile 10\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 11\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 12\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 13\u001b[39m                                                                         ",
+        "\u001b[38;5;3mfile 14\u001b[39m\u001b[38;5;4m                                                                         ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7moption+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m\u001b[38;5;4m)\u001b[39m                                   "
+      ],
       "expected": [
         "                                                                                ",
         "\u001b[38;5;3mfile 0\u001b[39m                                                                          ",
