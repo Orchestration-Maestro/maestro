@@ -802,19 +802,24 @@ records it in the bundle manifest, so a shard validates the same files without C
 preparation fingerprints is not matched or a pattern names anything else, so a new
 dependency of a built crate needs its pattern. Markdown that crates embed only as
 documentation changes no staged file, so no pattern names it. The command runs the existing
-component-discovery example from a separate build directory with a user cache of its own, then stages the
-component files, the compiled code the example left in that cache, that built example,
+component-discovery example from a separate build directory, then stages the
+component files, the compiled code the example left in the engine's cache, that built example,
 the browser graph described under [Browser author build](#browser-author-build), the
 development tool itself and a content manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
-namespace that does not end in that time or on more than one, and stages none when the host
-keeps its cache elsewhere. Shared CI transfers
+namespace that does not end in that time or on more than one. The setup example's
+`--cache-directory` mode reports the engine's selected cache directory as one absolute
+JSON path without building or warming components. Preparation queries that directory once
+on its host before seeding or warming; installation queries it again on the test host. A failed query,
+empty reply or nonabsolute path stops setup. Host paths are not stored in the bundle.
+`XDG_CACHE_HOME` still isolates preparation's Linux cache under its target directory;
+Windows and macOS use the locations the engine reports. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
 compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the user cache (`XDG_CACHE_HOME`, else `~/.cache`) under the
-modification time that copy of the example has, and writes the component paths to
+installs the compiled code in the engine-reported cache under the modification time that
+copy of the example has, and writes the component paths to
 `NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
@@ -1123,13 +1128,37 @@ An unknown or malformed record fails before connecting or writing the optional
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
 
-The preparation tests also use a `tooling-cargo` record with the real Cargo path
-and an existing setup-example template path. That scenario forwards metadata,
-accepts the existing Clippy probe and stages the two preparation examples. On Unix,
-metadata replaces the fixture process, keeping its native PID and signal delivery. The
-remaining setup-example templates still use their existing shell fixtures until
-their owning conversion lands. Typed isolated native setup is planned; current
-Unix `shell_setup` remains available during that conversion.
+The preparation tests use a `tooling-cargo` record with the real Cargo path and
+an author-record template path. It forwards metadata, accepts the Clippy probe
+and stages native copies of both preparation examples. On Unix, metadata replaces
+the fixture process, keeping its native PID and signal delivery.
+
+The author example reads a `tooling-author` line followed by one JSON scenario.
+For example:
+
+```text
+tooling-author
+{"scenario":"cached","engine":"fixture"}
+```
+
+`cached` exports supplied component paths and writes compiled-code observations;
+`engine` is `fixture` or `newer`. `plain` exports without writing compiled code.
+`malformed` writes an invalid environment entry, and `unstable` changes a source
+after export. `misplaced` writes a cache namespace with the wrong executable time;
+`split` writes two namespaces. `marked` builds only unsupplied components and
+writes their dependency files. Unknown scenarios, engines and fields fail before
+preparation effects.
+
+`prepare_author_component --cache-directory` reports one absolute JSON path and
+creates no environment file, component, cache entry or observation log. The fixture
+uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
+fails the query and stops setup before cache installation. The built alias has a
+sibling record. When a test exercises product copying or relocation,
+set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
+explicitly; the product does not copy fixture sidecars. Only the author-example
+alias reads this selector, so nested Cargo and other aliases retain their own
+records. Other tooling fixture families and Unix `shell_setup` keep their existing
+contracts.
 
 #### Application RPC peers
 

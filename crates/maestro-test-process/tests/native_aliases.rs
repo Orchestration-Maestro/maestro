@@ -114,6 +114,46 @@ fn path_aliases_keep_native_operands_pid_environment_and_raw_streams() {
     }
 }
 
+/// A copied preparation example reports its cache without exporting components or writing logs.
+#[test]
+fn author_cache_query_has_no_preparation_effects() {
+    let root = Scratch::new().unwrap();
+    let alias = root.path().join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    install_executable(&artifact(), &alias).unwrap();
+    std::fs::write(
+        root.path().join("author-record"),
+        "tooling-author\n{\"scenario\":\"cached\",\"engine\":\"fixture\"}\n",
+    )
+    .unwrap();
+    let cache = root.path().join("private cache");
+    let environment = root.path().join("nextest-env");
+
+    let output = Command::new(alias)
+        .arg("--cache-directory")
+        .current_dir(root.path())
+        .env("MAESTRO_NATIVE_RECORD", root.path().join("author-record"))
+        .env("XDG_CACHE_HOME", &cache)
+        .env("NEXTEST_ENV", &environment)
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        serde_json::from_slice::<PathBuf>(&output.stdout).unwrap(),
+        cache.join("wasmtime")
+    );
+    assert!(!environment.exists());
+    assert!(!cache.exists());
+    assert!(!root.path().join("seen").exists());
+}
+
 /// Invalid selectors and records fail before fixture or installation effects.
 #[test]
 fn invalid_native_requests_leave_the_effect_sentinel_absent() {

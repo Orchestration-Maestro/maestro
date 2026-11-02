@@ -4,6 +4,7 @@ use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
+mod author;
 mod cargo;
 mod credentials;
 mod observe;
@@ -20,6 +21,8 @@ enum Request {
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Run a copied preparation example against its checkout-local declaration.
+    Author(author::Record, Vec<OsString>),
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
@@ -34,6 +37,14 @@ impl Request {
     /// Parse a private operation or the installed alias's sibling record.
     fn read(args: Vec<OsString>) -> io::Result<Self> {
         let executable = std::env::current_exe()?;
+        // Copied preparation examples receive their record through an explicit caller selector.
+        if executable
+            .file_stem()
+            .is_some_and(|name| name == "prepare_author_component")
+            && let Some(record) = std::env::var_os("MAESTRO_NATIVE_RECORD")
+        {
+            return Self::record(Path::new(&record), args);
+        }
         if executable
             .file_stem()
             .is_none_or(|name| name != "native_fixture")
@@ -61,6 +72,7 @@ impl Request {
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
             Some("credentials") => Ok(Self::Credentials(
                 credentials::Record::parse(&text)?,
                 operands,
@@ -80,6 +92,7 @@ pub(super) fn run() -> io::Result<()> {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        Request::Author(record, operands) => author::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
