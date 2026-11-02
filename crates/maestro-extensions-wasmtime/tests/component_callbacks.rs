@@ -132,7 +132,7 @@ async fn theme_ownership(
 #[test]
 fn component_methods_share_retained_state_and_callback_scope() {
     local(async {
-        let pair = Pair::new().await;
+        let mut pair = Pair::new().await;
         let view = render(&renderer(&pair.a, "echo-view"), &message("component"), true)
             .unwrap()
             .unwrap();
@@ -158,12 +158,12 @@ fn component_methods_share_retained_state_and_callback_scope() {
             view.try_render(3).unwrap(),
             lines(3, "\u{1b}[A| literal \u{96ea} ", 1)
         );
-        each_method_returns_before_delivery_ends(&pair).await;
+        each_method_returns_before_delivery_ends(&mut pair).await;
     });
 }
 
 /// Each method's same-instance listener runs inside it; the other instance's after it returns.
-async fn each_method_returns_before_delivery_ends(pair: &Pair) {
+async fn each_method_returns_before_delivery_ends(pair: &mut Pair) {
     pair.a
         .program(r#"[{"op":"on","channel":"component-foreign","id":"same","name":"same"}]"#)
         .await;
@@ -181,6 +181,7 @@ async fn each_method_returns_before_delivery_ends(pair: &Pair) {
         ["scoped:9"]
     );
     returned(pair, || scoped.input_handler().unwrap().handle_input("x"));
+    assert!(returned(pair, || scoped.wants_key_release()));
     returned(pair, || scoped.invalidate());
     let check = |method: &str| {
         [
@@ -192,11 +193,16 @@ async fn each_method_returns_before_delivery_ends(pair: &Pair) {
         ]
     };
     let trace = pair.take();
-    let expected: Vec<String> = ["create", "render", "input", "invalidate"]
+    let expected: Vec<String> = ["create", "render", "input", "preference", "invalidate"]
         .into_iter()
         .flat_map(check)
         .collect();
     assert_eq!(trace, expected);
+    assert!(!pair.a.released("scoped"));
+    drop(scoped);
+    pair.wait_release("a:scoped").await;
+    assert!(pair.a.released("scoped"));
+    assert!(pair.take().is_empty());
 }
 
 /// Runs one component call and marks its return in the trace.
@@ -271,44 +277,5 @@ fn returned_components_outlive_renderer_registration() {
         completed.sort();
         assert_eq!(completed, ["a:keep:v2", "a:old:v1"]);
         assert!(pair.a.released("keep:v2") && pair.a.released("old:v1"));
-    });
-}
-
-#[test]
-fn component_callbacks_drain_before_release() {
-    local(async {
-        let mut pair = Pair::new().await;
-        pair.b
-            .program(
-                r#"[{"op":"on","channel":"component-foreign","id":"foreign","name":"foreign"}]"#,
-            )
-            .await;
-        pair.take();
-        let view = returned(&pair, || {
-            render(&renderer(&pair.a, "scoped-view"), &message("scoped"), false)
-                .unwrap()
-                .unwrap()
-        });
-        returned(&pair, || view.try_render(2).unwrap());
-        returned(&pair, || view.input_handler().unwrap().handle_input("x"));
-        assert!(returned(&pair, || view.wants_key_release()));
-        returned(&pair, || view.invalidate());
-        let expected: Vec<String> = ["create", "render", "input", "preference", "invalidate"]
-            .into_iter()
-            .flat_map(|method| {
-                [
-                    format!("a:{method}:start"),
-                    format!("a:{method}:end"),
-                    "foreign:prefix".into(),
-                    "caller:return".into(),
-                ]
-            })
-            .collect();
-        assert_eq!(pair.take(), expected);
-        assert!(!pair.a.released("scoped"));
-        drop(view);
-        pair.wait_release("a:scoped").await;
-        assert!(pair.a.released("scoped"));
-        assert!(pair.take().is_empty());
     });
 }
