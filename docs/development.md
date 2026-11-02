@@ -1181,9 +1181,9 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests and `maestro-app`. Local setup builds the example
-with the locked host `dev` profile and reads Cargo's emitted executable path. It
-records source inputs, content digest and host in
+attachment-completion tests, `maestro-app` and `maestro-cli`. Local setup builds
+the example with the locked host `dev` profile and reads Cargo's emitted executable
+path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1257,6 +1257,12 @@ Keep each alias in a test's disposable directory and pass its absolute path as t
 configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it.
 
+A command that only reports installation output uses the `output` scenario. The
+command-line startup tests install it as `controlled-npm` and write its two install
+lines, so protocol modes still show empty standard output while the chatter reaches
+standard error. A cleared child needs `MAESTRO_NATIVE_FIXTURE` passed on, because
+`env_clear` drops the preparation variable.
+
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
 and stages native copies of both preparation examples. It also reports the two
@@ -1290,6 +1296,19 @@ explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
 records. Other tooling fixture families and Unix `shell_setup` keep their existing
 contracts.
+
+#### Retained native boundaries
+
+These owners keep a real interpreter or native program because that program is the
+product operation under test. A controlled stand-in would remove the behaviour the
+test observes.
+
+| Owner | Retained operation | Reason |
+| --- | --- | --- |
+| `crates/maestro-credentials/src/credentials/tests.rs` | `/bin/sh` and `/system/bin/sh` as compared launch descriptions, plus one real `!command` resolution. | The configured and default shell is the product behaviour; the compared descriptions never start a process. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs` | `!printf`, `!exit` and a missing helper resolved through that same shell. | The resolver's shell is the product operation, and every payload is authored shell text. |
+| `crates/maestro-extensions/tests/support/action_checks.rs` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-rpc/tests/support/mod.rs`, `crates/maestro-rpc/tests/transports.rs` | The native `kill` program signalling a live child and the test process itself. | Real signal delivery and handler registration are what these cases qualify. |
 
 #### Application RPC peers
 
