@@ -551,6 +551,75 @@ original diagnostic. `platform::current_process_is_detached_server_daemon`
 reports whether the process leads its own session, which is how a detached
 daemon runs.
 
+## Server mode
+
+`maestro_rpc::daemon::run_server` takes the daemon's `App`, its `SettingsManager`, its
+`DaemonPaths` and a shutdown future. It installs the file log for the `daemon` role,
+filtered by a valid `MAESTRO_LOG` directive, and binds the API socket at
+`DaemonPaths::api_socket_path`.
+The socket is readable and writable by its owner only. A stale socket is replaced; a
+live one fails the start as address-in-use, and a file that is not a socket is kept.
+After binding, a daemon without workspaces opens one in the directory
+`MAESTRO_STARTUP_CWD` names, focused; a daemon that already has workspaces ignores it.
+Panes never inherit the variable. The server then logs `maestro server started` and
+writes three lines to standard error:
+
+```text
+maestro server running; you can use any maestro CLI command in another terminal.
+api socket: <path>
+logs: <daemon log path>
+```
+
+A start against a running daemon writes `error: maestro server is already running`
+and the socket path instead. No startup record goes on the socket, and no status
+file is written. The daemon loop then runs beside the socket until the shutdown
+future resolves or a client sends `server.stop`. Afterwards the server removes its
+socket, unless another file has replaced it. Ping reports live handoff as
+unavailable, and the detached capability is the process's own session check.
+
+`App::run` takes the request queue the socket feeds and the settings owner a
+configuration reload reads through. `App::handle_api_request` applies every queued
+internal event before it answers, and marks render work for a command that changes
+what a view shows. It sets the quit flag for `server.stop`, answers the server,
+notification, workspace, tab and pane topology commands, and answers every other command
+with `not_implemented`. Creating a workspace from the view goes through the same
+`workspace.create` handler.
+The [socket server](daemon-protocol.md#socket-server) section describes the
+connection rules.
+
+## Panes and layouts
+
+The pane commands and the `layout_updated` event read one projection of a tab,
+`maestro_daemon::app::layout`, available to attached clients. It combines the tab's
+split tree, the view area and the pane chrome.
+
+- **View area.** `DaemonState::view_area` is the region panes are laid out in. With no
+  client attached it is the headless surface, `daemon.headlessCols` by
+  `daemon.headlessRows` (120 by 40 by default). Everything that needs the area asks
+  this one function.
+- **Chrome.** `PaneChrome::from_config` reads `paneBorders`, `paneGaps` and
+  `paneOuterBorders` from the accepted preferences. `apply_pane_chrome` turns tile cells
+  into the cells a client draws. With borders and no gaps, neighbours share one
+  divider. With borders and gaps, each pane keeps all four borders. With gaps and no
+  borders, a pane gives up one cell next to each neighbour, unless that would leave it
+  with none. Without `paneOuterBorders`, edges on the outside of the pane area are
+  dropped. A tab with one pane has no chrome. `pane_inner_rect` removes one cell for
+  each drawn border, and each chrome cell carries its inner rectangle.
+- **Snapshot.** `App::pane_layout_snapshot` lists a tab's panes with their public ids,
+  focus and chrome cells, and its dividers. A divider id is `split_<index>_<path>`:
+  the index counts dividers from the root, and the path is `root` or a string of
+  `0` (first child) and `1` (second child). A workspace or tab that does not exist
+  has no snapshot.
+- **Neighbours.** `App::directional_pane_target` picks the neighbour from the tile
+  cells before chrome, so a gap never changes which pane is next. Ties go to the
+  pane that comes first in the tree.
+- **Events.** `layout_updated` carries a snapshot. A created workspace or tab publishes
+  it after its created records, and `layout_update_target_after_pane_removal` names the
+  tab that still has panes after a removal.
+
+`maestro-workspace` keeps the split math and the border flag sets. The view area and the
+preferences stay in the daemon.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and

@@ -139,7 +139,7 @@ fn operation(panel: &TreeSelectorComponent, op: &Operation, context: &Context) {
             if let Some(palette) = &c.palette {
                 context
                     .publication
-                    .set_theme_instance(self::palette::palette(palette))
+                    .set_theme_instance(self::palette::palette(palette).unwrap())
                     .unwrap();
             }
             if let Some(now) = &c.now {
@@ -176,7 +176,8 @@ pub(super) fn case(case: &Case) {
     let input = &case.input;
     bindings::replace(&input.bindings);
     let host = manual_runtime::ManualRuntime::new();
-    let (publication, theme) = published::published(&palette::palette(&input.palette));
+    let (publication, theme) =
+        published::published(&palette::palette(&input.palette).unwrap()).unwrap();
     let effects = Rc::new(Effects {
         panel: RefCell::default(),
         events: RefCell::default(),

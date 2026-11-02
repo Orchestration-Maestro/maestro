@@ -7,7 +7,7 @@ pub use atomic::{Symlinks, Temporary, atomic_replace};
 mod recovery;
 mod replace;
 pub use identity::{acquire_write, acquire_write_bounded, try_acquire_write};
-pub use replace::{Committed, Replace, replace};
+pub use replace::{Committed, CreationMode, Replace, replace};
 
 use std::fs::{File, TryLockError};
 use std::time::Duration;
@@ -66,7 +66,11 @@ impl WriteLock {
     /// # Errors
     /// Returns native staging or target-write errors. A pending durable copy is
     /// replayed before the next holder is admitted.
-    pub fn replace(self, bytes: &[u8], creation_mode: Option<u32>) -> std::io::Result<Committed> {
+    pub fn replace(
+        self,
+        bytes: &[u8],
+        creation_mode: Option<CreationMode>,
+    ) -> std::io::Result<Committed> {
         recovery::replace(&self, bytes, creation_mode)
     }
 }

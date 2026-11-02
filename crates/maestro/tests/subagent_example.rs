@@ -110,7 +110,7 @@ fn subagent_discovery_refreshes_scopes_and_nearest_project_shadowing() {
             );
             assert_eq!(
                 default["details"]["projectAgentsDir"],
-                root.path(".maestro/agents").to_str().unwrap()
+                root.path(".maestro").join("agents").to_str().unwrap()
             );
             #[cfg(unix)]
             {

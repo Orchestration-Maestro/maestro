@@ -6,6 +6,10 @@ use std::path::{Path, PathBuf};
 
 mod cargo;
 mod observe;
+#[cfg(unix)]
+mod rpc;
+#[cfg(unix)]
+mod search;
 
 /// A fully parsed fixture request, before any observable effect.
 enum Request {
@@ -15,6 +19,12 @@ enum Request {
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Exchange raw application RPC records.
+    #[cfg(unix)]
+    Rpc(rpc::Record),
+    /// Produce controlled search bytes without interpreting native operands.
+    #[cfg(unix)]
+    Search(search::Record, Vec<OsString>),
 }
 
 impl Request {
@@ -48,6 +58,10 @@ impl Request {
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
+            #[cfg(unix)]
+            Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
             _ => Err(io::Error::other("unknown native fixture record")),
         }
     }
@@ -59,6 +73,10 @@ pub(super) fn run() -> io::Result<()> {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Rpc(record) => rpc::run(&record),
+        #[cfg(unix)]
+        Request::Search(record, operands) => search::run(&record, &operands),
     }
 }
 

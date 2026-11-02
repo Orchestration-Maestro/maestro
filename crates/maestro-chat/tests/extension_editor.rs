@@ -145,7 +145,7 @@ fn configured_dialog(
         TerminalImage::new(|_| None, || 1),
         Some(false),
     ));
-    let (theme_state, theme) = published::published(&colors(0));
+    let (theme_state, theme) = published::published(&colors(0)).unwrap();
     let events = Rc::new(RefCell::new(Vec::new()));
     let submits = events.clone();
     let cancels = events.clone();

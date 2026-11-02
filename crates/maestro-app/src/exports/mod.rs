@@ -10,7 +10,7 @@ mod clipboard;
 mod configuration;
 /// Existing credentials re-exports.
 mod credentials;
-/// Named daemon records and profiling operations for frontends.
+/// Named daemon socket operations, pane rendering and host theme records for frontends.
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "daemon.rs"]
 mod daemon_exports;

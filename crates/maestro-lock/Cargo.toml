@@ -17,6 +17,9 @@ maestro-dependencies.workspace = true
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true, features = ["std", "process", "fs"] }
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"

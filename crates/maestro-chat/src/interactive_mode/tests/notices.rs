@@ -1059,7 +1059,8 @@ sys.exit(row.get('code') or 0)
 fn install_command(root: &std::path::Path, name: &str, script: &str) {
     let source = root.join(format!("{name}.py"));
     std::fs::write(&source, script).unwrap();
-    super::native::install_executable(&source, &root.join("bin").join(name));
+    super::native::install_executable(&source, &root.join("bin").join(name))
+        .expect("install starts");
     assert_eq!(
         std::fs::read_to_string(root.join("bin").join(name)).unwrap(),
         script

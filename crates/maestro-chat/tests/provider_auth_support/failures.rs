@@ -79,7 +79,8 @@ impl Rig {
                 ThemeOptions::default(),
             )
             .unwrap(),
-        ));
+        ))
+        .unwrap();
         let selected = self.events.clone();
         let cancelled = self.events.clone();
         let storage = self.storage.clone();

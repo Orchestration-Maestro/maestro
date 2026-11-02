@@ -41,25 +41,20 @@ fn failed_prompt_releases_its_collection_registration() {
 #[test]
 fn failed_launch_publishes_nothing_and_leaves_no_child() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let source = scratch.path().join("peer.sh");
-    std::fs::write(
-        &source,
-        "#!/bin/sh\necho launched >> \"$0.launches\"\necho '{\"type\": \"peer_ready\"}'\nexec cat > /dev/null\n",
+    let entry = scratch.path().join("peer");
+    maestro_test_process::rpc_peer::install(
+        &entry,
+        maestro_test_process::rpc_peer::Scenario::Launch,
     )
     .unwrap();
-    let entry = scratch.path().join("peer");
-    // Installing from a child process keeps the executable free of this process's writers.
-    let installed = std::process::Command::new("install")
-        .args(["-m", "0700"])
-        .arg(&source)
-        .arg(&entry)
-        .status()
-        .unwrap();
-    assert!(installed.success());
-    let options = RpcClientOptions {
+    let mut options = RpcClientOptions {
         cli_path: Some(entry.to_str().unwrap().to_owned()),
         ..RpcClientOptions::default()
     };
+    options.env.insert(
+        "PEER_MARKER".into(),
+        format!("{}.launches", entry.display()),
+    );
     on_local(async {
         let client = RpcClient::new(options);
         let mut command = process::command_for(&client.options).unwrap();

@@ -203,7 +203,8 @@ fn native_git_observations(args: &[String]) {
     install_executable(
         Path::new(&scratch.join("git.sh")),
         Path::new(&scratch.join("bin/git")),
-    );
+    )
+    .expect("install starts");
     let log = scratch.join("log");
     let path = format!("{}:/usr/bin:/bin", scratch.join("bin"));
     let repo = scratch.join("repo");
@@ -223,6 +224,7 @@ fn native_git_observations(args: &[String]) {
             ],
             &[],
         )
+        .expect("child starts")
     };
     assert_eq!(run(&path, "0"), ["branch=feature/native"]);
     let logged = std::fs::read_to_string(&log).expect("log");
@@ -300,7 +302,8 @@ fn check_discovery_ambient(
         Path::new(&ops.path(current)),
         &env,
         &[],
-    );
+    )
+    .expect("child starts");
     assert_eq!(
         observed,
         [format!(
@@ -1203,6 +1206,7 @@ fn native_ambient_lines() -> Vec<String> {
         &[("FOOTER_PROBE_AMBIENT", &root)],
         &[],
     )
+    .expect("child starts")
 }
 
 #[test]

@@ -25,6 +25,7 @@ mod environment;
 mod error;
 mod executable;
 mod proof;
+pub mod rpc_peer;
 mod selection;
 mod test_process;
 
@@ -38,3 +39,17 @@ pub use executable::install_executable;
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use selection::test_name;
 pub use test_process::TestProcess;
+
+/// Controlled loopback HTTP fixtures.
+pub mod loopback;
+/// Child build toolchain selection.
+pub mod toolchain;
+
+/// Shared subprocess helpers.
+pub mod subprocess;
+
+/// Shared probe helpers.
+pub mod probe;
+
+/// Shared native helpers.
+pub mod native;

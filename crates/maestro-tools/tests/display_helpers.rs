@@ -165,8 +165,8 @@ fn display_paths_keep_root_and_empty_homes_unchanged() {
 /// The complete `read` call row for `args` under the current home.
 #[cfg(not(target_arch = "wasm32"))]
 fn read_call_row(args: &Value) -> String {
-    let setup = Setup::from(&json!({"readme": "/work/README.md"}));
-    let env = Env::new(setup.shift);
+    let setup = Setup::from(&json!({"readme": "/work/README.md"})).unwrap();
+    let env = Env::new(setup.shift).unwrap();
     let ctx = context(args, &setup, &env, None);
     let tool = create_read_tool_definition::<()>("/work".into(), ReadToolOptions::default());
     let row = (tool.render_call.as_ref().unwrap())(Some(args), &env.live, &ctx).unwrap();
@@ -179,7 +179,7 @@ fn read_call_row(args: &Value) -> String {
 /// The complete `read` call row showing `text` in `role`.
 #[cfg(not(target_arch = "wasm32"))]
 fn styled_read_call(role: &ThemeColor, text: &str) -> String {
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     let theme = env.live.get().unwrap();
     let title = theme
         .fg(&ThemeColor::ToolTitle, &Theme::bold("read", true))
@@ -234,7 +234,7 @@ fn key_hints_use_current_bindings_order_and_separate_styles() {
     for case in cases("key_hints_use_current_bindings_order_and_separate_styles") {
         let keys: Vec<String> = serde_json::from_value(case.input["binding"].clone()).unwrap();
         let _bindings = bind(&keys);
-        let env = Env::new(0);
+        let env = Env::new(0).unwrap();
         let actual = json!({
             "text": key_text("app.tools.expand"),
             "hint": key_hint("app.tools.expand", "to expand", &env.live).unwrap(),
@@ -266,7 +266,7 @@ fn display_width_cases_use_shared_toolkit_boundaries() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn display_output_handles_absence_and_orders_content_by_kind() {
-    let env = Env::new(0);
+    let env = Env::new(0).unwrap();
     for case in cases("display_output_handles_absence_and_orders_content_by_kind") {
         let result = case.input["result"]
             .as_object()
@@ -368,7 +368,8 @@ fn search_corpus_loading_preserves_validation_and_palette() {
     assert_eq!(json!(search_keys(&corpus.to_string())), keys);
     // The display recording's palette is read from its own committed file on every target.
     let palette =
-        crate::display_palette::palette_keys(include_str!("fixtures/read_display_palette.json"));
+        crate::display_palette::palette_keys(include_str!("fixtures/read_display_palette.json"))
+            .unwrap();
     assert_eq!(palette.len(), 19);
     assert_eq!(palette.first().map(String::as_str), Some("toolTitle"));
     assert_eq!(

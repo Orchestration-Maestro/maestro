@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+serde = { workspace = true, optional = true }
 maestro-json = { path = "../maestro-json" }
 maestro-text = { path = "../maestro-text" }
 sha2 = { version = "=0.11.0", default-features = false }
@@ -33,6 +34,7 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]
+maestro-packages = { path = ".", features = ["test-support"] }
 serde.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "test-util"] }
 
@@ -42,3 +44,6 @@ path = "tests/integration.rs"
 
 [lints]
 workspace = true
+
+[features]
+test-support = ["dep:serde"]

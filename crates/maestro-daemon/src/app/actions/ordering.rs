@@ -91,37 +91,51 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             .enumerate()
             .map(|(position, id)| (id.to_owned(), position))
             .collect();
-        self.topology
-            .workspaces
-            .sort_by_key(|workspace| positions[&workspace.id]);
+        self.reorder_workspaces(&positions);
         self.active = active;
         self.selected = selected;
         self.session_dirty = true;
         true
     }
 
-    /// Validates membership, uniqueness and insertion outside the moved block.
+    /// Validates membership, uniqueness and insertion outside the moved block, in one pass
+    /// over the workspaces.
     fn valid_workspace_block(
         &self,
         ids: &[String],
         before: Option<&str>,
         moved: &std::collections::HashSet<&str>,
     ) -> bool {
+        let existing: std::collections::HashSet<_> = self
+            .topology
+            .workspaces
+            .iter()
+            .map(|workspace| {
+                #[cfg(test)]
+                crate::tests::record_workspace_work();
+                workspace.id.as_str()
+            })
+            .collect();
         !moved.is_empty()
             && moved.len() == ids.len()
-            && ids.iter().all(|id| {
-                self.topology
-                    .workspaces
-                    .iter()
-                    .any(|workspace| workspace.id == *id)
-            })
-            && before.is_none_or(|id| {
-                !moved.contains(id)
-                    && self
-                        .topology
-                        .workspaces
-                        .iter()
-                        .any(|workspace| workspace.id == id)
-            })
+            && ids.iter().all(|id| existing.contains(id.as_str()))
+            && before.is_none_or(|id| !moved.contains(id) && existing.contains(id))
     }
 }
+
+impl<C: FnMut() -> u128> DaemonState<C> {
+    /// Places each workspace directly in its validated destination, without sorting.
+    fn reorder_workspaces(&mut self, positions: &std::collections::HashMap<String, usize>) {
+        let mut ordered: Vec<_> = (0..positions.len()).map(|_| None).collect();
+        for workspace in std::mem::take(&mut self.topology.workspaces) {
+            #[cfg(test)]
+            crate::tests::record_workspace_work();
+            let position = positions[&workspace.id];
+            ordered[position] = Some(workspace);
+        }
+        self.topology.workspaces = ordered.into_iter().flatten().collect();
+    }
+}
+
+#[cfg(test)]
+mod tests;
