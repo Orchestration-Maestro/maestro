@@ -1257,9 +1257,9 @@ Keep each alias in a test's disposable directory and pass its absolute path as t
 configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it.
 
-A command that only reports installation output uses the `output` scenario. The
+A command that only prints installation output uses the `output` scenario. The
 command-line startup tests install it as `controlled-npm` and write its two install
-lines, so protocol modes still show empty standard output while the chatter reaches
+lines, so the protocol modes keep an empty standard output while the chatter reaches
 standard error. A cleared child needs `MAESTRO_NATIVE_FIXTURE` passed on, because
 `env_clear` drops the preparation variable.
 
@@ -1299,16 +1299,21 @@ contracts.
 
 #### Retained native boundaries
 
-These owners keep a real interpreter or native program because that program is the
+These paths keep a real interpreter or native program because that program is the
 product operation under test. A controlled stand-in would remove the behaviour the
 test observes.
 
-| Owner | Retained operation | Reason |
+| Path | Retained operation | Reason |
 | --- | --- | --- |
-| `crates/maestro-credentials/src/credentials/tests.rs` | `/bin/sh` and `/system/bin/sh` as compared launch descriptions, plus one real `!command` resolution. | The configured and default shell is the product behaviour; the compared descriptions never start a process. |
-| `crates/maestro-credentials/tests/credential_key_selection.rs` | `!printf`, `!exit` and a missing helper resolved through that same shell. | The resolver's shell is the product operation, and every payload is authored shell text. |
-| `crates/maestro-extensions/tests/support/action_checks.rs` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
-| `crates/maestro-rpc/tests/support/mod.rs`, `crates/maestro-rpc/tests/transports.rs` | The native `kill` program signalling a live child and the test process itself. | Real signal delivery and handler registration are what these cases qualify. |
+| `crates/maestro-credentials/src/credentials/tests.rs:179`, `:219` | `/bin/sh` and `/system/bin/sh` compared as launch descriptions. | The configured and default shell is the product behaviour, and these values never start a process. |
+| `crates/maestro-credentials/src/credentials/tests.rs:205-215` | One real `!if read line; ...` resolution through that shell. | The resolver's configured shell is the operation under test. |
+| `crates/maestro-credentials/src/credentials/tests.rs:240-266` | Windows `cmd.exe` and `bash.exe` launch descriptions. | The launch shape is the product behaviour under test, and these values are compared, never run. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:136-149` | The Windows Git Bash, `bash.exe -c`, that runs configured helpers. | The helper launch needs the native shell the selector finds. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:153-163` | `!printf` payloads, one piped through `tr`, resolved by that shell. | Every payload is authored shell text, and the assertions are on the resolver's result. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
+| `crates/maestro-extensions/tests/support/action_checks.rs:1069` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
+| `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
 
 #### Application RPC peers
 
