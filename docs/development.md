@@ -790,12 +790,12 @@ Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing t
 The `test_prepare` command in `.github/ci.toml` is the development tool's
 `prepare-test-setup prepare`. Shared CI runs it only when a selected package is
 named by `test_prepare_packages` there, the packages that nextest's
-`author-component` and `browser-author` setups serve. Shared CI caches the bundle under the
-contents of the files that `test_prepare_inputs` matches and restores it instead of preparing
-again. Those patterns name the crates the preparation builds, `maestro-extensions-wasm`,
-`maestro-tooling` and `maestro-web`, and every workspace crate they depend on through a path
-dependency of any kind, plus the fixed inputs, so a change to any other crate keeps the cached
-bundle.
+`author-component`, `browser-author` and `native-fixture` setups serve. Shared CI caches
+the bundle under the contents of the files that `test_prepare_inputs` matches and restores it
+instead of preparing again. Those patterns name the crates the preparation builds,
+`maestro-extensions-wasm`, `maestro-tooling` and `maestro-web`, and every workspace crate
+they depend on through a path dependency of any kind, plus the fixed inputs, so a change to
+any other crate keeps the cached bundle.
 The preparation reads that closure from the workspace metadata, compiling nothing, and
 records it in the bundle manifest, so a shard validates the same files without Cargo.
 `ci_cache_key_names_exactly_the_files_the_preparation_reads` fails when a file the
@@ -1102,7 +1102,8 @@ is [Rust test children](specs/test-processes.md).
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools` and the application RPC client tests. Local setup builds the example
+`maestro-tools`, the toolkit's attachment-completion tests and the application
+RPC client tests. Local setup builds the example
 with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1193,7 +1194,7 @@ signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
 
-#### Search aliases
+#### Search and completion aliases
 
 On Unix, install the same artifact as `fd`, `fdfind` or `rg` to control search
 output while exercising native lookup and process handling. Write `search` on
@@ -1238,6 +1239,17 @@ The finite scenarios use these fields:
 | `grep-term` | On `socket`, writes `R`, requires `x`, writes `event` bytes to stdout, optionally writes `S` when `started` is true, waits for TERM, writes `T`, requires another `x`, then exits 9. |
 | `chunks` | On `socket`, writes `R` and requires `x` before each entry of `chunks`. Each entry has `stream: "stdout"` or `"stderr"` and a `bytes` array. Exits with `code` after the final write. |
 | `chosen-shell` | Writes `chosen-shell` and a newline, then replaces itself with `/bin/bash`, passing the original operands unchanged. This keeps configured-shell qualification on the real shell. |
+| `completion-wait` | `stdout` bytes and a parent-owned `port`. Writes the bytes, connects, writes `READY`, then waits for a byte or EOF, so a cancelled search must end this child without further output. |
+| `completion-stream` | `stderr`, a count of repeating `x` bytes, and `stdout` bytes. Fails unless standard input is already closed, fills the diagnostic pipe, then writes standard output. |
+| `completion-descendant` | `port` and `holder`, the alias whose record runs `completion-holder`. Reports its process id, starts the holder with inherited pipes, then exits zero while the holder keeps them. |
+| `completion-holder` | `port`. Writes `D` on the parent's port and holds both inherited pipes until the test releases it with one byte. |
+
+Attachment completion uses the four `completion-*` scenarios under any name the
+test owns. The child is launched through the product operation that owns it, so
+the test observes real pipes, a real status and a real cancellation. Install the
+holder under a second name and put that path in the parent's `holder` field: the
+descendant is a linked process, never a thread, and the search must not wait for
+the pipes it keeps.
 
 Keep these aliases in each test's disposable binary directory. Isolated discovery
 and startup cases replace `PATH` explicitly; ordinary native find/grep corpus

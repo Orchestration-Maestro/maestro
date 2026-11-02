@@ -1,10 +1,13 @@
-//! Finite native search producers selected by a sibling JSON record.
+//! Finite native search and completion producers selected by a sibling JSON record.
 
 use std::ffi::OsString;
 use std::io::{self, Read, Write};
 use std::os::unix::{net::UnixStream, process::CommandExt};
+use std::process::{Command, Stdio};
 
-use maestro_test_process::child::{leave, receive, write_stderr, write_stdout};
+use maestro_test_process::child::{
+    connect, leave, read_input, receive, write_stderr, write_stdout,
+};
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
 
@@ -103,6 +106,32 @@ pub(super) enum Record {
     },
     /// Mark the configured shell choice, then execute the real shell with native operands.
     ChosenShell {},
+    /// Write an incomplete record, announce readiness and wait for cancellation.
+    CompletionWait {
+        /// Standard output bytes, including a record that never ends.
+        stdout: Vec<u8>,
+        /// Parent-owned readiness port.
+        port: u16,
+    },
+    /// Require a closed standard input, then fill the diagnostic pipe before standard output.
+    CompletionStream {
+        /// Count of repeating `x` bytes flushed to standard error first.
+        stderr: u64,
+        /// Standard output bytes written afterwards.
+        stdout: Vec<u8>,
+    },
+    /// Report this process's id and exit while a linked descendant retains both pipes.
+    CompletionDescendant {
+        /// Parent-owned port for the process-id report.
+        port: u16,
+        /// Installed alias whose record holds the pipes after this process exits.
+        holder: String,
+    },
+    /// Greet on the parent's port, then hold both inherited pipes until released.
+    CompletionHolder {
+        /// Parent-owned port for the greeting and release byte.
+        port: u16,
+    },
 }
 
 impl Record {
@@ -175,7 +204,52 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
                 .args(operands)
                 .exec())
         }
+        Record::CompletionWait { stdout, port } => completion_wait(stdout, *port),
+        Record::CompletionStream { stderr, stdout } => completion_stream(*stderr, stdout),
+        Record::CompletionDescendant { port, holder } => completion_descendant(*port, holder),
+        Record::CompletionHolder { port } => completion_holder(*port),
     }
+}
+
+/// Write an incomplete record, announce readiness and wait for the consumer's cancellation.
+fn completion_wait(stdout: &[u8], port: u16) -> io::Result<()> {
+    write_stdout(stdout)?;
+    let mut socket = connect(port)?;
+    socket.write_all(b"READY")?;
+    receive(&mut socket).map(|_| ())
+}
+
+/// Require the consumer's closed standard input, then fill the diagnostic pipe first.
+fn completion_stream(stderr: u64, stdout: &[u8]) -> io::Result<()> {
+    if !read_input()?.is_empty() {
+        return Err(io::Error::other("expected a closed standard input"));
+    }
+    let count = usize::try_from(stderr).map_err(io::Error::other)?;
+    let diagnostics = vec![b'x'; count];
+    write_stderr(&diagnostics)?;
+    write_stdout(stdout)
+}
+
+/// Report the native id, leave a descendant retaining both output pipes and exit.
+fn completion_descendant(port: u16, holder: &str) -> io::Result<()> {
+    let mut report = connect(port)?;
+    report.write_all(std::process::id().to_string().as_bytes())?;
+    drop(report);
+    let descendant = Command::new(holder)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()?;
+    // The descendant deliberately outlives this process and retains both output pipes.
+    drop(descendant);
+    leave(0)
+}
+
+/// Announce the descendant's hold, then release both pipes when the consumer is done.
+fn completion_holder(port: u16) -> io::Result<()> {
+    let mut socket = connect(port)?;
+    socket.write_all(b"D")?;
+    receive(&mut socket).map(|_| ())
 }
 
 /// Logs operands, requires `--version`, writes supplied bytes and exits with the supplied status.
