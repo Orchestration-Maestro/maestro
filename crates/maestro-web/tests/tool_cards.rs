@@ -105,4 +105,23 @@ fn tool_card_recipes_own_borrowed_fields_without_reading_details() {
         "recipes retained unused native details"
     );
     assert!(owned.iter().all(|recipe| !recipe.is_custom));
+    // The failed result paints each tool's glyph in the error state, with the borrowed command,
+    // expression and time zone kept after their owners were dropped.
+    let views: Vec<_> = owned
+        .iter()
+        .map(|recipe| maestro_web::test_support::prepared_view(recipe.content.as_ref()).unwrap())
+        .collect();
+    assert_eq!(
+        views,
+        [
+            json!({"state": "Error", "glyph": "SquareTerminal",
+                "caption": {"key": "Running command...", "suffix": ""},
+                "body": {"console": "> command\n\none\ntwo", "variant": "error"}}),
+            json!({"state": "Error", "glyph": "Calculator", "caption": {"text": "expression"},
+                "body": {"error": "one\ntwo"}}),
+            json!({"state": "Error", "glyph": "Clock",
+                "caption": {"key": "Getting current time in", "suffix": " timezone"},
+                "body": {"error": "one\ntwo"}}),
+        ]
+    );
 }

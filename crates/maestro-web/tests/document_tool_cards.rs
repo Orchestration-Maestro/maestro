@@ -81,11 +81,14 @@ fn document_renderers_keep_model_json_and_native_operands() {
     for name in ["javascript_repl", "extract_document"] {
         let params = json!({"title":"title", "code":"YWJj", "url":"url", "unused":true});
         let model: JsonObject = serde_json::from_value(params.clone()).unwrap();
-        assert!(
-            !render_tool::<_, Value>(name, Some(ToolParams::object(&model)), None, false)
-                .unwrap()
-                .is_custom
-        );
+        let pending =
+            render_tool::<_, Value>(name, Some(ToolParams::object(&model)), None, false).unwrap();
+        assert!(!pending.is_custom);
+        // Parameters without a result select the pending disclosure; once streaming has ended
+        // the header no longer shows progress.
+        let pending = view(&pending);
+        assert_eq!(pending["state"], "Complete", "{name}");
+        assert_eq!(pending["body"]["phase"], "Pending", "{name}");
         assert!(
             !render_tool::<_, Value>(name, Some(ToolParams::json(&params)), None, false)
                 .unwrap()
@@ -96,19 +99,21 @@ fn document_renderers_keep_model_json_and_native_operands() {
         get_tool_renderer::<JavaScriptReplParams, JavaScriptReplToolResult>("javascript_repl")
             .unwrap();
     let result = recipes::message(Some(JavaScriptReplToolResult { files: None }));
-    assert!(
-        !repl
-            .render(
-                Some(&JavaScriptReplParams {
-                    title: "owned".into(),
-                    code: "YWJj".into()
-                }),
-                Some((&result).into()),
-                false
-            )
-            .unwrap()
-            .is_custom
-    );
+    let shown = repl
+        .render(
+            Some(&JavaScriptReplParams {
+                title: "owned".into(),
+                code: "YWJj".into(),
+            }),
+            Some((&result).into()),
+            false,
+        )
+        .unwrap();
+    assert!(!shown.is_custom);
+    // A failed result replaces the pending subtree with the result template.
+    let shown = view(&shown);
+    assert_eq!(shown["state"], "Error");
+    assert_eq!(shown["body"]["phase"], "Result");
     let extract =
         get_tool_renderer::<ExtractDocumentParams, ExtractDocumentResult>("extract_document")
             .unwrap();
@@ -118,16 +123,21 @@ fn document_renderers_keep_model_json_and_native_operands() {
         format: "ßé".into(),
         size: 1280,
     }));
-    assert!(
-        !extract
-            .render(
-                Some(&ExtractDocumentParams { url: "url".into() }),
-                Some((&result).into()),
-                false
-            )
-            .unwrap()
-            .is_custom
-    );
+    let shown = extract
+        .render(
+            Some(&ExtractDocumentParams { url: "url".into() }),
+            Some((&result).into()),
+            false,
+        )
+        .unwrap();
+    assert!(!shown.is_custom);
+    let shown = view(&shown);
+    assert_eq!(shown["state"], "Error");
+    assert_eq!(shown["body"]["phase"], "Result");
+}
+/// The values the browser renders from a prepared built-in card.
+fn view(shown: &maestro_web::ToolRenderResult) -> Value {
+    maestro_web::test_support::prepared_view(shown.content.as_ref()).unwrap()
 }
 
 #[test]

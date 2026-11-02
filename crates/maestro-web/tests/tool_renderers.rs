@@ -283,6 +283,21 @@ fn json_mode_bypasses_custom_renderers_without_unregistering() {
             .unwrap()
             .is_custom
     );
+    // The default card shows the formatted input and the raw joined output of a failed call.
+    let result = message(Some(Value::Null));
+    let input = serde_json::json!({"b": 1, "a": [2]});
+    let shown = render_tool::<Value, Value>(
+        "custom",
+        Some(ToolParams::json(&input)),
+        Some(&result),
+        false,
+    )
+    .unwrap();
+    assert_eq!(
+        maestro_web::test_support::prepared_view(shown.content.as_ref()).unwrap(),
+        serde_json::json!({"state": "Error", "input": "{\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}",
+            "output": "one\ntwo"})
+    );
     assert!(Rc::ptr_eq(
         &get_tool_renderer::<Value, Value>("custom").unwrap(),
         &renderer

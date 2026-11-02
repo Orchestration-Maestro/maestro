@@ -1,6 +1,7 @@
 //! Artifact renderer preparation through the embedding facade.
 #![cfg(test)]
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -82,7 +83,6 @@ fn artifact_update_distinguishes_absent_and_empty_replacements() {
 #[test]
 fn artifact_languages_keep_literal_suffix_rules() {
     use crate::artifact_card_support as cards;
-    use serde_json::json;
     let valid: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/artifact_languages.json")).unwrap();
     crate::support::strict_record::<crate::artifact_card_support::Language>(&valid[0], &["input"]);
@@ -224,6 +224,53 @@ fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     drop(renderer);
     assert!(weak.upgrade().is_some());
     assert!(host.effects.borrow().is_empty());
+    // The header pill shows the literal filename, keeps it as the artifact identity and opens the
+    // captured panel.
+    assert_eq!(
+        view(&recipe)["caption"],
+        json!({"key": "Creating artifact",
+            "pill": {"text": "literal <&> 雪.html", "filename": "literal <&> 雪.html", "panel": true}})
+    );
     drop(recipe);
     assert!(weak.upgrade().is_none());
+    selected_diff_rows_and_plain_template();
+}
+
+/// An update owns its signed difference rows; a finished delete shows only its header template.
+fn selected_diff_rows_and_plain_template() {
+    use maestro_app::browser::tools::artifacts::{ArtifactCommand, ArtifactsParams};
+    use maestro_web::{ArtifactsToolRenderer, ToolRenderer};
+    let renderer = ArtifactsToolRenderer::new(None);
+    let mut params = ArtifactsParams {
+        command: ArtifactCommand::Update,
+        filename: "notes.txt".into(),
+        content: None,
+        old_str: Some("a\nb\n".into()),
+        new_str: Some("a\nc\n".into()),
+    };
+    let update =
+        ToolRenderer::<ArtifactsParams, Value>::render(&renderer, Some(&params), None, false)
+            .unwrap();
+    params.command = ArtifactCommand::Delete;
+    let done = crate::artifact_card_support::phase("success").unwrap();
+    let delete = ToolRenderer::<ArtifactsParams, Value>::render(
+        &renderer,
+        Some(&params),
+        Some((&done).into()),
+        false,
+    )
+    .unwrap();
+    drop(params);
+    assert_eq!(
+        view(&update)["body"]["diff"]["rows"],
+        json!([{"sign": " ", "text": "a"}, {"sign": "-", "text": "b"}, {"sign": "+", "text": "c"}])
+    );
+    let delete = view(&delete);
+    assert_eq!(delete["plainPhase"], "Artifact(ResultPlain)");
+    assert_eq!(delete["body"], Value::Null);
+    assert_eq!(delete["caption"]["key"], "Deleted artifact");
+}
+/// The values the browser renders from a prepared built-in card.
+fn view(shown: &maestro_web::ToolRenderResult) -> Value {
+    maestro_web::test_support::prepared_view(shown.content.as_ref()).unwrap()
 }
