@@ -3,6 +3,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 /// Read peer bytes after readiness, treating shutdown resets or aborts as EOF.
+///
+/// Some hosts, including macOS and Windows, report a reset before end of stream.
 pub(crate) async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
     loop {
         peer.readable().await.unwrap();

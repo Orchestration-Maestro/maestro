@@ -55,6 +55,11 @@ pub fn registry(
     (scratch, state)
 }
 impl Events {
+    /// Callback recording each value under `name`.
+    pub fn record<T: Into<Value> + 'static>(&self, name: &'static str) -> Rc<dyn Fn(T)> {
+        let events = self.clone();
+        Rc::new(move |value: T| events.push(name, Some(value.into())))
+    }
     /// Name confirmation.
     pub fn select(&self) -> Rc<dyn Fn(&str)> {
         let record = self.record::<String>("select");

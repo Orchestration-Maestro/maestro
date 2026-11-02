@@ -166,10 +166,3 @@ pub struct ImageInput {
     /// Starting bool.
     pub current: bool,
 }
-impl Events {
-    /// Callback recording each value under `name`.
-    pub fn record<T: Into<Value> + 'static>(&self, name: &'static str) -> Rc<dyn Fn(T)> {
-        let events = self.clone();
-        Rc::new(move |value: T| events.push(name, Some(value.into())))
-    }
-}
