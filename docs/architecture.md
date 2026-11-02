@@ -309,8 +309,8 @@ A single name passed to `clap::Command::new`, directly or through an explicit
 import, defines a command-line item rather than launching a viewer. The check
 accepts those names without exempting process calls in the same file. Imports
 follow their containing token group, and competing imports keep the process
-check active. Globs, re-export chains, constructed names
-and type inference remain source-review obligations. For example,
+check active. Globs, re-export chains, constructed names and type inference are
+not resolved; reviewers check them. For example,
 `use clap::Command; Command::new("open")` is accepted, but
 `std::process::Command::new("open")` beside it is rejected.
 

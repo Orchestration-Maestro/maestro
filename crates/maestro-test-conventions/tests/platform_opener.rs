@@ -183,6 +183,7 @@ fn platform_viewers_distinguish_clap_names_from_process_operands() {
             std::fs::write(&path, format!("{contents}\n{launch}")).unwrap();
             let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(error.contains("viewer.rs:2: platform viewer"), "{error}");
+            assert!(!error.contains("viewer.rs:1:"), "{error}");
         }
         std::fs::remove_file(path).unwrap();
     }
