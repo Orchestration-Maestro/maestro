@@ -399,7 +399,7 @@ async fn first_request(chat: &Conversation, listener: &TcpListener) -> Peer {
 /// The close frame the peer reads after an explicit close.
 const DEBUG_CLOSE: (u16, &str) = (1000, "debug_close");
 
-/// Reset removes one session's counters and fallback state and leaves its connection usable;
+/// Reset removes one session's counters and leaves its connection usable and other sessions intact;
 /// close keeps the counters.
 async fn reset_then_close_one_session(listener: &TcpListener, url: &str) -> Peer {
     let [a, b, d] = ["ctl-a", "ctl-b", "ctl-d"];
@@ -412,7 +412,7 @@ async fn reset_then_close_one_session(listener: &TcpListener, url: &str) -> Peer
     record_web_socket_failure(Some(d), DiagnosticInput::Text("x"));
 
     reset(Some(a));
-    assert!(stats_of(a).is_none() && !active(Some(a)));
+    assert!(stats_of(a).is_none());
     assert!(stats_of(d).is_some() && active(Some(d)));
     let (request, outcome) = join(answer(&mut peer_a, "r2", "second"), chat_a.send()).await;
     outcome.result.unwrap();

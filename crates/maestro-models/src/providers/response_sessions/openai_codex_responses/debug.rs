@@ -1,4 +1,4 @@
-//! Per-session socket counters and the fallback flag; none of it needs native I/O.
+//! Per-session socket counters, fallback flags and completion records without native I/O.
 
 use crate::{DiagnosticInput, format_thrown_value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -47,7 +47,7 @@ pub struct OpenAICodexWebSocketDebugStats {
 struct DebugState {
     /// Counters of sessions that selected a request or recorded an outcome.
     stats: BTreeMap<String, OpenAICodexWebSocketDebugStats>,
-    /// Sessions whose socket failed.
+    /// Sessions whose socket failed before ever completing a response.
     fallback: BTreeSet<String>,
     /// Sessions whose socket completed a response.
     completed: BTreeSet<String>,
@@ -107,8 +107,8 @@ pub fn get_openai_codex_web_socket_debug_stats(
     lock().stats.get(session_id).cloned()
 }
 
-/// Clear statistics and fallback state of one session, or of every session when none or an
-/// empty one is named. Connections are not touched.
+/// Clear statistics, fallback state and completion records for one session or all sessions.
+/// An absent or empty session identity selects all sessions. Connections are not touched.
 pub fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
     let mut state = lock();
     if let Some(id) = session_id.filter(|id| !id.is_empty()) {
@@ -122,7 +122,7 @@ pub fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
     }
 }
 
-/// Whether the session's socket failed since its state was last reset.
+/// Whether a socket failure activated fallback before any response completed since the last reset.
 pub(crate) fn is_web_socket_sse_fallback_active(session_id: Option<&str>) -> bool {
     session_id
         .filter(|id| !id.is_empty())
