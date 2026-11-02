@@ -334,6 +334,7 @@ fn workspace_fixtures_never_reach_the_shared_cargo_home() {
     if !recipe_support::without_shared_cargo_home() {
         recipe_support::rerun_without_shared_cargo_home(
             "workspace_fixtures_never_reach_the_shared_cargo_home",
+            &[],
         );
         return;
     }
