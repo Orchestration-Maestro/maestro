@@ -40,24 +40,43 @@ pub fn install_executable(source: &Path, target: &Path) {
 pub fn prepared_sources() -> PathBuf {
     static SOURCES: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     SOURCES
+        .get_or_init(|| source_configuration("MAESTRO_TEST_CARGO_SOURCES", &[]))
+        .clone()
+}
+
+/// The complete locked workspace dependency sources, prepared before cold browser builds.
+pub fn prepared_workspace_sources() -> PathBuf {
+    static SOURCES: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SOURCES
         .get_or_init(|| {
-            if let Some(config) = std::env::var_os("MAESTRO_TEST_CARGO_SOURCES") {
-                return PathBuf::from(config);
-            }
-            record("phase: fixture sources preparation");
-            let output = Command::new(env!("CARGO_BIN_EXE_development"))
-                .args(["nextest-setup", "fixture-sources"])
-                .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
-                .output()
-                .unwrap();
-            assert!(
-                output.status.success(),
-                "{}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            PathBuf::from(String::from_utf8(output.stdout).unwrap().trim_end())
+            source_configuration("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES", &["workspace"])
         })
         .clone()
+}
+
+/// Read a setup export or run the same source preparation outside nextest.
+fn source_configuration(variable: &str, scope: &[&str]) -> PathBuf {
+    if let Some(config) = std::env::var_os(variable) {
+        return PathBuf::from(config);
+    }
+    record("phase: fixture sources preparation");
+    let output = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "fixture-sources"])
+        .args(scope)
+        .current_dir(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .canonicalize()
+                .unwrap(),
+        )
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    PathBuf::from(String::from_utf8(output.stdout).unwrap().trim_end())
 }
 
 /// Whether this process is the child of [`rerun_without_shared_cargo_home`].

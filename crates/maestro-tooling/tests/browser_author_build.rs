@@ -22,7 +22,12 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
             if stage == "lockfile" {
                 browser.generate_lockfile();
             } else {
-                browser_support::cold_sources(&browser);
+                let status = recipe_support::setup_status(
+                    toolchain_support::command(env!("CARGO_BIN_EXE_development"))
+                        .args(["nextest-setup", "fixture-sources", "workspace"])
+                        .current_dir(browser.workspace.path()),
+                );
+                assert!(!status.success());
             }
         }
         panic!("setup must fail");
@@ -92,9 +97,11 @@ fn browser_resolution_never_reaches_the_shared_cargo_home() {
     }
     let browser = Browser::new();
     browser.generate_lockfile();
+    let (home, _) = browser_support::cold_sources(&browser);
     success(
         &browser
             .cargo()
+            .env("CARGO_HOME", home)
             .args([
                 "metadata",
                 "--offline",
@@ -1761,7 +1768,9 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
     let command = |recipe: &str| {
-        let mut command = browser.command(recipe);
+        let mut command = browser.workspace.toolchain_command("just");
+        command.arg(recipe);
+        browser.configure(&mut command);
         command
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)

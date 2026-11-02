@@ -993,8 +993,20 @@ declare is named in that manifest. The setup exports the configuration path as
 `MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
 the same command. A fixture opts in with `Workspace::use_prepared_sources` or
 `Browser::cargo`, which copy the configuration into its private home. A fixture
-without registry dependencies copies nothing. The cold browser build still
-vendors the whole workspace for itself, because it compiles every dependency.
+without registry dependencies copies nothing.
+
+The cold browser build uses `nextest-setup fixture-sources workspace`, which
+prepares the whole workspace's locked dependencies before the test. It exports
+`MAESTRO_TEST_WORKSPACE_CARGO_SOURCES` from `target/workspace-sources/<hash>/`.
+This uses the same vendor operation with a wider dependency set, including Git
+sources. The key covers the workspace and member manifests, the browser manifest
+and both lockfiles. Dependency changes select a new directory; Rust-only edits
+reuse it because workspace sources are read from the checkout. Outside nextest,
+the first cold-source caller runs the same setup. The test copies only the source
+configuration into its initially empty Cargo home. Its Cargo target directory
+also starts empty, so the recipes still prove compilation from clean state.
+The cold recipe uses `fixture_command` to keep its private home out of the
+compiler wrapper's cache keys.
 
 Cargo builds that share one target directory with other builds, the test build's or the
 one the browser author setup prepares, keep the shared home.
