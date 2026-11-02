@@ -299,6 +299,21 @@ closures and impl bodies.
 
 ## Quality checks
 
+Native platform viewers belong to the application's `utils::platform_opener`.
+The conventions check reports executable literals outside that owner, including
+nested macros, closures, methods and source fragments. It also tracks local
+`open` bindings into command constructors and rejects the shell `cmd /c start`
+combination. Parsed test-only items are excluded.
+
+A single name passed to `clap::Command::new`, directly or through an explicit
+import, defines a command-line item rather than launching a viewer. The check
+accepts those names without exempting process calls in the same file. Imports
+follow their containing token group, and competing imports keep the process
+check active. Globs, re-export chains, constructed names
+and type inference remain source-review obligations. For example,
+`use clap::Command; Command::new("open")` is accepted, but
+`std::process::Command::new("open")` beside it is rejected.
+
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
 compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for
 maps whose remaining order is never observed. Ordinary maps are unaffected.
