@@ -1,4 +1,5 @@
 //! Strict recorded whole-frame session widget replay.
+use crate::platform_keys::for_this_platform;
 use maestro_tui::interface::InputHandler;
 #[allow(
     dead_code,
@@ -40,6 +41,8 @@ struct Case {
     test: String,
     input: Value,
     expected: Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Value>,
 }
 /// Decodes all rows belonging to one witness, retaining strict typed payloads.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
@@ -57,7 +60,7 @@ pub(crate) fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|c| {
             (
                 serde_json::from_value(c.input).unwrap(),
-                serde_json::from_value(c.expected).unwrap(),
+                serde_json::from_value(for_this_platform(c.expected, c.expected_macos)).unwrap(),
             )
         })
         .collect();

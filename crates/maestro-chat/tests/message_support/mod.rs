@@ -2,6 +2,7 @@
 mod input;
 mod summaries;
 use crate::palette;
+use crate::platform_keys::for_this_platform;
 use crate::published;
 pub use summaries::{summary_controls, user_styles};
 mod widget;
@@ -103,7 +104,9 @@ pub fn group(name: &str) {
         let raw: Vec<serde_json::Value> = serde_json::from_str(source).unwrap();
         for row in raw {
             assert!(queries.insert(serde_json::to_string(&row["input"]).unwrap()));
-            cases.push(serde_json::from_value(row).unwrap());
+            let mut case: Case = serde_json::from_value(row).unwrap();
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            cases.push(case);
         }
     }
     let identities: HashSet<_> = cases.iter().map(|case| (&case.test, &case.name)).collect();

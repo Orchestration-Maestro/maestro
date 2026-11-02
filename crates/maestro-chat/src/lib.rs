@@ -62,6 +62,9 @@ pub use components::authentication::{
 pub use components::session_picker::*;
 
 #[cfg(test)]
+pub(crate) use components::session_picker::list::tests::platform_keys;
+
+#[cfg(test)]
 extern crate self as maestro_chat;
 // The shared native test helpers name their child-process owner at the crate root.
 #[cfg(test)]

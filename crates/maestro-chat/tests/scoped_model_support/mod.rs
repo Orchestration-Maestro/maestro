@@ -3,6 +3,7 @@ use crate::{
     bindings::{self, Binding},
     manual_runtime::ManualRuntime,
     model_selector_support::Descriptor,
+    platform_keys::for_this_platform,
     published,
 };
 use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
@@ -135,6 +136,8 @@ struct Case {
     input: Query,
     /// Observations.
     expected: Expected,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Expected>,
 }
 /// Exact role palette supplied by the recording host.
 fn colors(shift: u8) -> Rc<Theme> {
@@ -329,7 +332,8 @@ pub fn replay(name: &str) {
     );
     let selected: Vec<_> = cases.into_iter().filter(|case| case.test == name).collect();
     assert!(!selected.is_empty());
-    for case in selected {
+    for mut case in selected {
+        case.expected = for_this_platform(case.expected, case.expected_macos.take());
         assert_eq!(case.expected.branch, "success");
         let Query {
             ops, width, focus, ..

@@ -1,6 +1,7 @@
 //! Strict recorded queries and controlled renderer callbacks.
 mod callbacks;
 pub(crate) use crate::manual_runtime;
+use crate::platform_keys::for_this_platform;
 use crate::published;
 mod records;
 use crate::registry::REGISTRY;
@@ -172,7 +173,15 @@ pub fn group(name: &str) {
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let _restore = Restore(get_keybindings());
     let text = include_str!("../fixtures/tool_rows.json");
-    let corpus: Corpus = serde_json::from_str(text).unwrap();
+    let mut corpus: Corpus = serde_json::from_str(text).unwrap();
+    corpus.cases = corpus
+        .cases
+        .into_iter()
+        .map(|mut case| {
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            case
+        })
+        .collect();
     let raw: serde_json::Value = serde_json::from_str(text).unwrap();
     let mut unique = HashSet::new();
     for row in raw["cases"].as_array().unwrap() {

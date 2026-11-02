@@ -1,8 +1,7 @@
 //! Portable platform guidance through the keyboard-help formatter.
 use super::editing_keys;
 
-#[path = "../../../tests/support/platform_keys.rs"]
-pub(crate) mod platform_keys;
+use crate::platform_keys;
 
 #[test]
 fn hotkeys_newline_guidance_covers_supported_hosts() {
