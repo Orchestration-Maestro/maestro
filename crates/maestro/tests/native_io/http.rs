@@ -180,6 +180,32 @@ fn native_fetch_returns_non_success_responses() {
     rpc.finish();
 }
 
+#[test]
+fn native_fetch_drop_cancels_attempt_without_aborting_caller() {
+    let root = Root::new();
+    let provider = super::HeldProvider::new();
+    let mut rpc = super::connected(&root, &provider.base);
+    let endpoint = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/pending", endpoint.local_addr().unwrap());
+    call(&mut rpc, &json!({"op":"arm", "url":url}));
+    rpc.request(json!({"type":"prompt", "message":"pending-http"}));
+    let (mut socket, _) = endpoint.accept().unwrap();
+    request(&mut socket);
+    assert_eq!(provider.request.recv().unwrap()["model"], "controlled");
+
+    call(&mut rpc, &json!({"op":"drop_pending"}));
+
+    assert_eq!(
+        socket.read(&mut [0]).unwrap(),
+        0,
+        "fetch must release its transport"
+    );
+    assert_eq!(call(&mut rpc, &json!({"op":"aborted"})), false);
+    rpc.request(json!({"type":"abort"}));
+    assert_eq!(call(&mut rpc, &json!({"op":"aborted"})), true);
+    rpc.finish();
+}
+
 /// Aborts the original active-run signal at one selected HTTP phase.
 fn abort_phase(body: bool) {
     let root = Root::new();
