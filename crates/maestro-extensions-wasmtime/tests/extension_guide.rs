@@ -42,7 +42,7 @@ fn prepared_extension_guide_runs_without_a_build_toolchain() {
     let scratch = Scratch::new().unwrap();
     let missing = scratch.path().join("missing-toolchain");
     let output = maestro_test_process::TestProcess::named(
-        "extension_guide::extension_guide_builds_and_loads_from_a_clean_folder",
+        "extension_guide::extension_guide_loads_and_invokes_from_a_clean_folder",
     )
     .unwrap()
     .env("CARGO", &missing)
@@ -53,9 +53,9 @@ fn prepared_extension_guide_runs_without_a_build_toolchain() {
     assert!(output.status.success(), "{output:?}");
 }
 
-/// The guide's project builds outside the workspace and registers a live greeting tool.
+/// The prepared guide component loads in a clean folder and invokes a live greeting tool.
 #[test]
-fn extension_guide_builds_and_loads_from_a_clean_folder() {
+fn extension_guide_loads_and_invokes_from_a_clean_folder() {
     let started = Instant::now();
     let (scratch, component) = project();
     let root = scratch.path();

@@ -1369,13 +1369,29 @@ fn prepared_cargo_checks_refuse_stale_inputs_and_artifacts() {
     let original = fs::read(&artifact).unwrap();
     let source = root.join("examples/extensions/hello.rs");
     let original_source = fs::read(&source).unwrap();
-    for change in ["missing", "bytes", "source"] {
-        match change {
-            "missing" => fs::remove_file(&artifact).unwrap(),
-            "bytes" => fs::write(&artifact, b"changed").unwrap(),
-            "source" => fs::write(&source, "changed").unwrap(),
-            _ => unreachable!(),
-        }
+    let receipt = bundle.join("cargo-checks.json");
+    let original_receipt = fs::read(&receipt).unwrap();
+    let mutations: [(&dyn Fn(), &str); 5] = [
+        (
+            &|| fs::remove_file(&artifact).unwrap(),
+            "MAESTRO_GUIDE_COMPONENT.wasm",
+        ),
+        (
+            &|| fs::write(&artifact, b"changed").unwrap(),
+            "stale prepared file",
+        ),
+        (
+            &|| fs::write(&source, "changed").unwrap(),
+            "stale prepared component inputs",
+        ),
+        (&|| fs::remove_file(&receipt).unwrap(), "cargo-checks.json"),
+        (
+            &|| fs::write(&receipt, b"invalid json").unwrap(),
+            "cargo-checks.json",
+        ),
+    ];
+    for (mutate, expected) in mutations {
+        mutate();
         let environment = root.join("cargo-checks-env");
         let output = Command::new(env!("CARGO_BIN_EXE_development"))
             .args(["nextest-setup", "cargo-checks"])
@@ -1386,10 +1402,13 @@ fn prepared_cargo_checks_refuse_stale_inputs_and_artifacts() {
             .env("NEXTEST_ENV", &environment)
             .output()
             .unwrap();
-        assert!(!output.status.success(), "accepted {change}");
+        assert!(!output.status.success(), "accepted mutation for {expected}");
+        let diagnostic = String::from_utf8_lossy(&output.stderr);
+        assert!(diagnostic.contains(expected), "{diagnostic}");
         assert!(!environment.exists());
         fs::write(&artifact, &original).unwrap();
         fs::write(&source, &original_source).unwrap();
+        fs::write(&receipt, &original_receipt).unwrap();
     }
 }
 

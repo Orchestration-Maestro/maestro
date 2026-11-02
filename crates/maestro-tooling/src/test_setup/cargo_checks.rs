@@ -35,7 +35,9 @@ pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String
         return Err(at(&output, "the path must stay on one line"));
     }
     let path = output.join(RECEIPT);
-    let record: Prepared = serde_json::from_slice(&std::fs::read(&path)?)?;
+    let record: Prepared =
+        serde_json::from_slice(&std::fs::read(&path).map_err(|error| at(&path, error))?)
+            .map_err(|error| at(&path, error))?;
     record.inputs.verify(checkout, &output)?;
     if record.files.len() != VARIABLES.len() {
         return Err(at(&output, "incomplete prepared Cargo checks"));
