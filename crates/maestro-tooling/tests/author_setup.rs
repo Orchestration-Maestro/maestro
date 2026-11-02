@@ -352,8 +352,8 @@ enum Home {
 }
 
 /// The bundle carries the code the setup example compiled, and a shard installs it for the
-/// modification time its executables share, in the directory the example reports,
-/// a relative `HOME` included.
+/// modification time its executables share, in the directory the example reports.
+/// A relative `HOME` without an absolute XDG cache stops setup before cache installation.
 #[test]
 fn archived_author_setup_installs_the_prepared_compiled_code() {
     for home in [Home::Unset, Home::Absolute, Home::Relative] {
@@ -373,12 +373,19 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         if let Some(value) = &value {
             command.env_remove("XDG_CACHE_HOME").env("HOME", value);
         }
-        assert_success(&command.output().unwrap());
-        let cache = if value.is_some() {
-            root.join("home/.cache")
-        } else {
-            root.join("cache-home")
-        };
+        let output = command.output().unwrap();
+        if matches!(home, Home::Relative) {
+            assert!(!output.status.success());
+            assert!(
+                String::from_utf8_lossy(&output.stderr).contains("cache directory query failed")
+            );
+            assert!(!root.join("nextest-env").exists());
+            assert!(!root.join("home").exists());
+            assert!(!root.join("cache-home").exists());
+            continue;
+        }
+        assert_success(&output);
+        let cache = value.map_or_else(|| root.join("cache-home"), |home| home.join(".cache"));
         let milliseconds =
             fs::metadata(root.join("target/debug/examples/prepare_author_component"))
                 .unwrap()
