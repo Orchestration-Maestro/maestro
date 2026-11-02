@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::edit_render_support::for_this_platform;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use maestro_tools::{WriteOperations, WriteToolInput};
 use serde::Deserialize;
@@ -23,6 +24,8 @@ pub struct Row {
     pub input: Value,
     /// Complete expectation.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 
 /// The committed corpus.
@@ -77,7 +80,16 @@ pub fn theme_keys() -> Vec<String> {
 
 /// The nonempty group of one test.
 pub fn rows(test: &str) -> Vec<Row> {
-    let rows = corpus().tests.remove(test).unwrap_or_default();
+    let rows = corpus()
+        .tests
+        .remove(test)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|mut row| {
+            row.expected = for_this_platform(row.expected, row.expected_macos.take());
+            row
+        })
+        .collect::<Vec<_>>();
     assert!(
         GROUPS.contains(&test) && !rows.is_empty(),
         "empty group {test}"

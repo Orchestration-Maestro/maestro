@@ -234,6 +234,26 @@ runs skip it. Native package selection and the coverage floor stay unchanged.
 See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.15.0/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
 
+## Extension guide lock
+
+Run `just example-index` after changing dependencies to regenerate the extension
+index, example targets and the standalone extension guide's `Cargo.lock`.
+`just check` runs `just example-index-check`, which reports stale generated files
+without changing them and names the regeneration command.
+
+The generator seeds a disposable copy of the guide project with the workspace
+`Cargo.lock`, then lets Cargo resolve offline. This retains the workspace's exact
+versions and uses the actual guide manifest and guest dependencies, rather than
+maintaining a second dependency list. The clean-folder guide test still builds
+with `--locked`. Populate the Cargo cache first if offline resolution reports a
+missing package; generation does not fetch dependencies.
+
+The tooling tests cover stale-lock detection, regeneration and resolver failures.
+Their path-only dependencies do not prove that resolution retains the workspace's
+registry versions: a matching Cargo cache can produce the same lock without the
+workspace seed. The shipped-index check compares the committed lock with the
+resolver's output, but it is not an independent test of workspace seeding.
+
 ## Feature unification
 
 See [dependency locks](dependency_locks.md) for generated-lock ownership,
@@ -516,6 +536,17 @@ stay in their existing integration-test support modules.
 
 Use the shared fixture without changing the caller's assertions or adding a
 production feature for test access.
+
+### FTP peer support
+
+The models tests share the scripted peer in
+`crates/maestro-models/tests/support/ftp_server.rs`. Library tests also load
+`ftp_server_timing.rs` for `Peer::reached` and `Peer::written`; the integration
+program uses only the common peer. Check both programs for unused support:
+
+```sh
+cargo clippy -p maestro-models --all-targets --locked -- -D warnings
+```
 
 ### Slowest-first test order
 
