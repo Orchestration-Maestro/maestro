@@ -362,7 +362,7 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
 fn launch_umask_cases(test: &str) -> bool {
     use maestro_test_process::TestProcess;
     if let Ok(mask) = std::env::var("MAESTRO_REPLACE_UMASK") {
-        let mask = u32::from_str_radix(&mask, 8).unwrap();
+        let mask = rustix::fs::RawMode::from_str_radix(&mask, 8).unwrap();
         rustix::process::umask(rustix::fs::Mode::from_bits_retain(mask));
         return false;
     }
