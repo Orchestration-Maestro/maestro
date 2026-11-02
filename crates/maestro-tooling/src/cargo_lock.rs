@@ -1,6 +1,6 @@
 //! The packages of `Cargo.lock` and the dependency graph between them.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io;
 use std::path::Path;
 
@@ -51,8 +51,63 @@ impl Lock {
     /// # Errors
     /// Returns a failed read or parse.
     pub(crate) fn read(checkout: &Path) -> io::Result<Self> {
-        let text = std::fs::read_to_string(checkout.join("Cargo.lock"))?;
-        toml::from_str(&text).map_err(io::Error::other)
+        let path = checkout.join("Cargo.lock");
+        let read = || {
+            let text = std::fs::read_to_string(&path)?;
+            toml::from_str(&text).map_err(io::Error::other)
+        };
+        read().map_err(|error: io::Error| {
+            io::Error::new(error.kind(), format!("{}: {error}", path.display()))
+        })
+    }
+
+    /// Find the version of exactly one named package.
+    ///
+    /// # Errors
+    /// Returns an error when the lock omits the package or contains multiple versions.
+    pub(crate) fn version(&self, name: &str) -> io::Result<&str> {
+        let mut packages = self.package.iter().filter(|package| package.name == name);
+        let package = packages
+            .next()
+            .ok_or_else(|| io::Error::other(format!("Cargo.lock has no {name} package")))?;
+        if packages.next().is_some() {
+            return Err(io::Error::other(format!(
+                "Cargo.lock has multiple {name} packages"
+            )));
+        }
+        Ok(&package.version)
+    }
+
+    /// Refuse external identities absent from this lock, allowing removed or local packages.
+    ///
+    /// # Errors
+    /// Returns an error for empty package records or an added external identity.
+    pub(crate) fn check_external_identities(&self, other: &Self) -> io::Result<()> {
+        if self.package.is_empty() || other.package.is_empty() {
+            return Err(io::Error::other("Cargo.lock must contain package records"));
+        }
+        let known: HashSet<_> = self
+            .package
+            .iter()
+            .filter(|package| package.source.is_some())
+            .map(LockedPackage::identity)
+            .collect();
+        for package in other
+            .package
+            .iter()
+            .filter(|package| package.source.is_some())
+        {
+            if !known.contains(&package.identity()) {
+                return Err(io::Error::other(format!(
+                    "Cargo.lock introduced external dependency {} {} from {} (checksum {})",
+                    package.name,
+                    package.version,
+                    package.source.as_deref().unwrap_or("none"),
+                    package.checksum.as_deref().unwrap_or("none")
+                )));
+            }
+        }
+        Ok(())
     }
 
     /// Every locked package, in lock order.
@@ -95,6 +150,18 @@ impl Lock {
             edges,
             positions,
         }
+    }
+}
+
+impl LockedPackage {
+    /// The package coordinates that must remain unchanged by offline scratch resolution.
+    fn identity(&self) -> (&str, &str, Option<&str>, Option<&str>) {
+        (
+            &self.name,
+            &self.version,
+            self.source.as_deref(),
+            self.checksum.as_deref(),
+        )
     }
 }
 

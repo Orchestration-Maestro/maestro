@@ -27,9 +27,6 @@ pub fn git(dir: &str, args: &[&str]) -> String {
 }
 
 #[cfg(unix)]
-pub use maestro_test_process::native::install_executable;
-
-#[cfg(unix)]
 /// Install the prepared native fixture as `name` below `directory`, selected by `record`.
 pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")

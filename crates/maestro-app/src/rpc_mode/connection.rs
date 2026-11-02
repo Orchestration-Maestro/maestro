@@ -10,11 +10,12 @@ use super::{
 };
 use crate::agent_session::AgentSession;
 use crate::rpc_types::{
-    RpcCommandBody, RpcCommandRejection, RpcResponse, names, parse_rpc_command, workspace,
+    RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command, workspace,
     workspace_schema,
 };
 use crate::utils::task::start_now;
 use maestro_json::jsonl::JsonlLineSplitter;
+use maestro_json::object::names;
 use serde_json::Value;
 use std::{
     cell::RefCell,
@@ -459,7 +460,7 @@ pub(super) fn write_to(connection: &Weak<Connection>, record: RpcRecord<'_>) -> 
 fn rejected(rejection: RpcCommandRejection) -> RpcResponse {
     match rejection {
         RpcCommandRejection::Invalid { command, error, .. }
-            if names::<workspace::RpcCommand>(&command) =>
+            if names::<workspace::RpcCommand>("type", &command) =>
         {
             RpcResponse::Workspace(Box::new(workspace::RpcResponse {
                 id: Some(String::new()),

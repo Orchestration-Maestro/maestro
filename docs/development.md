@@ -203,24 +203,38 @@ The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
 execution uses an unregistered temporary cdylib pointing at the unchanged
 `tests/integration.rs`, with `--cfg test` applied only to its root crate. Scratch
-dependencies come from the current manifests. Packaging first fetches the
-checkout's locked dependencies, which may require network access on a cold cache.
-Offline scratch lock preparation rejects new external package identities. The
-authored manifests and lock stay unchanged.
-Build outputs remain in Cargo's resolved target directory.
+dependencies come from the current manifests. Packaging builds the Rust setup
+command before fetching the checkout's locked dependencies. Either operation may
+require network access on a cold cache. Rust repository tooling prepares the
+scratch manifest and compares its resolved lock with the checkout lock. It resolves
+workspace dependency aliases, combines
+normal, WebAssembly and development features, anchors dependency and patch paths
+to the checkout, and retains the library source and development profile. Native-only
+dependencies stay outside the browser library. Preparation copies `Cargo.lock`
+and `rust-toolchain.toml` and links the authored test directory.
+
+The driver's `browser-export-setup` operations use the existing `development`
+command. `binding-version` checks the observed CLI version against the single
+locked `wasm-bindgen` package. `prepare` takes a scratch directory; `check-lock`
+takes that same directory after offline Cargo resolution. Missing or malformed
+manifest/lock data fails preparation. Lock errors and manifest parse errors include
+the filename. An inherited dependency missing from the workspace fails with its
+alias. External identities include name, version, source and checksum; any addition
+fails before compilation. The authored manifests
+and lock stay unchanged. Build outputs remain in Cargo's resolved target directory.
 
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 19 loading exports and 49 contribution exports. Packaging
+26 execution exports, 49 loading exports and 194 contribution exports. Packaging
 also builds the two runtime-module fixtures, each from its own manifest and lock
 with its own binding glue, into a copy of the fixture package. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAMILY` total, the unchanged `HOST` digest and
-`COMPLETE 94/94` on success. `PHASE` records
+`COMPLETE 269/269` on success. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
@@ -1263,6 +1277,58 @@ signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
 
+#### Footer Git aliases
+
+Run the footer observation tests with their prepared native Git aliases:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-app -E 'test(/footer_/)'
+```
+
+On Unix, `maestro_test_process::git_command::Scenario` selects a compiled stand-in
+behavior. Call `maestro_test_process::git_command::install(entry, scenario)` to copy
+the prepared artifact and write its sibling `<alias>.fixture` record, which holds
+`git` and `scenario.name()` on separate lines. Install the alias in a disposable
+binary directory and put that directory first on the `PATH` of the test child that
+reaches the footer operations. The two lookup scenarios answer the operands and
+the physical directory their launch supplied; `GIT_EXIT` selects their status and
+defaults to a successful lookup.
+
+| Scenario | Behavior |
+| --- | --- |
+| `Observed` | Writes the operands, the directory and, where the platform publishes them, the descriptor targets of standard input and standard error to `GIT_LOG`; writes one diagnostic, answers `feature/native` and ends with `GIT_EXIT`. |
+| `Reported` | Writes the operands and the directory to standard output, then ends with `GIT_EXIT`. |
+| `Exiting` | Writes an unterminated ` prefix` and starts the descendant named by `GIT_HOLDER` on the port in `holder-port`, passing its own identifier as `GIT_PARENT`, then exits without waiting for it. |
+| `Retaining` | Reads its port from `GIT_PORT`, reports the identifier in `GIT_PARENT`, waits for one release byte and adds ` tail` to the retained output. |
+
+`Exiting` and `Retaining` keep the descriptor topology of a real linked
+descendant instead of a thread: the direct child ends while its own child still
+holds the output pipe, so the footer query completes only after the test releases
+it. The announced identifier is the direct child's, so a test that watches for
+process completion waits for the launched child rather than the descendant.
+Install both aliases in one disposable binary directory:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let directory = maestro_test_directory::Scratch::new()?;
+    let bin = directory.path().join("bin");
+    std::fs::create_dir(&bin)?;
+    maestro_test_process::git_command::install(
+        &bin.join("git"),
+        maestro_test_process::git_command::Scenario::Exiting,
+    )?;
+    maestro_test_process::git_command::install(
+        &bin.join("git-holder"),
+        maestro_test_process::git_command::Scenario::Retaining,
+    )?;
+    Ok(())
+}
+```
+
+The installed aliases read their record instead of harness arguments, so the
+product keeps its own operands, working directory and standard descriptors.
+
 #### Search and completion aliases
 
 On Unix, install the same artifact as `fd`, `fdfind` or `rg` to control search
@@ -1536,6 +1602,7 @@ a hang or runaway memory as a finding.
 | `terminal-escapes` | `maestro_terminal::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
+| `git-worktrees` | `maestro_daemon::git::worktree::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
 
 The text targets skip input that is not UTF-8, because their callers only pass
 decoded text. Seeds come from the existing test fixtures and live in
@@ -1553,6 +1620,7 @@ finding:
 | `terminal-escapes` | 4096 | 10 | 2048 |
 | `protocol-frames` | 4096 | 10 | 2048 |
 | `tool-call-arguments` | 4096 | 10 | 2048 |
+| `git-worktrees` | 4096 | 10 | 2048 |
 
 The Markdown limits keep the largest seed whole. Under the instrumented fuzz
 build, 128 KB of ordinary Markdown takes 12 to 23 seconds, depending on

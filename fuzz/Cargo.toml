@@ -12,12 +12,20 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "=0.4.13"
+maestro-daemon = { path = "../crates/maestro-daemon" }
 maestro-markdown = { path = "../crates/maestro-markdown" }
 maestro-models = { path = "../crates/maestro-models" }
 maestro-protocol = { path = "../crates/maestro-protocol" }
 maestro-resources = { path = "../crates/maestro-resources" }
 maestro-terminal = { path = "../crates/maestro-terminal" }
 maestro-tui = { path = "../crates/maestro-tui" }
+
+[[bin]]
+name = "git-worktrees"
+path = "fuzz_targets/git_worktrees.rs"
+test = false
+doc = false
+bench = false
 
 [[bin]]
 name = "markdown"

@@ -17,10 +17,12 @@ use maestro_app::presentation_data::footer_data_provider::{ExtensionStatuses, Fo
 use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
+#[cfg(unix)]
+use maestro_test_process::git_command;
 use serde::Deserialize;
 use support::{Entry, Git, MetadataEffects, load, plain, provider, target};
 #[cfg(unix)]
-use support::{Scratch, git, install_executable, probe};
+use support::{Scratch, git, probe};
 
 /// An optional branch as a fixture spells it.
 type Branch = Option<String>;
@@ -198,13 +200,11 @@ fn native_git_observations(args: &[String]) {
         std::fs::create_dir(scratch.join(dir)).expect("directory");
     }
     std::fs::write(scratch.join("repo/.git/HEAD"), "ref: refs/heads/.invalid\n").expect("HEAD");
-    let script = "#!/bin/sh\n{ printf '%s\\n' \"$*\"; pwd -P; readlink /proc/self/fd/0; readlink /proc/self/fd/2; } > \"$FOOTER_LOG\"\necho noise >&2\necho feature/native\nexit \"$FOOTER_EXIT\"\n";
-    std::fs::write(scratch.join("git.sh"), script).expect("script");
-    install_executable(
-        Path::new(&scratch.join("git.sh")),
+    git_command::install(
         Path::new(&scratch.join("bin/git")),
+        git_command::Scenario::Observed,
     )
-    .expect("install starts");
+    .expect("alias installs");
     let log = scratch.join("log");
     let path = format!("{}:/usr/bin:/bin", scratch.join("bin"));
     let repo = scratch.join("repo");
@@ -219,8 +219,8 @@ fn native_git_observations(args: &[String]) {
             &[
                 ("FOOTER_PROBE_REPO", &repo),
                 ("PATH", path),
-                ("FOOTER_LOG", &log),
-                ("FOOTER_EXIT", exit),
+                ("GIT_LOG", &log),
+                ("GIT_EXIT", exit),
             ],
             &[],
         )

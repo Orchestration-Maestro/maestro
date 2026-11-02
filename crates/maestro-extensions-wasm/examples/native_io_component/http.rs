@@ -113,7 +113,7 @@ async fn execute(io: Rc<dyn NativeIo>, slot: &Rc<Slot>, args: &str) -> Extension
                 .ok_or("no pending HTTP operation")?;
             return work.await;
         }
-        "aborted" | "drop_response" | "drop_body" | "close" => {
+        "aborted" | "drop_pending" | "drop_response" | "drop_body" | "close" => {
             return observe(slot, action["op"].as_str().unwrap_or_default());
         }
         "read" | "start_read" | "text" | "json" | "aliases" => {
@@ -146,6 +146,9 @@ fn observe(slot: &Slot, operation: &str) -> ExtensionResult<Value> {
                     .as_ref()
                     .is_some_and(AbortSignal::aborted)
             ));
+        }
+        "drop_pending" => {
+            slot.pending.borrow_mut().take();
         }
         "drop_response" => {
             slot.response.borrow_mut().take();

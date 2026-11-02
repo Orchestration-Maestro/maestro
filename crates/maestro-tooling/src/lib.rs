@@ -18,6 +18,8 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Temporary browser-export manifest preparation and lock checks.
+mod browser_export_setup;
 /// The locked packages and the dependency graph between them.
 mod cargo_lock;
 /// Offline generation of locale date-time tables.
@@ -89,6 +91,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         Some("example-index") => example_index::run(args, cargo, checkout),
         Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
+        Some("browser-export-setup") => browser_export_setup::run(args, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;

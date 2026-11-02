@@ -46,10 +46,10 @@ impl State {
             Request::Fetch(fetch, reply, admission) => {
                 let registry = self.registry.clone();
                 self.admit(
-                    Box::pin(async move {
-                        let result = fetch_response(&registry, fetch).await;
-                        let _ = reply.send(result);
-                    }),
+                    super::native_resources::consuming(
+                        Box::pin(async move { fetch_response(&registry, fetch).await }),
+                        reply,
+                    ),
                     admission,
                 );
             }
