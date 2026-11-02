@@ -32,19 +32,18 @@ Run `cargo hakari generate` after changing dependencies, their features or
 [development](docs/development.md#feature-unification)).
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
-The commit hook formats the code, re-stages the staged files and names the
-selection, then runs the shared check recipe for the staged crates and every
-workspace crate that depends on them. A staged workspace-wide input runs the full
-workspace check instead: a manifest, the lockfile, `.cargo/`, the toolchain, the
-justfile, Clippy or mise settings, the hook configuration, the workspace
-inventory, CI files, root documentation or assets, or the conventions crate. The
-hook runs the full conventions suite when a staged path is under
-`crates/maestro-test-conventions/`, and the browser smoke check only when the
-selection compiles the browser entry. Unformatted code is fixed, never rejected.
-It also rejects merge-conflict markers, invalid TOML or YAML, and a secret in the
-staged change. The commit-msg hook enforces the message rule in
-[Git discipline](#test-and-git-discipline). `just check` and shared CI stay the full
-workspace checks.
+The commit hook formats only the crates holding staged paths, re-stages captured
+files that remain on disk and names the selection, then runs Clippy on those
+crates with `--all-targets --locked -- -D warnings`. Member manifests select their
+crate; root inputs select no crates and never widen a mixed change's selection.
+With no staged crate, the hook skips formatting and Clippy. The full conventions
+suite runs only for staged paths under `crates/maestro-test-conventions/`.
+Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
+the browser entry is present. Unformatted code is fixed, never rejected.
+The hook also rejects merge-conflict markers, invalid TOML or YAML, and a secret
+in the staged change. The commit-msg hook enforces the message rule in
+[Git discipline](#test-and-git-discipline). `just check` and shared CI keep the full
+workspace checks, including dependents.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
