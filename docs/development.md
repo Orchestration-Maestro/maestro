@@ -1109,7 +1109,7 @@ Stage the setup tool before a filtered native-fixture run:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-test-process
+cargo nextest run --locked -p maestro-test-process -p maestro-process
 ```
 
 Use checked reruns when the test owns the invocation and harness framing. Use the
@@ -1121,8 +1121,8 @@ is [Rust test children](specs/test-processes.md).
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools`, `maestro-models`, the toolkit's attachment-completion tests and
-`maestro-app`. Local setup builds the example
+`maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
+attachment-completion tests and `maestro-app`. Local setup builds the example
 with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1147,6 +1147,19 @@ An unknown or malformed record fails before connecting or writing the optional
 `MTP_EFFECT` sentinel. Direct invocation uses `--maestro-observe <record> <operands>`;
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
+
+Two further families stand in for a program the product itself launches. An
+`editor` record reports the file the controlled editor was asked to edit, skips
+the editor's own `--custom` option and ends with status 7. The process tests
+install it under the name the product resolves from `PATH`, so the shell
+evaluation under test stays real. An `echo` record prints the single line that
+follows it, which lets executable selection tests run a native program that
+prints the name their fixture authored. Neither family writes harness text.
+The editor writes the edited file's path to the file named by
+`MAESTRO_EDITOR_RESULT` and fails if that variable is unset. For example, with a
+`vi.fixture` record containing only `editor` and
+`MAESTRO_EDITOR_RESULT=/scratch/editor-result`, running `vi --custom notes.txt`
+writes `notes.txt` followed by a newline to `/scratch/editor-result` and exits 7.
 
 #### Command stand-ins
 

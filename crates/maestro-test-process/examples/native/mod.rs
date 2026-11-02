@@ -9,6 +9,8 @@ mod cargo;
 #[cfg(unix)]
 mod command;
 mod credentials;
+mod echo;
+mod editor;
 mod observe;
 #[cfg(unix)]
 mod rpc;
@@ -26,6 +28,10 @@ enum Request {
     Command(command::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Report the file a controlled editor was asked to edit.
+    Editor(editor::Record, Vec<OsString>),
+    /// Print one authored line and end.
+    Echo(echo::Record),
     /// Run a copied preparation example against its checkout-local declaration.
     Author(author::Record, Vec<OsString>),
     /// Answer as an AWS credential process or a Google executable source.
@@ -79,6 +85,8 @@ impl Request {
             #[cfg(unix)]
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
+            Some("echo") => Ok(Self::Echo(echo::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
             Some("credentials") => Ok(Self::Credentials(
                 credentials::Record::parse(&text)?,
@@ -101,6 +109,8 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Command(record, operands) => command::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        Request::Editor(record, operands) => editor::run(&record, &operands),
+        Request::Echo(record) => echo::run(&record, &[]),
         Request::Author(record, operands) => author::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]

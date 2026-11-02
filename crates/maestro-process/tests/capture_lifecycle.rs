@@ -1,7 +1,7 @@
 //! Captured native children observed through the public lifecycle interface.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::child_programs::{self, HeldMode, async_command};
+use crate::child_programs::{self, HeldMode, async_command, command};
 use crate::poll::is_pending;
 use maestro_process::child_process::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
@@ -185,13 +185,13 @@ fn exit_and_pipe_completion_orders_keep_output() {
                 "{case}"
             );
         }
-        let mut command = tokio::process::Command::new("true");
+        let mut command = async_command(child_programs::output_writer, &[]);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         let output = wait_for_child_process(&mut child, WaitOptions::default(), never(), None)
             .await
             .unwrap();
         assert!(output.status.success());
-        assert_eq!((output.stdout, output.stderr), (vec![], vec![]));
+        assert_eq!((output.stdout, output.stderr), (harness(b""), vec![]));
         let again = wait_for_child_process(&mut child, WaitOptions::default(), never(), None)
             .await
             .unwrap();
@@ -230,9 +230,9 @@ fn process_failures_preserve_native_error() {
             (native.kind(), native.raw_os_error())
         );
 
-        let mut cwd = tokio::process::Command::new("true");
+        let mut cwd = async_command(child_programs::output_writer, &[]);
         cwd.current_dir("/maestro-missing-directory");
-        let native = std::process::Command::new("true")
+        let native = command(child_programs::output_writer, &[])
             .current_dir("/maestro-missing-directory")
             .spawn()
             .unwrap_err();
@@ -242,7 +242,7 @@ fn process_failures_preserve_native_error() {
             (native.kind(), native.raw_os_error())
         );
 
-        let mut command = tokio::process::Command::new("true");
+        let mut command = async_command(child_programs::output_writer, &[]);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         wait_for_child_process(&mut child, WaitOptions::default(), never(), None)
             .await
@@ -256,7 +256,7 @@ fn process_failures_preserve_native_error() {
 fn capture_driver_releases_completed_stop_future() {
     runtime().block_on(async {
         let dropped = Rc::new(Cell::new(false));
-        let mut command = tokio::process::Command::new("true");
+        let mut command = async_command(child_programs::output_writer, &[]);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         let stop = Observed {
             inner: Box::pin(never()),
