@@ -59,6 +59,7 @@ fn operands() -> Vec<OsString> {
     operands
 }
 
+/// Native PATH execution preserves operands, process identity, environment and binary streams.
 #[test]
 fn path_aliases_keep_native_operands_pid_environment_and_raw_streams() {
     let root = Scratch::new().unwrap();
@@ -112,6 +113,7 @@ fn path_aliases_keep_native_operands_pid_environment_and_raw_streams() {
     }
 }
 
+/// Invalid selectors and records fail before fixture or installation effects.
 #[test]
 fn invalid_native_requests_leave_the_effect_sentinel_absent() {
     let root = Scratch::new().unwrap();
@@ -156,6 +158,7 @@ fn invalid_native_requests_leave_the_effect_sentinel_absent() {
     assert!(!sentinel.exists());
 }
 
+/// Concurrent installations leave launchable copies with independently mutable ages.
 #[test]
 fn parallel_installs_launch_independent_copies_while_siblings_are_live() {
     let root = Scratch::new().unwrap();
@@ -210,6 +213,7 @@ fn parallel_installs_launch_independent_copies_while_siblings_are_live() {
     );
 }
 
+/// The native child handle signals the same process that reported readiness.
 #[cfg(unix)]
 #[test]
 fn native_handle_stops_the_observed_child_by_signal() {
@@ -235,6 +239,7 @@ fn native_handle_stops_the_observed_child_by_signal() {
     assert_eq!(child.wait_with_output().unwrap().status.signal(), Some(9));
 }
 
+/// Forwarded metadata replaces the Cargo fixture without changing its native identity.
 #[cfg(unix)]
 #[test]
 fn cargo_metadata_forwarding_keeps_the_native_child_pid() {
