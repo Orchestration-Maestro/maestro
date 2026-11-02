@@ -418,19 +418,12 @@ fn newest_form(log: &Log) -> std::collections::HashMap<String, String> {
         .collect()
 }
 
-/// The executable-sourced script, created through a child process so it is never written and run in-process.
+/// The executable-sourced program, installed from the prepared native fixture.
 #[cfg(unix)]
 fn executable_source(files: &super::Files) -> String {
-    let script = files.0.path().join("script.tmp");
-    std::fs::write(&script, "#!/bin/sh\nprintf '{\"version\":1,\"success\":true,\"token_type\":\"urn:ietf:params:oauth:token-type:jwt\",\"id_token\":\"subject-exec\",\"expiration_time\":4102444800}'\n").unwrap();
+    use maestro_test_process::credentials::{Scenario, install};
     let program = files.0.path().join("script.sh");
-    let status = std::process::Command::new("install")
-        .args(["-m", "0700"])
-        .arg(&script)
-        .arg(&program)
-        .status()
-        .unwrap();
-    assert!(status.success());
+    install(&program, Scenario::GoogleExecutable).unwrap();
     program.to_str().unwrap().to_owned()
 }
 
