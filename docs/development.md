@@ -147,6 +147,18 @@ hiding missing helper activation. Portable helper imports, owner modules and
 Keep native-only collaborators and their imports conditional. Library and example
 checks alone do not compile integration tests.
 
+For model tests, lint every target, including the portable output-budget and
+stream-option assertions:
+
+```sh
+~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+  --all-targets -p maestro-models -- -D warnings
+```
+
+Build `Threaded` callbacks through `Execution::share`: it selects `Arc` on native
+targets and `Rc` on wasm32. Keep native-only helper predicates matched to their
+callers; pure thinking-budget assertions compile on both targets.
+
 Native socket, process and runtime fixtures stay with their native tests.
 Portable assertions remain in browser targets, with strictly parsed fixture
 records owned by their readers. A test that needs a Tokio runtime, a checked
