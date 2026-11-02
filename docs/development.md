@@ -23,14 +23,24 @@ x64 hosts, independently of the compilation target. A successful `mise lock` can
 still skip unresolved hosts; check its platform inventory. Follow the
 [repository setup guidance](../AGENTS.md#checks) when installing pinned tools.
 
-The commit hook formats and re-stages the staged files, announces `Selected
-crates: ...`, then verifies the staged crates and every workspace crate that
-depends on them. A staged workspace-wide input runs the full workspace check
-instead: a manifest, the lockfile, `.cargo/`, the toolchain, the justfile, Clippy
-or mise settings, the hook configuration, the workspace inventory, CI files, root
-documentation or assets, or the conventions crate. `_check` is the private recipe
-that receives either `--workspace` or repeated `-p <package>` arguments, so the
-hook and `check` share one command list; `check` passes `--workspace`.
+The commit hook selects only the crates holding staged files, including member
+manifests. It runs `cargo fmt -p <package>` for those crates, re-stages the captured
+files that remain on disk, announces `Selected crates: ...`, then runs
+`cargo clippy -p <package> --all-targets --locked -- -D warnings`. Multiple crates
+use repeated `-p` arguments. Formatting failures and Clippy warnings block the
+commit. Files changed by formatting but absent from the captured index stay
+unstaged.
+
+Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
+no crates. They never widen a mixed change's selection. With no staged crate, the
+hook skips formatting and Clippy. The full conventions suite runs only for staged
+paths under `crates/maestro-test-conventions/`, guarding the checker itself.
+Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
+the browser entry is present, guarding targets outside native Clippy.
+
+CI checks dependents and workspace-wide inputs. `just check` keeps the full
+workspace gate: its private `_check` recipe verifies feature unification, runs
+Clippy, builds strict public documentation and checks workspace conventions.
 
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
