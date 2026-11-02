@@ -52,6 +52,7 @@ mod shared_tree_projection;
 mod shell_rows;
 mod simple_selector_cases;
 mod simple_selectors;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::subprocess;
 mod tool_rows;
 #[path = "support/tree.rs"]

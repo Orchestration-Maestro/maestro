@@ -111,6 +111,7 @@ mod json_boundary_consumers;
 mod json_equivalence;
 #[path = "support/key_selection.rs"]
 mod key_selection;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::loopback;
 mod message_adaptive_thinking;
 mod message_eager_input;

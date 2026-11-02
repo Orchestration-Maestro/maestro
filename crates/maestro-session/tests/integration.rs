@@ -17,6 +17,7 @@ mod session_extraction;
 mod session_files;
 mod session_history;
 mod session_tree;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::subprocess;
 mod summary_generation;
 mod summary_text;

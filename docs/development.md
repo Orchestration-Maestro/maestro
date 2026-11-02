@@ -100,6 +100,19 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
+Compile each changed crate separately when checking helper availability:
+
+```sh
+~/.local/bin/capped cargo check --locked --tests \
+  --target wasm32-unknown-unknown -p maestro-tools
+```
+
+Checking one crate at a time prevents another crate's development features from
+hiding missing helper activation. Portable helper imports, owner modules and
+`test-support` development dependencies must all be available on browser targets.
+Keep native-only collaborators and their imports conditional. Library and example
+checks alone do not compile integration tests.
+
 Native socket, process and runtime fixtures stay with their native tests.
 Portable assertions remain in browser targets, with strictly parsed fixture
 records owned by their readers. A test that needs a Tokio runtime, a checked

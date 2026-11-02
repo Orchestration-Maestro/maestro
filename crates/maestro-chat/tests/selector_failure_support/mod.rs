@@ -1,4 +1,5 @@
 //! Strict recorded selector failures and shared original diagnostics.
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_app::OAuthError;
 pub use maestro_credentials::test_support::fallback_support::errors;
 use serde::Deserialize;

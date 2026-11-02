@@ -149,5 +149,5 @@ pub mod local {
 }
 
 /// Opt-in helpers for controlled tests.
-#[cfg(all(feature = "test-support", not(target_arch = "wasm32")))]
+#[cfg(feature = "test-support")]
 pub mod test_support;

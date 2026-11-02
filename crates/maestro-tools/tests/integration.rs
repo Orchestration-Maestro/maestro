@@ -15,7 +15,6 @@ mod display_cases;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_tools::test_support::display_context;
 mod display_helpers;
-#[cfg(not(target_arch = "wasm32"))]
 use maestro_tools::test_support::display_palette;
 mod display_support;
 mod edit_execution;
