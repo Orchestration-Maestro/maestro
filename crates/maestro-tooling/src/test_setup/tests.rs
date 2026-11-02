@@ -7,10 +7,10 @@ use std::process::Command;
 
 use cargo_metadata::Metadata;
 
-use super::inherited_components;
 use super::inputs::listed;
 use super::inputs::{Inputs, locked_closure};
 use super::plan::{closure_directories, component_inputs, plan};
+use super::*;
 
 /// Every name component discovery accepts is removed, including the bare and doubled
 /// underscore forms, and no other name is.
@@ -34,6 +34,89 @@ fn inherited_components_follow_the_discovery_rule() {
         ]
         .map(OsString::from)
     );
+}
+
+/// Native file names reach the real copy boundary when staging and restoring a bundle.
+#[test]
+fn executable_names_survive_bundle_copy_and_restore() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let built = scratch.path().join("built");
+    let bundle = scratch.path().join("bundle");
+    let restored = scratch.path().join("restored");
+    for directory in [&built, &bundle, &restored] {
+        std::fs::create_dir_all(directory).unwrap();
+    }
+    for (extension, example, exporter) in [
+        ("exe", "prepare_author_component.exe", "development.exe"),
+        ("", "prepare_author_component", "development"),
+    ] {
+        for (name, native) in [(EXAMPLE, example), (EXPORTER, exporter)] {
+            std::fs::write(built.join(native), b"native executable").unwrap();
+            let file = executable(name, extension);
+
+            copy(&built.join(&file), &bundle.join(&file)).unwrap();
+            std::fs::remove_file(built.join(native)).unwrap();
+            copy(&bundle.join(&file), &restored.join(&file)).unwrap();
+
+            assert_eq!(
+                std::fs::read(restored.join(native)).unwrap(),
+                b"native executable"
+            );
+        }
+    }
+}
+
+/// Bundle installation verifies and copies the native setup example beside test artifacts.
+#[test]
+fn bundle_export_installs_the_native_example() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    let bundle = root.join("bundle");
+    std::fs::create_dir_all(&bundle).unwrap();
+    let inputs = Inputs::new(root, BTreeSet::new(), BTreeSet::new()).unwrap();
+    let components = FIXED_COMPONENTS
+        .iter()
+        .map(|(_, _, variable)| {
+            std::fs::write(bundle.join(format!("{variable}.wasm")), b"component").unwrap();
+            (
+                (*variable).to_owned(),
+                Component {
+                    file: digest(b"component"),
+                    inputs: inputs.clone(),
+                },
+            )
+        })
+        .collect();
+    let native = format!("prepare_author_component{}", std::env::consts::EXE_SUFFIX);
+    std::fs::write(bundle.join(&native), b"native example").unwrap();
+    let manifest = Manifest {
+        shared: inputs.clone(),
+        tool: inputs.clone(),
+        browser: inputs,
+        components,
+        example: digest(b"native example"),
+        compiled: None,
+    };
+    std::fs::write(
+        bundle.join(MANIFEST),
+        serde_json::to_vec(&manifest).unwrap(),
+    )
+    .unwrap();
+    let artifacts = root.join("debug");
+    let environment = root.join("nextest-env");
+
+    export(root, &bundle, &artifacts, &environment, None).unwrap();
+
+    assert_eq!(
+        std::fs::read(artifacts.join("examples").join(native)).unwrap(),
+        b"native example"
+    );
+    let exported = std::fs::read_to_string(environment).unwrap();
+    assert_eq!(exported.lines().count(), FIXED_COMPONENTS.len());
+    for line in exported.lines() {
+        let (_, file) = line.split_once('=').unwrap();
+        assert_eq!(std::fs::read(file).unwrap(), b"component");
+    }
 }
 
 /// Whether a `test_prepare_inputs` pattern covers a file: the pattern names the file, or it is a

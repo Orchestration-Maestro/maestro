@@ -4,6 +4,7 @@
 //! from a prepared bundle installs the bundle's example there; any other run uses the test
 //! build's own example, or builds one.
 
+use std::env::consts::EXE_EXTENSION;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -11,7 +12,7 @@ use std::process::{Command, ExitCode};
 use super::normalize::{self, Outcome, archive_signalled};
 use super::{cargo, prepared_bundle};
 use crate::exit_code;
-use crate::test_setup::{self, EXAMPLE};
+use crate::test_setup::{self, EXAMPLE, executable};
 
 /// The sources the setup example is built from, beside the shared build and discovery
 /// directories listed below; the example is outdated once any of them is newer.
@@ -51,7 +52,9 @@ fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         return Ok(ExitCode::from(3));
     }
-    let example = directory.join("examples").join(EXAMPLE);
+    let example = directory
+        .join("examples")
+        .join(executable(EXAMPLE, EXE_EXTENSION));
     let mut command = Command::new(example);
     // The example takes the prepared components from its environment, so it only warms.
     for line in std::fs::read_to_string(&environment)?.lines() {
