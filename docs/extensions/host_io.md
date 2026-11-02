@@ -122,8 +122,12 @@ reads a file through a drive mounted with `subst`, an administrative share in
 the plain and `\\?\UNC\` spellings, a junction on each of those drives, a
 path that starts at the drive root, an absolute file link and a path longer
 than 260 characters through a directory link, in both generations. It also
-reads and creates link targets as in the last two rows above. macOS behavior is
-not separately qualified.
+reads and creates link targets as in the last two rows above.
+
+Hosted macOS checks also cover direct paths and absolute directory links below a
+search-only parent, denial after search permission is removed, and the native
+filesystem's refusal of a non-Unicode target name. Both standard filesystem
+generations retain native access through the search-only parent.
 
 ## Detached children
 
