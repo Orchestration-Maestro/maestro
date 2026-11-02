@@ -1,7 +1,8 @@
 # Local model catalog
 
 `maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
-model file. `create` uses native file operations; `with_operations` accepts
+model file or an ordered list of files. `create` uses native file operations;
+`with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential
 owner. Constructors take that credential as
@@ -12,6 +13,20 @@ which runs the commands that configured credential values name; it is a platform
 handle in the same way. Native file and command effects require `Send + Sync`;
 browser effects may capture local `Rc` state.
 
+`with_model_files` takes an ordered `Vec<String>` with supplied file operations.
+The single-file constructors use the same path with one entry. Later files
+replace supplied fields while retaining unsupplied provider and model-override
+fields. Custom models overlay by provider and ID: a later definition replaces
+the whole earlier definition without moving its first position. Compatibility
+overlays keep the loading rules below, including one-level routing overlays.
+
+`set_base_model_files` replaces the ordered base files below the construction-time
+files and refreshes the registry, replaying dynamic providers. An empty base that
+was already empty leaves the current catalog untouched. Session construction and
+reload use this operation for base-package contributions.
+
+[Configure custom models](models/custom.md) walks through editing `models.json`,
+local endpoints, field defaults and compatibility settings.
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
 ## Errors
@@ -40,6 +55,9 @@ Custom API and endpoint defaults come from the provider, then its first offline
 model; custom-model fields take precedence. Omitted custom metadata uses the ID
 as name, text input, no reasoning, zero prices, a 128000 context window and a
 16384 output limit.
+
+The `modelOverrides` of a provider also apply to the models an extension registers for it,
+and their `headers` are merged over the registered model's own.
 
 Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
@@ -178,6 +196,11 @@ and model-header sources at their later consuming phases.
 ## Authentication metadata
 
 `has_configured_auth` checks credential presence then configured key presence.
+Cloudflare API-key sources also require an account ID and, for AI Gateway, a
+gateway ID; missing or empty stored IDs fall back independently to the environment.
+Stored OAuth credentials with a registered OAuth handler remain available on
+presence alone, without account lookup, key extraction or refresh. Account
+configuration is still checked at request time.
 `get_available` returns a separate list of shared descriptors, preserving selected
 slot order and duplicates. `get_provider_auth_status` prefers credential metadata,
 otherwise describes a nonempty configured command, environment variable or literal key.

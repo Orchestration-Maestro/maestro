@@ -1,13 +1,17 @@
 //! A ripgrep tool that retains full output when the host's output limits are reached.
+// maestro-component: MAESTRO_TRUNCATED_TOOL_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    AgentToolResult, Component, ExecOptions, ExecResult, ExtensionAPI, ExtensionFuture,
-    ExtensionResult, Presence, Text, TextContent, Theme, ToolDefinition, ToolMetadata,
-    ToolRenderResultLike, ToolRenderResultOptions, UserBlock, tools, utils,
+    AgentToolResult, Component, ExtensionAPI, ExtensionFuture, ExtensionResult, Presence, Text,
+    TextContent, Theme, ToolDefinition, ToolMetadata, ToolRenderResultLike,
+    ToolRenderResultOptions, UserBlock,
+    child_process::{SpawnOptions, Stdio},
+    streams::Readable,
+    tools, utils,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -57,12 +61,37 @@ fn has_text(api: &ExtensionAPI, text: &str) -> ExtensionResult<bool> {
     Ok(false)
 }
 
-/// Runs literal search operands in the callback's supplied working directory.
+/// Exit code and decoded output streams of one search process.
+struct SearchOutput {
+    /// Numeric exit code, absent when a signal ended the process.
+    code: Option<i32>,
+    /// Matches, decoded lossily.
+    stdout: String,
+    /// Diagnostics, decoded lossily.
+    stderr: String,
+}
+
+/// Reads one output pipe to its end, decoding it lossily.
+///
+/// # Errors
+/// Returns native pipe-read errors.
+async fn read_to_end(pipe: Option<Rc<dyn Readable>>) -> ExtensionResult<String> {
+    let mut bytes = Vec::new();
+    if let Some(pipe) = pipe {
+        while let Some(chunk) = pipe.read().await? {
+            bytes.extend(chunk);
+        }
+    }
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+/// Starts ripgrep once with literal search operands in the callback's supplied working
+/// directory; a process that cannot start is an error.
 async fn search_output(
     api: &ExtensionAPI,
     params: &RgParams,
     cwd: String,
-) -> ExtensionResult<ExecResult> {
+) -> ExtensionResult<SearchOutput> {
     let mut args = vec!["--line-number".into(), "--color=never".into()];
     if let Some(glob) = params.glob.as_ref().filter(|glob| !glob.is_empty()) {
         args.extend(["--glob".into(), glob.clone()]);
@@ -76,25 +105,20 @@ async fn search_output(
             .filter(|path| !path.is_empty())
             .unwrap_or_else(|| ".".into()),
     ]);
-    let options = Some(ExecOptions {
+    let options = SpawnOptions {
         cwd: Some(cwd),
-        ..Default::default()
-    });
-    let output = api
-        .exec("rg", &args, options.clone())
-        .await
-        .map_err(|error| format!("ripgrep failed: {error}"))?;
-    // The host maps startup failures to the same empty status 1 as a no-match exit.
-    if output.code == 1 && output.stdout.is_empty() && output.stderr.is_empty() {
-        let version = api
-            .exec("rg", &["--version".into()], options)
-            .await
-            .map_err(|error| format!("ripgrep failed: {error}"))?;
-        if version.code != 0 {
-            return Err("ripgrep failed: could not start rg".into());
-        }
-    }
-    Ok(output)
+        stdio: [Stdio::Ignore, Stdio::Pipe, Stdio::Pipe],
+        ..SpawnOptions::default()
+    };
+    let child = api.native_io().spawn("rg".into(), args, options).await?;
+    let stdout = read_to_end(child.stdout()).await?;
+    let stderr = read_to_end(child.stderr()).await?;
+    let code = child.wait().await?.code;
+    Ok(SearchOutput {
+        code,
+        stdout,
+        stderr,
+    })
 }
 
 /// Saves complete output in a private directory, awaiting the native file queue.
@@ -136,11 +160,13 @@ async fn execute(
     params: RgParams,
     cwd: String,
 ) -> ExtensionResult<AgentToolResult> {
-    let output = search_output(&api, &params, cwd).await?;
-    if output.code == 1 {
+    let output = search_output(&api, &params, cwd)
+        .await
+        .map_err(|error| format!("ripgrep failed: {error}"))?;
+    if output.code == Some(1) && output.stdout.is_empty() && output.stderr.is_empty() {
         return result(&params, "No matches found".into(), 0, None);
     }
-    if output.code != 0 {
+    if output.code != Some(0) {
         return Err(format!("ripgrep failed: {}", output.stderr));
     }
     if !has_text(&api, &output.stdout)? {

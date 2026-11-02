@@ -1,6 +1,7 @@
 //! Snake exercised through its registered command and retained custom component.
 use super::{custom_host::Script, host::Harness};
 use serde_json::{Value, json};
+use std::collections::BTreeMap;
 use wasmtime_wasi::WasiView;
 
 /// Starts the built example with controlled randomness and literal keyboard replies.
@@ -83,6 +84,7 @@ fn run(
         .collect();
     host.observed().ui.custom_script = Some(Script {
         width: None,
+        input_errors: BTreeMap::new(),
         inputs: inputs.iter().map(|s| (*s).into()).collect(),
         frames,
         ticks,

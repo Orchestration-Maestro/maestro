@@ -146,7 +146,9 @@ fn setup(case: &Case, dir: &scratch::Scratch, user: &std::path::Path) {
     ] {
         if let Some(value) = value {
             fs::create_dir_all(path.parent().unwrap()).unwrap();
-            fs::write(path, value.to_string().replace("$ROOT", root)).unwrap();
+            // The root is written inside JSON strings, where a Windows `\` needs escaping.
+            let root = root.replace('\\', "\\\\");
+            fs::write(path, value.to_string().replace("$ROOT", &root)).unwrap();
         }
     }
 }

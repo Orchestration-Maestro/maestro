@@ -120,11 +120,25 @@ fn denial_ignored(root: &Scratch, case: &Case) -> bool {
             .unwrap()
             .is_none()
 }
+/// Whether the host folds the case's decomposed sibling onto the case's own spelling: it then
+/// finds the sibling under that spelling, so no fallback would be needed to reach it.
+fn sibling_folded(root: &Scratch, case: &Case) -> bool {
+    let pair = [case.file.as_str(), "cafe\u{301}.txt"].map(std::ffi::OsStr::new);
+    let folded =
+        case.setup.as_deref() == Some("decomposedSibling") && !root.keeps_distinct(&pair).unwrap();
+    if folded {
+        eprintln!("the sibling case needs a host that keeps {pair:?} apart");
+    }
+    folded
+}
 /// Compare the public result against one recorded native case.
 fn check_case(case: &Case) {
     let root = Scratch::new().unwrap();
     #[cfg(unix)]
     if denial_ignored(&root, case) {
+        return;
+    }
+    if sibling_folded(&root, case) {
         return;
     }
     let bytes = setup(&root, case);

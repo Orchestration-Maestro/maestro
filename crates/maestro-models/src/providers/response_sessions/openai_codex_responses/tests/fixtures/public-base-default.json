@@ -6,7 +6,7 @@
     },
     "expected": {
       "base": {
-        "maxTokens": 32000,
+        "maxTokens": 128000,
         "apiKey": "<synthetic-account-key>"
       }
     }

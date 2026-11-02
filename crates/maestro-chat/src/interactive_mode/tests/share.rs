@@ -31,9 +31,6 @@ static ENV_PACKAGE_DIR: LazyLock<String> =
 /// The state directory the controlled program reads its configuration from.
 const ENV_STATE: &str = "MAESTRO_SHARE_STATE";
 
-/// The program directory the child puts first on its own path.
-const ENV_PROGRAMS: &str = "MAESTRO_SHARE_PROGRAMS";
-
 /// The temporary directory the child's artifacts are created in.
 const ENV_TEMP: &str = "MAESTRO_SHARE_TEMP";
 
@@ -144,10 +141,8 @@ struct History {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Copied {
-    /// The text the clipboard owner receives, absent when nothing may be copied.
-    text: Option<String>,
-    /// The clipboard sequence that owner writes for that text.
-    frame: Option<String>,
+    /// The clipboard sequence the clipboard owner writes for the copied answer.
+    frame: String,
 }
 
 /// The process status a recorded exit code describes.
@@ -232,7 +227,6 @@ fn run(
         .env(ENV_AGENT_DIR.as_str(), &root)
         .env(&*ENV_PACKAGE_DIR, &package)
         .env(ENV_STATE, &state)
-        .env(ENV_PROGRAMS, &programs)
         .env(ENV_TEMP, &temp)
         .env("PATH", path);
     for key in CONTROLLED {
@@ -245,6 +239,17 @@ fn run(
         String::from_utf8_lossy(&finished.stderr)
     );
     Some(String::from_utf8_lossy(&finished.stdout).into_owned())
+}
+
+/// Whether the copy route starts at the controlled programs and the terminal sequence. On a
+/// host with a system clipboard the route reaches that clipboard first, outside the child's
+/// control, so the copy cases report the premise there instead of writing the real clipboard.
+fn clipboard_route_controlled(test: &str) -> bool {
+    let controlled = !cfg!(any(target_os = "macos", windows));
+    if !controlled {
+        eprintln!("{test} needs a host whose copy route starts at the controlled programs");
+    }
+    controlled
 }
 
 /// The directory the child's temporary artifacts are created in.
@@ -366,7 +371,7 @@ fn start(world: &World) -> maestro_tui::tui::LocalFuture {
 
 /// The last transcript row of `world`, rendered wide.
 fn last_row(world: &World) -> String {
-    rows(world).last().cloned().unwrap_or_default()
+    notice_rows(world).last().cloned().unwrap_or_default()
 }
 
 /// Whether the transcript's last row holds `needle`.
@@ -374,12 +379,16 @@ fn last_row_holds(world: &World, needle: &str) -> bool {
     last_row(world).contains(needle)
 }
 
-/// The transcript rows of the latest notice, one per displayed line.
+/// The transcript rows of the latest notice, one per displayed line, without the blank row
+/// that follows an error notice.
 ///
 /// The padding is dropped without counting the text's characters, because a row is
 /// measured in display cells and a recorded notice may hold a scalar of no width.
 fn notice_rows(world: &World) -> Vec<String> {
-    let rendered = rows(world);
+    let mut rendered = rows(world);
+    if rendered.last().is_some_and(String::is_empty) {
+        rendered.pop();
+    }
     let start = rendered
         .iter()
         .rposition(|row| row.trim().is_empty())
@@ -411,6 +420,9 @@ fn assert_notice(world: &World, color: &ThemeColor, text: &str) {
         .collect();
     let observed = notice_rows(world).join("\n");
     assert_eq!(observed, format!("{}\u{1b}[39m", opened.join("\n")));
+    if *color == ThemeColor::Error {
+        assert_eq!(rows(world).last().map(String::as_str), Some(""));
+    }
 }
 
 /// The complete text of one recorded notice, with the presenter's own prefix.
@@ -429,10 +441,10 @@ fn reports(test: &str, expected: usize) {
     drop(run(test, "child", None, async |directory| {
         for (case, report) in &cases {
             let world = started(directory).await;
-            let origin = case.origin.clone().unwrap_or_default();
+            let origin = case.origin.as_deref().unwrap_or_default();
             world
                 .mode
-                .show_share_result(&finished(case), &origin)
+                .show_share_result(&finished(case), origin)
                 .unwrap();
             let (color, notice) = presented(report);
             assert_notice(&world, &color, &notice);
@@ -485,15 +497,15 @@ fn share_formats_gist_with_configured_or_empty_viewer() {
     drop(run(TEST, "child", None, async |directory| {
         for (case, report) in &cases {
             let world = started(directory).await;
-            let origin = case.origin.clone().unwrap_or_default();
+            let origin = case.origin.as_deref().unwrap_or_default();
             world
                 .mode
-                .show_share_result(&finished(case), &origin)
+                .show_share_result(&finished(case), origin)
                 .unwrap();
             let gist = case.stdout.trim_matches(maestro_app::is_whitespace_scalar);
             let id = gist.rsplit('/').next().unwrap();
             // The selected identifier reaches the application's viewer owner unchanged.
-            let expected = get_share_viewer_url(id, &origin).map_or_else(
+            let expected = get_share_viewer_url(id, origin).map_or_else(
                 || format!("Gist: {gist}"),
                 |viewer| format!("Share URL: {viewer}\nGist: {gist}"),
             );
@@ -507,11 +519,10 @@ fn share_formats_gist_with_configured_or_empty_viewer() {
 #[test]
 fn copy_refuses_when_no_assistant_text() {
     const TEST: &str = "copy_refuses_when_no_assistant_text";
-    let cases: Vec<(History, Copied)> = recorded_cases(FIXTURES, TEST);
+    let cases: Vec<(History, ())> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 4);
     let Some(stdout) = run(TEST, "child", None, async |directory| {
-        for (case, expected) in &cases {
-            assert_eq!(expected.text, None);
+        for (case, ()) in &cases {
             let world = with_messages(directory, &case.messages).await;
             submit(&world.mode, "/copy");
             drive(&world).await.unwrap();
@@ -530,6 +541,9 @@ fn copy_refuses_when_no_assistant_text() {
 #[test]
 fn copy_uses_current_last_assistant_and_reports_result() {
     const TEST: &str = "copy_uses_current_last_assistant_and_reports_result";
+    if !clipboard_route_controlled(TEST) {
+        return;
+    }
     let cases: Vec<(History, Copied)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 6);
     let Some(stdout) = run(TEST, "child", None, async |directory| {
@@ -558,7 +572,7 @@ fn copy_uses_current_last_assistant_and_reports_result() {
     };
     let expected: Vec<&str> = cases
         .iter()
-        .filter_map(|(_, copied)| copied.frame.as_deref())
+        .map(|(_, copied)| copied.frame.as_str())
         .chain(["\u{1b}]52;c;cmVwbGFjZWQ=\u{7}"])
         .collect();
     assert_eq!(
@@ -571,6 +585,9 @@ fn copy_uses_current_last_assistant_and_reports_result() {
 #[test]
 fn copy_reports_clipboard_failure() {
     const TEST: &str = "copy_reports_clipboard_failure";
+    if !clipboard_route_controlled(TEST) {
+        return;
+    }
     let Some(stdout) = run(TEST, "child", None, async |directory| {
         // Beyond the terminal fallback's 100000 encoded bytes with no desktop route.
         let world = with_messages(directory, &[answer(&"a".repeat(90_000))]).await;

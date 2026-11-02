@@ -10,10 +10,13 @@ call, inspect or block tool calls, change the assembled prompt, manage session
 history, add a provider, or offer dialogs and terminal components. The
 [working examples](../examples/extensions/README.md) show the patterns available in the shipped examples. Start with
 [`hello.rs`](../examples/extensions/hello.rs), which registers one greeting tool.
+For terminal views, follow [component authoring and recipes](extensions/components.md)
+to connect host widgets, input, focus and cleanup.
 
 Extensions run with the user's access. They inherit environment variables and
-standard streams, can use the network, and on Unix can read and write through a
-preopened filesystem root. A component is **not an untrusted-code sandbox** in
+standard streams, can use the network, and can read and write every path the
+user can open through one filesystem root, `/`, on Unix and Windows alike. A
+component is **not an untrusted-code sandbox** in
 Maestro. Inspect an extension before loading it; see the
 [operating environment](extensions/host_io.md) for the precise access and current
 platform limitations.
@@ -24,7 +27,8 @@ platform limitations.
 2. [Build the component](#build-the-component)
 3. [Package the component](#package-the-component)
 4. [Load and reload](#load-and-reload)
-5. [Capability reference](#capability-reference)
+5. [Author workflows](extensions/workflows.md)
+6. [Capability reference](#capability-reference)
 
 ## Create the project
 
@@ -244,8 +248,10 @@ maestro
 The `index.wasm` name is a conventional entry point. An extension directory can
 instead declare its entries in `package.json`. Discovery starts with
 `<cwd>/.maestro/extensions`, then `<agent_dir>/extensions`, followed by configured
-paths. The default agent directory is `~/.maestro/agent`; configuration can change
-it. Package installation records its own source in settings. See
+paths; a leading `~` reads as
+[Home directory in paths](settings.md#home-directory-in-paths), so `~name` is a relative
+path. The default agent directory is `~/.maestro/agent`; configuration can change it.
+Package installation records its own source in settings. See
 [path loading and discovery](extensions/loading.md) and
 [application resources](application/resources.md).
 
@@ -285,6 +291,14 @@ the native artifact runtime. It asserts both `Hello, Ada!` and the structured
 starts empty. No extension package is downloaded or published, and no provider
 request is made.
 
+## Author workflows
+
+After loading your first component, use the [author workflows](extensions/workflows.md)
+to choose event handlers, wrap built-in tools, bound output, restore branch-local
+state and add UI that also handles headless use. Each workflow points to a shipped
+example and its owning capability reference. Keep using the build and packaging
+recipe above.
+
 ## Capability reference
 
 Start with the guest-facing pages when writing a component. Native facade pages
@@ -299,7 +313,7 @@ native-extension authoring instructions.
 | Messages, tool selection, model selection, thinking and session entries | [Guest actions](extensions/guest.md#ordinary-actions), [action bindings](extensions/registration.md#actions-and-provider-binding) |
 | Persistence across restarts | [Session entries](extensions/guest.md#session-entries), [entry records](entry.md) |
 | Event channels between extensions | [Event bus](extensions/event_bus.md), [guest event channels](extensions/guest.md#event-channels) |
-| Model invocation, streaming and provider registration | [Guest model streams](extensions/guest_streams.md) |
+| Provider endpoints, account flows and custom streaming | [Provider author guide](extensions/providers.md), [guest model streams](extensions/guest_streams.md) |
 | Dialogs, widgets, editors, overlays and custom rendering | [Guest UI](extensions/guest_ui.md), [UI and headless results](extensions/ui.md) |
 | Child processes, waits, HTTP bodies, watches and built-in tool wrappers | [Guest native operations](extensions/guest_operations.md) |
 | Files, environment, network access and platform limitations | [Operating environment](extensions/host_io.md) |

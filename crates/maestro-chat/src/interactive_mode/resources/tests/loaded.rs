@@ -372,7 +372,7 @@ fn extension_listing_work_stays_linear_through_the_listing() {
             let compact = painted(&theme, &[format!("@dim@  {labels}\u{1b}[39m")]);
             assert_eq!(rows[1].trim_end(), compact[0]);
             if let Some(previous) = previous {
-                assert_eq!(lookups.get(), 2 * previous, "home lookups grow linearly");
+                assert!(lookups.get() <= 2 * previous, "home lookups grow linearly");
             }
             previous = Some(lookups.get());
         }

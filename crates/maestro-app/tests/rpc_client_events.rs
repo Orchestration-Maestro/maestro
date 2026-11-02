@@ -1,7 +1,8 @@
 //! The RPC client's event callbacks, its deadlines and the work that a stop or the child's
 //! end settles.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
+use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of};
+use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
 use maestro_process::child_process::process_exists;

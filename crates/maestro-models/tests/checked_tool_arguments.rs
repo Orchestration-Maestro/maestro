@@ -1,3 +1,4 @@
+use crate::json_equivalence::equivalent;
 use maestro_models::{Tool, ToolCall, validate_tool_arguments};
 use serde_json::{Value, json};
 
@@ -194,26 +195,6 @@ fn run_case(fixture: Fixture) {
     }
     assert_eq!(tool.parameters.as_json(), &schema, "{}", fixture.case);
     assert_eq!(call.arguments, arguments, "{}", fixture.case);
-}
-
-fn equivalent(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(left), Value::Number(right)) => left.as_f64() == right.as_f64(),
-        (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| equivalent(left, right))
-        }
-        (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| equivalent(left, right)))
-        }
-        _ => left == right,
-    }
 }
 
 #[test]

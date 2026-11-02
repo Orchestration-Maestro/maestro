@@ -5,11 +5,14 @@ pub(crate) use registration::STALE_MESSAGE;
 
 mod actions;
 mod construction;
+mod contributions;
 pub use construction::CatalogConstruction;
+pub(crate) use contributions::LoadTimeState;
 #[cfg(not(target_arch = "wasm32"))]
 mod tool_construction;
 #[cfg(not(target_arch = "wasm32"))]
 pub use tool_construction::ToolConstruction;
+mod provider_order;
 pub(crate) mod runtime;
 
 #[cfg(not(target_arch = "wasm32"))]

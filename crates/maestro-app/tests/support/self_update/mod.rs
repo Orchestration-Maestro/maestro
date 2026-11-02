@@ -517,8 +517,8 @@ impl HomeRow {
             },
             expected: json!({"value": {
                 "command": "bun",
-                "args": ["install", "-g", "@old/agent"],
-                "display": "bun install -g @old/agent",
+                "args": ["install", "-g", "--ignore-scripts", "@old/agent"],
+                "display": "bun install -g --ignore-scripts @old/agent",
             }}),
             trace: vec![json!(["command", "bun", ["pm", "bin", "-g"]])],
         }

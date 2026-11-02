@@ -115,7 +115,7 @@ fn apply_extension_flag_values<E: ExtensionExecution>(
         let extension = read(extension);
         for (name, flag) in &extension.flags {
             let flag = read(flag);
-            registered.insert(name.clone(), flag.r#type);
+            registered.entry(name.clone()).or_insert(flag.r#type);
         }
     }
     let mut diagnostics = Vec::new();
@@ -222,6 +222,9 @@ pub async fn create_agent_session_services<E: DefaultEventBus>(
     });
     let resource_loader =
         default_resource_loader(&cwd, &agent_dir, &settings_manager, resources).await?;
+    model_registry
+        .set_base_model_files(resource_loader.get_model_files())
+        .map_err(io::Error::other)?;
     let extensions = resource_loader.get_extensions();
     let mut diagnostics = register_providers(&extensions, &model_registry);
     if let Some(values) = options.extension_flag_values {

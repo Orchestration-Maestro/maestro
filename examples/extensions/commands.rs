@@ -1,4 +1,5 @@
 //! Lists the host's slash commands through an opt-in `/commands` selector.
+// maestro-component: MAESTRO_COMMANDS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -20,6 +21,10 @@ const SOURCES: [(&str, &str); 3] = [
 ];
 
 /// Shows the current inventory, optionally restricted to one literal source.
+///
+/// # Errors
+/// Returns the host's inventory failure, a UI lookup, notification or selection
+/// failure, or the failure of `show_path`.
 async fn list(
     api: ExtensionAPI,
     args: String,
@@ -66,6 +71,9 @@ async fn list(
 }
 
 /// Offers the selected command's authored path without opening the source file.
+///
+/// # Errors
+/// Returns the confirmation or notification failure.
 async fn show_path(
     commands: &[SlashCommandInfo],
     selected: Option<String>,
@@ -99,6 +107,10 @@ async fn show_path(
 }
 
 /// Registers the command inventory selector.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses the command
+/// registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {

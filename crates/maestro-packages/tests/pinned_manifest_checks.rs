@@ -38,7 +38,12 @@ fn check_matching_pin(offline: bool, member: &str) {
     }
     let scratch = scratch::Scratch::new().unwrap();
     let cwd = scratch.path().to_str().unwrap();
-    let target = scratch.path().join(".maestro/npm/node_modules/pkg");
+    let target = scratch
+        .path()
+        .join(".maestro")
+        .join("npm")
+        .join("node_modules")
+        .join("pkg");
     fs::create_dir_all(&target).unwrap();
     let deep = format!("{}0{}", "[".repeat(128), "]".repeat(128));
     fs::write(

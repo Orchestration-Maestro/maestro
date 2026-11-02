@@ -362,7 +362,8 @@ fn local_bash_has_its_own_session_and_process_group() {
         let mut sink = |data: &[u8]| bytes.extend_from_slice(data);
         let result = operations
             .exec(
-                "printf '%s\\n' \"$$\"; ps -o sid= -p $$; ps -o pgid= -p $$; if ( : </dev/tty ) 2>/dev/null; then exit 9; fi",
+                // Not every `ps` names the session column, so the interpreter reads both ids.
+                "printf '%s\\n' \"$$\"; python3 -c 'import os; print(os.getsid(0)); print(os.getpgrp())'; if ( : </dev/tty ) 2>/dev/null; then exit 9; fi",
                 "/",
                 BashExecOptions {
                     on_data: &mut sink,

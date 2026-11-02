@@ -1,4 +1,5 @@
 //! A startup extension that places text widgets above and below the editor.
+// maestro-component: MAESTRO_WIDGET_PLACEMENT_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -38,6 +39,10 @@ fn session_start(
 }
 
 /// Registers the widget requests through the supplied extension host.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses the `session_start`
+/// handler registration.
 #[must_use]
 pub fn widget_placement_extension(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move { api.on("session_start", Rc::new(session_start)) })

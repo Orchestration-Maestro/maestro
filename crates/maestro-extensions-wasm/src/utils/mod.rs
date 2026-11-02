@@ -8,14 +8,26 @@ pub mod event_stream;
 
 use crate::{ExtensionAPI, ExtensionResult};
 
-/// Reads the host's current local date and time in the en-US twelve-hour format.
+/// Reads the host's current local date and time using its selected locale.
 ///
-/// Other locale patterns are not selected; the host supplies its local time zone.
+/// The host supplies the local time zone.
 ///
 /// # Errors
 /// Returns the host's failure or an invalid response.
 pub fn local_date_time_string(api: &ExtensionAPI) -> ExtensionResult<String> {
     api.helper("time.local_date_time_string", &())
+}
+
+/// Formats an instant, in milliseconds since the Unix epoch, as the host's local time in the
+/// en-US twelve-hour format.
+///
+/// The host supplies its local time zone; an instant outside its calendar reads as
+/// `Invalid Date`.
+///
+/// # Errors
+/// Returns the host's failure or an invalid response.
+pub fn local_time_string(api: &ExtensionAPI, timestamp: i64) -> ExtensionResult<String> {
+    api.helper("time.local_time_string", &(timestamp,))
 }
 
 /// Measures terminal cells, including the host's Unicode and escape handling.

@@ -156,6 +156,46 @@ pub fn delete_all_kitty_images() -> String {
     "\x1b_Ga=d,d=A,q=2\x1b\\".to_owned()
 }
 
+/// The image name a fallback shows: `filename` with the directory `home` shown as `~`, and
+/// linked to its `file:` URL when `hyperlinks` is on and the name is absolute.
+pub(crate) fn fallback_name(filename: &str, home: Option<&str>, hyperlinks: bool) -> String {
+    let shown = home.map_or_else(
+        || filename.to_owned(),
+        |home| maestro_path::shorten_home(filename, home),
+    );
+    if hyperlinks && maestro_path::is_absolute(filename) {
+        hyperlink(&shown, &file_url(filename))
+    } else {
+        shown
+    }
+}
+
+/// The `file:` URL of the absolute `path` after its `.` and `..` segments fold, with every
+/// byte a URL path cannot hold percent-encoded.
+fn file_url(path: &str) -> String {
+    let path = maestro_path::normalize(path);
+    let path = if cfg!(windows) {
+        let path = path.replace('\\', "/");
+        // A UNC path names its host; a drive path sits below an empty one.
+        if path.starts_with("//") {
+            path
+        } else {
+            format!("///{path}")
+        }
+    } else {
+        format!("//{path}")
+    };
+    let mut url = String::from("file:");
+    for byte in path.bytes() {
+        if byte.is_ascii_alphanumeric() || b"-._~!$&'()*+,;=:@/[]^|".contains(&byte) {
+            url.push(char::from(byte));
+        } else {
+            let _ = write!(url, "%{byte:02X}");
+        }
+    }
+    url
+}
+
 /// Unconditionally wraps verbatim text and URL in OSC 8 open/close sequences.
 #[must_use]
 pub fn hyperlink(text: &str, url: &str) -> String {

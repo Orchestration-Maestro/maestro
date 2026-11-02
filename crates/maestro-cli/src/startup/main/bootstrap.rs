@@ -16,9 +16,10 @@ const FAILURE: i32 = 1;
 pub enum AppMode {
     /// The interactive terminal frontend.
     Interactive,
-    /// Text or one JSON document for a single prompt.
+    /// The prompts run in order, then the final answer is written as text.
     Print,
-    /// One JSON document for a single prompt.
+    /// The prompts run in order and every session event is streamed as a JSON line after
+    /// the session header; no final answer is written.
     Json,
     /// JSONL requests and responses.
     Rpc,
@@ -46,13 +47,16 @@ pub fn resolve_app_mode(parsed: &Args, stdin_is_tty: bool) -> AppMode {
     }
 }
 
-/// Whether startup reserves standard output before it writes its result.
+/// Whether a run in `app_mode` needs standard output reserved for its records.
+///
+/// The answer only follows from the mode; the caller does the reserving.
 #[must_use]
 pub fn takes_over_stdout(app_mode: AppMode) -> bool {
     !app_mode.is_interactive()
 }
 
-/// The output mode of a run that answers one prompt.
+/// The form a print run writes: JSON events for the JSON mode, the final answer text
+/// otherwise.
 #[must_use]
 pub fn to_print_output_mode(app_mode: AppMode) -> Mode {
     if app_mode == AppMode::Json {

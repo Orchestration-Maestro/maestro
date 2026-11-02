@@ -143,8 +143,11 @@ or flush borrows its stream only for that call.
 
 `startup::main` selects what a run does before any frontend starts, in the
 order the authored arguments decide it. `bootstrap` picks the presentation mode
-from the parsed mode, the print request and the stdin kind; any run that is not
-the interactive frontend reserves standard output first. Parser diagnostics,
+from the parsed mode, the print request and the stdin kind, and says whether the
+run needs standard output reserved, which every mode but the interactive
+frontend does; the entry point reserves it. In JSON mode the prompts run in
+order and each session event is streamed as a JSON line; text print mode writes
+the final answer after the prompts. Parser diagnostics,
 settings failures and conflicting fork flags are written with their exact
 prefix and style, and each reporting step returns the status that ends the run
 when the problem is fatal. The session directory comes from the authored
@@ -156,7 +159,11 @@ before every project, and selects the operation the arguments name: an unsaved,
 forked, opened, resumed, continued or new session. An explicit fork copies the
 matched session into the current project without asking, wherever it was found;
 a session argument of another project is returned for confirmation instead of
-being opened in place. A missing session keeps the argument its message quotes.
+being opened in place. A refused `--session` file, whether selected by path or a
+local identifier match, prints `Error: <reason>` to standard error in red (plain
+text when colour is off) and exits with status 1. For a nonempty file without a
+valid session, the reason is `Session file is not a valid maestro session: <path>`.
+A missing session keeps the argument its message quotes.
 
 `options` selects the model from the authored pattern before the scoped
 default, the effort from the explicit level before the model shorthand and the
@@ -179,10 +186,3 @@ before constructing its frame writer, forwards saved cursor and clear-on-shrink
 policies, and returns the fallback directory only for Continue. Cancellation,
 repeated notifications and dropped operations share the existing selector's
 one-shot cleanup. It does not start a theme watch or bind session services.
-
-## Print mode
-
-`run_print_mode` runs one session to completion over a caller-owned runtime and
-presents the result as its final text or as session event records. See [print
-mode](print.md) for the options, the exact output and the cleanup and error
-boundary.

@@ -436,9 +436,9 @@
         "content": "",
         "truncated": false,
         "truncatedBy": null,
-        "totalLines": 1.0,
+        "totalLines": 0.0,
         "totalBytes": 0.0,
-        "outputLines": 1.0,
+        "outputLines": 0.0,
         "outputBytes": 0.0,
         "lastLinePartial": false,
         "firstLineExceedsLimit": false,
@@ -3384,9 +3384,9 @@
       "content": "",
       "truncated": false,
       "truncatedBy": null,
-      "totalLines": 1.0,
+      "totalLines": 0.0,
       "totalBytes": 0.0,
-      "outputLines": 1.0,
+      "outputLines": 0.0,
       "outputBytes": 0.0,
       "lastLinePartial": false,
       "firstLineExceedsLimit": false,
@@ -3406,9 +3406,9 @@
       "content": "",
       "truncated": false,
       "truncatedBy": null,
-      "totalLines": 1.0,
+      "totalLines": 0.0,
       "totalBytes": 0.0,
-      "outputLines": 1.0,
+      "outputLines": 0.0,
       "outputBytes": 0.0,
       "lastLinePartial": false,
       "firstLineExceedsLimit": false,
@@ -4690,7 +4690,7 @@
       ]
     ],
     "context": {},
-    "ok": "[User]: hi\n\n[Assistant thinking]: plan\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+    "ok": "[User]: hi\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
   },
   {
     "test": "helper_conversation_serialization_keeps_text_and_tools",
@@ -5263,5 +5263,250 @@
     "args": [],
     "context": {},
     "ok": "/controlled-agent"
+  },
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    ""
+  ],
+  "ok": {
+    "kind": "null"
   }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "null"
+  ],
+  "ok": {
+    "kind": "null"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "false"
+  ],
+  "ok": {
+    "kind": "bool",
+    "value": false
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "42"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": 42.0
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "plain"
+  ],
+  "ok": {
+    "kind": "string",
+    "value": "plain"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "[null, true]"
+  ],
+  "ok": {
+    "kind": "sequence",
+    "value": [
+      {
+        "kind": "null"
+      },
+      {
+        "kind": "bool",
+        "value": true
+      }
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "z: &a [one]\na: *a"
+  ],
+  "ok": {
+    "kind": "mapping",
+    "value": [
+      [
+        "z",
+        {
+          "kind": "sequence",
+          "value": [
+            {
+              "kind": "string",
+              "value": "one"
+            }
+          ]
+        }
+      ],
+      [
+        "a",
+        {
+          "kind": "sequence",
+          "value": [
+            {
+              "kind": "string",
+              "value": "one"
+            }
+          ]
+        }
+      ]
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "text: |\n  ---\n  ...\n"
+  ],
+  "ok": {
+    "kind": "mapping",
+    "value": [
+      [
+        "text",
+        {
+          "kind": "string",
+          "value": "---\n...\n"
+        }
+      ]
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "---\r\n[1, 2]\r\n..."
+  ],
+  "ok": {
+    "kind": "sequence",
+    "value": [
+      {
+        "kind": "number",
+        "value": 1.0
+      },
+      {
+        "kind": "number",
+        "value": 2.0
+      }
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    ".nan"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "NaN"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    ".inf"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "Infinity"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "-.inf"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "-Infinity"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "-0.0"
+  ],
+  "ok": {
+    "kind": "number",
+    "value": {
+      "$number": "-0"
+    }
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "2: two\n1: one"
+  ],
+  "ok": {
+    "kind": "mapping",
+    "value": [
+      [
+        "2",
+        {
+          "kind": "string",
+          "value": "two"
+        }
+      ],
+      [
+        "1",
+        {
+          "kind": "string",
+          "value": "one"
+        }
+      ]
+    ]
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "x: ["
+  ],
+  "ok": {
+    "error": "while parsing a flow sequence, expected ',' or ']' at byte 4 line 2 column 1"
+  }
+},
+{
+  "test": "helper_raw_yaml_preserves_document_values",
+  "operation": "fm.parseYaml",
+  "args": [
+    "---\none\n---\ntwo"
+  ],
+  "ok": {
+    "error": "Source contains multiple documents at byte 8 line 3 column 1"
+  }
+}
 ]

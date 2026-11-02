@@ -475,6 +475,7 @@ fn provider_key_samples_fallback_after_credential_effect() {
         registry.auth_storage().set(
             "p",
             maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+                env: None,
                 key: format!("!stored-{edit}"),
             }),
         );
@@ -865,6 +866,7 @@ fn empty_key_blocks_fallback(registry: &ModelRegistry, commands: &Mutex<Vec<Stri
     registry.auth_storage().set(
         "p",
         maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+            env: None,
             key: String::new(),
         }),
     );

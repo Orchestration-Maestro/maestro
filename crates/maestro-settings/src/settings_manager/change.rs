@@ -19,6 +19,24 @@ impl Edit {
             .try_fold(document.get(field)?, |value, key| value.get(key))
     }
 
+    /// Removes the first non-object ancestor of an absent locked preference.
+    pub(super) fn remove_malformed_ancestor(&self, mut document: &mut Map<String, Value>) -> bool {
+        let Some((_, parents)) = self.0.split_last() else {
+            return false;
+        };
+        for parent in parents {
+            if document.get(parent).is_some_and(|value| !value.is_object()) {
+                document.shift_remove(parent);
+                return true;
+            }
+            let Some(Value::Object(next)) = document.get_mut(parent) else {
+                return false;
+            };
+            document = next;
+        }
+        false
+    }
+
     /// Sets or removes precisely this preference without copying stale sibling values.
     pub(super) fn apply(&self, mut document: &mut Map<String, Value>, value: Option<Value>) {
         let Some((key, parents)) = self.0.split_last() else {
@@ -56,6 +74,14 @@ pub(super) struct Change {
 }
 
 impl Change {
+    /// Captures a public edit whose nonempty path was checked before admission.
+    pub(super) fn from_requested(change: super::SettingsChange) -> Self {
+        Self {
+            edit: Edit(change.path),
+            value: change.value,
+        }
+    }
+
     /// Captures precisely the paths a one-level runtime merge can replace.
     pub(super) fn overrides(document: &Map<String, Value>) -> Vec<Self> {
         document
@@ -100,6 +126,14 @@ impl Change {
     /// Borrows the literal components of this requested edit.
     pub(super) fn components(&self) -> Vec<&str> {
         self.edit.0.iter().map(String::as_str).collect()
+    }
+
+    /// Copies this edit for the publisher without exposing persistence internals.
+    pub(super) fn requested(&self) -> super::SettingsChange {
+        super::SettingsChange {
+            path: self.edit.0.clone(),
+            value: self.value.clone(),
+        }
     }
 
     /// Publishes the value immediately and returns its captured persistence identity.

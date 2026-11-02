@@ -49,6 +49,7 @@ From `docs/specs/maestro-port.md`.
 
 ## Application foundation
 
+- **Settled:** The point after a run when its retries, compaction, summaries, persistence and queued continuations have all finished. A session is idle only then. See [the run](docs/application/lifecycle.md#the-run).
 - **Hosted-service origin:** The single supplied origin for release checks, install reports and session-viewer links; an empty value disables those operations. It is separate from model-request attribution. See [hosted services](docs/application/services.md).
 
 From `docs/specs/maestro-port.md`. Manifest mode is specified in
@@ -64,8 +65,12 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
 - **Manifest package:** The default-on base package that selects, installs, reads
   and enforces a manifest through the core hooks.
-- **Manifest area:** One folder of a manifest (common, standard, core, language or
-  capability) whose content enters the manifest layer in a fixed order.
+- **Manifest root:** The one folder of a release, `manifests/`, that holds all of
+  its manifest content. Maestro reads manifest content only from it; documentation,
+  schemas and CI stay outside.
+- **Manifest area:** The manifest root itself (the common area) or one folder under
+  it (standard, core, language or capability) whose content enters the manifest
+  layer in a fixed order.
 - **Capability:** A manifest area that is one package bundling a team's roles,
   skills, instructions, prompt templates and workflows, selected by name.
 - **Capability group:** The folder that groups capabilities, usually after the
@@ -77,14 +82,24 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
   locally and in a manifest.
 - **Workflow:** A named chain or parallel set of steps in a `maestro.workflow/v1`
   file.
+- **Guard:** A manifest rule that blocks, confirms, redacts or warns on a command, a
+  path or text, from a `maestro.guards/v1` file in the manifest's core area.
+- **Guard family:** The set of guard rules in one guard file, named by the file,
+  such as personal data or destructive commands.
 - **Base layer:** A read-only settings document with locked keys, published by a
   package below the user layer.
 - **Blueprint:** The catalog's description of one artifact kind: its properties
   and the relations its entries have.
+- **Requires:** The catalog relation from a release or package to a package it
+  needs. Skills and workflows inherit their package's requirements; selecting an
+  entry installs the transitive required-package closure in its scope.
 - **Policy:** The combined locks, bounds, allowed models, required entries, role
   constraints and release rules of a manifest; the manifest package decides every
   governed change.
-- **Lock:** A policy entry fixing a value that local layers cannot change.
+- **Lock:** A policy entry that fixes a value or refuses local additions of a
+  resource kind. A lock never loosens another rule.
+- **Lock name:** A `locked` entry that names something other than a settings key:
+  the prompts, the providers or a resource kind that has no settings key.
 - **Bound:** A policy minimum or maximum for a numeric value or thinking level.
 - **Required resource:** A manifest resource that local layers cannot disable,
   shadow or drop.
@@ -131,7 +146,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **InstallMethod:** The package-manager classification selected from supplied installation layout and path evidence, without executing a manager.
 - **SelfUpdateCommand:** An owned self-update command description with literal installation arguments, a display and optional ordered removal/installation steps; selection does not execute an update.
 - **Session directory:** A caller-selected or default directory used for native session files.
-- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, in-place persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
+- **File-write lock:** Native operating-system file locking on `<target>.lock` beside a write target, created on acquisition and removed on release. `maestro-lock` owns waiting, bounded and single-attempt acquisition. Settings and credentials hold it across read, update and replace and keep their retry schedules. The [lock documentation](docs/locking.md) gives acquisition and naming; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input. Its typed records belong to `maestro-request::auth_storage`; credentials re-exports them.
 - **Account file:** The standalone `auth.json` an account command reads and writes at the caller's relative path, distinct from the session credential store; its entries hold stored credentials.
@@ -197,7 +212,7 @@ traversal runs, so one removal and a complete clear both stay cheap.
 ### Interfaces
 
 - **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends. Its read-only contract and live status view belong to `maestro-extensions`, whose footer factories receive them.
-- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application and is available to browser builds, so transcripts and the offline viewer read one implementation.
+- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application; the native transcript reads it, and it is available to browser builds, though the offline viewer does not read it yet.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
@@ -240,20 +255,20 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Fragment:** An incomplete escape sequence the input buffer retains for more input; it can be completed, explicitly flushed or cleared, released as it is at a representable deadline, or delivered as data immediately before a paste starts.
 - **Bracketed paste:** Text a terminal wraps in start and end markers; the input buffer delivers it as one paste event without the markers.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner whose library owns the recording terminal and the manual runtime, declared as a native development dependency by `maestro-cli` only.
-- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, entry, tool and JSON owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
+- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, entry, tool, JSON and text owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
 - **Shared request owner:** The core `maestro-request` library below layer 0, whose job is to define shared message and model-request records, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, `SlashCommandInfo`, `SlashCommandSource`, `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
-`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, `DiagnosticErrorInfo` as the one thrown-error form with its message-only construction, and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, flat-rate `calculate_cost` arithmetic, `DiagnosticErrorInfo` as the one thrown-error form with its message-only construction, and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
-- **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
+- **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose permitted internal targets are extensions and the optional native path utility.
 - **Attachment:** Application-owned original bytes, media metadata and optional derived text/preview, with browser-message conversion. See [browser attachments](docs/application/browser-attachments.md).
-- **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping, CSS string serialization, terminal escape stripping and binary-output filtering, BOM-aware lossy UTF-8 decoding and, behind its `collation` and `number-format` features, locale comparator and number-formatter preparation through one locale selector; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
+- **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping, CSS string serialization, terminal escape stripping and binary-output filtering, raw CR/LF byte-line framing, BOM-aware lossy UTF-8 decoding and, behind its `collation` and `number-format` features, locale comparator and number-formatter preparation through one locale selector; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing); it depends on no workspace crate and its callers keep their own preprocessing, defaults, duplicate-member policy and error wording. See [JSON boundary](docs/json.md).
 - **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination and reaping, Linux pane terminals and their shared retained-front byte queue, and native termination-signal delivery with its prepared default action) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
-- **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native, std-only test-support leaf that owns one named test's isolated execution: its checked-output operations start a libtest child and prove the child started exactly that test; argument-only invocation checks eligibility and leaves startup proof with the caller; distinct from product process execution (**Process**). It is reached only through native development dependencies of its declared callers. See the [contract](docs/specs/maestro-port.md#test-process-owner).
-- **Foundation utility:** The `maestro-path` library of lexical path operations, native component normalization and home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
-- **Directory listing:** The core leaf `maestro-listing` below layer 0, owning one directory's entries sorted by file name on every platform; resources, theme, the terminal toolkit, tools, session and the application list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
+- **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native test-support leaf for checked libtest reruns and direct native fixtures. Checked-output operations prove the selected test started; argument-only invocation leaves startup proof with the caller. The prepared harness-free fixture receives literal native operands and raw streams through installed aliases. Typed isolated native setup is planned; existing Unix shell setup remains until its callers move together. This owner is distinct from product process execution (**Process**) and is reached only through its declared callers' native development dependencies. See the [contract](docs/specs/maestro-port.md#test-process-owner).
+- **Foundation utility:** The `maestro-path` library of lexical path operations, native component normalization, home and directory selection from caller-supplied observations, and the native environment-plus-account home reader, below every delivery layer; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
+- **Directory listing:** The core leaf `maestro-listing` below layer 0, owning one directory's entries sorted by file name on every platform; resources, theme, the terminal toolkit, tools, session and the application list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. Guest-authoring examples also use it through a portable development dependency from `maestro-extensions-wasm`, never a normal or build dependency. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
 - **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application, extensions and cancellation subscribe and walk through it, and each keeps its own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
-- **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
+- **Recoverable publication:** `maestro-lock` locks a canonical target, durably stages its intended bytes, then writes and syncs the target in place before deleting the recovery copy. The next holder replays an interrupted write. Native ownership, ACLs and hard links survive. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#recoverable-byte-publication).
 - **Dependencies:** The generated `maestro-dependencies` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
@@ -312,6 +327,11 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 ## Packages
 
 From `docs/specs/packages.md`.
+
+- **Package crate:** A guest-only reusable `rlib` exposing `factory`, with one
+  component export in `src/component.rs`. Its `component` example builds as a
+  `cdylib`. Packages may use the guest API, shared request/entry/tool/JSON records
+  and other packages; core and dedicated crates cannot depend on packages.
 
 - **Skill pack:** a content-only package of skills and the shared reference files they read; Maestro's own is
   `maestro-skills`.

@@ -28,18 +28,6 @@ const HOME: &str = "/home/user";
 /// The width recorded listings render at unless a case names one.
 const WIDTH: usize = 220;
 
-/// One recorded case.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: Input,
-    /// The recorded observation.
-    expected: Expected,
-}
-
 /// The recorded operations.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
@@ -111,8 +99,6 @@ struct Listing {
     /// The prompt templates of the loader's first read, when they differ.
     #[serde(rename = "loaderTemplates")]
     loader_templates: Option<Vec<Recorded>>,
-    /// Whether a quiet startup was asked for diagnostics, which this listing omits.
-    diagnostics: bool,
     /// The render width.
     width: Option<usize>,
 }
@@ -261,14 +247,7 @@ enum Expected {
 
 /// The recorded cases of `test`.
 fn cases(test: &str) -> Vec<(Input, Expected)> {
-    let all: Vec<Case> = serde_json::from_str(FIXTURES).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| (case.input, case.expected))
-        .collect();
-    assert!(!cases.is_empty());
-    cases
+    crate::interactive_mode::tests::cases(FIXTURES, test)
 }
 
 /// Context files at the recorded paths.
@@ -322,10 +301,6 @@ async fn check_listing(directory: &Path, listing: Listing, expected: Expected) -
         verbose,
         expanded: tool_output_expanded,
     } = listing.startup;
-    assert!(
-        quiet || !listing.diagnostics,
-        "diagnostics are asked of quiet startup"
-    );
     let mut prompts: Vec<_> = listing
         .loader_templates
         .into_iter()

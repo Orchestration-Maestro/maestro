@@ -1,6 +1,6 @@
 //! Truncation to a visible width with an independently framed ellipsis.
 
-use super::measure::{TAB_CELLS, visible_width};
+use super::measure::visible_width;
 use super::parsed::{Grapheme, Parsed};
 use super::render::{Emission, RESET};
 
@@ -40,7 +40,7 @@ impl<'p, 'a> Scan<'p, 'a> {
     fn new(parsed: &'p Parsed<'a>, limit: usize) -> Self {
         let mut graphemes = Vec::new();
         let mut cells = 0;
-        for grapheme in parsed.graphemes(0..parsed.visible.len(), TAB_CELLS) {
+        for grapheme in parsed.graphemes(0..parsed.visible.len()) {
             cells += grapheme.cells;
             graphemes.push(grapheme);
             if cells > limit {

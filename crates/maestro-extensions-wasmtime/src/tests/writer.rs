@@ -147,12 +147,11 @@ fn branch_records(writer: &Endpoint, reader: &history_reads::Endpoint, id: Strin
     writer
         .read(|reply| Request::SetFile("/setup-does-not-write/session.jsonl".into(), reply))
         .unwrap();
+    // The selected file is resolved: Windows puts it on the working drive.
+    let selected = std::path::absolute("/setup-does-not-write/session.jsonl").unwrap();
     assert_eq!(
-        reader
-            .read(history_reads::Request::SessionFile)
-            .unwrap()
-            .as_deref(),
-        Some("/setup-does-not-write/session.jsonl")
+        reader.read(history_reads::Request::SessionFile).unwrap(),
+        Some(selected.display().to_string())
     );
     assert!(
         writer

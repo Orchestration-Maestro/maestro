@@ -36,6 +36,7 @@ impl<C: FnMut() -> u128> App<C> {
             self.copy_feedback_deadline,
             self.session_save_deadline,
             self.next_tab_bar_status_deadline(),
+            self.git_refresh_deadline(),
             render,
         ]
         .into_iter()

@@ -2,9 +2,14 @@
 #![cfg(test)]
 
 mod capture_lifecycle;
+mod child_programs;
 mod child_status_checks;
+mod detached_server;
 mod helper_launches;
 mod interactive_pipes;
+#[cfg(unix)]
+#[path = "support/poll.rs"]
+mod poll;
 mod pty_children;
 mod raw_children;
 mod startup_environment;

@@ -20,6 +20,8 @@ mod model_selector_support;
 mod occurrences;
 #[path = "message_support/palette.rs"]
 mod palette;
+#[path = "support/platform_keys.rs"]
+mod platform_keys;
 mod provider_auth_selection;
 #[path = "support/recorded_keys/registry.rs"]
 mod recorded_registry;

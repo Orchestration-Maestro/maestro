@@ -4,6 +4,10 @@ use std::{env, fs, io::Write, path::Path, process::Command};
 /// Routes fixture calls to their controlled or native command.
 fn main() {
     let args: Vec<_> = env::args().skip(1).collect();
+    if env::var_os("MAESTRO_COMMAND_OUTPUT").is_some() {
+        println!("controlled command stdout");
+        eprintln!("controlled command stderr");
+    }
     if args.first().map(String::as_str) == Some("run")
         && args.iter().any(|arg| arg == "--")
         && env::var_os("MAESTRO_REAL_CARGO").is_some()

@@ -334,7 +334,8 @@ pub struct SettingsList;
         );
         let error = check_workspace(workspace.root.path()).unwrap_err();
         let line = innocent.lines().count() + 2;
-        assert!(error.contains(&format!("src/lib.rs:{line}:")), "{error}");
+        let location = format!("{}:{line}:", support::native_path_text("src/lib.rs"));
+        assert!(error.contains(&location), "{error}");
         source(&workspace, "maestro-tui", "src/lib.rs", innocent);
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
@@ -853,7 +854,16 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
         .root
         .path()
         .join(support::native_path("crates/maestro-extensions-wasm"));
-    std::fs::create_dir_all(member.join(directory)).unwrap();
+    // Windows refuses quotes and control characters in a name, so those spellings cannot
+    // be exercised there.
+    match std::fs::create_dir_all(member.join(directory)) {
+        Ok(()) => {}
+        Err(_) if cfg!(windows) => {
+            eprintln!("premise not met: this host refuses the directory {directory:?}");
+            return;
+        }
+        Err(error) => panic!("{directory:?}: {error}"),
+    }
     source(
         workspace,
         "maestro-extensions-wasm",

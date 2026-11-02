@@ -81,9 +81,25 @@ fn serve(listener: &TcpListener, seen: &Mutex<Vec<Value>>, stopping: &AtomicBool
         } else {
             "test123"
         };
+        let chunk = chunk(&request, text);
         seen.lock().unwrap().push(request);
-        let chunk = json!({"id":"controlled", "choices":[{"index":0,"delta":{"content":text},"finish_reason":"stop"}], "usage":{"prompt_tokens":20,"completion_tokens":4,"total_tokens":24}});
         let events = format!("data: {chunk}\n\ndata: [DONE]\n\n");
         write!(stream, "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{events}", events.len()).unwrap();
     }
+}
+
+/// Emits one harmless tool call only when the newest user message requests that scenario.
+fn chunk(request: &Value, text: &str) -> Value {
+    let dangerous = request["messages"]
+        .as_array()
+        .and_then(|messages| messages.last())
+        .is_some_and(|message| {
+            message["role"] == "user" && message["content"].to_string().contains("rpc-demo-danger")
+        });
+    if dangerous {
+        return json!({"id":"controlled", "choices":[{"index":0,"delta":{"tool_calls":[{
+            "index":0,"id":"rpc-demo-tool","type":"function","function":{"name":"bash","arguments":"{\"command\":\"echo sudo\"}"}
+        }]},"finish_reason":"tool_calls"}]});
+    }
+    json!({"id":"controlled", "choices":[{"index":0,"delta":{"content":text},"finish_reason":"stop"}], "usage":{"prompt_tokens":20,"completion_tokens":4,"total_tokens":24}})
 }

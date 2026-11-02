@@ -47,6 +47,7 @@ fn common_defaults() {
 /// Supplies every common field with distinguishable data and shared capabilities.
 fn common_options(number: Option<f64>, callback: &Rc<dyn Fn()>) -> StreamOptions<Slots> {
     StreamOptions {
+        base_url: None,
         temperature: number,
         max_tokens: number,
         timeout_ms: number,

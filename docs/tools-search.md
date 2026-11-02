@@ -91,7 +91,8 @@ with the caller's startup selection: `Some(true)` skips, `Some(false)` acquires,
 Android instead receives `pkg install fd` or `pkg install ripgrep` advice.
 
 Other hosts request the latest release from `sharkdp/fd` or `BurntSushi/ripgrep`
-on GitHub. Release lookup has a 10-second deadline and archive download a
+on GitHub, except that fd on Intel macOS skips the lookup and downloads the last
+build published for it, release `v10.3.0`. Release lookup has a 10-second deadline and archive download a
 120-second deadline, each including the body. Supported assets are macOS/Linux
 `.tar.gz` archives extracted by system `tar`, and Windows `.zip` archives
 extracted in process. Each install stages inside a separately created directory,
@@ -129,7 +130,9 @@ The program handles glob syntax and scoped ignore files. It includes hidden user
 files and unignored dependencies, excludes `.git`, and receives zero as unlimited.
 Negative and fractional limits are left for fd to reject. Patterns containing `/`
 use full-path mode, with `**/` prefixed unless already rooted or prefixed; `--`
-separates patterns from options. NUL-delimited output keeps filename whitespace,
+separates patterns from options. fd matches a full-path pattern against the native
+absolute path, so on Windows the glob reaches fd as the regex fd compiles from it,
+with every separator it matches widened to `/` or `\`. NUL-delimited output keeps filename whitespace,
 embedded newlines and directory markers. Native nonzero exits with records return
 those records; without records they fail with trimmed stderr or an exit-code message.
 

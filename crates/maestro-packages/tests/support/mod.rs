@@ -219,6 +219,8 @@ pub fn recorded_stages(text: &str) -> String {
 /// they are.
 pub fn below(root: &std::path::Path, path: &str) -> String {
     if path.starts_with('/') {
+        // The authored separators become native ones, as the package manager joins them.
+        let path = path.replace('/', std::path::MAIN_SEPARATOR_STR);
         format!("{}{path}", root.to_str().unwrap())
     } else {
         path.to_owned()

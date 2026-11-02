@@ -112,6 +112,9 @@ acknowledgment without waiting for exit.
 
 ## Direct shell execution
 
+For session settings and a dedicated Bash alias file, see
+[Use aliases in shell commands](shell-aliases.md).
+
 `execute_bash_with_operations(command, cwd, operations, options)` invokes the supplied
 `BashOperations` with the literal command and directory, the same optional signal,
 and no timeout or replacement environment. Even a pre-aborted signal reaches the operation.
@@ -201,7 +204,11 @@ expanded results show the complete body. Hidden rows add a clipped hint using th
 bindings and colors when drawn, falling back to plain text if its theme becomes unavailable.
 
 Nonempty artifact paths and active truncation add an independent warning after the
-body. Execution-started calls capture the initial clock; results display `Elapsed`
+body. A final result whose details report a truncation and a nonempty artifact path
+drops the footer the tool appended to its text, so the path appears once: when the
+trimmed text ends with `]`, the part from its last blank line before `[`, or the
+whole text when it starts with `[`, is cut if it names the path, and the rest is
+trimmed at the end. Partial results keep their text. Execution-started calls capture the initial clock; results display `Elapsed`
 while partial and `Took` otherwise, with one decimal second. Final or error results
 freeze the first end time and cancel refresh. A partial error keeps the `Elapsed`
 label. Historical results without a start show no clock. A later partial result

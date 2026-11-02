@@ -17,6 +17,10 @@ use super::ui_host::receipts;
 use crate::component_adapter::{Capabilities, Exports};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
+#[expect(
+    clippy::duplicate_mod,
+    reason = "Each shipped example is its own crate; only this harness loads several examples."
+)]
 #[path = "../../../../examples/extensions/titlebar_spinner.rs"]
 mod titlebar_spinner;
 

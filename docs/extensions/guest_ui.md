@@ -187,6 +187,21 @@ pass it to another dialog. An absent placeholder or prefill stays distinct from 
 empty one, and an empty answer stays distinct from a dismissal. A host rejection
 resolves to its message; the guest never turns it into a dismissal.
 
+### Caller-owned cancellation
+
+`AbortController::new()` creates a signal that is not aborted. Pass
+`controller.signal()` in `ExtensionUIDialogOptions::signal`, then call `controller.abort()` to cancel
+operations using that signal. Clones share the cancellation state; a signal stays
+usable after its controller is dropped. Aborting twice does nothing the second
+time. Listeners run synchronously in registration order, and the first listener
+error stops delivery and is returned to the caller. Listeners added after an
+abort are not invoked, and a listener's callback emitter has no host channel.
+
+The controller owns no timer. The
+[timed dialogs example](../../examples/extensions/timed_confirm.rs) pairs it with
+`ExtensionAPI::native_io().sleep(...)` and drops the unfinished wait when the
+dialog answers first. The host still owns dialog dismissal and countdown display.
+
 ## Resources and their native counterparts
 
 Each guest handle wraps one resource from `crates/maestro-extensions-wasm/wit/host.wit`.
@@ -305,7 +320,8 @@ It returns an `EditorFactoryOutcome`:
 
 `Editor` and `CustomEditor` implement the matching traits. A factory can return one as
 it is, or wrap one and delegate to it, as a modal editor does for the keys it does not
-keep.
+keep. [`examples/extensions/modal_editor.rs`](../../examples/extensions/modal_editor.rs)
+wraps the custom editor this way.
 
 The host calls the authored editor through its operations. It renders and delivers
 input through the editor's component, and the input reaches

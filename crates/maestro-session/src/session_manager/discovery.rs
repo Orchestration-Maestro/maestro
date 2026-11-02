@@ -4,12 +4,24 @@ use super::{
     SessionInfo, SessionManager,
     context::{ecma_whitespace, observation, property},
     files::{get_default_session_dir, jsonl_path, modified_millis},
-    parse_session_entries,
+    records::{Admission, for_each_entry},
 };
 use crate::messages::{millis_number, timestamp_millis};
-use futures_util::{StreamExt, stream::FuturesUnordered};
+use futures_util::{StreamExt, stream};
 use serde_json::Value;
-use std::{borrow::Cow, fs::DirEntry, io};
+use std::{
+    borrow::Cow,
+    fs::{self, DirEntry},
+    future::Future,
+    io::{self, BufRead, BufReader},
+    ops::ControlFlow,
+};
+
+/// The most session files whose metadata loads at the same time.
+const MAX_CONCURRENT_LOADS: usize = 10;
+
+/// Largest absolute epoch millisecond value accepted as a header or record date.
+const MAX_DATE_MILLIS: f64 = 8.64e15;
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
 pub type SessionListProgress<'a> = dyn FnMut(usize, usize) -> io::Result<()> + 'a;
@@ -34,7 +46,7 @@ impl SessionManager {
             None => Cow::Owned(get_default_session_dir(cwd, agent_dir)?),
         };
         let files = read_paths(&dir, jsonl_path).await.unwrap_or_default();
-        Ok(collect(files, on_progress).await)
+        Ok(collect(files, build_session_info, on_progress).await)
     }
 
     /// List the sessions of every project directory under `<agent_dir>/sessions`,
@@ -60,7 +72,7 @@ impl SessionManager {
                 files.extend(children);
             }
         }
-        collect(files, on_progress).await
+        collect(files, build_session_info, on_progress).await
     }
 }
 
@@ -82,18 +94,21 @@ async fn read_paths(
     .map_err(io::Error::other)?
 }
 
-/// Read every candidate concurrently in this task, reporting progress as each completes,
-/// then order the healthy results by input position and descending activity.
-async fn collect(
+/// Read the candidates in this task, at most `MAX_CONCURRENT_LOADS` at a time, reporting
+/// progress as each completes, then order the healthy results by input position and
+/// descending activity.
+pub(super) async fn collect<F: Future<Output = Option<SessionInfo>>>(
     files: Vec<String>,
+    load: impl Fn(String) -> F,
     mut on_progress: Option<&mut SessionListProgress<'_>>,
 ) -> Vec<SessionInfo> {
     let total = files.len();
-    let mut pending: FuturesUnordered<_> = files
-        .iter()
-        .enumerate()
-        .map(|(index, file)| async move { (index, build_session_info(file).await) })
-        .collect();
+    let mut pending = stream::iter(files.into_iter().enumerate())
+        .map(|(index, file)| {
+            let loading = load(file);
+            async move { (index, loading.await) }
+        })
+        .buffer_unordered(MAX_CONCURRENT_LOADS);
     let mut results: Vec<Option<SessionInfo>> = (0..total).map(|_| None).collect();
     let mut loaded = 0;
     while let Some((index, info)) = pending.next().await {
@@ -110,23 +125,52 @@ async fn collect(
     sessions
 }
 
-/// Summarize one session file, or `None` when it is unreadable or not a session.
-async fn build_session_info(path: &str) -> Option<SessionInfo> {
-    let bytes = tokio::fs::read(path).await.ok()?;
-    let entries = parse_session_entries(&String::from_utf8_lossy(&bytes));
-    let header = entries.first()?;
-    if property(Some(header), "type").ok()??.as_str() != Some("session") {
-        return None;
-    }
-    let metadata = tokio::fs::metadata(path).await.ok()?;
-    let scan = scan_entries(&entries).ok()?;
+/// Summarize one session file on the blocking pool, or `None` when it is unreadable or not a session.
+async fn build_session_info(path: String) -> Option<SessionInfo> {
+    tokio::task::spawn_blocking(move || read_session_info(&path))
+        .await
+        .ok()?
+}
+
+/// Summarize one session file, reading it line by line.
+fn read_session_info(path: &str) -> Option<SessionInfo> {
+    let (header, scan) = scan_reader(BufReader::new(fs::File::open(path).ok()?))?;
+    let metadata = fs::metadata(path).ok()?;
     let mtime = millis_number(i64::try_from(modified_millis(&metadata)?).ok()?);
-    Some(summarize(path, header, scan, mtime))
+    Some(summarize(path, &header, scan, mtime))
+}
+
+/// The session header and the facts of every later record, or `None` when the first record is
+/// not a session header or a reached record is malformed; reading stops at that record.
+/// Null, false, zero and empty-string records are skipped before either check.
+pub(super) fn scan_reader(reader: impl BufRead) -> Option<(Value, Scan)> {
+    let mut header: Option<Value> = None;
+    let mut scan = Scan::default();
+    let mut admitted = true;
+    for_each_entry(reader, Admission::Nonempty, |entry| {
+        admitted = match &header {
+            None => is_session_header(&entry),
+            Some(_) => scan_entry(&entry, &mut scan).is_ok(),
+        };
+        if !admitted {
+            return ControlFlow::Break(());
+        }
+        header.get_or_insert(entry);
+        ControlFlow::Continue(())
+    })
+    .ok()?;
+    admitted.then_some(())?;
+    Some((header?, scan))
+}
+
+/// Whether the record is a session header.
+fn is_session_header(entry: &Value) -> bool {
+    matches!(property(Some(entry), "type"), Ok(Some(kind)) if kind.as_str() == Some("session"))
 }
 
 /// Selected facts gathered from the entries after the header check.
 #[derive(Default)]
-struct Scan {
+pub(super) struct Scan {
     /// Message records seen.
     message_count: usize,
     /// Latest trimmed name.
@@ -139,20 +183,17 @@ struct Scan {
     activity: f64,
 }
 
-/// Walk every entry once; a reached null record or malformed selected field fails the file.
-fn scan_entries(entries: &[Value]) -> Result<Scan, serde_json::Error> {
-    let mut scan = Scan::default();
-    for entry in entries {
-        match property(Some(entry), "type")?.and_then(Value::as_str) {
-            Some("session_info") => scan.name = session_name(entry)?,
-            Some("message") => {
-                scan.message_count += 1;
-                scan_message(entry, &mut scan)?;
-            }
-            _ => {}
+/// Fold one admitted entry into the scan; a malformed selected field fails the file.
+fn scan_entry(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
+    match property(Some(entry), "type")?.and_then(Value::as_str) {
+        Some("session_info") => scan.name = session_name(entry)?,
+        Some("message") => {
+            scan.message_count += 1;
+            scan_message(entry, scan)?;
         }
+        _ => {}
     }
-    Ok(scan)
+    Ok(())
 }
 
 /// Trim a string name; absent, null or empty clears it and other types fail.
@@ -166,7 +207,7 @@ fn session_name(entry: &Value) -> Result<Option<String>, serde_json::Error> {
     }
 }
 
-/// Index a user or assistant message that has content and track its activity time.
+/// Index a user or assistant message with content, reading scalar record dates as activity.
 fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error> {
     let message = entry.get("message");
     let Some(role) = property(message, "role")?.and_then(Value::as_str) else {
@@ -178,14 +219,12 @@ fn scan_message(entry: &Value, scan: &mut Scan) -> Result<(), serde_json::Error>
     if role != "user" && role != "assistant" {
         return Ok(());
     }
-    let activity = match message.and_then(|message| message.get("timestamp")) {
-        Some(Value::Number(time)) => time.as_f64(),
-        _ => entry
-            .get("timestamp")
-            .and_then(Value::as_str)
-            .map(timestamp_millis)
-            .filter(|time| !time.is_nan()),
-    };
+    let activity =
+        if let Some(Value::Number(time)) = message.and_then(|message| message.get("timestamp")) {
+            time.as_f64()
+        } else {
+            Some(created_millis(entry.get("timestamp"))).filter(|time| !time.is_nan())
+        };
     scan.activity = scan.activity.max(activity.unwrap_or(0.0));
     let text = message_text(content)?;
     if !text.is_empty() {
@@ -219,13 +258,19 @@ fn message_text(content: &Value) -> Result<String, serde_json::Error> {
     }
 }
 
-/// Header creation time: strings parse, numbers truncate, null is the epoch, the rest is invalid.
+/// Scalar date in bounded epoch milliseconds; missing values and nonscalars are invalid.
 fn created_millis(timestamp: Option<&Value>) -> f64 {
-    match timestamp {
+    let time = match timestamp {
         Some(Value::String(text)) => timestamp_millis(text),
-        Some(Value::Number(number)) => number.as_f64().map_or(f64::NAN, f64::trunc),
+        Some(Value::Number(number)) => number.as_f64().unwrap_or(f64::NAN),
+        Some(Value::Bool(value)) => f64::from(u8::from(*value)),
         Some(Value::Null) => 0.0,
         _ => f64::NAN,
+    };
+    if time.abs() <= MAX_DATE_MILLIS {
+        time.trunc()
+    } else {
+        f64::NAN
     }
 }
 

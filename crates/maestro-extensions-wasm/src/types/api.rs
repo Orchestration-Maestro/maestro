@@ -51,9 +51,14 @@ port! {
         /// Formats a native byte count without narrowing its floating-point domain.
         #[doc(hidden)]
         fn native_format_size(bytes: f64) -> String;
+        /// Offers package sources, base prompts, model files and scoped base layers during base loading.
+        fn contribute_load_time(contributions: Value) -> ();
         /// Reads complete typed metadata through the installed host.
         #[doc(hidden)]
         fn native_frontmatter(content: &str) -> crate::bindings::maestro::extension::host::FrontmatterDocument;
+        /// Reads one raw YAML document through the installed host.
+        #[doc(hidden)]
+        fn native_yaml(content: &str) -> Vec<crate::bindings::maestro::extension::host::FrontmatterToken>;
         /// Forwards ordinary helper operands to their native owners.
         #[doc(hidden)]
         fn native_helper(operation: &str, data: &str) -> String;

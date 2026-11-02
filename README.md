@@ -87,6 +87,7 @@ vocabulary.
 ## Documentation
 
 - [First-session user guide](docs/first-session.md)
+- [Consume JSON session events](docs/json-events.md)
 - [Library architecture and checks](docs/architecture.md)
 - [Approved libraries](docs/libraries/)
 - [Identity guide and brand pack](docs/identity.md)

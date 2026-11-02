@@ -8,9 +8,10 @@ and GitHub Copilot device login and refresh.
 
 A terminal frontend reads this metadata through `maestro-app`, which re-exports
 `get_providers`, `DEFAULT_MODEL_PER_PROVIDER`, `BUILT_IN_PROVIDER_DISPLAY_NAMES`,
-`OAuthSelectPrompt` and `OAuthSelectOption` at its root. The application exports
-share the catalog's own tables and prompt record, so a frontend selects a model
-and presents an authorization prompt without keeping copies.
+`OAuthSelectPrompt` and `OAuthSelectOption` at its root. The two provider tables
+are the catalog's own, and the prompt records are the ones `maestro-models`
+defines, so a frontend selects a model and presents an authorization prompt
+without keeping copies.
 
 `OAuthCredentials` carries token strings, an expiry number in Unix epoch
 milliseconds and flattened provider extension fields. It does not validate
@@ -135,10 +136,13 @@ waiting. Manual work remains independently owned even after a browser winner or
 the loss of all observation handles.
 
 Login binds a native listener at `127.0.0.1:53692`; a nonempty
-`MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. A binding that
-conflicts with the configured address makes login return a native binding error
-before interaction callbacks run. The redirect remains
-`http://localhost:53692/callback`. A browser binding attempt returns
+`MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. When port 53692
+cannot be bound, login binds any free port on the same host instead. If that
+also fails, login continues without a listener: the wait for a callback is already
+cancelled, so the manual-input callback or the prompt supplies the code. The redirect
+address is `http://localhost:` followed by the bound port, or `53692` when no port is
+bound, and `/callback`; the authorization address, the prompt placeholder and the token
+exchange all name that address. A browser binding attempt returns
 `Anthropic OAuth requires a native callback listener`; importing the library,
 PKCE, pages and refresh do not require that listener. Interaction is supplied by
 library callbacks: this library does not open a browser or provide a UI.

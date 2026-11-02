@@ -5,7 +5,10 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
+    CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture,
+    child_process::{SpawnOptions, Stdio},
+    tools::path_utils::guest_path,
 };
 use serde_json::{Value, json};
 use std::{cell::Cell, rc::Rc};
@@ -26,6 +29,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             let request: Value =
                 serde_json::from_str(&request).map_err(|error| error.to_string())?;
             stdio::output(&request).await?;
+        }
+        if let Ok(endpoint) = std::env::var("MAESTRO_WASI_ROOT_OUTPUT") {
+            return root_output(&api, endpoint);
         }
         let reporter = api.clone();
         let calls = Rc::new(Cell::new(0));
@@ -57,7 +63,20 @@ async fn dispatch(
         Some("basics") => basics(&request)?,
         Some("close-pending") => network::close_pending(&request, &reporter.events()).await?,
         Some("listen") => network::listen(&request, &reporter.events()).await?,
-        Some("file") => filesystem::operate(&request).await?,
+        Some("file") => {
+            let path = request["path"].as_str().ok_or("missing path")?;
+            filesystem::operate(&request, &guest_path(&reporter, path)?).await?
+        }
+        Some("link") => {
+            let target = request["target"].as_str().ok_or("missing target")?;
+            let link = request["link"].as_str().ok_or("missing link")?;
+            filesystem::link(
+                &request,
+                &guest_path(&reporter, target)?,
+                &guest_path(&reporter, link)?,
+            )
+            .await?
+        }
         Some("cwd") => filesystem::cwd(),
         Some("stdio") => {
             stdio::inherited(request["generation"].as_str().ok_or("missing generation")?).await?
@@ -115,4 +134,97 @@ fn basics(request: &Value) -> Result<Value, String> {
     Ok(
         json!({"before":before,"after":std::fs::read(path).map_err(|error| error.to_string())?,"env":observe()}),
     )
+}
+
+/// Registers byte output and native execution through the executable's ordinary loader.
+fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
+    api.on(
+        "session_start",
+        Rc::new(|_, context| {
+            Box::pin(async move {
+                context.ui()?.set_title("ROOT-STDOUT-READY")?;
+                Ok(None)
+            })
+        }),
+    )?;
+    let executor = api.clone();
+    api.register_command(
+        "stdout-probe",
+        CommandOptions {
+            description: None,
+            get_argument_completions: None,
+            handler: Rc::new(move |generation, context| {
+                let (executor, endpoint) = (executor.clone(), endpoint.clone());
+                Box::pin(async move {
+                    if generation == "reload" {
+                        return context.reload().await;
+                    }
+                    let mut bytes = b"\x1b[36m".to_vec();
+                    bytes.extend(b"guest\0\xff".repeat(300_000));
+                    bytes.extend_from_slice(b"\x1b[0m");
+                    let result =
+                        stdio::output(&json!({"generation":generation,"bytes":bytes})).await;
+                    let reply = result.unwrap_or_else(|error| json!({"error":error}));
+                    acknowledge(&executor, endpoint, reply).await?;
+                    context.ui()?.set_title("ROOT-STDOUT-DONE")
+                })
+            }),
+        },
+    )
+}
+
+/// Captures native exec streams and spawns a checked child to acknowledge the combined reply.
+async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Result<(), String> {
+    let command = std::env::var("MAESTRO_WASI_ROOT_COMMAND").map_err(|error| error.to_string())?;
+    let command: Value = serde_json::from_str(&command).map_err(|error| error.to_string())?;
+    let program = command["command"]
+        .as_str()
+        .ok_or("missing native program")?;
+    let execution = execute(api, program, &command)
+        .await
+        .unwrap_or_else(|error| json!({"error":error}));
+    let reply = json!({"output":reply,"exec":execution});
+    let args =
+        serde_json::from_value(command["args"].clone()).map_err(|error| error.to_string())?;
+    let prologue: Vec<u8> =
+        serde_json::from_value(command["prologue"].clone()).map_err(|error| error.to_string())?;
+    let child = api
+        .native_io()
+        .spawn(
+            program.into(),
+            args,
+            SpawnOptions {
+                env: Some(vec![
+                    ("MAESTRO_STDOUT_ENDPOINT".into(), endpoint),
+                    ("MAESTRO_STDOUT_REPLY".into(), reply.to_string()),
+                ]),
+                stdio: [Stdio::Ignore, Stdio::Pipe, Stdio::Ignore],
+                ..Default::default()
+            },
+        )
+        .await?;
+    let stdout = child.stdout().ok_or("missing native output")?;
+    let mut output = Vec::new();
+    while let Some(bytes) = stdout.read().await? {
+        output.extend(bytes);
+    }
+    let status = child.wait().await?;
+    if !output.starts_with(&prologue) || status.code != Some(0) {
+        return Err("native acknowledgement failed".into());
+    }
+    Ok(())
+}
+
+/// Captures the literal native program's streams through the application execution path.
+///
+/// # Errors
+/// Returns argument-decoding and native execution failures.
+async fn execute(api: &ExtensionAPI, program: &str, command: &Value) -> Result<Value, String> {
+    let args: Vec<String> =
+        serde_json::from_value(command["exec_args"].clone()).map_err(|error| error.to_string())?;
+    let result = api.exec(program, &args, None).await?;
+    Ok(json!({
+        "stdout":result.stdout,"stderr":result.stderr,
+        "code":result.code,"killed":result.killed,
+    }))
 }

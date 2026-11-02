@@ -25,12 +25,15 @@ use maestro_models::system_prompt::ContextFile;
 use maestro_models::{
     AssistantMessage, DiagnosticErrorInfo, Execution, FauxAssistantMessageOptions,
     FauxModelDefinition, FauxProviderRegistration, FauxResponseInput, FauxResponseStep, Local,
-    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, faux_assistant_message,
-    register_faux_provider,
+    Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, UserContent,
+    faux_assistant_message, register_faux_provider,
 };
 use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
-use maestro_session::{CompactionResult, Presence, SessionManager, messages::CustomAgentMessages};
+use maestro_session::{
+    CompactionResult, Presence, SessionManager,
+    messages::{CustomAgentMessages, CustomMessageInput},
+};
 use maestro_settings::SettingsManager;
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
@@ -144,6 +147,8 @@ pub struct HarnessOptions {
     pub append_system_prompt: Vec<String>,
     /// The agent's own task facility; the session supplies its default when absent.
     pub spawn: Option<maestro_agent::AgentSpawner<Local>>,
+    /// The next-turn hook already installed on the supplied agent.
+    pub prepare_next_turn: Option<maestro_agent::PrepareNextTurn<CustomAgentMessages, Local>>,
     /// The loaded skills.
     pub skills: Vec<maestro_resources::Skill>,
     /// The loaded prompt templates.
@@ -175,6 +180,7 @@ impl Default for HarnessOptions {
             system_prompt: None,
             append_system_prompt: Vec::new(),
             spawn: None,
+            prepare_next_turn: None,
             skills: Vec::new(),
             prompts: Vec::new(),
             scratch: None,
@@ -511,6 +517,23 @@ pub fn assistant(text: &str, offset: u64, extra: &Value) -> Value {
     message
 }
 
+/// Stamps `message` at the compaction summary of `manager`'s context.
+///
+/// The message then counts as given after the compaction without reading the clock.
+///
+/// # Panics
+/// Panics when the session context cannot be built or holds no compaction summary.
+pub fn after_summary(manager: &SessionManager, mut message: Value) -> Value {
+    let context = manager.build_session_context().unwrap();
+    let summary = context
+        .messages
+        .iter()
+        .find(|message| message["role"] == "compactionSummary")
+        .expect("a compaction summary in context");
+    message["timestamp"] = summary["timestamp"].clone();
+    message
+}
+
 /// Tree entry identities by name.
 pub type Names = IndexMap<String, String>;
 
@@ -686,6 +709,7 @@ pub async fn harness(mut options: HarnessOptions) -> Harness {
         .take()
         .map(|responses| scripted_stream(responses, requests.clone()));
     let (runner_ref, settings_manager, agent) = scripted_agent(&mut options, &faux, stream);
+    *agent.prepare_next_turn.write().unwrap() = options.prepare_next_turn.take();
     let session_manager = options
         .session_manager
         .take()
@@ -816,12 +840,15 @@ fn compaction_end_view(
 
 /// The recorded form of a stored compaction result.
 fn compaction_result_view(result: &CompactionResult) -> Value {
-    json!({
+    let mut view = json!({
         "summary": result.summary,
         "firstKeptEntryId": result.first_kept_entry_id,
         "tokensBefore": recorded_number(result.tokens_before),
-        "details": result.details,
-    })
+    });
+    if !result.details.is_missing() {
+        view["details"] = serde_json::to_value(&result.details).unwrap();
+    }
+    view
 }
 
 /// What started a compaction, as the recorded cases spell it.
@@ -1398,30 +1425,54 @@ pub fn hold_first_answer(
 
 /// `value` with every `(from, to)` spelling replaced, in order, in its strings.
 pub fn substituting(value: Value, paths: &[(&str, &str)]) -> Value {
+    mapping_strings(value, &|text| {
+        paths
+            .iter()
+            .fold(text, |text, (from, to)| text.replace(from, to))
+    })
+}
+
+/// `value` with `map` applied to each of its strings.
+fn mapping_strings(value: Value, map: &impl Fn(String) -> String) -> Value {
     match value {
-        Value::String(text) => json!(
-            paths
-                .iter()
-                .fold(text, |text, (from, to)| text.replace(from, to))
-        ),
+        Value::String(text) => json!(map(text)),
         Value::Array(items) => items
             .into_iter()
-            .map(|item| substituting(item, paths))
+            .map(|item| mapping_strings(item, map))
             .collect(),
         Value::Object(fields) => Value::Object(
             fields
                 .into_iter()
-                .map(|(key, item)| (key, substituting(item, paths)))
+                .map(|(key, item)| (key, mapping_strings(item, map)))
                 .collect(),
         ),
         other => other,
     }
 }
 
+/// `value` with each `(path, placeholder)` path spelled as its placeholder, as the recorded
+/// cases spell it. On Windows a string that names a placeholder also spells its native
+/// separators `/`, as the recordings do.
+pub fn as_recorded(value: Value, paths: &[(&str, &str)]) -> Value {
+    mapping_strings(value, &|text| {
+        let text = paths.iter().fold(text, |text, (path, placeholder)| {
+            text.replace(path, placeholder)
+        });
+        let named = paths
+            .iter()
+            .any(|(_, placeholder)| text.contains(placeholder));
+        if cfg!(windows) && named {
+            text.replace('\\', "/")
+        } else {
+            text
+        }
+    })
+}
+
 /// `value` with the scratch root spelled `$ROOT`, as the recorded cases spell it.
 pub fn with_placeholders(value: Value, h: &Harness) -> Value {
     let root = h.scratch.path().display().to_string();
-    substituting(value, &[(&root, "$ROOT")])
+    as_recorded(value, &[(&root, "$ROOT")])
 }
 
 /// The agent run and message events, as the session's listeners would see them.
@@ -1756,6 +1807,10 @@ pub struct Scripted {
     pub error: Option<String>,
     /// Input and output tokens; 100 and 50 when absent.
     pub usage: Option<(f64, f64)>,
+    /// Whether the stream sends only the terminal event, so the response arrives whole.
+    pub terminal_only: bool,
+    /// Whether the answer names the model the request asked for, as a provider's answer does.
+    pub names_requested_model: bool,
 }
 
 impl Scripted {
@@ -1774,6 +1829,22 @@ impl Scripted {
             ..Self::default()
         }
     }
+
+    /// A failed answer from the requested model reporting a context overflow.
+    pub fn context_overflow() -> Self {
+        Self {
+            names_requested_model: true,
+            ..Self::failure("prompt is too long: 213462 tokens > 200000 maximum")
+        }
+    }
+
+    /// A call of the tool named `echo` with `text`.
+    pub fn echo_call(text: &str) -> Self {
+        Self {
+            tool_calls: vec![("echo".into(), json!({"text": text}))],
+            ..Self::default()
+        }
+    }
 }
 
 /// The requests the scripted stream received, in order.
@@ -1786,11 +1857,17 @@ fn scripted_stream(
     responses: Vec<Scripted>,
     requests: ScriptedRequests,
 ) -> maestro_agent::StreamFn<Local> {
-    Rc::new(move |_, context, _, _| {
+    Rc::new(move |model, context, _, _| {
         let index = requests.0.borrow().len() % responses.len();
         requests.0.borrow_mut().push(context);
         let stream = maestro_models::AssistantMessageEventStream::new();
-        stream_with_deltas(&stream, scripted_message(&responses[index]));
+        let response = &responses[index];
+        let mut message = scripted_message(response);
+        if response.names_requested_model {
+            message.provider = model.provider;
+            message.model = model.id;
+        }
+        stream_with_deltas(&stream, message, response.terminal_only);
         Box::pin(std::future::ready(Ok(stream)))
     })
 }
@@ -1840,11 +1917,22 @@ fn scripted_message(response: &Scripted) -> AssistantMessage {
 }
 
 /// Pushes `message` onto `stream` block by block, each with its start, deltas of up to four
-/// characters and its end, then its terminal event.
+/// characters and its end, then its terminal event; only the terminal event when
+/// `terminal_only`.
 fn stream_with_deltas(
     stream: &maestro_models::AssistantMessageEventStream,
     message: AssistantMessage,
+    terminal_only: bool,
 ) {
+    if !terminal_only {
+        stream_blocks(stream, &message);
+    }
+    stream_terminal(stream, message);
+}
+
+/// Pushes the start of `message`, then each block with its start, deltas of up to four
+/// characters and its end.
+fn stream_blocks(stream: &maestro_models::AssistantMessageEventStream, message: &AssistantMessage) {
     use maestro_models::{AssistantContent, AssistantMessageEvent as Event};
     let mut partial = AssistantMessage {
         content: Vec::new(),
@@ -1875,6 +1963,14 @@ fn stream_with_deltas(
         }
         stream.push(block_end(block, index, &snapshot(&partial)));
     }
+}
+
+/// Pushes the terminal event of `message`: its completion, or its failure.
+fn stream_terminal(
+    stream: &maestro_models::AssistantMessageEventStream,
+    message: AssistantMessage,
+) {
+    use maestro_models::AssistantMessageEvent as Event;
     let failed = matches!(message.stop_reason, StopReason::Error | StopReason::Aborted);
     let reason = message.stop_reason.clone();
     let message = Arc::new(RwLock::new(message));
@@ -2013,28 +2109,64 @@ fn delivered_agent_event(event: &maestro_agent::AgentEvent<CustomAgentMessages>)
     view
 }
 
+/// A displayed custom `note` message that only records `text`.
+pub fn custom_note(text: &str) -> CustomMessageInput {
+    CustomMessageInput {
+        custom_type: "note".into(),
+        content: UserContent::Text(text.into()),
+        display: true,
+        details: Presence::Missing,
+    }
+}
+
 /// An executable tool that reports its entry and answers `released` once released.
 pub fn waiting_tool(
     started: Rc<tokio::sync::Notify>,
     release: Rc<tokio::sync::Notify>,
 ) -> maestro_agent::SharedAgentTool<Local> {
+    text_tool("wait", "Wait for release", "Wait", "released", move || {
+        started.notify_one();
+        let release = Rc::clone(&release);
+        Box::pin(async move { release.notified().await })
+    })
+}
+
+/// An executable tool named `name` that calls `on_execute` and answers `ok`.
+pub fn callback_tool(
+    name: &str,
+    on_execute: impl Fn() + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
+    text_tool(name, "Run a callback", name, "ok", move || {
+        on_execute();
+        Box::pin(std::future::ready(()))
+    })
+}
+
+/// An executable tool with no parameters that awaits the work `run` starts, then answers
+/// `text`.
+fn text_tool(
+    name: &str,
+    description: &str,
+    label: &str,
+    text: &'static str,
+    run: impl Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> + 'static,
+) -> maestro_agent::SharedAgentTool<Local> {
     let tool = maestro_agent::AgentToolRecord::<Local> {
         definition: Tool {
-            name: "wait".into(),
-            description: "Wait for release".into(),
+            name: name.into(),
+            description: description.into(),
             parameters: json!({"type": "object", "properties": {}}).into(),
         },
         description: None,
-        label: "Wait".into(),
+        label: label.into(),
         prepare_arguments: None,
         execute: Rc::new(move |_, _, _, _| {
-            started.notify_one();
-            let release = Rc::clone(&release);
+            let work = run();
             Box::pin(async move {
-                release.notified().await;
+                work.await;
                 Ok(maestro_agent::AgentToolResult {
                     content: vec![maestro_models::UserBlock::Text(
-                        maestro_models::TextContent::new("released".into()),
+                        maestro_models::TextContent::new(text.into()),
                     )],
                     details: Some(json!({})),
                     terminate: None,
@@ -2044,6 +2176,35 @@ pub fn waiting_tool(
         execution_mode: None,
     };
     Rc::new(RwLock::new(tool))
+}
+
+/// Notified once `session` announces the start of a retry.
+pub fn retry_started(session: &AgentSession<Local>) -> Rc<tokio::sync::Notify> {
+    let started = Rc::new(tokio::sync::Notify::new());
+    let notify = Rc::clone(&started);
+    drop(session.subscribe(Rc::new(move |event| {
+        if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+            notify.notify_one();
+        }
+    })));
+    started
+}
+
+/// The extension whose before-agent-start handler answers every prompt with the system
+/// prompt `prompt`.
+pub fn system_prompt_extension(prompt: &'static str) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let registered = api.on::<BeforeAgentStartEvent, BeforeAgentStartEventResult>(
+            "before_agent_start".into(),
+            Rc::new(move |_, _| {
+                Box::pin(std::future::ready(Ok(Some(BeforeAgentStartEventResult {
+                    message: Presence::Missing,
+                    system_prompt: Presence::Present(prompt.to_owned()),
+                }))))
+            }),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
 }
 
 /// Prompts `text` and waits until the session has delivered the run's end.

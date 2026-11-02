@@ -109,10 +109,14 @@ impl<E: ExtensionExecution> AgentSession<E> {
     }
 
     /// Enables or disables automatic compaction.
-    pub fn set_auto_compaction_enabled(&self, enabled: bool) {
-        self.settings_manager
-            .borrow_mut()
-            .set_compaction_enabled(enabled);
+    ///
+    /// # Errors
+    /// Returns the publisher's refusal without changing preferences.
+    pub fn set_auto_compaction_enabled(&self, enabled: bool) -> Result<(), DiagnosticErrorInfo> {
+        let edit =
+            self.prepare_behaviour(&["compaction", "enabled"], serde_json::json!(enabled))?;
+        self.settings_manager.borrow_mut().apply_prepared_edit(edit);
+        Ok(())
     }
 
     /// Compacts the context once the caller's turn is stopped.

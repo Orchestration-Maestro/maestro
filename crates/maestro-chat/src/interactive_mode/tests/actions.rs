@@ -539,7 +539,11 @@ fn temporary_files_preserve_existing_entries_and_private_bytes() {
 fn notices(world: &World, expected: &[String]) -> (Vec<String>, Vec<String>) {
     let theme = world.themes.theme().get().unwrap();
     let expected = painted(&theme, expected);
-    let width = maestro_tui::visible_width(&expected[expected.len() - 1]);
+    let width = expected
+        .iter()
+        .map(|row| maestro_tui::visible_width(row))
+        .max()
+        .unwrap_or_default();
     (world.mode.chat_container.render(width), expected)
 }
 

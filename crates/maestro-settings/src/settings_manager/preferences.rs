@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 
 use super::BaseSettingsLayer;
 
-mod thread_bound {
+pub(super) mod thread_bound {
     //! Marks storage adapters that the queue worker may own.
 
     /// Native adapters must be shareable with the queue worker thread.
@@ -54,9 +54,20 @@ pub type SettingsStorageError = Box<dyn std::error::Error + Send + Sync>;
 /// stored text alone, or a failure.
 pub type SettingsUpdate = Result<Option<String>, SettingsStorageError>;
 
-/// A failure attributed to the scope whose load or save produced it.
+/// Distinguishes settings failures from accepted stored-value resolutions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SettingsErrorKind {
+    /// A read, parse, write or explicit edit failure.
+    Failure,
+    /// A stored preference was resolved by a base lock or the registered decider.
+    StoredValueIgnored,
+}
+
+/// A failure or diagnostic attributed to its settings scope.
 #[derive(Debug)]
 pub struct SettingsError {
+    /// Whether this reports a failure or a resolved stored conflict.
+    pub kind: SettingsErrorKind,
     /// The scope whose operation failed.
     pub scope: SettingsScope,
     /// The underlying parser, I/O or adapter failure.
@@ -134,11 +145,12 @@ pub trait SettingsStorage: thread_bound::StorageThreadBound {
     /// The default delegates once to [`Self::with_lock`], preserving the supplied
     /// adapter's callback, exclusion and re-entry policy. Native decorators must
     /// forward this operation to retain the file adapter's write exclusion.
-    /// The file adapter creates the parent as needed and acquires its stable
-    /// sidecar before reading and invoking `update` exactly once. It releases
-    /// exclusion on every outcome; acquire/read failures skip the callback.
-    /// `Ok(None)` and callback failure leave settings bytes untouched but may
-    /// leave a newly created parent and sidecar, never a new settings file.
+    /// The file adapter creates the parent as needed and acquires the lock file
+    /// beside the settings file before reading and invoking `update` exactly once.
+    /// It releases exclusion and removes the lock file on every outcome;
+    /// acquire/read failures skip the callback. `Ok(None)` and callback failure
+    /// leave settings bytes untouched but may leave a newly created parent,
+    /// never a new settings file.
     ///
     /// # Errors
     ///

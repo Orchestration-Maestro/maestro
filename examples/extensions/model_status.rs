@@ -1,4 +1,5 @@
 //! A model-status extension that reports the model each selection chose.
+// maestro-component: MAESTRO_MODEL_STATUS_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,
@@ -43,6 +44,10 @@ fn model_select(
 }
 
 /// Registers the model-selection status handler through the supplied host.
+///
+/// # Errors
+/// The returned future returns the host's rejection when it refuses the handler
+/// registration.
 #[must_use]
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move { api.on("model_select", Rc::new(model_select)) })

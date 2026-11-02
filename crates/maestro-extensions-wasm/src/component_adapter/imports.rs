@@ -409,6 +409,8 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
         description: Option<&str>,
         handler: &Self::Callback,
     ) -> ExtensionResult<()>;
+    /// Offers one JSON load-time input to the original host registration owner.
+    fn contribute_load_time(&self, contributions: &str) -> ExtensionResult<()>;
     /// Forwards flag options unchanged.
     fn register_flag(&self, name: &str, options: &FlagOptions) -> ExtensionResult<()>;
     /// Returns the host-resolved value.

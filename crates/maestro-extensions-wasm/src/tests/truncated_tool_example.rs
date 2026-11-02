@@ -6,7 +6,7 @@ use super::example_support::{registered, release_all, result_value};
 use super::scenario::{Driver, ToolRenderRun};
 use super::theme_host::{Palette, Reply};
 use crate::component_adapter::{Exports, ToolCapabilities};
-use crate::{Extension, ExtensionAPI, ExtensionFuture};
+use crate::{Extension, ExtensionAPI, ExtensionFuture, child_process::Stdio};
 
 #[path = "../../../../examples/extensions/truncated_tool.rs"]
 mod truncated_tool;
@@ -42,13 +42,21 @@ async fn search(
     Ok(result_value(&encoded))
 }
 
+/// Supplies the next search process's complete streams and exit status.
+fn supply(host: &Controlled, stdout: &str, stderr: &str, code: i32) {
+    let bank = &mut host.observe().native_io;
+    bank.stdout = vec![stdout.as_bytes().to_vec()];
+    bank.stderr = vec![stderr.as_bytes().to_vec()];
+    bank.exit_code = Some(code);
+}
+
 #[test]
 fn truncated_tool_handles_empty_and_failed_process_output() -> Result<(), String> {
     super::block_on(async {
         let (host, key, exports) = registered::<TruncatedTool>("tool rg").await?;
-        for (code, stdout) in [(1, "ignored"), (0, ""), (0, " \u{feff}\n\t")] {
-            host.observe().actions.value = json!({"code":code,"stdout":stdout,"stderr":"","killed":false,
-                "is_whitespace_char":true});
+        host.observe().actions.value = json!({"is_whitespace_char":true});
+        for (code, stdout) in [(1, ""), (0, ""), (0, " \u{feff}\n\t")] {
+            supply(&host, stdout, "", code);
             assert_eq!(
                 search(&host, &exports, key).await?,
                 json!({
@@ -56,13 +64,15 @@ fn truncated_tool_handles_empty_and_failed_process_output() -> Result<(), String
                 "details":{"pattern":"needle","path":"","glob":"","matchCount":0}})
             );
         }
-        host.observe().actions.value =
-            json!({"code":2,"stdout":"","stderr":"bad pattern","killed":false});
-        assert_eq!(
-            search(&host, &exports, key).await,
-            Err("ripgrep failed: bad pattern".into())
-        );
-        host.observe().actions.error = Some("process refused".into());
+        assert_eq!(host.observed().native_io.launches.len(), 3);
+        for (code, stderr) in [(1, "partial failure"), (2, "bad pattern")] {
+            supply(&host, "", stderr, code);
+            assert_eq!(
+                search(&host, &exports, key).await,
+                Err(format!("ripgrep failed: {stderr}"))
+            );
+        }
+        host.observe().native_io.error = Some("process refused".into());
         assert_eq!(
             search(&host, &exports, key).await,
             Err("ripgrep failed: process refused".into())
@@ -231,8 +241,8 @@ fn truncated_tool_counts_matches_and_registers_limits() -> Result<(), String> {
                 "path":{"type":"string","description":"Directory to search (default: current directory)"},
                 "glob":{"type":"string","description":"File glob pattern, e.g. '*.ts'"}}}})
         );
-        host.observe().actions.value = json!({"stdout":"1:x\n2:x\n","stderr":"","code":0,"killed":false,
-            "is_whitespace_char":false,"tools.truncate_head":{
+        supply(&host, "1:x\n2:x\n", "", 0);
+        host.observe().actions.value = json!({"is_whitespace_char":false,"tools.truncate_head":{
                 "content":"1:x\n2:x\n","truncated":false,"truncatedBy":null,
                 "totalLines":3,"totalBytes":8,"outputLines":3,"outputBytes":8,
                 "lastLinePartial":false,"firstLineExceedsLimit":false,"maxLines":2000,"maxBytes":51200}});
@@ -242,11 +252,19 @@ fn truncated_tool_counts_matches_and_registers_limits() -> Result<(), String> {
             "content":[{"type":"text","text":"1:x\n2:x\n"}],
             "details":{"pattern":"needle","path":"","glob":"","matchCount":2}})
         );
-        assert!(host.observed().transcript.contains(&format!(
-            "action exec {}",
-            json!([
-            "rg",["--line-number","--color=never","--","needle","."],{"cwd":"/work"}])
-        )));
+        let observed = host.observed();
+        let [(command, args, options)] = observed.native_io.launches.as_slice() else {
+            panic!("one search process");
+        };
+        assert_eq!(command, "rg");
+        assert_eq!(
+            args,
+            &["--line-number", "--color=never", "--", "needle", "."]
+        );
+        assert_eq!(options.cwd.as_deref(), Some("/work"));
+        assert_eq!((&options.env, options.detached), (&None, false));
+        assert_eq!(options.stdio, [Stdio::Ignore, Stdio::Pipe, Stdio::Pipe]);
+        drop(observed);
         assert!(host.observed().updates.is_empty());
         release_all(&host, &["render-call rg", "render-result rg", "tool rg"]);
         Ok(())

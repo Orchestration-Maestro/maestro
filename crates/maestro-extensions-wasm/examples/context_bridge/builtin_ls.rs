@@ -77,9 +77,9 @@ fn operations(
             let (request, calls, context) = (stat.clone(), stats.clone(), stat_ctx.clone());
             Box::pin(async move {
                 calls.borrow_mut().push(serde_json::json!(["stat", path]));
-                let stage = if path == "/virtual/雪" {
+                let stage = if super::builtin::ends_in(&path, "virtual/雪") {
                     "stat"
-                } else if path.ends_with("/skip") {
+                } else if super::builtin::ends_in(&path, "skip") {
                     "skip"
                 } else {
                     "entry"
@@ -88,7 +88,7 @@ fn operations(
                 Ok(if stage == "stat" {
                     request.directory
                 } else {
-                    path.ends_with("/Dir")
+                    super::builtin::ends_in(&path, "Dir")
                 })
             })
         }),

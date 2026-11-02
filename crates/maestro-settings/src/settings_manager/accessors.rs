@@ -2,13 +2,48 @@
 
 use serde_json::{Map, Value};
 
+use super::conversion::number;
 use super::entries::SettingsListEntry;
 use super::records::{
     Member, ResolvedBranchSummarySettings, ResolvedCompactionSettings,
     ResolvedProviderRetrySettings, ResolvedRetrySettings, ThinkingBudgetsSettings, get_member,
 };
 use super::vocabulary::{MessageDeliveryMode, ThinkingLevel, TransportSetting};
-use super::{Change, SettingsManager, SettingsScope};
+use super::{Change, SettingsEdit, SettingsManager, SettingsScope};
+
+/// The HTTP idle timeout, in milliseconds, when none is stored.
+const DEFAULT_HTTP_IDLE_TIMEOUT_MS: f64 = 300_000.0;
+
+/// A stored idle timeout as whole milliseconds: a nonnegative number, a numeric string or
+/// the text `disabled` (0).
+fn idle_timeout(value: &Value) -> Option<f64> {
+    let milliseconds = match value {
+        Value::Number(number) => number.as_f64()?,
+        Value::String(text) if text.trim().eq_ignore_ascii_case("disabled") => 0.0,
+        Value::String(text) => text.trim().parse().ok()?,
+        _ => return None,
+    };
+    (milliseconds.is_finite() && milliseconds >= 0.0).then(|| milliseconds.floor())
+}
+
+/// An idle timeout setting that is not a nonnegative finite number or `disabled`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InvalidHttpIdleTimeout {
+    /// The rejected value as authored text or compact JSON.
+    value: String,
+}
+
+impl std::fmt::Display for InvalidHttpIdleTimeout {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "Invalid httpIdleTimeoutMs setting: {}",
+            self.value
+        )
+    }
+}
+
+impl std::error::Error for InvalidHttpIdleTimeout {}
 
 impl SettingsManager {
     /// Borrows a top-level string.
@@ -68,7 +103,7 @@ impl SettingsManager {
     /// preference; absent parents stay absent. Each queued edit merges into fresh
     /// storage under the existing write lock, preserving unedited sibling keys.
     pub fn set_global_key_path(&mut self, field: &str, keys: &[&str], value: Option<Value>) {
-        self.set_global_key_paths(field, &[(keys, value)]);
+        self.set_key_path(SettingsScope::Global, field, keys, value);
     }
 
     /// Sets or removes several nested preferences as one cache publication and queued write.
@@ -76,13 +111,40 @@ impl SettingsManager {
     /// Paths are literal and apply in their supplied order. Storage readers observe
     /// the complete batch under the existing lock, never a partially applied batch.
     pub fn set_global_key_paths(&mut self, field: &str, edits: &[(&[&str], Option<Value>)]) {
+        self.edit_key_paths(SettingsScope::Global, field, edits);
+    }
+
+    /// Applies literal paths through the scope's publication and persistence owner.
+    fn edit_key_paths(
+        &mut self,
+        scope: SettingsScope,
+        field: &str,
+        edits: &[(&[&str], Option<Value>)],
+    ) {
         self.edit(
-            SettingsScope::Global,
+            scope,
             edits
                 .iter()
                 .map(|(keys, value)| Change::path(field, keys, value.clone()))
                 .collect(),
         );
+    }
+
+    /// Sets or removes a literal preference path in the selected scope.
+    ///
+    /// Empty `keys` addresses the field itself. `Some(Value::Null)` stores null;
+    /// `None` removes the addressed value without creating absent parents.
+    /// Accepted edits publish immediately and merge into fresh storage on the
+    /// existing queue. Locked paths are refused without publication or a save.
+    /// Use [`Self::flush`] to wait and [`Self::drain_errors`] to take failures.
+    pub fn set_key_path(
+        &mut self,
+        scope: SettingsScope,
+        field: &str,
+        keys: &[&str],
+        value: Option<Value>,
+    ) {
+        self.edit_key_paths(scope, field, &[(keys, value)]);
     }
 
     /// Returns the last changelog version shown, if any.
@@ -280,6 +342,55 @@ impl SettingsManager {
         }
     }
 
+    /// Returns the HTTP header or body idle timeout in milliseconds (default 300000).
+    ///
+    /// A stored number is floored; the text `disabled` and the number 0 mean no limit.
+    ///
+    /// # Errors
+    /// Returns the rejected value when the stored setting is unusable.
+    pub fn get_http_idle_timeout_ms(&self) -> Result<f64, InvalidHttpIdleTimeout> {
+        let Some(value) = self.effective.get("httpIdleTimeoutMs") else {
+            return Ok(DEFAULT_HTTP_IDLE_TIMEOUT_MS);
+        };
+        idle_timeout(value).ok_or_else(|| InvalidHttpIdleTimeout {
+            value: value.as_str().map_or_else(
+                || maestro_json::compact_json(value).unwrap_or_else(|error| error.to_string()),
+                str::to_owned,
+            ),
+        })
+    }
+
+    /// Stores the HTTP header or body idle timeout in whole milliseconds; 0 disables it.
+    ///
+    /// # Errors
+    /// Refuses a negative or non-finite value without changing memory or storage.
+    pub fn set_http_idle_timeout_ms(&mut self, value: f64) -> Result<(), InvalidHttpIdleTimeout> {
+        let edit = Self::prepare_http_idle_timeout_ms(value)?;
+        match self.admit_settings_edit(edit) {
+            Ok(edit) => self.apply_prepared_edit(edit),
+            Err(message) => self.report_refusal(SettingsScope::Global, message),
+        }
+        Ok(())
+    }
+
+    /// Prepares whole milliseconds without changing memory or storage.
+    ///
+    /// # Errors
+    /// Refuses a negative or non-finite value with its authored number spelling.
+    pub fn prepare_http_idle_timeout_ms(
+        value: f64,
+    ) -> Result<SettingsEdit, InvalidHttpIdleTimeout> {
+        if !value.is_finite() || value < 0.0 {
+            return Err(InvalidHttpIdleTimeout {
+                value: ryu_js::Buffer::new().format(value).to_owned(),
+            });
+        }
+        Ok(SettingsEdit::new(
+            &["httpIdleTimeoutMs"],
+            number(value.floor()),
+        ))
+    }
+
     /// Returns whether thinking blocks are hidden (default false).
     #[must_use]
     pub fn get_hide_thinking_block(&self) -> bool {
@@ -289,6 +400,18 @@ impl SettingsManager {
     /// Hides or shows thinking blocks.
     pub fn set_hide_thinking_block(&mut self, value: bool) {
         self.set_global("hideThinkingBlock", value);
+    }
+
+    /// Returns whether unchecked assistant text and tool output are withheld from session
+    /// listeners until checked (default false).
+    #[must_use]
+    pub fn get_hold_unchecked_text(&self) -> bool {
+        self.flag("holdUncheckedText").unwrap_or(false)
+    }
+
+    /// Withholds or delivers unchecked assistant text and tool output.
+    pub fn set_hold_unchecked_text(&mut self, value: bool) {
+        self.set_global("holdUncheckedText", value);
     }
 
     /// Returns the custom shell path, if any.

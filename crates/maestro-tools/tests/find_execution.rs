@@ -60,6 +60,7 @@ fn check_wrapped_decoding() {
             op: "custom".into(),
             input: serde_json::json!({"wrapped":true,"params":params,"results":[]}),
             expected: serde_json::Value::Null,
+            expected_macos: None,
         };
         let observed = find_support::custom(&record);
         assert_eq!(observed.get("error").is_none(), accepted);
@@ -130,6 +131,7 @@ fn find_windows_results_keep_drive_context_and_directory_suffix() {
         op: "custom".into(),
         input: serde_json::json!({"cwd":"C:\\work", "results":["C:/work/sub/"]}),
         expected: serde_json::Value::Null,
+        expected_macos: None,
     };
     assert_eq!(
         find_support::custom(&case)["result"]["content"][0]["text"],
@@ -421,12 +423,15 @@ fn find_native_symlinks_and_invalid_utf8_keep_fd_results() {
         "*link*",
         &["linked-dir", "linked-file", "dangling-link"],
     );
-    std::fs::write(
-        root.path()
-            .join(std::ffi::OsStr::from_bytes(b"invalid-\xff")),
-        b"",
-    )
-    .unwrap();
+    let invalid = std::ffi::OsStr::from_bytes(b"invalid-\xff");
+    if !root.keeps_distinct(&[invalid]).unwrap() {
+        eprintln!(
+            "the lossy name needs a host that stores the bytes {:?}",
+            invalid.as_bytes()
+        );
+        return;
+    }
+    std::fs::write(root.path().join(invalid), b"").unwrap();
     assert_files(&root, "invalid-*", &["invalid-�"]);
 }
 /// Native nested ignore rules with both repository states.

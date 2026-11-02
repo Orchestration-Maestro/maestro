@@ -4,14 +4,8 @@ use crate::DiagnosticErrorInfo;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use sha2::{Digest as _, Sha256};
 
-/// Proof key and its SHA-256 challenge.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Pkce {
-    /// Unpadded URL-safe Base64 of 32 secure random bytes.
-    pub verifier: String,
-    /// Unpadded URL-safe Base64 of the verifier text's SHA-256 digest.
-    pub challenge: String,
-}
+#[doc(inline)]
+pub use maestro_request::oauth::Pkce;
 
 /// Generate a proof key, returning the native entropy failure if entropy is unavailable.
 ///

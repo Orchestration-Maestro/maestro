@@ -7,6 +7,7 @@ mod bootstrap_creation_checks;
 mod cache_resolution_checks;
 #[cfg(not(target_arch = "wasm32"))]
 mod cache_support;
+mod candidate_inspection_checks;
 mod capture_checks;
 mod capture_context_checks;
 mod capture_path_checks;
@@ -20,6 +21,7 @@ mod configured_source_checks;
 mod configured_update_checks;
 mod contribution_resource_checks;
 mod git_execution_checks;
+mod git_reinstall_checks;
 mod git_ssh_url_checks;
 mod git_staging_checks;
 mod manifest_case_checks;
@@ -36,6 +38,7 @@ mod pin_integrity_checks;
 mod pin_safety_checks;
 mod pinned_manifest_checks;
 mod process_checks;
+mod release_inspection_checks;
 #[cfg(not(target_arch = "wasm32"))]
 mod resolution_support;
 mod resolved_package_checks;

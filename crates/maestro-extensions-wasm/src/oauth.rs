@@ -4,9 +4,10 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::{AbortSignal, ExtensionFuture, ExtensionResult, Model, OAuthCredentials};
+use crate::{AbortSignal, ExtensionAPI, ExtensionFuture, ExtensionResult, Model, OAuthCredentials};
+#[doc(inline)]
 pub use maestro_request::oauth::{
-    OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt,
+    OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt, Pkce,
 };
 use std::rc::Rc;
 
@@ -98,4 +99,12 @@ impl OAuthLoginCallbacks {
             self.on_select.is_some(),
         )
     }
+}
+
+/// Generates a proof key through the host's OAuth primitive owner.
+///
+/// # Errors
+/// Returns the host's entropy failure or an invalid response.
+pub fn generate_pkce(api: &ExtensionAPI) -> ExtensionResult<Pkce> {
+    api.helper("oauth.generate_pkce", &())
 }

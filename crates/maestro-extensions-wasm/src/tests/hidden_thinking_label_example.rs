@@ -277,12 +277,14 @@ fn hidden_thinking_label_registers_the_session_hook_and_command() -> Result<(), 
             )],
             "the command metadata the host received"
         );
+        let order: Vec<String> = corpus
+            .metadata
+            .iter()
+            .map(|record| format!("register {} {}", record.operation, record.name))
+            .collect();
         assert_eq!(
             host.observed().transcript,
-            [
-                "register event session_start",
-                "register command thinking-label"
-            ],
+            order,
             "the registrations in the order the host received them"
         );
         assert!(

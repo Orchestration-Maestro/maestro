@@ -44,8 +44,8 @@ The approved Forge identity governs presentation, not interaction. Read the
 [identity guide](docs/identity.md) and [brand pack](assets/brand/brand.json)
 for normative values, voice, mark geometry and contrast requirements.
 This inventory records existing terminal widgets and the browser components
-to be ported; it does not implement those browser components. Screen layouts,
-wording and behaviour remain unchanged.
+to be ported; it does not implement those browser components. Screen layouts
+and behaviour remain unchanged.
 
 ## Colors
 
@@ -280,6 +280,6 @@ The decorative mark has an accessible title from the pack wordmark.
 ## Do's and Don'ts
 
 - Do resolve brand values through the selected pack and link the owning rules.
-- Do preserve the established layout, wording and interaction states.
+- Do preserve the established layout and interaction states.
 - Don't add colours, generated ramps, interpolated text, new motion or controls.
 - Don't treat this inventory as evidence of shipped browser/application UI.

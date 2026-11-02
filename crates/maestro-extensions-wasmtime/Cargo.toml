@@ -16,6 +16,7 @@ wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime", rev = "f
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "net", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-path = { path = "../maestro-path" }
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

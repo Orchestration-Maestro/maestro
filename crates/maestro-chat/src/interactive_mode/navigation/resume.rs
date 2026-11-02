@@ -85,7 +85,7 @@ impl InteractiveMode {
         session_path: String,
         options: SwitchSessionOptions,
     ) -> Result<SessionChangeResult, EventError> {
-        self.stop_working_loader();
+        self.clear_status_indicator(None);
         let first = SwitchSessionOptions {
             with_session: options.with_session.clone(),
         };

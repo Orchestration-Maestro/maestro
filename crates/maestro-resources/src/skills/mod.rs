@@ -84,7 +84,7 @@ fn validated_skill(path: &str, source: &str, fields: SkillFrontmatter) -> LoadSk
     let description = fields.description.unwrap_or_default();
     let diagnostics = validation::description_warnings(&description)
         .into_iter()
-        .chain(validation::name_warnings(&name, &parent))
+        .chain(validation::name_warnings(&name))
         .map(|message| ResourceDiagnostic::warning(path, message))
         .collect();
     let mut result = LoadSkillsResult {

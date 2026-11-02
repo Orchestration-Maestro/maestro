@@ -30,7 +30,8 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> (ConfigReloadReport, Vec<SettingsError>) {
         self.config_reloaded_from_disk = true;
         let previous_toast = self.state.toast.clone();
-        let (loaded, errors) = load_live_config(manager, agent_dir).await;
+        let (loaded, errors) =
+            load_live_config(manager, &self.accepted_config_areas, agent_dir).await;
         let report = match loaded {
             Ok(loaded) => self.apply_live_config(loaded, notify_success),
             Err(diagnostics) => {
@@ -76,6 +77,7 @@ impl<C: FnMut() -> u128> App<C> {
             .iter()
             .any(|area| area == "experimental");
         let previous = self.config.clone();
+        self.accepted_config_areas.accept(&loaded);
         let report = apply_loaded(&mut self.config, loaded);
         self.clear_history_after_reload |=
             valid_experimental && !self.config.experimental.pane_history.0;

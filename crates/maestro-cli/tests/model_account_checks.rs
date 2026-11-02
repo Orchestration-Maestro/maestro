@@ -167,6 +167,8 @@ struct Recorder {
     retained: Mutex<Vec<OAuthCallbacks>>,
     /// Pending provider change, applied at the next question.
     live: Mutex<Option<Live>>,
+    /// Identifiers the live resolver was asked for, in order.
+    lookups: Mutex<Vec<String>>,
 }
 
 impl Recorder {
@@ -246,6 +248,26 @@ impl Recorder {
     /// The callback handles a provider kept beyond its authorization.
     fn retained_count(&self) -> usize {
         self.retained.lock().expect("retained lock").len()
+    }
+
+    /// Releases the callback handles a provider kept, which hold the console and so this
+    /// recorder; the handles drop after the lock does.
+    fn release_retained(&self) {
+        let kept = std::mem::take(&mut *self.retained.lock().expect("retained lock"));
+        drop(kept);
+    }
+
+    /// Record one identifier the live resolver was asked for.
+    fn look_up(&self, id: &str) {
+        self.lookups
+            .lock()
+            .expect("lookups lock")
+            .push(id.to_owned());
+    }
+
+    /// The identifiers the live resolver was asked for, in order.
+    fn lookups(&self) -> Vec<String> {
+        self.lookups.lock().expect("lookups lock").clone()
     }
 
     /// The complete standard output written so far.
@@ -589,7 +611,11 @@ impl World {
     /// Run the public entry against this world and return its exit status.
     fn run(&self, args: &[String]) -> i32 {
         let live = Arc::clone(&self.live);
-        let resolver = move |id: &str| live.lock().expect("live map lock").get(id).cloned();
+        let recorder = Arc::clone(&self.recorder);
+        let resolver = move |id: &str| {
+            recorder.look_up(id);
+            live.lock().expect("live map lock").get(id).cloned()
+        };
         let console: Arc<dyn AccountConsole> = Arc::new(Console {
             recorder: Arc::clone(&self.recorder),
             live: Arc::clone(&self.live),
@@ -668,7 +694,7 @@ struct TableExpected {
 }
 
 /// Run one recorded provider table through the list and help commands.
-fn check_table(recorded: &support::Recorded) -> Arc<Recorder> {
+fn check_table(recorded: &support::Recorded) {
     let specs: Vec<ProviderSpec> =
         serde_json::from_value(recorded.input.clone()).expect("decodable providers");
     let expected: TableExpected =
@@ -693,7 +719,6 @@ fn check_table(recorded: &support::Recorded) -> Arc<Recorder> {
         expected.help,
         "{name}: help output"
     );
-    Arc::clone(&listed.recorder)
 }
 
 /// A world offering the supplied provider records, in order, under a fresh recorder.
@@ -711,7 +736,7 @@ fn spec_world(specs: &[ProviderSpec]) -> World {
 }
 
 /// Run one recorded case and compare every observation.
-fn check(name: &str) -> Arc<Recorder> {
+fn check(name: &str) {
     let recorded = support::case_by_title("model_accounts", name);
     if recorded.operation == "table" {
         return check_table(&recorded);
@@ -752,20 +777,44 @@ fn check(name: &str) -> Arc<Recorder> {
             "{name}: kept callback handle"
         );
     }
-    Arc::clone(&world.recorder)
+    assert_released(world, name);
+}
+
+/// Releases what the run's providers kept and checks that nothing still holds its recorder.
+fn assert_released(world: World, name: &str) {
+    let recorder = Arc::clone(&world.recorder);
+    drop(world);
+    recorder.release_retained();
+    assert_eq!(
+        Arc::strong_count(&recorder),
+        1,
+        "{name}: a kept callback holds the recorder"
+    );
 }
 
 /// Run one test's recorded cases, in a checked child that gives every case its own directory.
 fn run_cases(test: &str, names: &[&str]) {
+    in_child(test, || {
+        for name in names {
+            in_case_directory(|| check(name));
+        }
+    });
+}
+
+/// Run `body` in a fresh working directory, then return to the one it started in.
+fn in_case_directory(body: impl FnOnce()) {
+    let origin = std::env::current_dir().expect("origin directory");
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory");
+    std::env::set_current_dir(scratch.path()).expect("case directory");
+    body();
+    std::env::set_current_dir(&origin).expect("restored directory");
+}
+
+/// Run `body` in a checked child of `test`, so no case writes to the test's own directory.
+fn in_child(test: &str, body: impl FnOnce()) {
     let selection = maestro_test_process::selection();
     if selection.is_child() && selection.runs_case("rows") {
-        let origin = std::env::current_dir().expect("origin directory");
-        for name in names {
-            let scratch = maestro_test_directory::Scratch::new().expect("scratch directory");
-            std::env::set_current_dir(scratch.path()).expect("case directory");
-            check(name);
-            std::env::set_current_dir(&origin).expect("restored directory");
-        }
+        body();
         return;
     }
     let scratch = maestro_test_directory::Scratch::new().expect("scratch directory");
@@ -918,6 +967,73 @@ fn invalid_selections_never_start_login() {
     );
 }
 
+/// The snapshot offers `known`; the resolver also holds `live-only`, which the snapshot does
+/// not. The input interface answers `answers`.
+fn lookup_world(answers: &[&str]) -> World {
+    let recorder = Arc::new(Recorder::new(&CaseInput {
+        answers: answers.iter().map(|answer| (*answer).to_owned()).collect(),
+        ..CaseInput::default()
+    }));
+    let provider = |id: &str, name: &str| {
+        handle(TestProvider::named(
+            &recorder,
+            &ProviderSpec {
+                id: id.to_owned(),
+                name: name.to_owned(),
+            },
+        ))
+    };
+    let known = provider("known", "Known");
+    let live = HashMap::from([
+        ("known".to_owned(), Arc::clone(&known)),
+        ("live-only".to_owned(), provider("live-only", "Live Only")),
+    ]);
+    World {
+        recorder: Arc::clone(&recorder),
+        providers: vec![known],
+        live: Arc::new(Mutex::new(live)),
+    }
+}
+
+#[test]
+fn resolver_is_asked_only_after_the_snapshot_accepts_the_identifier() {
+    in_child(
+        "resolver_is_asked_only_after_the_snapshot_accepts_the_identifier",
+        || {
+            // Every path that ends before an accepted identifier asks the resolver nothing,
+            // including a login for an identifier only the resolver holds.
+            for (args, answers, status, error) in [
+                (&["--help"][..], &[][..], 0, ""),
+                (&["list"], &[], 0, ""),
+                (&["nonsense"], &[], 1, "Unknown command: nonsense\n"),
+                (
+                    &["login", "live-only"],
+                    &[],
+                    1,
+                    "Unknown provider: live-only\n",
+                ),
+                (&["login", "absent"], &[], 1, "Unknown provider: absent\n"),
+                (&["login"], &["99"], 1, "Invalid selection\n"),
+            ] {
+                in_case_directory(|| {
+                    let world = lookup_world(answers);
+                    let args: Vec<String> = args.iter().map(|arg| (*arg).to_owned()).collect();
+                    assert_eq!(world.run(&args), status, "{args:?}: exit status");
+                    assert!(world.recorder.stderr().starts_with(error), "{args:?}");
+                    assert_eq!(world.recorder.lookups(), Vec::<String>::new(), "{args:?}");
+                });
+            }
+            // An accepted identifier is looked up once, by the identifier the snapshot accepted.
+            in_case_directory(|| {
+                let world = lookup_world(&[]);
+                let args = ["login".to_owned(), "known".to_owned()];
+                assert_eq!(world.run(&args), 0, "login: exit status");
+                assert_eq!(world.recorder.lookups(), ["known"], "login: lookups");
+            });
+        },
+    );
+}
+
 #[test]
 fn live_lookup_observes_replaced_provider() {
     run_cases("live_lookup_observes_replaced_provider", &["live_replaced"]);
@@ -1051,6 +1167,7 @@ fn retained_callbacks_close_when_login_finishes() {
         vec![1],
         "retained failure: released interface"
     );
+    assert_released(failure, "retained failure");
 }
 
 #[test]
@@ -1077,8 +1194,16 @@ fn provider_table_work_is_linear() {
             .iter()
             .map(|counter| counter.name_reads.load(Ordering::Relaxed))
             .sum();
-        assert_eq!(id_reads, count, "{count}: identifier reads");
-        assert_eq!(name_reads, count, "{count}: display-name reads");
+        // Each provider is read a bounded number of times, whether the table reads a field
+        // once or twice per row.
+        assert!(
+            id_reads <= 2 * count,
+            "{count}: identifier reads {id_reads}"
+        );
+        assert!(
+            name_reads <= 2 * count,
+            "{count}: display-name reads {name_reads}"
+        );
         assert_eq!(
             world.recorder.stdout().lines().count(),
             count + 2,

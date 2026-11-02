@@ -67,8 +67,13 @@ mod builtin_signals;
 #[path = "context_bridge/builtin_write.rs"]
 mod builtin_write;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/callbacks.rs"]
+mod callbacks;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;
+#[cfg(target_arch = "wasm32")]
+use callbacks::{components, listeners, ordering};
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/credentials.rs"]
 mod credentials;
@@ -78,6 +83,9 @@ mod exec;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/json_boundary.rs"]
 mod json_boundary;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/load_time.rs"]
+mod load_time;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/oauth.rs"]
 mod oauth;
@@ -162,6 +170,7 @@ mod model_protocol_routes;
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
         check_start(&api)?;
+        load_time::publish(&api)?;
         providers::factory(&api)?;
         register_callbacks(&api)?;
         let renderer_api = api.clone();
@@ -262,6 +271,10 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(ops) = args.strip_prefix("listen:") {
+        let ops = ops.to_owned();
+        return Box::pin(async move { listeners::run(api, &ops, context).await });
+    }
     if args == "model-protocol-routes" {
         return Box::pin(async { Err(model_protocol_routes::command().await?) });
     }
@@ -476,6 +489,8 @@ impl Drop for ReleaseTrap {
 #[cfg(target_arch = "wasm32")]
 fn register_callbacks(api: &ExtensionAPI) -> maestro_extensions_wasm::ExtensionResult<()> {
     register_listeners(api)?;
+    ordering::register(api)?;
+    components::register(api)?;
     builtin::register(api)
 }
 

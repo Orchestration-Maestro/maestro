@@ -93,7 +93,7 @@ pub(super) async fn create_session_manager(
     Ok(ControlFlow::Continue(reopened))
 }
 
-/// Perform the operation the arguments select, reporting a fork or lookup failure.
+/// Perform the selected operation, reporting explicit open, fork and lookup failures.
 async fn selected(
     parsed: &Args,
     dirs: &SessionDirs,
@@ -102,15 +102,17 @@ async fn selected(
 ) -> Phase<SessionManager> {
     let session_dir = dirs.session_dir.as_deref();
     match select_session_operation(parsed, &dirs.cwd, session_dir, &dirs.agent_dir).await? {
-        SessionSelection::Selected(SessionOperation::Fork { path }) => {
-            fork_or_report(&path, dirs, effects)
+        SessionSelection::Selected(operation) => {
+            let result = open_selected_session(&operation, &dirs.cwd, session_dir, &dirs.agent_dir);
+            if matches!(
+                operation,
+                SessionOperation::Open { .. } | SessionOperation::Fork { .. }
+            ) {
+                session_or_report(result, effects)
+            } else {
+                Ok(ControlFlow::Continue(result?))
+            }
         }
-        SessionSelection::Selected(operation) => Ok(ControlFlow::Continue(open_selected_session(
-            &operation,
-            &dirs.cwd,
-            session_dir,
-            &dirs.agent_dir,
-        )?)),
         SessionSelection::ConfirmFork { path, cwd } => {
             confirm_fork(&path, &cwd, dirs, effects).await
         }
@@ -123,18 +125,12 @@ async fn selected(
     }
 }
 
-/// Copy `path` into the current project, reporting a failure as status 1.
-fn fork_or_report(
-    path: &str,
-    dirs: &SessionDirs,
+/// Return a selected session, or report its failure in the run's style with status 1.
+fn session_or_report(
+    result: io::Result<SessionManager>,
     effects: &SessionEffects<'_>,
 ) -> Phase<SessionManager> {
-    match fork_session(
-        path,
-        &dirs.cwd,
-        dirs.session_dir.as_deref(),
-        &dirs.agent_dir,
-    ) {
+    match result {
         Ok(manager) => Ok(ControlFlow::Continue(manager)),
         Err(error) => {
             line(
@@ -158,7 +154,15 @@ async fn confirm_fork(
     let mut stdout = SharedWriter(Rc::clone(&effects.stdout));
     let question = "Fork this session into current directory?";
     match prompt_confirm(question, effects.stdin, &mut stdout).await? {
-        Some(true) => fork_or_report(path, dirs, effects),
+        Some(true) => session_or_report(
+            fork_session(
+                path,
+                &dirs.cwd,
+                dirs.session_dir.as_deref(),
+                &dirs.agent_dir,
+            ),
+            effects,
+        ),
         Some(false) => {
             line(&effects.stdout, &Theme::dim("Aborted.", effects.styles))?;
             Ok(ControlFlow::Break(0))

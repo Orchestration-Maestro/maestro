@@ -758,13 +758,13 @@ fn renamed_release_runs_ordered_replacement() {
         harness.runs(),
         [
             "npm --global uninstall -g maestro".to_owned(),
-            "npm --global install -g maestro-next".to_owned()
+            "npm --global install -g --ignore-scripts maestro-next".to_owned()
         ]
     );
     assert!(
         harness.stdout.text().contains(
-            "Updating maestro with npm --global uninstall -g maestro && npm --global install -g \
-             maestro-next...\n"
+            "Updating maestro with npm --global uninstall -g maestro && npm --global \
+             install -g --ignore-scripts maestro-next...\n"
         ),
         "{}",
         harness.stdout.text()
@@ -807,7 +807,7 @@ fn renamed_install_failure_has_manual_fallback() {
     assert!(
         harness.stderr.text().contains(
             "If this keeps failing, run this command yourself: npm --global uninstall -g maestro && \
-             npm --global install -g maestro-next\n"
+             npm --global install -g --ignore-scripts maestro-next\n"
         ),
         "{}",
         harness.stderr.text()
@@ -975,7 +975,7 @@ fn self_update_install_failure_keeps_nonzero_status() {
         harness.runs(),
         [
             "npm --global uninstall -g maestro",
-            "npm --global install -g maestro-next"
+            "npm --global install -g --ignore-scripts maestro-next"
         ]
     );
     assert!(harness.stderr.text().contains("exited with code 23"));

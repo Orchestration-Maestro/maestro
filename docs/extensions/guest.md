@@ -278,6 +278,13 @@ the host invokes the tail separately. Releasing the listener does not release a 
 already announced. The callback emitter cannot be retained by that tail: capture an
 owned `EventBus` for later asynchronous emissions instead.
 
+A component has no task of its own that outlives a callback. `Background::new(api.events())`
+registers one listener that turns announced work into tails, and
+`background.spawn(work).await` announces `work` and returns its `BackgroundTask`. The host
+polls the work on that tail until the work ends; dropping the task stops it, dropping any
+pending wait, and settles the tail. A refused announcement fails the start, and the work
+never runs. A failure of the work goes to the host's event-bus reporter.
+
 ## Session readers
 
 Ordinary and command contexts expose `session_manager()`, which acquires the currently
@@ -337,7 +344,7 @@ differs from a result whose properties are all omitted.
 | `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
 | `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
 | `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
-| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
+| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`), `streamingBehavior?` (`steer`, `followUp`) |
 
 Before-compaction `preparation` holds `firstKeptEntryId`, `messagesToSummarize`,
 `turnPrefixMessages`, `isSplitTurn`, `tokensBefore`, `previousSummary?`, `fileOps` and
@@ -431,8 +438,8 @@ an acquisition or retained query is allowed remains the host's decision.
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
 `ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
-present empty strings; `Error` carries a structured denial, distinct from an
+`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
 `ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
@@ -445,7 +452,10 @@ before the call; `AuthStatus` and `AuthSource` are the
 `ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
 copied credentials. Its `AuthStorage` handle can outlive the creating callback.
 Reads, runtime key overrides, stored credential changes, reload, logout and error
-draining reach that same owner. `get_api_key` uses its original credential-command
+draining reach that same owner. `get`, `list`, `get_all`, `has_auth`, `get_auth_status`
+and `get_api_key` first reread the stored document through the owner's backend, so
+they see what another process wrote, and an authored backend runs inside the read as it
+does inside `reload`. `get_api_key` uses its original credential-command
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
 remain in `drain_errors` rather than rolling back accepted state.
 
@@ -563,6 +573,11 @@ may keep the callback record or an input future after login ends; its last alias
 releases the original native captures. Pending input leaves the host available,
 and synchronous native notifications may reenter the same guest implementation.
 
+An authored login that uses a proof key calls `generate_pkce(&api)`. The host draws
+32 secure random bytes and returns a `Pkce` record: the verifier is their unpadded
+URL-safe Base64 and the challenge is that text's SHA-256 digest in the same encoding.
+Entropy failure returns the host's error. The guest links no hashing or encoding crate.
+
 Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
 survives. A nonfinite number fails with the finite-number error before the host
@@ -651,9 +666,10 @@ Other extension-assigned Infinity or NaN fails encoding with
 failure or other encoded part is retained. Numeric-looking text remains text.
 
 The request body of `before_provider_request`, its replacement, tool-execution arguments
-and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+and results, tool-result input and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
-Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+Tool schemas are `maestro_request::parameter_schema::ParameterSchema` values inside the
+tool metadata, not quoted JSON documents. Thinking levels
 cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
 Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
@@ -1001,9 +1017,9 @@ Each admitted name becomes an `Echo <name>` tool whose description names its
 prefix, and whose execution answers `<prefix><message>` with the registered name
 and prefix as details. The factory keeps one set of admitted names, inserts a
 name before asking the host to register it, and keeps that name when the request
-fails, so a retry reports `Tool already registered: <name>` rather than replacing
-the tool the first call registered. It never asks whether the host reports UI
-availability before requesting a notification.
+fails. A refused request admits no tool, so a retry reports
+`Tool already registered: <name>` without asking the host again. It never asks
+whether the host reports UI availability before requesting a notification.
 
 It is opt-in like the other shipped extensions: its crate's tests replay the
 recorded sequences through the built component in a controlled host, and
@@ -1047,7 +1063,7 @@ sends user messages the way a user types them. `/ask` sends an ordinary message,
 which starts a turn, and reports `Agent is busy. Use /steer or /followup
 instead.` while the agent is working. `/steer` sends an ordinary message while
 idle and a steering message while the agent is working, so that message reaches
-the request in flight. `/followup` sends an ordinary message while idle and
+the next model request. `/followup` sends an ordinary message while idle and
 otherwise queues a follow-up, reporting `Follow-up queued` once the host admitted
 it. `/askwith` sends two text blocks, `User request: <arguments>` and `Please
 respond concisely.`, so the second instruction arrives with the request.
@@ -1159,3 +1175,9 @@ baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
 and `wit_stream` byte-stream construction. Both generations use the same host
 context; neither introduces an extension-specific permission list. See
 [component operating environment](host_io.md) for access and platform limits.
+
+### Portable provider primitives
+
+`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
+framing; callers keep their UTF-8, BOM and event-dispatch policies.
