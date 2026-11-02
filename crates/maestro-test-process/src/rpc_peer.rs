@@ -13,12 +13,7 @@ use std::str::FromStr;
 /// Returns an error when preparation is missing, executable installation fails or the record
 /// cannot be written.
 pub fn install(entry: &Path, scenario: Scenario) -> io::Result<()> {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .ok_or_else(|| io::Error::other("run just prepare-tests, then cargo nextest"))?;
-    crate::install_executable(Path::new(&artifact), entry)?;
-    let mut record = entry.as_os_str().to_owned();
-    record.push(".fixture");
-    std::fs::write(record, format!("rpc-peer\n{}\n", scenario.name()))
+    crate::executable::install_recorded(entry, "rpc-peer", scenario.name())
 }
 
 /// A native peer's protocol or lifecycle behavior.

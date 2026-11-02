@@ -24,6 +24,7 @@ mod console;
 mod environment;
 mod error;
 mod executable;
+pub mod git_command;
 mod proof;
 pub mod rpc_peer;
 mod selection;

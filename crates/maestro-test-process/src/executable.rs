@@ -48,3 +48,21 @@ pub fn install_executable(artifact: &Path, destination: &Path) -> io::Result<()>
         )))
     }
 }
+
+/// Install the prepared artifact as `entry` and write its fixture family and scenario record.
+///
+/// The record is the two lines `family` and `scenario` beside the alias, which the installed
+/// program reads instead of harness arguments.
+///
+/// # Errors
+///
+/// Returns a missing preparation variable, a failed installation or a failed record write.
+/// The caller creates the entry's parent directory.
+pub(crate) fn install_recorded(entry: &Path, family: &str, scenario: &str) -> io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| io::Error::other("run just prepare-tests, then cargo nextest"))?;
+    install_executable(Path::new(&artifact), entry)?;
+    let mut record = entry.as_os_str().to_owned();
+    record.push(".fixture");
+    std::fs::write(record, format!("{family}\n{scenario}\n"))
+}

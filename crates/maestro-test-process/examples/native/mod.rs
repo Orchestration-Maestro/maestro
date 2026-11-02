@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 mod author;
 mod cargo;
+#[cfg(unix)]
+mod git;
 mod observe;
 #[cfg(unix)]
 mod rpc;
@@ -20,6 +22,9 @@ enum Request {
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Answer native Git queries for footer observations.
+    #[cfg(unix)]
+    Git(git::Record),
     /// Run a copied preparation example against its checkout-local declaration.
     Author(author::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
@@ -69,6 +74,8 @@ impl Request {
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("git") => Ok(Self::Git(git::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
@@ -85,6 +92,8 @@ pub(super) fn run() -> io::Result<()> {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Git(record) => git::run(&record),
         Request::Author(record, operands) => author::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
