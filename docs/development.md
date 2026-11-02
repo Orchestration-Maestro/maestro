@@ -828,7 +828,10 @@ nextest prints the missing path `target/test-setup/development`; run `just prepa
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
 runs a staged copy that is outdated without a word. The tooling entries run
 `debug/development` from the target directory, which every `maestro-tooling` test build
-produces.
+produces. On Windows the staged tool is `development.exe`; the configured command
+resolves that native executable. Preparation also copies, hashes and restores the setup
+example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
+names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
