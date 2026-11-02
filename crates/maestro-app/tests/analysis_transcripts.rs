@@ -389,34 +389,25 @@ const EVENTS: [&str; 8] = [
     r#"{"type":"turn_end"}"#,
 ];
 
-/// Install a controlled `maestro` child in `directory` that prints the events and
+/// Install a controlled `maestro` child below `directory` that prints the events and
 /// records its argv.
-///
-/// # Errors
-/// Returns the native install or write failure.
 #[cfg(unix)]
-fn child(directory: &str, exit: i32, receipt: &str) -> std::io::Result<()> {
-    let bin = format!("{directory}/bin");
-    std::fs::create_dir_all(&bin)?;
-    let mut script = String::from("#!/bin/sh\n");
+fn child(directory: &str, exit: u8, receipt: &str) {
+    let mut output = String::new();
     for event in EVENTS {
-        let _ = writeln!(script, "printf '%s\\n' '{event}'");
+        let _ = writeln!(output, "{event}");
     }
-    let _ = writeln!(
-        script,
-        "printf '%s\\000' '{MARK}' \"$@\" >> \"{receipt}\"\nprintf 'controlled stderr\\n' >&2\nexit {exit}"
+    crate::native::command(
+        std::path::Path::new(directory).join("bin").as_path(),
+        "maestro",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": output.as_bytes(),
+            "stderr": b"controlled stderr\n",
+            "code": exit,
+            "argv_log": {"path": receipt, "mark": MARK},
+        }),
     );
-    let staged = format!("{bin}/maestro.staged");
-    std::fs::write(&staged, script)?;
-    let installer = std::env::var_os("INSTALL").unwrap_or_else(|| "install".into());
-    let status = std::process::Command::new(installer)
-        .args(["-m", "0700", &staged, &format!("{bin}/maestro")])
-        .status()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(std::io::Error::other("the controlled child is installable"))
-    }
 }
 
 /// The line that opens one recorded invocation.
@@ -439,20 +430,6 @@ fn invocations(receipt: &str) -> Vec<Vec<String>> {
     invocations
 }
 
-/// The absolute path of the installer, kept in the isolated child's environment.
-#[cfg(unix)]
-fn installer() -> String {
-    if let Ok(install) = std::env::var("INSTALL") {
-        return install;
-    }
-    std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
-        .map(|directory| directory.join("install"))
-        .find(|path| path.is_file())
-        .expect("install is on the search path")
-        .display()
-        .to_string()
-}
-
 /// A prepared project with one session and a selected output directory.
 #[cfg(unix)]
 fn prepared(base: &str) -> (String, String) {
@@ -469,9 +446,9 @@ fn analysis_stream_keeps_text_tool_and_turn_branches() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_stream_keeps_text_tool_and_turn_branches",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
-            child(base, 0, &format!("{base}/argv")).expect("the controlled child is installed");
+            child(base, 0, &format!("{base}/argv"));
             let (project, output) = prepared(base);
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
             std::fs::write(
@@ -507,9 +484,9 @@ fn analysis_runs_each_file_before_aggregation() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_runs_each_file_before_aggregation",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
-            child(base, 0, &format!("{base}/argv")).expect("the controlled child is installed");
+            child(base, 0, &format!("{base}/argv"));
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
             let large = sized_transcript("a.jsonl", 60_000);
@@ -556,10 +533,10 @@ fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_prompts_keep_paths_and_all_instruction_paragraphs",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
             let receipt = format!("{base}/argv");
-            child(base, 0, &receipt).expect("the controlled child is installed");
+            child(base, 0, &receipt);
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
             std::fs::write(format!("{project}/AGENTS.md"), "rules")
@@ -613,7 +590,7 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_classifies_spawn_exit_and_missing_summary_outcomes",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
             std::fs::create_dir_all(format!("{base}/bin"))
                 .expect("the child directory is creatable");
@@ -627,7 +604,7 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
                 "{missing:?}"
             );
             // A child that exits nonzero.
-            child(base, 3, &format!("{base}/argv")).expect("the failing child is installed");
+            child(base, 3, &format!("{base}/argv"));
             let failed = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(failed.succeeded(), "{failed:?}");
@@ -638,7 +615,7 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
                 "{failed:?}"
             );
             // A child that succeeds without writing the summary it was asked for.
-            child(base, 0, &format!("{base}/argv")).expect("the controlled child is installed");
+            child(base, 0, &format!("{base}/argv"));
             let unwritten = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(unwritten.succeeded(), "{unwritten:?}");
@@ -664,10 +641,10 @@ fn analysis_aggregates_existing_summary_files() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_aggregates_existing_summary_files",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
             let receipt = format!("{base}/argv");
-            child(base, 0, &receipt).expect("the controlled child is installed");
+            child(base, 0, &receipt);
             let (project, output) = prepared(base);
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
             std::fs::write(
