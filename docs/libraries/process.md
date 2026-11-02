@@ -65,3 +65,12 @@ safe `sigprocmask` before it replaces itself with the test executable. The `maes
 composition tests inherit the same workspace pin and `signal` feature. Their checked
 children block termination before replacing themselves with the test executable, then
 wait with `sigwait` after reporting readiness. No package version changes.
+
+The test-process owner's single harness-free native fixture also inherits the
+existing workspace `serde_json` pin, including `float_roundtrip`, for its controlled
+Cargo artifact records. Its installer uses standard-library process and file
+operations; repository tooling reuses its existing SHA-256 input and content
+fingerprints to stage that host artifact. No new library or feature is enabled,
+and the offline fixture-source manifest already declares and imports `serde_json`.
+Typed native isolated setup remains planned; the existing shell-setup API is not
+removed by the raw-fixture preparation.
