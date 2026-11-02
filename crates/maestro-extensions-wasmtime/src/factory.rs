@@ -55,7 +55,7 @@ pub fn artifact_factory_with_stdout(
         path,
         widgets,
         installation,
-        Some(crate::wasi::Output::new(stdout, terminal)),
+        Some(crate::Stdout::new(stdout, terminal)),
         None,
     )
 }
@@ -65,14 +65,17 @@ pub fn artifact_factory_with_stdout(
 ///
 /// The application supplies installation facts and the operations' original local executor.
 /// Construction performs no native launch or request; guest calls select their effects.
+/// Supplied stdout is retained beside native effects for initialization and callbacks.
+/// With no supplied writer, stdout stays inherited.
 #[must_use]
 pub fn artifact_factory_with_io(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
     installation: Installation,
     io: Rc<dyn maestro_extensions::native_io::NativeIo>,
+    stdout: Option<crate::Stdout>,
 ) -> ExtensionFactory<Local> {
-    factory(path, widgets, installation, None, Some(io))
+    factory(path, widgets, installation, stdout, Some(io))
 }
 
 /// Retains the original supplied widgets, output and native effects for each independently
@@ -81,7 +84,7 @@ fn factory(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
     installation: Installation,
-    output: Option<crate::wasi::Output>,
+    output: Option<crate::Stdout>,
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api| {

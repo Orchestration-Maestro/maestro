@@ -41,9 +41,9 @@ mod transcript;
 mod transfer;
 mod typed;
 
-use super::hotkeys::tests::platform_keys;
 use crate::components::thinking_selector::thinking_text;
 use crate::interactive_mode::bash::component_address;
+use crate::platform_keys;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
 // The controlled host, disposable directory and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
@@ -773,6 +773,8 @@ pub(super) struct Case {
     input: serde_json::Value,
     /// The recorded observation.
     expected: serde_json::Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<serde_json::Value>,
 }
 
 /// The recorded operations.
@@ -873,7 +875,11 @@ pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|case| {
             (
                 serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
+                serde_json::from_value(platform_keys::for_this_platform(
+                    case.expected,
+                    case.expected_macos,
+                ))
+                .unwrap(),
             )
         })
         .collect();
