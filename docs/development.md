@@ -966,9 +966,17 @@ the advertised redirect URI remains unchanged. Public protocol, account and
 provider checks run in checked child processes with only the child's callback
 host set to a single space, exercising manual fallback without a listener.
 Callback tests that still bind a fixed port belong in an `oauth_callback` module,
-which joins a single-thread nextest group. Browser author-build tests also
-join a single-thread group because Trunk shares binding/optimizer intermediates;
-their file lock keeps plain Cargo tests safe. Other tests remain parallel.
+which joins a single-thread nextest group. To serialize those tests across runs
+on one machine, set `MAESTRO_FIXED_PORT_LOCK` to the same writable file path in
+each run. The `fixed-port` nextest wrapper creates the file if needed, waits for
+an exclusive file lock and holds it only while each selected test runs. Without
+the variable, the wrapper runs the test directly. Keep the wrapper's filter and
+the `oauth-callback` group's filter together in `.config/nextest.toml`. Plain
+`cargo test` does not use the wrapper; serialize fixed-port tests separately.
+
+Browser author-build tests also join a single-thread group because Trunk shares
+binding/optimizer intermediates; their file lock keeps plain Cargo tests safe.
+Other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the

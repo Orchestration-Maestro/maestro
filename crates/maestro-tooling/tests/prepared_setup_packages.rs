@@ -12,7 +12,7 @@ fn ci_declares_the_packages_that_read_the_prepared_setup() {
         .iter()
         .filter(|rule| {
             matches!(
-                rule["setup"].as_str(),
+                rule.get("setup").and_then(toml::Value::as_str),
                 Some("author-component" | "browser-author" | "native-fixture")
             )
         })

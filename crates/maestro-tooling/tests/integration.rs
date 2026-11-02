@@ -11,6 +11,7 @@ mod date_time_data;
 mod fixture_sources_setup;
 mod native_setup;
 mod nextest_priorities;
+mod nextest_wrapper;
 mod prepared_setup_packages;
 mod setup_docs;
 mod shared_ci_callers;
