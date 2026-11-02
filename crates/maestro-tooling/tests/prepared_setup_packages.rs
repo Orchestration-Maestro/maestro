@@ -38,7 +38,7 @@ fn ci_declares_every_setup_that_reads_the_prepared_bundle() {
         assert!(
             rules
                 .iter()
-                .any(|rule| rule["setup"].as_str() == Some(name)),
+                .any(|rule| rule.get("setup").and_then(toml::Value::as_str) == Some(name)),
             "{name} has no default-profile setup rule"
         );
     }

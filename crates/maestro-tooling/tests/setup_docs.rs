@@ -16,7 +16,10 @@ fn served_packages() -> Vec<String> {
     let rules = nextest["profile"]["default"]["scripts"].as_array().unwrap();
     let mut consumers: Vec<_> = rules
         .iter()
-        .filter(|rule| setups.contains(&rule["setup"]))
+        .filter(|rule| {
+            rule.get("setup")
+                .is_some_and(|setup| setups.contains(setup))
+        })
         .flat_map(|rule| rule["filter"].as_str().unwrap().split("package(").skip(1))
         .map(|rest| {
             rest.split_once(')')
