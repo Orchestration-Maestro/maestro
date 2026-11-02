@@ -35,7 +35,7 @@ pub fn clipboard_alias(root: &Scratch, name: &str, record: &str) -> std::path::P
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     let alias =
         std::path::PathBuf::from(root.join(&format!("{name}{}", std::env::consts::EXE_SUFFIX)));
-    install_executable(std::path::Path::new(&artifact), &alias).unwrap();
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias).unwrap();
     let mut sibling = alias.as_os_str().to_owned();
     sibling.push(".fixture");
     std::fs::write(sibling, format!("clipboard\n{record}")).unwrap();

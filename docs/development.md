@@ -1256,6 +1256,9 @@ just prepare-tests
 cargo nextest run --locked -p maestro-app -E 'test(/^clipboard_(copy|images)::/)'
 ```
 
+The artifact copies itself into the alias, so no system installer has to answer on
+the path.
+
 Write `clipboard` on the first line of `<alias>.fixture`, followed by a JSON object
 with a `scenario` field. The fixture parses the whole record before it reads a
 stream or opens a socket, and rejects unknown fields, unknown scenarios and values
