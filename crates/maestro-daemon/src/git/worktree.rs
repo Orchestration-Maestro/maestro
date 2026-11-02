@@ -21,29 +21,41 @@ const NOUNS: [&str; 8] = [
     "river", "cloud", "field", "forest", "harbor", "meadow", "stone", "valley",
 ];
 
-/// A failed worktree operation, carrying the message Git printed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A failed worktree operation with its diagnostic and native error source.
+#[derive(Debug)]
 pub struct WorktreeError {
-    /// The text a caller shows or matches.
+    /// The text a caller shows.
     message: String,
+    /// The failure classified when the diagnostic was read.
+    kind: ErrorKind,
+}
+
+/// The worktree refusal or native operation that failed.
+#[derive(Debug)]
+enum ErrorKind {
+    /// Removal would discard modified or untracked files.
+    DirtyCheckout,
+    /// Git does not register this path as a worktree.
+    NotAWorkingTree,
+    /// Git failed for another reason.
+    Git,
+    /// The process owner could not complete a Git command.
+    Launch(SpawnSyncError),
+    /// A verified leftover checkout could not be deleted.
+    Cleanup(std::io::Error),
 }
 
 impl WorktreeError {
-    /// Wraps a message that came from Git or from checking a checkout.
-    #[must_use]
-    pub fn new(message: impl Into<String>) -> Self {
-        Self {
-            message: message.into(),
-        }
-    }
-
     /// The message Git gives when a checkout holds changes and removal is not forced.
     #[must_use]
     pub fn dirty_checkout(path: &Path) -> Self {
-        Self::new(format!(
-            "fatal: '{}' contains modified or untracked files, use --force to delete it",
-            path.display()
-        ))
+        Self {
+            message: format!(
+                "fatal: '{}' contains modified or untracked files, use --force to delete it",
+                path.display()
+            ),
+            kind: ErrorKind::DirtyCheckout,
+        }
     }
 
     /// The text of the failure.
@@ -55,15 +67,12 @@ impl WorktreeError {
     /// Whether Git refused removal because the checkout holds changes that `--force` discards.
     #[must_use]
     pub fn is_dirty_checkout(&self) -> bool {
-        let message = self.message.to_ascii_lowercase();
-        message.contains("contains modified or untracked files")
-            && message.contains("use --force to delete it")
+        matches!(self.kind, ErrorKind::DirtyCheckout)
     }
 
     /// Whether Git answered that the path is not one of its worktrees.
     fn is_not_a_working_tree(&self) -> bool {
-        let message = self.message.to_ascii_lowercase();
-        message.contains("is not a working tree") || message.contains("is not a worktree")
+        matches!(self.kind, ErrorKind::NotAWorkingTree)
     }
 }
 
@@ -73,9 +82,17 @@ impl fmt::Display for WorktreeError {
     }
 }
 
-impl std::error::Error for WorktreeError {}
+impl std::error::Error for WorktreeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self.kind {
+            ErrorKind::Launch(source) => Some(source),
+            ErrorKind::Cleanup(source) => Some(source),
+            ErrorKind::DirtyCheckout | ErrorKind::NotAWorkingTree | ErrorKind::Git => None,
+        }
+    }
+}
 
-/// One entry of `git worktree list --porcelain -z`.
+/// One entry of `git worktree list --porcelain`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExistingWorktree {
     /// The checkout directory as Git printed it.
@@ -91,16 +108,15 @@ pub struct ExistingWorktree {
 }
 
 impl ExistingWorktree {
-    /// Parses the output of `git worktree list --porcelain -z`.
+    /// Parses the output of `git worktree list --porcelain`.
     ///
-    /// Every field ends with a NUL byte and an empty field ends an entry, so a path keeps each
-    /// byte Git printed, line breaks included. Fields before the first `worktree` field of an
-    /// entry belong to no entry.
+    /// Fields end with a newline and an empty line ends an entry. Path bytes are retained.
+    /// Fields before the first `worktree` field of an entry belong to no entry.
     #[must_use]
     pub fn parse_porcelain(output: &[u8]) -> Vec<Self> {
         let mut entries = Vec::new();
         let mut current: Option<Self> = None;
-        for field in output.split(|byte| *byte == 0) {
+        for field in output.split(|byte| *byte == b'\n') {
             if field.is_empty() {
                 entries.extend(current.take());
             } else if let Some(path) = field.strip_prefix(b"worktree ") {
@@ -223,12 +239,16 @@ fn os(operand: &(impl AsRef<OsStr> + ?Sized)) -> &OsStr {
 /// Runs `git -C <dir> <args>` to completion with its output captured.
 fn capture(dir: &Path, args: &[&OsStr]) -> Result<Output, WorktreeError> {
     git_output(dir, args).map_err(|error| {
-        WorktreeError::new(match error {
+        let message = match &error {
             SpawnSyncError::Infrastructure(error)
             | SpawnSyncError::Spawn(error)
             | SpawnSyncError::Wait(error) => format!("cannot run git: {error}"),
             SpawnSyncError::Timeout => "git timed out".to_owned(),
-        })
+        };
+        WorktreeError {
+            message,
+            kind: ErrorKind::Launch(error),
+        }
     })
 }
 
@@ -237,13 +257,24 @@ fn capture(dir: &Path, args: &[&OsStr]) -> Result<Output, WorktreeError> {
 fn failure(label: &str, output: &Output) -> WorktreeError {
     let text = |bytes: &[u8]| String::from_utf8_lossy(bytes).trim().to_owned();
     let (stderr, stdout) = (text(&output.stderr), text(&output.stdout));
-    WorktreeError::new(if !stderr.is_empty() {
+    let message = if !stderr.is_empty() {
         stderr
     } else if !stdout.is_empty() {
         stdout
     } else {
         format!("git {label} failed with status {}", output.status)
-    })
+    };
+    let lower = message.to_ascii_lowercase();
+    let kind = if lower.contains("contains modified or untracked files")
+        && lower.contains("use --force to delete it")
+    {
+        ErrorKind::DirtyCheckout
+    } else if lower.contains("is not a working tree") || lower.contains("is not a worktree") {
+        ErrorKind::NotAWorkingTree
+    } else {
+        ErrorKind::Git
+    };
+    WorktreeError { message, kind }
 }
 
 /// Runs the `label` command and returns its standard output when Git succeeds.
@@ -335,11 +366,12 @@ fn recover_leftover(
         if !links_to_repository(repo_root, path) {
             return Err(error);
         }
-        std::fs::remove_dir_all(path).map_err(|failure| {
-            WorktreeError::new(format!(
+        std::fs::remove_dir_all(path).map_err(|failure| WorktreeError {
+            message: format!(
                 "{error}; failed to remove leftover checkout {}: {failure}",
                 path.display()
-            ))
+            ),
+            kind: ErrorKind::Cleanup(failure),
         })?;
     }
     Ok(())
@@ -394,7 +426,7 @@ pub fn checkout_has_dirty_files(path: &Path) -> Result<bool, WorktreeError> {
 /// # Errors
 /// Returns Git's message when `git worktree list` fails.
 pub fn list(repo_root: &Path) -> Result<Vec<ExistingWorktree>, WorktreeError> {
-    let args = [os("worktree"), os("list"), os("--porcelain"), os("-z")];
+    let args = [os("worktree"), os("list"), os("--porcelain")];
     run(repo_root, "worktree list", &args).map(|stdout| ExistingWorktree::parse_porcelain(&stdout))
 }
 

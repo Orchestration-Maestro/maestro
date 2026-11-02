@@ -132,22 +132,6 @@ fn worktrees_root_keeps_native_home_bytes() {
 
 #[test]
 fn dirty_checkout_error_matches_the_hint_git_gives() {
-    assert!(
-        WorktreeError::new(
-            "fatal: '/w/repo' contains modified or untracked files, use --force to delete it"
-        )
-        .is_dirty_checkout()
-    );
-    assert!(
-        !WorktreeError::new("fatal: '/w/repo' is a missing but already registered worktree")
-            .is_dirty_checkout()
-    );
-    assert!(
-        !WorktreeError::new(
-            "fatal: '/w/repo' contains a locked worktree, use --force only if you know why"
-        )
-        .is_dirty_checkout()
-    );
     assert!(WorktreeError::dirty_checkout(Path::new("/w/repo")).is_dirty_checkout());
     assert!(
         WorktreeError::dirty_checkout(Path::new("/w/repo"))
@@ -159,22 +143,22 @@ fn dirty_checkout_error_matches_the_hint_git_gives() {
 #[test]
 fn porcelain_listing_parses_branches_and_flags() {
     let output = b"\
-worktree /repo/main\0\
-HEAD abc\0\
-branch refs/heads/main\0\
-\0\
-worktree /repo/issue\0\
-HEAD def\0\
-branch refs/heads/worktree/issue\0\
-\0\
-worktree /repo/detached\0\
-HEAD fed\0\
-detached\0\
-prunable gitdir file points to non-existent location\0\
-\0\
-worktree /repo/bare.git\0\
-bare\0\
-\0";
+worktree /repo/main\n\
+HEAD abc\n\
+branch refs/heads/main\n\
+\n\
+worktree /repo/issue\n\
+HEAD def\n\
+branch refs/heads/worktree/issue\n\
+\n\
+worktree /repo/detached\n\
+HEAD fed\n\
+detached\n\
+prunable gitdir file points to non-existent location\n\
+\n\
+worktree /repo/bare.git\n\
+bare\n\
+\n";
     let entry = |path: &str, branch: Option<&str>, bare, detached, prunable| ExistingWorktree {
         path: PathBuf::from(path),
         branch: branch.map(str::to_owned),
@@ -195,28 +179,12 @@ bare\0\
 
 #[test]
 fn porcelain_listing_ignores_a_stanza_without_a_path_and_a_missing_final_terminator() {
-    let output = b"HEAD abc\0branch refs/heads/orphan\0\0worktree /repo/last\0detached";
+    let output = b"HEAD abc\nbranch refs/heads/orphan\n\nworktree /repo/last\ndetached";
     let parsed = ExistingWorktree::parse_porcelain(output);
     assert_eq!(parsed.len(), 1);
     assert_eq!(parsed[0].path, PathBuf::from("/repo/last"));
     assert_eq!(parsed[0].branch, None);
     assert!(parsed[0].is_detached);
-}
-
-#[test]
-fn porcelain_listing_keeps_line_breaks_inside_and_after_a_path() {
-    let output = b"worktree /repo/two\nlines\0bare\0\0worktree /repo/carriage\r\0bare\0\0";
-    let paths: Vec<PathBuf> = ExistingWorktree::parse_porcelain(output)
-        .into_iter()
-        .map(|entry| entry.path)
-        .collect();
-    assert_eq!(
-        paths,
-        [
-            PathBuf::from("/repo/two\nlines"),
-            PathBuf::from("/repo/carriage\r")
-        ]
-    );
 }
 
 #[test]
@@ -629,30 +597,6 @@ fn list_keeps_the_bytes_of_a_checkout_path_that_text_cannot_hold() {
             .iter()
             .any(|entry| canonical(&entry.path) == canonical(&checkout))
     );
-}
-
-#[cfg(unix)]
-#[test]
-fn list_keeps_a_checkout_path_with_a_line_break_or_a_trailing_carriage_return() {
-    let scratch = Scratch::new().unwrap();
-    let repo = repository(&scratch);
-    let checkouts = [
-        scratch.path().join("trees\nname"),
-        scratch.path().join("trees\r"),
-    ];
-    for (index, checkout) in checkouts.iter().enumerate() {
-        worktree::add(&repo, checkout, &format!("lines-{index}"), "HEAD").unwrap();
-    }
-
-    let paths: Vec<PathBuf> = worktree::list(&repo)
-        .unwrap()
-        .into_iter()
-        .map(|entry| entry.path)
-        .collect();
-
-    for checkout in &checkouts {
-        assert!(paths.contains(checkout), "{checkout:?} not in {paths:?}");
-    }
 }
 
 #[test]

@@ -885,9 +885,10 @@ Ok::<(), worktree::WorktreeError>(())
 ```
 
 These library operations add, remove and list checkouts. They do not expose socket
-commands or change workspace membership. Git 2.36 or newer is required for the
-NUL-framed listing. Every Git operation runs through `maestro-process`; failures
-return a `WorktreeError` carrying Git's diagnostic. Git runs with `LC_ALL=C` so
+commands or change workspace membership. Every Git operation runs through
+`maestro-process`; failures return a `WorktreeError` carrying Git's diagnostic.
+Removal refusals are classified when read; process failures retain their native
+cause through `Error::source`. Git runs with `LC_ALL=C` so
 removal refusals can be classified regardless of the daemon's locale.
 
 `generated_branch_slug` turns a seed into `worktree/<adjective>-<noun>-<hex>`.
@@ -915,7 +916,7 @@ leaves, and `..` after a missing segment names no folder. Other directories stay
 untouched and the operation returns Git's diagnostic.
 
 `list` returns each checkout's path, branch and bare, detached and prunable flags.
-NUL framing preserves line breaks and native Unix path bytes that text cannot hold.
+The newline-framed listing retains native Unix path bytes that text cannot hold.
 
 For example, a branch named `feature/Review Notes` gets the folder
 `feature-review-notes`. With the default root and repository name `project`, the
