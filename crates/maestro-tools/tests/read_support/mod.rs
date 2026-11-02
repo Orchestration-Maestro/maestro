@@ -429,12 +429,36 @@ fn isolated_output(
     output
 }
 
+/// Install the prepared native fixture as `name` under `root` with one command record.
+#[cfg(unix)]
+pub fn payload(root: &std::path::Path, name: &str, record: &Value) -> std::path::PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
+    let program = root.join(name);
+    std::fs::write(
+        root.join(format!("{name}.fixture")),
+        format!("exec\n{record}"),
+    )
+    .unwrap();
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &program).unwrap();
+    program
+}
+
+/// Install a process that writes grace bytes into `pid`'s output descriptor.
+#[cfg(target_os = "linux")]
+pub fn grace_holder(root: &std::path::Path, pid: u32) -> std::path::PathBuf {
+    payload(
+        root,
+        "grace-holder",
+        &json!({"scenario": "grace", "pid": pid}),
+    )
+}
+
 /// A separately reaped process holds the shell's stdout across root exit.
 #[cfg(target_os = "linux")]
-pub async fn pipe_holder(pid: u32) -> tokio::process::Child {
+pub async fn pipe_holder(program: &std::path::Path) -> tokio::process::Child {
     use tokio::io::AsyncReadExt;
-    let mut command = tokio::process::Command::new("/bin/bash");
-    command.args(["-c", &format!("exec 3>/proc/{pid}/fd/1; printf held; read action; printf grace >&3; read finish; exit 0")]);
+    let mut command = tokio::process::Command::new(program);
     command
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())

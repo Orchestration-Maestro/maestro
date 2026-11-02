@@ -587,9 +587,12 @@ fn local_bash_sink_uses_native_child_waiter() {
         let updates = Rc::new(RefCell::new(Vec::new()));
         let values = updates.clone();
         let weak = Rc::downgrade(&values);
-        let command = format!(
-            "python3 -c \"import socket,os; s=socket.create_connection(('127.0.0.1',{port})); assert s.recv(1)==b'x'; os.write(1,b'one'); assert s.recv(1)==b'x'; os.write(2,b'two')\""
+        let payload = crate::read_support::payload(
+            root.path(),
+            "exchange",
+            &json!({"scenario": "exchange", "port": port}),
         );
+        let command = payload.to_str().unwrap().to_owned();
         let mut future = (tool.execute)(
             "id".into(),
             maestro_tools::BashToolInput {

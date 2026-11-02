@@ -1216,6 +1216,56 @@ cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
 
+#### Command payloads
+
+On Unix, install the same artifact as the program under test to observe command
+execution without an interpreter. Write `exec` on the first line of
+`<alias>.fixture`, followed by one JSON object with a `scenario` field. The whole
+record is parsed before any stream, socket or directory changes; unknown fields
+and unknown scenarios fail first.
+
+A `read_support::payload` call in `maestro-tools` installs the alias and writes
+that record. The held-child cases connect to a parent-owned TCP port, so the
+record carries `port`. For example, a child that reports readiness and finishes
+after one release byte:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({"scenario": "holder", "port": 9099});
+    std::fs::write(directory.path().join("child.fixture"), format!("exec\n{record}"))?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("child"),
+    )?;
+    Ok(())
+}
+```
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `operands` | Requires closed standard input, then writes `operand|cwd|HOME` for the first operand. |
+| `streams` | Writes the terminal-coloured prefix and 300000 `o` bytes to standard output, then 300000 `e` bytes and CRLF to standard error. |
+| `utf8` | With `port` and `split`, writes the first `split` bytes of one four-byte scalar to both outputs, announces `READY`, waits for a byte, then writes the rest. |
+| `malformed` | Writes `a`, byte FF and `b` to standard output, and an incomplete scalar to standard error. |
+| `cwd` | Writes the directory this process inherited. |
+| `holder` | On `port`, announces `READY`, waits for one byte, then writes `bye`. |
+| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket, staying alive until killed. |
+| `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
+| `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
+| `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |
+| `identity` | Writes this process's session and process group, one per line. |
+| `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, and waits for it. |
+| `tree-leaf` | On `port`, writes `READY` and holds the channel until the tree is killed. |
+| `blocked` | Waits for a termination signal on a native notification channel, without a deadline or a poll. |
+| `grace` | On Linux, writes `held`, then writes `grace` into standard output `pid` names after one input line, and finishes when input closes. |
+
+The `MTP_ROLE` variable selects a linked-descendant role for the same record; no
+other selection uses it. Shell parsing stays on the real shell: select the
+shell itself when the command grammar, session identity or process group is the
+observation, and use a payload only for what runs inside it.
+
 #### Checked reruns
 
 A test that re-runs one test in a fresh process starts it through

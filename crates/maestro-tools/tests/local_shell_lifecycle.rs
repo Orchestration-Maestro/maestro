@@ -108,6 +108,17 @@ fn local_bash_orders_abort_and_timeout_during_exit_grace() {
     });
 }
 
+/// Reads the root shell's own PID from its first chunk.
+#[cfg(target_os = "linux")]
+async fn root_pid(
+    operation: &mut Operation<'_>,
+    receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
+    waker: &Waker,
+) -> u32 {
+    let bytes = next_chunk(operation, receiver, waker).await;
+    String::from_utf8(bytes).unwrap().trim().parse().unwrap()
+}
+
 /// Exercises one execution with an independently reaped writer holding its pipe.
 #[cfg(target_os = "linux")]
 async fn grace_case(policy: GracePolicy) {
@@ -139,13 +150,8 @@ async fn grace_case(policy: GracePolicy) {
         },
     );
     let waker = Waker::from(Arc::new(Wakes::default()));
-    let pid_bytes = next_chunk(&mut operation, &mut receiver, &waker).await;
-    let pid = String::from_utf8(pid_bytes)
-        .unwrap()
-        .trim()
-        .parse::<u32>()
-        .unwrap();
-    let mut holder = pipe_holder(pid).await;
+    let pid = root_pid(&mut operation, &mut receiver, &waker).await;
+    let mut holder = pipe_holder(&read_support::grace_holder(dir.path(), pid)).await;
     std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
