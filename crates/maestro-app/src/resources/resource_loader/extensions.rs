@@ -4,7 +4,8 @@ use super::{DefaultResourceLoader, overrides::apply};
 use crate::utils::lock::{read, write};
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
-    create_event_bus_for, load_extension_from_factory, load_extensions_with_runtime,
+    create_event_bus_for, create_extension_runtime, load_extension_from_factory,
+    load_extensions_with_runtime,
 };
 use maestro_models::{Execution, Local, Threaded};
 use maestro_resources::{canonicalize_path, is_local_path};
@@ -23,6 +24,11 @@ pub trait DefaultEventBus: ExtensionExecution {
     /// A bus whose continuations run on `local` and whose listener failures are written
     /// to standard error.
     fn default_event_bus(local: &Rc<LocalSet>) -> EventBusController<Self>;
+    /// Retains the original local owners behind this family's callback representation.
+    fn operation_handler(
+        operations: Rc<crate::extension_operations::ExtensionOperations>,
+        local: &Rc<LocalSet>,
+    ) -> Self::Shared<Self::HostOperation>;
 }
 
 /// Writes a bus diagnostic, which carries its own final newline, to standard error.
@@ -31,6 +37,15 @@ pub(crate) fn report(text: &str) {
 }
 
 impl DefaultEventBus for Local {
+    fn operation_handler(
+        operations: Rc<crate::extension_operations::ExtensionOperations>,
+        _local: &Rc<LocalSet>,
+    ) -> Self::Shared<Self::HostOperation> {
+        Rc::new(move |operation| {
+            let work = operations.call(operation);
+            Box::pin(async move { work.await.map_err(|error| error.to_string()) })
+        })
+    }
     fn default_event_bus(local: &Rc<LocalSet>) -> EventBusController<Self> {
         let local = Rc::downgrade(local);
         create_event_bus_for::<Self>(
@@ -45,14 +60,38 @@ impl DefaultEventBus for Local {
 }
 
 impl DefaultEventBus for Threaded {
+    fn operation_handler(
+        operations: Rc<crate::extension_operations::ExtensionOperations>,
+        local: &Rc<LocalSet>,
+    ) -> Self::Shared<Self::HostOperation> {
+        let sender = crate::utils::task::forward(
+            local,
+            move |(operation, reply): (
+                _,
+                tokio::sync::oneshot::Sender<Result<serde_json::Value, String>>,
+            )| {
+                let work = operations.call(operation);
+                Box::pin(async move {
+                    let _ = reply.send(work.await.map_err(|error| error.to_string()));
+                })
+            },
+        );
+        Arc::new(move |operation| {
+            let (reply, response) = tokio::sync::oneshot::channel();
+            let sent = sender.send((operation, reply));
+            Box::pin(async move {
+                sent.map_err(|_| "Extension host operations ended".to_owned())?;
+                response
+                    .await
+                    .map_err(|_| "Extension host operation reply ended".to_owned())?
+            })
+        })
+    }
     fn default_event_bus(local: &Rc<LocalSet>) -> EventBusController<Self> {
-        let (sender, mut receiver) =
-            tokio::sync::mpsc::unbounded_channel::<<Self as Execution>::Future<'static, ()>>();
-        drop(local.spawn_local(async move {
-            while let Some(tail) = receiver.recv().await {
-                drop(tokio::task::spawn_local(tail));
-            }
-        }));
+        let sender =
+            crate::utils::task::forward(local, |tail: <Self as Execution>::Future<'static, ()>| {
+                tail
+            });
         create_event_bus_for::<Self>(
             Arc::new(move |tail| {
                 // A closed channel means the task set is gone; the continuation is dropped.
@@ -237,6 +276,37 @@ impl<E: super::DefaultEventBus> DefaultResourceLoader<E> {
                 }),
             }
         }
+    }
+
+    /// Installs the original application owners before the first factory runs.
+    pub(super) fn extension_runtime(&self) -> E::Shared<maestro_extensions::ExtensionRuntime<E>> {
+        let runtime = create_extension_runtime::<E>();
+        runtime.set_host_operations(E::operation_handler(
+            crate::extension_operations::ExtensionOperations::new(
+                self.settings_manager.clone(),
+                self.package_manager.clone(),
+            ),
+            &self.options.local,
+        ));
+        if let Some(services) = &self.options.tool_construction {
+            runtime.set_tool_construction(services.clone());
+        }
+        let auth_root = self.agent_dir.clone();
+        let models_root = self.agent_dir.clone();
+        runtime.set_catalog_construction(maestro_extensions::CatalogConstruction {
+            auth_path: Arc::new(move || {
+                Ok(crate::configuration::config::paths::get_auth_path(
+                    &auth_root,
+                ))
+            }),
+            models_path: Arc::new(move || {
+                Ok(crate::configuration::config::paths::get_models_path(
+                    &models_root,
+                ))
+            }),
+            config_values: crate::runtime::agent_session_services::native_config_values(),
+        });
+        runtime
     }
 
     /// Gives each extension a fresh provenance record, shared with its commands and tools.

@@ -138,3 +138,8 @@ pub mod stream;
 pub use stream::{complete, complete_simple, stream, stream_simple};
 
 pub mod wasi;
+
+pub mod package_manager;
+pub mod settings_manager;
+pub use package_manager::DefaultPackageManager;
+pub use settings_manager::SettingsManager;
