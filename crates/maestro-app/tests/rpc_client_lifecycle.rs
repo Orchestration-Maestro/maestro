@@ -1,6 +1,6 @@
 //! Launching, observing and stopping the RPC client's child.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of};
+use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
 use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
@@ -13,14 +13,6 @@ use std::{
     task::Poll,
     time::Duration,
 };
-
-/// Reports the arguments, directory and environment, then waits for its input to end.
-const REPORT: &str = r"
-open(os.environ['PEER_MARKER'], 'a').write('started\n')
-emit({'type': 'peer_ready', 'argv': sys.argv[1:], 'cwd': os.getcwd(),
-      'path': os.environ.get('PATH'), 'home': os.environ.get('HOME')})
-sys.stdin.read()
-";
 
 /// Changes one launch option.
 type Configure = fn(&mut RpcClientOptions);
@@ -72,7 +64,7 @@ fn client_arguments_keep_literal_order_and_child_context() {
     ];
     on_task_set(|_| async {
         for (index, (configure, extra)) in cases.into_iter().enumerate() {
-            let mut options = peer.options(REPORT);
+            let mut options = peer.options(Scenario::Report);
             options.env.insert("PEER_MARKER".into(), marker.clone());
             configure(&mut options);
             let client = RpcClient::new(options);
@@ -96,7 +88,7 @@ fn client_arguments_keep_literal_order_and_child_context() {
 /// A selected directory and an environment overlay reach the child, beside the inherited
 /// environment.
 async fn child_context(peer: &Peer, marker: &str) {
-    let mut options = peer.options(REPORT);
+    let mut options = peer.options(Scenario::Report);
     options.env.insert("PEER_MARKER".into(), marker.to_owned());
     options.env.insert("HOME".into(), "override".into());
     options.cwd = Some(peer.scratch.join(""));
@@ -112,13 +104,22 @@ fn relative_entry_uses_the_selected_child_directory() {
     let peer = Peer::new();
     let dist = peer.scratch.join("dist");
     std::fs::create_dir(&dist).unwrap();
-    crate::native::install_executable(Path::new(&peer.entry), &Path::new(&dist).join("maestro"));
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE").unwrap();
+    maestro_test_process::install_executable(
+        Path::new(&artifact),
+        &Path::new(&dist).join("maestro"),
+    )
+    .unwrap();
+    std::fs::write(
+        Path::new(&dist).join("maestro.fixture"),
+        "rpc-peer\nEntry\n",
+    )
+    .unwrap();
     let here = std::env::current_dir().unwrap();
     let up = "../".repeat(here.components().count() - 1);
     let from_here = format!("{up}{}", peer.entry.trim_start_matches('/'));
     let launch = |cli_path: Option<&str>, cwd: Option<String>| {
-        let mut options =
-            peer.options("emit({'type': 'peer_ready', 'entry': sys.argv[0]})\nsys.stdin.read()");
+        let mut options = peer.options(Scenario::Entry);
         options.cli_path = cli_path.map(str::to_owned);
         options.cwd = cwd;
         RpcClient::new(options)
@@ -146,7 +147,7 @@ fn relative_entry_uses_the_selected_child_directory() {
         }
         for (cli_path, cwd) in [
             (None, None),
-            (Some("python3"), scratch.clone()),
+            (Some("missing-peer"), scratch.clone()),
             (Some(peer.entry.as_str()), Some(peer.scratch.join("absent"))),
         ] {
             let error = launch(cli_path, cwd).start().await.unwrap_err();
@@ -162,7 +163,7 @@ fn relative_entry_uses_the_selected_child_directory() {
 fn startup_reports_duplicate_and_early_exit() {
     let peer = Peer::new();
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(SERVE));
+        let client = RpcClient::new(peer.options(Scenario::Serve));
         let error = client.abort().await.unwrap_err();
         assert!(matches!(error, RpcClientError::NotStarted));
         assert_eq!(error.to_string(), "Client not started");
@@ -175,8 +176,7 @@ fn startup_reports_duplicate_and_early_exit() {
         client.stop().await.unwrap();
         client.stop().await.unwrap();
 
-        let failing =
-            RpcClient::new(peer.options("sys.stderr.write('boot failed\\n')\nsys.exit(7)"));
+        let failing = RpcClient::new(peer.options(Scenario::BootFailure));
         for runs in 1..=2 {
             let error = failing.start().await.unwrap_err();
             let stderr = "boot failed\n".repeat(runs);
@@ -199,7 +199,7 @@ fn startup_reports_duplicate_and_early_exit() {
         }
         assert_eq!(failing.get_stderr(), "boot failed\nboot failed\n");
 
-        let killed = RpcClient::new(peer.options("os.kill(os.getpid(), signal.SIGKILL)"));
+        let killed = RpcClient::new(peer.options(Scenario::Kill));
         let error = killed.start().await.unwrap_err();
         assert!(matches!(
             &error,
@@ -216,9 +216,9 @@ fn startup_reports_duplicate_and_early_exit() {
 #[test]
 fn startup_observes_the_hundred_millisecond_boundary() {
     let peer = Peer::new();
-    let script = "sys.stderr.write('booting\\n'); sys.stderr.flush()\nemit({'type': 'peer_ready'})\nsys.stdin.read()";
+    let scenario = Scenario::Booting;
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(scenario));
         let (release, hold) = hold_clock();
         let mut events = events(&client);
         let mut start = pin!(client.start());
@@ -245,17 +245,9 @@ const FILL: usize = 1 << 20;
 /// standard error holds, then reports the retained text and waits for the parent.
 fn forwarding_child() {
     let peer = Peer::new();
-    let script = format!(
-        r"
-signal.signal(signal.SIGTERM, lambda *_: (os.write(2, b'terminating\xc3'), os.write(2, b'\xa9\n')))
-os.write(2, b'boot\xff\n')
-sys.stderr.buffer.write(b'x' * {FILL}); sys.stderr.flush()
-emit({{'type': 'peer_ready'}})
-for line in commands(): respond(json.loads(line))
-"
-    );
+    let scenario = Scenario::ForwardStderr;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(&script));
+        let client = RpcClient::new(peer.options(scenario));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -328,15 +320,9 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
 /// stop still waits for that text to be written.
 fn delivering_child() {
     let peer = Peer::new();
-    let script = format!(
-        r"
-sys.stderr.buffer.write(b'x' * {FILL} + b'end\n'); sys.stderr.flush()
-emit({{'type': 'peer_ready', 'pid': os.getpid()}})
-while True: time.sleep(1)
-"
-    );
+    let scenario = Scenario::DeliverStderr;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(&script));
+        let client = RpcClient::new(peer.options(scenario));
         let mut events = events(&client);
         client.start().await.unwrap();
         let ready = next_of(&mut events, "peer_ready").await;
@@ -407,15 +393,9 @@ fn stop_ends_after_every_captured_diagnostic_byte_is_written() {
 #[test]
 fn stderr_keeps_a_character_split_across_reads() {
     let peer = Peer::new();
-    let script = r"
-os.write(2, b'a\xc3')
-emit({'type': 'peer_ready'})
-for line in commands():
-    os.write(2, b'\xa9\n')
-    respond(json.loads(line))
-";
+    let scenario = Scenario::SplitStderr;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(scenario));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
@@ -439,12 +419,13 @@ for line in commands():
 #[test]
 fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
     let peer = Peer::new();
-    let ticking =
-        "emit({'type': 'peer_ready'})\nwhile True:\n    emit({'type': 'tick'}); time.sleep(0.001)";
+    let ticking = Scenario::Tick;
     on_task_set(|_| async {
         let client = RpcClient::new(peer.options(ticking));
         let mut events = events(&client);
         client.start().await.unwrap();
+        let mut control = peer.control();
+        release_peer(&mut control);
         next_of(&mut events, "tick").await;
         let started = std::time::Instant::now();
         let mut stop = pin!(client.stop());
@@ -457,11 +438,7 @@ fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
         );
         assert!(events.try_recv().is_err(), "stdout is detached at stop");
     });
-    let resisting = r"
-signal.signal(signal.SIGTERM, lambda *_: os.write(2, b'terminating\n'))
-emit({'type': 'peer_ready', 'pid': os.getpid()})
-while True: time.sleep(1)
-";
+    let resisting = Scenario::Resist;
     on_paused_task_set(|_| async {
         let client = RpcClient::new(peer.options(resisting));
         let mut events = events(&client);
@@ -496,16 +473,9 @@ while True: time.sleep(1)
 #[test]
 fn restart_keeps_ids_stderr_and_registered_listeners() {
     let peer = Peer::new();
-    let script = r"
-os.write(2, b'child\n')
-emit({'type': 'peer_ready'})
-for line in commands():
-    command = json.loads(line)
-    emit({'type': 'wire_capture', 'raw': line})
-    if command['type'] != 'get_state': respond(command)
-";
+    let scenario = Scenario::Restart;
     on_task_set(|_| async {
-        let client = RpcClient::new(peer.options(script));
+        let client = RpcClient::new(peer.options(scenario));
         let mut events = events(&client);
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;

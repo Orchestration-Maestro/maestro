@@ -25,6 +25,7 @@ mod environment;
 mod error;
 mod executable;
 mod proof;
+pub mod rpc_peer;
 mod selection;
 mod test_process;
 

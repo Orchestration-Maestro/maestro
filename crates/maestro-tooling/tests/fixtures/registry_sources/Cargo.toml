@@ -14,5 +14,6 @@ cargo_metadata = "*"
 rustix = { version = "*", default-features = false, features = ["std", "stdio"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+signal-hook = { version = "*", default-features = false }
 sha2 = "0.11"
 toml = "*"

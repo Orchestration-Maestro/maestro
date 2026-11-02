@@ -276,3 +276,39 @@ fn cargo_metadata_forwarding_keeps_the_native_child_pid() {
     assert_eq!(output.stderr, b"err\0\xfe!");
     assert_eq!(reported_pid, pid.to_string().as_bytes());
 }
+
+/// RPC family inputs fail before protocol bytes or launch markers can escape.
+#[cfg(unix)]
+#[test]
+fn rpc_peer_inputs_fail_before_protocol_output_or_marker_creation() {
+    let root = Scratch::new().unwrap();
+    let record = root.path().join("record");
+    let marker = root.path().join("marker");
+    for (text, answers, records, replies) in [
+        ("rpc-peer\nunknown\n", "{}", "[]", "[]"),
+        ("rpc-peer\n", "{}", "[]", "[]"),
+        ("rpc-peer\nLaunch\nextra\n", "{}", "[]", "[]"),
+        ("rpc-peer\nServe\n", "[]", "[]", "[]"),
+        ("rpc-peer\nBurst\n", "{}", "{}", "[]"),
+        ("rpc-peer\nReplay\n", "{}", "[]", "[null]"),
+        ("rpc-peer\nTick\n", "{}", "[]", "[]"),
+    ] {
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .env("PEER_MARKER", &marker)
+            .env("PEER_ANSWERS", answers)
+            .env("PEER_RECORDS", records)
+            .env("PEER_REPLIES", replies)
+            .env("PEER_PORT", "0")
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(
+            output.stdout.is_empty(),
+            "emitted protocol output for {text:?}"
+        );
+        assert!(!marker.exists(), "wrote a launch marker for {text:?}");
+    }
+}

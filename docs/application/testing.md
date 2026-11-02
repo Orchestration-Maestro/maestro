@@ -84,6 +84,7 @@ the harness unregisters the scripted provider and removes the disposable root.
 Run one group of checks through the shared integration-test program:
 
 ```sh
+just prepare-tests
 cargo nextest run -p maestro-app --locked --test integration \
   -E 'test(/^agent_session_concurrent_checks::/)'
 ```
@@ -92,6 +93,7 @@ The model, reload and navigation qualification group includes the concurrency
 regressions that share its completion helpers:
 
 ```sh
+just prepare-tests
 cargo nextest run -p maestro-app --locked --test integration \
   -E 'test(/^(agent_session_(model_extension|stats|tree_navigation|concurrent)|reload_stale_resource_settings|tree_cancel_compacting|tree_traversal)_checks::/)'
 ```
@@ -99,6 +101,7 @@ cargo nextest run -p maestro-app --locked --test integration \
 The prompt and queue checks run together:
 
 ```sh
+just prepare-tests
 cargo nextest run -p maestro-app --locked --test integration \
   -E 'test(/^(agent_session_prompt_checks|agent_session_queue_checks|queued_slash_command_followup_checks)::/)'
 ```

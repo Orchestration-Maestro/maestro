@@ -4540,7 +4540,9 @@ dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
  "rustix",
+ "serde",
  "serde_json",
+ "signal-hook",
 ]
 
 [[package]]
