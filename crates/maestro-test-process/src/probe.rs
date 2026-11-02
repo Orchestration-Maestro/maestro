@@ -1,5 +1,7 @@
 //! Reusable child-process test observation.
+#[cfg(unix)]
 use crate::TestProcess;
+#[cfg(unix)]
 use std::path::Path;
 #[cfg(unix)]
 /// Run the configured test process with `envs` and
