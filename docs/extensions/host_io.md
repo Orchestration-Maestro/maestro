@@ -22,9 +22,11 @@ native directory that holds the path with the user's own access and finishes
 the operation there. The operating system therefore resolves every directory
 on the way, as it does for a native process: a drive mounted after the
 extension loads, any network share, junctions, and links with absolute
-targets. On Unix a user may be allowed to search a directory but not list it.
-The host cannot open such a directory, so a path below it is resolved one name
-at a time from the root, where an absolute link is refused.
+targets. A directory's search permission allows access to a known file without
+permission to list that directory. On Linux and macOS, the host opens a denied
+parent with a path-only or search-only handle, so direct paths and absolute
+links through that parent keep native file access. Removing search permission
+still denies access; the handle does not grant permission to list the directory.
 
 The host supplies the native current directory when it can observe it. Guest
 export startup applies that observation once to Rust’s standard-library cwd
@@ -73,9 +75,10 @@ passes paths through the root. A directory that a 0.3 caller opens itself
 keeps the standard rules for paths below it, so an absolute link there is
 refused; pass the whole path through the root instead. WASI paths are strings: a
 followed link whose final native name is not UTF-8 returns `illegal-byte-sequence`
-rather than opening a replacement-character spelling. Atomic saves and file modes remain
-undelivered. Final application-mode output routing remains separate from these
-host capabilities.
+rather than opening a replacement-character spelling. Some filesystems, including
+the default macOS filesystem, reject such names before a target can be created.
+Atomic saves and file modes remain undelivered. Final application-mode output
+routing remains separate from these host capabilities.
 
 ## Link checks
 
@@ -90,7 +93,8 @@ loading and callback dispatch. On an unprivileged Linux host:
 | Later target update through the same links | Updated bytes | Updated bytes | Updated bytes |
 | Dangling absolute link | Not found | `NoEntry` | Not found |
 | Genuinely unreadable direct target | Permission denied | `Access` | Permission denied |
-| File below a directory the user may search but not list | Exact bytes | Exact bytes | Not separately exercised |
+| File below a directory the user may search but not list, directly or through an absolute directory link | Exact bytes | Exact bytes | Exact bytes; listing denied |
+| Same file after search permission is removed | Permission denied | Permission denied | Access denied |
 | Target of an absolute link | Component spelling | Component spelling | Native target |
 | New link with an absolute or relative target | Not exercised | Native target, exact bytes | Native target |
 

@@ -378,11 +378,34 @@ fn component_root_reaches_below_a_directory_it_may_search_but_not_list() {
     let target = searchable.join("file Ω name");
     std::fs::write(&target, b"").unwrap();
     // A privileged run lists every directory, so it has no unlistable parent to reach through.
-    let Some(_restore) = maestro_test_directory::deny(&searchable, 0o311).unwrap() else {
+    let Some(restore) = maestro_test_directory::deny(&searchable, 0o311).unwrap() else {
         eprintln!("skipped: this process may list every directory");
         return;
     };
-    run(root_paths(std::slice::from_ref(&target), &target));
+    assert_eq!(
+        std::fs::read_dir(&searchable).unwrap_err().kind(),
+        std::io::ErrorKind::PermissionDenied
+    );
+    // Native file access needs search permission, not permission to list the parent.
+    std::fs::write(&target, b"native control").unwrap();
+    assert_eq!(std::fs::read(&target).unwrap(), b"native control");
+    let alias = scratch.path().join("absolute searchable link");
+    std::os::unix::fs::symlink(&searchable, &alias).unwrap();
+    run(root_paths(
+        &[target.clone(), alias.join("file Ω name")],
+        &target,
+    ));
+    drop(restore);
+    let _restore = maestro_test_directory::deny(&searchable, 0o200)
+        .unwrap()
+        .expect("the unprivileged process cannot search the parent");
+    assert_eq!(
+        std::fs::read(&target).unwrap_err().kind(),
+        std::io::ErrorKind::PermissionDenied
+    );
+    let healthy = scratch.path().join("healthy");
+    std::fs::write(&healthy, b"healthy\0\xff").unwrap();
+    run(file_failures(&[(target, "permission-denied")], &healthy));
 }
 
 /// The drive spelling of a native path, without the verbatim prefix a canonical path keeps.
@@ -913,8 +936,18 @@ fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target = scratch.path().join(OsStr::from_bytes(b"raw\xff"));
     let neighbor = scratch.path().join("raw�");
-    std::fs::write(&target, b"native").unwrap();
     std::fs::write(&neighbor, b"neighbor").unwrap();
+    let created = std::fs::write(&target, b"native");
+    #[cfg(not(target_os = "macos"))]
+    created.unwrap();
+    #[cfg(target_os = "macos")]
+    if let Err(error) = created {
+        // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation.
+        assert_eq!(error.raw_os_error(), Some(92), "{error}");
+        assert!(!target.exists());
+        assert_eq!(std::fs::read(&neighbor).unwrap(), b"neighbor");
+        return;
+    }
     let link = scratch.path().join("alias");
     std::os::unix::fs::symlink(&target, &link).unwrap();
     run(async {
