@@ -45,6 +45,7 @@ pub fn prepared_sources() -> PathBuf {
 }
 
 /// The complete locked workspace dependency sources, prepared before cold browser builds.
+#[cfg(unix)]
 pub fn prepared_workspace_sources() -> PathBuf {
     static SOURCES: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     SOURCES

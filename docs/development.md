@@ -995,8 +995,10 @@ the same command. A fixture opts in with `Workspace::use_prepared_sources` or
 `Browser::cargo`, which copy the configuration into its private home. A fixture
 without registry dependencies copies nothing.
 
-The cold browser build uses `nextest-setup fixture-sources workspace`, which
-prepares the whole workspace's locked dependencies before the test. It exports
+The Unix-only cold browser test uses `nextest-setup fixture-sources workspace`,
+which prepares the whole workspace's locked dependencies before the test. Its
+source-preparation helper is also Unix-only; Windows compiles the shared fixture
+helpers without the browser tests. The setup exports
 `MAESTRO_TEST_WORKSPACE_CARGO_SOURCES` from `target/workspace-sources/<hash>/`.
 This uses the same vendor operation with a wider dependency set, including Git
 sources. The key covers the workspace and member manifests, the browser manifest
