@@ -1143,8 +1143,10 @@ writes their dependency files. Unknown scenarios, engines and fields fail before
 preparation effects.
 
 `prepare_author_component --cache-directory` reports one absolute JSON path and
-creates no environment file, component, cache entry or observation log. The built
-alias has a sibling record. When a test exercises product copying or relocation,
+creates no environment file, component, cache entry or observation log. The fixture
+uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
+fails the query and stops setup before cache installation. The built alias has a
+sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
