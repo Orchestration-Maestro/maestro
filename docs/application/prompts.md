@@ -37,8 +37,10 @@ ends the prompt:
 5. Shell results recorded during the previous response are appended.
 6. A model without configured credentials is refused with the login help for its
    provider.
-7. When the history holds a response, the compaction check runs before sending.
-8. The user message (the text, then the images), the custom messages kept for the
+7. An invalid stored `httpIdleTimeoutMs` refuses the prompt with
+   `Invalid httpIdleTimeoutMs setting: <value>`, before a turn or retry starts.
+8. When the history holds a response, the compaction check runs before sending.
+9. The user message (the text, then the images), the custom messages kept for the
    next turn and the messages the `before_agent_start` handlers add are sent
    together. A system prompt from those handlers replaces the base prompt for this
    turn; otherwise the base prompt is restored.

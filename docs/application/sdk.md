@@ -416,7 +416,10 @@ already exist: their directories, credentials, catalog, preferences and loader.
 ## Requests
 
 Each provider request takes the catalog's key and headers for the model; a
-credential failure fails the request with its message. The provider retry
+credential failure fails the request with its message. Next, the request reads
+`httpIdleTimeoutMs`; an invalid stored value fails with
+`Invalid httpIdleTimeoutMs setting: <value>`, even when the request supplies a
+timeout. The provider retry
 settings supply the timeout, the retry limit and the longest retry delay where
 the request sets none, and the `httpIdleTimeoutMs` setting supplies the timeout
 when neither the request nor the provider retry settings set one; its `0` or
@@ -424,6 +427,23 @@ when neither the request nor the provider retry settings set one; its `0` or
 every provider that reads the timeout stops limiting the wait. Headers merge in order: attribution headers, then the
 credential headers, then the request's own, later names replacing earlier
 values.
+
+The shared native HTTP client starts with a 300,000 ms idle limit on headers and
+body chunks. Embedders apply their setting to this client explicitly:
+
+```rust
+# #[cfg(not(target_arch = "wasm32"))]
+# fn apply_http_limit(settings: &maestro_app::SettingsManager) -> Result<(), Box<dyn std::error::Error>> {
+maestro_app::configure_http_dispatcher(settings.get_http_idle_timeout_ms()?)?;
+# Ok(())
+# }
+```
+
+The change applies to subsequent requests; existing requests keep their client.
+Zero disables both shared-client limits. Header waiting includes connecting and
+sending the request; the body limit restarts after each chunk. Private clients
+and browser transport keep their own policies. A finite setting too large to
+represent as a duration returns a conversion error.
 
 While install telemetry is on, requests to `openrouter` or an `openrouter.ai`
 address carry `HTTP-Referer: https://github.com/Orchestration-Maestro/maestro`,

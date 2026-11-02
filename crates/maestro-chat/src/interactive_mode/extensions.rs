@@ -25,14 +25,20 @@ impl InteractiveMode {
                 .set_on_extension_shortcut(Some(shortcut_interceptor(self, selected)));
         }
     }
-    /// Applies the current session's footer, thinking, terminal and editor settings, the
-    /// editor settings to the default editor first and then to a distinct current editor.
+    /// Applies the session's footer, thinking, HTTP, terminal and editor settings.
+    /// Configures the default editor before a distinct current editor.
     ///
     /// # Errors
-    /// Returns the cursor-hiding failure or the current editor's original failure; the
-    /// settings before it stay applied.
+    /// Returns an unusable HTTP idle limit before changing the presentation. A cursor-hiding
+    /// or current-editor failure keeps the settings already applied.
     pub(super) fn apply_runtime_settings(&self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.runtime_host.session();
+        maestro_app::configure_http_dispatcher(
+            session
+                .settings_manager()
+                .borrow()
+                .get_http_idle_timeout_ms()?,
+        )?;
         self.footer.set_session(Rc::clone(&session));
         self.footer
             .set_auto_compact_enabled(session.auto_compaction_enabled());

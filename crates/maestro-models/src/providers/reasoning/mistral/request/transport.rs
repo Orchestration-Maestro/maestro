@@ -92,9 +92,8 @@ pub(in crate::providers::reasoning::mistral) fn media_type(
     })
 }
 
-/// How long a request without a configured timeout and without a caller signal waits for a
-/// response or a chunk.
-const DEFAULT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+/// How long a request without a configured timeout waits for a response or a chunk.
+const DEFAULT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
 
 /// A timer that ends the wait with a timeout after `limit`.
 fn timer(limit: std::time::Duration) -> crate::BoxFuture<crate::FetchError> {
@@ -109,14 +108,14 @@ struct Lifetime {
     /// Pending completion when the caller's signal aborts.
     cancelled: Option<crate::BoxFuture<crate::FetchError>>,
     /// The longest wait and the timer measuring the current one.
-    idle: Option<(std::time::Duration, crate::BoxFuture<crate::FetchError>)>,
+    idle: (std::time::Duration, crate::BoxFuture<crate::FetchError>),
     /// A wait that ran out while it was being started.
     expired: Option<crate::FetchError>,
 }
 
 impl Lifetime {
-    /// Observe the caller's signal and, when `limit` is set, time the first wait.
-    fn new(signal: Option<&crate::Cancellation>, limit: Option<std::time::Duration>) -> Self {
+    /// Observe the caller's signal and time the first wait.
+    fn new(signal: Option<&crate::Cancellation>, limit: std::time::Duration) -> Self {
         Self {
             cancelled: signal.map(|signal| {
                 let cancelled = signal.cancelled();
@@ -125,7 +124,7 @@ impl Lifetime {
                     crate::FetchError::Aborted
                 }) as crate::BoxFuture<crate::FetchError>
             }),
-            idle: limit.map(|limit| (limit, timer(limit))),
+            idle: (limit, timer(limit)),
             expired: None,
         }
     }
@@ -133,11 +132,10 @@ impl Lifetime {
     /// Start a new wait: the response or the next chunk may take the whole limit again. A
     /// timer's deadline starts at its first poll, so it is polled here.
     fn restart(&mut self, context: &mut std::task::Context<'_>) {
-        if let Some((limit, running)) = self.idle.as_mut() {
-            *running = timer(*limit);
-            if let std::task::Poll::Ready(error) = running.as_mut().poll(context) {
-                self.expired = Some(error);
-            }
+        let (limit, running) = &mut self.idle;
+        *running = timer(*limit);
+        if let std::task::Poll::Ready(error) = running.as_mut().poll(context) {
+            self.expired = Some(error);
         }
     }
 
@@ -154,10 +152,7 @@ impl Lifetime {
         {
             return ready;
         }
-        match self.idle.as_mut() {
-            Some((_, running)) => running.as_mut().poll(context),
-            None => std::task::Poll::Pending,
-        }
+        self.idle.1.as_mut().poll(context)
     }
 }
 
@@ -198,9 +193,7 @@ pub(in crate::providers::reasoning::mistral) async fn send(
     prepared: super::Prepared,
 ) -> Result<crate::HttpBody, RequestFailure> {
     use futures_util::StreamExt;
-    let limit = prepared
-        .timeout
-        .or_else(|| prepared.request.signal.is_none().then_some(DEFAULT_TIMEOUT));
+    let limit = prepared.timeout.unwrap_or(DEFAULT_TIMEOUT);
     let mut lifetime = Lifetime::new(prepared.request.signal.as_ref(), limit);
     let early =
         std::future::poll_fn(|context| std::task::Poll::Ready(lifetime.poll_end(context))).await;

@@ -240,7 +240,7 @@ pub(crate) fn dispatch_simple(
     invocation.dispatch(model, context, simple::<Local>, simple::<Threaded>)
 }
 
-/// Resolve thinking and key policy once for either family.
+/// Resolve thinking, output limits and key policy once for either family.
 fn simple<E: Producer>(
     model: Model,
     context: Context,
@@ -278,6 +278,11 @@ fn simple<E: Producer>(
             ThinkingInput::Budget(adjusted.thinking_budget)
         }
     };
+    raw.common.max_tokens = raw
+        .common
+        .max_tokens
+        .filter(|tokens| *tokens != 0.0 && !tokens.is_nan())
+        .or(Some(model.max_tokens));
     Ok(start::<E>(
         model,
         context,

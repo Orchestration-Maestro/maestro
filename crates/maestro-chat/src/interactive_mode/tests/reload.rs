@@ -25,6 +25,43 @@ use std::{
 };
 
 #[test]
+fn reload_applies_http_idle_limit_to_next_request() {
+    isolated(
+        "reload_applies_http_idle_limit_to_next_request",
+        async |directory| {
+            let world = started(directory).await;
+            *world.host.session().settings_manager().borrow_mut() = SettingsManager::in_memory(
+                serde_json::from_value(json!({"httpIdleTimeoutMs": 60_000})).unwrap(),
+            );
+            reload(&world).await;
+            assert!(shows(&world.mode.chat_container, "Reloaded keybindings"));
+            super::settings::next_http_request_uses_idle_limit(Some(60_000)).await;
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn reload_reports_invalid_http_idle_timeout() {
+    isolated(
+        "reload_reports_invalid_http_idle_timeout",
+        async |directory| {
+            let world = started(directory).await;
+            *world.host.session().settings_manager().borrow_mut() = SettingsManager::in_memory(
+                serde_json::from_value(json!({"httpIdleTimeoutMs": -5})).unwrap(),
+            );
+            reload(&world).await;
+            assert!(shows(
+                &world.mode.chat_container,
+                "Reload failed: Invalid httpIdleTimeoutMs setting: -5"
+            ));
+            assert!(!shows(&world.mode.chat_container, "Reloaded keybindings"));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
 fn reload_submit_routes_exact_command() {
     isolated("reload_submit_routes_exact_command", async |directory| {
         let world = started(directory).await;

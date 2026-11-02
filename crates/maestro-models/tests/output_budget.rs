@@ -63,6 +63,78 @@ async fn sent_body(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn raw_messages_request_keeps_the_supplied_output_limit() -> TestResult {
+    crate::runtime::run(async {
+        for (limit, expected) in [
+            (Some(512.0), json!(512)),
+            (Some(0.0), json!(0)),
+            (Some(f64::NAN), Value::Null),
+            (None, json!(8192)),
+        ] {
+            let requests = messages::Requests::default();
+            let options = maestro_models::AnthropicOptions {
+                common: StreamOptions {
+                    api_key: Some("fixture-key".into()),
+                    max_tokens: limit,
+                    max_retries: Some(0.0),
+                    fetch: Some(messages::scripted_fetch(
+                        &messages::Case::default(),
+                        &requests,
+                    )),
+                    ..StreamOptions::default()
+                },
+                ..maestro_models::AnthropicOptions::default()
+            };
+            let stream = maestro_models::stream_anthropic(
+                messages::model(&json!({"maxTokens": 8192}))?,
+                messages::context(&Value::Null)?,
+                Some(options),
+            );
+            messages::collect(&stream).await?;
+            let sent = requests.lock().map_err(|error| error.to_string())?;
+            assert_eq!(sent[0]["body"]["max_tokens"], expected, "{limit:?}");
+        }
+        Ok(())
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn simple_messages_nan_thinking_budget_keeps_the_model_cap() -> TestResult {
+    crate::runtime::run(async {
+        let requests = messages::Requests::default();
+        let options = SimpleStreamOptions {
+            common: StreamOptions {
+                api_key: Some("fixture-key".into()),
+                max_retries: Some(0.0),
+                fetch: Some(messages::scripted_fetch(
+                    &messages::Case::default(),
+                    &requests,
+                )),
+                ..StreamOptions::default()
+            },
+            reasoning: Some(ThinkingLevel::Low),
+            thinking_budgets: Some(maestro_models::ThinkingBudgets {
+                low: Some(f64::NAN),
+                ..maestro_models::ThinkingBudgets::default()
+            }),
+            ..SimpleStreamOptions::default()
+        };
+        let stream = stream_simple_anthropic(
+            messages::model(&json!({"maxTokens": 8192}))?,
+            messages::context(&Value::Null)?,
+            Some(options),
+        );
+        messages::collect(&stream).await?;
+        let sent = requests.lock().map_err(|error| error.to_string())?;
+        assert_eq!(sent[0]["body"]["max_tokens"], json!(8192));
+        assert_eq!(sent[0]["body"]["thinking"]["budget_tokens"], json!(1024));
+        Ok(())
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn simple_messages_request_defaults_to_the_model_cap_and_fits_thinking() -> TestResult {
     crate::runtime::run(async {
         let model = messages::model(&json!({"maxTokens": 64_000, "contextWindow": 1_000_000}))?;

@@ -6,12 +6,12 @@ pub mod settings_manager;
 pub use settings_manager::FileSettingsStorage;
 pub use settings_manager::{
     BaseSettingsLayer, BranchSummarySettings, CompactionSettings, DecisionRequest,
-    DoubleEscapeAction, FilteredPackage, ImageSettings, InMemorySettingsStorage, MarkdownSettings,
-    MessageDeliveryMode, PackageSource, PreparedSettingsEdit, ProviderRetrySettings,
-    ResolvedBranchSummarySettings, ResolvedCompactionSettings, ResolvedProviderRetrySettings,
-    ResolvedRetrySettings, RetrySettings, Settings, SettingsChange, SettingsDecider,
-    SettingsDeciderHandle, SettingsEdit, SettingsError, SettingsErrorKind, SettingsListEntry,
-    SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError, SettingsStorageHandle,
-    SettingsUpdate, TerminalSettings, ThinkingBudgetsSettings, ThinkingLevel, TransportSetting,
-    TreeFilterMode, WarningSettings,
+    DoubleEscapeAction, FilteredPackage, ImageSettings, InMemorySettingsStorage,
+    InvalidHttpIdleTimeout, MarkdownSettings, MessageDeliveryMode, PackageSource,
+    PreparedSettingsEdit, ProviderRetrySettings, ResolvedBranchSummarySettings,
+    ResolvedCompactionSettings, ResolvedProviderRetrySettings, ResolvedRetrySettings,
+    RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsDeciderHandle, SettingsEdit,
+    SettingsError, SettingsErrorKind, SettingsListEntry, SettingsManager, SettingsScope,
+    SettingsStorage, SettingsStorageError, SettingsStorageHandle, SettingsUpdate, TerminalSettings,
+    ThinkingBudgetsSettings, ThinkingLevel, TransportSetting, TreeFilterMode, WarningSettings,
 };
