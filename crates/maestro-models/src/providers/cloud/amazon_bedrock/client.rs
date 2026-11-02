@@ -100,7 +100,7 @@ impl Settings {
     /// Decide configuration from the model, the options and the environment.
     ///
     /// # Errors
-    /// Fails when the endpoint the SDK must use is not a URL.
+    /// Fails when the SDK endpoint or chosen proxy is not a URL, or the proxy scheme is unsupported.
     pub(super) fn resolve<E: crate::ProviderExecution>(
         model: &Model,
         options: &BedrockOptions<E>,

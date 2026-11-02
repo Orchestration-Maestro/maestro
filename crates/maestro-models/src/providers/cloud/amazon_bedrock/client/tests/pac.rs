@@ -71,7 +71,7 @@ fn pac_bridge_scopes_globals_by_protocol_across_timeouts() {
     });
 }
 
-/// A captured environment stays owned by one bridge while sender settings change.
+/// The bridge uses the settings' chosen proxy while sender timeouts change.
 async fn consume(source: &str, protocols: &[&str]) {
     let env = Environment(
         [
@@ -201,7 +201,7 @@ async fn captured_environment(bypass: bool) {
     );
 }
 
-/// Compare retained and ambient routing through the same native SDK connector.
+/// Compare settings' proxy choices from captured and ambient environments through the SDK connector.
 async fn check_environment(captured: Environment, uri: &str) {
     let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
     for (env, retained) in [(Environment::capture(), false), (captured, true)] {
