@@ -87,8 +87,8 @@ pub fn without_shared_cargo_home() -> bool {
 /// Rerun the named test in a child whose shared Cargo home cannot be locked.
 ///
 /// A fixture that still reaches the shared home fails at once, instead of waiting for whichever
-/// test holds the lock; the child keeps the run's prepared sources.
-pub fn rerun_without_shared_cargo_home(test: &str) {
+/// test holds the lock; the child keeps the run's prepared sources and any additional source sets.
+pub fn rerun_without_shared_cargo_home(test: &str, sources: &[(&str, PathBuf)]) {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let home = root.path().join("unusable-cargo-home");
     fs::create_dir_all(home.join(".package-cache")).unwrap();
@@ -96,6 +96,7 @@ pub fn rerun_without_shared_cargo_home(test: &str) {
         .unwrap()
         .env("MAESTRO_SHARED_CARGO_HOME_UNUSABLE", "1")
         .env("MAESTRO_TEST_CARGO_SOURCES", prepared_sources())
+        .envs(sources.iter().map(|(name, path)| (*name, path)))
         .env("CARGO_HOME", home)
         .output()
         .unwrap();

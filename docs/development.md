@@ -1002,9 +1002,11 @@ This uses the same vendor operation with a wider dependency set, including Git
 sources. The key covers the workspace and member manifests, the browser manifest
 and both lockfiles. Dependency changes select a new directory; Rust-only edits
 reuse it because workspace sources are read from the checkout. Outside nextest,
-the first cold-source caller runs the same setup. The test copies only the source
-configuration into its initially empty Cargo home. Its Cargo target directory
-also starts empty, so the recipes still prove compilation from clean state.
+the first cold-source caller runs the same setup. The shared-home isolation test
+prepares both source sets in its parent and forwards their configuration paths to
+the child before making the shared Cargo home unusable. The cold test copies only
+the source configuration into its initially empty Cargo home. Its Cargo target
+directory also starts empty, so the recipes still prove compilation from clean state.
 The cold recipe uses `fixture_command` to keep its private home out of the
 compiler wrapper's cache keys.
 

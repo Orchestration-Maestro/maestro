@@ -2557,6 +2557,7 @@ fn consumer_workspace_never_reaches_the_shared_cargo_home() {
     if !recipe_support::without_shared_cargo_home() {
         recipe_support::rerun_without_shared_cargo_home(
             "consumer_workspace_never_reaches_the_shared_cargo_home",
+            &[],
         );
         return;
     }
