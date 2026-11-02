@@ -1,5 +1,7 @@
 //! Layout export and split ratio through the daemon's handler: targets, the portable tree,
 //! clamping and publication.
+#![cfg(target_os = "linux")]
+
 use crate::support::{
     api::{
         TestApp, add_tab, answer_command, daemon_with_workspaces, events_after, failure, request,

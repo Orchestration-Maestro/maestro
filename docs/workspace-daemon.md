@@ -668,7 +668,8 @@ their pane like the reads do, and hand the work to the owners that already exist
 ### Layouts
 
 The layout commands in `app/api/layouts.rs` read and change one tab's split tree through
-the same owners as the pane commands.
+the same owners as the pane commands. These handlers are available only on Linux,
+where the daemon application and native PTY runtime are built.
 
 - **Export.** `App::layout_description` turns the tree into the portable description. A
   leaf takes its label and launch command from the terminal state and its directory from
