@@ -23,6 +23,7 @@ Each target has executable behavior tests selected by the default application
 test command:
 
 ```sh
+just prepare-tests
 cargo nextest run -p maestro-app
 ```
 
