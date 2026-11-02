@@ -34,8 +34,13 @@ fn streamed_wait_delivers_chunks_without_retaining_them() {
         .build()
         .unwrap()
         .block_on(async {
-            let mut command = tokio::process::Command::new("/bin/sh");
-            command.args(["-c", "printf 'raw\\000bytes'; printf 'diagnostic' >&2"]);
+            let mut command = async_command(
+                child_programs::output_writer,
+                &[
+                    ("CHILD_OUT", "726177006279746573"),
+                    ("CHILD_ERR", "646961676e6f73746963"),
+                ],
+            );
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let mut chunks = Vec::new();
             let mut sink = |_, bytes: &[u8]| chunks.extend_from_slice(bytes);
@@ -50,6 +55,7 @@ fn streamed_wait_delivers_chunks_without_retaining_them() {
             assert!(output.status.success());
             assert!(output.stdout.is_empty());
             assert!(output.stderr.is_empty());
+            let chunks = without_harness(&chunks);
             assert!(chunks.windows(9).any(|bytes| bytes == b"raw\0bytes"));
             assert!(chunks.windows(10).any(|bytes| bytes == b"diagnostic"));
             assert_eq!(chunks.len(), 19);
@@ -149,8 +155,10 @@ fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
         .build()
         .unwrap()
         .block_on(async {
-            let mut command = tokio::process::Command::new("/bin/sh");
-            command.args(["-c", "printf diagnostic >&2"]);
+            let mut command = async_command(
+                child_programs::output_writer,
+                &[("CHILD_ERR", "646961676e6f73746963")],
+            );
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let mut bytes = Vec::new();
             let mut sink = |_, chunk: &[u8]| bytes.extend_from_slice(chunk);
@@ -165,7 +173,7 @@ fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
             )
             .await
             .unwrap();
-            assert_eq!(bytes, b"diagnostic");
+            assert_eq!(without_harness(&bytes), b"diagnostic");
             assert!(output.stderr.is_empty());
             assert!(child.take_output().1.is_empty());
         });
@@ -341,8 +349,10 @@ fn default_waiter_keeps_send_and_none_inference() {
         .unwrap()
         .block_on(async {
             for observed in [false, true] {
-                let mut command = tokio::process::Command::new("/bin/sh");
-                command.args(["-c", "printf output"]);
+                let mut command = async_command(
+                    child_programs::output_writer,
+                    &[("CHILD_OUT", "6f7574707574")],
+                );
                 let mut child = CapturedChild::spawn(&mut command).unwrap();
                 let mut bytes = Vec::new();
                 let mut sink = |_, data: &[u8]| bytes.extend_from_slice(data);
@@ -372,13 +382,13 @@ fn default_waiter_keeps_send_and_none_inference() {
                     if observed {
                         b"".to_vec()
                     } else {
-                        b"output".to_vec()
+                        harness(b"output")
                     }
                 );
                 assert_eq!(
                     bytes,
                     if observed {
-                        b"output".to_vec()
+                        harness(b"output")
                     } else {
                         b"".to_vec()
                     }

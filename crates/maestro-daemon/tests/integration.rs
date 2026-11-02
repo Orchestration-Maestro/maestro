@@ -27,6 +27,8 @@ mod desktop_notification;
 mod event_replay;
 mod git_status;
 mod key_combo;
+mod layout_apply;
+mod layout_commands;
 mod pane_chrome;
 mod pane_close;
 mod pane_commands;

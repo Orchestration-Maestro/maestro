@@ -19,7 +19,7 @@ setup = "author-component"
 command = "target/test-setup/development nextest-setup native-fixture"
 
 [[profile.default.scripts]]
-filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | (package(maestro-app) & (test(/rpc_client/) | test(/^clipboard_(copy|images)::/)))"
+filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-process) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | (package(maestro-app) & (test(/rpc_client/) | test(/^clipboard_(copy|images)::/)))"
 setup = "native-fixture"
 
 [scripts.setup.fixture-sources]

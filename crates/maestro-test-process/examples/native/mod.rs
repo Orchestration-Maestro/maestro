@@ -8,6 +8,8 @@ mod author;
 mod cargo;
 mod clipboard;
 mod credentials;
+mod echo;
+mod editor;
 mod observe;
 #[cfg(unix)]
 mod rpc;
@@ -24,6 +26,10 @@ enum Request {
     Cargo(cargo::Record, Vec<OsString>),
     /// Produce controlled clipboard bytes for the application's native operations.
     Clipboard(clipboard::Record, Vec<OsString>),
+    /// Report the file a controlled editor was asked to edit.
+    Editor(editor::Record, Vec<OsString>),
+    /// Print one authored line and end.
+    Echo(echo::Record),
     /// Run a copied preparation example against its checkout-local declaration.
     Author(author::Record, Vec<OsString>),
     /// Answer as an AWS credential process or a Google executable source.
@@ -76,6 +82,8 @@ impl Request {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
+            Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
+            Some("echo") => Ok(Self::Echo(echo::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
             Some("credentials") => Ok(Self::Credentials(
                 credentials::Record::parse(&text)?,
@@ -97,6 +105,8 @@ pub(super) fn run() -> io::Result<()> {
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
+        Request::Editor(record, operands) => editor::run(&record, &operands),
+        Request::Echo(record) => echo::run(&record, &[]),
         Request::Author(record, operands) => author::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]
