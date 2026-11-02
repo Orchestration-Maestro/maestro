@@ -23,7 +23,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo clippy|--workspace|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -79,7 +79,7 @@ fn maestro_scoped_check_consumes_package_selection() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -92,6 +92,24 @@ fn maestro_scoped_check_consumes_package_selection() {
     assert_eq!(
         workspace.log(),
         "cargo hakari|verify\ncargo clippy|-p|maestro-models|--all-targets|--locked|--|-D|warnings\n"
+    );
+}
+
+/// A foreign-target failure must stop the check before documentation or conventions.
+#[test]
+fn maestro_scoped_check_stops_on_windows_failure() {
+    let workspace = Workspace::new();
+    let result = workspace
+        .command("_check")
+        .args(["-p", "maestro-path"])
+        .env("MAESTRO_FAIL_ARG", "x86_64-pc-windows-gnu")
+        .output()
+        .unwrap();
+
+    assert!(!result.status.success());
+    assert_eq!(
+        workspace.log(),
+        "cargo hakari|verify\ncargo clippy|-p|maestro-path|--all-targets|--locked|--|-D|warnings\ncargo clippy|-p|maestro-path|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\n"
     );
 }
 

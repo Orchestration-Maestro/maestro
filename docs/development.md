@@ -38,9 +38,27 @@ paths under `crates/maestro-test-conventions/`, guarding the checker itself.
 Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
 the browser entry is present, guarding targets outside native Clippy.
 
-CI checks dependents and workspace-wide inputs. `just check` keeps the full
-workspace gate: its private `_check` recipe verifies feature unification, runs
-Clippy, builds strict public documentation and checks workspace conventions.
+For changed crates, run `just _check -p <package>` with repeated `-p` arguments
+for multiple crates. `_check` verifies feature unification, runs native Clippy
+followed by Windows-GNU Clippy, builds strict native documentation and checks
+workspace conventions. Both Clippy passes use the same package selection with
+`--all-targets --locked -- -D warnings`; they add no reverse dependents.
+CI checks dependents and workspace-wide inputs. `just check` explicitly selects
+`--workspace` for both passes on every development host. The commit hook stays
+native-only.
+
+The pinned `rust-toolchain.toml` provisions `x86_64-pc-windows-gnu`. To repair a
+missing standard library, run `rustup target add x86_64-pc-windows-gnu` from the
+checkout. Install MinGW-w64 too: on Ubuntu use
+`sudo apt-get install gcc-mingw-w64-x86-64-posix`; on macOS use
+`brew install mingw-w64`; on Windows use a MinGW-w64 development shell with its
+compiler on `PATH`. Cross-builds need `x86_64-w64-mingw32-gcc` on `PATH`, or Cargo's
+C dependencies need `CC_x86_64_pc_windows_gnu` set to that host's MinGW-w64 compiler.
+The saved build-box setup already installs the compiler and standard library.
+Missing prerequisites fail the check; there is no native-only fallback.
+Windows-GNU checks `cfg(windows)` and `cfg(unix)` boundaries, not MSVC-specific
+code or ABI behavior. Required native Windows-MSVC CI and native runtime
+qualification remain in place.
 
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
