@@ -340,7 +340,6 @@ fn repository_native_links_keep_unicode_trim_and_climb_past_missing_head() {
 #[cfg(unix)]
 #[test]
 fn repository_reftable_queries_use_native_process_owner() {
-    use std::os::unix::fs::PermissionsExt;
     const NAME: &str = "repository_reftable_queries_use_native_process_owner";
     if let Some(root) = std::env::var_os("MAESTRO_REFTABLE_PROBE") {
         let root = PathBuf::from(root);
@@ -361,31 +360,23 @@ fn repository_reftable_queries_use_native_process_owner() {
         "[extensions]\nrefStorage = RefTable # selected storage\n",
     )
     .unwrap();
-    std::fs::create_dir(root.join("bin")).unwrap();
-    let executable = root.join("bin/git");
+    let bin = root.join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
     std::fs::write(
-        &executable,
-        r#"#!/bin/sh
-[ "$1" = -C ] && [ "$2" = "$MAESTRO_REFTABLE_PROBE" ] || exit 2
-shift 2
-case "$*" in
-  'symbolic-ref --quiet --short HEAD') printf ' topic\n';;
-  'rev-parse --verify HEAD') printf ' 0123456789abcdef\n';;
-  'rev-parse --verify missing') printf 'discard this output\n'; exit 1;;
-  *) exit 2;;
-esac
-"#,
+        bin.join("git.fixture"),
+        format!("git-probe\n{}", serde_json::json!({ "cwd": &root })),
     )
     .unwrap();
-    std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+    maestro_test_process::install_executable(Path::new(&artifact), &bin.join("git")).unwrap();
     let output = maestro_test_process::TestProcess::current(NAME)
         .unwrap()
         .env("MAESTRO_REFTABLE_PROBE", &root)
-        .env("PATH", root.join("bin"))
+        .env("PATH", &bin)
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
-    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[cfg(target_os = "linux")]

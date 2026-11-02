@@ -1096,8 +1096,9 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
-currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools` and the application RPC client tests. Local setup builds the example
+currently served selections: `maestro-test-process`, `maestro-tooling`,
+`maestro-tools`, the application RPC client tests and the daemon's notification and
+repository discovery cases. Local setup builds the example
 with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1215,6 +1216,39 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Notification and Git aliases
+
+Install the same artifact as `notify-send` or `git` when a test must observe the
+operands the product hands to those programs.
+
+| Family | Fields | Behavior |
+| --- | --- | --- |
+| `notify-send` | `args`, `code` | Writes each untouched operand on its own line to `args`, records nothing when `args` is null, then ends with `code`. |
+| `git-probe` | `cwd` | Answers the three queries that repository discovery runs against a reftable checkout: `symbolic-ref --quiet --short HEAD` reports `topic`, `rev-parse --verify HEAD` reports `0123456789abcdef`, and `rev-parse --verify missing` writes output the caller discards and ends with a failing status. Every query must name `cwd` after `-C`; another directory, a non-text operand or any other operands end with status 2 before output. |
+
+A failing notifier records nothing:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({ "args": null, "code": 1 });
+    std::fs::write(
+        directory.path().join("notify-send.fixture"),
+        format!("notify-send\n{record}"),
+    )?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("notify-send"),
+    )?;
+    Ok(())
+}
+```
+
+A recording notifier names its file in `args` instead, and a Git alias names the
+checkout every query must carry. Point `PATH` at the directory holding either
+alias, so the product finds it by its own program name.
 
 #### Checked reruns
 

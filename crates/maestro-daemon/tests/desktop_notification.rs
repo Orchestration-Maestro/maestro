@@ -3,7 +3,17 @@
 #![cfg(target_os = "linux")]
 
 use maestro_daemon::platform::show_desktop_notification;
-use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
+
+/// Install the `notify-send` alias with its operand-capture record.
+fn install_notify_send(directory: &Path, record: &serde_json::Value) {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
+    let fixture = directory.join("notify-send.fixture");
+    std::fs::write(&fixture, format!("notify-send\n{record}")).unwrap();
+    maestro_test_process::install_executable(Path::new(&artifact), &directory.join("notify-send"))
+        .unwrap();
+}
 
 #[test]
 fn daemon_desktop_notification_separates_option_like_titles() {
@@ -16,14 +26,10 @@ fn daemon_desktop_notification_separates_option_like_titles() {
         return;
     }
     let directory = maestro_test_directory::Scratch::new().unwrap();
-    let dir = directory.path().to_path_buf();
-    let script = dir.join("notify-send");
-    std::fs::write(
-        &script,
-        "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$MAESTRO_NOTIFICATION_ARGS\"\n",
-    )
-    .unwrap();
-    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let bin = directory.path().join("bin");
+    let args = directory.path().join("args");
+    std::fs::create_dir(&bin).unwrap();
+    install_notify_send(&bin, &serde_json::json!({ "args": args, "code": 0 }));
     assert!(
         maestro_test_process::TestProcess::current(
             "daemon_desktop_notification_separates_option_like_titles"
@@ -31,13 +37,12 @@ fn daemon_desktop_notification_separates_option_like_titles() {
         .unwrap()
         .env("DISPLAY", ":0")
         .env_remove("WAYLAND_DISPLAY")
-        .env("PATH", &dir)
-        .env("MAESTRO_NOTIFICATION_ARGS", dir.join("args"))
+        .env("PATH", &bin)
+        .env("MAESTRO_NOTIFICATION_ARGS", &args)
         .status()
         .unwrap()
         .success()
     );
-    std::fs::remove_dir_all(dir).unwrap();
 }
 
 #[test]
@@ -48,13 +53,15 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
     }
     let name = "desktop_notification_does_not_claim_unavailable_or_failed_delivery";
     let directory = maestro_test_directory::Scratch::new().unwrap();
-    let dir = directory.path().to_path_buf();
+    let bin = directory.path().join("bin");
+    std::fs::create_dir(&bin).unwrap();
     assert!(
         maestro_test_process::TestProcess::current(name)
             .unwrap()
             .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
             .env_remove("DISPLAY")
             .env_remove("WAYLAND_DISPLAY")
+            .env("PATH", &bin)
             .status()
             .unwrap()
             .success()
@@ -64,23 +71,20 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
             .unwrap()
             .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
             .env("DISPLAY", ":0")
-            .env("PATH", &dir)
+            .env("PATH", &bin)
             .status()
             .unwrap()
             .success()
     );
-    let script = dir.join("notify-send");
-    std::fs::write(&script, "#!/bin/sh\nexit 1\n").unwrap();
-    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
+    install_notify_send(&bin, &serde_json::json!({ "args": null, "code": 1 }));
     assert!(
         maestro_test_process::TestProcess::current(name)
             .unwrap()
             .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
             .env("DISPLAY", ":0")
-            .env("PATH", &dir)
+            .env("PATH", &bin)
             .status()
             .unwrap()
             .success()
     );
-    std::fs::remove_dir_all(dir).unwrap();
 }
