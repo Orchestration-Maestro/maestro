@@ -75,12 +75,13 @@ mod tests {
     }
 
     #[test]
-    fn maestro_credentials_publish_before_failed_write() {
+    fn refused_write_disappears_at_the_next_read() {
         let inner = Arc::new(InMemoryAuthStorageBackend::default());
         let storage = AuthStorage::from_storage(RefusingWrites(Arc::clone(&inner)));
         storage.set("openai", api_key("one"));
-        assert_eq!(storage.get("openai"), Some(api_key("one")));
-        assert_eq!(storage.list(), ["openai"]);
+        assert_eq!(storage.get("openai"), None);
+        assert!(storage.list().is_empty());
+        assert!(!storage.has("openai"));
         assert_eq!(memory_text(&inner), None);
         let errors = storage.drain_errors();
         assert_eq!(errors.len(), 1);
@@ -201,18 +202,39 @@ mod tests {
     }
 
     #[test]
-    fn reading_a_repaired_document_allows_writes_again() {
-        let dir = TempDir::new("repaired");
-        let path = dir.path("auth.json");
-        write_file(&path, "{invalid-json");
-        let storage = AuthStorage::create(&path);
-        write_file(&path, &pretty_keys(&[("google", "g")]));
-        assert_eq!(storage.list(), ["google"]);
-        storage.set("openai", api_key("o"));
-        assert_eq!(
-            read_file(&path),
-            pretty_keys(&[("google", "g"), ("openai", "o")])
-        );
+    fn reading_a_repaired_document_keeps_writes_blocked() {
+        for initially_valid in [false, true] {
+            let dir = TempDir::new("repaired");
+            let path = dir.path("auth.json");
+            let repaired = pretty_keys(&[("google", "g")]);
+            write_file(
+                &path,
+                if initially_valid {
+                    &repaired
+                } else {
+                    "{invalid-json"
+                },
+            );
+            let storage = AuthStorage::create(&path);
+            if initially_valid {
+                write_file(&path, "not json");
+                storage.reload();
+            }
+            write_file(&path, &repaired);
+            assert_eq!(storage.list(), ["google"]);
+            assert_eq!(storage.get("google"), Some(api_key("g")));
+            storage.set("openai", api_key("o"));
+            assert_eq!(read_file(&path), repaired);
+            assert_eq!(storage.drain_errors().len(), 1);
+
+            storage.reload();
+            storage.set("openai", api_key("o"));
+            assert_eq!(
+                read_file(&path),
+                pretty_keys(&[("google", "g"), ("openai", "o")])
+            );
+            assert!(storage.drain_errors().is_empty());
+        }
     }
 
     #[test]
