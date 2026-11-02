@@ -19,6 +19,7 @@ pub mod css;
 pub mod decoding;
 mod flags;
 mod lexical;
+pub mod line_framing;
 pub mod markup;
 mod newlines;
 pub mod terminal;
