@@ -130,7 +130,8 @@ pub(crate) fn spawn_detached(task: impl Future<Output = ()> + 'static) -> bool {
 
 /// Draw a number in `[0, 1)`.
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn unit_random() -> f64 {
+#[must_use]
+pub fn unit_random() -> f64 {
     use std::hash::{BuildHasher, RandomState};
 
     let high = u32::try_from(RandomState::new().hash_one(0_u8) >> 32).unwrap_or(0);
@@ -139,6 +140,7 @@ pub(crate) fn unit_random() -> f64 {
 
 /// Draw a number in `[0, 1)`.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn unit_random() -> f64 {
+#[must_use]
+pub fn unit_random() -> f64 {
     js_sys::Math::random()
 }

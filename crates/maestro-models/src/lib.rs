@@ -48,6 +48,7 @@ pub use providers::content::google_shared::GoogleThinkingLevel;
 pub use providers::http::configure_http_dispatcher;
 pub use providers::http::{
     Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
+    unit_random,
 };
 pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,

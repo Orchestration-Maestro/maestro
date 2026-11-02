@@ -159,7 +159,7 @@ fn has_host(base_url: &str, host: &str) -> bool {
 
 /// The session headers `OpenCode` requests carry, and the attribution headers `OpenRouter`,
 /// NVIDIA and Cloudflare requests carry while install telemetry is on, matched by provider
-/// or by the base URL's host.
+/// or by the base URL (substring for `OpenRouter`, parsed host for the others).
 fn get_attribution_headers(
     model: &Model,
     settings: &SettingsManager,
@@ -173,7 +173,7 @@ fn get_attribution_headers(
     let opencode = matches!(model.provider.as_str(), "opencode" | "opencode-go")
         || has_host(&model.base_url, "opencode.ai");
     let session = session_id
-        .filter(|_| opencode)
+        .filter(|id| opencode && !id.is_empty())
         .into_iter()
         .flat_map(|id| [("x-opencode-session", id), ("x-opencode-client", "maestro")]);
     let headers: IndexMap<String, String> = session
@@ -183,9 +183,9 @@ fn get_attribution_headers(
     (!headers.is_empty()).then_some(headers)
 }
 
-/// The telemetry attribution headers of `model`'s provider or host, when it has any.
+/// The telemetry attribution headers selected by `model`'s provider or base URL.
 fn attribution_pairs(model: &Model) -> Option<&'static [(&'static str, &'static str)]> {
-    if model.provider == "openrouter" || has_host(&model.base_url, "openrouter.ai") {
+    if model.provider == "openrouter" || model.base_url.contains("openrouter.ai") {
         return Some(&[
             (
                 "HTTP-Referer",
