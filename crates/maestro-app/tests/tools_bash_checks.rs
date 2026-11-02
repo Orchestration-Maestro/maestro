@@ -432,23 +432,29 @@ fn bash_preserves_prefix_then_command_output() {
 }
 
 #[test]
-fn bash_empty_options_keep_command_output() {
-    if run_native_tool_child("bash_empty_options_keep_command_output") {
-        return;
-    }
-    let root = maestro_test_directory::Scratch::new().unwrap();
-    let tool = native_tool(&root, BashToolOptions::default());
-    let result = run_io((tool.execute)(
+fn bash_empty_prefix_preserves_command() {
+    let shell = Arc::new(ScriptedShell::output("", Some(0.0)));
+    let tool = create_bash_tool(
+        "/work".into(),
+        String::new(),
+        BashToolOptions {
+            operations: Some(shell.clone()),
+            command_prefix: Some(String::new()),
+            ..BashToolOptions::default()
+        },
+    );
+
+    run_io((tool.execute)(
         "bash".into(),
         json!({"command":"echo no-prefix"}),
         None,
         None,
     ))
     .unwrap();
-    assert_eq!(
-        json!(result),
-        json!({"content":[{"type":"text","text":"no-prefix\n"}]})
-    );
+
+    let executed = shell.executed.lock().unwrap();
+    assert_eq!(executed.len(), 1);
+    assert_eq!(executed[0]["command"], "echo no-prefix");
 }
 
 #[test]
