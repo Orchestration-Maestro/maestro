@@ -31,7 +31,8 @@ pub fn git(dir: &str, args: &[&str]) -> String {
 pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
     std::fs::create_dir_all(directory).expect("the alias directory is creatable");
     let path = directory.join(name);
-    maestro_test_process::install_command(&path, &record.to_string()).expect("install starts");
+    maestro_test_process::install_command(&path, &record.to_string())
+        .expect("the native fixture installs");
     path
 }
 

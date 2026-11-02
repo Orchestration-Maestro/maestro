@@ -490,7 +490,7 @@ fn configured_sources_work_without_acquisition() {
     let stand_in = crate::native_support::command(
         scratch.path(),
         "npm",
-        &json!({"scenario": "npm", "view": "", "root": root}),
+        &json!({"scenario": "npm", "root": root}),
     );
     let command = [stand_in.to_string_lossy().into_owned()];
     workflow(

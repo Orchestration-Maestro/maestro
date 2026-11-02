@@ -1183,8 +1183,7 @@ currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` and `maestro-packages`. Local setup
 builds the example with the locked host `dev` profile and reads Cargo's emitted
-executable path. It
-records source inputs, content digest and host in
+executable path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1236,18 +1235,15 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `report` | `fields` lists what to print, joined by one bar in that order: `{"variable": "NAME"}` for a variable that reads empty when unset, `"working-directory"`, `{"operand": N}` for one operand by position, and `"input"` for the number of bytes standard input held. |
 | `stdio` | Prints every operand in angle brackets, `out-<invoked name>`, one line of input as `stdin:<line>` and the working directory on standard output, and `err-<invoked name>` on standard error. |
-| `npm` | Answers package queries: `view` prints `view`, `root` prints `root`, and `install` requires `install.argument` as its second operand before writing `install.path` with `install.contents`. Optional `log` records each invocation like `argv_log`. Any other command exits 1. |
+| `npm` | Answers package queries: `view` prints the optional `view` field, `root` prints the optional `root` field, and `install` requires `install.argument` as its second operand before writing `install.path` with `install.contents`. Optional `log` records each invocation like `argv_log`. An unrecorded query or any other command exits 1. |
 | `hold` | Writes `"ready"` to optional `ready`, reads one byte from the `permit` FIFO, then writes `stdout`, `stderr` and optional `append`. Optional `late` names a FIFO read before the permit, for a writer that opened it first. Optional `terminate` appends and exits 0 when SIGTERM arrives, so only a termination signal ends the process after the gate. It drains standard input first, which ends when the process that started it exits. |
 | `holder` | Starts the program named by `descendant` with a shared input pipe, writes `stdout` and `stderr`, and exits at once. The descendant receives end-of-input when the holder ends, so it runs after it, and it keeps the inherited streams open until it finishes. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
 | `forward` | Appends `marker`, then replaces itself with `program`, which receives the untouched operands. |
 
-Write the record with `install_command(alias, record)`, which copies the artifact
-and writes the sibling `.fixture` line:
-
-The package manager's tests configure a stand-in command and assert what the
-product does with its results:
+Use `install_command(alias, record)` to copy the artifact and write its sibling
+`.fixture` record, then configure the alias as the command the product launches:
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {

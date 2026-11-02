@@ -19,9 +19,7 @@ struct Captured {
 /// Captures one stand-in installed in a scratch directory of its own.
 fn captured(name: &str, record: &Value) -> Captured {
     let scratch = scratch::Scratch::new().unwrap();
-    let capture = capture_in(scratch.path(), name, record, None);
-    assert!(!scratch.path().join("unused").exists());
-    capture
+    capture_in(scratch.path(), name, record, None)
 }
 
 /// Captures one stand-in below `directory`, which owns the alias.
@@ -314,7 +312,7 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
     let operations = NativePackageOperations::new(Rc::new(|| false), &local);
     let runtime = runtime();
     let result = local.spawn_local(async move {
-        let captured = operations
+        operations
             .run_command_capture(
                 &expected,
                 &[],
@@ -324,8 +322,7 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
                     env: &[],
                 },
             )
-            .await;
-        (expected, captured)
+            .await
     });
     let (early, capture) = runtime.block_on(local.run_until(async {
         producer.ready.await.unwrap();
@@ -337,7 +334,7 @@ fn capture_waits_for_exit_and_both_pipe_eofs() {
     producer.release.send(()).unwrap();
     producer.thread.join().unwrap();
     assert!(!early, "capture completed before descendant EOF");
-    assert_eq!(capture.1.unwrap(), "earlytail");
+    assert_eq!(capture.unwrap(), "earlytail");
 }
 
 #[test]

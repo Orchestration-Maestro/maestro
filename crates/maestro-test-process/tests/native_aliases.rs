@@ -430,6 +430,40 @@ fn command_stand_in_answers_package_queries() {
     );
 }
 
+/// Package queries fail when the record does not supply their answer.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_rejects_unrecorded_package_queries() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    for (name, record, admitted, denied) in [
+        (
+            "root-only",
+            json!({"scenario": "npm", "root": "/package/root"}),
+            "root",
+            "view",
+        ),
+        (
+            "view-only",
+            json!({"scenario": "npm", "view": ""}),
+            "view",
+            "root",
+        ),
+    ] {
+        let alias = command_alias(root.path(), name, &record);
+        assert!(
+            Command::new(&alias)
+                .arg(admitted)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let output = Command::new(&alias).arg(denied).output().unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+    }
+}
+
 /// A forward records its marker and then becomes the recorded program.
 #[cfg(unix)]
 #[test]

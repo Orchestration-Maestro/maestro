@@ -164,8 +164,8 @@ pub(super) enum Record {
     Stdio {},
     /// Answer package-manager queries from the recorded values.
     Npm {
-        /// Text a `view` invocation prints.
-        view: String,
+        /// Text a `view` invocation prints, when admitted.
+        view: Option<String>,
         /// Root a `root` invocation prints.
         root: Option<String>,
         /// Manifest an `install` invocation writes.
@@ -229,7 +229,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             install,
             log,
         } => npm(
-            view,
+            view.as_deref(),
             root.as_deref(),
             install.as_ref(),
             log.as_ref(),
@@ -298,7 +298,7 @@ fn stdio(operands: &[OsString]) -> io::Result<()> {
 
 /// Answer a package-manager query, or fail for an invocation the record does not admit.
 fn npm(
-    view: &str,
+    view: Option<&str>,
     root: Option<&str>,
     install: Option<&Manifest>,
     log: Option<&ArgvLog>,
@@ -309,11 +309,13 @@ fn npm(
     }
     match operands.first().and_then(|command| command.to_str()) {
         Some("view") => {
+            let Some(view) = view else { leave(1) };
             write_stdout(view.as_bytes())?;
             leave(0)
         }
         Some("root") => {
-            write_stdout(root.unwrap_or_default().as_bytes())?;
+            let Some(root) = root else { leave(1) };
+            write_stdout(root.as_bytes())?;
             leave(0)
         }
         Some("install") => write_manifest(install, operands),
@@ -338,7 +340,7 @@ fn holder(stdout: &[u8], stderr: &[u8], descendant: &str) -> io::Result<()> {
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
         .spawn()?;
-    // The descendant starts once this process ends, which closes its inherited input.
+    // The descendant drains this pipe until this process ends and closes its writer.
     let _held = child.stdin.take();
     write_stdout(stdout)?;
     write_stderr(stderr)?;

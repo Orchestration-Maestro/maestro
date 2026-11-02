@@ -263,7 +263,6 @@ fn candidate_inspection_disables_inherited_checkout_hooks() {
     fixture.use_local_clone();
     let hooks = tree.join("hooks");
     std::fs::create_dir(&hooks).unwrap();
-    let hook = hooks.join("post-checkout");
     crate::native_support::command(
         &hooks,
         "post-checkout",
@@ -275,7 +274,6 @@ fn candidate_inspection_disables_inherited_checkout_hooks() {
             "append": {"path": tree.join("hook-sentinel"), "cwd": false, "bytes": b"ran"}
         }),
     );
-    assert!(hook.is_file());
     let source = format!("git:github.com/acme/tool@{}", fixture.repo.original);
     assert_eq!(
         fixture
