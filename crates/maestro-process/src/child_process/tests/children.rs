@@ -1,4 +1,4 @@
-//! Controlled children the owner's unit tests start by re-running this test executable.
+//! Controlled children the crate's unit tests start by re-running this test executable.
 //!
 //! Each program is an ignored test that only a parent test selects. Its arguments are
 //! variables, and it ends through `std::process::exit` so no harness epilogue follows its
@@ -13,7 +13,7 @@ use std::net::{TcpListener, TcpStream};
 use std::process::{Command, Stdio};
 
 /// The command that runs `program` with `variables` added to its environment.
-pub(in crate::child_process) fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command {
+pub(crate) fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command {
     TestProcess::child(program)
         .unwrap()
         .envs(variables.iter().copied())
@@ -22,7 +22,7 @@ pub(in crate::child_process) fn command(program: impl Fn(), variables: &[(&str, 
 }
 
 /// [`command`] as the asynchronous command the owner takes.
-pub(in crate::child_process) fn async_command(
+pub(crate) fn async_command(
     program: impl Fn(),
     variables: &[(&str, &str)],
 ) -> tokio::process::Command {
@@ -35,18 +35,26 @@ fn connect_to(name: &str) -> TcpStream {
 }
 
 /// Starts `program` as a descendant that keeps this process's three descriptors, linked to
-/// this process by a connection this process holds until it ends.
+/// this process by a connection this process holds until it ends; returns its process id.
 ///
 /// The descendant waits on [`await_parent_exit`] for that connection to close.
-fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) {
+fn spawn_linked_child(program: impl Fn(), variables: &[(&str, &str)]) -> u32 {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port().to_string();
     let mut command = command(program, variables);
     command
         .env("CHILD_LINK_PORT", &port)
         .stdin(Stdio::inherit());
-    std::mem::forget(command.spawn().unwrap());
+    let child = command.spawn().unwrap();
     std::mem::forget(listener.accept().unwrap().0);
+    let pid = child.id();
+    std::mem::forget(child);
+    pid
+}
+
+/// [`spawn_linked_child`] for a descendant whose process id no test reads.
+fn spawn_linked(program: impl Fn(), variables: &[(&str, &str)]) {
+    let _ = spawn_linked_child(program, variables);
 }
 
 /// The link to the process that started this descendant.
@@ -67,7 +75,7 @@ type Writer = fn(&[u8]) -> std::io::Result<()>;
 /// input.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn stubborn() {
+pub(crate) fn stubborn() {
     let (reader, writer) = std::os::unix::net::UnixStream::pair().unwrap();
     signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer).unwrap();
     let mut socket = connect_to("CHILD_PORT");
@@ -90,7 +98,7 @@ pub(in crate::child_process) fn stubborn() {
 /// Writes to both output streams, leaves a descendant that keeps them, and ends.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn inherited_output() {
+pub(crate) fn inherited_output() {
     write_stdout(b"prefix").unwrap();
     write_stderr(b"diag").unwrap();
     let port = variable("CHILD_PORT").unwrap();
@@ -102,7 +110,7 @@ pub(in crate::child_process) fn inherited_output() {
 /// released it, it reports whether each output stream still has a reader.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn inherited_output_descendant() {
+pub(crate) fn inherited_output_descendant() {
     await_parent_exit();
     let mut socket = connect_to("CHILD_PORT");
     if receive(&mut socket).unwrap().is_some() {
@@ -120,10 +128,79 @@ pub(in crate::child_process) fn inherited_output_descendant() {
     leave(0)
 }
 
+/// Writes the bytes `CHILD_OUT` and `CHILD_ERR` name in hex to the two output streams, then
+/// ends through the status `CHILD_EXIT` names or the signal `CHILD_SIGNAL` numbers.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(crate) fn output_writer() {
+    write_stderr(&hex_field("CHILD_ERR")).unwrap();
+    write_stdout(&hex_field("CHILD_OUT")).unwrap();
+    if let Ok(number) = variable("CHILD_SIGNAL") {
+        signal_hook::low_level::raise(number.parse().unwrap()).unwrap();
+        hold_forever()
+    }
+    leave(variable("CHILD_EXIT").map_or(0, |code| code.parse().unwrap()))
+}
+
+/// The bytes the hex field `name` holds, empty when the variable is unset.
+fn hex_field(name: &str) -> Vec<u8> {
+    let text = std::env::var(name).unwrap_or_default();
+    (0..text.len() / 2)
+        .map(|at| u8::from_str_radix(&text[at * 2..at * 2 + 2], 16).unwrap())
+        .collect()
+}
+
+/// Writes to standard output until it is killed.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(crate) fn endless_writer() {
+    loop {
+        write_stdout(&[b'y'; 4096]).unwrap();
+    }
+}
+
+/// Writes `READY`, then waits for its input to end.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(crate) fn ready_then_drain() {
+    write_stdout(b"READY").unwrap();
+    read_input().unwrap();
+    leave(0)
+}
+
+/// Reports on the port `CHILD_PORT` names the process id of a descendant holding both
+/// output pipes, writes `diag` to standard error, then ends once `CHILD_GATE` can be read.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(crate) fn pipe_holder() {
+    let mut report = connect_to("CHILD_PORT");
+    let descendant = spawn_linked_child(pipe_holder_descendant, &[]);
+    announce(&mut report, &descendant.to_string()).unwrap();
+    write_stderr(b"diag").unwrap();
+    std::fs::read(variable("CHILD_GATE").unwrap()).unwrap();
+    leave(0)
+}
+
+/// The descendant of [`pipe_holder`]: it keeps both output pipes until the parent test ends
+/// it.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub(crate) fn pipe_holder_descendant() {
+    await_parent_exit();
+    hold_forever()
+}
+
+/// Waits for a signal to end this process, which never ends on its own.
+fn hold_forever() -> ! {
+    loop {
+        std::thread::park();
+    }
+}
+
 /// Writes a prefix, then waits for a signal.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn prefix_then_wait() {
+pub(crate) fn prefix_then_wait() {
     write_stdout(b"prefix").unwrap();
     loop {
         std::thread::park();
@@ -135,7 +212,7 @@ pub(in crate::child_process) fn prefix_then_wait() {
 /// output and closes its streams once released.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn input_hold() {
+pub(crate) fn input_hold() {
     let pid = std::process::id().to_string();
     if std::env::var_os("CHILD_EXITED").is_some() {
         let port = variable("CHILD_PORT").unwrap();
@@ -154,7 +231,7 @@ pub(in crate::child_process) fn input_hold() {
 /// The descendant of [`input_hold`]: once its parent ended it holds the inherited input.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn input_hold_descendant() {
+pub(crate) fn input_hold_descendant() {
     await_parent_exit();
     if std::env::var("CHILD_OVERFLOW")
         .unwrap_or_default()
@@ -185,7 +262,7 @@ fn hold_input(pid: &str) -> ! {
 /// Prints readiness and waits for its input to end.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn ready_then_wait() {
+pub(crate) fn ready_then_wait() {
     write_stdout(b"ready\n").unwrap();
     read_input().unwrap();
     leave(0)
@@ -194,7 +271,7 @@ pub(in crate::child_process) fn ready_then_wait() {
 /// Writes a prefix and a sibling note, then waits for one byte of input.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn prefix_and_sibling() {
+pub(crate) fn prefix_and_sibling() {
     write_stdout(b"prefix").unwrap();
     std::io::stderr().write_all(b"sibling").unwrap();
     std::io::stdin().read_exact(&mut [0]).unwrap();
@@ -205,7 +282,7 @@ pub(in crate::child_process) fn prefix_and_sibling() {
 /// parent test releases it.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn link_holder() {
+pub(crate) fn link_holder() {
     let mut control = connect_to("CHILD_PORT");
     let port = variable("CHILD_PORT").unwrap();
     spawn_linked(link_probe, &[("CHILD_PORT", &port)]);
@@ -218,7 +295,7 @@ pub(in crate::child_process) fn link_holder() {
 /// link to the parent is still open and `D` when the link already ended.
 #[test]
 #[ignore = "runs only inside a controlled child"]
-pub(in crate::child_process) fn link_probe() {
+pub(crate) fn link_probe() {
     let link = parent_link();
     let mut control = connect_to("CHILD_PORT");
     assert_eq!(receive(&mut control).unwrap(), Some(b'p'));
