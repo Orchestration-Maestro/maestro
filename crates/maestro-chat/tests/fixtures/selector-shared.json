@@ -1106,7 +1106,7 @@
       "path": "/home/test-other/project"
     },
     "expected": {
-      "path": "~-other/project"
+      "path": "/home/test-other/project"
     }
   },
   {
@@ -1137,36 +1137,6 @@
     },
     "expected": {
       "path": ""
-    }
-  },
-  {
-    "test": "existing_home_prefix_regression",
-    "input": {
-      "home": "C:/Users/test",
-      "path": "C:/Users/test"
-    },
-    "expected": {
-      "path": "~"
-    }
-  },
-  {
-    "test": "existing_home_prefix_regression",
-    "input": {
-      "home": "C:/Users/test",
-      "path": "C:/Users/test/project"
-    },
-    "expected": {
-      "path": "~/project"
-    }
-  },
-  {
-    "test": "existing_home_prefix_regression",
-    "input": {
-      "home": "C:/Users/test",
-      "path": "C:/Users/test-other/project"
-    },
-    "expected": {
-      "path": "~-other/project"
     }
   },
   {
@@ -1276,7 +1246,7 @@
       "path": "/home/username/file"
     },
     "expected": {
-      "path": "~name/file"
+      "path": "/home/username/file"
     }
   },
   {
@@ -1326,7 +1296,7 @@
       "path": "/home/user/file"
     },
     "expected": {
-      "path": "~file"
+      "path": "~/file"
     }
   }
 ]

@@ -165,14 +165,6 @@ fn recorded_echo_tool(runs: Rc<RefCell<Vec<String>>>) -> ToolDefinitionHandle {
     sdk_definition(definition)
 }
 
-/// The scripted call of the echo tool with `text`.
-fn echo_call(text: &str) -> Scripted {
-    Scripted {
-        tool_calls: vec![("echo".into(), json!({"text": text}))],
-        ..Scripted::default()
-    }
-}
-
 /// Harness options over the scripted stream answering `responses`.
 fn scripted(responses: Vec<Scripted>) -> HarnessOptions {
     HarnessOptions {
@@ -257,7 +249,7 @@ fn registered_slow_end_keeps_prompt_waiting() {
         entered.notified().await;
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
-        assert!(h.session.is_retrying(), "the retry was already open");
+        assert!(h.session.is_streaming(), "the run is still active");
         assert!(!running.is_finished(), "the prompt still waits");
         release.notify_one();
         entered.notified().await;
@@ -347,7 +339,7 @@ fn recovered_tool_only_turn_settles_before_follow_up() {
             custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
             ..scripted(vec![
                 Scripted::failure("overloaded_error"),
-                echo_call("hello"),
+                Scripted::echo_call("hello"),
                 Scripted::text("final answer"),
                 Scripted::text("follow-up answer"),
             ])
@@ -416,7 +408,7 @@ fn tool_turn_keeps_event_sequence() {
         let runs = Rc::new(RefCell::new(Vec::new()));
         let h = harness(HarnessOptions {
             custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
-            ..scripted(vec![echo_call("hello"), Scripted::text("done")])
+            ..scripted(vec![Scripted::echo_call("hello"), Scripted::text("done")])
         })
         .await;
         let order = event_order(&h.session);
@@ -535,5 +527,35 @@ fn abort_finishes_and_stores_partial_assistant() {
             .unwrap();
         assert_eq!(stored["message"]["role"], json!("assistant"));
         assert_eq!(stored["message"]["stopReason"], json!("aborted"));
+    });
+}
+
+/// A final non-retryable response ends the visible retry with its current attempt.
+#[test]
+fn final_non_retryable_error_ends_retry_once() {
+    on_paused_task_set(|_| async {
+        let h = harness(HarnessOptions {
+            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
+            ..scripted(vec![
+                Scripted::failure("overloaded_error"),
+                Scripted::failure("invalid api key"),
+            ])
+        })
+        .await;
+        let events = delivered_events(&h.session);
+        start_prompt(&h, "hi").await.unwrap().unwrap();
+        let ends: Vec<Value> = events
+            .borrow()
+            .iter()
+            .filter(|event| event["type"] == "auto_retry_end")
+            .cloned()
+            .collect();
+        assert_eq!(
+            ends,
+            [json!({"type": "auto_retry_end", "success": false,
+            "attempt": 1, "finalError": "invalid api key"})]
+        );
+        assert_eq!(h.session.retry_attempt(), 0);
+        assert_eq!(h.requests.0.borrow().len(), 2);
     });
 }

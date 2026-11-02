@@ -1,6 +1,18 @@
 //! Ordered corrections to acquired descriptors.
 use crate::{Model, ModelCompat};
 
+/// Copilot models offering the extended one-million-token context window.
+const GITHUB_COPILOT_EXTENDED_CONTEXT_MODELS: &[&str] = &[
+    "claude-fable-5",
+    "claude-opus-4.6",
+    "claude-opus-4.7",
+    "claude-opus-4.8",
+    "claude-sonnet-4.6",
+    "claude-sonnet-5",
+    "gpt-5.3-codex",
+    "gpt-5.4",
+    "gpt-5.5",
+];
 /// Repair acquired cache prices, contexts and router rates in place.
 pub(super) fn correct_models(models: &mut [Model]) {
     if let Some(opus) = models
@@ -15,9 +27,14 @@ pub(super) fn correct_models(models: &mut [Model]) {
             model.cost.cache_read = 0.5;
             model.cost.cache_write = 6.25;
         }
+        if model.provider == "github-copilot"
+            && GITHUB_COPILOT_EXTENDED_CONTEXT_MODELS.contains(&model.id.as_str())
+        {
+            model.context_window = 1_000_000.0;
+        }
         if matches!(
             model.provider.as_str(),
-            "anthropic" | "opencode" | "opencode-go" | "github-copilot"
+            "anthropic" | "opencode" | "opencode-go"
         ) && matches!(
             model.id.as_str(),
             "claude-opus-4-6" | "claude-sonnet-4-6" | "claude-opus-4.6" | "claude-sonnet-4.6"
@@ -36,6 +53,16 @@ pub(super) fn correct_models(models: &mut [Model]) {
         }
         if model.provider == "openrouter" {
             router_prices(model);
+        }
+        if model.provider == "openrouter" && model.id.starts_with("moonshotai/kimi-k2.6") {
+            let compat = model.compat.get_or_insert_with(ModelCompat::default);
+            compat
+                .0
+                .insert("supportsDeveloperRole".into(), false.into());
+            compat.0.insert(
+                "requiresReasoningContentOnAssistantMessages".into(),
+                true.into(),
+            );
         }
     }
 }
@@ -62,26 +89,24 @@ pub(super) fn deepseek_compat(models: &mut [Model]) {
         .iter_mut()
         .filter(|model| model.api == "openai-completions" && model.id.contains("deepseek-v4"))
     {
+        let router = model.provider == "openrouter";
         let compat = model.compat.get_or_insert_with(ModelCompat::default);
         compat.0.insert(
             "requiresReasoningContentOnAssistantMessages".into(),
             true.into(),
         );
-        compat.0.insert("thinkingFormat".into(), "deepseek".into());
+        if !router {
+            compat.0.insert("thinkingFormat".into(), "deepseek".into());
+        }
         super::thinking::deepseek_levels(model);
     }
 }
-/// Retain only supported direct `MiniMax` models and repair their limits.
+/// Retain only supported direct `MiniMax` models, keeping their upstream limits.
 pub(super) fn minimax_models(models: &mut Vec<Model>) {
-    models.retain_mut(|model| {
+    models.retain(|model| {
         if !matches!(model.provider.as_str(), "minimax" | "minimax-cn") {
             return true;
         }
-        if !matches!(model.id.as_str(), "MiniMax-M2.7" | "MiniMax-M2.7-highspeed") {
-            return false;
-        }
-        model.context_window = 204_800.0;
-        model.max_tokens = 131_072.0;
-        true
+        matches!(model.id.as_str(), "MiniMax-M2.7" | "MiniMax-M2.7-highspeed")
     });
 }

@@ -1,4 +1,5 @@
 //! A command that toggles a footer showing history usage, the model and Git branch.
+// maestro-component: MAESTRO_CUSTOM_FOOTER_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,

@@ -22,7 +22,10 @@ async fn published(state: &ThemeState, changed: &Notify, name: &str) {
 fn theme_native_notification_reloads_selected_file() {
     let scratch = Scratch::new();
     let state = state(&scratch);
-    scratch.write("custom/a.json", &custom_json("a", "#112233").to_string());
+    scratch.write(
+        "custom/a.json",
+        &custom_json("a", "#112233").unwrap().to_string(),
+    );
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
@@ -41,13 +44,13 @@ fn theme_native_notification_reloads_selected_file() {
         state.init_theme(Some("a"), Some(effects)).unwrap();
         scratch.write(
             "custom/a.json",
-            &custom_json("edited", "#445566").to_string(),
+            &custom_json("edited", "#445566").unwrap().to_string(),
         );
         published(&state, &changed, "edited").await;
 
         scratch.write(
             "incoming/a.json",
-            &custom_json("replaced", "#778899").to_string(),
+            &custom_json("replaced", "#778899").unwrap().to_string(),
         );
         fs::rename(
             scratch.path("incoming/a.json"),
@@ -57,7 +60,9 @@ fn theme_native_notification_reloads_selected_file() {
         published(&state, &changed, "replaced").await;
         scratch.write(
             "custom/a.json",
-            &custom_json("edited-after-replacement", "#8899aa").to_string(),
+            &custom_json("edited-after-replacement", "#8899aa")
+                .unwrap()
+                .to_string(),
         );
         published(&state, &changed, "edited-after-replacement").await;
         state.stop_theme_watcher();

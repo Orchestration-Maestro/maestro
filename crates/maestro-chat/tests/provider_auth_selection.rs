@@ -187,6 +187,7 @@ fn application_auth_exports_use_existing_owners() {
     let _: &dyn AuthStorageBackend = &backend;
     let storage = AuthStorage::from_storage(backend);
     let key = AuthCredential::ApiKey(ApiKeyCredential {
+        env: None,
         key: "controlled-key".into(),
     });
     let oauth = AuthCredential::OAuth(OAuthCredential {
@@ -267,6 +268,7 @@ fn provider_trait_reports_input_failure_once_without_render() {
             selector_failure_support::errors::error_value(
                 &selector_failure_support::errors::failure()
             )
+            .unwrap()
         );
         assert_eq!(rig.runtime.futures(), 0);
         assert_eq!(rig.runtime.pending(), 0);

@@ -95,7 +95,7 @@ struct Run {
 impl Run {
     /// Build a controlled panel and obtain retained aliases through public children.
     fn new(query: &mut Query) -> Self {
-        let (state, theme) = super::published::published(&colors(0));
+        let (state, theme) = super::published::published(&colors(0)).unwrap();
         let events = Rc::new(RefCell::new(Vec::new()));
         let renders = Rc::new(Cell::new(0));
         let launches = Rc::new(RefCell::new(Vec::new()));
@@ -257,9 +257,9 @@ const OWNERS: [&str; 21] = [
     "login_title_uses_registry_and_override_precedence",
     "authorization_rows_keep_links_hints_and_instructions",
     "authorization_replaces_content_without_resetting_input",
-    "manual_input_appends_and_retains_entered_text",
-    "prompt_input_resets_and_submits_exact_text",
-    "sequential_prompts_keep_history_and_shared_input",
+    "manual_input_appends_and_starts_empty",
+    "prompt_input_resets_freezes_and_submits_exact_text",
+    "sequential_prompts_freeze_submitted_rows_and_share_the_input",
     "information_replaces_rows_and_keeps_caller_text",
     "information_keeps_hidden_pending_input",
     "waiting_appends_spacer_message_and_cancel_hint",
@@ -333,7 +333,7 @@ pub fn controlled(
     platform: LoginDialogPlatform,
     launch_browser: Option<Launcher>,
 ) -> (LoginDialogComponent, Rc<Cell<usize>>) {
-    let (_, theme) = super::published::published(&colors(0));
+    let (_, theme) = super::published::published(&colors(0)).unwrap();
     let renders = Rc::new(Cell::new(0));
     let count = renders.clone();
     let dialog = LoginDialogComponent::new(
@@ -365,7 +365,7 @@ pub fn retained_input(dialog: &LoginDialogComponent) -> Rc<dyn Component> {
 }
 /// Completion must observe both abort and rejected input; later cancellation rejects again silently.
 pub fn cancellation_order() {
-    let (_, theme) = super::published::published(&colors(0));
+    let (_, theme) = super::published::published(&colors(0)).unwrap();
     let observer: Rc<RefCell<Option<LoginInputFuture>>> = Rc::default();
     let signal: Rc<RefCell<Option<maestro_tui::Cancellation>>> = Rc::default();
     let completed = Rc::new(Cell::new(0));

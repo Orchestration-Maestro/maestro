@@ -61,7 +61,7 @@ fn selected_request(
 
 #[test]
 fn named_daemon_client_uses_the_supplied_path_table() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let selection = Selection::from_args(
         root.path().to_str().unwrap(),
         &[],
@@ -77,7 +77,7 @@ fn named_daemon_client_uses_the_supplied_path_table() {
 
 #[test]
 fn explicit_client_socket_paths_keep_native_spelling() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     std::fs::create_dir(root.path().join("selected")).unwrap();
     let endpoint = root.path().join("selected/../explicit.sock");
     let client = DaemonClient::for_target(ConnectionTarget::SocketPath(endpoint.clone()));
@@ -104,7 +104,7 @@ fn reply(
 fn raw_client_failures_keep_native_causes() {
     use std::error::Error;
 
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let request = Request {
         id: Some("target".into()),
         command: RpcCommand::Ping(PingParams::default()),
@@ -148,7 +148,7 @@ fn raw_client_failures_keep_native_causes() {
 
 #[test]
 fn client_request_keeps_large_metadata_sequence() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let path = root.path().join("sequence.sock");
     let listener = UnixListener::bind(&path).unwrap();
     let peer = reply(listener, b"{\"success\":true}\n");
@@ -254,7 +254,7 @@ const SHAPE_FRAME: &str = "{\"id\":\"shape\",\"type\":\"ping\"}\n";
 
 #[test]
 fn client_requests_preserve_response_and_error_shapes() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     typed_success_keeps_raw_members(root.path());
     failures_keep_their_correlation(root.path());
     blank_and_undecodable_replies_fail(root.path());
@@ -388,7 +388,7 @@ const TIMEOUT: std::time::Duration = std::time::Duration::from_millis(50);
 
 #[test]
 fn client_timeouts_reach_both_native_operations() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     receive_timeouts_leave_ordinary_requests_waiting(root.path());
     send_timeouts_stop_an_unread_request(root.path());
     zero_timeouts_are_native_invalid_input(root.path());
@@ -487,7 +487,7 @@ fn zero_timeouts_are_native_invalid_input(root: &Path) {
 
 #[test]
 fn runtime_status_distinguishes_absence_from_failure() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let path = root.path().join("live.sock");
     let peer = reply(UnixListener::bind(&path).unwrap(), PONG);
     let status = read_runtime_status_at(&path, TIMEOUT).unwrap();
@@ -581,7 +581,7 @@ fn status_failures_keep_their_diagnostics(root: &Path) {
 
 #[test]
 fn status_preserves_inaccessible_parent_errors() {
-    let root = Scratch::new().unwrap();
+    let root = Scratch::new_socket().unwrap();
     let parent = root.path().join("inaccessible");
     std::fs::create_dir(&parent).unwrap();
     let socket = parent.join("api.sock");

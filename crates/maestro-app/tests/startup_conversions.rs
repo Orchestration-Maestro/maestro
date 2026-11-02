@@ -281,7 +281,8 @@ fn relocated_referent(name: &str, alias_first: bool) {
                 ("MAESTRO_CODING_AGENT_DIR", "."),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         for file in [alias, referent] {
             assert_eq!(
                 fs::read(root.join("sessions/--work--").join(file)).unwrap(),
@@ -331,7 +332,8 @@ fn relative_session_link_replaces_a_dangling_destination() {
                 ),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(
             fs::symlink_metadata(scratch.0.path().join("alias.jsonl"))
                 .unwrap_err()
@@ -387,7 +389,8 @@ fn unchanged_absolute_session_link_moves_by_rename() {
                 ),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
         assert_eq!(fs::read_link(&destination).unwrap(), referent);
         assert_eq!(fs::read(&destination).unwrap(), body);
@@ -524,7 +527,8 @@ fn check_resolution_chain(
                 ("MAESTRO_CODING_AGENT_DIR", "."),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         for (index, path) in paths.iter().enumerate() {
             if index < paths.len() - 1 && path.extension().unwrap() == "data" && moving != "none" {
                 continue;
@@ -596,7 +600,8 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
                 ("MAESTRO_CODING_AGENT_DIR", "."),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(
             fs::read(&alias).unwrap(),
             b"{\"type\":\"session\",\"cwd\":\"/work\"}\ntranscript"

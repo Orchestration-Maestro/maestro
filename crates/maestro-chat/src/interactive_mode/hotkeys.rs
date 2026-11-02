@@ -49,7 +49,7 @@ fn navigation_keys() -> String {
         r"**Navigation**
 | Key | Action |
 |-----|--------|
-| `{}` / `{}` / `{}` / `{}` | Move cursor / browse history (Up when empty) |
+| `{}` / `{}` / `{}` / `{}` | Move cursor / browse history |
 | `{}` / `{}` | Move by word |
 | `{}` | Start of line |
 | `{}` | End of line |
@@ -146,22 +146,11 @@ fn other_keys() -> String {
     )
 }
 
-/// Capitalizes ASCII word starts without changing the rest of a shortcut.
+/// An extension shortcut in the display spelling of the other key hints: each part starts
+/// with a capital letter and `alt` takes the platform's name.
 fn capitalize_shortcut(key: &str) -> String {
-    let mut previous = false;
-    key.chars()
-        .map(|value| {
-            let word = value.is_ascii_alphanumeric() || value == '_';
-            let display = if word && !previous {
-                value.to_ascii_uppercase()
-            } else {
-                value
-            };
-            previous = word;
-            display
-        })
-        .collect()
+    maestro_app::format_key_text(key, true)
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

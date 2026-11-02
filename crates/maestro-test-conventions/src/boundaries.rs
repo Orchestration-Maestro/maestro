@@ -5,6 +5,9 @@ use crate::source::{Member, Source, test_scope};
 use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
 
+/// Named frontend-facing exports from bounded domain crates.
+mod application_exports;
+
 /// Static interface inputs for extension code generation.
 mod wit;
 use wit::{ScanContext, WitInputs};
@@ -48,6 +51,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
         }
     }
+    application_exports::check(members)?;
     message_renderers::check(members)?;
     inline_polls::check(members)?;
     wit.finish()
@@ -342,8 +346,6 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-entry"
     } else if name == "Listeners" {
         "maestro-listeners"
-    } else if matches!(name, "RecordingTerminal" | "ManualRuntime") {
-        "maestro-test-terminal"
     } else if input_presenter_record(name) {
         "maestro-app"
     } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {

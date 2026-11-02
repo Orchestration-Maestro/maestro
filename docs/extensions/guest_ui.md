@@ -215,7 +215,7 @@ holds no copy of the UI logic.
 | `tui` | `TUI` | `maestro_tui::TUI` |
 | `footer-data` | `FooterData` | `maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider` |
 | `tool-invalidator` | `ToolRenderContext::invalidate` | `maestro_tools::ToolRenderContext::invalidate` |
-| `subscription` | `Subscription` | `maestro_extensions::Subscription` |
+| `subscription` | `Subscription` | `maestro_extensions::Subscription<Local>` for an event-bus listener; for a terminal input listener, the `maestro_extensions::types::UIUnsubscribe` callback; for a branch change or abort listener, the removal callback its owner returns |
 | `callback-emitter` | `CallbackEmitter` | `maestro_extensions::CallbackEmitter` |
 | `abort-signal` | `AbortSignal` | The caller's signal, followed by a host signal for each dialog. |
 
@@ -320,7 +320,8 @@ It returns an `EditorFactoryOutcome`:
 
 `Editor` and `CustomEditor` implement the matching traits. A factory can return one as
 it is, or wrap one and delegate to it, as a modal editor does for the keys it does not
-keep.
+keep. [`examples/extensions/modal_editor.rs`](../../examples/extensions/modal_editor.rs)
+wraps the custom editor this way.
 
 The host calls the authored editor through its operations. It renders and delivers
 input through the editor's component, and the input reaches

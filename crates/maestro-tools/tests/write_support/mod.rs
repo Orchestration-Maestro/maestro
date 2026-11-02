@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::edit_render_support::for_this_platform;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use maestro_tools::{WriteOperations, WriteToolInput};
 use serde::Deserialize;
@@ -10,10 +11,7 @@ use std::{
     collections::BTreeMap,
     future::Future,
     pin::Pin,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
+    sync::{Arc, Mutex},
     task::{Context, Poll, Waker},
 };
 use tokio::sync::oneshot;
@@ -26,6 +24,8 @@ pub struct Row {
     pub input: Value,
     /// Complete expectation.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 
 /// The committed corpus.
@@ -57,7 +57,7 @@ const GROUPS: [&str; 21] = [
     "mutation_queue_keeps_invocation_order_before_waiting",
     "mutation_queue_different_paths_can_finish_out_of_order",
     "mutation_queue_failure_does_not_poison_following_work",
-    "write_abort_releases_queue_and_drops_pending_operation",
+    "write_abort_keeps_queue_until_pending_operation_settles",
     "write_propagates_adapter_failures_without_progress",
     "write_preaborted_call_starts_no_operations",
     "write_abort_during_mkdir_skips_write_after_queue_release",
@@ -80,7 +80,16 @@ pub fn theme_keys() -> Vec<String> {
 
 /// The nonempty group of one test.
 pub fn rows(test: &str) -> Vec<Row> {
-    let rows = corpus().tests.remove(test).unwrap_or_default();
+    let rows = corpus()
+        .tests
+        .remove(test)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|mut row| {
+            row.expected = for_this_platform(row.expected, row.expected_macos.take());
+            row
+        })
+        .collect::<Vec<_>>();
     assert!(
         GROUPS.contains(&test) && !rows.is_empty(),
         "empty group {test}"
@@ -140,6 +149,12 @@ impl Gate {
         (Self(sender), receiver)
     }
 
+    /// A controlled operation held until this gate opens.
+    pub fn operation() -> (Self, Mode) {
+        let (gate, receiver) = Self::new();
+        (gate, Mode::Wait(Arc::new(Mutex::new(Some(receiver)))))
+    }
+
     /// Let the waiting operation continue the next time it is polled.
     pub fn open(self) {
         self.0.send(()).unwrap();
@@ -157,24 +172,8 @@ pub enum Mode {
     AbortThenSucceed,
     /// Abort the write's signal, then fail.
     AbortThenFail(DiagnosticErrorInfo),
-    /// Never complete, counting drops of the returned future.
-    Pend,
-}
-
-/// A future that never completes and counts being dropped.
-struct PendProbe(Arc<AtomicUsize>);
-
-impl Future for PendProbe {
-    type Output = ();
-    fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<()> {
-        Poll::Pending
-    }
-}
-
-impl Drop for PendProbe {
-    fn drop(&mut self) {
-        self.0.fetch_add(1, Ordering::SeqCst);
-    }
+    /// Wait until the supplied gate opens.
+    Wait(Arc<Mutex<Option<oneshot::Receiver<()>>>>),
 }
 
 /// The diagnostic a failing controlled operation reports.
@@ -199,8 +198,6 @@ pub struct ScriptedWrite {
     signal: Option<Cancellation>,
     /// Calls as `[operation, operands...]`.
     calls: Mutex<Vec<Vec<String>>>,
-    /// Drops of pending futures.
-    pub dropped: Arc<AtomicUsize>,
 }
 
 impl ScriptedWrite {
@@ -212,7 +209,6 @@ impl ScriptedWrite {
             write: Mode::Succeed,
             signal: None,
             calls: Mutex::new(Vec::new()),
-            dropped: Arc::default(),
         }
     }
 
@@ -257,7 +253,7 @@ impl ScriptedWrite {
         let mut call = vec![name.to_owned()];
         call.extend(operands.iter().map(|operand| (*operand).to_owned()));
         self.calls.lock().unwrap().push(call);
-        let pending = matches!(mode, Mode::Pend);
+        let pending = matches!(mode, Mode::Wait(_));
         self.journal.push(if pending {
             format!("{name}:start")
         } else {
@@ -271,10 +267,10 @@ impl ScriptedWrite {
             Mode::Fail(error) | Mode::AbortThenFail(error) => {
                 Box::pin(std::future::ready(Err(error)))
             }
-            Mode::Pend => {
-                let probe = PendProbe(Arc::clone(&self.dropped));
+            Mode::Wait(receiver) => {
+                let receiver = receiver.lock().unwrap().take().unwrap();
                 Box::pin(async move {
-                    probe.await;
+                    receiver.await.unwrap();
                     Ok(())
                 })
             }

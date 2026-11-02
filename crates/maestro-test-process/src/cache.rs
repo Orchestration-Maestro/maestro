@@ -1,0 +1,17 @@
+//! The user cache location a child with a replaced home still shares with its parent.
+
+use std::path::PathBuf;
+
+/// The directory a child names in `XDG_CACHE_HOME` to reach this process's user cache.
+///
+/// Returns `XDG_CACHE_HOME` when it is an absolute path, otherwise `HOME/.cache`, and
+/// `None` when neither names a location. On Linux, a cleared child that replaces `HOME`
+/// would otherwise start with an empty user cache and compile every component again.
+/// macOS and Windows keep their cache in their own folders and ignore the variable.
+#[must_use]
+pub fn user_cache_home() -> Option<PathBuf> {
+    std::env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
+}

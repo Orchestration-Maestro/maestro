@@ -353,6 +353,10 @@ pub struct State {
     pub load_failure: RefCell<Option<String>>,
     /// A failure the working-directory observation reports instead.
     pub cwd_failure: RefCell<Option<String>>,
+    /// A failure the agent-directory observation reports instead.
+    pub agent_failure: RefCell<Option<String>>,
+    /// A failure the package-manager construction reports instead.
+    pub manager_failure: RefCell<Option<String>>,
     /// Whether the factory supplies the second adapter.
     pub second: Cell<bool>,
     /// Whether the package directory of the installation is absent.
@@ -480,6 +484,16 @@ impl Harness {
         *self.state.cwd_failure.borrow_mut() = Some(reason.to_owned());
     }
 
+    /// Halt the harness on an agent-directory failure.
+    pub fn fail_agent_dir(&self, reason: &str) {
+        *self.state.agent_failure.borrow_mut() = Some(reason.to_owned());
+    }
+
+    /// Halt the harness on a package-manager construction failure.
+    pub fn fail_manager(&self, reason: &str) {
+        *self.state.manager_failure.borrow_mut() = Some(reason.to_owned());
+    }
+
     /// The live settings owner the last command was given.
     pub fn supplied(&self) -> Rc<RefCell<SettingsManager>> {
         self.state
@@ -588,10 +602,17 @@ impl Harness {
         };
         let observe_agent = move || {
             self.state.steps.borrow_mut().push("agent");
-            Ok(agent_dir.clone())
+            match self.state.agent_failure.borrow().as_deref() {
+                Some(reason) => Err(io::Error::other(reason.to_owned())),
+                None => Ok(agent_dir.clone()),
+            }
         };
         let load = |cwd: &str, agent_dir: &str| self.load(cwd, agent_dir);
-        let create = |options: PackageManagerOptions| Ok(self.build_manager(options));
+        let create =
+            |options: PackageManagerOptions| match self.state.manager_failure.borrow().as_deref() {
+                Some(reason) => Err(io::Error::other(reason.to_owned())),
+                None => Ok(self.build_manager(options)),
+            };
         let select = |settings: &Settings, package: &str| self.select(settings, package);
         let instruction = |settings: &Settings, package: &str| self.instruction(settings, package);
         let context = PackageCommandContext {

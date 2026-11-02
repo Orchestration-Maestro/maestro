@@ -1,12 +1,12 @@
 //! Preparation of discarded history, split prefixes and carried file operations.
 use super::{CompactionPreparation, CompactionSettings, FileOperations};
-use crate::session_manager::context::{generated, property};
+use crate::session_manager::context::{generated_message, property};
 use crate::{Presence, SessionEntry};
 use maestro_json::is_truthy;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
-/// Copy only messages selected for summary input, including empty branch summaries.
+/// Copy the messages the entries put in context, except a compaction entry's own summary.
 fn messages(entries: &[Value]) -> Result<Vec<Value>, serde_json::Error> {
     let mut messages = Vec::new();
     for entry in entries {
@@ -15,15 +15,8 @@ fn messages(entries: &[Value]) -> Result<Vec<Value>, serde_json::Error> {
                 .get("message")
                 .filter(|value| is_truthy(value))
                 .cloned(),
-            Some("custom_message") => Some(generated(
-                entry,
-                "custom",
-                &["customType", "content", "display", "details"],
-            )),
-            Some("branch_summary") => {
-                Some(generated(entry, "branchSummary", &["summary", "fromId"]))
-            }
-            _ => None,
+            Some("compaction") => None,
+            _ => generated_message(entry),
         };
         if let Some(message) = message {
             messages.push(message);

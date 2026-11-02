@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::published;
 use crate::support::rpc_connection::{
-    Client, Outcomes, connect, no_workspace, serve, startup_select,
+    Client, Outcomes, connect, no_workspace, poll_once, serve, startup_select,
 };
 use crate::support::runtime_fixtures::runtime_for;
 use crate::support::session_harness::{Harness, on_paused_task_set, on_task_set};
@@ -20,7 +20,6 @@ use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};
 use std::{
     collections::HashSet,
-    future::Future,
     pin::pin,
     rc::Rc,
     sync::{Arc, RwLock},
@@ -91,11 +90,6 @@ async fn nothing_written(client: &mut Client) {
         next["id"], "quiet",
         "no record came before the probe's answer"
     );
-}
-
-/// Polls `future` once without waking.
-fn poll_once<F: Future + ?Sized>(future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
-    future.poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
 }
 
 /// Every method writes its request as soon as it is called, each with a fresh UUID v4; a

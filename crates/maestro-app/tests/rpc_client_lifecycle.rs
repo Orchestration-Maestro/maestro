@@ -1,6 +1,7 @@
 //! Launching, observing and stopping the RPC client's child.
 #![cfg(unix)]
-use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of, poll_once};
+use crate::rpc_peer::{Peer, SERVE, events, hold_clock, next_of};
+use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
 use maestro_process::child_process::process_exists;
@@ -111,7 +112,8 @@ fn relative_entry_uses_the_selected_child_directory() {
     let peer = Peer::new();
     let dist = peer.scratch.join("dist");
     std::fs::create_dir(&dist).unwrap();
-    crate::native::install_executable(Path::new(&peer.entry), &Path::new(&dist).join("maestro"));
+    crate::native::install_executable(Path::new(&peer.entry), &Path::new(&dist).join("maestro"))
+        .expect("install starts");
     let here = std::env::current_dir().unwrap();
     let up = "../".repeat(here.components().count() - 1);
     let from_here = format!("{up}{}", peer.entry.trim_start_matches('/'));

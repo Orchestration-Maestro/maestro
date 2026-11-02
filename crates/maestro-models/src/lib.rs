@@ -23,8 +23,9 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
-    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, ESTIMATED_IMAGE_CHARS, adjust_max_tokens_for_thinking, build_base_options,
+    build_base_options_for, clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    tokens_for_chars, utf16_units,
 };
 /// Conversation adaptation for the destination model.
 mod projection;
@@ -43,6 +44,8 @@ pub use providers::chat::openai_completions::{
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
+#[cfg(not(target_arch = "wasm32"))]
+pub use providers::http::configure_http_dispatcher;
 pub use providers::http::{
     Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
 };
@@ -116,6 +119,9 @@ pub use providers::response_sessions::openai_codex_responses::{
 };
 
 pub use providers::json_text::compact_json;
+
+#[cfg(test)]
+extern crate self as maestro_models;
 
 #[cfg(test)]
 pub mod tests;

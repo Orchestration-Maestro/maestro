@@ -2,6 +2,7 @@
 mod input;
 mod summaries;
 use crate::palette;
+use crate::platform_keys::for_this_platform;
 use crate::published;
 pub use summaries::{summary_controls, user_styles};
 mod widget;
@@ -45,7 +46,8 @@ fn markdown(live: LiveTheme, enabled: bool) -> MarkdownTheme {
 fn replay(case: &Case) {
     let input = &case.input;
     let (state, live) =
-        published::published(&palette::palette(input.palette.as_deref().unwrap_or("a")));
+        published::published(&palette::palette(input.palette.as_deref().unwrap_or("a")).unwrap())
+            .unwrap();
     bind(vec!["ctrl+o".into()]);
     let enabled = input.styles_enabled.unwrap_or(true);
     let mut markdown = markdown(live.clone(), enabled);
@@ -70,7 +72,9 @@ fn replay(case: &Case) {
             Action::Expand { value } => widget.expand(*value),
             Action::Invalidate {} => widget.invalidate(),
             Action::Theme { value } => {
-                state.set_theme_instance(palette::palette(value)).unwrap();
+                state
+                    .set_theme_instance(palette::palette(value).unwrap())
+                    .unwrap();
             }
             Action::Keys { value } => bind(value.clone()),
             Action::CaptureChildren {} => alias = Some(widget.children()),
@@ -103,7 +107,9 @@ pub fn group(name: &str) {
         let raw: Vec<serde_json::Value> = serde_json::from_str(source).unwrap();
         for row in raw {
             assert!(queries.insert(serde_json::to_string(&row["input"]).unwrap()));
-            cases.push(serde_json::from_value(row).unwrap());
+            let mut case: Case = serde_json::from_value(row).unwrap();
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            cases.push(case);
         }
     }
     let identities: HashSet<_> = cases.iter().map(|case| (&case.test, &case.name)).collect();
@@ -120,7 +126,7 @@ pub fn group(name: &str) {
 
 /// Weak handles prove replacement and final-drop release without a clock.
 pub fn releases_handles() {
-    let (_, live) = published::published(&palette::palette("a"));
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
     let markdown = Rc::new(markdown(live.clone(), true));
     let original = widget::message(None);
     let old = std::sync::Arc::downgrade(&original);
@@ -173,7 +179,7 @@ const TERMINAL_CONTROL_CASES: &[(&str, &str)] = &[
 /// Text and thinking that carry terminal control sequences in prose and fenced code
 /// render without them, keeping the words around them.
 pub fn drops_terminal_controls() {
-    let (_, live) = published::published(&palette::palette("a"));
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
     let markdown = Rc::new(markdown(live.clone(), true));
     let mut leaks = Vec::new();
     for &(name, control) in TERMINAL_CONTROL_CASES {
@@ -220,4 +226,76 @@ pub fn drops_terminal_controls() {
         }
     }
     assert!(leaks.is_empty(), "rendered controls: {leaks:?}");
+}
+
+/// The rows of an assistant message holding `content`, with thinking hidden or shown.
+fn assistant_rows(content: serde_json::Value, hide: bool) -> Vec<String> {
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
+    let markdown = Rc::new(markdown(live.clone(), true));
+    let message = widget::message(None);
+    message.write().unwrap().content = serde_json::from_value(content).unwrap();
+    let component = maestro_chat::AssistantMessageComponent::new(
+        Some(message),
+        maestro_chat::AssistantMessageOptions {
+            hide_thinking_block: hide,
+            hidden_thinking_label: "Thinking...".into(),
+            styles_enabled: true,
+        },
+        live,
+        markdown,
+        maestro_tui::TerminalImage::new(|_| None, || 1),
+    );
+    component.render(40)
+}
+
+/// Adjacent thinking blocks render as one section; a tool call or any text splits them.
+pub fn adjacent_thinking() {
+    use serde_json::json;
+    let thinking = |text: &str| json!({"type": "thinking", "thinking": text});
+    let text = |text: &str| json!({"type": "text", "text": text});
+    let tool = json!({"type": "toolCall", "id": "t", "name": "tool", "arguments": {}});
+    let run = json!([
+        thinking("first thought"),
+        thinking(""),
+        thinking("second thought"),
+        text("answer")
+    ]);
+    assert_eq!(
+        assistant_rows(run.clone(), true),
+        assistant_rows(json!([thinking("first thought"), text("answer")]), true)
+    );
+    assert_eq!(
+        assistant_rows(run, false),
+        assistant_rows(
+            json!([thinking("first thought\n\nsecond thought"), text("answer")]),
+            false
+        )
+    );
+    let labels = |content| {
+        assistant_rows(content, true)
+            .iter()
+            .filter(|row| row.contains("Thinking..."))
+            .count()
+    };
+    assert_eq!(labels(json!([thinking("a"), thinking("b")])), 1);
+    assert_eq!(labels(json!([thinking("a"), tool, thinking("b")])), 2);
+    assert_eq!(labels(json!([thinking("a"), text("  "), thinking("b")])), 2);
+    assert_eq!(labels(json!([thinking(" "), thinking("")])), 0);
+}
+
+/// A user message is one Markdown layer that pads and colours itself.
+pub fn user_markdown_layer() {
+    let (_, live) = published::published(&palette::palette("a").unwrap()).unwrap();
+    let markdown = Rc::new(markdown(live.clone(), true));
+    let component = maestro_chat::UserMessageComponent::new(
+        "hello".into(),
+        live,
+        markdown,
+        maestro_tui::TerminalImage::new(|_| None, || 1),
+    );
+    let children = component.children().borrow().clone();
+    assert_eq!(children.len(), 1);
+    let child: Rc<dyn std::any::Any> = Rc::<dyn Component>::clone(&children[0]);
+    assert!(child.downcast::<maestro_tui::Markdown>().is_ok());
+    assert_eq!(component.render(20).len(), 3);
 }

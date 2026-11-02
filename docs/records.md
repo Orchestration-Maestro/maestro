@@ -331,7 +331,7 @@ ordered cancellable events through the ordinary invocation interface. See the
 ## Resolved request authentication
 
 `maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
-ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
+optional endpoint, ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
 

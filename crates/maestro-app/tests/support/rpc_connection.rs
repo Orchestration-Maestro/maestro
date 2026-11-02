@@ -20,8 +20,14 @@ use maestro_models::Local;
 use maestro_session::Presence;
 use maestro_theme::LiveTheme;
 use serde_json::{Value, json};
-use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
+use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc, task::Poll};
 use tokio::sync::mpsc;
+
+/// Polls `future` once without a waker.
+pub fn poll_once<F: Future + ?Sized>(future: Pin<&mut F>) -> Poll<F::Output> {
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    future.poll(&mut context)
+}
 
 /// Lines a test supplies, read in order; a dropped sender ends the input.
 struct MemoryReader {

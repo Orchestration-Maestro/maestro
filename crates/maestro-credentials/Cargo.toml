@@ -14,6 +14,7 @@ maestro-request = { path = "../maestro-request" }
 indexmap = "=2.14.2"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
@@ -32,3 +33,9 @@ workspace = true
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
+
+[features]
+test-support = []
+
+[dev-dependencies]
+maestro-credentials = { path = ".", features = ["test-support"] }

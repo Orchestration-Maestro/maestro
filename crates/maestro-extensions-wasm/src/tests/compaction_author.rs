@@ -52,7 +52,10 @@ fn result_value(result: CompactionResult) -> ExtensionResult<Value> {
 /// An optional callback-scoped emission, whose rejection can be caught by author code.
 fn emit(api: &ExtensionAPI, emitter: &CallbackEmitter<'_>, input: &Value) -> ExtensionResult<()> {
     if let Some(data) = input.get("emit") {
-        let result = emitter.emit(data["channel"].as_str().unwrap(), data["payload"].clone());
+        let result = emitter.emit(
+            data["channel"].as_str().ok_or("channel is not a string")?,
+            data["payload"].clone(),
+        );
         if input["catchEmit"] == true {
             api.append_entry("emit-error", Some(json!(result.err())))?;
         } else {
@@ -67,9 +70,9 @@ fn options(
     ctx: &ExtensionContext,
     input: &Value,
     aliases: &Aliases,
-) -> Option<CompactOptions> {
+) -> ExtensionResult<Option<CompactOptions>> {
     if input["absent"] == true {
-        return None;
+        return Ok(None);
     }
     let complete = if input["alias"] == true {
         aliases.0.borrow().clone()
@@ -106,14 +109,20 @@ fn options(
         None
     };
     let error = error_callback(api, input);
-    Some(CompactOptions {
-        custom_instructions: input["instructions"]["present"]
-            .as_bool()
-            .unwrap_or(false)
-            .then(|| input["instructions"]["value"].as_str().unwrap().to_owned()),
+    Ok(Some(CompactOptions {
+        custom_instructions: if input["instructions"]["present"] == true {
+            Some(
+                input["instructions"]["value"]
+                    .as_str()
+                    .ok_or("instructions are not a string")?
+                    .to_owned(),
+            )
+        } else {
+            None
+        },
         on_complete: complete,
         on_error: error,
-    })
+    }))
 }
 /// Admit one compaction synchronously and report the returned host result.
 fn admit(
@@ -122,7 +131,7 @@ fn admit(
     input: &Value,
     aliases: &Aliases,
 ) -> ExtensionResult<()> {
-    let result = ctx.compact(options(api, ctx, input, aliases));
+    let result = ctx.compact(options(api, ctx, input, aliases)?);
     api.append_entry(
         "compact-return",
         Some(match result {

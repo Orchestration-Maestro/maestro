@@ -1,7 +1,7 @@
 //! The API socket: its private listener, the connections it accepts and the removal of the
 //! socket it bound.
 use maestro_app::LineTooLarge;
-use maestro_app::daemon::api::socket::{
+use maestro_app::daemon::{
     AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketFileIdentity,
     bind_async_local_listener, is_connection_closed_error, prepare_socket_path,
     remove_socket_file_if_owned, restrict_socket_permissions, socket_file_identity,

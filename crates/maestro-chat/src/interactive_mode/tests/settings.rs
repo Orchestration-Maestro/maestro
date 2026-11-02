@@ -4,11 +4,17 @@ use super::transcript;
 use super::typed::{poll, recalled, submit};
 use super::{Setup, World, isolated, start};
 use crate::SettingsSelectorComponent;
+use maestro_app::agent_session::PromptOptions;
 use maestro_app::presentation_data::footer_data_provider::FooterOperations;
-use maestro_app::{MessageDeliveryMode, SettingsManager, Transport, TransportSetting, strip_ansi};
+use maestro_app::{
+    AssistantMessageEventStream, MessageDeliveryMode, SettingsManager, Transport, TransportSetting,
+    strip_ansi,
+};
 use maestro_theme::{ThemeColor, ThemeDirectories};
 use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
+use serde_json::{Value, json};
+use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
@@ -133,9 +139,13 @@ fn settings_snapshot_reads_live_session_and_preferences() {
             })
             .await;
             let session = world.host.session();
-            session.set_auto_compaction_enabled(true);
-            session.set_steering_mode(maestro_app::QueueMode::All);
-            session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
+            session.set_auto_compaction_enabled(true).unwrap();
+            session
+                .set_steering_mode(maestro_app::QueueMode::All)
+                .unwrap();
+            session
+                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .unwrap();
             let levels = session.get_available_thinking_levels();
             open(&world);
             let config = world.mode.settings_config().unwrap();
@@ -294,6 +304,64 @@ fn settings_changes_preserve_each_callback_effect() {
 }
 
 #[test]
+fn settings_panel_reports_invalid_http_idle_timeout() {
+    isolated(
+        "settings_panel_reports_invalid_http_idle_timeout",
+        async |directory| {
+            let world = started_settings(directory).await;
+            world
+                .host
+                .session()
+                .settings_manager()
+                .borrow_mut()
+                .apply_overrides(serde_json::from_value(json!({"httpIdleTimeoutMs": -5})).unwrap());
+            let result = world.mode.show_settings_selector();
+            assert_eq!(
+                result.unwrap_err().to_string(),
+                "Invalid httpIdleTimeoutMs setting: -5"
+            );
+            assert!(panel(&world).is_none());
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn settings_http_idle_timeout_change_is_saved_and_announced() {
+    isolated(
+        "settings_http_idle_timeout_change_is_saved_and_announced",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let list = open(&world);
+            let session = world.host.session();
+            let saved = || {
+                session
+                    .settings_manager()
+                    .borrow()
+                    .get_http_idle_timeout_ms()
+                    .unwrap()
+            };
+            assert!(saved().total_cmp(&300_000.0).is_eq());
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&0.0).is_eq(), "the choice is saved");
+            next_http_request_uses_idle_limit(None).await;
+            assert!(
+                super::actions::shows(&world.mode.chat_container, "HTTP idle timeout: disabled"),
+                "the transcript names the new limit"
+            );
+            choose(&list, "idle", 0);
+            assert!(saved().total_cmp(&30_000.0).is_eq());
+            next_http_request_uses_idle_limit(Some(30_000)).await;
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout: 30 sec"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
 fn settings_remaining_changes_preserve_each_callback_effect() {
     isolated(
         "settings_remaining_changes_preserve_each_callback_effect",
@@ -351,8 +419,12 @@ fn settings_session_modes_use_distinct_live_policies() {
         async |directory| {
             let world = settings_world(directory, |_| {}).await;
             let session = world.host.session();
-            session.set_steering_mode(maestro_app::QueueMode::All);
-            session.set_follow_up_mode(maestro_app::QueueMode::OneAtATime);
+            session
+                .set_steering_mode(maestro_app::QueueMode::All)
+                .unwrap();
+            session
+                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .unwrap();
             let list = open(&world);
             choose(&list, "Steering", 0);
             assert_eq!(session.steering_mode(), maestro_app::QueueMode::OneAtATime);
@@ -406,6 +478,279 @@ fn settings_transport_change_reaches_the_live_agent() {
                 assert_eq!(live, transport);
             }
             drop(world.runtime.settle());
+        },
+    );
+}
+
+/// Each of the four choices must reach the request the next prompt sends: the controlled
+/// provider records the transport its options carry, so the agent field alone proves nothing.
+#[test]
+fn settings_transport_change_reaches_next_model_request() {
+    isolated(
+        "settings_transport_change_reaches_next_model_request",
+        async |directory| {
+            let world = started_settings(directory).await;
+            world
+                .host
+                .services()
+                .auth_storage
+                .set_runtime_api_key("unknown", "key");
+            let list = open(&world);
+            let session = world.host.session();
+            let requested: Rc<RefCell<Vec<Option<Transport>>>> = Rc::default();
+            let record = Rc::clone(&requested);
+            *session.agent().stream_fn.write().unwrap() = Some(Rc::new(move |_, _, options, _| {
+                record.borrow_mut().push(options.common.transport);
+                let stream = AssistantMessageEventStream::new();
+                stream.end(Some(super::answer()));
+                Box::pin(std::future::ready(Ok(stream)))
+            }));
+            for transport in [
+                Transport::Sse,
+                Transport::Websocket,
+                Transport::WebsocketCached,
+                Transport::Auto,
+            ] {
+                choose(&list, "Transport", 0);
+                session
+                    .prompt("hello", PromptOptions::default())
+                    .await
+                    .unwrap();
+                assert_eq!(requested.borrow().last(), Some(&Some(transport)));
+            }
+            assert_eq!(requested.borrow().len(), 4, "one request per prompt");
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// One call the counted tool's renderer served: the row's identity and the image visibility
+/// it was rendered with.
+type Served = (String, bool);
+
+/// What the renderer of row `t1` runs once, set after the rows exist.
+type Churn = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
+
+/// A tool whose result renderer notes each call it serves, so the tests count every rebuild,
+/// and whose row `t1` runs `churn` once when its rebuild comes.
+fn counted_tool(seen: &Rc<RefCell<Vec<Served>>>, churn: &Churn) -> transcript::Definition {
+    let mut counted = transcript::tool("counted");
+    let (seen, churn) = (Rc::clone(seen), Rc::clone(churn));
+    counted.render_result = Some(maestro_app::ToolRenderResult::<Value, ()>::Raw(Rc::new(
+        move |_: &maestro_app::ToolRenderResultLike<'_, Value>,
+              _: maestro_app::ToolRenderResultOptions,
+              _: &maestro_theme::LiveTheme,
+              context: &maestro_app::ToolRenderContext<'_, ()>| {
+            seen.borrow_mut()
+                .push((context.tool_call_id.clone(), context.show_images));
+            if context.tool_call_id == "t1"
+                && let Some(churn) = churn.borrow_mut().take()
+            {
+                churn();
+            }
+            Ok(transcript::text("RESULT"))
+        },
+    )));
+    counted
+}
+
+/// A started mode over the real theme inventory whose session registers `counted_tool`.
+async fn counted_world(directory: &Path, seen: &Rc<RefCell<Vec<Served>>>, churn: &Churn) -> World {
+    let world = Setup {
+        directories: Some(registry(directory)),
+        extension: Some(transcript::registering(vec![counted_tool(seen, churn)])),
+        ..Setup::default()
+    }
+    .build(directory);
+    start(&world).await;
+    // The panel offers the image rows only when the terminal shows images.
+    world
+        .mode
+        .tool_environment
+        .terminal_image
+        .set_capabilities(TerminalCapabilities {
+            images: Some(maestro_tui::ImageProtocol::Iterm2),
+            ..TerminalCapabilities::default()
+        });
+    world
+}
+
+/// Replays `count` stored calls of the counted tool, `t0` first, each with its result.
+fn replay_counted(world: &World, count: usize) {
+    let messages = (0..count)
+        .flat_map(|index| {
+            let id = format!("t{index}");
+            [
+                transcript::assistant(&json!([transcript::call(&id, "counted")]), "toolUse", None),
+                transcript::result(&id),
+            ]
+        })
+        .collect();
+    transcript::replay(world, messages);
+}
+
+/// The tool rows of the transcript, in order.
+fn tool_rows_of(world: &World) -> Vec<Rc<crate::ToolExecutionComponent>> {
+    world
+        .mode
+        .chat_container
+        .walk()
+        .filter_map(|child| {
+            (child as Rc<dyn std::any::Any>)
+                .downcast::<crate::ToolExecutionComponent>()
+                .ok()
+        })
+        .collect()
+}
+
+/// The renderer calls one image-visibility choice makes over `count` retained rows, and the
+/// calls of a deliberately rescanning update that re-walks every row for each row.
+async fn image_choice_work(directory: &Path, count: usize) -> (usize, usize) {
+    let seen = Rc::default();
+    let world = counted_world(directory, &seen, &Churn::default()).await;
+    replay_counted(&world, count);
+    let list = open(&world);
+    let before = seen.borrow().len();
+    choose(&list, "images", 0);
+    let work = seen.borrow().len() - before;
+    let rows = tool_rows_of(&world);
+    assert_eq!(rows.len(), count, "every replayed call is a retained row");
+    let before = seen.borrow().len();
+    for _ in &rows {
+        for row in &rows {
+            row.set_show_images(true).unwrap();
+        }
+    }
+    let rescanned = seen.borrow().len() - before;
+    drop(world.runtime.settle());
+    (work, rescanned)
+}
+
+/// One image-visibility choice rebuilds each retained tool row once: the work doubles with
+/// the rows, while an update that re-walks every row for each row grows faster than that.
+#[test]
+fn settings_tool_updates_have_linear_work() {
+    isolated(
+        "settings_tool_updates_have_linear_work",
+        async |directory| {
+            let mut work = Vec::new();
+            for count in [16, 32, 64] {
+                let (changed, rescanned) = image_choice_work(directory, count).await;
+                assert!(
+                    (count..=2 * count).contains(&changed),
+                    "{count} rows: {changed} calls"
+                );
+                assert!(rescanned > 2 * changed, "the control rescans: {rescanned}");
+                work.push(changed);
+            }
+            assert!(work[1] <= 2 * work[0] && work[2] <= 2 * work[1], "{work:?}");
+        },
+    );
+}
+
+/// How the callback running inside one row's rebuild changes the transcript's children.
+#[derive(Clone, Copy, Debug)]
+enum Edit {
+    /// Appends a further tool row.
+    Append,
+    /// Removes the row being rebuilt and the transcript entry after it.
+    RemoveWithNext,
+    /// Clears the transcript.
+    Clear,
+    /// Gives the transcript another array holding one further tool row.
+    Replace,
+}
+
+/// The ids the update visited in order, and the ids of the tool rows the transcript holds
+/// afterwards, when row `t1` applies `edit` to the transcript during its rebuild and the
+/// panel row matching `query` changes the setting.
+async fn edited_update(directory: &Path, edit: Edit, query: &str) -> (Vec<String>, Vec<String>) {
+    let seen = Rc::default();
+    let churn = Churn::default();
+    let world = counted_world(directory, &seen, &churn).await;
+    replay_counted(&world, 4);
+    let rows = tool_rows_of(&world);
+    let mut named: Vec<(&str, Rc<crate::ToolExecutionComponent>)> =
+        ["t0", "t1", "t2", "t3"].into_iter().zip(rows).collect();
+    let binding = world
+        .host
+        .session()
+        .get_tool_definition("counted")
+        .unwrap()
+        .renderer_binding()
+        .unwrap();
+    let mut params = transcript::tool_params(&world, "late");
+    params.tool_name = "counted".into();
+    params.tool_definition = Some(binding);
+    let late = Rc::new(crate::ToolExecutionComponent::new(params).unwrap());
+    late.update_result(image_result("late"), false).unwrap();
+    named.push(("late", Rc::clone(&late)));
+    let container = Rc::clone(&world.mode.chat_container);
+    let current: maestro_tui::tui::ComponentHandle = Rc::clone(&named[1].1) as _;
+    let late: maestro_tui::tui::ComponentHandle = late;
+    *churn.borrow_mut() = Some(match edit {
+        Edit::Append => Box::new(move || container.add_child(late)),
+        Edit::RemoveWithNext => Box::new(move || {
+            let array = container.children();
+            let mut children = array.borrow_mut();
+            let at = children
+                .iter()
+                .position(|child| Rc::ptr_eq(child, &current))
+                .unwrap();
+            children.drain(at..=at + 1);
+        }),
+        Edit::Clear => Box::new(move || container.clear()),
+        Edit::Replace => Box::new(move || {
+            container.set_children(Rc::new(RefCell::new(vec![late])));
+        }),
+    });
+    let list = open(&world);
+    let before = seen.borrow().len();
+    choose(&list, query, 0);
+    let visited = seen.borrow()[before..]
+        .iter()
+        .map(|(id, _)| id.clone())
+        .collect();
+    let held = tool_rows_of(&world);
+    let kept = named
+        .iter()
+        .filter(|(_, row)| held.iter().any(|held| Rc::ptr_eq(held, row)))
+        .map(|(id, _)| (*id).to_owned())
+        .collect();
+    drop(world.runtime.settle());
+    (visited, kept)
+}
+
+/// The child walk a setting change makes is the live array it started on: a row appended or
+/// removed during the walk is reached or skipped like the array's indexes say, and a cleared
+/// or replaced transcript leaves the walk on its old rows. Image visibility and image width
+/// take the same route.
+#[test]
+fn settings_tool_updates_keep_captured_live_child_walk() {
+    isolated(
+        "settings_tool_updates_keep_captured_live_child_walk",
+        async |directory| {
+            let cases: [(Edit, &[&str], &[&str]); 4] = [
+                (
+                    Edit::Append,
+                    &["t0", "t1", "t2", "t3", "late"],
+                    &["t0", "t1", "t2", "t3", "late"],
+                ),
+                (
+                    Edit::RemoveWithNext,
+                    &["t0", "t1", "t3"],
+                    &["t0", "t2", "t3"],
+                ),
+                (Edit::Clear, &["t0", "t1", "t2", "t3"], &[]),
+                (Edit::Replace, &["t0", "t1", "t2", "t3"], &["late"]),
+            ];
+            for query in ["images", "width"] {
+                for (edit, visited, kept) in cases {
+                    let (seen, held) = edited_update(directory, edit, query).await;
+                    assert_eq!(seen, visited, "{query}: visits after {edit:?}");
+                    assert_eq!(held, kept, "{query}: members after {edit:?}");
+                }
+            }
         },
     );
 }
@@ -1317,6 +1662,414 @@ fn settings_theme_cancel_replays_the_saved_theme_without_persisting() {
                 Some("dark"),
                 "cancel replays the latest committed selection"
             );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// Check the next shared-client request against a peer that withholds response headers.
+pub(super) async fn next_http_request_uses_idle_limit(milliseconds: Option<u64>) {
+    use futures_util::{
+        FutureExt,
+        future::{Either, select},
+    };
+    use tokio::io::AsyncReadExt;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let (arrived, received) = tokio::sync::oneshot::channel();
+    let (release, released) = tokio::sync::oneshot::channel();
+    let peer = tokio::task::spawn_local(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut headers = Vec::new();
+        while !headers.ends_with(b"\r\n\r\n") {
+            headers.push(socket.read_u8().await.unwrap());
+        }
+        arrived.send(()).unwrap();
+        released.await.unwrap();
+    });
+    let request = maestro_app::default_fetch()(maestro_app::HttpRequest {
+        method: "GET".into(),
+        url: format!("http://{address}/"),
+        headers: indexmap::IndexMap::new(),
+        body: Vec::new(),
+        signal: None,
+    });
+    let Either::Right((Ok(()), mut request)) = select(request, received).await else {
+        panic!("the peer must receive the request before it ends");
+    };
+    tokio::time::pause();
+    let started = tokio::time::Instant::now();
+    let limit = milliseconds.unwrap_or(600_000);
+    let early = limit * 3 / 4;
+    tokio::time::advance(std::time::Duration::from_millis(early)).await;
+    tokio::task::yield_now().await;
+    assert!(request.as_mut().now_or_never().is_none());
+    tokio::time::advance(std::time::Duration::from_millis(limit - early)).await;
+    tokio::task::yield_now().await;
+    if milliseconds.is_some() {
+        assert!(matches!(
+            request.as_mut().await,
+            Err(maestro_app::FetchError::Timeout)
+        ));
+        // Tokio deadlines round up to the next 1 ms timer tick.
+        assert!(
+            (u128::from(limit)..=u128::from(limit) + 1).contains(&started.elapsed().as_millis())
+        );
+    } else {
+        assert!(request.as_mut().now_or_never().is_none());
+    }
+    drop(request);
+    release.send(()).unwrap();
+    peer.await.unwrap();
+    tokio::time::resume();
+}
+
+#[test]
+fn runtime_settings_apply_http_idle_limit_to_next_request() {
+    isolated(
+        "runtime_settings_apply_http_idle_limit_to_next_request",
+        async |directory| {
+            let world = started_settings(directory).await;
+            world
+                .host
+                .session()
+                .settings_manager()
+                .borrow_mut()
+                .set_http_idle_timeout_ms(60_000.0)
+                .unwrap();
+            world.mode.apply_runtime_settings().unwrap();
+            next_http_request_uses_idle_limit(Some(60_000)).await;
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// Refuses explicit behaviour edits while allowing tool refresh candidates.
+struct RefuseBehaviour;
+impl maestro_app::SettingsDecider for RefuseBehaviour {
+    fn decide(&self, request: &maestro_app::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(request, maestro_app::DecisionRequest::SettingsEdit { .. }) {
+            return Err("release refuses behaviour changes".into());
+        }
+        Ok(())
+    }
+}
+
+/// A refused transport selection cannot escape through the live agent field.
+#[test]
+fn refused_transport_selection_preserves_live_agent_and_settings() {
+    isolated(
+        "refused_transport_selection_preserves_live_agent_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            let before = session.agent().transport.read().unwrap().clone();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            choose(&list, "Transport", 0);
+            assert_eq!(*session.agent().transport.read().unwrap(), before);
+            assert_eq!(
+                session.settings_manager().borrow().get_transport(),
+                saved(&before)
+            );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// A refused session policy cannot change the footer's compaction marker.
+#[test]
+fn refused_compaction_selection_preserves_session_and_footer() {
+    isolated(
+        "refused_compaction_selection_preserves_session_and_footer",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            assert!(footer_shows(&world, "(auto)"));
+            choose(&list, "compact", 0);
+            assert!(session.auto_compaction_enabled());
+            assert!(footer_shows(&world, "(auto)"));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+/// Refused preferences retain both the panel value and the live presentation.
+#[test]
+fn refused_panel_preferences_keep_display_and_show_message() {
+    isolated(
+        "refused_panel_preferences_keep_display_and_show_message",
+        async |directory| {
+            for query in ["Hide", "padding", "hardware", "images", "quiet"] {
+                let world = started_settings(directory).await;
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                    .unwrap();
+                let list = open(&world);
+                search(&list, query);
+                let before = list.render(100);
+                let editor = world.mode.editor.render(60);
+                let raw = session.settings_manager().borrow().get_global_settings();
+                press(&list, "\r");
+                assert_eq!(list.render(100), before, "{query}: panel value");
+                assert_eq!(world.mode.editor.render(60), editor, "{query}: editor");
+                assert!(!world.mode.hide_thinking_block.get());
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    raw.0
+                );
+                assert!(
+                    world
+                        .mode
+                        .chat_container
+                        .render(100)
+                        .join("\n")
+                        .contains("release refuses behaviour changes")
+                );
+                drop(world.runtime.settle());
+            }
+        },
+    );
+}
+
+/// Every preference callback reports refusal before touching live components.
+#[test]
+fn all_panel_preference_callbacks_refuse_before_live_effects() {
+    isolated(
+        "all_panel_preference_callbacks_refuse_before_live_effects",
+        async |directory| {
+            for route in 0..19 {
+                let world = started_settings(directory).await;
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                    .unwrap();
+                let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+                let before = session.settings_manager().borrow().get_global_settings().0;
+                let editor = world.mode.editor.render(60);
+                let footer = world.mode.footer.render(100);
+                let theme = published(&world);
+                let accepted = match route {
+                    0 => (callbacks.on_auto_compact_change)(false),
+                    1 => (callbacks.on_show_images_change)(false),
+                    2 => (callbacks.on_image_width_cells_change)(80.0),
+                    3 => (callbacks.on_auto_resize_images_change)(false),
+                    4 => (callbacks.on_block_images_change)(true),
+                    5 => (callbacks.on_enable_skill_commands_change)(false),
+                    6 => (callbacks.on_theme_change)("light"),
+                    7 => (callbacks.on_hide_thinking_block_change)(true),
+                    8 => (callbacks.on_collapse_changelog_change)(false),
+                    9 => (callbacks.on_enable_install_telemetry_change)(false),
+                    10 => (callbacks.on_double_escape_action_change)(
+                        maestro_app::DoubleEscapeAction::Fork,
+                    ),
+                    11 => (callbacks.on_tree_filter_mode_change)(maestro_app::TreeFilterMode::All),
+                    12 => (callbacks.on_show_hardware_cursor_change)(true),
+                    13 => (callbacks.on_editor_padding_x_change)(2.0),
+                    14 => (callbacks.on_autocomplete_max_visible_change)(10.0),
+                    15 => (callbacks.on_quiet_startup_change)(true),
+                    16 => (callbacks.on_clear_on_shrink_change)(true),
+                    17 => (callbacks.on_show_terminal_progress_change)(true),
+                    _ => (callbacks.on_warnings_change)(maestro_app::WarningSettings::default()),
+                };
+                assert!(!accepted, "route {route}");
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    before
+                );
+                assert_eq!(world.mode.editor.render(60), editor);
+                assert_eq!(world.mode.footer.render(100), footer);
+                assert_eq!(published(&world), theme);
+                assert!(!world.mode.hide_thinking_block.get());
+                assert!(
+                    world
+                        .mode
+                        .chat_container
+                        .render(100)
+                        .join("\n")
+                        .contains("release refuses behaviour changes")
+                );
+                drop(world.runtime.settle());
+            }
+        },
+    );
+}
+
+#[test]
+fn refused_thinking_shortcut_preserves_flag_transcript_and_settings() {
+    isolated(
+        "refused_thinking_shortcut_preserves_flag_transcript_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            append_messages(
+                &world,
+                vec![transcript::assistant(
+                    &json!([{"type": "thinking", "thinking": "RETAINED THOUGHT"},
+                {"type": "text", "text": "ANSWER"}]),
+                    "stop",
+                    None,
+                )],
+            );
+            world.mode.render_initial_messages().unwrap();
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let before = session.settings_manager().borrow().get_global_settings().0;
+            world.terminal.send_input("\x14");
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("RETAINED THOUGHT")
+            );
+            assert!(!world.mode.hide_thinking_block.get());
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                before
+            );
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("release refuses behaviour changes")
+            );
+            assert!(world.runtime.drain_futures().is_empty());
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn refused_extension_theme_preserves_published_theme_and_settings() {
+    isolated(
+        "refused_extension_theme_preserves_published_theme_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let before = session.settings_manager().borrow().get_global_settings().0;
+            let theme = published(&world);
+            let outcome = maestro_app::ExtensionUIContextPort::set_theme(
+                &*world.mode,
+                maestro_app::ThemeSelection::Name("light".into()),
+            )
+            .unwrap();
+            assert!(!outcome.success);
+            assert_eq!(
+                outcome.error.as_deref(),
+                Some("release refuses behaviour changes")
+            );
+            assert_eq!(published(&world), theme);
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                before
+            );
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("release refuses behaviour changes")
+            );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn refused_http_idle_timeout_keeps_saved_value_and_reports_no_success() {
+    isolated(
+        "refused_http_idle_timeout_keeps_saved_value_and_reports_no_success",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            search(&list, "idle");
+            let before = list.render(100);
+            let raw = session.settings_manager().borrow().get_global_settings().0;
+
+            press(&list, "\r");
+
+            assert_eq!(list.render(100), before);
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                raw
+            );
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "release refuses behaviour changes"
+            ));
+            assert!(!super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout:"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success() {
+    isolated(
+        "invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+            let raw = session.settings_manager().borrow().get_global_settings().0;
+
+            for (value, spelling) in [
+                (-5.0, "-5"),
+                (f64::NAN, "NaN"),
+                (f64::INFINITY, "Infinity"),
+                (f64::NEG_INFINITY, "-Infinity"),
+            ] {
+                assert!(!(callbacks.on_http_idle_timeout_ms_change)(value));
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    raw
+                );
+                assert!(super::actions::shows(
+                    &world.mode.chat_container,
+                    &format!("Invalid httpIdleTimeoutMs setting: {spelling}")
+                ));
+            }
+            assert!(!super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout:"
+            ));
             drop(world.runtime.settle());
         },
     );

@@ -56,7 +56,7 @@
       "op": "unavailable"
     },
     "expected": {
-      "value": "This installation is managed by a global npm install, but the install path is not writable. Update it yourself with: npm --prefix /opt/tool install -g @old/agent"
+      "value": "This installation is managed by a global npm install, but the install path is not writable. Update it yourself with: npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
     },
     "trace": [
       [
@@ -142,7 +142,7 @@
       "op": "unavailable"
     },
     "expected": {
-      "value": "This installation is managed by a global npm install, but the install path is not writable. Update it yourself with: npm --prefix /opt/tool install -g @old/agent"
+      "value": "This installation is managed by a global npm install, but the install path is not writable. Update it yourself with: npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
     },
     "trace": [
       [
@@ -190,9 +190,10 @@
           "/opt/tool",
           "install",
           "-g",
+          "--ignore-scripts",
           "@old/agent"
         ],
-        "display": "npm --prefix /opt/tool install -g @old/agent"
+        "display": "npm --prefix /opt/tool install -g --ignore-scripts @old/agent"
       }
     },
     "trace": [

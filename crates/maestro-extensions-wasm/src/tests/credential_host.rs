@@ -67,8 +67,9 @@ impl host::HostAuthStorage for State {
         &mut self,
         this: Resource<Reader>,
         provider: String,
-    ) -> wasmtime::Result<Result<Option<String>, String>> {
-        Ok(self.table.get(&this)?.record("get", &[json!(provider)]))
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self.table.get(&this)?.record("get", &[json!(provider)]);
+        self.routed_value(result.map(host::RouteValue::OptionalText))
     }
     fn set(
         &mut self,
@@ -91,15 +92,16 @@ impl host::HostAuthStorage for State {
         let result = self.table.get(&this)?.unit("remove", &[json!(provider)]);
         self.routed(result)
     }
-    fn list(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<Vec<String>, String>> {
-        Ok(self
+    fn list(&mut self, this: Resource<Reader>) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
             .record("list", &[])
             .and_then(|value| {
                 serde_json::from_str(&value.ok_or("missing credential list")?)
                     .map_err(|error| error.to_string())
-            }))
+            });
+        self.routed_value(result.map(host::RouteValue::Lines))
     }
     fn has(
         &mut self,
@@ -131,12 +133,16 @@ impl host::HostAuthStorage for State {
             .map(host::RouteValue::Text);
         self.credential_fallback_route(&reader, provider, result)
     }
-    fn get_all(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
-        Ok(self
+    fn get_all(
+        &mut self,
+        this: Resource<Reader>,
+    ) -> wasmtime::Result<Resource<super::host::Route>> {
+        let result = self
             .table
             .get(&this)?
             .record("get_all", &[])
-            .and_then(|value| value.ok_or("missing credential record".into())))
+            .and_then(|value| value.ok_or("missing credential record".into()));
+        self.routed_value(result.map(host::RouteValue::Text))
     }
     fn drain_errors(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<String, String>> {
         Ok(self
