@@ -5,7 +5,6 @@
 use maestro_app::{
     BashOperations, create_bash_tool_definition, create_local_bash_operations, get_shell_config,
 };
-use maestro_tools::format_key_text;
 use std::sync::Arc;
 
 #[test]
@@ -234,6 +233,10 @@ fn shell_display_exports_share_existing_owners() {
     maestro_tui::set_keybindings(old);
     assert_eq!(
         hint,
-        format!("{} to expand", format_key_text("alt+x/ctrl+o", false))
+        if cfg!(target_os = "macos") {
+            "option+x/ctrl+o to expand"
+        } else {
+            "alt+x/ctrl+o to expand"
+        }
     );
 }
