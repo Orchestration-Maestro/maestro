@@ -191,6 +191,7 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
                 .terminal_id(crate::support::api::root_pane(app, 0))
                 .unwrap()
                 .clone();
+            // Force readiness to follow output without a newline, as a late shell prompt does.
             run_in_pane(
                 app,
                 &terminal,
