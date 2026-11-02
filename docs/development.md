@@ -1566,6 +1566,7 @@ a hang or runaway memory as a finding.
 | `terminal-escapes` | `maestro_terminal::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
+| `git-worktrees` | `maestro_daemon::git::worktree::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
 
 The text targets skip input that is not UTF-8, because their callers only pass
 decoded text. Seeds come from the existing test fixtures and live in
@@ -1583,6 +1584,7 @@ finding:
 | `terminal-escapes` | 4096 | 10 | 2048 |
 | `protocol-frames` | 4096 | 10 | 2048 |
 | `tool-call-arguments` | 4096 | 10 | 2048 |
+| `git-worktrees` | 4096 | 10 | 2048 |
 
 The Markdown limits keep the largest seed whole. Under the instrumented fuzz
 build, 128 KB of ordinary Markdown takes 12 to 23 seconds, depending on
