@@ -23,6 +23,7 @@ futures-task = { version = "0.3.34", default-features = false, features = ["std"
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await", "sink", "std"] }
 hashbrown = { version = "0.17.1" }
 icu_locale_core = { version = "2.3.0", default-features = false, features = ["alloc", "zerovec"] }
+icu_locale_fallback = { version = "2.3.0" }
 icu_normalizer = { version = "2.3.0", default-features = false, features = ["compiled_data", "utf16_iter", "utf8_iter"] }
 icu_properties = { version = "2.3.0", default-features = false, features = ["compiled_data"] }
 icu_provider = { version = "2.3.1", default-features = false, features = ["alloc", "baked"] }

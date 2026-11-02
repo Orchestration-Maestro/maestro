@@ -8,9 +8,9 @@ pub mod event_stream;
 
 use crate::{ExtensionAPI, ExtensionResult};
 
-/// Reads the host's current local date and time in the en-US twelve-hour format.
+/// Reads the host's current local date and time using its selected locale.
 ///
-/// Other locale patterns are not selected; the host supplies its local time zone.
+/// The host supplies the local time zone.
 ///
 /// # Errors
 /// Returns the host's failure or an invalid response.

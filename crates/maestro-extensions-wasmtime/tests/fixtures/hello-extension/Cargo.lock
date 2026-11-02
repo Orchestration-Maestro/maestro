@@ -533,6 +533,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "icu_locale_fallback"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "251af8e57c9400e3eb58242fe5b8b1152b2a64fdf4cf632f923c38ccee6f2fa9"
+dependencies = [
+ "icu_locale_core",
+ "icu_locale_fallback_data",
+ "icu_provider",
+ "potential_utf",
+ "tinystr",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_locale_fallback_data"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "decf2a22ec8fa68f1a0c1129a3f8583f8f8bc24e8b9ccbe98ead99f62a4dc3a8"
+
+[[package]]
 name = "icu_normalizer"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -737,6 +757,7 @@ dependencies = [
  "hashbrown",
  "iana-time-zone",
  "icu_locale_core",
+ "icu_locale_fallback",
  "icu_normalizer",
  "icu_properties",
  "icu_provider",

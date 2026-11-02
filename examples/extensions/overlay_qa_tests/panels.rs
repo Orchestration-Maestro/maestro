@@ -8,13 +8,13 @@ use super::{
 use maestro_extensions_wasm::{
     CallbackEmitter, Component, ComponentView, CustomDone, CustomFactory, ExtensionAPI,
     ExtensionCommandContext, ExtensionResult, Focusable, OverlayAnchor, OverlayHandle,
-    OverlayOptions, OverlayOptionsHandle, SizeValue, TUI, utils::local_date_time_string,
+    OverlayOptions, OverlayOptionsHandle, SizeValue, TUI, utils::local_time_string,
 };
 use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
     rc::Rc,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 /// Border colours of the three panels, in panel order.
@@ -468,16 +468,32 @@ impl ComponentView for StreamingDemo {
     }
 }
 
+/// Formats one stream line at the supplied instant in milliseconds since the Unix epoch.
+///
+/// # Errors
+/// Returns host clock-formatting failures.
+pub(crate) fn feed_line(api: &ExtensionAPI, timestamp: i64, count: u64) -> ExtensionResult<String> {
+    let time = local_time_string(api, timestamp)?;
+    Ok(format!("[{time}] Line {count}"))
+}
+
 /// Adds one timestamped line every 500 ms, keeping the newest eight.
 async fn feed(api: ExtensionAPI, feed: Rc<Feed>) -> ExtensionResult<()> {
     let io = api.native_io();
     loop {
         io.sleep(Duration::from_millis(500), None).await?;
         feed.count.set(feed.count.get() + 1);
-        let now = local_date_time_string(&api)?;
-        let time = now.split_once(", ").map_or(now.as_str(), |(_, time)| time);
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|error| error.to_string())?
+            .as_millis();
+        let line = feed_line(
+            &api,
+            i64::try_from(timestamp).map_err(|error| error.to_string())?,
+            feed.count.get(),
+        )?;
         let mut lines = feed.lines.borrow_mut();
-        lines.push_back(format!("[{time}] Line {}", feed.count.get()));
+        lines.push_back(line);
         if lines.len() > KEPT {
             lines.pop_front();
         }

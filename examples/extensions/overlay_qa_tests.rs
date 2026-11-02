@@ -30,7 +30,7 @@ mod live;
 #[path = "overlay_qa_tests/paint.rs"]
 mod paint;
 #[path = "overlay_qa_tests/panels.rs"]
-mod panels;
+pub(crate) mod panels;
 use dialogs::{Cycle, Step};
 
 /// The nine anchors in the order `/overlay-anchors` cycles through them.
