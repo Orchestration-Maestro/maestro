@@ -2,9 +2,10 @@
 //!
 //! An authored path is the text a user, setting or file wrote. These functions
 //! join, normalize, resolve and split that text without touching the file
-//! system, the process working directory or the environment, and follow the
+//! system or the process working directory. The string operations follow the
 //! JavaScript runtime's `path` module for both of its flavors, except where
-//! that module's result is a defect; the crate's tests mark each one. Convert
+//! that module's result is a defect; the crate's tests mark each one.
+//! [`native_homedir`] alone reads the environment and native account home. Convert
 //! an authored path to [`std::path::PathBuf`] only at a file-system call.
 //! [`normalize_native`] shares segment reduction with these string operations
 //! when a native filesystem path must retain non-UTF-8 components.
@@ -17,11 +18,16 @@
 mod links;
 mod os;
 mod path;
+mod tilde;
 
 pub use links::resolve_final_links;
-pub use os::homedir;
+pub use os::{homedir, native_homedir};
 pub use path::{
     Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, win32,
+};
+pub use tilde::{
+    Tilde, expand_tilde, expand_tilde_joined, expand_tilde_native, join_home, parse_tilde,
+    shorten_home, shorten_home_normalized,
 };
 
 #[cfg(not(windows))]

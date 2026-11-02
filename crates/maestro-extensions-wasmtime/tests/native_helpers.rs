@@ -250,11 +250,16 @@ fn isolate_paths(name: &str) -> bool {
     let component = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
     let home_text = home.path().to_str().unwrap().to_owned();
     maestro_test_process::run_per_environment(name, [home_text], |home| {
-        std::collections::BTreeMap::from([
+        let mut variables = std::collections::BTreeMap::from([
             ("HOME", home.clone()),
             ("USERPROFILE", home.clone()),
             ("MAESTRO_HELPER_COMPONENT", component.clone()),
-        ])
+        ]);
+        variables.extend(
+            maestro_test_process::user_cache_home()
+                .map(|path| ("XDG_CACHE_HOME", path.to_string_lossy().into_owned())),
+        );
+        variables
     })
     .unwrap()
     .is_none()

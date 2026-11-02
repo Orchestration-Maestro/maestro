@@ -77,6 +77,8 @@ impl ResolvedOpenAICompletionsCompat {
 enum Family {
     /// Z.ai endpoints.
     Zai,
+    /// `OpenRouter` endpoints.
+    OpenRouter,
     /// Moonshot endpoints.
     Moonshot,
     /// Cloudflare Workers AI endpoints.
@@ -99,6 +101,10 @@ fn detect_families(model: &Model) -> BTreeSet<Family> {
     };
     let mut families: BTreeSet<Family> = [
         (Family::Zai, found(&["zai"], &["api.z.ai"])),
+        (
+            Family::OpenRouter,
+            found(&["openrouter"], &["openrouter.ai"]),
+        ),
         (
             Family::Moonshot,
             found(&["moonshotai", "moonshotai-cn"], &["api.moonshot."]),
@@ -135,10 +141,19 @@ fn detect_families(model: &Model) -> BTreeSet<Family> {
 }
 
 /// Whether the provider families enable a capability when the model says nothing.
-fn detected(capability: Capability, families: &BTreeSet<Family>) -> bool {
+fn detected(capability: Capability, families: &BTreeSet<Family>, model: &Model) -> bool {
     let has = |family| families.contains(&family);
     match capability {
-        Capability::SupportsStore | Capability::SupportsDeveloperRole => !has(Family::NonStandard),
+        Capability::SupportsStore => !has(Family::NonStandard),
+        Capability::SupportsDeveloperRole => {
+            if has(Family::OpenRouter) {
+                ["anthropic/", "openai/"]
+                    .iter()
+                    .any(|prefix| model.id.starts_with(prefix))
+            } else {
+                !has(Family::NonStandard)
+            }
+        }
         Capability::SupportsReasoningEffort => {
             !(has(Family::Grok)
                 || has(Family::Zai)
@@ -213,19 +228,24 @@ impl From<&Model> for ResolvedOpenAICompletionsCompat {
             ThinkingFormat::Deepseek
         } else if has(Family::Zai) {
             ThinkingFormat::Zai
-        } else if router || url.contains("openrouter.ai") {
+        } else if has(Family::OpenRouter) {
             ThinkingFormat::Openrouter
         } else {
             ThinkingFormat::Openai
         };
-        let cache_control_format =
-            (router && model.id.starts_with("anthropic/")).then_some(CacheControlFormat::Anthropic);
+        let cache_control_format = (router
+            && model
+                .id
+                .strip_prefix('~')
+                .unwrap_or(&model.id)
+                .starts_with("anthropic/"))
+        .then_some(CacheControlFormat::Anthropic);
         Self {
             capabilities: CAPABILITIES
                 .into_iter()
                 .filter(|capability| {
                     overridden(*capability, model.compat.as_ref())
-                        .unwrap_or_else(|| detected(*capability, &families))
+                        .unwrap_or_else(|| detected(*capability, &families, model))
                 })
                 .collect(),
             max_tokens_field: if literal(
@@ -274,5 +294,15 @@ fn resolved_thinking(model: &Model, thinking_format: ThinkingFormat) -> Thinking
         "qwen" => ThinkingFormat::Qwen,
         "qwen-chat-template" => ThinkingFormat::QwenChatTemplate,
         _ => ThinkingFormat::Openai,
+    }
+}
+
+/// The field replayed reasoning is sent back in: the gateway that streams it as `reasoning`
+/// takes it back as `reasoning_content`.
+pub(super) fn reasoning_field<'a>(model: &Model, field: &'a str) -> &'a str {
+    if model.provider == "opencode-go" && field == "reasoning" {
+        "reasoning_content"
+    } else {
+        field
     }
 }

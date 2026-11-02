@@ -387,11 +387,10 @@ fn failed_flush_keeps_the_unwritten_shell_results() {
         };
         deferred("one");
         deferred("two");
-        release.notify_one();
-        running.await.unwrap().unwrap();
         std::fs::remove_dir_all(&sessions).unwrap();
-        let failed = h.session.prompt("second", PromptOptions::default()).await;
-        assert!(failed.is_err());
+        release.notify_one();
+        let failed = running.await.unwrap();
+        assert!(failed.is_err(), "the settle step reports the failed flush");
         assert!(h.session.has_pending_bash_messages());
         assert_eq!(shell_commands(&h), [json!("one")]);
         std::fs::create_dir_all(&sessions).unwrap();

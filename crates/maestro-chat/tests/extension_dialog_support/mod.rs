@@ -450,6 +450,7 @@ fn replay(
             timeout,
             runtime: Rc::new(spy.clone()),
             theme: live,
+            on_toggle_tools_expanded: None,
         },
         (
             query.title.clone().unwrap_or_else(|| default_title.into()),
@@ -679,6 +680,7 @@ pub fn native_dialog(
             timeout: Some(1000.0),
             runtime: Rc::new(spy.clone()),
             theme,
+            on_toggle_tools_expanded: None,
         },
         ("Title".into(), vec!["Alpha".into(), "Beta".into()], None),
     )
@@ -751,6 +753,7 @@ pub fn startup_host() -> StartupHost {
                     timeout: None,
                     runtime: actual_runtime.clone(),
                     theme: live.clone(),
+                    on_toggle_tools_expanded: None,
                 },
             )
             .unwrap(),

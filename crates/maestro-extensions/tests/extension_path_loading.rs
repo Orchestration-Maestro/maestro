@@ -254,7 +254,7 @@ fn tilde_paths_keep_the_written_file_name() {
     );
 }
 
-/// Every leading `~` form loads without reading a removed working directory.
+/// Both expanded `~` forms load without reading a removed working directory.
 #[test]
 fn leading_home_paths_load_without_a_working_directory() {
     use crate::local_support::{LocalBus, local};
@@ -280,7 +280,7 @@ fn leading_home_paths_load_without_a_working_directory() {
         });
         let bus = LocalBus::new();
         let paths = vec![
-            "~missing\u{a0}extension.wasm".to_owned(),
+            "~/missing\u{a0}extension.wasm".to_owned(),
             "~/other\u{a0}extension.wasm".to_owned(),
         ];
         let mut errors = 0;

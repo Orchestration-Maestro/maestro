@@ -2,8 +2,8 @@
 use super::InteractiveMode;
 use maestro_app::{
     AutocompleteProviderFactory, EventError, ExtensionUIContextPort, ExtensionUIDialogOptions,
-    ExtensionUIFuture, NotificationType, TerminalInputHandler, ThemeSelection, ThemeSetResult,
-    UIUnsubscribe, WorkingIndicatorOptions,
+    ExtensionUIFuture, NotificationType, PreparedSettingsEdit, SettingsEdit, TerminalInputHandler,
+    ThemeSelection, ThemeSetResult, UIUnsubscribe, WorkingIndicatorOptions,
 };
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use std::rc::Rc;
@@ -220,8 +220,8 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// Publishes a theme by name or instance, saving a changed name before the frame.
     ///
     /// A named selection starts the supplied theme watch and saves `name` only when the
-    /// saved name differs; a rejected name publishes the fallback and is reported without
-    /// saving it or requesting a frame.
+    /// saved name differs. A policy refusal leaves the palette and settings unchanged.
+    /// An unloadable name publishes the fallback without saving or requesting a frame.
     ///
     /// # Errors
     /// Returns the failure of the published-theme callback or of the fallback load.
@@ -236,6 +236,16 @@ impl ExtensionUIContextPort for InteractiveMode {
                 })
             }
             ThemeSelection::Name(name) => {
+                let edit = match self.prepare_theme_name(&name) {
+                    Ok(edit) => edit,
+                    Err(error) => {
+                        self.show_error(&error)?;
+                        return Ok(ThemeSetResult {
+                            success: false,
+                            error: Some(error),
+                        });
+                    }
+                };
                 let watcher: Rc<dyn ThemeWatchOperations> = self.operations.clone();
                 if let ThemeChangeResult::Failure { error } =
                     self.themes.set_theme(&name, Some(watcher))?
@@ -245,7 +255,13 @@ impl ExtensionUIContextPort for InteractiveMode {
                         error: Some(error),
                     });
                 }
-                self.save_theme_name(&name);
+                if let Some(edit) = edit {
+                    self.runtime_host
+                        .session()
+                        .settings_manager()
+                        .borrow_mut()
+                        .apply_prepared_edit(edit);
+                }
                 self.ui.request_render(false);
                 Ok(ThemeSetResult {
                     success: true,
@@ -312,13 +328,16 @@ impl ExtensionUIContextPort for InteractiveMode {
 }
 
 impl InteractiveMode {
-    /// Saves `name` as the configured theme unless it is already saved.
-    fn save_theme_name(&self, name: &str) {
+    /// Admits a changed theme name before publishing its palette.
+    fn prepare_theme_name(&self, name: &str) -> Result<Option<PreparedSettingsEdit>, String> {
         let session = self.runtime_host.session();
         let settings = session.settings_manager();
-        let saved = settings.borrow().get_theme();
-        if saved.as_deref() != Some(name) {
-            settings.borrow_mut().set_theme(name.to_owned());
+        let settings = settings.borrow();
+        if settings.get_theme().as_deref() == Some(name) {
+            return Ok(None);
         }
+        settings
+            .admit_settings_edit(SettingsEdit::new(&["theme"], name.into()))
+            .map(Some)
     }
 }

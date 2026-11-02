@@ -21,6 +21,7 @@ mod configured_source_checks;
 mod configured_update_checks;
 mod contribution_resource_checks;
 mod git_execution_checks;
+mod git_reinstall_checks;
 mod git_ssh_url_checks;
 mod git_staging_checks;
 mod manifest_case_checks;

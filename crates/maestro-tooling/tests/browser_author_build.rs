@@ -66,6 +66,48 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+/// Lockfile regeneration resolves the fixture's crates from the run's prepared sources.
+#[test]
+fn browser_lockfile_generation_resolves_prepared_sources() {
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    assert!(
+        browser
+            .workspace
+            .path()
+            .with_file_name("cargo-home/config.toml")
+            .is_file(),
+        "lockfile generation must resolve through a private source configuration"
+    );
+}
+
+/// Lockfile generation and metadata queries finish while the shared Cargo home is unusable.
+#[test]
+fn browser_resolution_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "browser_resolution_never_reaches_the_shared_cargo_home",
+        );
+        return;
+    }
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    success(
+        &browser
+            .cargo()
+            .args([
+                "metadata",
+                "--offline",
+                "--format-version",
+                "1",
+                "--manifest-path",
+            ])
+            .arg(browser.fixture("Cargo.toml"))
+            .output()
+            .unwrap(),
+    );
+}
+
 #[test]
 fn browser_clean_preserves_authored_inputs() {
     let browser = Browser::new();
@@ -97,7 +139,7 @@ fn browser_clean_preserves_authored_inputs() {
 }
 
 #[path = "fixtures/browser_support.rs"]
-mod browser_support;
+pub(crate) mod browser_support;
 use browser_support::{Browser, success};
 use std::fs;
 
@@ -633,7 +675,8 @@ fn browser_wasm_closure_excludes_native_engines() {
     fs::write(&manifest, original).unwrap();
     fs::write(browser.fixture("Cargo.lock"), lock).unwrap();
     success(&browser.run("browser-library-build"));
-    let tree = toolchain_support::command("cargo")
+    let tree = browser
+        .cargo()
         .args([
             "tree",
             "--locked",
@@ -1619,7 +1662,8 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
 
 /// Qualify the actual resolved graph, not only the manifest spelling.
 fn assert_fixture_independent(browser: &Browser) {
-    let metadata = toolchain_support::command(env!("CARGO"))
+    let metadata = browser
+        .cargo()
         .args([
             "metadata",
             "--locked",
@@ -1658,15 +1702,9 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
             .unwrap(),
     );
     assert_eq!(
-        target.canonicalize().unwrap(),
-        std::path::Path::new(env!("CARGO_BIN_EXE_development"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .canonicalize()
-            .unwrap(),
-        "warm browser recipes must reuse the test build's actual Cargo target"
+        target,
+        browser_support::target_directory(),
+        "warm browser recipes must reuse the run's shared Cargo target"
     );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
@@ -1704,6 +1742,16 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
         compiled,
         "reuse the built launcher"
     );
+}
+
+/// The cold checkout compiles its dependencies at the plain development profile.
+#[test]
+fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let browser = Browser::cold();
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(browser.path("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
 }
 
 #[test]

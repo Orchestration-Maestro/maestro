@@ -6,7 +6,7 @@ share one package reader using these existing lockfile packages on native and br
 
 | Package | Pin | Direct features | License choice |
 |---|---|---|---|
-| zip | 9.0.3 | defaults off; `deflate-flate2` | MIT |
+| zip | 9.0.5 | defaults off; `deflate-flate2` | MIT |
 | indexmap | 2.14.2 | defaults (`std`); ordered package-name identity | MIT |
 | roxmltree | 0.21.1 | defaults off; `std`, `positions` | MIT |
 | url | 2.5.8 | defaults | MIT |
@@ -27,6 +27,10 @@ zopfli 0.8.4, bumpalo 3.20.3 and typed-path 0.12.3 (MIT OR Apache-2.0).
 ZIP's macOS/BSD filesystem edge reuses nix 0.31.3 with defaults off and `fs`
 (MIT), bitflags 2.13.2, cfg-if 1.0.5, cfg_aliases 0.2.2 and libc 0.2.190
 (MIT OR Apache-2.0). No other archive codec is requested.
+
+Package names and payload reads use the same central-directory-backed
+`ZipArchive`. Word documents, presentations and spreadsheets do not switch to
+a streaming ZIP reader after inspecting entry names.
 
 URL resolution retains form_urlencoded 1.2.2, percent-encoding 2.3.2, idna 1.1.0,
 idna_adapter 1.2.2 and ICU 2.3's normalization, properties, collection, locale

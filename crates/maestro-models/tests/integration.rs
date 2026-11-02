@@ -69,6 +69,7 @@ mod cloud_model_routes;
 mod cloud_pac_routing;
 mod cloud_profile_credentials;
 mod cloud_proxy_transports;
+mod cloudflare_dispatch;
 mod compatibility_invocation;
 mod content_generation_conversion;
 mod content_generation_invocation;
@@ -94,10 +95,6 @@ mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
 mod executable_schemas;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the scripted FTP peer."
-)]
 #[path = "support/ftp_server.rs"]
 mod ftp_server;
 mod handoff_tool_ids;
@@ -144,9 +141,14 @@ mod model_stream_lifetimes;
 #[path = "model_streaming.rs"]
 mod model_streaming;
 mod model_thinking_levels;
+#[path = "support/native_peer.rs"]
+mod native_peer;
+#[path = "support/oauth_admission.rs"]
+mod oauth_admission;
 mod oauth_primitives;
 mod oauth_provider_registry;
 mod offline_model_catalog;
+mod output_budget;
 #[cfg(unix)]
 #[path = "support/profile_credentials.rs"]
 mod profile_credentials;
@@ -221,3 +223,7 @@ mod cloud_content_invocation;
 
 #[path = "support/content_credentials.rs"]
 mod content_credentials;
+
+mod message_beta_headers;
+
+mod simple_missing_auth;

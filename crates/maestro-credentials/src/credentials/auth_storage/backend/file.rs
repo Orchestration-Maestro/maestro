@@ -1,6 +1,7 @@
 //! Native credential file guarded by a sidecar lock file.
 use super::{AsyncLockUpdate, AuthStorageBackend, AuthStorageError, AuthStorageFuture, LockUpdate};
-use std::fs::{self, File, OpenOptions, TryLockError};
+use maestro_lock::WriteLock;
+use std::fs::{self, OpenOptions, TryLockError};
 use std::io::{self, ErrorKind};
 use std::path::Path;
 use std::time::Duration;
@@ -24,8 +25,8 @@ impl FileAuthStorageBackend {
         }
     }
 
-    /// Create missing parents privately and open the sidecar lock file.
-    fn lock_file(&self) -> io::Result<File> {
+    /// Create missing credential parent directories privately.
+    fn create_parents(&self) -> io::Result<()> {
         if let Some(parent) = Path::new(&self.auth_path).parent() {
             let mut builder = fs::DirBuilder::new();
             builder.recursive(true);
@@ -33,31 +34,27 @@ impl FileAuthStorageBackend {
             std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
             builder.create(parent)?;
         }
-        let sidecar = format!("{}.lock", self.auth_path);
-        OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(false)
-            .open(sidecar)
+        Ok(())
     }
 
     /// Lock the sidecar, retrying only while another holder has it.
-    fn acquire(&self) -> Result<File, AuthStorageError> {
-        Ok(maestro_lock::acquire(self.lock_file()?)?)
+    fn acquire(&self) -> Result<WriteLock, AuthStorageError> {
+        self.create_parents()?;
+        maestro_lock::acquire_write_bounded(Path::new(&self.auth_path), true).map_err(lock_error)
     }
 
     /// Lock the sidecar, waiting the scheduled delays while another holder has it.
-    async fn acquire_async(&self) -> Result<File, AuthStorageError> {
-        let file = self.lock_file()?;
+    async fn acquire_async(&self) -> Result<WriteLock, AuthStorageError> {
+        self.create_parents()?;
         let mut delays = ASYNC_LOCK_DELAYS_MS.into_iter();
         loop {
-            match file.try_lock() {
-                Ok(()) => return Ok(file),
-                Err(TryLockError::WouldBlock) => match delays.next() {
+            match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
+                Ok(holder) => return Ok(holder),
+                Err(error @ TryLockError::WouldBlock) => match delays.next() {
                     Some(delay) => tokio::time::sleep(Duration::from_millis(delay)).await,
-                    None => return Err(Box::new(TryLockError::WouldBlock)),
+                    None => return Err(lock_error(error)),
                 },
-                Err(error) => return Err(Box::new(error)),
+                Err(error) => return Err(lock_error(error)),
             }
         }
     }
@@ -74,15 +71,23 @@ impl FileAuthStorageBackend {
     }
 }
 
+/// Preserves native acquisition errors and distinguishes exhausted contention.
+fn lock_error(error: TryLockError) -> AuthStorageError {
+    match error {
+        TryLockError::Error(error) => error.into(),
+        error @ TryLockError::WouldBlock => error.into(),
+    }
+}
+
 /// Create the file with `{}` only if absent, following dangling links; an existing file is never opened for writing.
 fn initialize(path: &Path) -> io::Result<()> {
     let mut candidate = path.to_path_buf();
     loop {
-        match OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&candidate)
-        {
+        let mut open = OpenOptions::new();
+        open.write(true).create_new(true);
+        #[cfg(unix)]
+        std::os::unix::fs::OpenOptionsExt::mode(&mut open, 0o600);
+        match open.open(&candidate) {
             Ok(mut file) => {
                 io::Write::write_all(&mut file, b"{}")?;
                 #[cfg(unix)]
@@ -104,12 +109,48 @@ fn initialize(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Replace the text, restricting it to its owner on Unix.
-fn write(path: &Path, text: &str) -> io::Result<()> {
-    fs::write(path, text)?;
+/// Publishes `text` as the credential file at `path` through the shared recoverable writer,
+/// readable only by its owner on Unix.
+///
+/// The text is written in place under the shared exclusion, so a hard link to the file sees it,
+/// and a write cut short is completed, not rolled back, by the next coordinated writer. A symbolic
+/// link at `path` is followed and a missing parent directory is created. An existing file must be
+/// writable by its owner: it is narrowed to mode 0600 through the handle that proved this, so the
+/// new text is never written under looser bits, and a read-only file is refused without a change.
+/// A failed parent-directory sync after the write is not reported: the text is already written.
+///
+/// # Errors
+/// Returns the native error of the narrowing or of the publication.
+pub fn write_auth_file(path: &str, text: &str) -> io::Result<()> {
     #[cfg(unix)]
-    fs::set_permissions(path, std::os::unix::fs::PermissionsExt::from_mode(0o600))?;
+    narrow(Path::new(path))?;
+    maestro_lock::replace(
+        Path::new(path),
+        text.as_bytes(),
+        maestro_lock::Replace {
+            through_symlinks: true,
+            creation_mode: Some(0o600),
+        },
+    )
+    .map(|_| ())
+}
+
+/// Narrows an existing writable file before publishing any credential bytes.
+#[cfg(unix)]
+fn narrow(path: &Path) -> io::Result<()> {
+    match OpenOptions::new().write(true).open(path) {
+        Ok(file) => file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?,
+        Err(error) if error.kind() != ErrorKind::NotFound => return Err(error),
+        Err(_) => (),
+    }
     Ok(())
+}
+
+/// Publishes on the transaction's retained lock without acquiring it again.
+fn publish(holder: WriteLock, text: &str) -> io::Result<()> {
+    #[cfg(unix)]
+    narrow(holder.path())?;
+    holder.replace(text.as_bytes(), Some(0o600)).map(|_| ())
 }
 
 impl AuthStorageBackend for FileAuthStorageBackend {
@@ -118,16 +159,11 @@ impl AuthStorageBackend for FileAuthStorageBackend {
         update: &mut dyn FnMut(Option<&str>) -> LockUpdate,
     ) -> Result<(), AuthStorageError> {
         let lock = self.acquire()?;
-        let outcome = self
-            .read()
-            .map_err(AuthStorageError::from)
-            .and_then(|current| update(current.as_deref()))
-            .and_then(|next| match next {
-                Some(next) => Ok(write(Path::new(&self.auth_path), &next)?),
-                None => Ok(()),
-            });
-        lock.unlock()?;
-        outcome
+        let current = self.read()?;
+        if let Some(next) = update(current.as_deref())? {
+            publish(lock, &next)?;
+        }
+        Ok(())
     }
 
     fn with_lock_async<'a>(
@@ -135,10 +171,10 @@ impl AuthStorageBackend for FileAuthStorageBackend {
         update: AsyncLockUpdate<'a>,
     ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
         Box::pin(async move {
-            let _lock = self.acquire_async().await?;
+            let lock = self.acquire_async().await?;
             let current = self.read()?;
             if let Some(next) = update(current).await? {
-                write(Path::new(&self.auth_path), &next)?;
+                publish(lock, &next)?;
             }
             Ok(())
         })

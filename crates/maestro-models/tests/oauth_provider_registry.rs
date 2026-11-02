@@ -3,38 +3,14 @@
 #[cfg(not(target_arch = "wasm32"))]
 use crate::clock::epoch_millis;
 #[cfg(not(target_arch = "wasm32"))]
+use crate::oauth_admission::Admission;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::oauth::*;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{BoxFuture, Fetch};
 #[cfg(not(target_arch = "wasm32"))]
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 
-#[cfg(not(target_arch = "wasm32"))]
-/// Serial admission for this binary's process-wide registry.
-static ADMISSION: Mutex<()> = Mutex::new(());
-#[cfg(not(target_arch = "wasm32"))]
-/// Reset registry membership even when an assertion fails.
-struct Admission {
-    /// Keep admission until cleanup completes.
-    _guard: MutexGuard<'static, ()>,
-}
-#[cfg(not(target_arch = "wasm32"))]
-impl Admission {
-    /// Start an isolated registry observation.
-    fn enter() -> Self {
-        let guard = ADMISSION
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        reset_oauth_providers();
-        Self { _guard: guard }
-    }
-}
-#[cfg(not(target_arch = "wasm32"))]
-impl Drop for Admission {
-    fn drop(&mut self) {
-        reset_oauth_providers();
-    }
-}
 #[cfg(not(target_arch = "wasm32"))]
 /// Controlled provider refresh operation.
 type Refresh = dyn Fn(OAuthCredentials, Option<Fetch>) -> BoxFuture<Result<OAuthCredentials, OAuthError>>

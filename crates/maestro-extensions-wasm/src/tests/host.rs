@@ -1539,20 +1539,22 @@ impl host::Host for State {
         &mut self,
         auth: Resource<super::reader_host::Reader>,
         path: Option<String>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("create_model_registry", &[serde_json::json!(path)])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn in_memory_model_registry(
         &mut self,
         auth: Resource<super::reader_host::Reader>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("in_memory_model_registry", &[])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn register_provider(
         &mut self,

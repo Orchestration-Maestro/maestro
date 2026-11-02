@@ -773,16 +773,9 @@ under the same license. Changes include shared framing, three-channel RGBA reply
 admission and checked string slicing for malformed non-ASCII hex replies.
 
 The application state, construction, internal event routing, notifications,
-metadata expiry, configuration reload, session scheduling and API request handling
-in `crates/maestro-daemon/src/app/` derive from the application modules under the
-same license. The workspace, tab, launch environment, notification, manifest and
-metadata command handlers in `app/api/` and `app/api_helpers.rs` derive from the
-application API modules, with typed results instead of encoded response text.
-The API socket server and server mode in `crates/maestro-rpc/src/daemon/`
-and the daemon request adapter in `crates/maestro-app/src/rpc_mode/daemon.rs` derive
-from the API server and headless server modules. Changes include the shared
-connection runner instead of one request per connection, owned tasks instead of
-threads, and the shared response envelope. Workspace attention ordering derives from the workspace aggregate
+metadata expiry, configuration reload and session scheduling in
+`crates/maestro-daemon/src/app/` derive from the application modules under the
+same license. Workspace attention ordering derives from the workspace aggregate
 module. The daemon's repository queries reuse workspace-owned discovery.
 The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config.rs`
 and its submodules derives from the repository configuration module under the same
@@ -1242,6 +1235,23 @@ authorization of the copyright holder.
 
 SPDX-License-Identifier: Unicode-3.0
 ```
+
+## Local date-time data
+
+The locale recipes and recorded inputs in `crates/maestro-text/data/date-time/`
+derive from Unicode CLDR JSON 48.2.0. The Persian calendar conversion in
+`crates/maestro-text/src/date_time_calendar.rs` derives from Unicode ICU.
+Their copyright notices are:
+
+```text
+Copyright © 2004-2026 Unicode, Inc.
+© 2016 and later: Unicode, Inc. and others;
+Copyright (C) 2003–2013, International Business Machines Corporation and others.
+All Rights Reserved.
+```
+
+The [Unicode-3.0 licence](crates/maestro-text/data/date-time/LICENSE) applies to
+the data and translated calendar code.
 
 ## Development skill content
 

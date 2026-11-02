@@ -2728,13 +2728,14 @@
         }
       }
     ],
-    "edit_abort_drops_each_pending_stage_and_releases_queue": [
+    "edit_abort_keeps_each_pending_stage_and_queue": [
       {
         "input": {
           "stage": "access"
         },
         "expected": [
           "access:start",
+          "access:end",
           "Operation aborted",
           "successor"
         ]
@@ -2747,6 +2748,7 @@
           "access:start",
           "access:end",
           "read:start",
+          "read:end",
           "Operation aborted",
           "successor"
         ]
@@ -2761,6 +2763,7 @@
           "read:start",
           "read:end",
           "write:start",
+          "write:end",
           "Operation aborted",
           "successor"
         ]

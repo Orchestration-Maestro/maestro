@@ -1,4 +1,5 @@
 //! Opt-in guard that asks before leaving or forking a repository with uncommitted changes.
+// maestro-component: MAESTRO_DIRTY_REPO_GUARD_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

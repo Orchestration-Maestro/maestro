@@ -128,3 +128,63 @@ fn propagates_write_failures() {
         "{saved:?}"
     );
 }
+
+#[test]
+fn saving_reaches_a_hard_linked_account_file_in_place() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/auth.json", scratch.path().display());
+    let linked = format!("{}/linked.json", scratch.path().display());
+    std::fs::write(&path, object_seed()).unwrap();
+    std::fs::hard_link(&path, &linked).unwrap();
+    let mut auth = load_auth(&path);
+    auth.insert("alpha".into(), json!({"type": "oauth"}));
+
+    save_auth(&path, &auth).unwrap();
+
+    assert!(std::fs::read_to_string(&path).unwrap().contains("alpha"));
+    assert_eq!(
+        std::fs::read_to_string(&linked).unwrap(),
+        std::fs::read_to_string(&path).unwrap()
+    );
+}
+
+/// Re-runs the calling test in a child with umask 022: true in the parent once the child
+/// passed, false inside the child.
+#[cfg(unix)]
+fn relaunched_under_umask_022(test: &str) -> bool {
+    use maestro_test_process::TestProcess;
+    if std::env::var_os("ACCOUNT_FILE_UMASK_CHILD").is_some() {
+        return false;
+    }
+    let output = TestProcess::current(test)
+        .unwrap()
+        .shell_setup("/bin/sh", "umask 022")
+        .env("ACCOUNT_FILE_UMASK_CHILD", "1")
+        .single_threaded()
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    true
+}
+
+#[cfg(unix)]
+#[test]
+fn saving_creates_the_account_file_private_to_its_owner() {
+    use std::os::unix::fs::PermissionsExt;
+    if relaunched_under_umask_022("saving_creates_the_account_file_private_to_its_owner") {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/auth.json", scratch.path().display());
+    let auth = Map::from_iter([("alpha".to_owned(), json!({"type": "oauth"}))]);
+
+    save_auth(&path, &auth).unwrap();
+
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o600);
+}

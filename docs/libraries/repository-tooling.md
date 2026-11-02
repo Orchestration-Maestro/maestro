@@ -31,10 +31,14 @@ of `maestro-dependencies`, whose manifest therefore repeats existing locked pack
 and features for native targets; it adds no package version of its own.
 
 Build-recipe tests in `maestro-tooling` use the existing `toml =1.1.6`
-(default features, MIT OR Apache-2.0) as a development dependency to copy local
-`path` sources from the root manifest's `[patch]` tables into disposable build
-fixtures. Registry/git patches need no local copy; production watching is
-unchanged.
+(default features, MIT OR Apache-2.0) as a normal dependency, to read `Cargo.lock` in the
+nextest cache normalization, and in its tests to copy local `path` sources from the root
+manifest's `[patch]` tables into disposable build fixtures. Registry/git patches need no
+local copy; production watching is unchanged.
+
+Test-setup staging in `maestro-tooling` digests bundle files with `sha2 =0.11.0`,
+defaults off (MIT OR Apache-2.0). This direct edge reuses the locked SHA-256
+dependency; it adds no resolved package or feature.
 
 ## External browser author tools
 

@@ -713,8 +713,8 @@ fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
     std::fs::write(&target, original).unwrap();
     let path = scratch.path().join("keybindings.json");
     std::os::unix::fs::symlink(&target, &path).unwrap();
-    let Some(_guard) = maestro_test_directory::deny(&target_dir, 0o500).unwrap() else {
-        eprintln!("host permits writes to a protected directory; permission premise unavailable");
+    let Some(_guard) = maestro_test_directory::deny(&target, 0o400).unwrap() else {
+        eprintln!("host permits writes to a read-only file; permission premise unavailable");
         return;
     };
     let error = reset_multiplexer_keybindings(scratch.path().to_str().unwrap(), 9).unwrap_err();

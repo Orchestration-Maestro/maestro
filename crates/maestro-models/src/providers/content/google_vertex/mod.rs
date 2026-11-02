@@ -126,6 +126,7 @@ fn setup<E: ProviderExecution>(
 /// Adapt simple common controls without forwarding raw cloud scope extras.
 fn simple<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions<E>>,
 ) -> GoogleVertexOptions<E> {
     let thinking = options
@@ -142,7 +143,7 @@ fn simple<E: ProviderExecution>(
             )
         });
     GoogleVertexOptions {
-        common: build_base_options_for(model, options, None),
+        common: build_base_options_for(model, context, options, None),
         thinking: Some(thinking),
         ..Default::default()
     }
@@ -169,7 +170,7 @@ fn simple_call<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: E::Submission,
 ) -> AssistantMessageEventStream {
-    let selected = simple(&model, options.as_ref());
+    let selected = simple(&model, &context, options.as_ref());
     drop(options);
     dispatch(model, context, E::submission(Some(selected), submit))
 }

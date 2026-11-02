@@ -43,13 +43,10 @@ pub async fn delayed_refresh(expired: bool) -> chat::TestResult {
         tokio::time::advance(std::time::Duration::from_millis(1001)).await;
     }
     let mut result = std::pin::pin!(stream.result());
-    assert!(
-        std::future::Future::poll(
-            result.as_mut(),
-            &mut std::task::Context::from_waker(std::task::Waker::noop())
-        )
-        .is_pending()
-    );
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(std::future::Future::poll(result.as_mut(), &mut context).is_pending());
+    // The native peer finishes without paused time jumping to an unrelated HTTP idle limit.
+    tokio::time::resume();
     release.send(())?;
     let output = result.await;
     let output = output.read().unwrap();

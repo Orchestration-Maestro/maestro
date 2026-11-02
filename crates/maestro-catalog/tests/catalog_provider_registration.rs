@@ -972,6 +972,7 @@ fn set_credential_kind(auth: &maestro_credentials::AuthStorage, kind: usize) {
         auth.set(
             "p",
             maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+                env: None,
                 key: "unused".into(),
             }),
         );

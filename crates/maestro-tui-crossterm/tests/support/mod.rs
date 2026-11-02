@@ -38,8 +38,13 @@ const CASE_MARKER: &str = "MAESTRO_TERMINAL_TEST_CASE";
 /// Variables a scenario sees only when it sets them.
 const SCENARIO_VARIABLES: [&str; 4] = ["COLUMNS", "LINES", "MAESTRO_TUI_WRITE_LOG", "TZ"];
 
-/// The bytes a terminal writes when it starts: bracketed paste on, then the keyboard query.
-pub const START_BYTES: &str = "\x1b[?2004h\x1b[?u";
+/// The bytes a terminal writes when it starts: bracketed paste on, the keyboard flags
+/// requested, then the keyboard and device-attribute queries.
+pub const START_BYTES: &str = "\x1b[?2004h\x1b[>7u\x1b[?u\x1b[c";
+
+/// The bytes a started terminal writes when it stops with no progress shown: bracketed paste
+/// off, then the keyboard flags popped.
+pub const STOP_BYTES: &str = "\x1b[?2004l\x1b[<u";
 
 /// Runs scenario number `case` of `test` in a child copy of the calling test and fails the
 /// test when the child fails. Inside the child it runs `scenario` only when it is the case

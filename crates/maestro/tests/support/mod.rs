@@ -26,6 +26,7 @@ impl Root {
             .env_clear()
             .current_dir(self.path("project"))
             .env("HOME", self.scratch.path())
+            .envs(maestro_test_process::user_cache_home().map(|path| ("XDG_CACHE_HOME", path)))
             .env("PATH", std::env::var_os("PATH").unwrap_or_default())
             // A Windows process without its system root cannot open sockets.
             .envs(std::env::var_os("SYSTEMROOT").map(|root| ("SYSTEMROOT", root)))
@@ -82,6 +83,18 @@ fn child_guard_reaps_during_unwind() {
     child.wait().unwrap();
     assert!(unwind.is_err());
     assert!(status.is_some(), "child survived selector failure");
+}
+
+#[cfg(unix)]
+#[test]
+fn root_command_keeps_the_user_compilation_cache() {
+    let command = Root::new().command(&[]);
+    let cache = command
+        .get_envs()
+        .find(|(name, _)| *name == "XDG_CACHE_HOME")
+        .and_then(|(_, value)| value);
+    let expected = maestro_test_process::user_cache_home();
+    assert_eq!(cache.map(Path::new), expected.as_deref());
 }
 
 pub mod rpc;

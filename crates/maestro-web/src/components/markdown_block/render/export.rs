@@ -1,6 +1,6 @@
 //! Viewer-specific admission through the shared document walker.
 use super::{Policy, Prepared, Writer, escape, title};
-use maestro_app::{browser::script_scheme, is_whitespace_scalar, markdown, normalize_to_lf};
+use maestro_app::{is_whitespace_scalar, markdown, normalize_to_lf};
 use maestro_theme::{HighlightProfile, SyntaxHighlighter};
 
 /// Prepare standalone viewer markup without retained chat controls.
@@ -17,22 +17,32 @@ pub(crate) fn prepare_export(text: &str, highlighter: &dyn SyntaxHighlighter) ->
     html
 }
 
-/// Classify the operand as consumed by a native HTML URL attribute.
-pub(super) fn blocked(href: &str) -> bool {
-    let selected = href.replace('\0', "\u{fffd}");
-    url::Url::parse(&selected)
-        .is_ok_and(|url| script_scheme(url.scheme()) || url.scheme() == "data")
+/// Schemes an exported link or image target may name; a target without a scheme is relative.
+const ALLOWED_SCHEMES: [&str; 5] = ["http", "https", "mailto", "tel", "ftp"];
+
+/// The target with ASCII control characters removed, as a browser reads it, or `None` when it
+/// names a scheme outside the allowlist.
+pub(super) fn sanitized(href: &str) -> Option<String> {
+    let href: String = href.chars().filter(|c| !c.is_ascii_control()).collect();
+    let scheme = href.split_once(':').map(|(name, _)| name).filter(|name| {
+        name.starts_with(|c: char| c.is_ascii_alphabetic())
+            && name
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '.' | '-'))
+    });
+    scheme
+        .is_none_or(|name| ALLOWED_SCHEMES.iter().any(|a| a.eq_ignore_ascii_case(name)))
+        .then_some(href)
 }
 
 /// Emit literal image alternatives rather than formatted label children.
 pub(super) fn image(alt: &str, meta: &markdown::ImageMetadata, out: &mut String) {
-    let href = meta.destination.trim_matches(is_whitespace_scalar);
-    if blocked(href) {
+    let Some(href) = sanitized(meta.destination.trim_matches(is_whitespace_scalar)) else {
         escape(alt, out);
         return;
-    }
+    };
     out.push_str("<img src=\"");
-    escape(href, out);
+    escape(&href, out);
     out.push_str("\" alt=\"");
     escape(alt, out);
     out.push('"');

@@ -166,10 +166,3 @@ pub struct ImageInput {
     /// Starting bool.
     pub current: bool,
 }
-impl Events {
-    /// Boolean confirmation.
-    pub fn images(&self) -> Rc<dyn Fn(bool)> {
-        let events = self.clone();
-        Rc::new(move |value| events.push("select", Some(Value::from(value))))
-    }
-}

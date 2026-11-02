@@ -2,16 +2,11 @@
 //! request adapter under one connection.
 #![cfg(target_os = "linux")]
 use maestro_app::SettingsManager;
-use maestro_app::daemon::api::client::{ConnectionTarget, DaemonClient};
-use maestro_app::daemon::api::{RequestMessage, RuntimeStatus, event_hub::EventHub};
-use maestro_app::daemon::app::App;
-use maestro_app::daemon::app::construction::{
-    ManifestCache, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry,
+use maestro_app::daemon::{
+    App, Config, ConnectionTarget, DaemonClient, DaemonPaths, EventHub, ManifestCache,
+    NewTerminalCwdConfig, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry, RenderSignal,
+    RequestMessage, RuntimeStatus, TerminalTheme, init_file_logging,
 };
-use maestro_app::daemon::paths::DaemonPaths;
-use maestro_app::daemon::render_signal::RenderSignal;
-use maestro_app::daemon::settings::model::{Config, NewTerminalCwdConfig};
-use maestro_app::daemon::terminal_theme::TerminalTheme;
 use maestro_app::rpc_mode::{
     DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
 };
@@ -330,7 +325,7 @@ fn response_outcome_uses_the_shared_success_and_code_fields() {
         return;
     };
     let paths = root_paths(&root);
-    maestro_app::daemon::logging::init_file_logging(&paths, "daemon", Some("maestro=debug"));
+    init_file_logging(&paths, "daemon", Some("maestro=debug"));
     let looks_failed = Ok(ResponseResult::Pong {
         version: r#"{"error":{"code":"timeout","message":"failed"}}"#.into(),
         protocol: PROTOCOL,
@@ -528,8 +523,7 @@ fn socket_ping_reports_product_and_shared_protocol_versions() {
     });
     let capabilities = ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon:
-            maestro_app::daemon::platform::current_process_is_detached_server_daemon(),
+        detached_server_daemon: maestro_app::daemon::current_process_is_detached_server_daemon(),
     };
     let reply: RpcResponse = serde_json::from_str(&line).unwrap();
     assert_eq!(
@@ -577,8 +571,7 @@ fn socket_first_lines_close_or_answer_by_their_framing() {
     });
     let served_capabilities = ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon:
-            maestro_app::daemon::platform::current_process_is_detached_server_daemon(),
+        detached_server_daemon: maestro_app::daemon::current_process_is_detached_server_daemon(),
     };
     let answered = response("p", "ping", Ok(pong(Some(served_capabilities))));
     let answered = format!("{}\n", serde_json::to_string(&answered).unwrap());
@@ -743,7 +736,7 @@ fn server_startup_announces_only_bound_resources() {
 
 #[test]
 fn setup_entry() {
-    if maestro_app::daemon::app::construction::setup_entry().is_some() {
+    if maestro_app::daemon::setup_entry().is_some() {
         std::process::exit(1);
     }
 }

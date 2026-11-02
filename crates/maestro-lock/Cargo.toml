@@ -8,6 +8,7 @@ autotests = false
 
 [dependencies]
 maestro-path = { path = "../maestro-path" }
+sha2 = { version = "=0.11.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

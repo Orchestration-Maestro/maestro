@@ -121,6 +121,7 @@ impl AgentSession<Local> {
             bound.command_context_actions = bindings
                 .command_context_actions
                 .or(bound.command_context_actions.take());
+            bound.abort_handler = bindings.abort_handler.or(bound.abort_handler.take());
             bound.shutdown_handler = bindings.shutdown_handler.or(bound.shutdown_handler.take());
             bound.on_error = bindings.on_error.or(bound.on_error.take());
         }
@@ -208,6 +209,7 @@ impl AgentSession<Local> {
         let flush = self.settings_manager.borrow().flush();
         flush.await;
         self.settings_manager.borrow_mut().reload_from_storage();
+        self.sync_queue_modes_from_settings();
         maestro_models::reset_api_providers();
         self.resource_loader.reload().await.map_err(thrown)?;
         self.model_registry

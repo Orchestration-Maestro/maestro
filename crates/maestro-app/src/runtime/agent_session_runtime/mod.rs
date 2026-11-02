@@ -234,7 +234,7 @@ impl AgentSessionRuntime {
             wait_for_idle: Rc::new(move || {
                 let runtime = current(&idle);
                 Box::pin(async move {
-                    runtime?.session().agent().wait_for_idle().await;
+                    runtime?.session().wait_for_idle().await;
                     Ok(())
                 })
             }),
