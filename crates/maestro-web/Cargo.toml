@@ -42,7 +42,11 @@ custom-element = "=0.1.5"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
+[features]
+test-support = []
+
 [dev-dependencies]
+maestro-web = { path = ".", features = ["test-support"] }
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 egui = { version = "=0.36.2", default-features = false, features = ["default_fonts"] }
