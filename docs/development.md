@@ -989,7 +989,10 @@ lock selects, together with the browser fixture's crates. It runs once per run,
 writes `target/fixture-sources/<hash>/`, and reuses that directory while the
 inputs stay unchanged. The set stays small because Cargo reads every vendored
 package on each run; a test checks that every registry crate the tooling crates
-declare is named in that manifest. The setup exports the configuration path as
+declare is named in that manifest. Keep an anonymous import for each declared
+crate in `fixtures/registry_sources/src/lib.rs`, including `use signal_hook as _;`
+for the native search fixture's Unix signal dependency. The dependency scan checks
+this standalone fixture too. The setup exports the configuration path as
 `MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
 the same command. A fixture opts in with `Workspace::use_prepared_sources` or
 `Browser::cargo`, which copy the configuration into its private home. A fixture
