@@ -131,8 +131,7 @@ pub fn detect(app: &mut TestApp, agent: Agent, state: AgentState) {
         );
 }
 
-/// Gives the first pane of the first workspace a recognized Pi process whose fallback state is
-/// `state`.
+/// Gives the first pane of the first workspace a recognized agent process with fallback `state`.
 pub fn pilot(app: &mut TestApp, state: AgentState) {
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(app, 0))
