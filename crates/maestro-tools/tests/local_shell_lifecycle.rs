@@ -111,22 +111,68 @@ fn local_bash_orders_abort_and_timeout_during_exit_grace() {
     });
 }
 
-/// Reads the root shell's own PID from its first chunk.
+/// Reads the root shell's PID while accepting the executed payload's control channel.
 #[cfg(target_os = "linux")]
 async fn root_pid(
     operation: &mut Operation<'_>,
     receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
+    listener: &tokio::net::TcpListener,
     waker: &Waker,
-) -> u32 {
-    let bytes = next_chunk(operation, receiver, waker).await;
-    String::from_utf8(bytes).unwrap().trim().parse().unwrap()
+) -> (u32, tokio::net::TcpStream) {
+    let (bytes, accepted) = drive_until(
+        operation,
+        async { tokio::join!(receiver.recv(), listener.accept()) },
+        waker,
+    )
+    .await;
+    let pid = String::from_utf8(bytes.unwrap())
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap();
+    (pid, accepted.unwrap().0)
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn local_bash_startup_failure_does_not_wait_for_readiness() {
+    run_paused(async {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
+        let mut sink = |_: &[u8]| {};
+        let mut operation = operations.exec(
+            "exit 7",
+            "/",
+            BashExecOptions {
+                on_data: &mut sink,
+                signal: None,
+                timeout: None,
+                env: None,
+            },
+        );
+        let waker = Waker::noop();
+        assert_pending(&mut operation, waker);
+        let observation =
+            std::panic::AssertUnwindSafe(drive_until(&mut operation, listener.accept(), waker))
+                .catch_unwind()
+                .await;
+        drop(listener);
+        assert!(
+            observation.is_err(),
+            "settlement must reject missing readiness"
+        );
+    });
 }
 
 /// Exercises one execution with an independently reaped writer holding its pipe.
 #[cfg(target_os = "linux")]
 async fn grace_case(policy: GracePolicy) {
     let dir = Scratch::new().unwrap();
-    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+        .await
+        .unwrap();
     let payload = read_support::payload(
         dir.path(),
         "yielding",
@@ -158,10 +204,10 @@ async fn grace_case(policy: GracePolicy) {
         },
     );
     let waker = Waker::from(Arc::new(Wakes::default()));
-    let pid = root_pid(&mut operation, &mut receiver, &waker).await;
+    let (pid, mut connection) = root_pid(&mut operation, &mut receiver, &listener, &waker).await;
+    drop(listener);
     let mut holder = pipe_holder(&read_support::grace_holder(dir.path(), pid)).await;
-    let (mut connection, _) = listener.accept().unwrap();
-    connection.write_all(b"x").unwrap();
+    connection.write_all(b"x").await.unwrap();
     while std::path::Path::new(&format!("/proc/{pid}")).exists() {
         assert_pending(&mut operation, &waker);
         tokio::task::yield_now().await;
@@ -259,12 +305,26 @@ async fn next_chunk(
     receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
     waker: &Waker,
 ) -> Vec<u8> {
+    drive_until(operation, receiver.recv(), waker)
+        .await
+        .unwrap()
+}
+
+/// Drives the execution while waiting for I/O without advancing the paused clock.
+#[cfg(target_os = "linux")]
+async fn drive_until<F: std::future::Future>(
+    operation: &mut Operation<'_>,
+    future: F,
+    waker: &Waker,
+) -> F::Output {
+    let mut future = std::pin::pin!(future);
     loop {
         assert_pending(operation, waker);
-        if let Ok(chunk) = receiver.try_recv() {
-            return chunk;
+        tokio::select! {
+            biased;
+            result = &mut future => return result,
+            () = tokio::task::yield_now() => {}
         }
-        tokio::task::yield_now().await;
     }
 }
 
@@ -358,7 +418,8 @@ async fn settle_child(
     operation: &mut Operation<'_>,
     connection: Option<&mut TcpStream>,
 ) {
-    if connection.is_some_and(|connection| connection.write_all(b"ar").is_err())
+    if let Some(connection) = connection
+        && connection.write_all(b"ar").is_err()
         && let Some(pid) = witness.pid
     {
         maestro_tools::utils::shell::kill_process_tree(pid);
@@ -405,8 +466,8 @@ async fn termination_case(stop: Stop) {
     let mut connection = None;
     let observation = std::panic::AssertUnwindSafe(async {
         let line = witness.line(&mut operation, &mut receiver).await;
-        witness.pid = Some(std::str::from_utf8(&line).unwrap().trim().parse().unwrap());
         let socket = connection.insert(listener.accept().unwrap().0);
+        witness.pid = Some(std::str::from_utf8(&line).unwrap().trim().parse().unwrap());
         match stop {
             Stop::Abort => witness.poll(&mut operation).await,
             Stop::Timeout => {
@@ -416,6 +477,7 @@ async fn termination_case(stop: Stop) {
     })
     .catch_unwind()
     .await;
+    drop(listener);
     settle_child(&mut witness, &mut operation, connection.as_mut()).await;
     if let Err(panic) = observation {
         std::panic::resume_unwind(panic);

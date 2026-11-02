@@ -1311,7 +1311,7 @@ fn main() -> std::io::Result<()> {
 | `malformed` | Writes `a`, byte FF and `b` to standard output, and an incomplete scalar to standard error. |
 | `cwd` | Writes the directory this process inherited. |
 | `holder` | On `port`, announces `READY`, waits for one byte, then writes `bye`. |
-| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket, staying alive until killed. |
+| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. |
 | `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
 | `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
 | `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |
@@ -1319,10 +1319,10 @@ fn main() -> std::io::Result<()> {
 | `interleaved` | Connects to `port`, writes bytes F0 9F, waits for one release byte, writes `err` to standard error, waits for another byte, then writes bytes 98 80 and 262144 zero bytes to standard output. |
 | `termination` | Connects to `port` and writes its PID followed by a newline. After one release byte, writes `alive` and a newline; after a second byte, writes `survived` to the file of that name in its working directory. Closing the channel before either byte fails without writing the marker. |
 | `identity` | Writes this process's session and process group, one per line. |
-| `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, and waits for it. |
+| `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, waits for it to end, then waits for one control byte or EOF. |
 | `tree-leaf` | On `port`, writes `READY` and holds the channel until the tree is killed. |
 | `blocked` | Registers TERM, announces `READY` on the optional `port`, then waits for one termination notification and finishes. An optional `code` selects its exit code after handling TERM. To test a deadline, poll execution once on a paused runtime, wait for `READY`, then advance the clock; resume real time to collect native exit and pipe completion. |
-| `grace` | On Linux, writes `held`, then writes `grace` into standard output `pid` names after one input line. Finishes after a second input line or when input closes. |
+| `grace` | On Linux, writes `held`, then writes `grace` into standard output `pid` names after one input line or EOF. Finishes after a second input line or when input closes. |
 
 The `MTP_ROLE` variable selects a linked-descendant role for the same record; no
 other selection uses it. Shell parsing stays on the real shell: select the

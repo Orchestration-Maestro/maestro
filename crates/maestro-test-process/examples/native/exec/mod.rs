@@ -30,7 +30,7 @@ pub(super) enum Record {
         /// Parent-owned readiness and release channel.
         port: u16,
     },
-    /// Answer every termination request and stay alive until killed.
+    /// Answer every TERM until killed, released by one byte or disconnected.
     Stubborn {
         /// Parent-owned readiness and question channel.
         port: u16,
@@ -67,7 +67,7 @@ pub(super) enum Record {
         /// Parent-owned readiness and question channel.
         port: u16,
     },
-    /// Hold a control channel with a linked descendant until the tree is killed.
+    /// Wait for a linked descendant, then one control byte or EOF.
     TreeRoot {
         /// Parent-owned control channel.
         port: u16,

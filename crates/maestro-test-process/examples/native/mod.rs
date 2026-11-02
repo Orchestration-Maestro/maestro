@@ -14,6 +14,8 @@ mod observe;
 mod rpc;
 #[cfg(unix)]
 mod search;
+#[cfg(unix)]
+mod termination;
 
 /// A fully parsed fixture request, before any observable effect.
 enum Request {

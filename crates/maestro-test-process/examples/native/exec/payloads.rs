@@ -2,10 +2,11 @@
 
 use std::{
     ffi::OsString,
-    io::{self, BufRead, Read, Write},
+    io::{self, BufRead, Write},
     net::TcpStream,
 };
 
+use crate::native::termination::Termination;
 use maestro_test_process::child::{
     announce, connect, read_input, receive, write_stderr, write_stdout,
 };
@@ -50,10 +51,9 @@ pub(super) fn streams() -> io::Result<()> {
 /// Write one scalar to both outputs around the parent's release, keeping its bytes split.
 pub(super) fn utf8(port: u16, split: usize) -> io::Result<()> {
     let bytes = SCALAR.as_bytes();
-    let head = bytes
-        .get(..split)
+    let (head, tail) = bytes
+        .split_at_checked(split)
         .ok_or_else(|| io::Error::other("split beyond one scalar"))?;
-    let tail = &bytes[split..];
     write_stdout(head)?;
     write_stderr(head)?;
     let mut socket = connect(port)?;
@@ -83,12 +83,9 @@ pub(super) fn holder(port: u16) -> io::Result<()> {
     write_stdout(b"bye")
 }
 
-/// Answer every termination request with `bye` and `T`, staying alive until killed.
+/// Answer every TERM with `bye` and `T` until killed, released or disconnected.
 pub(super) fn stubborn(port: u16) -> io::Result<()> {
-    use std::os::unix::net::UnixStream;
-    let (notifications, writer) = UnixStream::pair()?;
-    let _registration =
-        signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
+    let notifications = Termination::new()?;
     let mut socket = connect(port)?;
     let answers = socket.try_clone()?;
     drop(std::thread::spawn(move || {
@@ -100,12 +97,8 @@ pub(super) fn stubborn(port: u16) -> io::Result<()> {
 }
 
 /// Report each queued termination until the parent kills this process.
-fn answer_each_termination(
-    mut notifications: std::os::unix::net::UnixStream,
-    mut socket: TcpStream,
-) {
-    let mut byte = [0];
-    while notifications.read_exact(&mut byte).is_ok() {
+fn answer_each_termination(mut notifications: Termination, mut socket: TcpStream) {
+    while notifications.wait().is_ok() {
         if write_stdout(b"bye").is_err() || socket.write_all(b"T").is_err() {
             return;
         }
@@ -150,7 +143,7 @@ pub(super) fn exchange(port: u16) -> io::Result<()> {
 pub(super) fn raw(port: u16) -> io::Result<()> {
     let mut socket = connect(port)?;
     write_stdout(b"raw\0\x1b[31m\r\n\xff")?;
-    socket.read_exact(&mut [0])?;
+    receive(&mut socket)?.ok_or_else(|| io::Error::other("missing raw release"))?;
     write_stderr(b"stderr")
 }
 
@@ -158,9 +151,9 @@ pub(super) fn raw(port: u16) -> io::Result<()> {
 pub(super) fn interleaved(port: u16) -> io::Result<()> {
     let mut socket = connect(port)?;
     write_stdout(b"\xf0\x9f")?;
-    socket.read_exact(&mut [0])?;
+    receive(&mut socket)?.ok_or_else(|| io::Error::other("missing first release"))?;
     write_stderr(b"err")?;
-    socket.read_exact(&mut [0])?;
+    receive(&mut socket)?.ok_or_else(|| io::Error::other("missing second release"))?;
     write_stdout(b"\x98\x80")?;
     write_stdout(&vec![0; RAW_LENGTH])
 }
@@ -169,9 +162,9 @@ pub(super) fn interleaved(port: u16) -> io::Result<()> {
 pub(super) fn termination(port: u16) -> io::Result<()> {
     let mut socket = connect(port)?;
     write_stdout(format!("{}\n", std::process::id()).as_bytes())?;
-    socket.read_exact(&mut [0])?;
+    receive(&mut socket)?.ok_or_else(|| io::Error::other("missing first release"))?;
     write_stdout(b"alive\n")?;
-    socket.read_exact(&mut [0])?;
+    receive(&mut socket)?.ok_or_else(|| io::Error::other("missing second release"))?;
     std::fs::write("survived", b"survived")
 }
 
@@ -215,16 +208,12 @@ pub(super) fn tree_leaf(port: u16) -> io::Result<()> {
 /// Finish after one termination signal, reporting it with `code` when supplied.
 /// Announce readiness on `port`, when supplied, only after registering TERM.
 pub(super) fn blocked(code: Option<i32>, port: Option<u16>) -> io::Result<()> {
-    use std::os::unix::net::UnixStream;
-    let (mut notifications, writer) = UnixStream::pair()?;
-    let _registration =
-        signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
+    let mut notifications = Termination::new()?;
     let mut socket = port.map(connect).transpose()?;
     if let Some(socket) = &mut socket {
         announce(socket, "READY")?;
     }
-    let mut byte = [0];
-    notifications.read_exact(&mut byte)?;
+    notifications.wait()?;
     match code {
         Some(code) => std::process::exit(code),
         None => Ok(()),

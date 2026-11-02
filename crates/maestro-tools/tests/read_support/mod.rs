@@ -432,12 +432,23 @@ fn isolated_output(
 /// Install the prepared native fixture as `name` under `root` with one command record.
 #[cfg(unix)]
 pub fn payload(root: &std::path::Path, name: &str, record: &Value) -> std::path::PathBuf {
+    native_alias(root, name, "exec", record)
+}
+
+/// Install one prepared alias with a record from the supplied finite family.
+#[cfg(unix)]
+pub fn native_alias(
+    root: &std::path::Path,
+    name: &str,
+    family: &str,
+    record: &Value,
+) -> std::path::PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("nextest native-fixture setup supplies the artifact");
     let program = root.join(name);
     std::fs::write(
         root.join(format!("{name}.fixture")),
-        format!("exec\n{record}"),
+        format!("{family}\n{record}"),
     )
     .unwrap();
     maestro_test_process::install_executable(std::path::Path::new(&artifact), &program).unwrap();
