@@ -558,6 +558,16 @@ program uses only the common peer. Check both programs for unused support:
 cargo clippy -p maestro-models --all-targets --locked -- -D warnings
 ```
 
+### Code scanning
+
+Open the repository's **Security > Code scanning** page to inspect CodeQL alerts.
+The workflow scans each push to `main` and runs every Monday at 04:17 UTC on
+GitHub-hosted Linux. It covers Actions, JavaScript/TypeScript and Rust with the
+default query suite. Pull requests and merge groups start no scan.
+
+CodeQL is advisory: no ruleset requires its checks. Scan failures and alerts
+remain visible in GitHub but do not block the merge queue.
+
 ### Slowest-first test order
 
 The 64 tests that took more than 30 seconds in the baseline merge group have
