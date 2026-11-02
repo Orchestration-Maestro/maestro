@@ -1,5 +1,5 @@
 //! Public card preparation and default registration contracts.
-#![cfg(test)]
+#![cfg(all(test, not(target_arch = "wasm32")))]
 use crate::recipes;
 use maestro_app::JsonObject;
 use maestro_web::tools::{

@@ -1,5 +1,5 @@
 //! Native preparation and independent opened-owner transfer for document cards.
-#![cfg(test)]
+#![cfg(all(test, not(target_arch = "wasm32")))]
 use crate::{document_card_support as cards, recipes};
 use maestro_app::JsonObject;
 use maestro_web::{

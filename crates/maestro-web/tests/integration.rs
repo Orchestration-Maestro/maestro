@@ -7,7 +7,6 @@ mod artifact_elements;
 mod artifact_elements_browser;
 mod artifact_panel;
 mod artifact_panel_browser;
-#[cfg(not(target_arch = "wasm32"))]
 mod artifact_tool_cards;
 mod attachment_exports;
 mod attachment_overlay;
@@ -28,7 +27,6 @@ mod custom_provider_card_browser;
 mod dialogs_browser;
 mod diff_factory;
 mod document_card_support;
-#[cfg(not(target_arch = "wasm32"))]
 mod document_tool_cards;
 mod document_tool_cards_browser;
 mod docx_preview_browser;
@@ -83,9 +81,7 @@ mod storage_exports;
 mod text_image_artifacts;
 mod text_image_artifacts_browser;
 mod theme_toggle_browser;
-#[cfg(not(target_arch = "wasm32"))]
 mod tool_cards;
-#[cfg(not(target_arch = "wasm32"))]
 mod tool_renderers;
 mod tool_renderers_browser;
 

@@ -1,5 +1,5 @@
 //! Browser tool dispatch through retained typed registrations.
-#![cfg(test)]
+#![cfg(all(test, not(target_arch = "wasm32")))]
 use maestro_web::tools::types::ToolUiError;
 use maestro_web::tools::{
     renderer_registry::{TOOL_RENDERERS, get_tool_renderer, register_tool_renderer},

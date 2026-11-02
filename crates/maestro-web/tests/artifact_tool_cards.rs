@@ -1,5 +1,5 @@
 //! Artifact renderer preparation through the embedding facade.
-#![cfg(test)]
+#![cfg(all(test, not(target_arch = "wasm32")))]
 use serde::Deserialize;
 use serde_json::{Value, json};
 
