@@ -387,6 +387,8 @@ An omitted method selects GET. Request bodies retain absence, present-empty byte
 and arbitrary binary bytes. Header normalization, status text and response headers
 come from the shared native HTTP client. `ok()` means status 200 through 299;
 other statuses are responses, not fetch errors. Fetch adds no retry or timeout.
+Dropping a pending fetch future cancels that native attempt without aborting the
+caller's signal. It does not undo effects the server has already performed.
 
 Headers arrive before the body completes. A 204 response has no body; an empty 200
 response has a body that returns EOF. Getting `body()` again aliases the same
