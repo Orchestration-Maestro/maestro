@@ -95,10 +95,6 @@ mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
 mod executable_schemas;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the scripted FTP peer."
-)]
 #[path = "support/ftp_server.rs"]
 mod ftp_server;
 mod handoff_tool_ids;

@@ -1700,3 +1700,270 @@ fn refused_compaction_selection_preserves_session_and_footer() {
         },
     );
 }
+
+/// Refused preferences retain both the panel value and the live presentation.
+#[test]
+fn refused_panel_preferences_keep_display_and_show_message() {
+    isolated(
+        "refused_panel_preferences_keep_display_and_show_message",
+        async |directory| {
+            for query in ["Hide", "padding", "hardware", "images", "quiet"] {
+                let world = started_settings(directory).await;
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                    .unwrap();
+                let list = open(&world);
+                search(&list, query);
+                let before = list.render(100);
+                let editor = world.mode.editor.render(60);
+                let raw = session.settings_manager().borrow().get_global_settings();
+                press(&list, "\r");
+                assert_eq!(list.render(100), before, "{query}: panel value");
+                assert_eq!(world.mode.editor.render(60), editor, "{query}: editor");
+                assert!(!world.mode.hide_thinking_block.get());
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    raw.0
+                );
+                assert!(
+                    world
+                        .mode
+                        .chat_container
+                        .render(100)
+                        .join("\n")
+                        .contains("release refuses behaviour changes")
+                );
+                drop(world.runtime.settle());
+            }
+        },
+    );
+}
+
+/// Every preference callback reports refusal before touching live components.
+#[test]
+fn all_panel_preference_callbacks_refuse_before_live_effects() {
+    isolated(
+        "all_panel_preference_callbacks_refuse_before_live_effects",
+        async |directory| {
+            for route in 0..19 {
+                let world = started_settings(directory).await;
+                let session = world.host.session();
+                session
+                    .settings_manager()
+                    .borrow_mut()
+                    .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                    .unwrap();
+                let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+                let before = session.settings_manager().borrow().get_global_settings().0;
+                let editor = world.mode.editor.render(60);
+                let footer = world.mode.footer.render(100);
+                let theme = published(&world);
+                let accepted = match route {
+                    0 => (callbacks.on_auto_compact_change)(false),
+                    1 => (callbacks.on_show_images_change)(false),
+                    2 => (callbacks.on_image_width_cells_change)(80.0),
+                    3 => (callbacks.on_auto_resize_images_change)(false),
+                    4 => (callbacks.on_block_images_change)(true),
+                    5 => (callbacks.on_enable_skill_commands_change)(false),
+                    6 => (callbacks.on_theme_change)("light"),
+                    7 => (callbacks.on_hide_thinking_block_change)(true),
+                    8 => (callbacks.on_collapse_changelog_change)(false),
+                    9 => (callbacks.on_enable_install_telemetry_change)(false),
+                    10 => (callbacks.on_double_escape_action_change)(
+                        maestro_app::DoubleEscapeAction::Fork,
+                    ),
+                    11 => (callbacks.on_tree_filter_mode_change)(maestro_app::TreeFilterMode::All),
+                    12 => (callbacks.on_show_hardware_cursor_change)(true),
+                    13 => (callbacks.on_editor_padding_x_change)(2.0),
+                    14 => (callbacks.on_autocomplete_max_visible_change)(10.0),
+                    15 => (callbacks.on_quiet_startup_change)(true),
+                    16 => (callbacks.on_clear_on_shrink_change)(true),
+                    17 => (callbacks.on_show_terminal_progress_change)(true),
+                    _ => (callbacks.on_warnings_change)(maestro_app::WarningSettings::default()),
+                };
+                assert!(!accepted, "route {route}");
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    before
+                );
+                assert_eq!(world.mode.editor.render(60), editor);
+                assert_eq!(world.mode.footer.render(100), footer);
+                assert_eq!(published(&world), theme);
+                assert!(!world.mode.hide_thinking_block.get());
+                assert!(
+                    world
+                        .mode
+                        .chat_container
+                        .render(100)
+                        .join("\n")
+                        .contains("release refuses behaviour changes")
+                );
+                drop(world.runtime.settle());
+            }
+        },
+    );
+}
+
+#[test]
+fn refused_thinking_shortcut_preserves_flag_transcript_and_settings() {
+    isolated(
+        "refused_thinking_shortcut_preserves_flag_transcript_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            append_messages(
+                &world,
+                vec![transcript::assistant(
+                    &json!([{"type": "thinking", "thinking": "RETAINED THOUGHT"},
+                {"type": "text", "text": "ANSWER"}]),
+                    "stop",
+                    None,
+                )],
+            );
+            world.mode.render_initial_messages().unwrap();
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let before = session.settings_manager().borrow().get_global_settings().0;
+            world.terminal.send_input("\x14");
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("RETAINED THOUGHT")
+            );
+            assert!(!world.mode.hide_thinking_block.get());
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                before
+            );
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("release refuses behaviour changes")
+            );
+            assert!(world.runtime.drain_futures().is_empty());
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn refused_extension_theme_preserves_published_theme_and_settings() {
+    isolated(
+        "refused_extension_theme_preserves_published_theme_and_settings",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let before = session.settings_manager().borrow().get_global_settings().0;
+            let theme = published(&world);
+            let outcome = maestro_app::ExtensionUIContextPort::set_theme(
+                &*world.mode,
+                maestro_app::ThemeSelection::Name("light".into()),
+            )
+            .unwrap();
+            assert!(!outcome.success);
+            assert_eq!(
+                outcome.error.as_deref(),
+                Some("release refuses behaviour changes")
+            );
+            assert_eq!(published(&world), theme);
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                before
+            );
+            assert!(
+                world
+                    .mode
+                    .chat_container
+                    .render(100)
+                    .join("\n")
+                    .contains("release refuses behaviour changes")
+            );
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn refused_http_idle_timeout_keeps_saved_value_and_reports_no_success() {
+    isolated(
+        "refused_http_idle_timeout_keeps_saved_value_and_reports_no_success",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            session
+                .settings_manager()
+                .borrow_mut()
+                .register_decider(std::sync::Arc::new(RefuseBehaviour))
+                .unwrap();
+            let list = open(&world);
+            search(&list, "idle");
+            let before = list.render(100);
+            let raw = session.settings_manager().borrow().get_global_settings().0;
+
+            press(&list, "\r");
+
+            assert_eq!(list.render(100), before);
+            assert_eq!(
+                session.settings_manager().borrow().get_global_settings().0,
+                raw
+            );
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "release refuses behaviour changes"
+            ));
+            assert!(!super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout:"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success() {
+    isolated(
+        "invalid_http_idle_timeout_callback_keeps_saved_value_and_reports_no_success",
+        async |directory| {
+            let world = started_settings(directory).await;
+            let session = world.host.session();
+            let callbacks = world.mode.settings_callbacks(Rc::new(|| {}));
+            let raw = session.settings_manager().borrow().get_global_settings().0;
+
+            for value in [-5.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+                assert!(!(callbacks.on_http_idle_timeout_ms_change)(value));
+                assert_eq!(
+                    session.settings_manager().borrow().get_global_settings().0,
+                    raw
+                );
+            }
+
+            assert!(super::actions::shows(
+                &world.mode.chat_container,
+                "invalid HTTP idle timeout"
+            ));
+            assert!(!super::actions::shows(
+                &world.mode.chat_container,
+                "HTTP idle timeout:"
+            ));
+            drop(world.runtime.settle());
+        },
+    );
+}

@@ -1608,6 +1608,53 @@
     "input": {
       "op": "retry-replace-and-live-keys"
     },
+    "expected_macos": {
+      "changed": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (1/4) in 2s... (ctrl+q/option+x to cancel)\u001b[39m                                              "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "after": {
+        "status": [
+          "",
+          " @warning@⠋\u001b[39m @muted@Retrying (2/4) in 1s... (ctrl+q/option+x to cancel)\u001b[39m                                              "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80,
+          1000
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "working": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Working...\u001b[39m                                                                                       "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      }
+    },
     "expected": {
       "changed": {
         "status": [
@@ -1697,6 +1744,32 @@
         "ctrl+q",
         "alt+x"
       ]
+    },
+    "expected_macos": {
+      "start": {
+        "status": [
+          "",
+          " @accent@⠋\u001b[39m @muted@Compacting context... (ctrl+q/option+x to cancel)\u001b[39m                                                "
+        ],
+        "chat": [],
+        "progress": [],
+        "timers": [
+          80
+        ],
+        "editor": "draft"
+      },
+      "end": {
+        "status": [],
+        "chat": [
+          "",
+          " @error@Error: Compaction cancelled\u001b[39m                                                                        ",
+          ""
+        ],
+        "progress": [],
+        "timers": [],
+        "editor": "draft"
+      },
+      "restored": true
     },
     "expected": {
       "start": {
