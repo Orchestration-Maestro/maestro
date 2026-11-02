@@ -31,8 +31,6 @@ pub mod daemon {
     #[cfg(target_os = "linux")]
     #[doc(inline)]
     pub use maestro_daemon::app::state::ThemeRuntimeConfig;
-    #[doc(inline)]
-    pub use maestro_daemon::logging::{init_file_logging, shutdown};
     #[cfg(target_os = "linux")]
     #[doc(inline)]
     pub use maestro_daemon::pane::launch_env::STARTUP_CWD_ENV;
@@ -52,6 +50,12 @@ pub mod daemon {
     };
     #[doc(inline)]
     pub use maestro_daemon::terminal_theme::{HostAppearance, RgbColor, TerminalTheme};
+
+    /// File logging setup and lifecycle events for native daemon roles.
+    pub mod logging {
+        #[doc(inline)]
+        pub use maestro_daemon::logging::{init_file_logging, shutdown};
+    }
 
     /// Opt-in measurements emitted by pane rendering and ANSI encoding.
     pub mod render_prof {

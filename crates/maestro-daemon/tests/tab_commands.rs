@@ -1,16 +1,15 @@
 //! Tab commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, daemon_with_workspaces, events_after, failure, request,
+    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, request,
     with_live_daemon, workspace_ids,
 };
 use maestro_daemon::app::state::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_protocol::events::EventData;
-use maestro_protocol::rpc_types::RpcCommand;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, TabInfo};
 use maestro_workspace::workspace::WorktreeSpaceMembership;
-use serde_json::{Value, json};
+use serde_json::json;
 use std::path::PathBuf;
 
 /// Adds `count` tabs without processes to the workspace at `index`.
@@ -271,6 +270,20 @@ fn final_tab_close_publishes_tab_then_workspace() {
 }
 
 #[test]
+fn final_tab_close_empties_the_daemon_and_clears_focus() {
+    let mut app = daemon_with_workspaces(&["/only"]);
+    app.state.session_dirty = false;
+
+    let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
+    assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
+
+    assert!(app.state.topology.workspaces.is_empty());
+    assert!(app.state.terminals.is_empty());
+    assert_eq!(app.state.active, None);
+    assert!(app.state.session_dirty);
+}
+
+#[test]
 fn tab_close_preserves_confirmation_and_terminal_ownership() {
     let mut app = three_tabs();
     let closing = app.state.topology.workspaces[0].tabs[1].clone();
@@ -312,14 +325,6 @@ fn created(result: Result<ResponseResult, ErrorBody>) -> (TabInfo, PaneInfo) {
         Ok(ResponseResult::TabCreated { tab, root_pane }) => (tab, root_pane),
         other => panic!("expected a created tab: {other:?}"),
     }
-}
-
-/// Answers `wire` through the handler from inside a running test runtime.
-async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
-    let command: RpcCommand = crate::support::api::command(wire);
-    let mut settings = crate::support::api::settings();
-    let paths = crate::support::api::untouched_paths();
-    app.handle_api_request(command, &mut settings, &paths).await
 }
 
 #[test]

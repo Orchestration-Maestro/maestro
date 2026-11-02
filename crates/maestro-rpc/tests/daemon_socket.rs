@@ -5,7 +5,7 @@ use maestro_app::SettingsManager;
 use maestro_app::daemon::{
     App, Config, ConnectionTarget, DaemonClient, DaemonPaths, EventHub, ManifestCache,
     NewTerminalCwdConfig, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry, RenderSignal,
-    RequestMessage, RuntimeStatus, TerminalTheme, init_file_logging,
+    RequestMessage, RuntimeStatus, TerminalTheme, logging,
 };
 use maestro_app::rpc_mode::{
     DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
@@ -325,7 +325,7 @@ fn response_outcome_uses_the_shared_success_and_code_fields() {
         return;
     };
     let paths = root_paths(&root);
-    init_file_logging(&paths, "daemon", Some("maestro=debug"));
+    logging::init_file_logging(&paths, "daemon", Some("maestro=debug"));
     let looks_failed = Ok(ResponseResult::Pong {
         version: r#"{"error":{"code":"timeout","message":"failed"}}"#.into(),
         protocol: PROTOCOL,

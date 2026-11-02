@@ -72,8 +72,15 @@ pub fn command(wire: Value) -> RpcCommand {
 
 /// Answers the wire-form `command` through the daemon's handler.
 pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
+    block_on(answer(app, wire))
+}
+
+/// Answers `wire` through the handler from inside a running test runtime.
+pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
-    block_on(app.handle_api_request(command(wire), &mut settings, &untouched_paths()))
+    let paths = untouched_paths();
+    app.handle_api_request(command(wire), &mut settings, &paths)
+        .await
 }
 
 /// The failure with `code` and `message`.

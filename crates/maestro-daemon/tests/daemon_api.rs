@@ -160,7 +160,7 @@ fn notification_request_does_not_replace_existing_toast() {
     let mut app = delivering(ToastDelivery::Workspace);
     let retained = ToastNotification {
         kind: ToastKind::NeedsAttention,
-        title: "pi needs attention".into(),
+        title: "Maestro needs attention".into(),
         context: "background · 2".into(),
         position: Some(ToastMaestroPosition::BottomLeft),
         target: None,
