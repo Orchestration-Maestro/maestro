@@ -142,7 +142,7 @@ fn ansi_reads_keep_the_styling_that_text_reads_drop() {
     with_live_daemon(
         "pane_read::ansi_reads_keep_the_styling_that_text_reads_drop",
         async |app| {
-            let script = "printf '\\033[31mred\\033[0m\\n'";
+            let script = "printf 'prompt> '; printf '\\n\\033[31mred\\033[0m\\n'";
             let (_, pane) = printed(app, script, "red").await;
             let plain = read_of(answer(app, read(&pane, "recent", Some(100), "text")).await);
             assert!(plain.text.contains("red"), "{:?}", plain.text);
@@ -159,7 +159,7 @@ fn visible_ansi_reads_keep_the_styling_that_visible_text_reads_drop() {
     with_live_daemon(
         "pane_read::visible_ansi_reads_keep_the_styling_that_visible_text_reads_drop",
         async |app| {
-            let script = "printf '\\033[31mred\\033[0m\\n'";
+            let script = "printf 'prompt> '; printf '\\n\\033[31mred\\033[0m\\n'";
             let (_, pane) = printed(app, script, "red").await;
             let plain = read_of(answer(app, read(&pane, "visible", None, "text")).await);
             assert!(plain.text.contains("red") && !plain.text.contains('\u{1b}'));

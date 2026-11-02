@@ -18,6 +18,7 @@ const KITTY_KEYBOARD: &str = "printf '\\033[>7u'; ";
 /// A live workspace whose only pane prints the next `count` bytes it receives as a hex line.
 ///
 /// `preamble` runs in the shell first. Returns the pane handle and its terminal.
+/// Readiness starts on a fresh line even when the shell prints its prompt after input echo.
 async fn watching(app: &mut TestApp, count: usize, preamble: &str) -> (String, TerminalId) {
     let created = answer(app, json!({"type": "workspace.create"})).await;
     let Ok(ResponseResult::WorkspaceCreated {
@@ -33,7 +34,7 @@ async fn watching(app: &mut TestApp, count: usize, preamble: &str) -> (String, T
         .unwrap()
         .clone();
     let script = format!(
-        "{preamble}stty -echo -icanon -isig -icrnl -inlcr -ixon -iexten; echo READ\"Y\"; \
+        "{preamble}stty -echo -icanon -isig -icrnl -inlcr -ixon -iexten; echo; echo READ\"Y\"; \
          od -An -vtx1 -w32 -N{count} | {{ read line; echo \"GO\"\"T $line\"; }}\n"
     );
     run_in_pane(app, &terminal, &script, "READY").await;
@@ -153,7 +154,8 @@ fn a_refused_key_writes_nothing_not_even_the_text_or_keys_before_it() {
     with_live_daemon(
         "pane_input::a_refused_key_writes_nothing_not_even_the_text_or_keys_before_it",
         async |app| {
-            let (pane, terminal) = watching(app, 1, "").await;
+            // Force readiness to follow output without a newline, as a late shell prompt does.
+            let (pane, terminal) = watching(app, 1, "printf 'prompt> '; ").await;
             let keys = json!({
                 "type": "pane.send_keys", "pane_id": pane, "keys": ["ctrl+h", "not-a-key"]
             });
@@ -189,7 +191,13 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
                 .terminal_id(crate::support::api::root_pane(app, 0))
                 .unwrap()
                 .clone();
-            run_in_pane(app, &terminal, "echo READ\"Y\"; exec sleep 600\n", "READY").await;
+            run_in_pane(
+                app,
+                &terminal,
+                "printf 'prompt> '; echo; echo READ\"Y\"; exec sleep 600\n",
+                "READY",
+            )
+            .await;
             let wire = json!({
                 "type": "pane.send_text", "pane_id": root_pane.pane_id, "text": "x".repeat(1024)
             });
