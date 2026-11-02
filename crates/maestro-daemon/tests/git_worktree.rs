@@ -132,12 +132,18 @@ fn worktrees_root_keeps_native_home_bytes() {
 
 #[test]
 fn dirty_checkout_error_matches_the_hint_git_gives() {
-    assert!(WorktreeError::dirty_checkout(Path::new("/w/repo")).is_dirty_checkout());
-    assert!(
-        WorktreeError::dirty_checkout(Path::new("/w/repo"))
-            .message()
-            .contains("/w/repo")
-    );
+    let scratch = Scratch::new().unwrap();
+    let repo = repository(&scratch);
+    let checkout = scratch.path().join("trees/topic");
+    worktree::add(&repo, &checkout, "topic", "HEAD").unwrap();
+    std::fs::write(checkout.join("README.md"), "dirty\n").unwrap();
+    let refusal = worktree::remove(&repo, &checkout, false).unwrap_err();
+
+    let error = WorktreeError::dirty_checkout(&checkout);
+
+    assert_eq!(error.message(), refusal.message());
+    assert!(error.is_dirty_checkout());
+    assert!(checkout.join("README.md").exists());
 }
 
 #[test]

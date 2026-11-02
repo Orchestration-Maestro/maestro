@@ -783,7 +783,7 @@ license. Changes include one include walk in place of three, wildcard matching w
 rules in bounded time, and supplied user files and home directory.
 The worktree names, checkout paths and Git operations in
 `crates/maestro-daemon/src/git/worktree.rs` derive from the worktree module under the
-same license. Changes include literal command operands, NUL-framed native paths,
+same license. Changes include literal command operands, native path bytes,
 shared home expansion and repository discovery, and link-aware leftover cleanup.
 The status snapshots, fingerprints and cache keys in
 `crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in

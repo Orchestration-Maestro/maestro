@@ -870,7 +870,7 @@ a plain section wins and quoted values lose their quotes.
 
 ### Worktree operations
 
-Use `maestro-daemon::git::worktree` from a blocking worker. For example, list the
+Use `maestro_daemon::git::worktree` from a blocking worker. For example, list the
 checkouts of a repository without opening a workspace:
 
 ```rust
@@ -887,8 +887,8 @@ Ok::<(), worktree::WorktreeError>(())
 These library operations add, remove and list checkouts. They do not expose socket
 commands or change workspace membership. Every Git operation runs through
 `maestro-process`; failures return a `WorktreeError` carrying Git's diagnostic.
-Removal refusals are classified when read; process failures retain their native
-cause through `Error::source`. Git runs with `LC_ALL=C` so
+Removal refusals are classified when read; process and cleanup failures retain
+their native cause through `Error::source`. Git runs with `LC_ALL=C` so
 removal refusals can be classified regardless of the daemon's locale.
 
 `generated_branch_slug` turns a seed into `worktree/<adjective>-<noun>-<hex>`.

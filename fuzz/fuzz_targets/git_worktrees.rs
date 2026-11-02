@@ -1,4 +1,4 @@
-//! Exercise NUL-framed Git worktree records with arbitrary bytes.
+//! Exercise newline-framed Git worktree records with arbitrary bytes.
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
