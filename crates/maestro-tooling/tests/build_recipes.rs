@@ -1815,6 +1815,32 @@ fn assert_killed_transcript(directory: Option<&Path>) {
 }
 
 #[test]
+fn maestro_codeql_token_does_not_read_actions() {
+    let workflow = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),
+    )
+    .unwrap();
+    assert!(
+        !workflow
+            .lines()
+            .any(|line| line.trim().starts_with("actions:"))
+    );
+}
+
+#[test]
+fn maestro_codeql_scans_do_not_replace_other_scans() {
+    let workflow = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),
+    )
+    .unwrap();
+    assert!(
+        !workflow
+            .lines()
+            .any(|line| line.trim().starts_with("concurrency:"))
+    );
+}
+
+#[test]
 fn maestro_codeql_scans_only_main_and_weekly() {
     let workflow = fs::read_to_string(
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),

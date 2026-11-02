@@ -9,9 +9,6 @@ name: CodeQL
     - cron: "17 4 * * 1" # Mondays at 04:17 UTC
 permissions:
   contents: read
-concurrency:
-  group: codeql-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
@@ -19,7 +16,6 @@ jobs:
     permissions:
       security-events: write
       contents: read
-      actions: read
     strategy:
       fail-fast: false
       matrix:
