@@ -291,17 +291,16 @@ pub fn get(port: u16, path: &str) -> (String, Vec<u8>) {
 pub fn native_tool(browser: &Browser, command: &mut Command, name: &str) -> PathBuf {
     let tool = Command::new("which").arg(name).output().unwrap();
     assert!(tool.status.success());
-    let directory = browser.path("native-bin");
-    fs::create_dir_all(&directory).unwrap();
-    super::recipe_support::install_executable(
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/native_tool.sh"),
-        &directory.join(name),
-    );
+    super::recipe_support::stand_in(&browser.path("native-bin"), name, "forward");
     let log = browser.path("native-log");
     command
         .env(
             "PATH",
-            format!("{}:{}", directory.display(), std::env::var("PATH").unwrap()),
+            format!(
+                "{}:{}",
+                browser.path("native-bin").display(),
+                std::env::var("PATH").unwrap()
+            ),
         )
         .env(
             "MAESTRO_NATIVE_TOOL",

@@ -20,17 +20,45 @@ pub fn write_input(root: &Path, name: &str, bytes: &str) {
     fs::write(path, bytes).unwrap();
 }
 
-/// Copies an executable through a child `install`, so this process never holds a
-/// writable descriptor to a file it later runs (a concurrent fork would otherwise
-/// make `exec` fail with "Text file busy").
+/// Copies an executable in this process, so nothing holds a writable descriptor to a file it
+/// later runs (a concurrent fork would otherwise make `exec` fail with "Text file busy").
 pub fn install_executable(source: &Path, target: &Path) {
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(source)
-        .arg(target)
-        .status()
-        .unwrap();
-    assert!(status.success());
+    fs::copy(source, target).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(target, fs::Permissions::from_mode(0o700)).unwrap();
+    }
+}
+
+/// Install the prepared native fixture as `name` in `directory`, selecting `scenario` from the
+/// `tooling-command` family.
+pub fn stand_in(directory: &Path, name: &str, scenario: &str) -> PathBuf {
+    installed(directory, name, "tooling-command", scenario)
+}
+
+/// Install the prepared native fixture as `name` in `directory`, selecting `scenario` from the
+/// `tooling-wrapper` family.
+#[cfg(unix)]
+pub fn wrapper(directory: &Path, name: &str, scenario: &str) -> PathBuf {
+    installed(directory, name, "tooling-wrapper", scenario)
+}
+
+/// Install the prepared artifact as one alias with its fixture family and scenario record.
+fn installed(directory: &Path, name: &str, family: &str, scenario: &str) -> PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    fs::create_dir_all(directory).unwrap();
+    let path = directory.join(name);
+    maestro_test_process::install_executable(Path::new(&artifact), &path).unwrap();
+    let mut record = path.as_os_str().to_owned();
+    record.push(".fixture");
+    fs::write(
+        record,
+        format!("{family}\n{{\"scenario\":\"{scenario}\"}}\n"),
+    )
+    .unwrap();
+    path
 }
 
 /// The source configuration for registry crates, prepared once per run.
@@ -109,28 +137,8 @@ pub fn rerun_without_shared_cargo_home(test: &str, sources: &[(&str, PathBuf)]) 
     );
 }
 
-/// Build the fake-command tool into the target shared by every recipe fixture.
-pub fn build_tool(root: &Path) -> PathBuf {
-    let manifest =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/recipe_tools/Cargo.toml");
-    let target = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/recipe-tools");
-    record("phase: recipe tool cargo build");
-    let status = setup_status(
-        super::toolchain_support::fixture_command("cargo", root, None)
-            .unwrap()
-            .args(["build", "--locked", "--manifest-path"])
-            .arg(manifest)
-            .arg("--target-dir")
-            .arg(&target),
-    );
-    record(format!("phase: recipe tool cargo complete {status}"));
-    assert!(status.success());
-    target.join("debug/recipe-command")
-}
-
 impl Workspace {
     pub fn new() -> Self {
-        static TOOL: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
         record("phase: workspace setup");
         let workspace = Self {
             parent: maestro_test_directory::Scratch::new().unwrap(),
@@ -149,10 +157,8 @@ impl Workspace {
             root.join("justfile"),
         )
         .unwrap();
-        let tool = TOOL.get_or_init(|| build_tool(workspace.parent.path()));
-        install_executable(tool, &root.join("bin/cargo"));
-        for name in ["mise", "prek", "watchexec", "trunk", "miniserve"] {
-            install_executable(tool, &root.join("bin").join(name));
+        for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
+            stand_in(&root.join("bin"), name, "stand-in");
         }
         workspace
     }
@@ -298,6 +304,7 @@ pub fn join_reader(thread: std::thread::JoinHandle<()>) {
 }
 
 /// Write child lines to the transcript before echoing to stderr and forwarding to the consumer.
+#[cfg(unix)]
 pub fn capture_lines<R: std::io::Read>(
     reader: impl FnOnce() -> R + Send + 'static,
     send: std::sync::mpsc::Sender<String>,
@@ -325,6 +332,7 @@ pub fn capture_lines<R: std::io::Read>(
 }
 
 /// Run setup with both streams delivered through the shared capture owner.
+#[cfg(unix)]
 pub fn setup_status(command: &mut Command) -> std::process::ExitStatus {
     use std::process::Stdio;
     let mut child = command

@@ -1110,14 +1110,16 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
-On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at a script,
-`rustc-wrapper.sh`, in the fixture root. The script unsets `CARGO_HOME` and runs
-the original wrapper. `sccache` hashes every `CARGO_*` variable into the key of
-each rustc call, so a wrapper that saw the private home would give the registry
-crates of each fixture a key that no other fixture shares. Cargo itself keeps the
-private home and its lock. `fixture_command_hides_cargo_home_from_the_compiler_wrapper`
-runs a fixture build behind a recording wrapper and checks that it never sees
-`CARGO_HOME`.
+On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at the prepared
+fixture's `hide-home` wrapper, installed as `rustc-wrapper` in the fixture root.
+The wrapper unsets `CARGO_HOME` and runs the original wrapper, which it reads from
+`MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache` hashes every `CARGO_*` variable into the
+key of each rustc call, so a wrapper that saw the private home would give the
+registry crates of each fixture a key that no other fixture shares. Cargo itself
+keeps the private home and its lock.
+`fixture_command_hides_cargo_home_from_the_compiler_wrapper` runs a fixture build
+behind the `recording` wrapper, which logs the `CARGO_HOME` its compiler saw, and
+checks that it never sees one.
 
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
@@ -1263,6 +1265,45 @@ and stages native copies of both preparation examples. It also reports the two
 finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
+
+#### Repository recipe stand-ins
+
+A recipe workspace answers its own commands without an interpreter. Install the
+prepared artifact under each name the recipe resolves from `PATH`, then run the
+recipe:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let bin = maestro_test_directory::Scratch::new()?.path().join("bin");
+    for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
+        let alias = bin.join(name);
+        maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+        let mut record = alias.clone().into_os_string();
+        record.push(".fixture");
+        std::fs::write(record, "tooling-command\n{\"scenario\":\"stand-in\"}")?;
+    }
+    Ok(())
+}
+```
+
+The record's first line selects the family and its `scenario` selects one finite
+behaviour; an unknown family, scenario or field fails before any effect.
+
+| Scenario | Behavior |
+| --- | --- |
+| `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
+| `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home. |
+| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` to observe the same boundary. |
+
+A runner that starts `just build` in a recipe workspace therefore never needs
+Cargo, `mise` or `watchexec` of its own: each call reaches the installed alias,
+and only the operations that need the real program forward to one. Installing
+needs the artifact nextest's `native-fixture` setup exports, so run
+`just prepare-tests` first; without it, a fixture command that needs the wrapper
+fails instead of building a fallback.
 
 The author example reads a `tooling-author` line followed by one JSON scenario.
 For example:

@@ -90,14 +90,27 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
     );
 }
 
-/// The recipe tool builds under a private Cargo home, not the shared package cache.
+/// Recipe stand-ins install from the prepared artifact and answer the recipe from their record.
 #[test]
-fn recipe_tool_build_uses_a_private_cargo_home() {
-    let root = Scratch::new().unwrap();
-    assert!(recipe_support::build_tool(root.path()).is_file());
+fn recipe_stand_ins_install_from_the_prepared_artifact() {
+    let workspace = Workspace::new();
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
+    let artifact = fs::read(artifact).unwrap();
+    for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
+        let alias = workspace.path().join("bin").join(name);
+        assert_eq!(fs::read(&alias).unwrap(), artifact, "{name}");
+        assert_eq!(
+            fs::read_to_string(alias.with_extension("fixture")).unwrap(),
+            "tooling-command\n{\"scenario\":\"stand-in\"}\n",
+            "{name}"
+        );
+    }
     assert!(
-        root.path().join("cargo-home/.package-cache").is_file(),
-        "the tool build must lock its private package cache"
+        !Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../target/recipe-tools")
+            .exists(),
+        "the stand-ins must not build a tool of their own"
     );
 }
 
@@ -107,7 +120,6 @@ fn recipe_tool_build_uses_a_private_cargo_home() {
 #[test]
 fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
     use maestro_test_process::TestProcess;
-    use std::os::unix::fs::PermissionsExt;
 
     const ROOT: &str = "MAESTRO_FIXTURE_WRAPPER_ROOT";
     if let Some(root) = std::env::var_os(ROOT) {
@@ -134,13 +146,7 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
     )
     .unwrap();
     let tools = Scratch::new().unwrap();
-    let recorder = tools.path().join("recorder.sh");
-    fs::write(
-        &recorder,
-        "#!/bin/sh\necho \"${CARGO_HOME-unset}\" >> \"$0.log\"\nexec \"$@\"\n",
-    )
-    .unwrap();
-    fs::set_permissions(&recorder, fs::Permissions::from_mode(0o755)).unwrap();
+    let recorder = recipe_support::wrapper(tools.path(), "recorder", "recording");
     let output = TestProcess::current("fixture_command_hides_cargo_home_from_the_compiler_wrapper")
         .unwrap()
         .nocapture()
@@ -154,7 +160,7 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let log = fs::read_to_string(tools.path().join("recorder.sh.log")).unwrap();
+    let log = fs::read_to_string(tools.path().join("recorder.log")).unwrap();
     assert!(!log.is_empty(), "the compiler wrapper must run");
     assert!(
         log.lines().all(|home| home == "unset"),
@@ -188,7 +194,7 @@ fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
                 .map(|value| value.to_string_lossy().into_owned())
         };
         let wrapped =
-            env("RUSTC_WRAPPER").is_some_and(|wrapper| wrapper.ends_with("rustc-wrapper.sh"));
+            env("RUSTC_WRAPPER").is_some_and(|wrapper| wrapper.ends_with("rustc-wrapper"));
         println!("{wrapped} {:?}", env("MAESTRO_FIXTURE_RUSTC_WRAPPER"));
         return;
     }
