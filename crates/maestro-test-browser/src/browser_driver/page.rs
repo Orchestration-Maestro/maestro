@@ -162,6 +162,9 @@ impl<'a> Page<'a> {
     }
 
     /// Install the same binding boundary in a page or an isolated child renderer.
+    ///
+    /// The script runs at once in a committed document and at every later commit, so a frame
+    /// attached before its document commits has no default context to evaluate in yet.
     pub(super) async fn initialize_session(&mut self, session: &SessionId) -> io::Result<()> {
         for method in ["Page.enable", "Runtime.enable", "Inspector.enable"] {
             self.command(Some(session), method, json!({})).await?;
@@ -175,13 +178,7 @@ impl<'a> Page<'a> {
         self.command(
             Some(session),
             "Page.addScriptToEvaluateOnNewDocument",
-            json!({"source":scripts::BINDINGS}),
-        )
-        .await?;
-        self.command(
-            Some(session),
-            "Runtime.evaluate",
-            json!({"expression":scripts::BINDINGS}),
+            json!({"source":scripts::BINDINGS,"runImmediately":true}),
         )
         .await?;
         self.command(

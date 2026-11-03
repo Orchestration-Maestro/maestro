@@ -242,8 +242,10 @@ with its own binding glue, into a copy of the fixture package. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
-`START` and `PASS`, each `FAMILY` total, the unchanged `HOST` digest and
-`COMPLETE 269/269` on success. `PHASE` records
+`START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
+`HOST` digest and `COMPLETE 269/269` on success. A failing export is recorded and
+the run goes on, so one Chromium run reports every failure; the command then fails
+with all of them, after the report painting has still run. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
@@ -258,7 +260,11 @@ that renderer's native content quad. The driver releases lookup handles after
 success and failure, and retains attached renderer sessions only for the page's
 lifetime. The driver tracks the default execution context of every
 automatically attached iframe, including frames whose scripts are already
-running when they attach. A host call that arrives while an iframe is still
+running when they attach. It installs the binding script with a
+run-immediately new-document script and sends no evaluation that needs a default
+context, because a frame that loads from a URL attaches before its document
+commits and has none yet: it runs the script at commit, and a `srcdoc` frame
+runs it at once. A host call that arrives while an iframe is still
 being set up waits, and runs in arrival order once that setup completes,
 ahead of any call that arrives while the queue drains. A session the caller
 attaches itself stays with the caller. An iframe removed during its own setup

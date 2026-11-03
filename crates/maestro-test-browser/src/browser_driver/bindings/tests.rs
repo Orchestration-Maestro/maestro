@@ -721,3 +721,160 @@ async fn caller_removed_while_closing(mut socket: WebSocketStream<TcpStream>) {
         }
     }
 }
+
+/// A sandboxed frame calls the host once its binding script is installed, whether Chromium
+/// attached it before its document committed (loaded from a URL) or after (`srcdoc`).
+#[test]
+fn host_calls_from_frames_attached_before_and_after_commit_are_answered() {
+    block_on(async {
+        for committed in [false, true] {
+            let (mut dispatcher, peer) =
+                connect_peer(move |socket| committing_frame(socket, committed)).await;
+            let mut lines = Vec::new();
+            let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+            let mut page = Page::open(&mut dispatcher, "commit", &mut lines, &expected)
+                .await
+                .unwrap();
+            page.initialize().await.unwrap();
+            let outcome = page.evaluate(HOLD).await;
+            page.close().await.unwrap();
+            let replies = peer.await.unwrap();
+            outcome.unwrap_or_else(|error| panic!("committed={committed}: {error}"));
+            assert_eq!(replies, ["__maestroReply(1,null,null)"], "{committed}");
+        }
+    });
+}
+
+/// Chromium's frame for the page, as the scripted peer plays it.
+///
+/// A frame attached before its commit has no default context, so it rejects a context-free
+/// evaluation. A script runs where Chromium would run it: at once in a committed document when
+/// `runImmediately` is set, and at every later commit.
+struct Frame {
+    /// Whether the document has committed when the page attaches.
+    committed: bool,
+    /// Whether the binding script is installed in the frame.
+    installed: bool,
+    /// Every reply the driver evaluated in the frame.
+    replies: Vec<String>,
+}
+
+impl Frame {
+    /// The attachment record, sent while the root evaluation is held.
+    fn attached(&self) -> Value {
+        let url = if self.committed {
+            "about:srcdoc"
+        } else {
+            "data:text/html,ready"
+        };
+        json!({
+            "method":"Target.attachedToTarget","sessionId":"session",
+            "params":{"sessionId":"child-session","waitingForDebugger":!self.committed,
+                "targetInfo":{"targetId":"child","type":"iframe","browserContextId":"context",
+                    "title":"","url":url,"attached":true,"canAccessOpener":false}}
+        })
+    }
+
+    /// Answer one command of the page or its frame; `Err` is the rejection to send instead.
+    async fn answer(
+        &mut self,
+        socket: &mut WebSocketStream<TcpStream>,
+        call: &Value,
+    ) -> Result<Value, Value> {
+        let method = call["method"].as_str().unwrap();
+        let expression = call["params"]["expression"].as_str().unwrap_or_default();
+        let child = call["sessionId"] == "child-session";
+        Ok(match method {
+            "Runtime.enable" => {
+                if self.committed || !child {
+                    send(socket, enabled_context(call)).await;
+                }
+                json!({})
+            }
+            "Page.addScriptToEvaluateOnNewDocument" if child => {
+                self.installed = !self.committed || call["params"]["runImmediately"] == true;
+                json!({"identifier":"1"})
+            }
+            "Runtime.evaluate" if child && call["params"]["contextId"].is_null() => {
+                if !self.committed {
+                    return Err(
+                        json!({"code":-32000,"message":"Cannot find default execution context"}),
+                    );
+                }
+                self.installed = true;
+                json!({"result":{"value":null}})
+            }
+            "Runtime.evaluate" if expression.starts_with("__maestroReply(") => {
+                self.replies.push(expression.to_owned());
+                json!({"result":{"value":null}})
+            }
+            "Runtime.evaluate" => json!({"result":{"value":null}}),
+            "Runtime.runIfWaitingForDebugger" if child => {
+                self.commit(socket).await;
+                json!({})
+            }
+            _ => shared_reply(call).unwrap_or_else(|| panic!("unexpected command {method}")),
+        })
+    }
+
+    /// Commit the frame's document if it was waiting, then call the host when the script ran.
+    async fn commit(&self, socket: &mut WebSocketStream<TcpStream>) {
+        if !self.committed {
+            let navigated = json!({
+                "method":"Page.frameNavigated","sessionId":"child-session",
+                "params":{"type":"Navigation","frame":{
+                    "id":"child","loaderId":"loader","url":"data:text/html,ready",
+                    "domainAndRegistry":"","securityOrigin":"null","mimeType":"text/html",
+                    "secureContextType":"InsecureScheme",
+                    "crossOriginIsolatedContextType":"NotIsolated","gatedAPIFeatures":[]
+                }}
+            });
+            send(socket, navigated).await;
+            send(socket, context_created("child-session", 2, "child")).await;
+        }
+        if self.installed {
+            let payload = json!({"id":1,"name":"sandboxDriverPhase","args":["ready"]});
+            let called = json!({
+                "method":"Runtime.bindingCalled","sessionId":"child-session",
+                "params":{
+                    "name":"__maestroDriver","executionContextId":2,"payload":payload.to_string()
+                }
+            });
+            send(socket, called).await;
+        }
+    }
+}
+
+/// Attach the frame during the held evaluation and release it once the host call is answered,
+/// or at once when the script never ran.
+///
+/// Returns every reply the driver evaluated in the frame.
+async fn committing_frame(mut socket: WebSocketStream<TcpStream>, committed: bool) -> Vec<String> {
+    let mut frame = Frame {
+        committed,
+        installed: false,
+        replies: Vec::new(),
+    };
+    let mut held = None;
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        if method == "Runtime.evaluate" && call["params"]["expression"] == HOLD {
+            held = Some(call["id"].clone());
+            send(&mut socket, frame.attached()).await;
+            continue;
+        }
+        let record = match frame.answer(&mut socket, &call).await {
+            Ok(result) => json!({"id":call["id"],"result":result}),
+            Err(error) => json!({"id":call["id"],"error":error}),
+        };
+        send(&mut socket, record).await;
+        let skipped = !frame.installed && method == "Runtime.runIfWaitingForDebugger";
+        if let Some(held) = held.take_if(|_| skipped || !frame.replies.is_empty()) {
+            send(&mut socket, held_result(&held)).await;
+        }
+        if method == "Target.disposeBrowserContext" {
+            break;
+        }
+    }
+    frame.replies
+}

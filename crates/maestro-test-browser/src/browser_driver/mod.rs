@@ -188,19 +188,25 @@ pub async fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result
             .map_err(io::Error::other)??;
     let profile = work.path.join("chromium");
     let result = async {
-        exports(&root, &executable, &profile, &inventory).await?;
+        let exported = exports(&root, &executable, &profile, &inventory).await;
         let target = work
             .path
             .parent()
             .ok_or_else(|| io::Error::other("browser target directory missing"))?;
-        report::run(
+        let reported = report::run(
             &checkout,
             &executable,
             target,
             &work.path,
             fixture.as_deref(),
         )
-        .await
+        .await;
+        match (exported, reported) {
+            (Err(exported), Err(reported)) => {
+                Err(io::Error::other(format!("{exported}\n{reported}")))
+            }
+            (exported, reported) => exported.and(reported),
+        }
     }
     .await;
     cleanup(result, tokio::fs::remove_dir_all(&work.path).await)?;
@@ -266,32 +272,73 @@ async fn run_inventory(
     browser.expected_error.clone_from(&inventory.expected_error);
     let before = host_digest(root).await?;
     browser.preflight(origin, &names).await?;
-    for (family, names) in &inventory.families {
+    let cases = run_cases(
+        browser,
+        &inventory.families,
+        Browser::log,
+        async |browser, family, name| run_case(browser, origin, family, name).await,
+    )
+    .await;
+    let unchanged = if host_digest(root).await? == before {
+        browser.log(&format!("HOST {before} unchanged"));
+        Ok(())
+    } else {
+        Err(io::Error::other("host bundle changed while modules loaded"))
+    };
+    cases.and(unchanged)
+}
+
+/// Run one export in a fresh page.
+async fn run_case(browser: &mut Browser, origin: &str, family: &str, name: &str) -> io::Result<()> {
+    let expression = format!(
+        "(async () => {{ const module = await import('/sandbox.js'); await module.default(); await module[{}](url => import(url)); }})()",
+        json!(name)
+    );
+    let entry = if family == "contributions" {
+        "/contributions.html"
+    } else {
+        "/"
+    };
+    browser
+        .check(&format!("{origin}{entry}"), name, &expression)
+        .await
+        .map(|_| ())
+}
+
+/// Record every case, then fail with all failures, as nextest does under `--no-fail-fast`.
+async fn run_cases<S>(
+    state: &mut S,
+    families: &[(&str, Vec<String>)],
+    log: fn(&mut S, &str),
+    case: impl AsyncFn(&mut S, &str, &str) -> io::Result<()>,
+) -> io::Result<()> {
+    let total: usize = families.iter().map(|(_, names)| names.len()).sum();
+    let mut failures = Vec::new();
+    for (family, names) in families {
+        let mut passed = 0;
         for name in names {
-            browser.log(&format!("START {family} {name}"));
-            let expression = format!(
-                "(async () => {{ const module = await import('/sandbox.js'); await module.default(); await module[{}](url => import(url)); }})()",
-                json!(name)
-            );
-            let entry = if *family == "contributions" {
-                "/contributions.html"
-            } else {
-                "/"
-            };
-            browser
-                .check(&format!("{origin}{entry}"), name, &expression)
-                .await
-                .map_err(|error| io::Error::other(format!("FAIL {name}: {error}")))?;
-            browser.log(&format!("PASS {family} {name}"));
+            log(state, &format!("START {family} {name}"));
+            match case(state, family, name).await {
+                Ok(()) => {
+                    passed += 1;
+                    log(state, &format!("PASS {family} {name}"));
+                }
+                Err(error) => {
+                    let failure = format!("FAIL {name}: {error}");
+                    log(state, &failure);
+                    failures.push(failure);
+                }
+            }
         }
-        browser.log(&format!("FAMILY {family} {0}/{0}", names.len()));
+        log(state, &format!("FAMILY {family} {passed}/{}", names.len()));
     }
-    if host_digest(root).await? != before {
-        return Err(io::Error::other("host bundle changed while modules loaded"));
+    let passed = total - failures.len();
+    log(state, &format!("COMPLETE {passed}/{total}"));
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(io::Error::other(failures.join("\n")))
     }
-    browser.log(&format!("HOST {before} unchanged"));
-    browser.log(&format!("COMPLETE {0}/{0}", names.len()));
-    Ok(())
 }
 
 /// Keep filesystem hashing off the browser event loop.

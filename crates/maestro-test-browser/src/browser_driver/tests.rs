@@ -464,3 +464,41 @@ fn launch_failures_are_reported() {
         "{error}"
     );
 }
+
+/// A failing export neither stops the later exports nor hides in the final outcome.
+#[test]
+fn inventory_records_every_case_before_failing() {
+    let families = [
+        ("execution", vec!["first".to_owned(), "broken".to_owned()]),
+        ("loading", vec!["last".to_owned()]),
+    ];
+    let mut lines = Vec::<String>::new();
+    let error = block_on(run_cases(
+        &mut lines,
+        &families,
+        |lines, text| lines.push(text.to_owned()),
+        async |_, _, name| {
+            if name == "broken" {
+                Err(io::Error::other("export threw"))
+            } else {
+                Ok(())
+            }
+        },
+    ))
+    .unwrap_err();
+    assert_eq!(error.to_string(), "FAIL broken: export threw");
+    assert_eq!(
+        lines,
+        [
+            "START execution first",
+            "PASS execution first",
+            "START execution broken",
+            "FAIL broken: export threw",
+            "FAMILY execution 1/2",
+            "START loading last",
+            "PASS loading last",
+            "FAMILY loading 1/1",
+            "COMPLETE 2/3",
+        ]
+    );
+}
