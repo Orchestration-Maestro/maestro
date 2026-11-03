@@ -4210,6 +4210,34 @@ fn example_index_renders_targets() {
     );
 }
 
+/// A directory entry point supplies the one row for its undocumented support files.
+#[test]
+fn example_index_summarizes_folder_entry_without_parsing_support_files() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    example_checkout(root.path());
+    let folder = root.path().join("examples/extensions");
+    fs::create_dir_all(folder.join("game")).unwrap();
+    let readme = folder.join("README.md");
+    fs::write(
+        &readme,
+        "<!-- example-index:start -->\n<!-- example-index:end -->\n",
+    )
+    .unwrap();
+    for (name, source) in [
+        ("main.rs", "//! Game command.\n"),
+        ("engine.wit", "package sample:game;\n"),
+        ("engine.c", "#include <stdio.h>\n"),
+        ("build.py", "print('build')\n"),
+    ] {
+        fs::write(folder.join("game").join(name), source).unwrap();
+    }
+    example_index(root.path(), false).unwrap();
+    assert_eq!(
+        fs::read_to_string(readme).unwrap(),
+        "<!-- example-index:start -->\n| File | Provides |\n| --- | --- |\n| `game/main.rs` | Game command. |\n<!-- example-index:end -->\n",
+    );
+}
+
 /// Guest dependency changes are detected without repairing files until generation is requested.
 #[test]
 fn example_index_refreshes_guide_lock_after_guest_dependency_change() {

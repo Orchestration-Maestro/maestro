@@ -18,12 +18,23 @@ pub fn collect(folder: &Path) -> io::Result<Vec<PathBuf>> {
 }
 
 /// Visit regular files without following symbolic links.
+///
+/// A directory holding an entry point contributes that `main.rs` as the one example;
+/// its support files are not examples.
 fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
     for entry in fs::read_dir(folder)? {
         let entry = entry?;
         let kind = entry.file_type()?;
         if kind.is_dir() {
-            collect_into(&entry.path(), files)?;
+            let main = entry.path().join("main.rs");
+            if main
+                .symlink_metadata()
+                .is_ok_and(|metadata| metadata.is_file())
+            {
+                files.push(main);
+            } else {
+                collect_into(&entry.path(), files)?;
+            }
         } else if kind.is_file() && entry.file_name() != "README.md" {
             files.push(entry.path());
         }
