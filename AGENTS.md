@@ -171,7 +171,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `maestro-lock` depends only on `maestro-path` for final-link resolution and uses
   the existing external `sha2 =0.11.0` to shorten lock and record names for long
   file names. Only theme/application may depend on watch; only
-  settings/credentials/workspace/detection/session/application may depend on lock.
+  settings/credentials/workspace/detection/session/application may depend on lock, and
+  the composed executable crate only as a native development dependency so its
+  tests serialize one shared native fixture.
   Application uses maestro-lock for recoverable in-place file publication, on native targets only. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
@@ -296,7 +298,9 @@ to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
-development edge for the product's one engine configuration,
+development edge for the product's one engine configuration, the native-only,
+non-optional `maestro` to `maestro-lock` development edge that serializes the
+executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
 of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see

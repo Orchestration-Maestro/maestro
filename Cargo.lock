@@ -3770,6 +3770,7 @@ dependencies = [
  "maestro-cli",
  "maestro-dependencies",
  "maestro-extensions-wasmtime",
+ "maestro-lock",
  "maestro-process",
  "maestro-rpc",
  "maestro-test-directory",
