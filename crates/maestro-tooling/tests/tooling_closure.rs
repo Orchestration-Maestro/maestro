@@ -1,64 +1,58 @@
-//! The workspace crates a tooling fixture must copy, read from the manifests.
+//! The workspace crates a tooling fixture must copy, read from Cargo metadata.
 
-use std::collections::BTreeSet;
-use std::fs;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use std::{env, fs};
+
+use cargo_metadata::{Metadata, MetadataCommand, Package};
+
+use crate::toolchain_support;
 
 /// The crate every fixture replaces with an empty stand-in, so its sources are never copied.
 const STAND_IN: &str = "maestro-dependencies";
 
-/// The dependency kinds cargo reads for the package it builds.
-const OWN_KINDS: [&str; 3] = ["dependencies", "dev-dependencies", "build-dependencies"];
-
-/// The dependency kinds cargo reads for a dependency of the package it builds.
-const DEPENDENCY_KINDS: [&str; 2] = ["dependencies", "build-dependencies"];
-
 /// The local crates the tooling package needs beside itself.
 pub fn tooling_local_dependencies() -> Vec<String> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    local_dependencies(&root, "maestro-tooling")
+    local_dependencies(&workspace_metadata(&root), "maestro-tooling")
 }
 
-/// The local crates `package` needs beside itself, below the workspace `root`.
+/// Read the packages this workspace declares, resolving no registry dependency.
+fn workspace_metadata(root: &Path) -> Metadata {
+    MetadataCommand::new()
+        .manifest_path(root.join("Cargo.toml"))
+        .no_deps()
+        .exec()
+        .unwrap()
+}
+
+/// The local crates `package` needs beside itself in `metadata`.
 ///
-/// Cargo reads the manifest of each local dependency of the package, development ones
-/// included, but none of a dependency's own development dependencies.
-fn local_dependencies(root: &Path, package: &str) -> Vec<String> {
-    let inherited = manifest(&root.join("Cargo.toml"))
-        .remove("workspace")
-        .and_then(|workspace| workspace.try_into::<toml::Table>().ok())
-        .and_then(|mut workspace| workspace.remove("dependencies"))
-        .and_then(|dependencies| dependencies.try_into::<toml::Table>().ok())
-        .unwrap_or_default();
+/// The copied root manifest makes every copied crate a workspace member, so cargo reads every
+/// reached crate's own dependencies: development and build ones, every target's included.
+fn local_dependencies(metadata: &Metadata, package: &str) -> Vec<String> {
+    let packages: BTreeMap<&str, &Package> = metadata
+        .packages
+        .iter()
+        .filter_map(|package| Some((package.manifest_path.parent()?.file_name()?, package)))
+        .collect();
     let mut found = BTreeSet::new();
-    let mut pending = vec![(package.to_owned(), OWN_KINDS.as_slice())];
-    while let Some((name, kinds)) = pending.pop() {
-        let table = manifest(&root.join("crates").join(&name).join("Cargo.toml"));
-        for (dependency, entry) in dependency_entries(&table, kinds) {
-            let entry = if entry.get("workspace").is_some() {
-                inherited.get(dependency).unwrap_or(entry)
-            } else {
-                entry
-            };
-            let Some(directory) = entry
-                .get("path")
-                .and_then(toml::Value::as_str)
-                .and_then(|path| Path::new(path).file_name())
-                .and_then(|name| name.to_str())
-            else {
+    let mut pending = vec![package];
+    while let Some(name) = pending.pop() {
+        let Some(owner) = packages.get(name) else {
+            continue;
+        };
+        for dependency in &owner.dependencies {
+            let path = dependency.path.as_deref();
+            let Some(directory) = path.and_then(|path| path.file_name()) else {
                 continue;
             };
-            if directory != STAND_IN && directory != package && found.insert(directory.to_owned()) {
-                pending.push((directory.to_owned(), DEPENDENCY_KINDS.as_slice()));
+            if directory != STAND_IN && found.insert(directory.to_owned()) {
+                pending.push(directory);
             }
         }
     }
     found.into_iter().collect()
-}
-
-/// Read one manifest.
-fn manifest(path: &Path) -> toml::Table {
-    fs::read_to_string(path).unwrap().parse().unwrap()
 }
 
 /// The dependencies of `kinds` a manifest declares, including its target-specific tables.
@@ -79,26 +73,28 @@ pub fn dependency_entries<'a>(
         .flat_map(toml::Table::iter)
 }
 
-/// Write the manifest of local crate `name` below `root`.
+/// Write the manifest and empty library of local crate `name` below `root`.
 fn write_crate(root: &Path, name: &str, dependencies: &str) {
     let directory = root.join("crates").join(name);
-    fs::create_dir_all(&directory).unwrap();
+    fs::create_dir_all(directory.join("src")).unwrap();
+    fs::write(directory.join("src/lib.rs"), "").unwrap();
     fs::write(
         directory.join("Cargo.toml"),
-        format!("[package]\nname = '{name}'\n{dependencies}"),
+        format!("[package]\nname = '{name}'\nversion = '0.0.0'\n{dependencies}"),
     )
     .unwrap();
 }
 
-/// Direct, inherited, target-specific and transitive local dependencies are found, and a
-/// dependency's own development dependencies, the stand-in and registry crates are not.
+/// Direct, inherited, target-specific and transitive local dependencies are found along with a
+/// dependency's own development dependency; the stand-in and registry crates are not.
 #[test]
-fn closure_follows_manifests_the_way_cargo_reads_them() {
+fn closure_follows_metadata_the_way_cargo_reads_it() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     fs::write(
         root.join("Cargo.toml"),
-        "[workspace.dependencies]\ninherited = { path = 'crates/inherited' }\n\
+        "[workspace]\nmembers = ['crates/*']\n\n[workspace.dependencies]\n\
+         inherited = { path = 'crates/inherited' }\n\
          maestro-dependencies = { path = 'crates/maestro-dependencies' }\n",
     )
     .unwrap();
@@ -125,8 +121,24 @@ fn closure_follows_manifests_the_way_cargo_reads_them() {
     ] {
         write_crate(root, name, "");
     }
+    let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
+        .unwrap()
+        .args([
+            "metadata",
+            "--offline",
+            "--no-deps",
+            "--format-version",
+            "1",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     assert_eq!(
-        local_dependencies(root, "owner"),
-        ["built", "direct", "inherited", "transitive"]
+        local_dependencies(&serde_json::from_slice(&output.stdout).unwrap(), "owner"),
+        ["built", "direct", "inherited", "transitive", "unread"]
     );
 }
