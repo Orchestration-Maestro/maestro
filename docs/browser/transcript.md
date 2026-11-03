@@ -244,9 +244,12 @@ pending feedback.
 implement `DomContent` without a canvas host, and `MountedContent` places them.
 Markdown mounts a `div.maestro-markdown` root and puts the prepared document in
 the page's light DOM, so its text stays findable and selectable. An update with
-the same source and escaping keeps every node and refreshes the listings with the
-supplied syntax engine and localization. Switching to the reasoning presentation
-changes only the root's class, so listings, copy feedback and selection stay.
+the same source and escaping keeps the listings and their copy controls and refreshes
+them with the supplied syntax engine and localization. Only what changed is touched:
+changed highlighting replaces a listing's code children, and a changed copy title
+rebuilds the copy control's children. Every other node, and a selection inside it,
+stays. Switching to the reasoning presentation changes only the root's class, so
+listings, copy feedback and selection stay.
 Changed source is prepared, highlighted and assembled off the page, then replaces
 the root's children. A failed update returns its error and leaves the previous
 document in place.
