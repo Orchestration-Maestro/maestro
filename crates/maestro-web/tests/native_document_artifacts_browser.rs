@@ -146,12 +146,15 @@ async fn assert_page_geometry(
     viewport.remove_child(&root.node).unwrap();
 }
 
-/// The page paints its own padding, then measured text inside it.
+/// The page paints its own padding around measured body text.
+///
+/// A header or footer paragraph sits at the document's header offset, which the artifact's own
+/// page padding replaces, so the padding surrounds the body text block rather than them.
 fn assert_painted_page(sheet: &Element, case: &Package) {
     let page = sheet.get_bounding_client_rect();
     assert!(page.height() > 0.0, "{} paints its page", case.name);
-    let text = sheet.query_selector("p").unwrap();
-    assert!(text.is_some(), "{} paints its paragraph", case.name);
+    let text = sheet.query_selector("article p").unwrap();
+    assert!(text.is_some(), "{} paints its body paragraph", case.name);
     let painted = text.unwrap().get_bounding_client_rect();
     assert!(
         painted.width() > 0.0 && painted.height() > 0.0,
@@ -160,7 +163,7 @@ fn assert_painted_page(sheet: &Element, case: &Package) {
     );
     assert!(
         painted.left() - page.left() >= 30.0 && painted.top() - page.top() >= 30.0,
-        "{}: the page paints its own padding around the text",
+        "{}: the page paints its own padding around the body text",
         case.name
     );
 }
