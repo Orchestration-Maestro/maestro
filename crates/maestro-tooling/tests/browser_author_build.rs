@@ -1804,6 +1804,24 @@ fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
     assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
 }
 
+/// The warm recipes and the native helper cap Cargo's compile jobs; the cold recipe leaves the
+/// variable to the caller, so a job cap set by the build host reaches it and no cap at all means
+/// every core.
+#[test]
+fn browser_cold_recipes_inherit_the_callers_compile_job_cap() {
+    let browser = Browser::cold();
+    let jobs = |command: &std::process::Command| {
+        command
+            .get_envs()
+            .find(|(name, _)| *name == "CARGO_BUILD_JOBS")
+            .map(|(_, value)| value.map(std::ffi::OsStr::to_owned))
+    };
+    assert_eq!(jobs(&browser.cold_command("recipe")), None);
+    for command in [browser.command("recipe"), browser.native_command("build")] {
+        assert_eq!(jobs(&command), Some(Some("3".into())));
+    }
+}
+
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
     let browser = Browser::cold();

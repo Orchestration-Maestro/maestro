@@ -1101,8 +1101,9 @@ the child before making the shared Cargo home unusable. The cold test copies onl
 the source configuration into its initially empty Cargo home. Its Cargo target
 directory also starts empty, so the recipes still prove compilation from clean state.
 The cold recipe uses `fixture_command` to keep its private home out of the
-compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` unset, so Cargo
-compiles with every core the test reserves; the other recipe tests keep three jobs.
+compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
+by the build host applies, and with none Cargo compiles with every core the test reserves.
+The other recipe tests keep three jobs.
 
 Cargo builds that share one target directory with other builds, the test build's or the
 one the browser author setup prepares, keep the shared home.
