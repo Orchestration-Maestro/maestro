@@ -12,6 +12,9 @@ use chromiumoxide::{
 use serde_json::{Value, json};
 use std::{collections::HashMap, io};
 
+/// Chromium's verdict on an evaluation whose context the renderer has already dropped.
+const DROPPED_CONTEXT: &str = "Cannot find context with specified id";
+
 impl Page<'_> {
     /// Resolve the host call in the exact context that emitted it.
     pub(super) async fn binding(&mut self, event: &CdpJsonEventMessage) -> io::Result<()> {
@@ -45,15 +48,8 @@ impl Page<'_> {
             .await
             .map(|_| ())
         {
-            Ok(()) => Ok(()),
-            Err(error)
-                if error
-                    .to_string()
-                    .contains("Cannot find context with specified id") =>
-            {
-                Ok(())
-            }
-            Err(error) => Err(error),
+            Err(error) if error.to_string().contains(DROPPED_CONTEXT) => Ok(()),
+            settled => settled,
         };
         // A caller removed while its call ran cannot receive the reply, whatever the outcome.
         if !self.context_exists(&context.session, context.id) {

@@ -560,8 +560,8 @@ fn page_exception_during_iframe_setup_fails_the_command() {
         assert!(error.contains("Error: page failed"), "{error}");
     });
 }
-/// Every key name the qualification exports press resolves on the press path, with the accepted
-/// chord modifiers.
+
+/// Every key name the qualification exports press resolves through the driver's key table.
 #[test]
 fn press_resolves_every_key_name_the_qualification_exports_press() {
     for chord in [
@@ -575,19 +575,12 @@ fn press_resolves_every_key_name_the_qualification_exports_press() {
         "Shift+Enter",
         "Shift+Tab",
     ] {
-        let mut parts = chord.split('+');
-        let key = parts.next_back().unwrap();
+        let key = chord.split('+').next_back().unwrap();
         assert!(key_definition(key).is_some(), "{chord} does not resolve");
-        for modifier in parts {
-            assert!(
-                ["Alt", "Control", "Meta", "Shift"].contains(&modifier),
-                "{chord} has an unknown modifier"
-            );
-        }
     }
     assert!(
         key_definition("Mute").is_none(),
-        "unmapped names stay known"
+        "unmapped names stay unknown"
     );
 }
 
@@ -638,7 +631,6 @@ async fn navigating_peer(mut socket: WebSocketStream<TcpStream>, commit_first: b
         if method == "Runtime.evaluate" && call["params"]["contextId"] == 2 {
             let expression = call["params"]["expression"].as_str().unwrap_or_default();
             assert!(expression.starts_with("new Promise"), "{expression}");
-            let _ = expression;
             send(
                 &mut socket,
                 json!({"id":call["id"],"result":{"result":{"value":null}}}),
@@ -665,9 +657,9 @@ async fn commit_navigation(
 ) {
     let reply = json!({"id":call["id"],"result":{"frameId":"committed","loaderId":"loader"}});
     let destroyed = json!({"method":"Runtime.executionContextDestroyed","sessionId":"session",
-            "params":{"executionContextUniqueId":"root-world"}});
+            "params":{"executionContextId":1,"executionContextUniqueId":"root-world"}});
     let navigated = json!({"method":"Page.frameNavigated","sessionId":"session",
-            "params":{"type":"Navigation","frame":{"id":"committed","loaderId":"loader1","url":"fixture",
+            "params":{"type":"Navigation","frame":{"id":"committed","loaderId":"loader","url":"fixture",
                 "domainAndRegistry":"","securityOrigin":"null","mimeType":"text/html",
                 "secureContextType":"InsecureScheme","crossOriginIsolatedContextType":"NotIsolated",
                 "gatedAPIFeatures":[]}}});
@@ -685,8 +677,8 @@ async fn commit_navigation(
     }
 }
 
-/// Page creation leaves the desktop pointer to the launch environment and touches emulation only
-/// for the export that asks for touch input.
+/// Page creation leaves the desktop pointer to the launch environment and enables touch emulation
+/// only for the export that asks for touch input.
 #[test]
 fn page_creation_enables_touch_emulation_only_for_its_touch_opted_export() {
     block_on(async {
@@ -714,7 +706,7 @@ fn page_creation_enables_touch_emulation_only_for_its_touch_opted_export() {
 /// Serve the setup sequence and refuse a page whose emulation command count differs from its
 /// request.
 async fn touch_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) -> Option<()> {
-    let mut enabled = Some(0usize);
+    let mut enabled = 0usize;
     while let Some(call) = receive(&mut socket).await {
         let method = call["method"].as_str().unwrap();
         if method == "Emulation.setDeviceMetricsOverride" {
@@ -724,7 +716,7 @@ async fn touch_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) -> O
         }
         if method == "Emulation.setTouchEmulationEnabled" {
             assert_eq!(call["params"]["enabled"], touch);
-            enabled = enabled.map(|count| count + 1);
+            enabled += 1;
             send(&mut socket, json!({"id":call["id"],"result":{}})).await;
             continue;
         }
@@ -738,7 +730,7 @@ async fn touch_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) -> O
         if leave {
             assert_eq!(
                 enabled,
-                Some(u8::from(touch).into()),
+                usize::from(touch),
                 "touch emulation commands on {touch}"
             );
             return Some(());

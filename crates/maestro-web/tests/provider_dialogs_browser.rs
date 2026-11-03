@@ -118,9 +118,7 @@ pub async fn provider_key_input_tests_with_current_proxy_before_saving(import: j
         .unwrap();
     // The label styles the provider name with `text-transform: capitalize`, and the accessible
     // name follows the rendered text.
-    let mut named = "anthropic".to_owned();
-    named[0..1].make_ascii_uppercase();
-    assert!(tree.contains(&format!("textbox \"{named}\"")), "{tree}");
+    assert!(tree.contains("textbox \"Anthropic\""), "{tree}");
     type_text("sk-ant-oat-1").await;
     assert!(!save.disabled());
     save.click();

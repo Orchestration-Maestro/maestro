@@ -150,7 +150,7 @@ impl<'a> Page<'a> {
             json!({"width":1280,"height":720,"deviceScaleFactor":1.25,"mobile":false}),
         )
         .await?;
-        // The desktop pointer stays as the launch presents it; only touch requests enable it.
+        // The launch settles the desktop pointer; only a touch request enables touch emulation.
         if self.name == "tile_dom_remove_does_not_open_and_uses_current_callback" {
             self.command(
                 Some(&session),

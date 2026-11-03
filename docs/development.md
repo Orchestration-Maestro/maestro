@@ -276,8 +276,8 @@ signals without command deadlines.
 
 The launch tells Chromium that this desktop has a hover-capable pointer, so
 media queries such as `(hover: hover)` behave like they do on a real desktop.
-Pages keep touch off until the export that asks for touch input gets touch
-emulation. A navigation waits for the committed main frame's own default
+Pages keep touch emulation off; only an export that asks for touch input turns
+it on. A navigation waits for the committed main frame's own default
 execution context before it evaluates readiness, whichever side of the navigate
 reply announces it.
 
