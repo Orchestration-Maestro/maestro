@@ -563,11 +563,13 @@ Move the existing matchers only after this contract lands, through
 
 `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
 `maestro-lock` is below layer 0 and depends only on `maestro-path` and the existing
-external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
-may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock, and the composed executable crate only as a native development
-dependency so its tests serialize one shared native fixture. Application uses maestro-lock's recoverable in-place
-`replace` for component saves on native targets only, preserving native identity.
+external `sha2 =0.11.0`, which shortens lock and record names for long file names.
+Only theme and application may depend on watch; only settings, credentials,
+workspace, detection, session and application may depend on lock, and the
+composed executable crate only as a native development dependency so its tests
+serialize one shared native fixture. Application uses maestro-lock's recoverable
+in-place `replace` for component saves on native targets only, preserving native
+identity.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
