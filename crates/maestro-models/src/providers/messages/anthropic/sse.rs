@@ -1,12 +1,13 @@
 //! Server-sent event framing of a message stream, the repair of event data and the point at
 //! which the stream is complete.
 //!
-//! This framing is the message protocol's own: a carriage return ends its line at once and
-//! swallows one line feed that follows it, even in the next chunk; one byte-order mark is
-//! dropped from the start of the stream; and a stream is complete only at its stop event.
+//! Lines come from the shared byte-line decoder: a carriage return ends its line at once and
+//! swallows one line feed that follows it, even in the next chunk. This module decodes each
+//! line as text, drops one byte-order mark from the start of the stream, and treats a stream
+//! as complete only at its stop event.
 
 use futures_util::StreamExt;
-use maestro_text::Utf8Stream;
+use maestro_text::{line_decoder::ByteLineDecoder, lossy_string};
 use serde_json::value::RawValue;
 
 use super::ABORTED_TEXT;
@@ -42,16 +43,11 @@ struct Frame {
 /// collect until a blank line dispatches them.
 #[derive(Default)]
 struct Decoder {
-    /// Raw scalar decoding before protocol framing.
-    utf8: Utf8Stream,
-    /// Whether the first text of the stream, which may start with a byte-order mark, is still
+    /// Raw-byte line framing before protocol decoding.
+    lines: ByteLineDecoder,
+    /// Whether the first line of the stream, which may start with a byte-order mark, is still
     /// to come.
     at_start: bool,
-    /// Whether the previous line ended at a carriage return, so that a line feed next is part
-    /// of the same ending.
-    after_carriage_return: bool,
-    /// The line being read.
-    line: String,
     /// Name given by the latest `event` field.
     event: Option<String>,
     /// Values of the `data` fields so far.
@@ -71,47 +67,36 @@ impl Decoder {
 
     /// Add a chunk and return the events it completes.
     fn push(&mut self, chunk: &[u8]) -> Vec<Frame> {
-        let text = self.text(chunk);
-        let mut frames = Vec::new();
-        for character in text.chars() {
-            if std::mem::take(&mut self.after_carriage_return) && character == '\n' {
-                continue;
-            }
-            match character {
-                '\r' | '\n' => {
-                    self.after_carriage_return = character == '\r';
-                    let line = std::mem::take(&mut self.line);
-                    frames.extend(self.read(&line));
-                }
-                other => self.line.push(other),
-            }
-        }
-        frames
+        let lines = self.lines.decode(chunk);
+        self.read_all(lines)
     }
 
-    /// End the stream: a character cut at the end becomes U+FFFD, a last line without its
-    /// ending is read and the event being collected is dispatched.
+    /// End the stream: a last line without its ending is read and the event being collected
+    /// is dispatched.
     fn finish(&mut self) -> Vec<Frame> {
-        self.line.push_str(&self.utf8.finish());
-        let mut frames = Vec::new();
-        if !self.line.is_empty() {
-            let line = std::mem::take(&mut self.line);
-            frames.extend(self.read(&line));
-        }
+        let lines = self.lines.flush();
+        let mut frames = self.read_all(lines);
         frames.extend(self.dispatch());
         frames
     }
 
-    /// Decode a chunk as text: invalid sequences become U+FFFD, a character cut by the end of
-    /// the chunk is completed by the next one, and one byte-order mark is dropped from the
-    /// start of the stream.
-    fn text(&mut self, chunk: &[u8]) -> String {
-        let mut text = self.utf8.push(chunk);
-        if self.at_start && !text.is_empty() {
-            self.at_start = false;
-            if text.starts_with('\u{feff}') {
-                text.remove(0);
-            }
+    /// Read lines in order and return the events they complete.
+    fn read_all(&mut self, lines: Vec<Vec<u8>>) -> Vec<Frame> {
+        lines
+            .into_iter()
+            .filter_map(|bytes| {
+                let line = self.text(bytes);
+                self.read(&line)
+            })
+            .collect()
+    }
+
+    /// Decode a line as text: invalid sequences become U+FFFD, and one byte-order mark is
+    /// dropped from the start of the stream.
+    fn text(&mut self, bytes: Vec<u8>) -> String {
+        let mut text = lossy_string(bytes);
+        if std::mem::take(&mut self.at_start) && text.starts_with('\u{feff}') {
+            text.remove(0);
         }
         text
     }
