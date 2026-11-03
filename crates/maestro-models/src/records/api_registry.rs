@@ -146,13 +146,17 @@ pub fn get_api_providers() -> Vec<ApiProvider> {
             .collect()
     })
 }
-/// Remove registrations whose current owner matches the supplied identity and restore
-/// the registration their replacement displaced.
+/// Remove registrations whose current owner matches the supplied identity, drop the
+/// shadow copies that identity also superseded, and restore the registration the
+/// removed entry displaced.
 pub fn unregister_api_providers(source_id: &str) {
     let retired = with_registry(|registry| {
         let mut superseded: Vec<Registration> = Vec::new();
         for list in registry.shadowed.values_mut() {
-            retire_stale_copies(list, source_id, &mut superseded);
+            for entry in list.extract_if(.., |entry| entry.source_id.as_deref() == Some(source_id))
+            {
+                superseded.push(entry);
+            }
         }
         let matched: Vec<_> = registry
             .entries
@@ -161,51 +165,23 @@ pub fn unregister_api_providers(source_id: &str) {
             .map(|(api, _)| api.clone())
             .collect();
         for api in &matched {
-            restore_or_remove(registry, api, source_id, &mut superseded);
+            restore_or_remove(registry, api, &mut superseded);
         }
         superseded
     });
     drop(retired);
 }
 
-/// Retire the shadow copies `source_id` superseded, from the top of the stack down.
-fn retire_stale_copies(
-    list: &mut Vec<Registration>,
-    source_id: &str,
-    superseded: &mut Vec<Registration>,
-) {
-    while list
-        .last()
-        .is_some_and(|entry| entry.source_id.as_deref() == Some(source_id))
-    {
-        let Some(entry) = list.pop() else {
-            break;
-        };
-        superseded.push(entry);
-    }
-}
-
-/// Retire the registration `api` currently holds for `source_id`, installing the
-/// registration its replacement displaced, and collect everything retired.
+/// Retire the registration `api` currently holds for the removed identity, installing
+/// the registration its replacement displaced, and collect everything retired. The
+/// stale copies of that identity are already gone, so the top shadow entry is the
+/// registration the removed entry displaced.
 fn restore_or_remove(
     registry: &mut ApiRegistrations,
     api: &str,
-    source_id: &str,
     superseded: &mut Vec<Registration>,
 ) {
-    let mut replacement = None;
-    {
-        let shadow = registry.shadowed.entry(api.to_owned()).or_default();
-        while replacement.is_none() {
-            match shadow.pop() {
-                Some(entry) if entry.source_id.as_deref() == Some(source_id) => {
-                    superseded.push(entry);
-                }
-                Some(entry) => replacement = Some(entry),
-                None => break,
-            }
-        }
-    }
+    let replacement = registry.shadowed.get_mut(api).and_then(Vec::pop);
     let Some(index) = registry.entries.get_index_of(api) else {
         return;
     };

@@ -190,6 +190,61 @@ fn refresh_and_removal_keep_another_instances_registrations() {
 }
 
 #[test]
+fn refresh_and_removal_leave_no_stale_shadow_copies() {
+    if dynamic::isolated("refresh_and_removal_leave_no_stale_shadow_copies") {
+        return;
+    }
+    let mut registries = Vec::new();
+    for owner in ["first", "second", "third"] {
+        let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+        let config = dynamic::config(&[owner]);
+        config.write().unwrap().api = Some("stale-shadow".into());
+        dynamic::callback(&config, owner);
+        registry.register_provider(owner, config).unwrap();
+        registries.push(registry);
+    }
+    let witness = registries[2]
+        .find("third", "third")
+        .unwrap()
+        .read()
+        .unwrap()
+        .clone();
+    // The last registration owns the protocol.
+    assert_eq!(live_shadow_message(&witness).as_deref(), Some("third"));
+    // Each refresh re-asserts its own registration without leaving a stale copy behind.
+    registries[0].refresh().unwrap();
+    assert_eq!(live_shadow_message(&witness).as_deref(), Some("first"));
+    registries[1].refresh().unwrap();
+    assert_eq!(live_shadow_message(&witness).as_deref(), Some("second"));
+    registries[0].unregister_provider("first").unwrap();
+    assert_eq!(live_shadow_message(&witness).as_deref(), Some("second"));
+    registries[2].unregister_provider("third").unwrap();
+    assert_eq!(live_shadow_message(&witness).as_deref(), Some("second"));
+    // A removal must not resurrect registrations from a source that already left.
+    registries[1].unregister_provider("second").unwrap();
+    assert!(live_shadow_message(&witness).is_none());
+}
+
+/// Invoke the live `stale-shadow` protocol callback over a retained witness model.
+fn live_shadow_message(witness: &maestro_models::Model) -> Option<String> {
+    maestro_models::get_api_provider(&witness.api).and_then(|provider| {
+        provider
+            .stream
+            .call(
+                witness.clone(),
+                maestro_models::Context {
+                    messages: vec![],
+                    system_prompt: None,
+                    tools: None,
+                },
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
+            .err()
+            .map(|error| error.message)
+    })
+}
+
+#[test]
 fn refresh_replays_initial_provider_order_and_defined_field_merges() {
     if dynamic::isolated("refresh_replays_initial_provider_order_and_defined_field_merges") {
         return;
