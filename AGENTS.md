@@ -90,8 +90,9 @@ are not evaluated. There are no suppressions or baseline. See
 Duplicate assertions are a review judgement.
 Conventions reject a platform temporary directory that test code in a migrated
 crate names itself through `std::env::temp_dir()`, as a call, a value, a macro
-argument or an import under any alias; tests that observe it use
-`maestro-test-directory::temporary_root`, and the diagnostic names
+argument or an import under any alias; a method named `temp_dir` is the
+receiver's own API and is accepted, while its arguments stay checked. Tests that
+observe it use `maestro-test-directory::temporary_root`, and the diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or
@@ -171,7 +172,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `maestro-lock` depends only on `maestro-path` for final-link resolution and uses
   the existing external `sha2 =0.11.0` to shorten lock and record names for long
   file names. Only theme/application may depend on watch; only
-  settings/credentials/workspace/detection/session/application may depend on lock.
+  settings/credentials/workspace/detection/session/application may depend on lock, and
+  the composed executable crate only as a native development dependency so its
+  tests serialize one shared native fixture.
   Application uses maestro-lock for recoverable in-place file publication, on native targets only. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
@@ -182,14 +185,16 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   existing theme paths may re-export moved types, not duplicate implementations.
   Land this contract before creating the leaves; size moves by net added
   production lines with matching moved/deleted counts, not claimed savings.
-- `maestro-process` is a declared core leaf below layer 0 with no workspace
-  dependencies, including the path and cancellation leaves. Only tools, packages,
-  credentials, detection, the application, the daemon, the toolkit and the terminal adapter may depend on it, on native targets. It owns native child-process
+- `maestro-process` is a declared core owner below layer 0 depending only on
+  `maestro-text`, which owns shared POSIX shell operand serialization. Only tools, packages,
+  credentials, detection, the application, the daemon, the toolkit and the terminal
+  adapter may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
   all output handling. Its retained-front byte queue is shared by pane-process input
   and native terminal output; callers own readiness and lifecycle policy. It also owns
   native termination-signal delivery, their idempotent removal and the prepared
-  default action, while each native mode keeps its own exit policy. Synchronous capture follows the timeout handling in
+  default action, while each native mode keeps its own exit policy. Synchronous
+  capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
 - `maestro-listing` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path utility. It lists one directory's entries sorted
@@ -294,9 +299,11 @@ to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
-development edge for the product's one engine configuration,
+development edge for the product's one engine configuration, the native-only,
+non-optional `maestro` to `maestro-lock` development edge that serializes the
+executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
-of the twenty-six declared callers on `maestro-test-process`, the owner of
+of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build

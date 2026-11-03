@@ -356,7 +356,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
-| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
+| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, POSIX shell operands, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
@@ -366,7 +366,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-lock` | guard file writes | `maestro-path` | below 0 |
-| `maestro-process` | own native child-process lifecycles | — | below 0 |
+| `maestro-process` | own native child-process lifecycles | `maestro-text` | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
@@ -563,10 +563,13 @@ Move the existing matchers only after this contract lands, through
 
 `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
 `maestro-lock` is below layer 0 and depends only on `maestro-path` and the existing
-external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
-may depend on watch; only settings, credentials, workspace, detection, session and application
-may depend on lock. Application uses maestro-lock's recoverable in-place
-`replace` for component saves on native targets only, preserving native identity.
+external `sha2 =0.11.0`, which shortens lock and record names for long file names.
+Only theme and application may depend on watch; only settings, credentials,
+workspace, detection, session and application may depend on lock, and the
+composed executable crate only as a native development dependency so its tests
+serialize one shared native fixture. Application uses maestro-lock's recoverable
+in-place `replace` for component saves on native targets only, preserving native
+identity.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -640,15 +643,15 @@ and [file-lock acquisition ownership](https://github.com/Orchestration-Maestro/m
 Size each relocation by net added production lines, showing matching moved and
 deleted lines; moving lines is not a code saving.
 
-`maestro-process` is a core leaf below layer 0 with no workspace dependencies,
-including the path and cancellation leaves. It owns native child-process lifecycles:
+`maestro-process` is a core owner below layer 0 depending only on `maestro-text`
+for POSIX shell operand serialization. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
 pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, detection, the application and the
 terminal toolkit, terminal adapter and the daemon may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
-with their feature owners. The process leaf also owns the retained-front byte queue
+with their feature owners. The process owner also owns the retained-front byte queue
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
 keep descriptor readiness, lifecycle and error-reporting policy. It owns native
@@ -689,7 +692,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
-request owner (`maestro-request`), watch leaf (`maestro-watch`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
+request owner (`maestro-request`), watch leaf (`maestro-watch`), process owner (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`), package records (`maestro-package`) and brand projection
@@ -758,6 +761,9 @@ product's one engine configuration. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
 dependency, supplies name-ordered directory reads to the guest examples. It permits
 no normal or build dependency on the listing leaf.
+`maestro` to `maestro-lock`, declared as a native, non-optional development
+dependency, serializes the executable's file-trigger test on the shared host
+fixture. It permits no normal or build edge.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -801,7 +807,7 @@ fixtures, and it is excluded from the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
 and `maestro-tui-crossterm`; a

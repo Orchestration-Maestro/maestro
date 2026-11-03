@@ -110,7 +110,9 @@ tests that build a real model catalog, the native-only `maestro-detection` to
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
 tests that drive a real session through the scripted provider, the native-only
 `maestro-cli` to `maestro-listeners` development edge for the controlled print
-adapter, and the native development edges from the twenty-three declared callers to the
+adapter, the native-only `maestro` to `maestro-lock` development edge that
+serializes the executable's file-trigger test on the shared host fixture, and the
+native development edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -156,8 +158,8 @@ recoverable in-place byte publication. See [file locking](locking.md) for the du
 copy and replay order.
 Feature owners retain serialization, symbolic-link policy and scheduling.
 
-The process leaf `maestro-process` is declared core below layer 0 with no workspace
-dependencies, including path and cancellation. Only tools, packages, credentials,
+The process owner `maestro-process` is declared core below layer 0 and depends only
+on `maestro-text` for POSIX shell operand serialization. Only tools, packages, credentials,
 detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
@@ -365,13 +367,15 @@ Conventions reject a platform temporary directory that migrated-crate test code
 names itself. Test-owned code is a test file layout and every item inside an
 inherited `cfg(test)` context, closures and macro arguments included; the
 `temp_dir` spelling is rejected there as a call, as a value or inside macro
-tokens, and its import is rejected anywhere in the crate, whatever the alias.
-The check follows no bindings or data flow. Tests that observe the platform
-directory, name an uncreated socket path under it or pass it as the owner's
-parent read it through `maestro_test_directory::temporary_root`, and directory
-creation and removal go through `Scratch`. The check covers the crates the
-migration onto `maestro-test-directory` has reached, and each batch adds its
-crates until the last one removes the scope. The diagnostic names
+tokens, and its import is rejected anywhere in the crate, whatever the alias. A
+method named `temp_dir` is the receiver's own API, never the platform spelling,
+so a call on a receiver is accepted while every member of its arguments stays
+checked. The check follows no bindings or data flow. Tests that observe the
+platform directory, name an uncreated socket path under it or pass it as the
+owner's parent read it through `maestro_test_directory::temporary_root`, and
+directory creation and removal go through `Scratch`. The check covers the
+crates the migration onto `maestro-test-directory` has reached, and each batch
+adds its crates until the last one removes the scope. The diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.

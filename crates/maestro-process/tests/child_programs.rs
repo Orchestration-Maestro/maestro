@@ -547,8 +547,9 @@ pub fn acknowledged_writer() {
     for (index, (stream, bytes)) in writes.into_iter().enumerate() {
         assert_eq!(receive(&mut socket).unwrap(), Some(b'g'), "write {index}");
         match stream {
+            Stream::Output => write_stdout(bytes),
             Stream::Error => write_stderr(bytes),
-            _ => write_stdout(bytes),
+            Stream::Input => panic!("write {index} names the input stream"),
         }
         .unwrap();
     }

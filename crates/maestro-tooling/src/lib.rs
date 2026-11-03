@@ -189,7 +189,7 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut smoke = Command::new(std::env::current_exe()?);
     smoke.arg("check-browser-smoke");
     let active = checkout
-        .join("crates/maestro-models/examples/browser_import_check.rs")
+        .join("crates/maestro-models/tests/support/browser_import_check.rs")
         .is_file();
     pre_commit::run(
         checkout,
@@ -200,10 +200,10 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Compile the delivered browser import example and capture its diagnostics.
+/// Compile the delivered browser import witness and capture its diagnostics.
 fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     if !checkout
-        .join("crates/maestro-models/examples/browser_import_check.rs")
+        .join("crates/maestro-models/tests/support/browser_import_check.rs")
         .is_file()
     {
         return Err(io::Error::other(
