@@ -1401,34 +1401,42 @@ fn native_launch(test: &str) {
                 .open(dir.path().join(name))
                 .unwrap();
         }
-        if mode != "unavailable" {
-            let status = std::process::Command::new("/usr/bin/install")
-                .args(["-m", "0700"])
-                .arg(
-                    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                        .join("tests/fixtures/session-trash.sh"),
-                )
-                .arg(dir.path().join("bin/trash"))
-                .status()
-                .unwrap();
-            assert!(status.success());
-        }
         let path = dir.path().join("bin").to_string_lossy().into_owned();
         let log = dir.path().join("argv").to_string_lossy().into_owned();
+        if mode != "unavailable" {
+            let entry = dir.path().join("bin/trash");
+            let mut record = entry.as_os_str().to_os_string();
+            record.push(".fixture");
+            let outcome = trash_record(mode, &log);
+            std::fs::write(record, format!("trash\n{outcome}")).unwrap();
+            let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+                .expect("nextest native-fixture setup supplies the prepared artifact");
+            maestro_test_process::install_executable(std::path::Path::new(&artifact), &entry)
+                .unwrap();
+        }
         let lines = native_child::probe(
             maestro_test_process::TestProcess::named(test)
                 .unwrap()
                 .case(mode),
             dir.path(),
-            &[
-                ("SESSION_TRASH_OUTCOME", mode),
-                ("PATH", &path),
-                ("MAESTRO_TRASH_LOG", &log),
-            ],
+            &[("PATH", &path), ("MAESTRO_TRASH_LOG", &log)],
             &[],
         )
         .expect("child starts");
         assert_eq!(lines, ["native qualified"]);
+    }
+}
+
+/// The finite trash outcome each native mode observes.
+#[cfg(target_os = "linux")]
+fn trash_record(mode: &str, log: &str) -> serde_json::Value {
+    match mode {
+        "leading-dash" => serde_json::json!({"log": log}),
+        "removed-nonzero" => serde_json::json!({"remove": true, "code": 1}),
+        "zero" => serde_json::json!({}),
+        _ => {
+            serde_json::json!({"stderr": b"trash native failure\nsecond line\n".as_slice(), "code": 1})
+        }
     }
 }
 

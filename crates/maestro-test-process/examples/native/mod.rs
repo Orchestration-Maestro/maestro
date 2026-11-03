@@ -5,6 +5,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 mod author;
+#[cfg(unix)]
+mod browser_launch;
 mod cargo;
 #[cfg(unix)]
 mod child;
@@ -22,6 +24,8 @@ mod rpc;
 mod search;
 mod tooling_command;
 mod tooling_wrapper;
+#[cfg(unix)]
+mod trash;
 
 /// A fully parsed fixture request, before any observable effect.
 enum Request {
@@ -49,6 +53,9 @@ enum Request {
     Echo(echo::Record),
     /// Run a copied preparation example against its checkout-local declaration.
     Author(author::Record, Vec<OsString>),
+    /// Announce a desktop viewer launch and wait for its release.
+    #[cfg(unix)]
+    BrowserLaunch(browser_launch::Record, Vec<OsString>),
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
@@ -60,6 +67,9 @@ enum Request {
     ToolingCommand(tooling_command::Record, Vec<OsString>),
     /// Stand in for a compiler wrapper a fixture build runs.
     ToolingWrapper(tooling_wrapper::Record, Vec<OsString>),
+    /// Move or remove caller-owned files on the trash program's behalf.
+    #[cfg(unix)]
+    Trash(trash::Record, Vec<OsString>),
 }
 
 impl Request {
@@ -114,6 +124,11 @@ impl Request {
             Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
             Some("echo") => Ok(Self::Echo(echo::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("browser_launch") => Ok(Self::BrowserLaunch(
+                browser_launch::Record::parse(&text)?,
+                operands,
+            )),
             Some("credentials") => Ok(Self::Credentials(
                 credentials::Record::parse(&text)?,
                 operands,
@@ -129,6 +144,8 @@ impl Request {
                 tooling_wrapper::Record::parse(&text)?,
                 operands,
             )),
+            #[cfg(unix)]
+            Some("trash") => Ok(Self::Trash(trash::Record::parse(&text)?, operands)),
             _ => Err(io::Error::other("unknown native fixture record")),
         }
     }
@@ -150,12 +167,16 @@ pub(super) fn run() -> io::Result<()> {
         Request::Editor(record, operands) => editor::run(&record, &operands),
         Request::Echo(record) => echo::run(&record, &[]),
         Request::Author(record, operands) => author::run(&record, &operands),
+        #[cfg(unix)]
+        Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
         Request::ToolingCommand(record, operands) => tooling_command::run(&record, &operands),
         Request::ToolingWrapper(record, operands) => tooling_wrapper::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Trash(record, operands) => trash::run(&record, &operands),
     }
 }
 
