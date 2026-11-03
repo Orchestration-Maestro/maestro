@@ -203,6 +203,8 @@ tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
 printed.
+The real-browser cases run with `--no-fail-fast`, so one Chromium run reports every
+failing case.
 
 The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
@@ -252,10 +254,13 @@ the driver scrolls `#target` into that document's view immediately, then sends
 move, press and release there. A frame that shares its parent's renderer uses
 that renderer's native content quad. The driver releases lookup handles after
 success and failure, and retains attached renderer sessions only for the page's
-lifetime. The driver tracks the default execution context of every attached
-iframe, including frames whose scripts are already running when they attach.
-Browser events route by session; export, binding and input operations
-wait for their own completion signals without command deadlines.
+lifetime. The driver tracks the default execution context of every
+automatically attached iframe, including frames whose scripts are already
+running when they attach. A host call that arrives while an iframe is still
+being set up waits, and runs in arrival order once that setup completes. A
+session the caller attaches itself stays with the caller. Browser events route
+by session; export, binding and input operations wait for their own completion
+signals without command deadlines.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
 page crashes and unexpected browser disconnection fail the command. An

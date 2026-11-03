@@ -7,7 +7,7 @@ use chromiumoxide::{
 };
 use serde_json::{Value, json};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     io,
 };
 
@@ -22,6 +22,15 @@ pub(super) struct Context {
     pub frame: String,
 }
 
+/// Host calls waiting for attached renderers to finish their setup.
+#[derive(Default)]
+struct Deferral {
+    /// Attached renderers still awaiting their setup answers.
+    initializing: HashSet<SessionId>,
+    /// Host calls received during that setup, in arrival order.
+    calls: VecDeque<CdpJsonEventMessage>,
+}
+
 /// One fresh page's retained state.
 pub struct Page<'a> {
     /// Shared browser transport, also used for attached iframe targets.
@@ -30,6 +39,8 @@ pub struct Page<'a> {
     pub(super) session: SessionId,
     /// Root and automatically attached sessions owned by this page.
     sessions: HashSet<SessionId>,
+    /// Host calls held back while attached renderers finish their setup.
+    deferral: Deferral,
     /// Disposable browser context providing fresh cookies and storage for this page.
     context: BrowserContextId,
     /// Root target identifier used for cleanup.
@@ -94,6 +105,7 @@ impl<'a> Page<'a> {
             Ok((target, session)) => Ok(Self {
                 dispatcher,
                 sessions: HashSet::from([session.clone()]),
+                deferral: Deferral::default(),
                 session,
                 context,
                 target,
@@ -374,6 +386,9 @@ impl<'a> Page<'a> {
             )?,
             "Runtime.exceptionThrown" => self.exception(&event.params)?,
             "Runtime.consoleAPICalled" => self.console(&event.params)?,
+            "Runtime.bindingCalled" if !self.deferral.initializing.is_empty() => {
+                self.deferral.calls.push_back(event);
+            }
             "Runtime.bindingCalled" => self.binding(&event).await?,
             "Fetch.requestPaused" => self.route(&event.params).await?,
             _ => {}
@@ -381,34 +396,42 @@ impl<'a> Page<'a> {
         Ok(())
     }
 
-    /// Ignore retired or unrelated sessions without losing browser-scoped lifecycle events.
+    /// Ignore retired or unrelated sessions without losing browser-scoped detach events.
     fn owns_event(&self, event: &CdpJsonEventMessage) -> bool {
         let known = |session: &str| self.sessions.contains(&SessionId::from(session.to_owned()));
         match event.session_id.as_deref() {
             Some(session) => known(session),
-            None => match event.method.as_ref() {
-                "Target.attachedToTarget" => {
-                    event.params["targetInfo"]["browserContextId"].as_str()
-                        == Some(self.context.as_ref())
-                }
-                "Target.detachedFromTarget" => {
-                    event.params["sessionId"].as_str().is_some_and(known)
-                }
-                _ => false,
-            },
+            None => {
+                event.method.as_ref() == "Target.detachedFromTarget"
+                    && event.params["sessionId"].as_str().is_some_and(known)
+            }
         }
     }
 
-    /// Track attached renderers and enable iframe events even when scripts are already running.
+    /// Track an automatically attached renderer, then release the host calls its setup deferred.
     async fn attached(&mut self, params: &Value) -> io::Result<()> {
         let session = SessionId::from(string(params, "sessionId")?.to_owned());
         self.sessions.insert(session.clone());
-        if params["targetInfo"]["type"] == "iframe" {
-            self.initialize_session(&session).await?;
+        self.deferral.initializing.insert(session.clone());
+        let ready = self.attach_session(&session, params).await;
+        self.deferral.initializing.remove(&session);
+        ready?;
+        while self.deferral.initializing.is_empty()
+            && let Some(event) = self.deferral.calls.pop_front()
+        {
+            self.binding(&event).await?;
         }
-        self.command(Some(&session), "Runtime.runIfWaitingForDebugger", json!({}))
-            .await?;
         Ok(())
+    }
+
+    /// Enable iframe events even when scripts are already running, then resume the renderer.
+    async fn attach_session(&mut self, session: &SessionId, params: &Value) -> io::Result<()> {
+        if params["targetInfo"]["type"] == "iframe" {
+            self.initialize_session(session).await?;
+        }
+        self.command(Some(session), "Runtime.runIfWaitingForDebugger", json!({}))
+            .await
+            .map(|_| ())
     }
 
     /// Retire one renderer without making an unrelated frame's removal fail the page.

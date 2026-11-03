@@ -221,3 +221,230 @@ async fn attached_iframe(mut socket: WebSocketStream<TcpStream>, waiting: bool) 
         "iframe state was not evaluated; paused={waiting}"
     );
 }
+
+/// A host call that arrives during an iframe's setup is answered after its default world is known.
+#[test]
+fn host_calls_wait_for_attached_iframe_initialization() {
+    block_on(async {
+        let (mut dispatcher, peer) = connect_peer(gated_iframe).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "gated", &mut lines, &expected)
+            .await
+            .unwrap();
+        page.initialize().await.unwrap();
+        page.evaluate(HOLD).await.unwrap();
+        page.close().await.unwrap();
+        assert_eq!(
+            peer.await.unwrap(),
+            [r#"__maestroReply(1,{"value":"right"},null)"#]
+        );
+    });
+}
+
+/// The evaluation the scripted peer holds open while the iframe attaches.
+const HOLD: &str = "hold()";
+
+/// Serve one scripted peer and connect a dispatcher to it.
+async fn connect_peer<T, F, Fut>(script: F) -> (Dispatcher, tokio::task::JoinHandle<T>)
+where
+    F: FnOnce(WebSocketStream<TcpStream>) -> Fut + Send + 'static,
+    Fut: std::future::Future<Output = T> + Send + 'static,
+    T: Send + 'static,
+{
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let peer = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        script(tokio_tungstenite::accept_async(stream).await.unwrap()).await
+    });
+    (
+        Dispatcher::connect(&format!("ws://{address}"))
+            .await
+            .unwrap(),
+        peer,
+    )
+}
+
+/// Send one scripted record to the driver.
+async fn send(socket: &mut WebSocketStream<TcpStream>, record: Value) {
+    socket
+        .send(Message::text(record.to_string()))
+        .await
+        .unwrap();
+}
+
+/// Read one driver command.
+async fn receive(socket: &mut WebSocketStream<TcpStream>) -> Option<Value> {
+    let message = socket.next().await?.unwrap();
+    Some(serde_json::from_str(message.to_text().unwrap()).unwrap())
+}
+
+/// Answer the setup and teardown commands every scripted peer shares.
+fn shared_reply(call: &Value) -> Option<Value> {
+    Some(match call["method"].as_str()? {
+        "Target.createBrowserContext" => json!({"browserContextId":"context"}),
+        "Target.createTarget" => json!({"targetId":"target"}),
+        "Target.attachToTarget" if call["params"]["targetId"] == "target" => {
+            json!({"sessionId":"session"})
+        }
+        "Target.attachToTarget" => json!({"sessionId":"caller"}),
+        "Page.getFrameTree" => json!({"frameTree":{"frame":{"id":"root"}}}),
+        "Page.enable"
+        | "Inspector.enable"
+        | "Runtime.addBinding"
+        | "Page.addScriptToEvaluateOnNewDocument"
+        | "Target.setAutoAttach"
+        | "Runtime.runIfWaitingForDebugger"
+        | "Runtime.releaseObject"
+        | "Emulation.setDeviceMetricsOverride"
+        | "Target.closeTarget"
+        | "Target.disposeBrowserContext" => json!({}),
+        _ => return None,
+    })
+}
+
+/// Build a default-world announcement for one renderer.
+fn context_created(session: &str, id: i64, frame: &str) -> Value {
+    json!({
+        "method":"Runtime.executionContextCreated","sessionId":session,
+        "params":{"context":{"id":id,"origin":"null","name":"","uniqueId":frame,
+            "auxData":{"isDefault":true,"frameId":frame}}}
+    })
+}
+
+/// Attach an iframe while the root evaluation is open and call the host before its setup ends.
+///
+/// Returns every reply the driver evaluated in the root world.
+async fn gated_iframe(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
+    let attached = json!({
+        "method":"Target.attachedToTarget","sessionId":"session",
+        "params":{"sessionId":"child-session","waitingForDebugger":false,
+            "targetInfo":{"targetId":"child","type":"iframe","browserContextId":"context",
+                "title":"","url":"about:srcdoc","attached":true,"canAccessOpener":false}}
+    });
+    let payload = json!({"id":1,"name":"inspectSandbox","args":["probe:\"雪]","state"]});
+    let binding_called = json!({
+        "method":"Runtime.bindingCalled","sessionId":"session",
+        "params":{"name":"__maestroDriver","executionContextId":1,"payload":payload.to_string()}
+    });
+    let (mut held, mut called, mut replies) = (None, false, Vec::new());
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        let expression = call["params"]["expression"].as_str().unwrap_or_default();
+        if method == "Runtime.evaluate" && expression == HOLD {
+            held = Some(call["id"].clone());
+            send(&mut socket, attached.clone()).await;
+            continue;
+        }
+        if method == "Page.enable" && call["sessionId"] == "child-session" && !called {
+            called = true;
+            send(&mut socket, binding_called.clone()).await;
+        }
+        if method == "Runtime.enable" {
+            send(&mut socket, enabled_context(&call)).await;
+        }
+        let result = gated_reply(&call, &mut replies);
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if expression.starts_with("__maestroReply(") {
+            let held = held.take().expect("the root evaluation is held");
+            send(
+                &mut socket,
+                json!({"id":held,"result":{"result":{"value":null}}}),
+            )
+            .await;
+        }
+        if method == "Target.disposeBrowserContext" {
+            break;
+        }
+    }
+    replies
+}
+
+/// Announce the default world of the renderer that just enabled its runtime.
+fn enabled_context(call: &Value) -> Value {
+    if call["sessionId"] == "session" {
+        context_created("session", 1, "root")
+    } else {
+        context_created("child-session", 2, "child")
+    }
+}
+
+/// Answer one command of the gated scenario, recording each reply evaluated in the root world.
+fn gated_reply(call: &Value, replies: &mut Vec<String>) -> Value {
+    let method = call["method"].as_str().unwrap();
+    let expression = call["params"]["expression"].as_str().unwrap_or_default();
+    match method {
+        "Runtime.enable" => json!({}),
+        "Runtime.evaluate" if expression.starts_with("__maestroReply(") => {
+            replies.push(expression.to_owned());
+            json!({"result":{"value":null}})
+        }
+        "Runtime.evaluate" if call["params"]["contextId"] == 2 => {
+            assert_eq!(expression, scripts::STATE);
+            json!({"result":{"value":{"value":"right"}}})
+        }
+        "Runtime.evaluate" if call["params"]["contextId"] == 1 => {
+            json!({"result":{"type":"object","objectId":"lookup-handle"}})
+        }
+        "Runtime.evaluate" => json!({"result":{"value":null}}),
+        "DOM.describeNode" => json!({"node":{"frameId":"child"}}),
+        _ => shared_reply(call).unwrap_or_else(|| panic!("unexpected command {method}")),
+    }
+}
+
+/// A session the caller attached itself receives no commands from the page.
+#[test]
+fn caller_iframe_sessions_stay_with_the_caller() {
+    block_on(async {
+        let (mut dispatcher, peer) = connect_peer(caller_session).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "caller", &mut lines, &expected)
+            .await
+            .unwrap();
+        let attached = page
+            .send(
+                None,
+                "Target.attachToTarget",
+                json!({"targetId":"child","flatten":true}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(attached["sessionId"], "caller");
+        page.evaluate("1").await.unwrap();
+        page.close().await.unwrap();
+        assert_eq!(peer.await.unwrap(), Vec::<String>::new());
+    });
+}
+
+/// Announce the caller's own session in the page's browser context, session-less, and record
+/// every command addressed to it.
+async fn caller_session(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
+    let announced = json!({
+        "method":"Target.attachedToTarget",
+        "params":{"sessionId":"caller","waitingForDebugger":false,
+            "targetInfo":{"targetId":"child","type":"iframe","browserContextId":"context",
+                "title":"","url":"about:srcdoc","attached":true,"canAccessOpener":false}}
+    });
+    let mut received = Vec::new();
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        let result = if call["sessionId"] == "caller" {
+            received.push(method.to_owned());
+            json!({})
+        } else if method == "Runtime.evaluate" {
+            json!({"result":{"value":1}})
+        } else {
+            shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}"))
+        };
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if method == "Target.attachToTarget" && call["params"]["targetId"] == "child" {
+            send(&mut socket, announced.clone()).await;
+        }
+        if method == "Target.disposeBrowserContext" {
+            break;
+        }
+    }
+    received
+}

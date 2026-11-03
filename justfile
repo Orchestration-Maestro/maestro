@@ -270,7 +270,7 @@ browser-chat-example *args:
 
 # Build and execute the retained sandbox exports with supplied browser tools.
 browser-test: prepare-tests
-    cargo nextest run --locked -p maestro-test-browser --run-ignored only -E 'test(/^browser::/)'
+    cargo nextest run --locked -p maestro-test-browser --run-ignored only --no-fail-fast -E 'test(/^browser::/)'
     cargo run --quiet --locked -p maestro-test-browser --
 
 # Generate the extension index, example targets and workspace-derived guide lock.
