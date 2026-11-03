@@ -36,3 +36,4 @@ test-support = []
 
 [dev-dependencies]
 maestro-agent = { path = ".", features = ["test-support"] }
+maestro-models = { path = "../maestro-models", features = ["test-support"] }

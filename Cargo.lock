@@ -4454,6 +4454,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-request",
  "serde",
  "serde_json",
 ]

@@ -2310,10 +2310,11 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, agent, Markdown and package helpers
-live in their type owners. Native loopback servers, child probes and toolchain
-selection live in `maestro-test-process`. Fallible helpers return their errors to
-the test caller; fixed-output callbacks retain immediate assertions.
+and terminal helpers. Theme, tool, credential, request (usage), agent, Markdown
+and package helpers live in their type owners. Native loopback servers, child
+probes and toolchain selection live in `maestro-test-process`. Fallible helpers
+return their errors to the test caller; fixed-output callbacks retain immediate
+assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.
