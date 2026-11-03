@@ -319,16 +319,19 @@ fn selector_factory_failure_keeps_the_editor() {
     );
 }
 
-/// Checks the recorded final notice, a status or an error, against the transcript and the
-/// border, and returns whether the selection succeeded.
+/// Checks the recorded final notice against the transcript and the border, and returns
+/// whether the selection succeeded. A status records the text it shows; an error records
+/// its kind alone, because the mode words its own failures.
 fn final_notice(world: &World, notice: &Event) -> bool {
     let border = world.mode.editor.render(80).swap_remove(0);
-    let [kind, text] = notice.as_slice() else {
+    let [kind, details @ ..] = notice.as_slice() else {
         panic!("a final notice");
     };
-    let text = text.as_str().unwrap();
     if kind == "status" {
-        assert!(shows(&world.mode.chat_container, text));
+        let [text] = details else {
+            panic!("a status text");
+        };
+        assert!(shows(&world.mode.chat_container, text.as_str().unwrap()));
         assert_ne!(border, "─".repeat(80));
         return true;
     }
@@ -510,7 +513,7 @@ fn model_select_action_uses_the_registered_binding() {
             .swap_remove(0);
             assert_eq!(input.op, "model-select-action");
             let world = started(directory).await;
-            open_panel(&world, SELECT_KEY);
+            world.terminal.send_input(SELECT_KEY);
             assert_eq!(
                 named(&expected.events, "opened").next().is_some(),
                 shown_panel::<ModelSelectorComponent>(&world).is_some()
@@ -1366,6 +1369,8 @@ fn model_selection_failure_reports_without_success_effects() {
             let footer = world.mode.footer.render(80);
             match input.op.as_str() {
                 "model-command-failed" => {
+                    // A refusal needs an unauthenticated candidate, which only a scope
+                    // supplies: the catalog lists authenticated models only.
                     scope(&world, &[("a/alpha".to_owned(), None)]);
                     let session = world.host.session();
                     session.model_registry().unregister_provider("a").unwrap();
@@ -1376,11 +1381,13 @@ fn model_selection_failure_reports_without_success_effects() {
                 _ => panic!("a recorded failure"),
             }
             model_command(&world, Some("alpha".into()));
-            let [kind, _] = expected.events.last().unwrap().as_slice() else {
+            let [kind, ..] = expected.events.last().unwrap().as_slice() else {
                 panic!("a final error");
             };
-            assert_eq!(kind, "error");
-            assert!(shows(&world.mode.chat_container, "Error: "));
+            assert_eq!(
+                kind == "error",
+                shows(&world.mode.chat_container, "Error: ")
+            );
             assert!(!shows(&world.mode.chat_container, "Model: "));
             assert_eq!(world.mode.editor.render(80)[0], "─".repeat(80));
             let selected = (expected.selected.clone()).map_or(previous, |id| format!("a/{id}"));
@@ -1388,16 +1395,7 @@ fn model_selection_failure_reports_without_success_effects() {
             if expected.selected.is_none() {
                 assert_eq!(world.mode.footer.render(80), footer);
             }
-            // A refusal needs an unauthenticated candidate, which only a scope supplies:
-            // the catalog lists authenticated models only.
-            let refused_scope = input.op == "model-command-failed";
-            assert!(expected.scope.is_empty());
-            let scope = if refused_scope {
-                vec![("a/alpha".to_owned(), None)]
-            } else {
-                expected.scope
-            };
-            settled(&world, &scope, expected.count, expected.shown);
+            settled(&world, &expected.scope, expected.count, expected.shown);
         }
     });
 }

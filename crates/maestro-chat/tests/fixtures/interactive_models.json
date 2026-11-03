@@ -910,11 +910,15 @@
     "expected": {
       "events": [
         [
-          "error",
-          "selection refused"
+          "error"
         ]
       ],
-      "scope": [],
+      "scope": [
+        [
+          "a/alpha",
+          null
+        ]
+      ],
       "count": null,
       "shown": false
     }
@@ -928,8 +932,7 @@
       "selected": "alpha",
       "events": [
         [
-          "error",
-          "recording refused"
+          "error"
         ]
       ],
       "scope": [],
@@ -1290,8 +1293,7 @@
           "editor"
         ],
         [
-          "error",
-          "selection refused"
+          "error"
         ]
       ],
       "scope": [],
