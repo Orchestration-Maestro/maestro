@@ -141,24 +141,16 @@ fn component_build_reuses_the_prepared_example() {
 #[test]
 fn component_build_compiles_unprepared_examples_in_one_cargo_run() {
     if !selection().is_child() {
-        use std::os::unix::fs::PermissionsExt;
         let scratch = Scratch::new().unwrap();
         let directory = scratch.path().join("crates/author");
         fs::create_dir_all(directory.join("examples")).unwrap();
         fs::create_dir_all(scratch.path().join("examples/extensions")).unwrap();
         let calls = scratch.path().join("calls");
-        let cargo = scratch.path().join("cargo");
-        fs::write(
-            &cargo,
-            r#"#!/bin/sh
-echo "$*" >> "$CARGO_CALLS"
-for name in alpha beta; do
-    printf '{"reason":"compiler-artifact","target":{"name":"%s"},"filenames":["/built/%s.wasm"]}\n' "$name" "$name"
-done
-"#,
-        )
-        .unwrap();
-        fs::set_permissions(&cargo, fs::Permissions::from_mode(0o755)).unwrap();
+        let cargo = crate::recipe_support::scenario(
+            scratch.path(),
+            "cargo",
+            &serde_json::json!({"scenario": "artifacts", "names": ["alpha", "beta"]}),
+        );
         let output =
             TestProcess::current("component_build_compiles_unprepared_examples_in_one_cargo_run")
                 .unwrap()
@@ -204,7 +196,7 @@ fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path:
     use std::os::unix::fs::PermissionsExt;
     let path = deps.join(name);
     fs::create_dir_all(deps).unwrap();
-    fs::write(&path, b"#!/bin/sh\n").unwrap();
+    fs::write(&path, b"output\n").unwrap();
     let mode = if executable { 0o755 } else { 0o644 };
     fs::set_permissions(&path, fs::Permissions::from_mode(mode)).unwrap();
     if !executable {

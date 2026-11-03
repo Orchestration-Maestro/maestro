@@ -3241,22 +3241,11 @@ fn consumer_workspace(root: &Path) -> PathBuf {
 /// Write the Cargo shim that records calls and forwards to the real compiler.
 #[cfg(unix)]
 fn write_consumer_tool(workspace: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-
-    fs::create_dir_all(workspace.join("bin")).unwrap();
-    let cargo = env!("CARGO");
-    fs::write(
-        workspace.join("bin/cargo"),
-        format!(
-            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$(dirname \"$0\")/../cargo-log\"\nif [ -n \"${{MAESTRO_FAIL_PHASE:-}}\" ] && [ \"$1\" = \"$MAESTRO_FAIL_PHASE\" ]; then exit 17; fi\ncase \"$1\" in\n  hakari|test|nextest) exit 0 ;;\nesac\nexec '{cargo}' \"$@\"\n"
-        ),
-    )
-    .unwrap();
-    fs::set_permissions(
-        workspace.join("bin/cargo"),
-        fs::Permissions::from_mode(0o755),
-    )
-    .unwrap();
+    recipe_support::scenario(
+        &workspace.join("bin"),
+        "cargo",
+        &serde_json::json!({"scenario": "consumer-cargo", "cargo": env!("CARGO")}),
+    );
 }
 
 /// Write the leaf and caller crates of the consumer workspace.
@@ -3530,7 +3519,6 @@ fn set_age(path: &Path, age: std::time::Duration) {
 /// source an hour old. Returns the profile directory and the example.
 #[cfg(unix)]
 fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
-    use std::os::unix::fs::PermissionsExt;
     let profile = root.join("target/debug");
     fs::create_dir_all(profile.join("deps")).unwrap();
     fs::create_dir_all(profile.join("examples")).unwrap();
@@ -3540,16 +3528,19 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
         fs::File::create(&path).unwrap();
         set_age(&path, std::time::Duration::from_secs(3600));
     }
-    let example = profile.join("examples/prepare_author_component");
-    fs::write(&example, "#!/bin/sh\necho example\n").unwrap();
-    fs::write(
-        root.join("cargo"),
-        "#!/bin/sh\necho cargo \"$@\"\nprintf '#!/bin/sh\\necho example\\n' > target/debug/examples/prepare_author_component\nchmod +x target/debug/examples/prepare_author_component\n",
-    )
-    .unwrap();
-    for path in [&example, &root.join("cargo")] {
-        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
-    }
+    let example = recipe_support::printer(
+        &profile.join("examples"),
+        "prepare_author_component",
+        "example",
+    );
+    recipe_support::scenario(
+        root,
+        "cargo",
+        &serde_json::json!({
+            "scenario": "announce",
+            "rebuilt": "target/debug/examples/prepare_author_component",
+        }),
+    );
     (profile, example)
 }
 
@@ -3595,7 +3586,7 @@ fn example_builds_on_library(
     );
     let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
     let copy = profile.join("examples/prepare_author_component-1");
-    fs::write(&copy, "#!/bin/sh\necho copy\n").unwrap();
+    fs::write(&copy, "copy\n").unwrap();
     fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
     fs::hard_link(
         profile.join("examples/prepare_author_component"),
@@ -3741,7 +3732,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     let check_only = profile.join("deps/libmaestro_request-2.rmeta");
     fs::write(&check_only, b"").unwrap();
     set_age(&check_only, Duration::from_mins(1));
-    fs::write(root.join("cargo"), "#!/bin/sh\necho cargo \"$@\"\n").unwrap();
+    recipe_support::scenario(root, "cargo", &serde_json::json!({"scenario": "announce"}));
     let output = author_setup(root, &profile);
     let (printed, logged) = (stdout(&output), String::from_utf8_lossy(&output.stderr));
     assert!(output.status.success(), "{logged}");
