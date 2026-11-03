@@ -190,6 +190,14 @@ fn code_held_angles_keep_a_later_quote() {
             "{source:?}: {html}"
         );
     }
+    // Stray backticks across blocks are prose, so the clipped angle stays text.
+    let html = prepare(
+        "Type ` to start.\n\n<https://example.test/$$x$$>\n\nThen run `ls`.\n",
+        true,
+    )
+    .html;
+    assert!(html.contains("<p>&gt;</p>\n"), "{html}");
+    assert!(!html.contains("<blockquote>"), "{html}");
 }
 
 /// Script and active-document targets, with the HTML that keeps only their text.

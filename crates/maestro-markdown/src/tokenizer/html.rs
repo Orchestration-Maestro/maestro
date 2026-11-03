@@ -386,44 +386,42 @@ pub(crate) fn escaped_spans(source: &str) -> Vec<Range<usize>> {
     spans
 }
 
-/// Byte ranges of one backtick-delimited code span or fence, which the caller preserves
-/// instead of escaping.
+/// Byte ranges of the code spans and fences the caller preserves instead of escaping.
+///
+/// Its own code shape decides each one: a fence is three backticks closed by the next
+/// three, and an inline span is one backtick holding at least one character that is
+/// neither a backtick nor a line break. Neither shape reaches across a line, so a stray
+/// backtick leaves the blocks after it to the ordinary literal-angle policy.
 fn code_regions(source: &str) -> Vec<Range<usize>> {
-    let bytes = source.as_bytes();
     let mut regions = Vec::new();
     let mut cursor = 0;
-    while let Some(open) = source[cursor..].find('`').map(|at| cursor + at) {
-        let body = run_end(bytes, open);
-        let Some(close) = closing_run(source, body, body - open) else {
-            break;
-        };
-        regions.push(open..close);
-        cursor = close;
+    while let Some(found) = source[cursor..].find('`') {
+        let open = cursor + found;
+        cursor = open + 1;
+        if let Some(end) = fence_end(source, open).or_else(|| span_end(source, open)) {
+            regions.push(open..end);
+            cursor = end;
+        }
     }
     regions
 }
 
-/// End of the first backtick run of exactly `width` bytes at or after `from`.
-fn closing_run(source: &str, from: usize, width: usize) -> Option<usize> {
-    let bytes = source.as_bytes();
-    let mut cursor = from;
-    while let Some(open) = source[cursor..].find('`').map(|at| cursor + at) {
-        let end = run_end(bytes, open);
-        if end - open == width {
-            return Some(end);
-        }
-        cursor = end;
+/// Exclusive end of the fence opening at `open`, when a later three-backtick run
+/// closes it.
+fn fence_end(source: &str, open: usize) -> Option<usize> {
+    let body = open + 3;
+    if source.get(open..body)? != "```" {
+        return None;
     }
-    None
+    Some(body + source.get(body..)?.find("```")? + 3)
 }
 
-/// Exclusive end of the backtick run starting at `start`.
-fn run_end(bytes: &[u8], start: usize) -> usize {
-    let mut end = start;
-    while bytes.get(end) == Some(&b'`') {
-        end += 1;
-    }
-    end
+/// Exclusive end of the inline span opening at `open`, when one line closes it.
+fn span_end(source: &str, open: usize) -> Option<usize> {
+    let body = source.get(open + 1..)?;
+    let close = body.find('`')?;
+    let content = &body[..close];
+    (!content.is_empty() && !content.contains('\n')).then_some(open + close + 2)
 }
 
 /// First `wanted` byte at or after `from` that no code range holds.

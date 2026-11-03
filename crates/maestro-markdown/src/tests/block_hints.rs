@@ -98,6 +98,16 @@ fn code_held_angles_leave_a_later_quote_marker_alone() {
             "```\n<a\n```\n\n> note\n",
             &["code ```\n<a\n```", "gap", "quote > note"][..],
         ),
+        (
+            "See `x\n\n<b\n\n> note `y\n",
+            &[
+                "paragraph See `x",
+                "gap",
+                "paragraph <b",
+                "gap",
+                "paragraph > note `y",
+            ][..],
+        ),
     ] {
         let document = crate::parse_with_options(
             source.to_owned(),
