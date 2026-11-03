@@ -777,11 +777,7 @@ fn json_keeps_every_subscribed_session_event_record() {
         // the authored key order.
         let expected = every_event_record()
             .iter()
-            .fold(String::new(), |mut text, record| {
-                text.push_str(&record.to_string());
-                text.push('\n');
-                text
-            });
+            .fold(String::new(), |text, record| format!("{text}{record}\n"));
         assert_eq!(
             recorder.stdout.borrow().as_str(),
             expected,

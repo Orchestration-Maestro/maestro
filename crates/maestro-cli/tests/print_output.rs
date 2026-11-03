@@ -6,6 +6,7 @@ use maestro_app::{AgentSessionRuntime, ImageContent, ModelResolverOutput};
 use maestro_cli::startup::main::runtime::create_runtime;
 use maestro_cli::{PrintMode, PrintModeOptions, run_print_mode};
 use serde_json::json;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 #[test]
@@ -31,7 +32,7 @@ fn a_print_run_shuts_the_session_down_with_quit() {
     run(
         "a_print_run_shuts_the_session_down_with_quit",
         |local| async move {
-            let shutdowns = Rc::new(std::cell::RefCell::new(Vec::new()));
+            let shutdowns = Rc::new(RefCell::new(Vec::new()));
             let fixture = Fixture::with_shutdown_watch(
                 Rc::clone(&local),
                 startup::settings(&[]),

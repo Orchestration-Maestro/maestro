@@ -768,11 +768,15 @@ fn forced_self_update_reinstalls_the_current_release() {
 
     assert!(harness.run(&["update", "--self", "--force"]));
 
-    assert_eq!(harness.runs().len(), 1, "a forced update reinstalls");
-    assert!(
-        harness.runs()[0].contains("install"),
-        "{:?}",
-        harness.runs()
+    let runs = harness.runs();
+    assert_eq!(runs.len(), 1, "a forced update reinstalls");
+    assert!(runs[0].contains("install"), "{runs:?}");
+    assert_eq!(
+        harness
+            .release_requests
+            .load(std::sync::atomic::Ordering::SeqCst),
+        0,
+        "force never asks for a release"
     );
     assert!(harness.stdout.text().contains("Updated maestro\n"));
     assert!(harness.stderr.text().is_empty());
