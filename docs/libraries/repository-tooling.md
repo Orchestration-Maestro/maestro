@@ -42,7 +42,7 @@ dependency; it adds no resolved package or feature.
 
 ## Browser qualification
 
-`maestro-tooling` uses `chromiumoxide =0.9.1` (MIT choice), inherited from the
+`maestro-test-browser` uses `chromiumoxide =0.9.1` (MIT choice), inherited from the
 workspace with default features disabled. Its public launcher starts only the
 explicitly supplied Chromium executable. The driver uses the library's one CDP
 connection and protocol records for command correlation, renderer-session events
@@ -60,6 +60,11 @@ They add no new workspace feature beyond the browser library's mandatory closure
 All use an allowed MIT or Apache-2.0 choice; Tokio uses MIT. The report's external
 JavaScript assets remain digest-pinned runtime inputs of the explicit browser
 qualification command, not Cargo or install-time downloads.
+
+The browser test crate is excluded from Hakari traversal and never links into
+`development` or `maestro-tooling`. Its scripted CDP unit tests inherit the already
+resolved `tokio-tungstenite =0.30.0` with defaults off, `connect` and
+`rustls-tls-native-roots` (MIT). This changes no resolved feature.
 
 ## External browser author tools
 

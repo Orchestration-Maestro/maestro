@@ -1,36 +1,80 @@
 //! Parse retained browser inputs before starting any browser work.
 
-use serde_json::{Value, json};
+use serde::Deserialize;
+use serde_json::Value;
 use std::{collections::HashSet, io};
 
+/// Parsed export selections in their authored execution order.
+pub(super) struct Inventory {
+    /// Named families with validated unique identifiers.
+    pub families: [(&'static str, Vec<String>); 3],
+    /// The one admitted policy exception.
+    pub expected_error: ExpectedError,
+}
+
+/// Authored inventory fields before cross-family checks.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct RawInventory {
+    /// Execution assertions.
+    execution: Vec<String>,
+    /// Loading assertions.
+    loading: Vec<String>,
+    /// Contribution assertions.
+    contributions: Vec<String>,
+    /// Designated policy exception.
+    expected_error: ExpectedError,
+}
+
+/// Exact exception identity and required per-export count.
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(super) struct ExpectedError {
+    /// Export allowed to emit this exception.
+    pub export: String,
+    /// JavaScript exception class.
+    pub name: String,
+    /// First-line exception message without the class prefix.
+    pub message: String,
+    /// Exception document URL.
+    pub source: String,
+    /// Required number of matching exceptions.
+    pub count: usize,
+}
+
 /// Read the three export families and their designated policy error.
-pub(super) fn inventory(text: &str) -> io::Result<Value> {
-    let value: Value = serde_json::from_str(text).map_err(io::Error::other)?;
-    let object = value
-        .as_object()
-        .ok_or_else(|| io::Error::other("missing inventory"))?;
-    if object.len() != 4 {
-        return Err(io::Error::other("inventory fields"));
-    }
+pub(super) fn inventory(text: &str) -> io::Result<Inventory> {
+    let raw: RawInventory = serde_json::from_str(text).map_err(io::Error::other)?;
+    let value = Inventory {
+        families: [
+            ("execution", raw.execution),
+            ("loading", raw.loading),
+            ("contributions", raw.contributions),
+        ],
+        expected_error: raw.expected_error,
+    };
     let mut names = HashSet::new();
-    for (family, count) in [("execution", 26), ("loading", 49), ("contributions", 194)] {
-        let selected = object
-            .get(family)
-            .and_then(Value::as_array)
-            .filter(|selected| selected.len() == count)
-            .ok_or_else(|| io::Error::other(format!("{family} inventory count")))?;
+    for ((family, selected), count) in value.families.iter().zip([26, 49, 194]) {
+        if selected.len() != count {
+            return Err(io::Error::other(format!("{family} inventory count")));
+        }
         for name in selected {
-            let name = name
-                .as_str()
-                .filter(|name| valid_name(name))
-                .ok_or_else(|| io::Error::other(format!("invalid {family} export")))?;
+            if !valid_name(name) {
+                return Err(io::Error::other(format!("invalid {family} export")));
+            }
             if !names.insert(name) {
                 return Err(io::Error::other(format!("duplicate export {name}")));
             }
         }
     }
-    if value["expectedError"]
-        != json!({"export":"inline_programs_preserve_text_policies_and_order", "name":"TypeError", "message":"window.complete is not a function", "source":"about:srcdoc", "count":1})
+    if value.expected_error
+        != (ExpectedError {
+            export: "inline_programs_preserve_text_policies_and_order".into(),
+            name: "TypeError".into(),
+            message: "window.complete is not a function".into(),
+            source: "about:srcdoc".into(),
+            count: 1,
+        })
     {
         return Err(io::Error::other("invalid expected policy error"));
     }

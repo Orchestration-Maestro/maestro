@@ -300,3 +300,6 @@ fn accessibility(node: &Value, nodes: &HashMap<&str, &Value>, output: &mut Strin
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

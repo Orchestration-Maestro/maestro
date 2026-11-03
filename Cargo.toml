@@ -3,6 +3,8 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.dependencies]
+sha2 = { version = "=0.11.0", default-features = false }
+tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 chromiumoxide = { version = "=0.9.1", default-features = false }
 tokio = { version = "=1.53.3", default-features = false }
 hyper = { version = "=1.11.1", default-features = false }

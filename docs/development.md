@@ -261,8 +261,11 @@ errors fail. Error accounting stays attached until the page closes. Browser,
 server and temporary preparation are closed or removed on both outcomes; a
 cleanup failure does not skip the other resource or replace an assertion failure.
 
-The command first runs the Rust driver regressions from the tooling crate's one
-integration target. These tests carry the reason `runs in the pinned Chromium job`;
+The command first runs the Rust driver regressions from `maestro-test-browser`'s one
+integration target. This test-only crate owns the browser stack and reuses
+`maestro-tooling` for preparation, locked metadata and asset copying. Hakari excludes
+it from traversal, so ordinary development commands never build the browser stack.
+These tests carry the reason `runs in the pinned Chromium job`;
 ordinary native runs leave them ignored and run the browser-independent input,
 resource and pixel checks. The command selects only the `browser` module, keeping
 controlled-child tests out. Run only the browser regressions with the same supplied
@@ -270,7 +273,7 @@ executable:
 
 ```sh
 ~/.local/bin/capped just prepare-tests
-~/.local/bin/capped cargo nextest run --locked -p maestro-tooling \
+~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(/^browser::/)'
 ```
 
@@ -294,7 +297,7 @@ still depend on the canvas renderer. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
-`browser_test_crates = ["maestro-app", "maestro-web", "maestro-tooling"]`.
+`browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]`.
 The job runs when the existing package selection includes a requested package,
 when a nonempty request changes, or for merge groups and main pushes; advisory-only
 runs skip it. Native package selection and the coverage floor stay unchanged.

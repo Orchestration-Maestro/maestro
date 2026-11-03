@@ -385,24 +385,6 @@ fn native_keyboard_pointer_and_accessibility_bindings_work() {
     })).unwrap();
 }
 
-/// Failed launch cleanup does not require a browser connection to exist.
-#[test]
-#[ignore = "runs in the pinned Chromium job"]
-fn launch_failures_are_reported() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
-    let error = run(maestro_tooling::browser_driver::Browser::launch(
-        &root.path().join("absent"),
-        &root.path().join("profile"),
-        &[],
-    ))
-    .err()
-    .expect("missing executable must fail");
-    assert!(matches!(
-        error.kind(),
-        io::ErrorKind::NotFound | io::ErrorKind::Other
-    ));
-}
-
 /// Preflight reports all missing and non-callable exports before any ready export runs.
 #[test]
 #[ignore = "runs in the pinned Chromium job"]

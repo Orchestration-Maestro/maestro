@@ -5,6 +5,9 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
+/// Encode bytes as lowercase hexadecimal.
+pub use test_setup::hex;
+
 /// Capture browser compilation diagnostics.
 pub mod check_browser_build;
 /// Copy prepared application assets.
@@ -18,8 +21,6 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
-/// Browser export qualification with the supplied Chromium.
-pub mod browser_driver;
 /// Temporary browser-export manifest preparation and lock checks.
 mod browser_export_setup;
 /// The locked packages and the dependency graph between them.
@@ -242,10 +243,10 @@ fn binary_manifest(cargo: &Path, checkout: &Path) -> io::Result<std::path::PathB
 }
 
 /// Read locked root metadata with dependency packages omitted.
-pub(crate) fn locked_metadata(
-    cargo: &Path,
-    checkout: &Path,
-) -> io::Result<cargo_metadata::Metadata> {
+///
+/// # Errors
+/// Returns Cargo execution, locked resolution or metadata decoding failures.
+pub fn locked_metadata(cargo: &Path, checkout: &Path) -> io::Result<cargo_metadata::Metadata> {
     cargo_metadata::MetadataCommand::new()
         .cargo_path(cargo)
         .manifest_path(checkout.join("Cargo.toml"))

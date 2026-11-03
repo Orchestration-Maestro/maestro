@@ -16,16 +16,11 @@ bytemuck = { version = "1.25.2", default-features = false, features = ["aarch64_
 cargo_metadata = { version = "0.23.1" }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "wasmbind"] }
 crc32fast = { version = "1.5.2" }
-either = { version = "1.19.0" }
 flate2 = { version = "1.1.10", features = ["zlib-rs"] }
-futures = { version = "0.3.34" }
-futures-channel = { version = "0.3.34", features = ["sink"] }
-futures-core = { version = "0.3.34" }
-futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
-futures-sink = { version = "0.3.34", default-features = false, features = ["std"] }
+futures-core = { version = "0.3.34", default-features = false, features = ["std"] }
+futures-sink = { version = "0.3.34", default-features = false, features = ["alloc"] }
 futures-task = { version = "0.3.34", default-features = false, features = ["std"] }
-futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
-getrandom-468e82937335b1c9 = { package = "getrandom", version = "0.3.4", default-features = false, features = ["std"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await", "sink", "std"] }
 hashbrown = { version = "0.17.1" }
 icu_locale_core = { version = "2.3.0", default-features = false, features = ["alloc", "zerovec"] }
 icu_locale_fallback = { version = "2.3.0" }
@@ -38,7 +33,6 @@ litemap = { version = "0.8.3", default-features = false, features = ["alloc"] }
 log = { version = "0.4.34", default-features = false, features = ["std"] }
 memchr = { version = "2.8.3" }
 num-traits = { version = "0.2.19", features = ["i128"] }
-percent-encoding = { version = "2.3.2" }
 phf_shared = { version = "0.14.0" }
 potential_utf = { version = "0.1.6", default-features = false, features = ["alloc", "zerovec"] }
 proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
@@ -46,7 +40,6 @@ quote = { version = "1.0.47" }
 regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
 regex-syntax = { version = "0.8.11" }
 regress = { version = "0.12.0", features = ["prohibit-unsafe"] }
-reqwest = { version = "0.13.5", features = ["stream"] }
 roxmltree = { version = "0.21.1" }
 semver = { version = "1.0.28", features = ["serde"] }
 serde = { version = "1.0.229", features = ["alloc", "derive", "rc"] }
@@ -59,8 +52,7 @@ stable_deref_trait = { version = "1.2.1", default-features = false, features = [
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 time = { version = "0.3.55", features = ["formatting"] }
 tinystr = { version = "0.8.4", default-features = false, features = ["alloc", "zerovec"] }
-tokio = { version = "1.53.3", features = ["fs", "io-std", "io-util", "macros", "net", "process", "rt-multi-thread", "signal", "test-util"] }
-tracing = { version = "0.1.44" }
+tokio = { version = "1.53.3", default-features = false, features = ["io-std", "io-util", "macros", "net", "signal", "test-util"] }
 tracing-core = { version = "0.1.36" }
 unicode-width = { version = "0.2.2" }
 writeable = { version = "0.6.4", default-features = false, features = ["alloc"] }
@@ -82,7 +74,7 @@ serde = { version = "1.0.229", features = ["alloc", "derive", "rc"] }
 serde_core = { version = "1.0.229", features = ["alloc", "rc"] }
 serde_json = { version = "1.0.151", features = ["alloc", "float_roundtrip", "preserve_order", "raw_value", "unbounded_depth"] }
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
-syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extra-traits", "full", "visit-mut"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["full"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
 aho-corasick = { version = "1.1.5" }
@@ -90,16 +82,16 @@ arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10.7", features = ["mac", "oid", "std"] }
-digest-a6292c17cd707f01 = { package = "digest", version = "0.11.3", features = ["alloc", "mac", "oid"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
-generic-array = { version = "0.14.7", default-features = false, features = ["more_lengths", "zeroize"] }
-getrandom-9fbad63c4bcf4a8f = { package = "getrandom", version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] }
-hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
@@ -107,20 +99,20 @@ libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
+percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
-reqwest = { version = "0.13.5", default-features = false, features = ["form", "json", "query", "rustls-no-provider"] }
 rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
-rustls = { version = "0.23.46", default-features = false, features = ["logging", "prefer-post-quantum", "std", "tls12"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-subtle = { version = "2.6.1", default-features = false, features = ["i128"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
+tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
@@ -130,6 +122,7 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
@@ -141,16 +134,16 @@ arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10.7", features = ["mac", "oid", "std"] }
-digest-a6292c17cd707f01 = { package = "digest", version = "0.11.3", features = ["alloc", "mac", "oid"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
-generic-array = { version = "0.14.7", default-features = false, features = ["more_lengths", "zeroize"] }
-getrandom-9fbad63c4bcf4a8f = { package = "getrandom", version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] }
-hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
@@ -158,20 +151,20 @@ libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
+percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
-reqwest = { version = "0.13.5", default-features = false, features = ["form", "json", "query", "rustls-no-provider"] }
 rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
-rustls = { version = "0.23.46", default-features = false, features = ["logging", "prefer-post-quantum", "std", "tls12"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-subtle = { version = "2.6.1", default-features = false, features = ["i128"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
+tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
@@ -181,6 +174,7 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
@@ -192,36 +186,36 @@ arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10.7", features = ["mac", "oid", "std"] }
-digest-a6292c17cd707f01 = { package = "digest", version = "0.11.3", features = ["alloc", "mac", "oid"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 errno = { version = "0.3.14" }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
-generic-array = { version = "0.14.7", default-features = false, features = ["more_lengths", "zeroize"] }
-getrandom-9fbad63c4bcf4a8f = { package = "getrandom", version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] }
-hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
+percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
-reqwest = { version = "0.13.5", default-features = false, features = ["form", "json", "query", "rustls-no-provider"] }
 rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
-rustls = { version = "0.23.46", default-features = false, features = ["logging", "prefer-post-quantum", "std", "tls12"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-subtle = { version = "2.6.1", default-features = false, features = ["i128"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
+tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
@@ -232,6 +226,7 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
@@ -243,36 +238,36 @@ arrayvec = { version = "0.7.8" }
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10.7", features = ["mac", "oid", "std"] }
-digest-a6292c17cd707f01 = { package = "digest", version = "0.11.3", features = ["alloc", "mac", "oid"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 errno = { version = "0.3.14" }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
-generic-array = { version = "0.14.7", default-features = false, features = ["more_lengths", "zeroize"] }
-getrandom-9fbad63c4bcf4a8f = { package = "getrandom", version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] }
-hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
+percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
-reqwest = { version = "0.13.5", default-features = false, features = ["form", "json", "query", "rustls-no-provider"] }
 rustc-hash = { version = "2.1.3" }
 rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pty", "shm", "stdio", "system", "termios"] }
-rustls = { version = "0.23.46", default-features = false, features = ["logging", "prefer-post-quantum", "std", "tls12"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-subtle = { version = "2.6.1", default-features = false, features = ["i128"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
+tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
@@ -283,6 +278,7 @@ bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 fastrand = { version = "2.5.0" }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 phf = { version = "0.14.0", features = ["macros"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
@@ -293,32 +289,31 @@ aho-corasick = { version = "1.1.5" }
 arrayvec = { version = "0.7.8" }
 bytes = { version = "1.12.1", features = ["serde"] }
 deranged = { version = "0.5.8", features = ["serde"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10.7", features = ["mac", "oid", "std"] }
-digest-a6292c17cd707f01 = { package = "digest", version = "0.11.3", features = ["alloc", "mac", "oid"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34", default-features = false, features = ["alloc"] }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
-generic-array = { version = "0.14.7", default-features = false, features = ["more_lengths", "zeroize"] }
-getrandom-9fbad63c4bcf4a8f = { package = "getrandom", version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
-hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] }
-hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
+percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
-reqwest = { version = "0.13.5", default-features = false, features = ["form", "json", "query", "rustls-no-provider"] }
 rustc-hash = { version = "2.1.3" }
-rustls = { version = "0.23.46", default-features = false, features = ["logging", "prefer-post-quantum", "std", "tls12"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
-subtle = { version = "2.6.1", default-features = false, features = ["i128"] }
 time = { version = "0.3.55", default-features = false, features = ["large-dates", "local-offset", "macros", "parsing", "serde"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
+tokio = { version = "1.53.3", features = ["fs", "process", "rt-multi-thread"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }
+tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 windows-sys = { version = "0.61.2", features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Wdk_System_IO", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
@@ -326,8 +321,9 @@ winnow = { version = "1.0.4" }
 
 [target.x86_64-pc-windows-msvc.build-dependencies]
 fastrand = { version = "2.5.0" }
-getrandom-9fbad63c4bcf4a8f = { package = "getrandom", version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 phf = { version = "0.14.0", features = ["macros"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 time-core = { version = "0.1.9", default-features = false, features = ["large-dates"] }
 toml_datetime = { version = "1.1.1", features = ["serde"] }
 toml_parser = { version = "1.1.3" }

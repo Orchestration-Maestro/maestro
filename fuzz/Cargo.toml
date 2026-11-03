@@ -19,7 +19,7 @@ maestro-protocol = { path = "../crates/maestro-protocol" }
 maestro-resources = { path = "../crates/maestro-resources" }
 maestro-terminal = { path = "../crates/maestro-terminal" }
 maestro-tui = { path = "../crates/maestro-tui" }
-maestro-tooling = { path = "../crates/maestro-tooling" }
+maestro-test-browser = { path = "../crates/maestro-test-browser" }
 
 [[bin]]
 name = "browser-resource-paths"

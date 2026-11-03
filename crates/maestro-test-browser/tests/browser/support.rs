@@ -1,8 +1,8 @@
 //! Shared pinned-browser runtime and native fixture ownership.
 
 use chromiumoxide::cdp::browser_protocol::{browser::BrowserContextId, target::SessionId};
+use maestro_test_browser::browser_driver::{Browser, Page, Server};
 use maestro_test_directory::Scratch;
-use maestro_tooling::browser_driver::{Browser, Page, Server};
 use serde_json::json;
 use std::{fs, future::Future, io, path::Path};
 

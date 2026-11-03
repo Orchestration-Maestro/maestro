@@ -1,6 +1,6 @@
 //! Session-aware page operations serviced through one CDP dispatcher.
 
-use super::{assets::Cache, connection::Dispatcher, scripts};
+use super::{assets::Cache, connection::Dispatcher, inputs::ExpectedError, scripts};
 use chromiumoxide::{
     cdp::browser_protocol::{browser::BrowserContextId, target::SessionId},
     types::{CallId, CdpJsonEventMessage},
@@ -44,6 +44,8 @@ pub struct Page<'a> {
     pub(super) urls: HashMap<String, String>,
     /// Exactly matching designated policy errors observed on this page.
     pub(super) policy_errors: usize,
+    /// Parsed policy exception admitted for the designated export.
+    expected_error: &'a ExpectedError,
     /// Optional verified report assets and request-confinement observations.
     pub(super) cache: Option<Cache>,
     /// Whether native target teardown is expected.
@@ -58,6 +60,7 @@ impl<'a> Page<'a> {
         dispatcher: &'a mut Dispatcher,
         name: &str,
         lines: &'a mut Vec<String>,
+        expected_error: &'a ExpectedError,
     ) -> io::Result<Self> {
         let created = raw(
             dispatcher,
@@ -99,6 +102,7 @@ impl<'a> Page<'a> {
                 contexts: HashMap::new(),
                 urls: HashMap::new(),
                 policy_errors: 0,
+                expected_error,
                 cache: None,
                 closing: false,
                 lines,
@@ -279,7 +283,11 @@ impl<'a> Page<'a> {
             .await
             .map(|_| ());
         super::cleanup(closed, disposed)?;
-        let expected = usize::from(self.name == "inline_programs_preserve_text_policies_and_order");
+        let expected = if self.name == self.expected_error.export {
+            self.expected_error.count
+        } else {
+            0
+        };
         if self.policy_errors != expected {
             return Err(io::Error::other(format!(
                 "{}: expected policy error count {expected}, observed {}",
@@ -454,13 +462,24 @@ impl<'a> Page<'a> {
         let description = exception["description"]
             .as_str()
             .unwrap_or("page exception");
-        let source = details["url"] == "about:srcdoc"
+        let source = details["url"] == self.expected_error.source
             || details["stackTrace"]["callFrames"]
                 .as_array()
-                .is_some_and(|frames| frames.iter().any(|frame| frame["url"] == "about:srcdoc"));
-        if self.name == "inline_programs_preserve_text_policies_and_order"
-            && exception["className"] == "TypeError"
-            && description.lines().next() == Some("TypeError: window.complete is not a function")
+                .is_some_and(|frames| {
+                    frames
+                        .iter()
+                        .any(|frame| frame["url"] == self.expected_error.source)
+                });
+        if self.name == self.expected_error.export
+            && exception["className"] == self.expected_error.name
+            && description.lines().next()
+                == Some(
+                    format!(
+                        "{}: {}",
+                        self.expected_error.name, self.expected_error.message
+                    )
+                    .as_str(),
+                )
             && source
         {
             self.policy_errors += 1;

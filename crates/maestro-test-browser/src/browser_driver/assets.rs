@@ -68,7 +68,7 @@ pub(super) async fn load(directory: &Path, origin: &str) -> io::Result<Cache> {
 
 /// Refuse stale or corrupt cache entries without executing them.
 fn verify(bytes: &[u8], asset: &Asset) -> io::Result<()> {
-    let actual = crate::test_setup::hex(&Sha256::digest(bytes));
+    let actual = maestro_tooling::hex(&Sha256::digest(bytes));
     if actual != asset.digest {
         return Err(io::Error::other(format!(
             "{} digest {actual} does not match its pin",

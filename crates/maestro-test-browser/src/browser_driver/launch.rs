@@ -28,7 +28,12 @@ impl Process {
             .args(args.iter().cloned())
             .build()
             .map_err(io::Error::other)?;
-        let mut child = config.launch()?;
+        let mut child = config.launch().map_err(|error| {
+            io::Error::new(
+                error.kind(),
+                format!("cannot launch {}: {error}", executable.display()),
+            )
+        })?;
         let stderr = child
             .stderr
             .take()

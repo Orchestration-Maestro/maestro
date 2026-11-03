@@ -714,7 +714,7 @@ workspace member may declare it only as a non-optional normal dependency under
 It never satisfies a required or exact direct dependency and never changes a
 member's layer. The crate is the sole exception to member `serde_json` inheritance;
 the workspace precision declaration and lint inheritance still apply to it.
-Never hand-edit its generated manifest section. The test-only browser qualification member, `maestro-test-browser`, is excluded from traversal and may retain the same native unifier declaration without contributing browser features to it.
+Never hand-edit its generated manifest section. Hakari excludes `maestro-test-browser` from traversal and managed dependency insertion, keeping its browser-only features out of this crate.
 
 The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
@@ -836,8 +836,8 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-extensions-wasm`, `maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
-`maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
-`maestro-test-process`, `maestro-test-browser`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
+`maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-browser`,
+`maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,

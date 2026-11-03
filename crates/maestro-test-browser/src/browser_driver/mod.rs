@@ -4,6 +4,7 @@
 //! low-level library connection, with default-world bindings routed by renderer session.
 
 use connection::Dispatcher;
+use inputs::{ExpectedError, Inventory};
 use launch::Process;
 use package::{Work, command};
 use serde_json::{Value, json};
@@ -51,6 +52,8 @@ pub struct Browser {
     dispatcher: Dispatcher,
     /// Ordered output from assertions and completion phases.
     lines: Vec<String>,
+    /// Parsed policy-error identity used by every page.
+    expected_error: ExpectedError,
 }
 
 impl Browser {
@@ -61,12 +64,17 @@ impl Browser {
     /// # Errors
     /// Returns launch, readiness or CDP connection failures.
     pub async fn launch(executable: &Path, profile: &Path, args: &[String]) -> io::Result<Self> {
+        let expected_error = inputs::inventory(include_str!(
+            "../../../maestro-web/tests/sandbox_loading_support/exports.json"
+        ))?
+        .expected_error;
         let (process, endpoint) = Process::launch(executable, profile, args).await?;
         match Dispatcher::connect(&endpoint).await {
             Ok(dispatcher) => Ok(Self {
                 process,
                 dispatcher,
                 lines: Vec::new(),
+                expected_error,
             }),
             Err(error) => cleanup(Err(error), process.close().await),
         }
@@ -77,7 +85,13 @@ impl Browser {
     /// # Errors
     /// Returns target creation or renderer initialization failures.
     pub async fn page(&mut self, name: &str) -> io::Result<Page<'_>> {
-        Page::open(&mut self.dispatcher, name, &mut self.lines).await
+        Page::open(
+            &mut self.dispatcher,
+            name,
+            &mut self.lines,
+            &self.expected_error,
+        )
+        .await
     }
 
     /// Execute one assertion with fresh page/module state and exact policy-error accounting.
@@ -194,7 +208,11 @@ pub async fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result
 }
 
 /// Validate and build before starting a listener or a browser process.
-fn prepare(checkout: &Path, cargo: &Path, executable: &Path) -> io::Result<(Work, PathBuf, Value)> {
+fn prepare(
+    checkout: &Path,
+    cargo: &Path,
+    executable: &Path,
+) -> io::Result<(Work, PathBuf, Inventory)> {
     package::tools(executable, checkout)?;
     println!(
         "CHECKOUT {}",
@@ -208,7 +226,7 @@ fn prepare(checkout: &Path, cargo: &Path, executable: &Path) -> io::Result<(Work
     let inventory = inputs::inventory(&fs::read_to_string(
         checkout.join("crates/maestro-web/tests/sandbox_loading_support/exports.json"),
     )?)?;
-    let target = crate::locked_metadata(cargo, checkout)?
+    let target = maestro_tooling::locked_metadata(cargo, checkout)?
         .target_directory
         .into_std_path_buf();
     let work = Work::new(&target)?;
@@ -221,7 +239,7 @@ async fn exports(
     root: &Path,
     executable: &Path,
     profile: &Path,
-    inventory: &Value,
+    inventory: &Inventory,
 ) -> io::Result<()> {
     let server = server::Server::start(root).await?;
     let result = async {
@@ -238,29 +256,24 @@ async fn run_inventory(
     browser: &mut Browser,
     root: &Path,
     origin: &str,
-    inventory: &Value,
+    inventory: &Inventory,
 ) -> io::Result<()> {
-    let names: Vec<_> = ["execution", "loading", "contributions"]
-        .into_iter()
-        .flat_map(|family| inventory[family].as_array().into_iter().flatten())
+    let names: Vec<String> = inventory
+        .families
+        .iter()
+        .flat_map(|(_, names)| names.iter().cloned())
         .collect();
-    let names: Vec<String> = serde_json::from_value(json!(names)).map_err(io::Error::other)?;
+    browser.expected_error.clone_from(&inventory.expected_error);
     let before = host_digest(root).await?;
     browser.preflight(origin, &names).await?;
-    for family in ["execution", "loading", "contributions"] {
-        let names = inventory[family]
-            .as_array()
-            .ok_or_else(|| io::Error::other("invalid export family"))?;
+    for (family, names) in &inventory.families {
         for name in names {
-            let name = name
-                .as_str()
-                .ok_or_else(|| io::Error::other("invalid export name"))?;
             browser.log(&format!("START {family} {name}"));
             let expression = format!(
                 "(async () => {{ const module = await import('/sandbox.js'); await module.default(); await module[{}](url => import(url)); }})()",
                 json!(name)
             );
-            let entry = if family == "contributions" {
+            let entry = if *family == "contributions" {
                 "/contributions.html"
             } else {
                 "/"

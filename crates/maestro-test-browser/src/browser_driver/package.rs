@@ -1,8 +1,9 @@
 //! Build browser exports from the checkout's exact locked inputs.
 
 use super::inputs;
-use crate::{browser_export_setup, cargo_lock::Lock};
+use maestro_tooling::copy_assets;
 use std::{
+    ffi::OsStr,
     fs, io,
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -65,7 +66,12 @@ pub(super) fn tools(executable: &Path, checkout: &Path) -> io::Result<()> {
         ));
     }
     let cli = command(Command::new("wasm-bindgen").arg("--version"))?;
-    browser_export_setup::run(&["binding-version".into(), cli.trim().into()], checkout)?;
+    setup(
+        checkout,
+        Path::new(env!("CARGO")),
+        "binding-version",
+        cli.trim().as_ref(),
+    )?;
     let browser = command(Command::new(executable).arg("--version"))?;
     inputs::chromium_version(&browser)?;
     println!(
@@ -85,7 +91,7 @@ pub(super) fn build(
 ) -> io::Result<PathBuf> {
     check_integration(checkout, cargo)?;
     let scratch = work.join("library");
-    browser_export_setup::prepare(checkout, &scratch)?;
+    setup(checkout, cargo, "prepare", scratch.as_os_str())?;
     command(
         Command::new(cargo)
             .current_dir(checkout)
@@ -97,8 +103,7 @@ pub(super) fn build(
             .env("CARGO_TARGET_DIR", target)
             .args(["metadata", "--offline", "--format-version=1"]),
     )?;
-    Lock::read(checkout)?.check_external_identities(&Lock::read(&scratch)?)?;
-    println!("LOCK external identity additions: 0");
+    setup(checkout, cargo, "check-lock", scratch.as_os_str())?;
     let built = command(
         Command::new(cargo)
             .current_dir(&scratch)
@@ -131,6 +136,20 @@ pub(super) fn build(
     Ok(output)
 }
 
+/// Reuse the repository preparation owner with its unchanged command operands.
+fn setup(checkout: &Path, cargo: &Path, operation: &str, value: &OsStr) -> io::Result<()> {
+    maestro_tooling::run(
+        &[
+            "browser-export-setup".into(),
+            operation.into(),
+            value.into(),
+        ],
+        cargo,
+        checkout,
+    )
+    .map(|_| ())
+}
+
 /// Compile the registered browser target without executing its native test harness.
 fn check_integration(checkout: &Path, cargo: &Path) -> io::Result<()> {
     let compiled = command(Command::new(cargo).current_dir(checkout).args([
@@ -155,7 +174,7 @@ fn check_integration(checkout: &Path, cargo: &Path) -> io::Result<()> {
 /// Keep both separately locked module instances and their own binding glue.
 fn modules(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::Result<()> {
     let fixtures = checkout.join("crates/maestro-web/tests/fixtures/browser_modules");
-    crate::copy_assets::copy_tree(&fixtures.join("package"), &output.join("package"))?;
+    copy_assets::copy_tree(&fixtures.join("package"), &output.join("package"))?;
     for name in ["a", "b"] {
         let built = command(
             Command::new(cargo)

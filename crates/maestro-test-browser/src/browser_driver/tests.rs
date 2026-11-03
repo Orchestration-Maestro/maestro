@@ -7,7 +7,7 @@ use std::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// The committed inventory used by the real browser qualification.
-const INVENTORY: &str =
+pub(super) const INVENTORY: &str =
     include_str!("../../../maestro-web/tests/sandbox_loading_support/exports.json");
 
 /// Raw request targets that must never expose a packaged resource.
@@ -122,10 +122,12 @@ fn chromium_version_rejects_missing_or_different_versions() {
 /// Validate the actual inventory before any export may execute.
 #[test]
 fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
-    let value = inputs::inventory(INVENTORY).unwrap();
-    assert_eq!(value["execution"].as_array().unwrap().len(), 26);
-    assert_eq!(value["loading"].as_array().unwrap().len(), 49);
-    assert_eq!(value["contributions"].as_array().unwrap().len(), 194);
+    let parsed = inputs::inventory(INVENTORY).unwrap();
+    assert_eq!(
+        parsed.families.each_ref().map(|(_, names)| names.len()),
+        [26, 49, 194]
+    );
+    let value: Value = serde_json::from_str(INVENTORY).unwrap();
     for invalid in [
         Value::Null,
         json!({}),
@@ -167,7 +169,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
 fn inventory_matches_authored_exports() {
     let inventory = inputs::inventory(INVENTORY).unwrap();
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-web/tests");
-    for family in ["execution", "loading"] {
+    for (family, selected) in &inventory.families[..2] {
         let source = fs::read_to_string(root.join(format!("sandbox_{family}_browser.rs"))).unwrap();
         let mut names = source
             .lines()
@@ -177,7 +179,7 @@ fn inventory_matches_authored_exports() {
             })
             .map(|(name, _)| name.to_owned())
             .collect::<Vec<_>>();
-        if family == "loading" {
+        if *family == "loading" {
             for file in [
                 "native_document_artifacts_browser.rs",
                 "native_html_artifact_browser.rs",
@@ -193,8 +195,7 @@ fn inventory_matches_authored_exports() {
             );
         }
         names.sort();
-        let mut selected =
-            serde_json::from_value::<Vec<String>>(inventory[family].clone()).unwrap();
+        let mut selected = selected.clone();
         selected.sort();
         assert_eq!(selected, names, "{family}");
     }
@@ -207,8 +208,7 @@ fn inventory_matches_authored_exports() {
         );
     }
     names.sort();
-    let mut selected =
-        serde_json::from_value::<Vec<String>>(inventory["contributions"].clone()).unwrap();
+    let mut selected = inventory.families[2].1.clone();
     selected.sort();
     assert_eq!(selected, names);
 }
@@ -434,4 +434,24 @@ fn host_digest_excludes_packages_but_detects_host_changes() {
     )
     .unwrap();
     assert_ne!(resources::digest(scratch.path()).unwrap(), before);
+}
+
+/// A missing executable is diagnosed without the pinned browser environment.
+#[test]
+fn launch_failures_are_reported() {
+    let root = Scratch::new().unwrap();
+    let executable = root.path().join("absent-chromium");
+    let error = block_on(Browser::launch(
+        &executable,
+        &root.path().join("profile"),
+        &[],
+    ))
+    .err()
+    .expect("missing executable must fail");
+    assert!(
+        error
+            .to_string()
+            .contains(&executable.display().to_string()),
+        "{error}"
+    );
 }

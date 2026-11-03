@@ -125,7 +125,7 @@ pub(super) fn digest(root: &Path) -> io::Result<String> {
         digest.update(file.as_bytes());
         digest.update(fs::read(root.join(file))?);
     }
-    Ok(crate::test_setup::hex(&digest.finalize()))
+    Ok(maestro_tooling::hex(&digest.finalize()))
 }
 
 /// Collect host-relative names in the same order on every platform.
