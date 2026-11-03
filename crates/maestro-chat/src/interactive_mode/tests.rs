@@ -118,9 +118,28 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
 }
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
-/// so the constructor reads its key bindings from there rather than the developer's.
+/// so the constructor reads its key bindings from there rather than the developer's. The
+/// child is offline and its binary directory supplies both search programs, so an
+/// ordinary startup witness neither downloads a program nor runs a host one.
 fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
-    isolated_case(test, "child", &[], body);
+    isolated_case(
+        test,
+        "child",
+        &[(OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1"))],
+        async |directory| {
+            controlled_search_programs(directory);
+            body(directory).await;
+        },
+    );
+}
+
+/// Installs stub `fd` and `rg` in the binary directory, which is searched before the
+/// command path.
+fn controlled_search_programs(directory: &Path) {
+    let bin = directory.join("bin");
+    for name in ["fd", "rg"] {
+        install_output(&bin, name, b"", 0);
+    }
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent

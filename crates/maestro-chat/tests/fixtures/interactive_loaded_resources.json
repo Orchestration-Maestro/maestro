@@ -1424,7 +1424,6 @@
         "path": "/pkg/index.ts",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1441,7 +1440,6 @@
         "path": "/pkg/index.js",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1458,7 +1456,6 @@
         "path": "/pkg/index.wasm",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1475,7 +1472,6 @@
         "path": "/pkg/extensions/index.ts",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1492,7 +1488,6 @@
         "path": "/pkg/extensions/sub/index.js",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1509,7 +1504,6 @@
         "path": "/pkg/./index.ts",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1526,7 +1520,6 @@
         "path": "/pkg/a/.index",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1543,7 +1536,6 @@
         "path": "/pkg/extensions/main.ts",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1560,7 +1552,6 @@
         "path": "/pkg/extensions/sub/main.js",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1577,7 +1568,6 @@
         "path": "/pkg/extensions//index.ts",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
@@ -1594,7 +1584,6 @@
         "path": "/pkg/extensions/sub/index.wasm",
         "sourceInfo": {
           "source": "npm:pack",
-          "scope": "project",
           "baseDir": "/pkg"
         }
       }
