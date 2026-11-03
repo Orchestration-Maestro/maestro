@@ -14,6 +14,7 @@ use maestro_app::{
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -427,7 +428,8 @@ fn new_session_stops_progress_honors_veto_and_uses_runtime_failure_route() {
         };
         let case = format!("fatal{index}");
         let body = async |directory: &Path| fatal_case(directory, input).await;
-        let Some(output) = isolated_output(TEST, &case, &[], "trap '' XFSZ", body) else {
+        let setup = IsolatedSetup::new().file_size_continues();
+        let Some(output) = isolated_output(TEST, &case, &[], setup, body) else {
             continue;
         };
         let stdout = String::from_utf8_lossy(&output.stdout);

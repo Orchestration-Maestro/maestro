@@ -148,17 +148,17 @@ fn saving_reaches_a_hard_linked_account_file_in_place() {
     );
 }
 
-/// Re-runs the calling test in a child with umask 022: true in the parent once the child
-/// passed, false inside the child.
+/// Re-runs the calling test in a child that creates files under umask 022, and returns that
+/// child's retained setup; `None` once the parent's child passed.
 #[cfg(unix)]
-fn relaunched_under_umask_022(test: &str) -> bool {
-    use maestro_test_process::TestProcess;
+fn relaunched_under_umask_022(test: &str) -> Option<maestro_test_process::SetupGuard> {
+    use maestro_test_process::{IsolatedSetup, TestProcess};
     if std::env::var_os("ACCOUNT_FILE_UMASK_CHILD").is_some() {
-        return false;
+        return Some(IsolatedSetup::apply_requested().expect("the child applies its request"));
     }
     let output = TestProcess::current(test)
         .unwrap()
-        .shell_setup("/bin/sh", "umask 022")
+        .setup(IsolatedSetup::new().umask(0o022))
         .env("ACCOUNT_FILE_UMASK_CHILD", "1")
         .single_threaded()
         .output()
@@ -169,16 +169,18 @@ fn relaunched_under_umask_022(test: &str) -> bool {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    true
+    None
 }
 
 #[cfg(unix)]
 #[test]
 fn saving_creates_the_account_file_private_to_its_owner() {
     use std::os::unix::fs::PermissionsExt;
-    if relaunched_under_umask_022("saving_creates_the_account_file_private_to_its_owner") {
+    let Some(_setup) =
+        relaunched_under_umask_022("saving_creates_the_account_file_private_to_its_owner")
+    else {
         return;
-    }
+    };
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     let auth = Map::from_iter([("alpha".to_owned(), json!({"type": "oauth"}))]);

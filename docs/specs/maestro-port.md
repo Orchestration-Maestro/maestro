@@ -789,10 +789,13 @@ See [Rust test children](test-processes.md) for the complete contract.
 Its native helpers also provide loopback servers, completed child probes,
 executable installation and child-build toolchain selection.
 
-On Unix the owner currently runs caller-supplied setup text in the interpreter the
-caller names by absolute path. Typed isolated native setup is planned; shell setup
-remains until all its callers move together. The owner uses the approved `rustix`
-stdio operations for descriptor replacement. It has no workspace dependencies except the native feature unifier and
+On Unix the owner applies each isolated child's typed native setup at that child's
+entry: a file creation umask, a process-count limit, a nonterminating file-size
+handler and a new session. The parent carries the request and keeps its own modes,
+limits, session and environment, and a refused effect stops the child before its
+body. The owner uses the approved `rustix` stdio and process operations for
+descriptor replacement and those effects, and the locked `signal-hook` flag
+registration for the file-size handler. It has no workspace dependencies except the native feature unifier and
 one native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only
 incoming edges are

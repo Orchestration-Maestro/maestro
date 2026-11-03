@@ -6,6 +6,7 @@ use super::super::{
 use super::{append_user, fork_panel, tree::finish, tree::panel};
 use crate::components::session_selector::{SessionList, SessionSelectorComponent};
 use maestro_app::{ReadonlySessionManager, SessionManager};
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, tui::InputHandler};
 use serde_json::json;
 use std::{path::Path, rc::Rc};
@@ -154,7 +155,8 @@ fn resume_rename_reopens_the_selected_file() {
 #[test]
 fn navigation_async_callbacks_keep_the_original_error_route() {
     let test = "navigation_async_callbacks_keep_the_original_error_route";
-    let output = isolated_output(test, "fatal", &[], "trap '' XFSZ", async |directory| {
+    let setup = IsolatedSetup::new().file_size_continues();
+    let output = isolated_output(test, "fatal", &[], setup, async |directory| {
         let effects = Rc::new(Effects::default());
         let (world, _) = resumable(directory, &effects).await;
         let broken = saved(&directory.join("here"), "broken", &json!(5), "broken");

@@ -9,6 +9,7 @@ use super::{
 };
 use crate::AuthType;
 use maestro_app::{DEFAULT_MODEL_PER_PROVIDER, Model, OAuthCredentials, OAuthError};
+use std::ffi::OsStr;
 use std::{
     error::Error,
     sync::{Arc, Mutex, RwLock},
@@ -240,8 +241,8 @@ fn authentication_completion_selects_each_provider_default_and_updates_presentat
         "authentication_completion_selects_each_provider_default_and_updates_presentation",
         "child",
         &[
-            ("CLOUDFLARE_ACCOUNT_ID", "account"),
-            ("CLOUDFLARE_GATEWAY_ID", "gateway"),
+            (OsStr::new("CLOUDFLARE_ACCOUNT_ID"), OsStr::new("account")),
+            (OsStr::new("CLOUDFLARE_GATEWAY_ID"), OsStr::new("gateway")),
         ],
         async |directory| {
             let defaults: Vec<(String, String)> = DEFAULT_MODEL_PER_PROVIDER
