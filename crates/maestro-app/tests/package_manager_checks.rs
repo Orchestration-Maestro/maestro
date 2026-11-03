@@ -252,21 +252,10 @@ fn selected_package_roots_keep_update_pins_and_progress() {
         let dir = scratch::Scratch::new().unwrap();
         let root = dir.path().to_str().unwrap();
         fs::create_dir_all(dir.path().join("work")).unwrap();
-        let script = dir.path().join("controlled-npm");
-        assert!(
-            std::process::Command::new("install")
-                .args([
-                    "-m",
-                    "0700",
-                    concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/tests/fixtures/controlled-npm.sh"
-                    )
-                ])
-                .arg(&script)
-                .status()
-                .unwrap()
-                .success()
+        crate::native::command(
+            dir.path(),
+            "controlled-npm",
+            &json!({"scenario": "package"}),
         );
         let agent = format!("{root}/selected");
         let log = format!("{root}/calls");

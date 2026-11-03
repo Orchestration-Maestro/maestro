@@ -32,6 +32,7 @@ use inputs::Inputs;
 use plan::{Artifacts, component_inputs};
 
 mod base;
+pub(crate) mod cargo_checks;
 mod compiled_code;
 mod inputs;
 pub(crate) mod native_fixture;
@@ -158,6 +159,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         ))
     })?;
     native_fixture::prepare(cargo, checkout, output, target)?;
+    cargo_checks::prepare(cargo, checkout, output, &target.join("cargo-checks"))?;
     stage_browser_graph(cargo, checkout, output)?;
     let mut unchanged = artifacts.is_current(checkout)?;
     for component in components.values() {

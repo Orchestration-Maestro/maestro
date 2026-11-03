@@ -6,15 +6,32 @@ use std::path::{Path, PathBuf};
 /// The recipe that stages the development tool the setup runs.
 const PREPARE: &str = "just prepare-tests";
 
-/// The packages whose tests nextest's author-component setup serves, as shared CI declares them.
+/// The packages nextest assigns to the setups that shared CI prepares.
 fn served_packages() -> Vec<String> {
     let ci: toml::Table = include_str!("../../../.github/ci.toml").parse().unwrap();
-    ci["test_prepare_packages"]
-        .as_array()
-        .unwrap()
+    let setups = ci["test_prepare_setups"].as_array().unwrap();
+    let nextest: toml::Table = include_str!("../../../.config/nextest.toml")
+        .parse()
+        .unwrap();
+    let rules = nextest["profile"]["default"]["scripts"].as_array().unwrap();
+    let mut consumers: Vec<_> = rules
         .iter()
-        .map(|name| name.as_str().unwrap().to_owned())
-        .collect()
+        .filter(|rule| {
+            rule.get("setup")
+                .is_some_and(|setup| setups.contains(setup))
+        })
+        .flat_map(|rule| rule["filter"].as_str().unwrap().split("package(").skip(1))
+        .map(|rest| {
+            rest.split_once(')')
+                .unwrap()
+                .0
+                .trim_start_matches('=')
+                .to_owned()
+        })
+        .collect();
+    consumers.sort_unstable();
+    consumers.dedup();
+    consumers
 }
 
 /// The Markdown files under `directory`, recursively.
@@ -122,9 +139,9 @@ fn development_guide_names_the_command_for_a_missing_setup_tool() {
     );
 }
 
-/// A command on a package that shared CI adds to the served list is checked like the others.
+/// A command on a package served by a nextest setup must stage the tool first.
 #[test]
-fn documented_nextest_commands_follow_the_packages_shared_ci_declares() {
+fn documented_nextest_commands_stage_the_tool_for_setup_consumers() {
     let served = vec!["maestro-app".to_owned()];
     let block = vec!["cargo nextest run --locked -p maestro-app".to_owned()];
 

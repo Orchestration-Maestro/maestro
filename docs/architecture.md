@@ -54,7 +54,9 @@ No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
-only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
+only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The `maestro-package` leaf owns portable package interchange records; native
+packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
 application re-exports them as `markdown`. The dedicated conventions checker may
@@ -296,6 +298,21 @@ separator changes nothing, and the shared token walk includes macro arguments,
 closures and impl bodies.
 
 ## Quality checks
+
+Native platform viewers belong to the application's `utils::platform_opener`.
+The conventions check reports executable literals outside that owner, including
+nested macros, closures, methods and source fragments. It also tracks local
+`open` bindings into command constructors and rejects the shell `cmd /c start`
+combination. Parsed test-only items are excluded.
+
+A single name passed to `clap::Command::new`, directly or through an explicit
+import, defines a command-line item rather than launching a viewer. The check
+accepts those names without exempting process calls in the same file. Imports
+follow their containing token group, and competing imports keep the process
+check active. Globs, re-export chains, constructed names and type inference are
+not resolved; reviewers check them. For example,
+`use clap::Command; Command::new("open")` is accepted, but
+`std::process::Command::new("open")` beside it is rejected.
 
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
 compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for

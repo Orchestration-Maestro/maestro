@@ -54,7 +54,7 @@ pub(crate) use retry::{RequestPolicy, RetryStatuses, send_with_policy};
 pub(crate) use retry::{request_timeout, send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
-pub use runtime::{Raced, race};
+pub use runtime::{Raced, race, unit_random};
 pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
 
 /// One HTTP attempt: method, final URL, lowercase headers and body bytes.

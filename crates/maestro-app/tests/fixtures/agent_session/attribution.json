@@ -1,5 +1,78 @@
 [
   {
+    "name": "routed_url_in_subdomain",
+    "model": {
+      "provider": "custom",
+      "baseUrl": "https://us.openrouter.ai/api/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": null,
+    "requestHeaders": null,
+    "expected": {
+      "present": true,
+      "headers": {
+        "HTTP-Referer": "https://github.com/Orchestration-Maestro/maestro",
+        "X-OpenRouter-Title": "maestro",
+        "X-OpenRouter-Categories": "cli-agent"
+      }
+    }
+  },
+  {
+    "name": "routed_url_in_path",
+    "model": {
+      "provider": "custom",
+      "baseUrl": "https://proxy.example/openrouter.ai/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": null,
+    "requestHeaders": null,
+    "expected": {
+      "present": true,
+      "headers": {
+        "HTTP-Referer": "https://github.com/Orchestration-Maestro/maestro",
+        "X-OpenRouter-Title": "maestro",
+        "X-OpenRouter-Categories": "cli-agent"
+      }
+    }
+  },
+  {
+    "name": "routed_url_match_is_case_sensitive",
+    "model": {
+      "provider": "custom",
+      "baseUrl": "https://OPENROUTER.AI/api/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "credentialHeaders": null,
+    "requestHeaders": null,
+    "expected": {
+      "present": false,
+      "headers": null
+    }
+  },
+  {
+    "name": "opencode_empty_session",
+    "model": {
+      "provider": "opencode",
+      "baseUrl": "https://opencode.ai/zen/v1"
+    },
+    "settings": {
+      "enableInstallTelemetry": true
+    },
+    "sessionId": "",
+    "credentialHeaders": null,
+    "requestHeaders": null,
+    "expected": {
+      "present": false,
+      "headers": null
+    }
+  },
+  {
     "name": "disabled_routed",
     "model": {
       "provider": "openrouter",

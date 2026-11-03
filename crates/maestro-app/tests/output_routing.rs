@@ -374,16 +374,32 @@ fn observe_flushed(process: &mut CheckedChild, stdout: &mut impl Read, stderr: &
 fn package_probe() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     use std::rc::Rc;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let command = crate::native::command(
+        scratch.path(),
+        "package-child",
+        &serde_json::json!({"scenario": "labelled"}),
+    );
+    let command = command.to_str().unwrap().to_owned();
     let local = Rc::new(tokio::task::LocalSet::new());
     let operations = NativePackageOperations::new(Rc::new(is_stdout_taken_over), &local);
     let runtime = crate::support::io_runtime();
     runtime.block_on(local.run_until(async {
-            for label in ["A", "B", "C"] {
-                if label == "B" { take_over_stdout(); }
-                if label == "C" { restore_stdout(); }
-                let args = ["-c", "printf '%s\\n' \"$1\"; printf '%s-err\\n' \"$1\" >&2; value=; IFS= read -r value || :; printf 'stdin:%s\\n' \"$value\"", "literal shell name", label].map(str::to_owned);
-                assert_eq!(operations.run_command("/bin/sh", &args, None).await.unwrap(), Some(0));
+        for label in ["A", "B", "C"] {
+            if label == "B" {
+                take_over_stdout();
             }
-        }));
+            if label == "C" {
+                restore_stdout();
+            }
+            assert_eq!(
+                operations
+                    .run_command(&command, &[label.to_owned()], None)
+                    .await
+                    .unwrap(),
+                Some(0)
+            );
+        }
+    }));
     runtime.block_on(Rc::try_unwrap(local).ok().unwrap());
 }

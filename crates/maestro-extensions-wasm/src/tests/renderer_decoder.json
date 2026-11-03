@@ -415,7 +415,14 @@
     "name": "content-[{\"type\": \"other\"}]",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"other\"}],\"display\":true,\"timestamp\":1.25}",
     "native": {
-      "error": "data did not match any variant of untagged enum UserContent at line 1 column 62"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
     }
   },
   {
@@ -497,14 +504,28 @@
     "name": "text-type-empty",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"\",\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
     "native": {
-      "error": "data did not match any variant of untagged enum UserContent at line 1 column 68"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
     }
   },
   {
     "name": "text-type-unicode",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"雪\",\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
     "native": {
-      "error": "data did not match any variant of untagged enum UserContent at line 1 column 71"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
     }
   },
   {
@@ -662,14 +683,28 @@
     "name": "image-type-empty",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"\",\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
     "native": {
-      "error": "data did not match any variant of untagged enum UserContent at line 1 column 83"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
     }
   },
   {
     "name": "image-type-unicode",
     "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"雪\",\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
     "native": {
-      "error": "data did not match any variant of untagged enum UserContent at line 1 column 86"
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
     }
   },
   {

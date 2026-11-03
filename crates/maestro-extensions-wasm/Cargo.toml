@@ -265,6 +265,10 @@ path = "../../examples/extensions/rpc_demo.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "sdk_standard_component"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "send_user_message"
 path = "../../examples/extensions/send_user_message.rs"
 crate-type = ["cdylib"]
@@ -375,6 +379,7 @@ crate-type = ["cdylib"]
 # example-index:end
 
 [dependencies]
+maestro-package = { path = "../maestro-package" }
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }

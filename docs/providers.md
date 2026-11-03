@@ -120,9 +120,10 @@ checks are described in [request authentication](request-authentication.md).
 
 ## Request attribution
 
-Attribution and session headers match the provider name or the base URL's parsed host, not
-a substring of the address, so a proxy path that names a gateway gets none of them. The
-headers and their conditions are listed in the [SDK guide](application/sdk.md).
+OpenRouter attribution matches the provider name or `openrouter.ai` anywhere in the
+base URL, case-sensitive. NVIDIA, Cloudflare and OpenCode match the provider name
+or parsed host. An empty session ID sends no OpenCode headers. The headers and
+their conditions are listed in the [SDK guide](application/sdk.md).
 
 ## Routing preferences
 

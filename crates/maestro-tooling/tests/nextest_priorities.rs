@@ -92,6 +92,27 @@ fn cold_browser_build_reserves_every_core_without_a_timeout_exception() {
     assert!(cold.iter().all(|rule| rule.get("slow-timeout").is_none()));
 }
 
+/// Every callback-group test receives the cross-run lock wrapper.
+#[test]
+fn fixed_port_wrapper_covers_every_callback_group_test() {
+    let config: toml::Table =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let profile = &config["profile"]["default"];
+    let wrapper = profile["scripts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|rule| rule.get("run-wrapper").and_then(toml::Value::as_str) == Some("fixed-port"))
+        .unwrap();
+    let group = profile["overrides"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|rule| rule.get("test-group").and_then(toml::Value::as_str) == Some("oauth-callback"))
+        .unwrap();
+    assert_eq!(wrapper["filter"], group["filter"]);
+}
+
 /// Run one-worker nextest and retain completion order, including the intentional failure.
 /// A private Cargo home avoids registry-cache locks held by unrelated builds.
 fn run_nextest(root: &Path, config: &Path, partition: Option<&str>) -> Vec<String> {

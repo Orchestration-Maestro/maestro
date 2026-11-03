@@ -859,6 +859,7 @@
       "message": "Removed stored API key for a. Environment variables and models.json config are unchanged.",
       "error": null,
       "accepted": [
+        "a",
         "b"
       ],
       "persisted": [
