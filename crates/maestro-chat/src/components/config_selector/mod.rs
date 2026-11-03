@@ -41,7 +41,7 @@ pub struct ResourceItem {
 /// Notification receiving the same live item used by the list.
 pub type ResourceToggle = Rc<dyn Fn(Rc<RefCell<ResourceItem>>, bool)>;
 /// Supplied project location and existing ambient presentation/path owners.
-pub struct ConfigSelectorOptions {
+pub struct ComponentOptions {
     /// Project directory used for project-relative settings patterns.
     pub cwd: String,
     /// User resource directory.
@@ -69,7 +69,7 @@ impl ConfigSelectorComponent {
     pub fn new(
         resolved: ResolvedPaths,
         settings: Rc<RefCell<SettingsManager>>,
-        options: ConfigSelectorOptions,
+        options: ComponentOptions,
         callbacks: ConfigSelectorCallbacks,
     ) -> Self {
         let groups = groups::build_groups(resolved, &options.collator);
