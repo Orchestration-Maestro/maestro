@@ -144,8 +144,25 @@ async fn inspect_attached_iframe(waiting: bool) {
     result.unwrap();
 }
 
+/// Build the iframe attachment and default-world events for the native peer.
+fn iframe_events(waiting: bool) -> [Value; 2] {
+    let attached = json!({
+        "method":"Target.attachedToTarget","sessionId":"session",
+        "params":{"sessionId":"child-session","waitingForDebugger":waiting,
+            "targetInfo":{"targetId":"child","type":"iframe","browserContextId":"context",
+                "title":"","url":"about:srcdoc","attached":true,"canAccessOpener":false}}
+    });
+    let context_created = json!({
+        "method":"Runtime.executionContextCreated","sessionId":"child-session",
+        "params":{"context":{"id":2,"origin":"null","name":"","uniqueId":"child-world",
+            "auxData":{"isDefault":true,"frameId":"child"}}}
+    });
+    [attached, context_created]
+}
+
 /// Emit a native iframe attachment, then its default world when Runtime is enabled.
 async fn attached_iframe(mut socket: WebSocketStream<TcpStream>, waiting: bool) {
+    let [attached, context_created] = iframe_events(waiting);
     let mut inspected = false;
     while let Some(message) = socket.next().await {
         let message = message.unwrap();
@@ -156,16 +173,18 @@ async fn attached_iframe(mut socket: WebSocketStream<TcpStream>, waiting: bool) 
             "Target.createTarget" => json!({"targetId":"target"}),
             "Target.attachToTarget" => json!({"sessionId":"session"}),
             "Runtime.evaluate" if call["params"]["expression"] == "mount()" => {
-                socket.send(Message::text(json!({"method":"Target.attachedToTarget","sessionId":"session",
-                    "params":{"sessionId":"child-session","waitingForDebugger":waiting,
-                        "targetInfo":{"targetId":"child","type":"iframe","browserContextId":"context",
-                            "title":"","url":"about:srcdoc","attached":true,"canAccessOpener":false}}}).to_string())).await.unwrap();
+                socket
+                    .send(Message::text(attached.to_string()))
+                    .await
+                    .unwrap();
                 json!({"result":{"value":true}})
             }
             "Runtime.enable" => {
                 assert_eq!(call["sessionId"], "child-session");
-                socket.send(Message::text(json!({"method":"Runtime.executionContextCreated","sessionId":"child-session",
-                    "params":{"context":{"id":2,"origin":"null","name":"","uniqueId":"child-world","auxData":{"isDefault":true,"frameId":"child"}}}}).to_string())).await.unwrap();
+                socket
+                    .send(Message::text(context_created.to_string()))
+                    .await
+                    .unwrap();
                 json!({})
             }
             "Runtime.evaluate" if call["params"]["expression"] == scripts::STATE => {

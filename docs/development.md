@@ -249,17 +249,17 @@ the driver scrolls `#target` into that document's view immediately, then sends
 move, press and release there. A frame that shares its parent's renderer uses
 that renderer's native content quad. The driver releases lookup handles after
 success and failure, and retains attached renderer sessions only for the page's
-lifetime. Every attached iframe has its default execution context tracked,
-including frames whose scripts are already running when they attach.
+lifetime. The driver tracks the default execution context of every attached
+iframe, including frames whose scripts are already running when they attach.
 Browser events route by session; export, binding and input operations
 wait for their own completion signals without command deadlines.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
-page crashes and unexpected browser disconnection fail the command. An acknowledged
-browser close or a lost connection ends command admission: later operations,
-including page creation, fail immediately with a connection-closed error. Script
-arguments in the browser fixtures are JSON-encoded before evaluation so quotes in
-embedded document scripts remain data in the containing page.
+page crashes and unexpected browser disconnection fail the command. An
+acknowledged browser close or a lost connection ends command admission: later
+operations, including page creation, fail immediately with a connection-closed
+error. Script arguments in the browser fixtures are JSON-encoded before evaluation
+so quotes in embedded document scripts remain data in the containing page.
 
 One deliberate policy-negative export,
 `inline_programs_preserve_text_policies_and_order`, must produce exactly one
