@@ -305,8 +305,10 @@ fn a_responding_reachable_daemon_still_exhausts_the_stop_budget() {
     let selection = named(&root, "lingering");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Bytes(STOPPED)), None);
+    // The exchange gets a budget no scheduling stall spends; only the wait is short.
+    request_stop(&selection, Instant::now() + Duration::from_secs(5)).unwrap();
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("lingering", &[&path]))
     );
     assert_eq!(api.finish().request, STOP_LINE);
@@ -391,7 +393,7 @@ fn stop_reply(bytes: &'static [u8]) -> Result<(), String> {
         Some(Answer::Bytes(bytes)),
         Some(0),
     );
-    let result = stop_with_timeout(&selection, SHORT);
+    let result = stop_with_timeout(&selection, Duration::from_secs(5));
     api.finish();
     result
 }
