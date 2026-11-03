@@ -4,6 +4,7 @@ mod help;
 mod parse;
 pub(crate) mod presentation;
 
+pub(crate) use help::{COMMAND_SUMMARIES, CONFIG_DESCRIPTION, description};
 pub use parse::PackageCommand;
 
 use super::package_manager_cli::parse::{PackageCommandOptions, UpdateTarget};

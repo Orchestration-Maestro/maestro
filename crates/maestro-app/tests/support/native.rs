@@ -42,6 +42,20 @@ pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> Path
 }
 
 #[cfg(unix)]
+/// Install the prepared fixture as `name` with a `clipboard` record in `root`.
+pub fn clipboard_alias(root: &Scratch, name: &str, record: &str) -> std::path::PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    let alias =
+        std::path::PathBuf::from(root.join(&format!("{name}{}", std::env::consts::EXE_SUFFIX)));
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias).unwrap();
+    let mut sibling = alias.as_os_str().to_owned();
+    sibling.push(".fixture");
+    std::fs::write(sibling, format!("clipboard\n{record}")).unwrap();
+    alias
+}
+
+#[cfg(unix)]
 /// Whether this process is refused access that a mode takes away; a privileged run is not.
 pub fn denials() -> bool {
     let probe = maestro_test_directory::Scratch::new().unwrap();
