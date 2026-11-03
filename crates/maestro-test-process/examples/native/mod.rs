@@ -8,6 +8,7 @@ mod author;
 mod cargo;
 #[cfg(unix)]
 mod child;
+mod clipboard;
 #[cfg(unix)]
 mod command;
 mod credentials;
@@ -37,6 +38,8 @@ enum Request {
     Child(child::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Produce controlled clipboard bytes for the application's native operations.
+    Clipboard(clipboard::Record, Vec<OsString>),
     /// Answer native Git queries for footer observations.
     #[cfg(unix)]
     Git(git::Record),
@@ -103,6 +106,7 @@ impl Request {
             #[cfg(unix)]
             Some("child") => Ok(Self::Child(child::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("git") => Ok(Self::Git(git::Record::parse(&text)?)),
             Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
@@ -139,6 +143,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Child(record, operands) => child::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
         #[cfg(unix)]
         Request::Git(record) => git::run(&record),
         Request::Editor(record, operands) => editor::run(&record, &operands),
