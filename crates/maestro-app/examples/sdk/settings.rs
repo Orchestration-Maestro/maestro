@@ -1,0 +1,163 @@
+//! Override session preferences and flush a persistent settings change.
+mod support;
+use serde_json::{Value, json};
+use support::{Error, Sample};
+
+/// Run the settings sample without touching user preferences.
+fn main() -> Result<(), Error> {
+    support::launch(run)
+}
+
+/// Return live overrides, durable preferences and in-memory session preferences.
+async fn run(sample: Sample) -> Result<Value, Error> {
+    use maestro_app::SettingsManager;
+    use std::{cell::RefCell, rc::Rc};
+    let options = configured_options(&sample).await?;
+    let created = maestro_app::create_agent_session(options).await?;
+    writeln!(
+        sample.output.borrow_mut(),
+        "Session created with custom settings"
+    )?;
+    let mut result = {
+        let settings = created.session.settings_manager().borrow();
+        json!({
+            "retry": settings.get_retry_enabled(), "maxRetries": settings.get_retry_settings().max_retries,
+            "compaction": settings.get_compaction_enabled(),
+        })
+    };
+    let manager = created.session.settings_manager();
+    manager
+        .borrow_mut()
+        .set_default_thinking_level(maestro_settings::ThinkingLevel::Low);
+    let flushed = manager.borrow().flush();
+    flushed.await;
+    let errors = manager.borrow_mut().drain_errors();
+    for error in &errors {
+        writeln!(
+            sample.output.borrow_mut(),
+            "Warning ({} settings): {}",
+            error.scope.label(),
+            error.error
+        )?;
+    }
+    result["errors"] = json!(errors.len());
+    if errors.is_empty() {
+        result["saved"] =
+            serde_json::from_slice(&std::fs::read(sample.root.path().join("settings.json"))?)?;
+    }
+    created.session.dispose();
+    let mut options = sample.options()?;
+    options.settings_manager = Some(Rc::new(RefCell::new(SettingsManager::in_memory(
+        serde_json::from_value(
+            json!({"compaction": {"enabled": false}, "retry": {"enabled": false}}),
+        )?,
+    ))));
+    let memory = maestro_app::create_agent_session(options).await?;
+    result["memoryRetry"] = json!(
+        memory
+            .session
+            .settings_manager()
+            .borrow()
+            .get_retry_enabled()
+    );
+    writeln!(
+        sample.output.borrow_mut(),
+        "Test session created with in-memory settings"
+    )?;
+    memory.session.dispose();
+    Ok(result)
+}
+
+/// Reload resources before applying runtime settings overrides.
+async fn configured_options(
+    sample: &Sample,
+) -> Result<maestro_app::CreateAgentSessionOptions, Error> {
+    use maestro_app::{
+        DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, SessionResources,
+        SettingsManager,
+    };
+    use std::{cell::RefCell, rc::Rc};
+    let cwd = sample.root.path().display().to_string();
+    let settings = Rc::new(RefCell::new(SettingsManager::create(
+        &cwd, &cwd, ".maestro",
+    )));
+    let mut options = sample.options()?;
+    let SessionResources::Default(resources) = options.resources else {
+        return Err("The sample requires default resource discovery".into());
+    };
+    let loader = Rc::new(DefaultResourceLoader::new(DefaultResourceLoaderOptions {
+        cwd: cwd.clone(),
+        agent_dir: cwd,
+        settings_manager: Some(Rc::clone(&settings)),
+        resources: *resources,
+    }));
+    loader.reload().await?;
+    writeln!(
+        sample.output.borrow_mut(),
+        "Current settings: {}",
+        serde_json::to_string_pretty(&settings.borrow().get_global_settings())?
+    )?;
+    settings.borrow_mut().apply_overrides(serde_json::from_value(json!({
+        "compaction": {"enabled": false}, "retry": {"enabled": true, "maxRetries": 5, "baseDelayMs": 1000}
+    }))?);
+    options.resources = SessionResources::Loader(loader);
+    options.settings_manager = Some(settings);
+    Ok(options)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Settings failures identify their scope without exposing a debug representation.
+    #[test]
+    fn settings_warns_with_scope_names() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let result = support::execute(|mut sample| {
+            sample.output = output.clone();
+            async move {
+                std::fs::create_dir(sample.root.path().join("settings.json"))?;
+                run(sample).await
+            }
+        });
+        let value = result?;
+        assert_eq!(value["memoryRetry"], false);
+        let text = String::from_utf8(output.borrow().clone())?;
+        assert!(
+            text.lines()
+                .any(|line| line.starts_with("Warning (global settings): "))
+        );
+        assert!(text.ends_with("Test session created with in-memory settings\n"));
+        Ok(())
+    }
+
+    /// Disk preferences precede the configured and in-memory session observations.
+    #[test]
+    fn settings_prints_observations_in_order() -> Result<(), Error> {
+        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        support::execute(|mut sample| {
+            sample.output = output.clone();
+            run(sample)
+        })?;
+        assert_eq!(
+            String::from_utf8(output.borrow().clone())?,
+            "Current settings: {}\nSession created with custom settings\nTest session created with in-memory settings\n"
+        );
+        Ok(())
+    }
+
+    /// Overrides affect the session while the explicit setter crosses the durability boundary.
+    #[test]
+    fn settings_applies_overrides_and_flushes_explicit_changes() -> Result<(), Error> {
+        let value = support::execute(run)?;
+        assert_eq!(value["retry"], true);
+        assert_eq!(value["maxRetries"], 5.0);
+        assert_eq!(value["compaction"], false);
+        assert_eq!(value["saved"]["defaultThinkingLevel"], "low");
+        assert!(value["saved"].get("retry").is_none());
+        assert_eq!(value["errors"], 0);
+        assert_eq!(value["memoryRetry"], false);
+        Ok(())
+    }
+    mod images;
+}

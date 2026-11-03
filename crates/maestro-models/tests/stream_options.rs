@@ -1,15 +1,17 @@
 //! SDK constructors retain execution-family inference through the shared option owner.
 use maestro_models::{
-    Local, OnPayload, OnResponse, ProviderStreamOptions, SimpleStreamOptions, StreamOptions,
-    StreamOptionsInput, Threaded, ToolChoice,
+    Execution, Local, OnPayload, OnResponse, ProviderStreamOptions, SimpleStreamOptions,
+    StreamOptions, StreamOptionsInput, Threaded, ToolChoice,
 };
-use std::{rc::Rc, sync::Arc};
+use std::rc::Rc;
 
 #[test]
 fn native_stream_aliases_keep_sdk_constructor_inference() {
     let threaded: StreamOptions = StreamOptions {
-        on_payload: Some(Arc::new(|input, _| Box::pin(async move { Ok(input) }))),
-        on_response: Some(Arc::new(|_, _| Box::pin(async { Ok(()) }))),
+        on_payload: Some(Threaded::share(|input, _| {
+            Box::pin(async move { Ok(input) })
+        })),
+        on_response: Some(Threaded::share(|_, _| Box::pin(async { Ok(()) }))),
         ..Default::default()
     };
     let _: &Option<OnPayload<Threaded>> = &threaded.on_payload;
