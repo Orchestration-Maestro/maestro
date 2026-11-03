@@ -1088,8 +1088,8 @@ directory in what it compiles, so the setup and the tests must name the same one
 test that built into a differently spelled directory recompiled every dependency. Output
 built for one checkout path serves another, so each test's copy of the checkout reuses it.
 
-`browser_author_bootstraps_from_empty_build_state` builds from an empty state on
-purpose, so the setup is not run for it. Only Maestro's own crates compile in it: the
+`browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
+unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own crates compile in it: the
 workspace-sources setup below provides the registry units. The test reserves every core
 with `threads-required`, so other tests do not stretch its compiler jobs past the hang
 limit. The test checks one cold build and its outputs. Rebuilds after a change to an
@@ -1131,8 +1131,8 @@ source-preparation helper is also Unix-only; Windows compiles the shared fixture
 helpers without the browser tests. The setup exports
 `MAESTRO_TEST_WORKSPACE_CARGO_SOURCES` from `target/workspace-sources/<hash>/`.
 This uses the same vendor operation with a wider dependency set, including Git
-sources. The key covers the workspace and member manifests, the browser manifest
-and both lockfiles. Dependency changes select a new directory; Rust-only edits
+sources. The key covers the workspace and member manifests, the browser manifest,
+both lockfiles and `rust-toolchain.toml`. Dependency or toolchain changes select a new directory; Rust-only edits
 reuse it because workspace sources are read from the checkout. Outside nextest,
 the first cold-source caller runs the same setup. The browser shared-home isolation
 test prepares both source sets in its parent and forwards their configuration paths to
@@ -1142,7 +1142,8 @@ the source configuration into its initially empty Cargo home.
 The same setup also builds the cold bootstrap's native targets once per key, with the
 commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
 units of registry crates and deletes the units and outputs of workspace members, the
-examples and `debug/incremental`, then publishes the result as `seed` beside the
+examples and `debug/incremental`. A member's binary has a name no package spells, so its
+output in `deps` goes with the fingerprint that shares its hash. The setup then publishes the result as `seed` beside the
 configuration. A failed build leaves no seed and the next run continues it. The cold test
 copies the seed into its empty Cargo target directory and checks that it holds compiled
 units but none of a workspace member's. The recipes then compile Maestro's crates and

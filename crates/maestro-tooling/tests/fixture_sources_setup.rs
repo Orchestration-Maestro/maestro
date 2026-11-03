@@ -2,51 +2,27 @@
 #![cfg(unix)]
 
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use maestro_test_directory::Scratch;
 
-use crate::recipe_support::write_input;
-
-/// The fixture Cargo: it records its arguments, fails when asked and otherwise creates the
-/// vendor directory, its last argument, and prints the source configuration `vendor` prints. A
-/// build records its arguments apart and leaves the units a registry crate, a registry crate
-/// named like a member plus a suffix, and the member `example` produce.
-const CARGO: &str = "#!/bin/sh\n\
-    if [ \"$1\" = build ]; then\n\
-    echo \"$*\" >> \"$BUILDS\"\n\
-    if [ -n \"${BUILD_FAILS-}\" ]; then echo 'build exploded' >&2; exit 1; fi\n\
-    profile=\"$CARGO_TARGET_DIR/debug\"\n\
-    mkdir -p \"$profile/deps\" \"$profile/examples\" \"$profile/incremental/example-1\"\n\
-    for unit in serde-0123456789abcdef example-extras-0123456789abcdef example-fedcba9876543210; do\n\
-    mkdir -p \"$profile/.fingerprint/$unit\" \"$profile/build/$unit\"\n\
-    done\n\
-    for file in libserde-0123456789abcdef.rlib libexample_extras-0123456789abcdef.rlib \\\n\
-    libexample-fedcba9876543210.rlib example-fedcba9876543210.d; do : > \"$profile/deps/$file\"; done\n\
-    : > \"$profile/development\"; : > \"$profile/examples/browser_author_inputs\"\n\
-    exit 0\n\
-    fi\n\
-    echo \"$*\" >> \"$CALLS\"\n\
-    if [ -n \"${VENDOR_FAILS-}\" ]; then echo 'vendor exploded' >&2; exit 1; fi\n\
-    for last; do :; done\n\
-    mkdir -p \"$last\"\n\
-    printf '[source.crates-io]\\nreplace-with = \"vendored-sources\"\\n'\n";
+use crate::recipe_support::{installed, write_input};
 
 /// The fixture checkout's directory that holds the registry closure and the browser fixture.
 const FIXTURES: &str = "crates/maestro-tooling/tests/fixtures";
 
-/// Lay out the inputs the setup reads and a Cargo that records its calls.
+/// Lay out the inputs the setup reads.
 fn checkout(root: &Path) {
     for (name, text) in [
         ("Cargo.lock", "workspace lock"),
+        ("rust-toolchain.toml", "[toolchain]\nchannel = \"1.0.0\"\n"),
         ("registry_sources/Cargo.toml", "closure manifest"),
         ("registry_sources/src/lib.rs", ""),
         ("browser_author/Cargo.toml", "browser manifest"),
         ("browser_author/Cargo.lock", "browser lock"),
     ] {
-        let path = if name == "Cargo.lock" {
+        let path = if name == "Cargo.lock" || name == "rust-toolchain.toml" {
             root.join(name)
         } else {
             root.join(FIXTURES).join(name)
@@ -54,25 +30,39 @@ fn checkout(root: &Path) {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, text).unwrap();
     }
-    fs::write(root.join("cargo"), CARGO).unwrap();
-    fs::set_permissions(root.join("cargo"), fs::Permissions::from_mode(0o755)).unwrap();
 }
 
-/// Configure the setup command as nextest does, with isolated Cargo and export paths.
-fn setup(root: &Path, fails: bool) -> Command {
+/// The operation the fixture Cargo fails, if any.
+#[derive(Clone, Copy)]
+enum Failure {
+    /// Both operations succeed.
+    None,
+    /// `cargo vendor` fails.
+    Vendor,
+    /// `cargo build` fails.
+    Build,
+}
+
+/// Install the fixture Cargo, which records its calls and fails as asked, and configure the setup
+/// command as nextest does, with isolated Cargo and export paths.
+fn setup(root: &Path, failure: Failure) -> Command {
+    installed(
+        root,
+        "cargo",
+        &format!(
+            "tooling-sources\n{{\"calls\":{:?},\"builds\":{:?},\"vendor_fails\":{},\"build_fails\":{}}}\n",
+            root.join("calls"),
+            root.join("builds"),
+            matches!(failure, Failure::Vendor),
+            matches!(failure, Failure::Build),
+        ),
+    );
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command
         .args(["nextest-setup", "fixture-sources"])
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
-        .env("CALLS", root.join("calls"))
-        .env("BUILDS", root.join("builds"))
-        .env_remove("BUILD_FAILS")
-        .env("NEXTEST_ENV", root.join("nextest-env"))
-        .env_remove("VENDOR_FAILS");
-    if fails {
-        command.env("VENDOR_FAILS", "1");
-    }
+        .env("NEXTEST_ENV", root.join("nextest-env"));
     command
 }
 
@@ -94,7 +84,7 @@ fn fixture_sources_setup_vendors_the_closure_and_exports_the_configuration() {
     let root = scratch.path();
     checkout(root);
 
-    let config = printed(&setup(root, false).output().unwrap());
+    let config = printed(&setup(root, Failure::None).output().unwrap());
 
     let directory = config.parent().unwrap();
     assert_eq!(
@@ -133,9 +123,12 @@ fn fixture_sources_setup_reuses_a_directory_while_the_inputs_stay_the_same() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     checkout(root);
-    let first = printed(&setup(root, false).output().unwrap());
+    let first = printed(&setup(root, Failure::None).output().unwrap());
 
-    assert_eq!(printed(&setup(root, false).output().unwrap()), first);
+    assert_eq!(
+        printed(&setup(root, Failure::None).output().unwrap()),
+        first
+    );
     assert_eq!(
         fs::read_to_string(root.join("calls"))
             .unwrap()
@@ -153,7 +146,7 @@ fn fixture_sources_setup_reuses_a_directory_while_the_inputs_stay_the_same() {
     .enumerate()
     {
         fs::write(root.join(&input), "changed dependency input").unwrap();
-        let current = printed(&setup(root, false).output().unwrap());
+        let current = printed(&setup(root, Failure::None).output().unwrap());
         assert_ne!(current, previous, "stale sources after editing {input}");
         assert_eq!(
             fs::read_to_string(root.join("calls"))
@@ -173,7 +166,7 @@ fn fixture_sources_setup_reports_a_failed_vendor_run() {
     let root = scratch.path();
     checkout(root);
 
-    let output = setup(root, true).output().unwrap();
+    let output = setup(root, Failure::Vendor).output().unwrap();
 
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("vendor exploded"));
@@ -184,7 +177,8 @@ fn fixture_sources_setup_reports_a_failed_vendor_run() {
     assert!(!root.join("nextest-env").exists());
 }
 
-/// Dependency declarations and locks refresh the complete workspace source configuration.
+/// Dependency declarations, locks and the toolchain refresh the complete workspace source
+/// configuration, which also keys the compiled seed.
 #[test]
 fn workspace_sources_refresh_when_dependency_inputs_change() {
     let scratch = Scratch::new().unwrap();
@@ -200,13 +194,21 @@ fn workspace_sources_refresh_when_dependency_inputs_change() {
         "crates/example/Cargo.toml",
         "[dependencies]\nserde = \"=1.0.229\"\n",
     );
-    let prepare = || printed(&setup(root, false).arg("workspace").output().unwrap());
+    let prepare = || {
+        printed(
+            &setup(root, Failure::None)
+                .arg("workspace")
+                .output()
+                .unwrap(),
+        )
+    };
     let mut previous = prepare();
     assert_eq!(prepare(), previous);
     for (index, input) in [
         "Cargo.toml".to_owned(),
         "crates/example/Cargo.toml".to_owned(),
         "Cargo.lock".to_owned(),
+        "rust-toolchain.toml".to_owned(),
         format!("{FIXTURES}/browser_author/Cargo.toml"),
         format!("{FIXTURES}/browser_author/Cargo.lock"),
     ]
@@ -270,7 +272,12 @@ fn workspace_sources_reuse_after_rust_only_edits() {
         "crates/example/src/lib.rs",
         "pub fn value() -> u8 { 1 }\n",
     );
-    let first = printed(&setup(root, false).arg("workspace").output().unwrap());
+    let first = printed(
+        &setup(root, Failure::None)
+            .arg("workspace")
+            .output()
+            .unwrap(),
+    );
 
     fs::write(
         root.join("crates/example/src/lib.rs"),
@@ -279,7 +286,12 @@ fn workspace_sources_reuse_after_rust_only_edits() {
     .unwrap();
 
     assert_eq!(
-        printed(&setup(root, true).arg("workspace").output().unwrap()),
+        printed(
+            &setup(root, Failure::Vendor)
+                .arg("workspace")
+                .output()
+                .unwrap()
+        ),
         first
     );
     assert_eq!(
@@ -323,7 +335,12 @@ fn workspace_sources_seed_keeps_only_registry_units() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     workspace(root);
-    let config = printed(&setup(root, false).arg("workspace").output().unwrap());
+    let config = printed(
+        &setup(root, Failure::None)
+            .arg("workspace")
+            .output()
+            .unwrap(),
+    );
     let seed = config.with_file_name("seed");
 
     assert_eq!(
@@ -362,9 +379,8 @@ fn workspace_sources_seed_is_built_once_and_retried_after_a_failure() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     workspace(root);
-    let failed = setup(root, false)
+    let failed = setup(root, Failure::Build)
         .arg("workspace")
-        .env("BUILD_FAILS", "1")
         .output()
         .unwrap();
     assert!(!failed.status.success());
@@ -377,12 +393,22 @@ fn workspace_sources_seed_is_built_once_and_retried_after_a_failure() {
         .path();
     assert!(!sources.join("seed").exists());
 
-    let config = printed(&setup(root, true).arg("workspace").output().unwrap());
+    let config = printed(
+        &setup(root, Failure::Vendor)
+            .arg("workspace")
+            .output()
+            .unwrap(),
+    );
     assert_eq!(config.parent().unwrap(), sources);
     assert!(sources.join("seed/debug/deps").is_dir());
     let count = |file: &str| fs::read_to_string(root.join(file)).unwrap().lines().count();
     assert_eq!((count("calls"), count("builds")), (1, 3));
 
-    printed(&setup(root, true).arg("workspace").output().unwrap());
+    printed(
+        &setup(root, Failure::Vendor)
+            .arg("workspace")
+            .output()
+            .unwrap(),
+    );
     assert_eq!((count("calls"), count("builds")), (1, 3));
 }

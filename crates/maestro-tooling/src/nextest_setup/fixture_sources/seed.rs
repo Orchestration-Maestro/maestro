@@ -63,6 +63,14 @@ fn members(checkout: &Path) -> io::Result<HashSet<String>> {
 /// Keep the units of registry crates in `profile` and delete everything else: the outputs of the
 /// workspace members, their units and the incremental state.
 fn prune(profile: &Path, members: &HashSet<String>) -> io::Result<()> {
+    let mut removed = HashSet::new();
+    // Fingerprints and build directories come before outputs, which are matched by hash.
+    for name in UNITS {
+        let path = profile.join(name);
+        if path.is_dir() {
+            remove_member_units(&path, members, &mut removed)?;
+        }
+    }
     for entry in std::fs::read_dir(profile)? {
         let entry = entry?;
         let path = entry.path();
@@ -71,8 +79,9 @@ fn prune(profile: &Path, members: &HashSet<String>) -> io::Result<()> {
             .to_str()
             .is_some_and(|name| UNITS.contains(&name))
         {
-            remove_member_units(&path, members)?;
-        } else if entry.file_type()?.is_dir() {
+            continue;
+        }
+        if entry.file_type()?.is_dir() {
             remove_directory(&path)?;
         } else {
             std::fs::remove_file(path)?;
@@ -81,37 +90,49 @@ fn prune(profile: &Path, members: &HashSet<String>) -> io::Result<()> {
     Ok(())
 }
 
-/// Delete the entries of `units` that belong to a workspace member.
-fn remove_member_units(units: &Path, members: &HashSet<String>) -> io::Result<()> {
+/// Delete the entries of `units` that belong to a workspace member, by name or by the hash of a
+/// member unit already removed, and record the hashes removed by name.
+///
+/// A member's binary compiles to `deps/<binary>-<hash>`, which no package name identifies.
+fn remove_member_units(
+    units: &Path,
+    members: &HashSet<String>,
+    removed: &mut HashSet<String>,
+) -> io::Result<()> {
     for entry in std::fs::read_dir(units)? {
         let entry = entry?;
-        if entry
-            .file_name()
-            .to_str()
-            .is_some_and(|name| is_member_unit(name, members))
-        {
-            if entry.file_type()?.is_dir() {
-                remove_directory(&entry.path())?;
-            } else {
-                std::fs::remove_file(entry.path())?;
-            }
+        let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+            continue;
+        };
+        let Some((unit, hash)) = split_unit(&name) else {
+            continue;
+        };
+        if !is_member(&unit, members) && !removed.contains(&hash) {
+            continue;
+        }
+        removed.insert(hash);
+        if entry.file_type()?.is_dir() {
+            remove_directory(&entry.path())?;
+        } else {
+            std::fs::remove_file(entry.path())?;
         }
     }
     Ok(())
 }
 
-/// Whether the unit entry `name`, `<crate>-<hash>` with any extension and `lib` prefix, belongs
-/// to a member. Fingerprints and build directories spell the package name, outputs the crate name.
-fn is_member_unit(name: &str, members: &HashSet<String>) -> bool {
+/// The package or crate name and the hash of the unit entry `name`, `<unit>-<hash>` with any
+/// extension.
+fn split_unit(name: &str) -> Option<(String, String)> {
     let stem = name.split('.').next().unwrap_or(name);
-    let Some((unit, hash)) = stem.rsplit_once('-') else {
-        return false;
-    };
-    if hash.len() != 16 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return false;
-    }
-    let unit = unit.replace('-', "_");
-    members.contains(&unit)
+    let (unit, hash) = stem.rsplit_once('-')?;
+    (hash.len() == 16 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        .then(|| (unit.replace('-', "_"), hash.to_owned()))
+}
+
+/// Whether `unit` names a member, as its package name or as its library output, which carries the
+/// `lib` prefix.
+fn is_member(unit: &str, members: &HashSet<String>) -> bool {
+    members.contains(unit)
         || unit
             .strip_prefix("lib")
             .is_some_and(|name| members.contains(name))

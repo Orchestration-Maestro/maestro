@@ -71,6 +71,8 @@ fn key(checkout: &Path, scope: Scope) -> io::Result<String> {
     match scope {
         Scope::Fixtures => inputs.push(fixtures.join("registry_sources/Cargo.toml")),
         Scope::Workspace => {
+            // The toolchain decides every compiled unit's hash, so it keys the seed built here.
+            inputs.push(checkout.join("rust-toolchain.toml"));
             inputs.push(checkout.join("Cargo.toml"));
             inputs.extend(member_manifests(checkout)?);
         }
