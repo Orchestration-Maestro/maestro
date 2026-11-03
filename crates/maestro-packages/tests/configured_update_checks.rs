@@ -33,9 +33,9 @@ fn updates_selected_unpinned_source_beside_pin() {
     native_settings
         .borrow_mut()
         .set_project_packages(entries.map(PackageSource::Unknown).collect());
-    native_settings.borrow_mut().set_npm_command(Some([
-        "/bin/sh", "-c", "if [ \"$1\" = view ]; then printf '\"2\"'; else test \"$1\" = install && test \"$2\" = example@latest && printf '{\"version\":\"2\"}' > \"$0/.maestro/npm/node_modules/example/package.json\"; fi", &cwd
-    ].map(|s| SettingsListEntry::String(s.into())).to_vec()));
+    native_settings
+        .borrow_mut()
+        .set_npm_command(Some(installer(scratch.path(), &manifest)));
     let local = Rc::new(tokio::task::LocalSet::new());
     *effects.local.borrow_mut() = Rc::downgrade(&local);
     let native: Rc<dyn PackageManager> = Rc::new(DefaultPackageManager::new(
@@ -71,6 +71,26 @@ fn updates_selected_unpinned_source_beside_pin() {
             json!(["npm:example@1", "npm:example"])
         );
     }
+}
+
+/// The stand-in that answers `view` with `"2"` and writes the updated example manifest.
+fn installer(directory: &std::path::Path, manifest: &str) -> Vec<SettingsListEntry> {
+    let alias = crate::native_support::command(
+        directory,
+        "npm",
+        &json!({
+            "scenario": "npm",
+            "view": "\"2\"",
+            "install": {
+                "argument": "example@latest",
+                "path": manifest,
+                "contents": "{\"version\":\"2\"}"
+            }
+        }),
+    );
+    vec![SettingsListEntry::String(
+        alias.to_string_lossy().into_owned(),
+    )]
 }
 
 /// Configures both scopes over an empty tree without validating filter members.

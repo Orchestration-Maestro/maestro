@@ -25,6 +25,9 @@ const REFUSED: &[u8] =
 /// The stop budget the short-deadline cases use.
 const SHORT: Duration = Duration::from_millis(75);
 
+/// The budget for a stop exchange whose outcome the reply decides; no scheduling stall spends it.
+const EXCHANGE: Duration = Duration::from_secs(5);
+
 /// How a controlled API endpoint treats the stop connection.
 enum Answer {
     /// Reads the request, then writes these bytes and closes.
@@ -305,8 +308,9 @@ fn a_responding_reachable_daemon_still_exhausts_the_stop_budget() {
     let selection = named(&root, "lingering");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Bytes(STOPPED)), None);
+    request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("lingering", &[&path]))
     );
     assert_eq!(api.finish().request, STOP_LINE);
@@ -330,7 +334,7 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
 
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(REFUSED)), None);
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        stop_with_timeout(&selection, EXCHANGE),
         Err("server is shutting down".to_owned())
     );
     assert_eq!(api.finish().request, STOP_LINE);
@@ -340,7 +344,7 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
         .unwrap_err()
         .to_string();
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(b"not json\n")), None);
-    assert_eq!(stop_with_timeout(&selection, SHORT), Err(malformed));
+    assert_eq!(stop_with_timeout(&selection, EXCHANGE), Err(malformed));
     assert_eq!(api.finish().request, STOP_LINE);
     std::fs::remove_file(&api_path).unwrap();
 
@@ -359,11 +363,13 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
     // The API socket disappears but the client socket stays.
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(STOPPED)), Some(0));
     let client = Endpoint::bind(&client_path, None, None);
+    request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
+    // Joining the endpoint is the signal that it has removed the API socket.
+    assert_eq!(api.finish().request, STOP_LINE);
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("work", &[&client_path]))
     );
-    assert_eq!(api.finish().request, STOP_LINE);
     client.finish();
 }
 
@@ -391,7 +397,7 @@ fn stop_reply(bytes: &'static [u8]) -> Result<(), String> {
         Some(Answer::Bytes(bytes)),
         Some(0),
     );
-    let result = stop_with_timeout(&selection, SHORT);
+    let result = stop_with_timeout(&selection, EXCHANGE);
     api.finish();
     result
 }

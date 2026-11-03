@@ -3,14 +3,21 @@
 //! Nextest supplies its active artifact directory in the platform library search path. A run
 //! from a prepared bundle installs the bundle's example there; any other run uses the test
 //! build's own example, or builds one.
+//!
+//! On Linux the example warms compiled code in a cache that only this run uses, and the run's
+//! tests inherit that cache through `XDG_CACHE_HOME`. Wasmtime prunes its user cache by age
+//! and size from every process that uses it, so on a host that runs several builds the shared
+//! cache can evict the code this setup warmed before the tests that read it have run. macOS
+//! and Windows ignore the variable, so there the example warms the engine's own cache.
 
 use std::env::consts::EXE_EXTENSION;
+use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use super::normalize::{self, Outcome, archive_signalled};
-use super::{cargo, prepared_bundle};
+use super::{cargo, export, prepared_bundle};
 use crate::exit_code;
 use crate::test_setup::{self, EXAMPLE, executable};
 
@@ -30,25 +37,42 @@ const SOURCE_DIRECTORIES: [&str; 2] = [
     "crates/maestro-tooling/src/example_files",
 ];
 
-/// Prepare the components with a staged or built example and run it.
+/// The directory beside the profile directory that holds this run's cache home. It is
+/// separate from the preparation cache home, which each preparation deletes.
+const CACHE_HOME: &str = "component-cache";
+
+/// Prepare the components with a staged or built example and run it, then export the cache
+/// home the example warmed so the tests read the same compiled code.
 ///
 /// # Errors
 /// Returns an unresolved artifact directory, a stale or missing bundle, a failed build, or
 /// a setup example that cannot start. A setup example that fails keeps its own status.
 pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
     let directory = artifact_directory()?;
-    if let Some(bundle) = prepared_bundle(checkout) {
-        return run_prepared(checkout, &bundle, &directory);
-    }
-    run_local(checkout, &directory)
+    let cache_home = directory.parent().unwrap_or(&directory).join(CACHE_HOME);
+    let status = if let Some(bundle) = prepared_bundle(checkout) {
+        run_prepared(checkout, &bundle, &directory, &cache_home)?
+    } else {
+        run_local(checkout, &directory, &cache_home)?
+    };
+    // The example and the installation rewrite the file, so the entry follows them.
+    let mut entry = OsString::from("XDG_CACHE_HOME=");
+    entry.push(cache_home);
+    export(&entry)?;
+    Ok(status)
 }
 
 /// Install the bundle's example, give the executables one time and run the example on the
 /// bundle's components. The staged example is as new as the archive's executables, so it is
 /// never outdated.
-fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<ExitCode> {
+fn run_prepared(
+    checkout: &Path,
+    bundle: &Path,
+    directory: &Path,
+    cache_home: &Path,
+) -> io::Result<ExitCode> {
     let environment = environment_file()?;
-    test_setup::install_bundle(checkout, bundle, directory, &environment)?;
+    test_setup::install_bundle(checkout, bundle, directory, &environment, cache_home)?;
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         return Ok(ExitCode::from(3));
     }
@@ -56,6 +80,7 @@ fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<
         .join("examples")
         .join(executable(EXAMPLE, EXE_EXTENSION));
     let mut command = Command::new(example);
+    command.env("XDG_CACHE_HOME", cache_home);
     // The example takes the prepared components from its environment, so it only warms.
     for line in std::fs::read_to_string(&environment)?.lines() {
         if let Some((name, value)) = line.split_once('=') {
@@ -70,11 +95,11 @@ fn run_prepared(checkout: &Path, bundle: &Path, directory: &Path) -> io::Result<
 /// The test build keeps the example's resolved features; a single-package `cargo run`
 /// resolves fewer and recompiles the engine. Running it only while it is newer than its
 /// sources keeps a filtered build from running outdated preparation.
-fn run_local(checkout: &Path, directory: &Path) -> io::Result<ExitCode> {
+fn run_local(checkout: &Path, directory: &Path, cache_home: &Path) -> io::Result<ExitCode> {
     if let Some(example) = built_example(directory).filter(|example| fresh(checkout, example))
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
-        return start(checkout, &example);
+        return start(checkout, &example, cache_home);
     }
     build(checkout, directory)?;
     let example = built_example(directory)
@@ -83,13 +108,17 @@ fn run_local(checkout: &Path, directory: &Path) -> io::Result<ExitCode> {
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         eprintln!("Cargo kept the setup example; test binaries may compile components again.");
     }
-    start(checkout, &example)
+    start(checkout, &example, cache_home)
 }
 
-/// Run the setup example in the checkout with this process's environment.
-fn start(checkout: &Path, example: &Path) -> io::Result<ExitCode> {
+/// Run the setup example in the checkout with this process's environment and `cache_home` as
+/// its user cache.
+fn start(checkout: &Path, example: &Path, cache_home: &Path) -> io::Result<ExitCode> {
     Ok(exit_code(
-        Command::new(example).current_dir(checkout).status()?,
+        Command::new(example)
+            .current_dir(checkout)
+            .env("XDG_CACHE_HOME", cache_home)
+            .status()?,
     ))
 }
 
