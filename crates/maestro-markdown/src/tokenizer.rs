@@ -2,7 +2,7 @@
 pub(crate) mod block;
 mod html;
 pub(crate) mod inline;
-pub(crate) use html::{closes_escaped_span, escaped_spans};
+pub(crate) use html::{escaped_spans, is_escaped_span_close};
 
 use crate::{Kind, Node, source::ScopeSource};
 use std::ops::Range;

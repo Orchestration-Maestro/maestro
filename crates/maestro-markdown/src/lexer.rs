@@ -146,10 +146,10 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Whether the escaped browser policy displays the angle at this operand offset as
     /// text, so a closing angle never opens a container.
-    pub(super) fn escaped_closer(&self, source: &Segmented, offset: usize) -> bool {
-        source
-            .native(&(offset..offset + 1))
-            .is_some_and(|native| tokenizer::closes_escaped_span(&self.escaped_spans, native.start))
+    pub(super) fn is_escaped_closer(&self, source: &Segmented, offset: usize) -> bool {
+        source.native(&(offset..offset + 1)).is_some_and(|native| {
+            tokenizer::is_escaped_span_close(&self.escaped_spans, native.start)
+        })
     }
 
     /// Recognize the container a dispatch step admits through its own frame.

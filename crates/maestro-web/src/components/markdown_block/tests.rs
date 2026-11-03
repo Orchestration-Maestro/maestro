@@ -181,6 +181,17 @@ fn clipped_escaped_angle_keeps_its_closing_angle_text() {
     );
 }
 
+#[test]
+fn code_held_angles_keep_a_later_quote() {
+    for source in ["Compare `a<b`.\n\n> note", "```\n<a\n```\n\n> note"] {
+        let html = prepare(source, true).html;
+        assert!(
+            html.ends_with("<blockquote>\n<p>note</p>\n</blockquote>\n"),
+            "{source:?}: {html}"
+        );
+    }
+}
+
 /// Script and active-document targets, with the HTML that keeps only their text.
 const REFUSED: [(&str, &str); 9] = [
     ("[x](javascript:alert(1))", "<p>x</p>\n"),

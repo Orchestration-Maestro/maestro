@@ -139,12 +139,14 @@ shown as text. Each document retains that selection and its first-wins reference
 index for later inline interpretation; writers keep presentation policy.
 
 When a browser caller shows authored HTML as text, one pass over the whole
-document records the angle spans it displays literally: a span opens at the `<`
-of a tag, a closing tag or a bare less-than, and runs to its closing `>`. The
-block grammar then reads both delimiters as text, so a caller block hint inside a
-span cannot turn its closing angle into a quote marker; the remainder stays a
-paragraph. A marker outside every span keeps its usual meaning, and the unescaped
-browser, terminal, export and documentation grammars read no such projection.
+document records the angle spans it displays literally: a tag from its `<`
+through its closing `>`, a complete closing tag, or a lone less-than before
+whitespace. Code spans and fences are left out, because the caller keeps code out
+of its escaping step. The block grammar then reads both delimiters as text, so a
+caller block hint inside a span cannot turn its closing angle into a quote marker;
+the remainder stays a paragraph. A marker outside every span keeps its usual
+meaning, and the unescaped browser, terminal, export and documentation grammars
+read no such projection.
 
 `InlineScope::text()` retains authored container padding. `content_range()`
 selects the semantic child extent in that source, so renderers can re-enter the

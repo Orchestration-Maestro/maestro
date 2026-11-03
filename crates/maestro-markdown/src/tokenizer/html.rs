@@ -356,37 +356,91 @@ fn append_tag(output: &mut String, tag: &str) {
 /// Authored spans whose angle delimiters the caller displays literally.
 ///
 /// One pass over the whole document, so a block that starts inside a span still reads the
-/// delimiter policy its opening angle established.
+/// delimiter policy its opening angle established. Code-held bytes are skipped, because
+/// the caller keeps them out of its escaping step.
 pub(crate) fn escaped_spans(source: &str) -> Vec<Range<usize>> {
+    let code = code_regions(source);
     let mut spans = Vec::new();
     let mut cursor = 0;
-    while let Some(relative) = source[cursor..].find('<') {
-        let start = cursor + relative;
-        cursor = match literal(&source[start..]) {
+    while let Some(start) = first_outside(source, cursor, b'<', &code) {
+        cursor = start + 1;
+        match literal(&source[start..]) {
             Some(Literal::Opening) => {
-                let Some(end) = source[start..].find('>') else {
+                let Some(end) = first_outside(source, start, b'>', &code) else {
                     spans.push(start..source.len());
                     break;
                 };
-                spans.push(start..start + end + 1);
-                start + end + 1
+                spans.push(start..end + 1);
+                cursor = end + 1;
             }
             Some(Literal::Closing(width)) => {
                 spans.push(start..start + width);
-                start + width
+                cursor = start + width;
             }
             Some(Literal::Bare) => {
                 spans.push(start..start + 1);
-                start + 1
             }
-            None => start + 1,
-        };
+            None => {}
+        }
     }
     spans
 }
 
+/// Byte ranges of one backtick-delimited code span or fence, which the caller preserves
+/// instead of escaping.
+fn code_regions(source: &str) -> Vec<Range<usize>> {
+    let bytes = source.as_bytes();
+    let mut regions = Vec::new();
+    let mut cursor = 0;
+    while let Some(open) = source[cursor..].find('`').map(|at| cursor + at) {
+        let body = run_end(bytes, open);
+        let Some(close) = closing_run(source, body, body - open) else {
+            break;
+        };
+        regions.push(open..close);
+        cursor = close;
+    }
+    regions
+}
+
+/// End of the first backtick run of exactly `width` bytes at or after `from`.
+fn closing_run(source: &str, from: usize, width: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
+    let mut cursor = from;
+    while let Some(open) = source[cursor..].find('`').map(|at| cursor + at) {
+        let end = run_end(bytes, open);
+        if end - open == width {
+            return Some(end);
+        }
+        cursor = end;
+    }
+    None
+}
+
+/// Exclusive end of the backtick run starting at `start`.
+fn run_end(bytes: &[u8], start: usize) -> usize {
+    let mut end = start;
+    while bytes.get(end) == Some(&b'`') {
+        end += 1;
+    }
+    end
+}
+
+/// First `wanted` byte at or after `from` that no code range holds.
+fn first_outside(source: &str, from: usize, wanted: u8, code: &[Range<usize>]) -> Option<usize> {
+    let mut cursor = from;
+    loop {
+        let found = cursor + source[cursor..].bytes().position(|byte| byte == wanted)?;
+        let held = code.partition_point(|region| region.end <= found);
+        match code.get(held).filter(|region| region.contains(&found)) {
+            Some(region) => cursor = region.end,
+            None => return Some(found),
+        }
+    }
+}
+
 /// Whether `offset` is the closing angle of one escaped span.
-pub(crate) fn closes_escaped_span(spans: &[Range<usize>], offset: usize) -> bool {
+pub(crate) fn is_escaped_span_close(spans: &[Range<usize>], offset: usize) -> bool {
     let index = spans.partition_point(|span| span.end <= offset);
     spans.get(index).is_some_and(|span| span.end == offset + 1)
 }

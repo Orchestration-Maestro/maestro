@@ -386,7 +386,7 @@ impl<E> Lexer<'_, E> {
             .take_while(|byte| *byte == b' ')
             .count()
             .min(3);
-        if self.escaped_closer(source, marker) {
+        if self.is_escaped_closer(source, marker) {
             return None;
         }
         let (raw, matched) = quote_prefix(source, rules::block_blockquote(self.options)?)?;
