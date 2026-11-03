@@ -1,6 +1,5 @@
 //! Displays terminal input bytes, Unicode scalars and escaped control characters.
 
-#[path = "support/process_terminal.rs"]
 mod process_terminal;
 
 /// Native key display and process lifetime.

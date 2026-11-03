@@ -12,7 +12,6 @@ mod default_markdown_theme;
 #[cfg(unix)]
 #[path = "test_themes/default_select_list_theme.rs"]
 mod default_select_list_theme;
-#[path = "support/process_terminal.rs"]
 mod process_terminal;
 
 /// Native chat composition and retained reply state.

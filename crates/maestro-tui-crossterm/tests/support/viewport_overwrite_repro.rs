@@ -1,6 +1,5 @@
 //! Streams text across a small terminal viewport and into its history.
 
-#[path = "support/process_terminal.rs"]
 mod process_terminal;
 
 /// Native viewport stream and its retained rows.
