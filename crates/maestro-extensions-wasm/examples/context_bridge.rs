@@ -333,8 +333,8 @@ fn context_command(
         if args == "healthy-admitted" {
             return retained::healthy(context).await;
         }
-        if args == "exec shell" {
-            return Err(exec::shell(&api)?);
+        if let Some(program) = args.strip_prefix("exec shell:") {
+            return Err(exec::shell(&api, program)?);
         }
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);

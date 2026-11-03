@@ -293,14 +293,13 @@ fn auto_commit_on_exit_component_stays_silent_when_commit_fails() {
 #[cfg(unix)]
 #[test]
 fn auto_commit_on_exit_component_ignores_global_hooks() {
-    use std::os::unix::fs::PermissionsExt;
+    use super::example_process::install;
 
     let root = Scratch::new().unwrap();
     let hooks = root.path().join("hooks");
     std::fs::create_dir(&hooks).unwrap();
-    let hook = hooks.join("pre-commit");
-    std::fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
-    std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let refusal = json!({"scenario":"output", "stdout":[], "stderr":[], "code":1});
+    install(&hooks, "pre-commit", "command", &refusal);
     let config = root.path().join("global.gitconfig");
     git(
         root.path(),

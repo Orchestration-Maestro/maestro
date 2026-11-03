@@ -11,6 +11,7 @@ mod chat;
 mod clipboard;
 #[cfg(unix)]
 mod command;
+mod component;
 mod credentials;
 mod echo;
 mod editor;
@@ -35,6 +36,8 @@ enum Request {
     /// Stand in for the programs the interactive mode launches.
     #[cfg(unix)]
     Chat(chat::Record, Vec<OsString>),
+    /// Stand in for the programs a guest component executes.
+    Component(component::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
     /// Produce controlled clipboard bytes for the application's native operations.
@@ -104,6 +107,9 @@ impl Request {
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("chat") => Ok(Self::Chat(chat::Record::parse(&text)?, operands)),
+            Some("component-exec") => {
+                Ok(Self::Component(component::Record::parse(&text)?, operands))
+            }
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
             Some("git") => Ok(Self::Git(git::Record::parse(&text)?, operands)),
@@ -143,6 +149,7 @@ pub(super) fn run() -> io::Result<()> {
         Request::Command(record, operands) => command::run(&record, &operands),
         #[cfg(unix)]
         Request::Chat(record, operands) => chat::run(&record, &operands),
+        Request::Component(record, operands) => component::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
         Request::Git(record, operands) => git::run(&record, &operands),

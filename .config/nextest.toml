@@ -27,7 +27,7 @@ setup = "cargo-checks"
 command = "target/test-setup/development nextest-setup native-fixture"
 
 [[profile.default.scripts]]
-filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-process) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | package(maestro-app) | (package(maestro-cli) & test(startup_stdout::)) | (package(maestro-daemon) & test(/desktop_notification::|repository_discovery::repository_reftable_queries_use_native_process_owner/)) | package(maestro-chat)"
+filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-process) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | package(maestro-app) | (package(maestro-cli) & test(startup_stdout::)) | (package(maestro-daemon) & test(/desktop_notification::|repository_discovery::repository_reftable_queries_use_native_process_owner/)) | package(maestro-chat) | package(maestro-extensions-wasmtime)"
 setup = "native-fixture"
 
 [scripts.setup.fixture-sources]

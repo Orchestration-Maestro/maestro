@@ -1,7 +1,10 @@
 //! Git fixtures and local executors for native component examples.
 #![cfg(test)]
 
-use std::{path::Path, process::Command};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 /// Runs Git only inside an exclusively owned disposable repository, with the environment
 /// the example's own Git commands inherit.
@@ -44,4 +47,23 @@ pub fn run(action: impl Future<Output = ()>) {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, action);
+}
+
+/// Installs the prepared native fixture as the program `name` in `directory` and records the
+/// `family` scenario it plays; returns the program's path.
+pub fn install(
+    directory: &Path,
+    name: &str,
+    family: &str,
+    scenario: &serde_json::Value,
+) -> PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    let program = directory.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    maestro_test_process::install_executable(Path::new(&artifact), &program)
+        .expect("the fixture installs");
+    let mut record = program.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, format!("{family}\n{scenario}")).expect("the record is writable");
+    program
 }

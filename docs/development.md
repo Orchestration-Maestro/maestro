@@ -1197,8 +1197,8 @@ currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
 tests), the command-line startup tests, the daemon's notification and repository
-discovery cases and `maestro-chat` (the interactive mode's tests and the terminal
-client example's tests). Local setup builds the
+discovery cases, `maestro-chat` (the interactive mode's tests and the terminal
+client example's tests) and `maestro-extensions-wasmtime`. Local setup builds the
 example with the locked host `dev` profile and reads Cargo's emitted executable
 path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1339,6 +1339,46 @@ fn main() -> std::io::Result<()> {
 
 A search probe that only answers, a quiet browser opener and a hook that only refuses
 use the `command` family's `output` scenario instead.
+
+#### Component execution stand-ins
+
+The `component-exec` family stands in for the programs a guest component runs through
+explicit execution. The component passes the alias path and its literal operands
+through the same request it always used; the record selects the behavior and the
+operands carry the per-call values. Every scenario except `stubborn` and `rerun`
+works on every platform.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `emit` | Writes `stdout` and `stderr` bytes and ends with `code`. |
+| `pending` | Writes its first two operands to standard output and standard error, connects to the loopback port in its third operand, sends `READY` and waits for one byte or the end of the connection. |
+| `stubborn` | As `pending`, and answers each SIGTERM with `T` on the connection instead of ending. Unix only. |
+| `chunks` | Takes a loopback port as its only operand. Before each of `chunks` (`stream`, `bytes`), it sends `R` and waits for the test's `x`, so every fragment reaches its pipe on its own. |
+| `report` | Prints the operands, the working directory and the length of standard input as one JSON line. |
+| `cwd` | Prints the working directory without a newline. |
+| `touch` | Creates the file its only operand names. |
+| `rerun` | Replaces the process with `binary` running `test --exact --nocapture`. Unix only. |
+
+The guest example registers a shell with `exec shell:{"program": path, "operands": [...]}`:
+each command then runs as the last operand of that program.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let program = directory.path().join("report");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &program)?;
+    let mut record = program.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, "component-exec\n{\"scenario\":\"report\"}")?;
+    // Execute `program` with literal operands; it prints them back as JSON.
+    Ok(())
+}
+```
+
+A timing assertion keeps its child alive until the deadline ends it, by holding the
+connection open; it never relies on how quickly the program starts.
 
 #### Repository recipe stand-ins
 
