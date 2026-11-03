@@ -318,8 +318,9 @@ never edited by hand. A same-format pack supplies the outputs below without a co
 cargo run -p maestro-theme --example brand_themes -- assets/brand/brand.json crates/maestro-theme/assets/theme
 ```
 
-The example writes `dark.json` and `light.json` into the given directory. Fewer or more
-arguments fail with `usage: brand_themes <pack.json> <output-directory>`.
+The generator, whose source is `crates/maestro-theme/scripts/brand_themes.rs`, writes
+`dark.json` and `light.json` into the given directory. Fewer or more arguments fail
+with `usage: brand_themes <pack.json> <output-directory>`.
 
 `load_brand_pack(path)` reads `path`, then decodes it with `BrandPack::parse(path, text)`,
 which applies [shared brand admission](brand.md#admission). Callers that already hold
