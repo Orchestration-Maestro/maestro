@@ -128,8 +128,8 @@ hook error ends the stream with the error's message as it is.
 
 Thinking fields require model reasoning support. Raw `thinking_enabled` absent omits thinking;
 `false` sends disabled thinking; `true` selects adaptive thinking when compatibility sets
-`forceAdaptiveThinking: true`, otherwise budget-based thinking. True enablement
-suppresses temperature even on a nonreasoning model. Enabled thinking defaults to summarized display;
+`forceAdaptiveThinking: true`, otherwise budget-based thinking. True enablement suppresses
+temperature even on a nonreasoning model. Enabled thinking defaults to summarized display;
 `AnthropicThinkingDisplay::Omitted` selects omitted display.
 
 Only enabled adaptive thinking emits a supplied nonempty effort. Raw `AnthropicEffort` offers

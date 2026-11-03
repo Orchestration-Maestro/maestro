@@ -85,7 +85,8 @@ requests use `retry.provider.timeoutMs`, `retry.provider.maxRetries` and
 last cap, the request fails with an explanation instead of waiting silently; `0`
 disables the cap. `httpIdleTimeoutMs` (default `300000`) is the longest wait, in
 whole milliseconds, for response headers or the next body chunk; `0` and
-`disabled` remove the limit, and an invalid stored value fails the request.
+`disabled` remove the limit, and an invalid stored value is reported as an
+error at startup and on each request.
 
 ```json
 { "retry": { "enabled": true, "maxRetries": 3, "provider": { "timeoutMs": 3600000, "maxRetries": 0 } } }
