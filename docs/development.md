@@ -1192,15 +1192,16 @@ is [Rust test children](specs/test-processes.md).
 
 #### Direct native fixtures
 
-Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for
-`maestro-test-process`, `maestro-tooling`, `maestro-tools`, `maestro-chat`, `maestro-process`,
-`maestro-models`, the toolkit's attachment-completion tests, `maestro-app`
-(including its RPC client and clipboard tests), the command-line startup tests,
-the daemon's notification and repository discovery cases, the terminal client
-example's tests and the composition root's `native_io`, `truncated_tool_example`
-and `entry_routes` tests. Local setup builds the example with the locked host
-`dev` profile and reads Cargo's emitted executable
-path. It records source inputs, content digest and host in
+Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
+`maestro-test-process` and every crate the crate graph allows to depend on it.
+To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
+add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
+`.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
+shared selection or docs edit. The conventions check rejects missing or extra
+crates and requires every filter term to be exactly `package(=name)`, joined by `|`.
+Run `just prepare-tests` before a filtered nextest run on any declared caller.
+Local setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
