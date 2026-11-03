@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
 
-pub(crate) mod cases;
+pub(super) mod cases;
 mod input;
 mod sessions;
 mod values;
@@ -39,7 +39,7 @@ struct Case {
 }
 
 /// Loaded hook components and the controls every case shares.
-pub(crate) struct Harness {
+pub(super) struct Harness {
     /// Loaded instances, labelled `<extension:i>`.
     owners: Vec<ExtensionHandle<Local>>,
     /// The runtime the instances share.
@@ -62,47 +62,39 @@ pub(super) struct Gate {
 }
 
 /// One case's runner and the diagnostics its error listener received.
-pub(crate) struct Run {
+pub(super) struct Run {
     /// Runner over the case's instances.
-    pub(crate) runner: Rc<ExtensionRunner<Local>>,
+    pub(super) runner: Rc<ExtensionRunner<Local>>,
     /// Received failures, with every field the listener saw.
     errors: Rc<RefCell<Vec<ExtensionError>>>,
 }
 
+/// One received failure as JSON, with the stack its author supplied if any.
+fn received(error: &ExtensionError) -> Value {
+    json!({
+        "extensionPath": error.extension_path,
+        "event": error.event,
+        "error": error.error,
+        "stack": error.stack,
+    })
+}
+
 impl Run {
     /// The diagnostics received so far, without engine stack text.
-    pub(crate) fn errors(&self) -> Value {
-        Value::Array(
-            self.errors
-                .borrow()
-                .iter()
-                .map(|error| {
-                    json!({
-                        "extensionPath": error.extension_path,
-                        "event": error.event,
-                        "error": error.error,
-                    })
-                })
-                .collect(),
-        )
+    pub(super) fn errors(&self) -> Value {
+        let without_stack = |error: &ExtensionError| {
+            let mut failure = received(error);
+            if let Some(fields) = failure.as_object_mut() {
+                fields.shift_remove("stack");
+            }
+            failure
+        };
+        Value::Array(self.errors.borrow().iter().map(without_stack).collect())
     }
 
     /// The diagnostics received so far, each with the stack its author supplied.
-    pub(crate) fn diagnostics(&self) -> Value {
-        Value::Array(
-            self.errors
-                .borrow()
-                .iter()
-                .map(|error| {
-                    json!({
-                        "extensionPath": error.extension_path,
-                        "event": error.event,
-                        "error": error.error,
-                        "stack": error.stack,
-                    })
-                })
-                .collect(),
-        )
+    pub(super) fn diagnostics(&self) -> Value {
+        Value::Array(self.errors.borrow().iter().map(received).collect())
     }
 }
 
@@ -113,7 +105,7 @@ pub(super) fn label(index: usize) -> String {
 
 impl Harness {
     /// Loads the pool concurrently, each instance on its own Store.
-    pub(crate) async fn load() -> Self {
+    pub(super) async fn load() -> Self {
         let path = std::env::var("MAESTRO_HOOK_COMPONENT").unwrap();
         let runtime = create_extension_runtime::<Local>();
         let bus = TracedBus::new();
@@ -139,7 +131,7 @@ impl Harness {
     /// A runner over the first `count` instances, each with only `handlers[i]` registered.
     ///
     /// `handlers[i]` lists the steps of each handler instance `i` registers for `event`.
-    pub(crate) async fn prepare(&self, event: &str, handlers: &[Vec<Value>]) -> Run {
+    pub(super) async fn prepare(&self, event: &str, handlers: &[Vec<Value>]) -> Run {
         let owners = self.owners[..handlers.len()].to_vec();
         for (index, owner) in owners.iter().enumerate() {
             let mut owner = owner.write().unwrap();

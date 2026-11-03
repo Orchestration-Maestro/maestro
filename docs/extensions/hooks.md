@@ -47,10 +47,12 @@ continues. A listener failure propagates and stops dispatch. Native mutable oper
 edits are not rolled back on callback failure, so an edit made before a separately
 failed decision still reaches the handlers after it.
 
-A hook returns `HookResult`, which fails with the shared diagnostic fields. The
-runner reports the event it was invoked for, the extension path and the supplied
-message and stack; a stack the author did not supply stays absent, and engine stack
-text is never manufactured. A changed-role replacement reports exactly
+A [component hook](guest.md#events-and-results) returns `HookResult`, which fails
+with the shared diagnostic fields; a native callback reports the message and stack
+of the `DiagnosticErrorInfo` it keeps. Either way the runner reports the event it
+was invoked for, the extension path and the supplied message and stack; a stack
+the author did not supply stays absent, and engine stack text is never
+manufactured. A changed-role replacement reports exactly
 `message_end handlers must return a message with the same role`.
 
 Artifact discovery and loading are not supplied by this hook runner. They are a

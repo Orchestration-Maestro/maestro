@@ -13,6 +13,9 @@ use crate::bindings::maestro::extension::host as guest;
 use maestro_request::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
 
 /// Preserve every supplied diagnostic field on the wire.
+///
+/// Reviewed native-only: conversion is exercised in the host tests and again on the guest
+/// target, where the guest bindings are the only wire form available.
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) fn to_wire(error: DiagnosticErrorInfo) -> guest::DiagnosticErrorInfo {
     guest::DiagnosticErrorInfo {
