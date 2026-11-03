@@ -2103,7 +2103,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
     let entry = fixture
         .root
         .path()
-        .join("crates/maestro-models/examples/browser_import_check.rs");
+        .join("crates/maestro-models/tests/support/browser_import_check.rs");
     fs::create_dir_all(entry.parent().unwrap()).unwrap();
     fs::write(entry, "controlled build input").unwrap();
     let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
@@ -3093,7 +3093,7 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
 
 /// Assert the dispatcher schedules smoke only for a delivered browser entry.
 fn assert_dispatcher_routes_delivered_smoke() {
-    let entry = "crates/maestro-models/examples/browser_import_check.rs";
+    let entry = "crates/maestro-models/tests/support/browser_import_check.rs";
     for delivered in [false, true] {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
@@ -3149,7 +3149,7 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
     let entry = fixture
         .root
         .path()
-        .join("crates/maestro-models/examples/browser_import_check.rs");
+        .join("crates/maestro-models/tests/support/browser_import_check.rs");
     fs::create_dir_all(entry.parent().unwrap()).unwrap();
     fs::write(entry, "fixture").unwrap();
     fs::remove_file(&fixture.child).unwrap();

@@ -4,8 +4,8 @@
 mise exec -- just models-generate
 ```
 
-The native `generate_catalog_data` example supplies the default developer
-transport to `maestro_models::catalog_generation::generate_models::generate_models`.
+The native `generate_catalog_data` script at `crates/maestro-models/scripts/`
+supplies the default developer transport to `maestro_models::catalog_generation::generate_models::generate_models`.
 The operation acquires models.dev, `OpenRouter` and Vercel AI Gateway sequentially;
 see [feed acquisition](#feed-acquisition) for normalization and source failures.
 
@@ -29,7 +29,7 @@ a filesystem or writer failure returns an error and can leave partial output.
 Generation success and unique-model statistics follow completed file writes.
 
 `models-build` and workspace `build` run `models-generate` once before their
-explicit Cargo build. Cargo compiles the generator example before running it;
+explicit Cargo build. Cargo compiles the generator script before running it;
 `models-prepublish`, `prepublish` and `build-binary` use those existing build routes.
 Ordinary Cargo builds, checks, tests, watches and runtime lookup do not generate
 or fetch. Explicit developer generation fetches live feeds; controlled tests do
@@ -144,7 +144,7 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo run --quiet --locked \
 
 This explicit native command recreates the fixed 200×200 red circle on white at
 `crates/maestro-models/tests/data/red-circle.png` from embedded PNG bytes. The
-example uses its package directory, not the working directory. It creates missing
+script uses its package directory, not the working directory. It creates missing
 parents recursively and replaces an existing target. It does not fetch feeds or
 run automatically during builds, tests or catalog generation.
 

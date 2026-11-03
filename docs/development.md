@@ -603,6 +603,16 @@ stay in their existing integration-test support modules.
 Use the shared fixture without changing the caller's assertions or adding a
 production feature for test access.
 
+Keep a crate's `examples/` directory for examples written for users. Put a program
+that exists for tests, checks or test preparation (a native test child, a fixture
+component, a browser compile witness, a terminal debugging program) in
+`tests/support/`, registered as an `[[example]]` target with an explicit `path`, as
+the models crate's browser witnesses are. Put a program that maintains repository
+files or reports on recorded data (a generator, a report tool) in the crate's
+`scripts/` directory, registered the same way. Both keep the `[[example]]` kind, so
+`cargo run -p <crate> --example <name>` and `target/<profile>/examples/<name>` stay
+the same.
+
 ### FTP peer support
 
 The models tests share the scripted peer in
