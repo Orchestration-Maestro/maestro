@@ -7,6 +7,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread::JoinHandle;
 
 /// The canonical stop request line.
@@ -32,7 +33,8 @@ const EXCHANGE: Duration = Duration::from_secs(5);
 enum Answer {
     /// Reads the request, then writes these bytes and closes.
     Bytes(&'static [u8]),
-    /// Reads the request and keeps the connection open without replying.
+    /// Reads the request, announces it on [`Endpoint::holding`] and keeps the connection open
+    /// without replying until the endpoint ends.
     Hold,
     /// Sends a reply in fragments for longer than the stop budget.
     Fragments,
@@ -49,12 +51,22 @@ struct Seen {
     probes: usize,
 }
 
+/// What the serving thread shares with its [`Endpoint`].
+struct Signals {
+    /// Tells a lasting endpoint to end at its next connection.
+    released: Arc<AtomicBool>,
+    /// Sent once a held connection has delivered its request line.
+    holding: Sender<()>,
+}
+
 /// A controlled endpoint that disappears after a number of probes or stays until finished.
 struct Endpoint {
     /// The bound socket path.
     path: PathBuf,
     /// Tells a lasting endpoint to end at its next connection.
     released: Arc<AtomicBool>,
+    /// Receives one message when a [`Answer::Hold`] endpoint has read the request.
+    holding: Receiver<()>,
     /// The serving thread.
     peer: JoinHandle<std::io::Result<Seen>>,
 }
@@ -67,14 +79,24 @@ impl Endpoint {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         let listener = UnixListener::bind(path).unwrap();
         let released = Arc::new(AtomicBool::new(false));
-        let flag = Arc::clone(&released);
+        let (sender, holding) = channel();
+        let signals = Signals {
+            released: Arc::clone(&released),
+            holding: sender,
+        };
         let owned = path.to_owned();
-        let peer = std::thread::spawn(move || serve(&listener, &owned, answer, probes, &flag));
+        let peer = std::thread::spawn(move || serve(&listener, &owned, answer, probes, &signals));
         Self {
             path: path.to_owned(),
             released,
+            holding,
             peer,
         }
+    }
+
+    /// Blocks until a held connection has delivered its request line.
+    fn wait_holding(&self) {
+        self.holding.recv().unwrap();
     }
 
     /// Ends the endpoint, waking a lasting one with one last connection.
@@ -93,7 +115,7 @@ fn serve(
     path: &Path,
     answer: Option<Answer>,
     probes: Option<usize>,
-    released: &AtomicBool,
+    signals: &Signals,
 ) -> std::io::Result<Seen> {
     let mut request = String::new();
     let mut held = None;
@@ -107,6 +129,7 @@ fn serve(
             Answer::Hold => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
                 held = Some(stream);
+                signals.holding.send(()).unwrap();
             }
             Answer::Fragments => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
@@ -118,7 +141,7 @@ fn serve(
     let mut count = 0;
     while probes != Some(count) {
         listener.accept()?;
-        if released.load(Ordering::SeqCst) {
+        if signals.released.load(Ordering::SeqCst) {
             return Ok(Seen {
                 request,
                 probes: count,
@@ -295,11 +318,29 @@ fn a_silent_reachable_daemon_exhausts_the_stop_budget() {
     let selection = named(&root, "silent");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Hold), None);
+    // A peer that never answers ends the exchange at its deadline; a read that ignored the
+    // deadline would never return.
+    let (ours, silent_peer) = UnixStream::pair().unwrap();
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        send_stop_request(LocalStream::UdSocket(ours.into()), Instant::now() + SHORT),
+        Ok(None)
+    );
+    drop(silent_peer);
+    // The exchange waits on the silent endpoint under its own budget, in a thread of its own.
+    let exchange = {
+        let selection = selection.clone();
+        std::thread::spawn(move || request_stop(&selection, Instant::now() + EXCHANGE))
+    };
+    // The endpoint has read the request; only the wait is short. A request that never arrives
+    // leaves this wait to the runner's hang limit.
+    api.wait_holding();
+    assert_eq!(
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("silent", &[&path]))
     );
+    // Ending the endpoint closes the held connection, which ends the exchange without a reply.
     assert_eq!(api.finish().request, STOP_LINE);
+    assert_eq!(exchange.join().unwrap(), Ok(()));
 }
 
 #[test]
