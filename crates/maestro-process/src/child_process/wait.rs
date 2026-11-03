@@ -6,7 +6,9 @@ use super::{
 use std::{
     future::Future,
     io,
+    pin::pin,
     process::{ExitStatus, Output},
+    task::{Context, Poll, Waker},
 };
 
 /// Observations made by the single native collector, not by a second waiter.
@@ -89,7 +91,11 @@ where
                 escalation = None;
                 child.kill_if_running().await?;
             }
-            () = fires(&mut grace) => break,
+            () = fires(&mut grace) => {
+                let keep = on_data.is_some() || options.stderr == OutputMode::Capture;
+                drain_ready(child, &mut on_data, keep)?;
+                break;
+            }
             value = child.child.wait(), if status.is_none() => {
                 status = Some(observe_exit(&mut on_data, value)?);
                 escalation = None;
@@ -111,6 +117,34 @@ where
         stdout,
         stderr,
     })
+}
+
+/// Delivers what both pipes already hold, stopping at the first read that would wait.
+///
+/// A grace deadline that falls due in the same wake-up as readable pipes would otherwise
+/// drop output the child wrote before it exited. The runtime's cooperative budget ends the
+/// reads when a descendant keeps writing.
+fn drain_ready<S: Observer + ?Sized>(
+    child: &mut CapturedChild,
+    sink: &mut Option<&mut S>,
+    keep: bool,
+) -> io::Result<()> {
+    let mut context = Context::from_waker(Waker::noop());
+    while child.stdout.is_some() {
+        let read = fill(&mut child.stdout, &mut child.out, true);
+        let Poll::Ready(value) = pin!(read).poll(&mut context) else {
+            break;
+        };
+        deliver(&mut child.out, value, sink, OutputStream::Stdout)?;
+    }
+    while child.stderr.is_some() {
+        let read = fill(&mut child.stderr, &mut child.err, keep);
+        let Poll::Ready(value) = pin!(read).poll(&mut context) else {
+            break;
+        };
+        deliver(&mut child.err, value, sink, OutputStream::Stderr)?;
+    }
+    Ok(())
 }
 
 /// Publishes a native exit without adding a second status waiter.

@@ -280,6 +280,37 @@ fn grace_deadline_begins_after_child_exit() {
 }
 
 #[test]
+fn output_buffered_when_the_grace_expires_is_collected() {
+    // The write and the clock advance both land before the wait runs again, so the
+    // pipe is readable and the grace is due in the same wake-up.
+    paused_runtime().block_on(async {
+        let mut child =
+            CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
+        child.child.wait().await.unwrap();
+        let (reader, mut writer) = std::io::pipe().unwrap();
+        child.stdout = Some(
+            tokio::process::ChildStdout::from_std(std::os::fd::OwnedFd::from(reader).into())
+                .unwrap(),
+        );
+        child.stderr = None;
+        let options = WaitOptions {
+            post_exit_grace: Some(Duration::from_millis(100)),
+            ..WaitOptions::default()
+        };
+        let mut wait = Box::pin(wait_for_child_process(
+            &mut child,
+            options,
+            std::future::pending(),
+            None,
+        ));
+        assert!(is_pending(&mut wait).await, "the open pipe holds the wait");
+        std::io::Write::write_all(&mut writer, b"late").unwrap();
+        tokio::time::advance(Duration::from_millis(100)).await;
+        assert_eq!(wait.await.unwrap().stdout, b"late");
+    });
+}
+
+#[test]
 fn discard_drops_stderr_retained_by_an_earlier_dropped_wait() {
     paused_runtime().block_on(async {
         let mut held = held_pipes().await;
