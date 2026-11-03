@@ -1221,16 +1221,16 @@ is [Rust test children](specs/test-processes.md).
 
 #### Direct native fixtures
 
-Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
-currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools`, `maestro-chat`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests, `maestro-app` (including its RPC client and clipboard
-tests), the command-line startup tests, the conventions checker's architecture
-tests, the daemon's notification, layout-apply and repository discovery cases,
-the terminal client example's tests and the composition root's `native_io`,
-`truncated_tool_example` and `entry_routes` tests. Local setup builds the example
-with the locked host `dev` profile and reads Cargo's emitted executable path.
-It records source inputs, content digest and host in
+Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
+`maestro-test-process` and every crate the crate graph allows to depend on it.
+To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
+add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
+`.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
+shared selection or docs edit. The conventions check rejects missing or extra
+crates and requires every filter term to be exactly `package(=name)`, joined by `|`.
+Run `just prepare-tests` before a filtered nextest run on any declared caller.
+Local setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1610,6 +1610,62 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Command payloads
+
+On Unix, install the same artifact as the program under test to observe command
+execution without an interpreter. Write `exec` on the first line of
+`<alias>.fixture`, followed by one JSON object with a `scenario` field. The whole
+record is parsed before any stream, socket or directory changes; unknown fields
+and unknown scenarios fail first.
+
+A `read_support::payload` call in `maestro-tools` installs the alias and writes
+that record. The held-child cases connect to a parent-owned TCP port, so the
+record carries `port`. For example, a child that reports readiness and finishes
+after one release byte:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({"scenario": "holder", "port": 9099});
+    std::fs::write(directory.path().join("child.fixture"), format!("exec\n{record}"))?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("child"),
+    )?;
+    Ok(())
+}
+```
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `operands` | Requires closed standard input, then writes `operand|cwd|HOME` for the first operand. |
+| `streams` | Writes the terminal-coloured prefix and 300000 `o` bytes to standard output, then 300000 `e` bytes and CRLF to standard error. |
+| `utf8` | With `port` and `split`, writes the first `split` bytes of one four-byte scalar to both outputs, announces `READY`, waits for a byte, then writes the rest. |
+| `malformed` | Writes `a`, byte FF and `b` to standard output, and an incomplete scalar to standard error. |
+| `cwd` | Writes the directory this process inherited. |
+| `holder` | On `port`, announces `READY`, waits for one byte, then writes `bye`. |
+| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. |
+| `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
+| `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
+| `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |
+| `raw` | Connects to `port`, writes `raw`, NUL, a colour escape, CRLF and byte FF to standard output, waits for one release byte, then writes `stderr` to standard error. |
+| `interleaved` | Connects to `port`, writes bytes F0 9F, waits for one release byte, writes `err` to standard error, waits for another byte, then writes bytes 98 80 and 262144 zero bytes to standard output. |
+| `termination` | Connects to `port` and writes its PID followed by a newline. After one release byte, writes `alive` and a newline; after a second byte, writes `survived` to the file of that name in its working directory. Closing the channel before either byte fails without writing the marker. |
+| `identity` | Writes this process's session and process group, one per line. |
+| `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, waits for it to end, then waits for one control byte or EOF. |
+| `tree-leaf` | On `port`, writes `READY` and holds the channel until the tree is killed. |
+| `blocked` | Registers TERM, announces `READY` on the optional `port`, then waits for one termination notification and finishes. An optional `code` selects its exit code after handling TERM. To test a deadline, poll execution once on a paused runtime, wait for `READY`, then advance the clock; resume real time to collect native exit and pipe completion. |
+| `grace` | On Linux, writes `held`, then writes `grace` into standard output `pid` names after one input line or EOF. Finishes after a second input line or when input closes. |
+
+The `MTP_ROLE` variable selects a linked-descendant role for the same record; no
+other selection uses it. Shell parsing stays on the real shell: select the
+shell itself when the command grammar, session identity or process group is the
+observation, and use a payload only for what runs inside it. Use `exec <alias>`
+when the payload must keep the shell's PID, process group and open descriptors.
+Streaming cases release each next write only after the sink has received the
+preceding bytes; no file gate or busy loop paces the child.
 
 #### Native IO children
 

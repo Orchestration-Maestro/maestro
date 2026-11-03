@@ -74,7 +74,7 @@ models-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-models --locked
 
 # Run native models tests with literal argument forwarding.
-models-test *args:
+models-test *args: prepare-tests
     @cargo nextest run -p maestro-models --locked {{quote(args)}}
     @cargo test -p maestro-models --locked --doc {{quote(args)}}
 
@@ -95,7 +95,7 @@ agent-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-agent --locked
 
 # Run native agent tests with literal argument forwarding.
-agent-test *args:
+agent-test *args: prepare-tests
     @cargo nextest run -p maestro-agent --locked {{quote(args)}}
     @cargo test -p maestro-agent --locked --doc {{quote(args)}}
 
@@ -116,7 +116,7 @@ tui-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-tui --locked
 
 # Run native tui tests with literal argument forwarding.
-tui-test *args:
+tui-test *args: prepare-tests
     @cargo nextest run -p maestro-tui --locked {{quote(args)}}
     @cargo test -p maestro-tui --locked --doc {{quote(args)}}
 
@@ -139,7 +139,7 @@ app-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-app --locked
 
 # Run native app tests with literal argument forwarding.
-app-test *args:
+app-test *args: prepare-tests
     @cargo nextest run -p maestro-app --locked {{quote(args)}}
     @cargo test -p maestro-app --locked --doc {{quote(args)}}
 
@@ -162,7 +162,7 @@ dev-compile: models-dev browser-dev-compile
 models-dev-compile: models-dev
 
 # Run the terminal wrapping integration tests explicitly.
-tui-test-ansi *args:
+tui-test-ansi *args: prepare-tests
     @cargo nextest run -p maestro-tui --locked --test integration ansi_wrapping:: {{quote(args)}}
 
 # Compile standalone prerequisites before copying prepared assets.

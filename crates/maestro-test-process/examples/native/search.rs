@@ -1,7 +1,7 @@
 //! Finite native search and completion producers selected by a sibling JSON record.
 
 use std::ffi::OsString;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 use std::os::unix::{net::UnixStream, process::CommandExt};
 use std::process::{Command, Stdio};
 
@@ -10,6 +10,8 @@ use maestro_test_process::child::{
 };
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
+
+use super::termination::Termination;
 
 /// The only signal a controlled search response sends itself.
 #[derive(Deserialize)]
@@ -359,39 +361,6 @@ fn marker(path: &str, text: &str, copy_input: bool, operands: &[OsString]) -> io
     Ok(())
 }
 
-/// A queued TERM notification and the registration that owns its write end.
-struct Termination {
-    /// Retained read end, receiving a byte even when TERM precedes the wait.
-    reader: UnixStream,
-    /// Handler removed before the read end closes on normal return.
-    registration: signal_hook::SigId,
-}
-
-impl Termination {
-    /// Consume the queued signal notification without polling or a deadline.
-    fn wait(&mut self) -> io::Result<()> {
-        self.reader.read_exact(&mut [0])
-    }
-}
-
-impl Drop for Termination {
-    /// Remove the handler before releasing the retained notification reader.
-    fn drop(&mut self) {
-        signal_hook::low_level::unregister(self.registration);
-    }
-}
-
-/// Register TERM before readiness so an early signal is retained by the native pipe.
-fn termination() -> io::Result<Termination> {
-    let (reader, writer) = UnixStream::pair()?;
-    let registration =
-        signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
-    Ok(Termination {
-        reader,
-        registration,
-    })
-}
-
 /// Require the parent's release byte without timers or polling.
 fn released(socket: &mut UnixStream) -> io::Result<()> {
     if receive(socket)? == Some(b'x') {
@@ -403,7 +372,7 @@ fn released(socket: &mut UnixStream) -> io::Result<()> {
 
 /// Wait for TERM, acknowledge it, and retain native pipe ownership until released.
 fn find_term(path: &str) -> io::Result<()> {
-    let mut signals = termination()?;
+    let mut signals = Termination::new()?;
     let mut socket = UnixStream::connect(path)?;
     socket.write_all(b"ready")?;
     signals.wait()?;
@@ -413,7 +382,7 @@ fn find_term(path: &str) -> io::Result<()> {
 
 /// Release one event, then acknowledge termination while deliberately remaining alive.
 fn grep_term(path: &str, event: &[u8], started: bool) -> io::Result<()> {
-    let mut signals = termination()?;
+    let mut signals = Termination::new()?;
     let mut socket = UnixStream::connect(path)?;
     socket.write_all(b"R")?;
     released(&mut socket)?;
