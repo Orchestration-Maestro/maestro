@@ -97,6 +97,8 @@ fn root_command_keeps_the_user_compilation_cache() {
     assert_eq!(cache.map(Path::new), expected.as_deref());
 }
 
+#[cfg(unix)]
+pub mod native;
 pub mod rpc;
 
 impl Root {

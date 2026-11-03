@@ -80,14 +80,24 @@ fn drain(rpc: &mut Rpc, stderr: bool) -> Vec<u8> {
     }
 }
 
+/// Installs the prepared native child whose record selects one producer.
+fn child(root: &Root, name: &str, record: &Value) -> std::path::PathBuf {
+    crate::support::native::install(&root.path("bin"), name, "child", record)
+}
+
+/// Installs the prepared native program whose record selects one producer.
+fn command(root: &Root, name: &str, record: &Value) -> std::path::PathBuf {
+    crate::support::native::install(&root.path("bin"), name, "command", record)
+}
+
 #[test]
 fn native_child_streams_bytes_while_input_is_pending() {
     let root = Root::new();
     let mut rpc = loaded(&root);
-    let producer = "import os; os.write(1,b'\\x00\\xff\\xe2'); os.write(2,b'error\\x00'); release=os.read(0,1); os.write(1,b'\\x82\\xac'+release); os.write(2,b'last'); tail=b''\nwhile True:\n b=os.read(0,4096)\n if not b: break\n tail+=b\nos.write(1,tail)";
+    let producer = child(&root, "pending", &json!({"scenario":"pending"}));
     let pid = call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c",producer]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     )
     .as_u64()
     .unwrap();
@@ -140,15 +150,11 @@ fn native_child_keeps_literal_arguments_and_cwd() {
     std::fs::create_dir(&outside).unwrap();
     let mut rpc = loaded(&root);
     let operands = ["space value", "$HOME; `literal`", "line\nbreak", "Ω雪", ""];
+    let producer = child(&root, "arguments", &json!({"scenario":"arguments"}));
     for cwd in [None, Some(outside.to_str().unwrap())] {
-        let mut argv = vec![
-            "-c",
-            "import os,sys,json; print(json.dumps([os.getcwd(),sys.argv[1:]],ensure_ascii=False))",
-        ];
-        argv.extend(operands);
         call(
             &mut rpc,
-            &json!({"op":"spawn","command":"python3","args":argv,"cwd":cwd}),
+            &json!({"op":"spawn","command":producer,"args":operands,"cwd":cwd}),
         );
         let bytes = drain(&mut rpc, false);
         let value: Value = serde_json::from_slice(&bytes).unwrap();
@@ -224,10 +230,25 @@ fn native_child_keeps_descriptor_selection() {
             selections.push(selected);
         }
     }
-    let producer = "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(os.getpid().to_bytes(8,'big')); s.recv(1)";
+    let producer = child(
+        &root,
+        "announce",
+        &json!({"scenario":"announce","port":0,"stdin":false,"stdout":[],"stderr":[]}),
+    );
     for selected in selections {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let pid = call(&mut rpc, &json!({"op":"spawn","command":"python3","args":["-c",producer,listener.local_addr().unwrap().port().to_string()],"stdio":selected})).as_u64().unwrap();
+        let port = listener.local_addr().unwrap().port();
+        crate::support::native::select(
+            &producer,
+            "child",
+            &json!({"scenario":"announce","port":port,"stdin":false,"stdout":[],"stderr":[]}),
+        );
+        let pid = call(
+            &mut rpc,
+            &json!({"op":"spawn","command":producer,"args":[],"stdio":selected}),
+        )
+        .as_u64()
+        .unwrap();
         let (socket, announced) = ready(&listener);
         assert_eq!(announced, pid);
         assert_eq!(
@@ -235,12 +256,12 @@ fn native_child_keeps_descriptor_selection() {
             json!(selected.map(|selection| selection == "pipe"))
         );
         for (fd, selection) in selected.into_iter().enumerate() {
-            let child = std::fs::read_link(format!("/proc/{pid}/fd/{fd}")).unwrap();
+            let descriptor = std::fs::read_link(format!("/proc/{pid}/fd/{fd}")).unwrap();
             let parent = std::fs::read_link(format!("/proc/{}/fd/{fd}", rpc.pid())).unwrap();
             match selection {
-                "inherit" => assert_eq!(child, parent),
-                "ignore" => assert_eq!(child, std::path::Path::new("/dev/null")),
-                _ => assert_ne!(child, parent),
+                "inherit" => assert_eq!(descriptor, parent),
+                "ignore" => assert_eq!(descriptor, std::path::Path::new("/dev/null")),
+                _ => assert_ne!(descriptor, parent),
             }
         }
         release(socket);
@@ -253,9 +274,14 @@ fn native_child_keeps_descriptor_selection() {
 fn native_child_writes_all_bytes_before_eof() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let producer = child(
+        &root,
+        "relay",
+        &json!({"scenario":"relay","ready":false,"tail":[]}),
+    );
     call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c","import sys; data=sys.stdin.buffer.read(); sys.stdout.buffer.write(data)"]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     );
     let bytes: Vec<u8> = (0..131_089)
         .map(|value| u8::try_from(value % 256).unwrap())
@@ -276,8 +302,25 @@ fn native_child_completion_keeps_output_close_order() {
     let root = Root::new();
     let mut rpc = loaded(&root);
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let producer = "import os,socket,sys\nr,w=os.pipe()\nif os.fork()==0:\n os.close(w)\n while os.read(r,1): pass\n s=socket.create_connection(('127.0.0.1',int(sys.argv[1])))\n s.sendall(os.getpid().to_bytes(8,'big')); s.recv(1)\n os.write(1,b'late\\x00\\xff'); os.write(2,b'late-error'); os._exit(0)\nos.close(r); os.write(1,b'early'); os.write(2,b'early-error'); os._exit(7)";
-    let pid = call(&mut rpc,&json!({"op":"spawn","command":"python3","args":["-c",producer,listener.local_addr().unwrap().port().to_string()]})).as_u64().unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let holder = child(
+        &root,
+        "late",
+        &json!({"scenario":"announce","port":port,"stdin":false,
+            "stdout":b"late\0\xff","stderr":b"late-error"}),
+    );
+    let producer = child(
+        &root,
+        "early",
+        &json!({"scenario":"early","stdout":b"early","stderr":b"early-error",
+            "code":7,"holder":holder}),
+    );
+    let pid = call(
+        &mut rpc,
+        &json!({"op":"spawn","command":producer,"args":[]}),
+    )
+    .as_u64()
+    .unwrap();
     let (socket, descendant) = ready(&listener);
     assert_ne!(descendant, pid);
     assert_eq!(prefix(&mut rpc, false, 5), b"early");
@@ -297,19 +340,35 @@ fn native_child_completion_keeps_output_close_order() {
 fn native_child_keeps_exit_and_signal_distinct() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    // The initial record only installs the alias; each iteration selects its own record.
+    let producer = command(
+        &root,
+        "output",
+        &json!({"scenario":"output","stdout":[],"stderr":[],"code":0}),
+    );
     for code in [0, 7] {
+        crate::support::native::select(
+            &producer,
+            "command",
+            &json!({"scenario":"output","stdout":[],"stderr":[],"code":code}),
+        );
         call(
             &mut rpc,
-            &json!({"op":"spawn","command":"python3","args":["-c",format!("import sys; sys.exit({code})")]}),
+            &json!({"op":"spawn","command":producer,"args":[]}),
         );
         assert_eq!(
             call(&mut rpc, &json!({"op":"wait"})),
             json!({"code":code,"signal":null})
         );
     }
+    let producer = child(
+        &root,
+        "ready",
+        &json!({"scenario":"relay","ready":true,"tail":[]}),
+    );
     call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c","import os; os.write(1,b'ready'); os.read(0,1)"]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     );
     assert_eq!(prefix(&mut rpc, false, 5), b"ready");
     assert_eq!(call(&mut rpc, &json!({"op":"wait_start"})), true);
@@ -325,9 +384,14 @@ fn native_child_keeps_exit_and_signal_distinct() {
 fn native_child_kill_controls_the_retained_child() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let producer = child(
+        &root,
+        "ready",
+        &json!({"scenario":"relay","ready":true,"tail":[]}),
+    );
     call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c","import os; os.write(1,b'ready'); os.read(0,1)"]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     );
     assert_eq!(prefix(&mut rpc, false, 5), b"ready");
     assert_eq!(
@@ -341,20 +405,48 @@ fn native_child_kill_controls_the_retained_child() {
     rpc.finish();
 }
 
+/// Selects the identity child's record and the port its group peer reports on.
+fn select_identity(
+    holder: &std::path::Path,
+    producer: &std::path::Path,
+    port: u16,
+    detached: bool,
+) {
+    crate::support::native::select(holder, "child", &json!({"scenario":"grouped","port":port}));
+    crate::support::native::select(
+        producer,
+        "child",
+        &json!({"scenario":"identity","holder":detached.then_some(holder)}),
+    );
+}
+
 #[test]
 fn native_child_group_signal_keeps_direct_fallback() {
     let root = Root::new();
     let mut rpc = loaded(&root);
-    let producer = "import os,json,socket,sys\nif sys.argv[1]=='1' and os.fork()==0:\n s=socket.create_connection(('127.0.0.1',int(sys.argv[2]))); s.sendall(os.getpid().to_bytes(8,'big')+os.getpgrp().to_bytes(8,'big')); s.recv(1); os._exit(0)\nos.write(1,(json.dumps([os.getpid(),os.getpgrp(),os.getsid(0)])+'\\n').encode()); os.read(0,1)";
+    // The initial records only install the aliases; each iteration selects both records.
+    let holder = child(&root, "grouped", &json!({"scenario":"grouped","port":0}));
+    let producer = child(
+        &root,
+        "identity",
+        &json!({"scenario":"identity","holder":null}),
+    );
     for detached in [true, false] {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let pid = call(&mut rpc,&json!({"op":"spawn","command":"python3","args":["-c",producer,if detached { "1" } else { "0" },listener.local_addr().unwrap().port().to_string()],"detached":detached})).as_u64().unwrap();
+        let port = listener.local_addr().unwrap().port();
+        select_identity(&holder, &producer, port, detached);
+        let pid = call(
+            &mut rpc,
+            &json!({"op":"spawn","command":producer,"args":[],"detached":detached}),
+        )
+        .as_u64()
+        .unwrap();
         let mut line = Vec::new();
         while !line.ends_with(b"\n") {
             line.extend(prefix(&mut rpc, false, 1));
         }
-        let identity: Vec<u64> = serde_json::from_slice(&line).unwrap();
-        assert_eq!(identity[0], pid);
+        let ids: Vec<u64> = serde_json::from_slice(&line).unwrap();
+        assert_eq!(ids[0], pid);
         let group = -i32::try_from(pid).unwrap();
         if detached {
             use std::io::Read;
@@ -363,14 +455,14 @@ fn native_child_group_signal_keeps_direct_fallback() {
             let mut inherited = [0; 8];
             socket.read_exact(&mut inherited).unwrap();
             assert_eq!(u64::from_be_bytes(inherited), pid);
-            assert_eq!(identity, [pid, pid, pid]);
+            assert_eq!(ids, [pid, pid, pid]);
             call(
                 &mut rpc,
                 &json!({"op":"signal_pid","pid":group,"signal":"SIGKILL"}),
             );
             assert_eq!(socket.read(&mut [0]).unwrap(), 0);
         } else {
-            assert_ne!(identity[1], pid);
+            assert_ne!(ids[1], pid);
             assert!(
                 answer(
                     &mut rpc,
@@ -396,15 +488,20 @@ fn native_child_group_signal_keeps_direct_fallback() {
 fn native_child_errors_remain_catchable() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let producer = child(
+        &root,
+        "ready",
+        &json!({"scenario":"relay","ready":true,"tail":[]}),
+    );
     for request in [
         json!({"op":"spawn","command":root.path("missing"),"args":[]}),
-        json!({"op":"spawn","command":"python3","args":[],"cwd":root.path("missing")}),
+        json!({"op":"spawn","command":producer,"args":[],"cwd":root.path("missing")}),
     ] {
         assert!(answer(&mut rpc, &request)["error"].is_string());
     }
     call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c","import os,sys; os.write(1,b'ready'); os.write(1,sys.stdin.buffer.read())"]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     );
     assert_eq!(prefix(&mut rpc, false, 5), b"ready");
     assert!(answer(&mut rpc, &json!({"op":"kill","signal":"invalid-signal"}))["error"].is_string());
@@ -420,9 +517,14 @@ fn native_child_errors_remain_catchable() {
 fn native_child_handles_outlive_the_callback() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let producer = child(
+        &root,
+        "outlive",
+        &json!({"scenario":"relay","ready":true,"tail":b"complete"}),
+    );
     call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c","import os,sys; os.write(1,b'ready'); os.write(1,sys.stdin.buffer.read()); os.write(2,b'complete')"]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     );
     assert_eq!(prefix(&mut rpc, false, 5), b"ready");
     call(&mut rpc, &json!({"op":"save_pipes"}));
@@ -439,7 +541,7 @@ fn native_child_handles_outlive_the_callback() {
 struct HeldProvider {
     /// Loopback endpoint for the ordinary native model owner.
     base: String,
-    /// The exact request admitted after the guest's agent-start handler returned.
+    /// The exact request admitted while the guest's agent-start handler may still run.
     request: std::sync::mpsc::Receiver<Value>,
     /// Releases the held server transaction during teardown.
     release: std::sync::mpsc::Sender<()>,
@@ -511,10 +613,14 @@ fn native_child_abort_keeps_the_original_signal() {
         &component,
     ]));
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let producer = "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(os.getpid().to_bytes(8,'big')); os.read(0,1)";
+    let producer = child(
+        &root,
+        "announce",
+        &json!({"scenario":"announce","port":listener.local_addr().unwrap().port(),"stdin":true,"stdout":[],"stderr":[]}),
+    );
     call(
         &mut rpc,
-        &json!({"op":"arm_abort","command":"python3","args":["-c",producer,listener.local_addr().unwrap().port().to_string()]}),
+        &json!({"op":"arm_abort","command":producer,"args":[]}),
     );
     rpc.request(json!({"type":"prompt","message":"native-child-abort"}));
     let (mut socket, pid) = ready(&listener);
@@ -547,7 +653,7 @@ fn native_io_keeps_full_user_basics() {
     std::fs::write(&target, b"symlink\0\xfe").unwrap();
     std::os::unix::fs::symlink("../linked 雪", &link).unwrap();
     let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
-    let mut child = root
+    let mut process = root
         .command(&[
             "--mode",
             "rpc",
@@ -569,8 +675,8 @@ fn native_io_keeps_full_user_basics() {
         .spawn()
         .unwrap();
     let input = b"input\0\xff\xe2\x82\xac";
-    child.stdin.take().unwrap().write_all(input).unwrap();
-    let output = child.wait_with_output().unwrap();
+    process.stdin.take().unwrap().write_all(input).unwrap();
+    let output = process.wait_with_output().unwrap();
     assert!(output.status.success(), "{output:?}");
     assert_eq!(
         output.stdout,
@@ -587,9 +693,14 @@ fn native_io_keeps_full_user_basics() {
 fn native_io_adapters_keep_the_same_author_contract() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let producer = command(
+        &root,
+        "output",
+        &json!({"scenario":"output","stdout":[],"stderr":[],"code":0}),
+    );
     call(
         &mut rpc,
-        &json!({"op":"spawn","command":"python3","args":["-c","import os; os._exit(0)"]}),
+        &json!({"op":"spawn","command":producer,"args":[]}),
     );
     assert_eq!(call(&mut rpc, &json!({"op":"aliases"})), true);
     assert_eq!(call(&mut rpc, &json!({"op":"wait"}))["code"], 0);
