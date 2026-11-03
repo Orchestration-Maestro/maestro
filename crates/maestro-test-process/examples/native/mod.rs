@@ -14,8 +14,8 @@ mod command;
 mod credentials;
 mod echo;
 mod editor;
-#[cfg(unix)]
 mod git;
+mod notification;
 mod observe;
 #[cfg(unix)]
 mod rpc;
@@ -39,9 +39,10 @@ enum Request {
     Cargo(cargo::Record, Vec<OsString>),
     /// Produce controlled clipboard bytes for the application's native operations.
     Clipboard(clipboard::Record, Vec<OsString>),
-    /// Answer native Git queries for footer observations.
-    #[cfg(unix)]
-    Git(git::Record),
+    /// Answer native Git queries for footer observations or repository discovery.
+    Git(git::Record, Vec<OsString>),
+    /// Record notification operands and return a chosen status.
+    Notification(notification::Record, Vec<OsString>),
     /// Report the file a controlled editor was asked to edit.
     Editor(editor::Record, Vec<OsString>),
     /// Print one authored line and end.
@@ -110,8 +111,11 @@ impl Request {
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
-            #[cfg(unix)]
-            Some("git") => Ok(Self::Git(git::Record::parse(&text)?)),
+            Some("git") => Ok(Self::Git(git::Record::parse(&text)?, operands)),
+            Some("notify-send") => Ok(Self::Notification(
+                notification::Record::parse(&text)?,
+                operands,
+            )),
             Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
             Some("echo") => Ok(Self::Echo(echo::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
@@ -152,8 +156,8 @@ pub(super) fn run() -> io::Result<()> {
         Request::Command(record, operands) => command::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
-        #[cfg(unix)]
-        Request::Git(record) => git::run(&record),
+        Request::Git(record, operands) => git::run(&record, &operands),
+        Request::Notification(record, operands) => notification::run(&record, &operands),
         Request::Editor(record, operands) => editor::run(&record, &operands),
         Request::Echo(record) => echo::run(&record, &[]),
         Request::Author(record, operands) => author::run(&record, &operands),

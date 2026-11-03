@@ -1,4 +1,4 @@
-//! Daemon socket operations, pane rendering and host theme records exposed to frontends.
+//! Daemon operations, pane rendering, themes, supported agents and default settings exposed to frontends.
 
 /// The daemon operations and records used by native frontends.
 pub mod daemon {
@@ -45,11 +45,14 @@ pub mod daemon {
     pub use maestro_daemon::render_signal::RenderSignal;
     #[doc(inline)]
     pub use maestro_daemon::settings::{
+        DEFAULTS_TEXT,
         model::{Config, NewTerminalCwdConfig},
         theme::{CustomThemeColors, THEME_NAMES, canonical_theme_name},
     };
     #[doc(inline)]
     pub use maestro_daemon::terminal_theme::{HostAppearance, RgbColor, TerminalTheme};
+    #[doc(inline)]
+    pub use maestro_daemon::{Agent, agent_label};
 
     /// File logging setup and lifecycle events for native daemon roles.
     pub mod logging {
