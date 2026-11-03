@@ -1,4 +1,5 @@
-//! The model-stream import accepts request text holding entries the records do not know.
+//! The model-stream import keeps the guest's request data: entries the records do not
+//! know stay out, and a chosen simple protocol runs while the model keeps its own API.
 use super::api;
 use crate::local_resources::{Admission, Pump};
 use crate::model_calls::Controls;
@@ -140,6 +141,7 @@ fn model_stream_import_leaves_out_unknown_entries() {
     unregister_api_providers(API);
 }
 
+/// The chosen simple protocol runs while callers and the provider see the model's API.
 #[test]
 fn model_stream_import_runs_the_chosen_simple_protocol() {
     let recording = Arc::new(Recording::default());

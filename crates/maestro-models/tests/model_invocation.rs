@@ -91,7 +91,9 @@ mod tests {
 
     #[test]
     fn explicit_protocol_keeps_the_public_model_api() {
-        use maestro_models::*;
+        use maestro_models::{
+            ApiProvider, Local, clear_api_providers, register_api_provider, stream_simple_via_for,
+        };
         let _serial = crate::bundled::registry();
         register_api_provider(
             ApiProvider {
