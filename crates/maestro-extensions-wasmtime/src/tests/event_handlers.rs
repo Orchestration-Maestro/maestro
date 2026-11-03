@@ -32,7 +32,7 @@ fn edited_event_failure_discards_a_valid_decision() {
 fn valid_edits_survive_failed_decisions_and_valid_decisions_are_retained() {
     let (pump, _admission) = Pump::new(crate::tests::support::widgets());
     for (decision, expected) in [
-        (Decision::Failed("handler failed".into()), None),
+        (failed_decision(), None),
         (Decision::Returned(Err("bad decision".into())), None),
         (
             Decision::Returned(Ok(Some("{\"block\":true}".into()))),
@@ -58,6 +58,37 @@ fn valid_edits_survive_failed_decisions_and_valid_decisions_are_retained() {
             ),
         }
     }
+}
+
+/// The diagnostic one authored failure supplies.
+fn failed_decision() -> Decision {
+    Decision::Failed(crate::schema_wire::Error {
+        name: None,
+        message: "handler failed".into(),
+        stack: Some("handler stack".into()),
+        code: None,
+    })
+}
+
+#[test]
+fn failed_decision_keeps_the_diagnostic_its_author_supplied() {
+    let (pump, _admission) = Pump::new(crate::tests::support::widgets());
+    let outcome = Outcome {
+        event: Ok(None),
+        decision: failed_decision(),
+        operations: None,
+    };
+    let error = Handle::apply_outcome::<_, ToolCallEventResult>(
+        &mut tool_event(),
+        outcome,
+        pump.registry(),
+    )
+    .expect_err("a failed decision is an error");
+    let diagnostic = error
+        .downcast_ref::<maestro_extensions::DiagnosticErrorInfo>()
+        .expect("the failure stays the shared diagnostic record");
+    assert_eq!(diagnostic.message, "handler failed");
+    assert_eq!(diagnostic.stack.as_deref(), Some("handler stack"));
 }
 
 #[test]

@@ -57,7 +57,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 name,
                 Rc::new(move |event, _| {
                     Box::pin(std::future::ready(
-                        append_observation(event, &log_file).map(|()| None),
+                        append_observation(event, &log_file)
+                            .map(|()| None)
+                            .map_err(Into::into),
                     ))
                 }),
             )?;

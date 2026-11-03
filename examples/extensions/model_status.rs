@@ -11,14 +11,14 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ModelSelectSource, NotificationType,
+    HookFuture, ModelSelectSource, NotificationType,
 };
 
 /// Reports one model selection without changing the supplied event.
 fn model_select(
     event: &mut ExtensionEvent,
     context: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::ModelSelect(event) = event else {
             return Ok(None);

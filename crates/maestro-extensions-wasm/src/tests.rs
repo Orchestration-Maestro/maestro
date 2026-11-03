@@ -474,7 +474,9 @@ fn assert_typed_event_export(contract: &Contract) {
         contract.event_results,
         [concat!(
             "result<record {event: result<option<string>, string>, ",
-            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<callback>>}, string>"
+            "decision: variant {returned(result<option<string>, string>), failed(record {name: option<string>, ",
+            "message: string, stack: option<string>, code: option<variant {text(string), number(f64)}>})}, ",
+            "operations: option<own<callback>>}, string>"
         )],
         "the event export answers with independent event, decision and operations channels or a refusal"
     );

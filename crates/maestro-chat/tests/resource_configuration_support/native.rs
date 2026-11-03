@@ -4,7 +4,7 @@ use super::{
     protocol::{resolved, scopes},
     records::Scopes,
 };
-use maestro_chat::components::config_selector::ConfigSelectorOptions;
+use maestro_chat::components::config_selector::ComponentOptions;
 use maestro_theme::Collator;
 use maestro_tui::{Component, tui::InputHandler};
 use serde_json::json;
@@ -39,7 +39,7 @@ fn native(path: &str, base: &str, settings: &Scopes) -> Harness {
     Harness::build(
         resolved(path, Some(base)),
         settings,
-        ConfigSelectorOptions {
+        ComponentOptions {
             cwd: "/unrelated/project".into(),
             agent_dir: "/unrelated/agent".into(),
             theme,

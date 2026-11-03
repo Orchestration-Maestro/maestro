@@ -27,6 +27,8 @@ mod platform_keys;
 mod provider_auth_selection;
 #[path = "support/recorded_keys/registry.rs"]
 mod recorded_registry;
+#[path = "support/refusing_provider.rs"]
+mod refusing_provider;
 mod resource_configuration;
 use maestro_tui::test_support::runtime_spy;
 mod scoped_model_selection;

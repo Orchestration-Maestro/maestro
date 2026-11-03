@@ -8,9 +8,9 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_extensions_wasm::{
-    BashExecOptions, BashExecResult, BashOperations, CommandOptions, ExtensionAPI,
-    ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, ExtensionResult, JsonText, Presence, SessionEvent, ToolInput,
+    BashExecOptions, BashExecResult, BashOperations, CommandOptions, DiagnosticErrorInfo,
+    ExtensionAPI, ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
+    ExtensionFuture, ExtensionResult, HookResult, JsonText, Presence, SessionEvent, ToolInput,
     UserBashEventResult,
 };
 use serde::Deserialize;
@@ -33,6 +33,16 @@ enum Request {
     Count,
     /// Registers one labelled set of commands, tools, renderers, shortcuts, flags and handlers.
     Registrations(hook_registrations::Registrations),
+}
+
+/// The message and optional stack one authored failure supplies.
+#[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+struct AuthoredDiagnostic {
+    /// The supplied failure message.
+    message: String,
+    /// The supplied stack text, absent when the author supplied none.
+    stack: Option<String>,
 }
 
 /// A handler for one event name and the steps it runs.
@@ -59,8 +69,10 @@ enum Step {
     Abort,
     /// Replaces one field of the event.
     Edit(Edit),
-    /// Fails with this message.
+    /// Fails with this message and no stack.
     Fail(String),
+    /// Fails with the diagnostic fields its author supplies.
+    Authored(AuthoredDiagnostic),
     /// Returns this document as the event's result.
     Return(Value),
     /// Returns the event's own message, payload or messages.
@@ -202,7 +214,7 @@ impl Hooks {
         steps: &[Step],
         event: &mut ExtensionEvent,
         ctx: ExtensionContext,
-    ) -> ExtensionResult<Option<ExtensionEventResult>> {
+    ) -> HookResult<Option<ExtensionEventResult>> {
         let mut skipped = 0;
         for step in steps {
             if skipped > 0 {
@@ -220,12 +232,24 @@ impl Hooks {
                 }
                 Step::Abort => ctx.abort()?,
                 Step::Edit(edit) => apply(edit, event)?,
-                Step::Fail(message) => return Err(message.clone()),
-                Step::Return(value) => return result(event, value.clone()).map(Some),
-                Step::Echo => return echo(event).map(Some),
+                Step::Fail(message) => return Err(message.clone().into()),
+                Step::Authored(diagnostic) => {
+                    return Err(DiagnosticErrorInfo {
+                        name: None,
+                        message: diagnostic.message.clone(),
+                        stack: diagnostic.stack.clone(),
+                        code: None,
+                    });
+                }
+                Step::Return(value) => {
+                    return result(event, value.clone()).map(Some).map_err(Into::into);
+                }
+                Step::Echo => return echo(event).map(Some).map_err(Into::into),
                 Step::Operations => return Ok(Some(self.operations())),
                 Step::SkipUnless { prompt, steps } => skipped = skipping(event, prompt, *steps),
-                Step::Suffix(suffix) => return suffixed(event, suffix).map(Some),
+                Step::Suffix(suffix) => {
+                    return suffixed(event, suffix).map(Some).map_err(Into::into);
+                }
             }
         }
         Ok(None)

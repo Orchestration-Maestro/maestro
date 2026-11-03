@@ -195,10 +195,13 @@ for. Starting a callback never serializes its subtree. Dropping a child view,
 including on an error path, leaves it attached to its parent. Reassigning a local
 view does not replace an argument slot.
 
-Schema callbacks return the shared `DiagnosticErrorInfo`, preserving name,
-message, stack and code. Ordinary extension operations still use `ExtensionResult`
-and string errors. Schema code stays out of serialized metadata and provider
-JSON; decoding ordinary JSON produces no callbacks.
+Schema callbacks and event hooks return the shared `DiagnosticErrorInfo`, which
+keeps name, message, stack and code. Hooks return it as `HookResult`, so a failing
+hook supplies its own message and stack, and a failure carrying only a message
+keeps no stack. The runner reports both fields to its error listeners unchanged.
+Ordinary extension operations outside hooks still use `ExtensionResult` and string
+errors. Schema code stays out of serialized metadata and provider JSON; decoding
+ordinary JSON produces no callbacks.
 
 ### Foreign schema calls
 

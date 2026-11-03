@@ -207,7 +207,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             "session_start",
             Rc::new(move |_, context| {
                 let api = handler.clone();
-                Box::pin(async move { install(&api, &context).map(|()| None) })
+                Box::pin(async move { install(&api, &context).map(|()| None).map_err(Into::into) })
             }),
         )
     })

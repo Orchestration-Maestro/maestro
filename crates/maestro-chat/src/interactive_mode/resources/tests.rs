@@ -144,20 +144,39 @@ struct Recorded {
 struct RecordedSource {
     /// The source label.
     source: String,
-    /// The scope.
-    scope: SourceScope,
+    /// The scope, recorded by every case whose witness compares it.
+    scope: Option<SourceScope>,
     /// The package root.
     #[serde(rename = "baseDir")]
     base_dir: Option<String>,
 }
 
 impl RecordedSource {
-    /// The source of the resource at `path`.
+    /// The source of the resource at `path`, whose scope the witness compares.
     fn into_source_info(self, path: &str) -> SourceInfo {
+        let scope = self.compared_scope();
+        self.into_info(path, scope)
+    }
+
+    /// The scope the recorded witness compares.
+    fn compared_scope(&self) -> SourceScope {
+        self.scope
+            .expect("a recorded provenance whose scope is compared")
+    }
+
+    /// The source of the resource at `path`, which a compact label reads without
+    /// its scope, so a record that names none is project material.
+    fn into_label_info(self, path: &str) -> SourceInfo {
+        let scope = self.scope.unwrap_or(SourceScope::Project);
+        self.into_info(path, scope)
+    }
+
+    /// The source of the resource at `path` in `scope`.
+    fn into_info(self, path: &str, scope: SourceScope) -> SourceInfo {
         SourceInfo {
             path: path.to_owned(),
             source: self.source,
-            scope: self.scope,
+            scope,
             origin: SourceOrigin::TopLevel,
             base_dir: self.base_dir,
         }
@@ -171,7 +190,7 @@ impl Recorded {
             .take()
             .unwrap_or_else(|| RecordedSource {
                 source: "local".to_owned(),
-                scope: SourceScope::Project,
+                scope: Some(SourceScope::Project),
                 base_dir: None,
             })
             .into_source_info(&self.file_path)

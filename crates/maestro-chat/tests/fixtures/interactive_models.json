@@ -10,11 +10,7 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
+          "key"
         ],
         [
           "warning",
@@ -38,9 +34,6 @@
     },
     "expected": {
       "events": [
-        [
-          "stored"
-        ],
         [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
@@ -90,15 +83,7 @@
       "missing": true
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -112,15 +97,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -134,15 +111,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -156,15 +125,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -178,15 +139,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -200,15 +153,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -222,15 +167,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -244,15 +181,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -267,13 +196,6 @@
     },
     "expected": {
       "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
         [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
@@ -294,13 +216,6 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
-        [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
@@ -318,15 +233,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -340,15 +247,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -362,15 +261,7 @@
       "missing": false
     },
     "expected": {
-      "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -385,13 +276,6 @@
     },
     "expected": {
       "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
         [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
@@ -411,13 +295,6 @@
     },
     "expected": {
       "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
         [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
@@ -452,13 +329,6 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
-        [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
@@ -477,13 +347,6 @@
     },
     "expected": {
       "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
         [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
@@ -504,13 +367,6 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
-        [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
@@ -529,13 +385,6 @@
     },
     "expected": {
       "events": [
-        [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
         [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
@@ -556,13 +405,6 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
-        [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
@@ -580,14 +422,7 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
-        ],
-        [
-          "stored"
+          "key"
         ],
         [
           "warning",
@@ -621,11 +456,7 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
+          "key"
         ],
         [
           "warning",
@@ -671,12 +502,6 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "stored"
-        ],
-        [
           "warning",
           "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
@@ -703,9 +528,6 @@
       "events": [
         [
           "refresh"
-        ],
-        [
-          "available"
         ]
       ]
     }
@@ -738,9 +560,6 @@
       "events": [
         [
           "refresh"
-        ],
-        [
-          "available"
         ]
       ]
     }
@@ -770,14 +589,7 @@
     "expected": {
       "ids": [],
       "error": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ]
+      "events": []
     }
   },
   {
@@ -788,12 +600,6 @@
     },
     "expected": {
       "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
         [
           "providers",
           2
@@ -896,20 +702,8 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "select",
           "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
         ],
         [
           "status",
@@ -931,20 +725,8 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "select",
           "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
         ],
         [
           "status",
@@ -966,12 +748,6 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "selector-search",
           "shared"
         ]
@@ -991,20 +767,8 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "select",
           "z/shared"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
         ],
         [
           "status",
@@ -1026,12 +790,6 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "selector-search",
           "missing"
         ]
@@ -1050,12 +808,6 @@
     },
     "expected": {
       "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
         [
           "selector-search",
           "alp"
@@ -1076,20 +828,8 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "select",
           "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
         ],
         [
           "status",
@@ -1111,20 +851,8 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "select",
           "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
         ],
         [
           "status",
@@ -1146,12 +874,6 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "selector-search",
           "alpha"
         ]
@@ -1171,12 +893,6 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
           "selector-search",
           "​alpha​"
         ]
@@ -1194,21 +910,9 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "select",
-          "a/alpha"
-        ],
-        [
-          "error",
-          "selection refused"
+          "error"
         ]
       ],
-      "scope": [],
       "count": null,
       "shown": false
     }
@@ -1222,14 +926,7 @@
       "selected": "alpha",
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "error",
-          "recording refused"
+          "error"
         ]
       ],
       "scope": [],
@@ -1245,22 +942,6 @@
     },
     "expected": {
       "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "select",
-          "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
-        ],
         [
           "status",
           "Model: changed"
@@ -1280,22 +961,6 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "select",
-          "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
-        ],
-        [
           "status",
           "Model: alpha"
         ]
@@ -1314,31 +979,11 @@
     "expected": {
       "events": [
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "select",
-          "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
-        ],
-        [
           "status",
           "Model: alpha"
         ],
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
+          "key"
         ]
       ],
       "scope": [],
@@ -1598,16 +1243,6 @@
       ],
       "events": [
         [
-          "select",
-          "a/alpha"
-        ],
-        [
-          "footer"
-        ],
-        [
-          "border"
-        ],
-        [
           "clear"
         ],
         [
@@ -1641,10 +1276,6 @@
       ],
       "events": [
         [
-          "select",
-          "a/alpha"
-        ],
-        [
           "clear"
         ],
         [
@@ -1656,8 +1287,7 @@
           "editor"
         ],
         [
-          "error",
-          "selection refused"
+          "error"
         ]
       ],
       "scope": [],
@@ -1708,28 +1338,7 @@
         "z/shared"
       ],
       "error": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [
         [
           "z/tail",
@@ -1757,31 +1366,7 @@
         "a/alpha"
       ],
       "error": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -1797,28 +1382,7 @@
       "installed": true,
       "enabled": null,
       "error": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -1834,28 +1398,7 @@
       "installed": true,
       "enabled": null,
       "error": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -1871,31 +1414,7 @@
       "installed": true,
       "enabled": [],
       "error": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -1912,12 +1431,6 @@
       "enabled": null,
       "error": null,
       "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
         [
           "status",
           "No models available"
@@ -1938,14 +1451,7 @@
       "installed": false,
       "enabled": null,
       "error": "availability refused",
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -1961,11 +1467,7 @@
       "installed": false,
       "enabled": null,
       "error": "refresh refused",
-      "events": [
-        [
-          "refresh"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -1982,16 +1484,6 @@
         [
           "scope",
           []
-        ],
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "providers",
-          2
         ],
         [
           "render"
@@ -2014,10 +1506,6 @@
         [
           "persist",
           null
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [],
@@ -2036,16 +1524,6 @@
         [
           "scope",
           []
-        ],
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "providers",
-          2
         ],
         [
           "render"
@@ -2068,10 +1546,6 @@
         [
           "persist",
           []
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [],
@@ -2090,9 +1564,6 @@
     "expected": {
       "events": [
         [
-          "available"
-        ],
-        [
           "scope",
           [
             [
@@ -2100,10 +1571,6 @@
               null
             ]
           ]
-        ],
-        [
-          "providers",
-          1
         ],
         [
           "render"
@@ -2137,10 +1604,6 @@
           [
             "z/tail"
           ]
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [
@@ -2165,9 +1628,6 @@
     "expected": {
       "events": [
         [
-          "available"
-        ],
-        [
           "scope",
           [
             [
@@ -2179,10 +1639,6 @@
               null
             ]
           ]
-        ],
-        [
-          "providers",
-          2
         ],
         [
           "render"
@@ -2223,10 +1679,6 @@
             "z/tail",
             "a/alpha"
           ]
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [
@@ -2261,16 +1713,6 @@
           []
         ],
         [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "providers",
-          2
-        ],
-        [
           "render"
         ]
       ],
@@ -2296,10 +1738,6 @@
         [
           "persist",
           null
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [],
@@ -2323,16 +1761,6 @@
         [
           "scope",
           []
-        ],
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "providers",
-          2
         ],
         [
           "render"
@@ -2360,10 +1788,6 @@
         [
           "persist",
           null
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [],
@@ -2388,16 +1812,6 @@
         [
           "scope",
           []
-        ],
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "providers",
-          2
         ],
         [
           "render"
@@ -2438,10 +1852,6 @@
             "z/tail",
             "unknown/extra"
           ]
-        ],
-        [
-          "status",
-          "Model selection saved to settings"
         ]
       ],
       "scope": [],
@@ -2492,28 +1902,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2530,28 +1919,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2568,28 +1936,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2606,28 +1953,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2644,28 +1970,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2682,28 +1987,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2720,28 +2004,7 @@
       "error": null,
       "installed": true,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2762,31 +2025,7 @@
       "enabled": [
         "a/alpha"
       ],
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "available"
-        ],
-        [
-          "clear"
-        ],
-        [
-          "add",
-          "selector"
-        ],
-        [
-          "focus",
-          "selector"
-        ],
-        [
-          "render"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2805,14 +2044,7 @@
       "error": "model patterns must be strings",
       "installed": false,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2831,14 +2063,7 @@
       "error": "model patterns must be strings",
       "installed": false,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2857,14 +2082,7 @@
       "error": "model patterns must be strings",
       "installed": false,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2883,14 +2101,7 @@
       "error": "model patterns must be strings",
       "installed": false,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2909,14 +2120,7 @@
       "error": "model patterns must be strings",
       "installed": false,
       "enabled": null,
-      "events": [
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ]
-      ],
+      "events": [],
       "scope": [],
       "count": null,
       "shown": false
@@ -2948,11 +2152,7 @@
     "expected": {
       "events": [
         [
-          "stored"
-        ],
-        [
-          "key",
-          "anthropic"
+          "key"
         ],
         [
           "warning",
@@ -3125,12 +2325,6 @@
           "a/alpha"
         ],
         [
-          "footer"
-        ],
-        [
-          "border"
-        ],
-        [
           "status",
           "Model: alpha"
         ]
@@ -3193,16 +2387,6 @@
         [
           "scope",
           []
-        ],
-        [
-          "refresh"
-        ],
-        [
-          "available"
-        ],
-        [
-          "providers",
-          3
         ],
         [
           "render"
