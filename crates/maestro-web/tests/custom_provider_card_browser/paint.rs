@@ -85,6 +85,9 @@ fn painted_parts(root: &Element, presentation: &BrandPresentation<'_>) {
     painted_actions(root, presentation);
 }
 /// The card paints its own border around measured text, without a clipping surface.
+///
+/// The page snaps border widths to whole device pixels under its scale and zoom, so the shipped
+/// width is the one a probe beside the card resolves.
 fn painted_card(root: &Element, presentation: &BrandPresentation<'_>) {
     let name = select(root, ".maestro-provider-name");
     let details = select(root, ".maestro-provider-details");
@@ -94,9 +97,10 @@ fn painted_card(root: &Element, presentation: &BrandPresentation<'_>) {
         "solid",
         "the card paints its own border"
     );
+    let parent = root.parent_element().unwrap();
     assert_eq!(
         computed(root, "border-top-width"),
-        "1px",
+        resolved(&parent, ("border-top", "1px solid"), "border-top-width"),
         "the card paints its own border"
     );
     assert_eq!(
@@ -272,29 +276,37 @@ fn focus_ring(view: &DomView, parent: &Element, control: &HtmlElement) {
         accent,
         "focus turns the control border accent"
     );
-    let ring = mixed_color(
-        view,
+    let ring = resolved(
         parent,
-        "color-mix(in srgb, var(--maestro-color-accent) 50%, transparent)",
+        (
+            "background-color",
+            "color-mix(in srgb, var(--maestro-color-accent) 50%, transparent)",
+        ),
+        "background-color",
     );
+    assert_ne!(ring, "rgba(0, 0, 0, 0)", "the page resolves the blend");
     assert!(
         computed(control, "box-shadow").contains(&ring),
         "focus paints the shipped accent blend around the control"
     );
 }
-/// The colour the page resolves one declaration to, read from a connected probe element.
-fn mixed_color(view: &DomView, parent: &Element, declaration: &str) -> String {
-    let probe = view.document.create_element("div").unwrap();
+/// The `property` value the page resolves one declaration to, read from a probe element
+/// connected in `parent`.
+fn resolved(parent: &Element, (name, declaration): (&str, &str), property: &str) -> String {
+    let probe = parent
+        .owner_document()
+        .unwrap()
+        .create_element("div")
+        .unwrap();
     probe
         .unchecked_ref::<HtmlElement>()
         .style()
-        .set_property("background-color", declaration)
+        .set_property(name, declaration)
         .unwrap();
     parent.append_child(&probe).unwrap();
-    let color = computed(&probe, "background-color");
+    let value = computed(&probe, property);
     probe.remove();
-    assert_ne!(color, "rgba(0, 0, 0, 0)", "the page resolves the blend");
-    color
+    value
 }
 /// The shared native button paints its hover surface.
 async fn hover_button(view: &DomView, page: &JsValue, button: &HtmlElement) {
