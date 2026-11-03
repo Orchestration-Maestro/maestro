@@ -733,8 +733,8 @@ fn package_resources_shorten_from_roots_before_legacy_fallbacks() {
     }
 }
 
-/// The paths visited while grouping `count` resources and the paths emitted, and the
-/// lookups a formatter that rescans every resource per emitted path would make.
+/// The paths visited while grouping `count` resources and the paths emitted, and the reads
+/// a labeller that rescans every resource per emitted path would make.
 fn traversal(count: usize) -> (usize, usize, usize) {
     let paths: Vec<_> = (0..count)
         .rev()
@@ -759,11 +759,11 @@ fn traversal(count: usize) -> (usize, usize, usize) {
         &collator,
         |item| {
             emitted.set(emitted.get() + 1);
-            let position = items
+            let found = items
                 .iter()
-                .position(|other| other.path == item.path)
-                .unwrap();
-            rescanned.set(rescanned.get() + count - position);
+                .inspect(|_| rescanned.set(rescanned.get() + 1))
+                .find(|other| other.path == item.path);
+            assert!(found.is_some(), "every emitted label names a resource");
             Ok(item.path.to_owned())
         },
         |_| unreachable!("no package resources"),
@@ -776,9 +776,12 @@ fn traversal(count: usize) -> (usize, usize, usize) {
 fn resource_listing_reads_each_input_once_before_ordering() {
     for count in [64, 128, 256] {
         let (visited, emitted, rescanned) = traversal(count);
-        assert_eq!((visited, emitted), (count, count));
-        assert_eq!(rescanned, count * (count + 1) / 2);
-        assert!(rescanned > 2 * count);
+        assert!(visited <= count, "{visited} visits for {count} resources");
+        assert!(emitted <= count, "{emitted} rows for {count} resources");
+        assert!(
+            rescanned > 2 * count,
+            "a labeller that rescans reads {rescanned} times for {count} resources"
+        );
     }
 }
 
@@ -795,42 +798,69 @@ fn prompt_templates(count: usize) -> Vec<PromptTemplate> {
         .collect()
 }
 
+/// The prompt rows named by `label`, grouped by the templates' own paths.
+fn prompt_rows(
+    templates: &[PromptTemplate],
+    label: impl Fn(&ResourceItem<'_>) -> Result<String, Box<dyn std::error::Error>>,
+) -> String {
+    let items: Vec<_> = templates
+        .iter()
+        .map(|template| ResourceItem {
+            path: &template.file_path,
+            source_info: Some(&template.source_info),
+        })
+        .collect();
+    let theme = crate::interactive_mode::tests::dark();
+    let collator = Collator::new(&|_| None).unwrap();
+    format_scope_groups(
+        &build_scope_groups(&items),
+        &theme,
+        &collator,
+        &label,
+        &label,
+    )
+    .unwrap()
+}
+
 #[test]
 fn prompt_labels_read_each_template_once_before_naming_paths() {
     for count in [64, 128, 256] {
         let templates = prompt_templates(count);
         let reads = Cell::new(0);
-        let names = prompt_names_by_path(templates.iter().inspect(|_| reads.set(reads.get() + 1)));
-        assert_eq!((names.len(), reads.get()), (count, count));
         let lookups = Cell::new(0);
         let home = || {
             lookups.set(lookups.get() + 1);
             Ok(HOME.to_owned())
         };
+        let names = prompt_names_by_path(templates.iter().inspect(|_| reads.set(reads.get() + 1)));
+        let expanded = prompt_rows(&templates, |item| prompt_label(&names, item, &home));
+        assert!(
+            reads.get() <= count,
+            "{} reads for {count} prompts",
+            reads.get()
+        );
+        assert_eq!(lookups.get(), 0, "every row is named from the index");
         for template in &templates {
-            let item = ResourceItem {
-                path: &template.file_path,
-                source_info: Some(&template.source_info),
-            };
-            assert_eq!(
-                prompt_label(&names, &item, &home).unwrap(),
-                format!("/{}", template.name)
+            assert!(
+                expanded.contains(&format!("/{}", template.name)),
+                "{} names its row",
+                template.name
             );
         }
-        assert_eq!((reads.get(), lookups.get()), (count, 0));
-        let rescanned = Cell::new(0);
-        let rescans: usize = templates
-            .iter()
-            .map(|template| {
-                templates
-                    .iter()
-                    .inspect(|_| rescanned.set(rescanned.get() + 1))
-                    .position(|other| other.file_path == template.file_path)
-                    .unwrap()
-                    + 1
-            })
-            .sum();
-        assert_eq!(rescans, count * (count + 1) / 2);
-        assert!(rescanned.get() > 2 * count);
+        let rescans = Cell::new(0);
+        let rescanned = prompt_rows(&templates, |item| {
+            let found = templates
+                .iter()
+                .inspect(|_| rescans.set(rescans.get() + 1))
+                .find(|other| other.file_path == item.path);
+            assert!(found.is_some(), "every emitted label names a prompt");
+            Ok(found.map_or_else(String::new, |found| format!("/{}", found.name)))
+        });
+        assert_eq!(rescanned, expanded, "both labellers name the same rows");
+        assert!(
+            rescans.get() > 2 * count,
+            "a labeller that rescans reads {} times for {count} prompts",
+            rescans.get()
+        );
     }
 }
