@@ -418,10 +418,11 @@ fn workflow(
     cwd: &str,
     agent: &str,
     root: &str,
+    command: &[String],
 ) -> std::io::Result<()> {
     use maestro_packages::InstalledSourceScope::{Project, User};
     let settings = Rc::new(RefCell::new(SettingsManager::in_memory(Settings(
-        json!({"npmCommand":["/bin/sh","-c",format!("printf '%s' '{root}'"),"--"]})
+        json!({"npmCommand": command})
             .as_object()
             .cloned()
             .unwrap_or_default(),
@@ -486,6 +487,12 @@ fn configured_sources_work_without_acquisition() {
     std::fs::create_dir_all(maestro_path::join(&[&cwd, ".maestro/git/github.com/u/r"])).unwrap();
     std::fs::create_dir_all(maestro_path::join(&[&root, "@scope"])).unwrap();
     std::fs::write(maestro_path::join(&[&root, "@scope/pkg"]), "contents").unwrap();
+    let stand_in = crate::native_support::command(
+        scratch.path(),
+        "npm",
+        &json!({"scenario": "npm", "root": root}),
+    );
+    let command = [stand_in.to_string_lossy().into_owned()];
     workflow(
         NativePackageOperations::new(
             Rc::new(|| false),
@@ -494,6 +501,7 @@ fn configured_sources_work_without_acquisition() {
         &cwd,
         &agent,
         &root,
+        &command,
     )
     .unwrap();
     let effects = Rc::new(Effects::default());
@@ -501,19 +509,10 @@ fn configured_sources_work_without_acquisition() {
         .outputs
         .borrow_mut()
         .push_back(Ok(support::output(&root, "", Some(0))));
-    workflow(Controlled(effects.clone()), &cwd, &agent, &root).unwrap();
+    workflow(Controlled(effects.clone()), &cwd, &agent, &root, &command).unwrap();
     assert_eq!(
         *effects.calls.borrow(),
-        vec![(
-            "/bin/sh".into(),
-            vec![
-                "-c".into(),
-                format!("printf '%s' '{root}'"),
-                "--".into(),
-                "root".into(),
-                "-g".into()
-            ]
-        )]
+        vec![(command[0].clone(), vec!["root".into(), "-g".into()])]
     );
 }
 #[cfg(windows)]

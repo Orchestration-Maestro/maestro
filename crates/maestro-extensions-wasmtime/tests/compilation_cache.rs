@@ -172,8 +172,19 @@ fn observe_compilation() {
     }
 }
 
-/// Runs setup in one executable and a second executable after it, both under one scratch user
-/// cache, with the archive signal shared CI gives nextest when `archived` is set.
+/// The user cache the tests inherit from the setup: the `XDG_CACHE_HOME` entry the setup wrote to
+/// `environment`, else the scratch root's `cache` directory when it exports none.
+fn exported_cache(environment: &Path, scratch: &Scratch) -> std::path::PathBuf {
+    std::fs::read_to_string(environment)
+        .unwrap()
+        .lines()
+        .find_map(|line| line.strip_prefix("XDG_CACHE_HOME="))
+        .map_or_else(|| scratch.path().join("cache"), std::path::PathBuf::from)
+}
+
+/// Runs setup in one executable and a second executable after it, with the archive signal shared
+/// CI gives nextest when `archived` is set. The second executable reads the user cache the setup
+/// exported, as nextest's tests do, and the scratch cache when the setup exported none.
 fn share_compiled_bytes(test: &str, archived: bool) {
     let scratch = Scratch::new().unwrap();
     let binaries = cache_consumers(scratch.path(), archived);
@@ -207,7 +218,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
                 "NEXTEST_LD_LIBRARY_PATH",
                 scratch.path().join("target/debug"),
             )
-            .env("XDG_CACHE_HOME", scratch.path().join("cache"))
+            .env("XDG_CACHE_HOME", exported_cache(&environment, &scratch))
             .env("XDG_CONFIG_HOME", scratch.path().join("config"))
             .env_remove("TEST_PREPARE_OUTPUT")
             .command()

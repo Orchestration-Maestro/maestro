@@ -29,15 +29,10 @@ pub fn git(dir: &str, args: &[&str]) -> String {
 #[cfg(unix)]
 /// Install the prepared native fixture as `name` below `directory`, selected by `record`.
 pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .map(PathBuf::from)
-        .expect("run just prepare-tests, then run these tests with cargo nextest");
     std::fs::create_dir_all(directory).expect("the alias directory is creatable");
     let path = directory.join(name);
-    maestro_test_process::install_executable(&artifact, &path).expect("install starts");
-    let mut record_path = path.as_os_str().to_owned();
-    record_path.push(".fixture");
-    std::fs::write(record_path, format!("command\n{record}")).expect("the record is writable");
+    maestro_test_process::install_command(&path, &record.to_string())
+        .expect("the native fixture installs");
     path
 }
 
