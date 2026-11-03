@@ -245,7 +245,7 @@ The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
 `HOST` digest and `COMPLETE 269/269` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
-with all of them, after the report painting has still run. `PHASE` records
+with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
@@ -260,9 +260,9 @@ that renderer's native content quad. The driver releases lookup handles after
 success and failure, and retains attached renderer sessions only for the page's
 lifetime. The driver tracks the default execution context of every
 automatically attached iframe, including frames whose scripts are already
-running when they attach. It installs the binding script with a
-run-immediately new-document script and sends no evaluation that needs a default
-context, because a frame that loads from a URL attaches before its document
+running when they attach. It registers the binding script as a
+new-document script that also runs immediately, and sends no evaluation that needs a
+default context, because a frame that loads from a URL attaches before its document
 commits and has none yet: it runs the script at commit, and a `srcdoc` frame
 runs it at once. A host call that arrives while an iframe is still
 being set up waits, and runs in arrival order once that setup completes,

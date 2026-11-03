@@ -163,8 +163,8 @@ impl<'a> Page<'a> {
 
     /// Install the same binding boundary in a page or an isolated child renderer.
     ///
-    /// The script runs at once in a committed document and at every later commit, so a frame
-    /// attached before its document commits has no default context to evaluate in yet.
+    /// A frame attached before its document commits has no default context yet, so the script is
+    /// registered to run at once in a committed document and at every later commit.
     pub(super) async fn initialize_session(&mut self, session: &SessionId) -> io::Result<()> {
         for method in ["Page.enable", "Runtime.enable", "Inspector.enable"] {
             self.command(Some(session), method, json!({})).await?;
