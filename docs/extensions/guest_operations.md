@@ -352,6 +352,19 @@ independent `Readable` handles. A read waits for bytes or EOF, preserves arbitra
 data, and returns `None` only at EOF. Reading or closing one alias affects its shared
 consumer; getting another handle does not reset or replay bytes.
 
+`streams::read_to_end` reads a handle's remaining bytes to end of stream without
+decoding them, and returns a read failure unchanged:
+
+```rust
+# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+# use maestro_extensions_wasm::streams::read_to_end;
+# async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
+# let child = api.native_io().spawn("git".into(), vec![], Default::default()).await?;
+let log = read_to_end(child.stdout().unwrap()).await?;
+# Ok(())
+# }
+```
+
 `wait` observes the child's exit and both output-close phases without consuming output.
 Numeric exit codes and signal termination remain distinct. `kill` controls the retained
 child and returns false after its exit has been observed. Explicit PID signalling supports

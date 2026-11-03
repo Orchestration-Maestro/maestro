@@ -3597,24 +3597,31 @@ fn guest_schema_validation_edge_is_native_development_only() {
 
 /// The native process owner reads POSIX shell operands from the text leaf, which gains no edge.
 #[test]
-fn native_process_and_guest_share_text_without_giving_text_dependencies() {
-    for owner in ["maestro-process", "maestro-extensions-wasm"] {
-        let workspace = Workspace::new();
-        workspace.foundation(&[owner, "maestro-text"]);
-        workspace.member(
-            owner,
-            owner,
-            r#"[dependencies]
+fn text_leaf_serves_the_process_owner_without_gaining_an_edge() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-process", "maestro-text"]);
+    workspace.member(
+        "maestro-process",
+        "maestro-process",
+        r#"[dependencies]
 maestro-text = { path = "../maestro-text" }
 "#,
-        );
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    }
-    let text = support::policy::POLICY
-        .iter()
-        .find(|(name, _)| *name == "maestro-text")
-        .unwrap();
-    assert!(text.1.is_empty());
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-text", "maestro-process"]);
+    workspace.member(
+        "maestro-text",
+        "maestro-text",
+        r#"[dependencies]
+maestro-process = { path = "../maestro-process" }
+"#,
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-text must not depend on workspace crate maestro-process".into())
+    );
 }
 
 /// The guest's component tests share the product engine through one native development edge,
