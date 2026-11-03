@@ -2622,6 +2622,67 @@ fn consumer_workspace_never_reaches_the_shared_cargo_home() {
     assert!(metadata.status.success());
 }
 
+/// A staged change to the conventions checker runs its suite through the recipe that prepares the native fixture.
+#[cfg(unix)]
+#[test]
+fn maestro_hook_conventions_suite_runs_through_the_prepared_recipe() {
+    drive();
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let checker = add_conventions_checker(&workspace);
+    fs::write(checker.join("src/lib.rs"), "//! Checker, edited.\n").unwrap();
+    git(
+        &workspace,
+        &["add", "--", "crates/maestro-test-conventions/src/lib.rs"],
+    );
+    let output = run_consumer_hook(
+        "maestro_hook_conventions_suite_runs_through_the_prepared_recipe",
+        &workspace,
+    );
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
+    assert!(
+        log.lines()
+            .any(|line| line == "nextest run -p maestro-test-conventions --locked"),
+        "{log}"
+    );
+    assert!(!log.contains("test -p maestro-test-conventions"), "{log}");
+}
+
+/// Add and commit a `maestro-test-conventions` member to the consumer workspace and return its directory.
+#[cfg(unix)]
+fn add_conventions_checker(workspace: &Path) -> PathBuf {
+    let checker = workspace.join("crates/maestro-test-conventions");
+    fs::create_dir_all(checker.join("src")).unwrap();
+    fs::write(
+        checker.join("Cargo.toml"),
+        "[package]\nname = \"maestro-test-conventions\"\nversion = \"0.0.0\"\nedition = \"2024\"\npublish = false\n",
+    )
+    .unwrap();
+    fs::write(checker.join("src/lib.rs"), "//! Checker.\n").unwrap();
+    fs::write(
+        workspace.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"leaf\", \"caller\", \"crates/maestro-test-conventions\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
+    let lock = consumer_toolchain(workspace)
+        .args(["generate-lockfile", "--offline"])
+        .output()
+        .unwrap();
+    assert!(lock.status.success());
+    git(
+        workspace,
+        &["add", "--", "Cargo.toml", "Cargo.lock", "crates"],
+    );
+    commit_staged_fixture(workspace);
+    checker
+}
+
 #[cfg(unix)]
 #[test]
 fn maestro_hook_checks_only_selected_packages() {
@@ -3187,7 +3248,7 @@ fn write_consumer_tool(workspace: &Path) {
     fs::write(
         workspace.join("bin/cargo"),
         format!(
-            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$(dirname \"$0\")/../cargo-log\"\nif [ -n \"${{MAESTRO_FAIL_PHASE:-}}\" ] && [ \"$1\" = \"$MAESTRO_FAIL_PHASE\" ]; then exit 17; fi\ncase \"$1\" in\n  hakari|test) exit 0 ;;\nesac\nexec '{cargo}' \"$@\"\n"
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$(dirname \"$0\")/../cargo-log\"\nif [ -n \"${{MAESTRO_FAIL_PHASE:-}}\" ] && [ \"$1\" = \"$MAESTRO_FAIL_PHASE\" ]; then exit 17; fi\ncase \"$1\" in\n  hakari|test|nextest) exit 0 ;;\nesac\nexec '{cargo}' \"$@\"\n"
         ),
     )
     .unwrap();
@@ -3236,6 +3297,12 @@ fn commit_fixture(workspace: &Path) {
             "caller",
         ],
     );
+    commit_staged_fixture(workspace);
+}
+
+/// Commit staged fixture inputs with the controlled local author.
+#[cfg(unix)]
+fn commit_staged_fixture(workspace: &Path) {
     git(
         workspace,
         &[

@@ -457,12 +457,7 @@ fn finished_executions_release_their_context_signals() {
             );
         }
         super::abort_observers::bind(&runner, &Cancellation::new());
-        super::abort_observers::signal_command(&runner, "barrier").await;
-        assert_eq!(
-            super::abort_observers::retained(&mut releases),
-            0,
-            "finished executions kept their context signals"
-        );
+        super::abort_observers::all_released(releases).await;
     });
 }
 

@@ -21,6 +21,8 @@ use maestro_protocol::{
 use maestro_test_directory::Scratch;
 use maestro_workspace::layout::PaneId;
 use serde_json::{Value, json};
+use std::io::{self, Read, Write};
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 
 /// The layout an apply answers with.
@@ -139,11 +141,10 @@ fn a_leaf_command_runs_with_its_directory_and_environment() {
         async |app| {
             add_workspaces(app, &["/tabs"]);
             let scratch = Scratch::new().unwrap();
-            let script = "printf '\\nseen:<%s>|<%s>|<%s>\\n' \"$ROLE\" \"$MAESTRO_PANE_ID\" \"$PWD\"; \
-                          exec sleep 60";
+            let reporter = install_leaf(scratch.path(), "reporter", "report-environment");
             let leaf = json!({
                 "type": "pane", "cwd": scratch.path(), "env": {"ROLE": "tests"},
-                "command": ["/bin/sh", "-c", script]
+                "command": [reporter]
             });
             let layout = applied(answer(app, apply_wire(&leaf, &json!({}))).await);
             let pane = layout.focused_pane_id.clone();
@@ -157,11 +158,7 @@ fn a_leaf_command_runs_with_its_directory_and_environment() {
             assert!(text.contains(&expected), "{text:?}");
             assert_eq!(
                 app.state.terminals[&terminal].launch_argv,
-                Some(vec![
-                    "/bin/sh".to_owned(),
-                    "-c".to_owned(),
-                    script.to_owned()
-                ])
+                Some(vec![reporter.display().to_string()])
             );
         },
     );
@@ -457,23 +454,90 @@ fn shell_leaves_start_the_configured_shell_without_a_launch_command() {
     );
 }
 
-/// Blocks hangup, reports `ready` on a line of its own (the launch helper leaves one open), takes
-/// the hangup with `sigwait` (a handler would miss one that arrives before it is installed),
-/// creates `gate` and runs on until it is terminated, so the pane takes a while to stop.
-const HOLDS_UNTIL_TERMINATED: &str = "import signal, sys, time
-signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGHUP})
-print('\\nready', flush=True)
-signal.sigwait({signal.SIGHUP})
-open(sys.argv[1], 'w').close()
-while True:
-    time.sleep(0.05)";
+/// Installs the prepared native fixture as `name` in `directory`, selected by a `command` scenario.
+fn install_leaf(directory: &Path, name: &str, scenario: &str) -> PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("nextest native-fixture setup supplies the artifact");
+    let path = directory.join(name);
+    maestro_test_process::install_executable(Path::new(&artifact), &path).unwrap();
+    let record = json!({"scenario": scenario});
+    std::fs::write(
+        directory.join(format!("{name}.fixture")),
+        format!("command\n{record}"),
+    )
+    .unwrap();
+    path
+}
 
-/// A leaf that holds until terminated; see `HOLDS_UNTIL_TERMINATED`.
-fn holds_until_terminated(gate: &Path) -> Value {
-    json!({
-        "type": "pane",
-        "command": ["/usr/bin/python3", "-c", HOLDS_UNTIL_TERMINATED, gate]
-    })
+/// Run the layout operation with a checked relay, returning as soon as either fails.
+async fn relay_hangup(
+    socket: &Path,
+    body: impl std::future::Future<Output = ()>,
+) -> io::Result<()> {
+    let listener = UnixListener::bind(socket)?;
+    let (report, result) = tokio::sync::oneshot::channel();
+    let relay = std::thread::spawn(move || {
+        // A failed body may drop its receiver before the relay ends.
+        let _ = report.send(release_after_hangup(&listener));
+    });
+    tokio::try_join!(
+        async {
+            result.await.map_err(io::Error::other)??;
+            relay
+                .join()
+                .map_err(|_| io::Error::other("hangup relay panicked"))
+        },
+        async {
+            body.await;
+            Ok(())
+        }
+    )?;
+    Ok(())
+}
+
+/// Release the one waiting leaf after the one holder reports its hangup, in either arrival order.
+fn release_after_hangup(listener: &UnixListener) -> io::Result<()> {
+    let mut waiting = None;
+    let mut hung_up = false;
+    for stream in listener.incoming() {
+        let mut stream = stream?;
+        let mut kind = [0];
+        stream.read_exact(&mut kind)?;
+        match kind {
+            [b'h'] => hung_up = true,
+            [b'w'] => waiting = Some(stream),
+            _ => return Err(io::Error::other("unknown relay announcement")),
+        }
+        if hung_up && let Some(leaf) = waiting.take() {
+            release(leaf);
+            return Ok(());
+        }
+    }
+    Err(io::Error::other("hangup relay closed before release"))
+}
+
+/// A peer that closes before announcing returns its I/O error to the layout operation.
+#[test]
+fn hangup_relay_reports_closed_stream() {
+    let scratch = Scratch::new().unwrap();
+    let socket = scratch.path().join("hangup");
+    let error = crate::support::runtime::block_on(relay_hangup(&socket, async {
+        drop(UnixStream::connect(&socket).unwrap());
+    }))
+    .unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::UnexpectedEof);
+}
+
+/// Sends the release byte; a leaf that already ended needs none.
+fn release(mut leaf: UnixStream) {
+    let _ = leaf.write_all(b"x");
+}
+
+/// A leaf that holds the hangup, reports `ready` on a line of its own (the launch helper leaves
+/// one open) and tells `socket` once the hangup arrives, so the pane takes a while to stop.
+fn holds_until_terminated(directory: &Path, socket: &Path) -> Value {
+    let holder = install_leaf(directory, "holder", "hold-hangup");
+    json!({"type": "pane", "command": [holder, socket]})
 }
 
 /// Waits until the focused pane of `layout` has blocked hangup, so shutdown cannot reach it first.
@@ -486,12 +550,10 @@ async fn wait_until_ready(app: &TestApp, layout: &LayoutDescription) {
     wait_for_line(app, &terminal, "ready").await;
 }
 
-/// A leaf that exits as soon as `gate` exists.
-fn exits_once_seen(gate: &Path) -> Value {
-    json!({
-        "type": "pane",
-        "command": ["/bin/sh", "-c", "while [ ! -e \"$0\" ]; do sleep 0.02; done", gate]
-    })
+/// A leaf that exits once `socket` releases it.
+fn exits_once_released(directory: &Path, socket: &Path) -> Value {
+    let waiter = install_leaf(directory, "waiter", "await-release");
+    json!({"type": "pane", "command": [waiter, socket]})
 }
 
 #[test]
@@ -501,16 +563,26 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
         async |app| {
             add_workspaces(app, &["/tabs"]);
             let scratch = Scratch::new().unwrap();
-            let gate = scratch.path().join("hangup");
-            let holder = apply_wire(&holds_until_terminated(&gate), &json!({"tab_id": "w1:t1"}));
-            let held = applied(answer(app, holder).await);
-            wait_until_ready(app, &held).await;
-            let replacement = apply_wire(&exits_once_seen(&gate), &json!({"tab_id": "w1:t2"}));
-            assert_eq!(
-                answer(app, replacement).await,
-                failure("layout_apply_failed", "new layout tab disappeared")
-            );
-            assert!(workspace_ids(app).is_empty());
+            let socket = scratch.path().join("hangup");
+            Box::pin(relay_hangup(&socket, async {
+                let holder = apply_wire(
+                    &holds_until_terminated(scratch.path(), &socket),
+                    &json!({"tab_id": "w1:t1"}),
+                );
+                let held = applied(answer(app, holder).await);
+                wait_until_ready(app, &held).await;
+                let replacement = apply_wire(
+                    &exits_once_released(scratch.path(), &socket),
+                    &json!({"tab_id": "w1:t2"}),
+                );
+                assert_eq!(
+                    answer(app, replacement).await,
+                    failure("layout_apply_failed", "new layout tab disappeared")
+                );
+                assert!(workspace_ids(app).is_empty());
+            }))
+            .await
+            .unwrap();
         },
     );
 }
@@ -522,30 +594,40 @@ fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout
         async |app| {
             add_workspaces(app, &["/first", "/second", "/third"]);
             let scratch = Scratch::new().unwrap();
-            let gate = scratch.path().join("hangup");
-            let leaving = apply_wire(&exits_once_seen(&gate), &json!({"tab_id": "w1:t1"}));
-            applied(answer(app, leaving).await);
-            let holder = apply_wire(&holds_until_terminated(&gate), &json!({"tab_id": "w2:t1"}));
-            let held = applied(answer(app, holder).await);
-            wait_until_ready(app, &held).await;
-            let replacement = apply_wire(&sleeper(), &json!({"tab_id": "w2:t2"}));
-            let layout = applied(answer(app, replacement).await);
-            assert_eq!(
-                (layout.workspace_id.as_str(), layout.tab_id.as_str()),
-                ("w2", "w2:t3")
-            );
-            assert_eq!(workspace_ids(app), ["w2", "w3"]);
-            let closed: Vec<_> = events_after(app, 0)
-                .into_iter()
-                .filter_map(|event| match event {
-                    EventData::TabClosed {
-                        tab_id,
-                        workspace_id,
-                    } if tab_id == "w2:t2" => Some(workspace_id),
-                    _ => None,
-                })
-                .collect();
-            assert_eq!(closed, ["w2"]);
+            let socket = scratch.path().join("hangup");
+            Box::pin(relay_hangup(&socket, async {
+                let leaving = apply_wire(
+                    &exits_once_released(scratch.path(), &socket),
+                    &json!({"tab_id": "w1:t1"}),
+                );
+                applied(answer(app, leaving).await);
+                let holder = apply_wire(
+                    &holds_until_terminated(scratch.path(), &socket),
+                    &json!({"tab_id": "w2:t1"}),
+                );
+                let held = applied(answer(app, holder).await);
+                wait_until_ready(app, &held).await;
+                let replacement = apply_wire(&sleeper(), &json!({"tab_id": "w2:t2"}));
+                let layout = applied(answer(app, replacement).await);
+                assert_eq!(
+                    (layout.workspace_id.as_str(), layout.tab_id.as_str()),
+                    ("w2", "w2:t3")
+                );
+                assert_eq!(workspace_ids(app), ["w2", "w3"]);
+                let closed: Vec<_> = events_after(app, 0)
+                    .into_iter()
+                    .filter_map(|event| match event {
+                        EventData::TabClosed {
+                            tab_id,
+                            workspace_id,
+                        } if tab_id == "w2:t2" => Some(workspace_id),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(closed, ["w2"]);
+            }))
+            .await
+            .unwrap();
         },
     );
 }

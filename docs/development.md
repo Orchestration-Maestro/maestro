@@ -34,7 +34,9 @@ unstaged.
 Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
 no crates. They never widen a mixed change's selection. With no staged crate, the
 hook skips formatting and Clippy. The full conventions suite runs only for staged
-paths under `crates/maestro-test-conventions/`, guarding the checker itself.
+paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
+runs it as `just test-conventions`, which prepares the native fixture the probes
+install and then runs the suite with nextest.
 Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
 the browser entry is present, guarding targets outside native Clippy.
 
@@ -611,6 +613,33 @@ program uses only the common peer. Check both programs for unused support:
 ```sh
 cargo clippy -p maestro-models --all-targets --locked -- -D warnings
 ```
+
+### TLS fixture certificates
+
+The provider tests trust fixed certificates under
+`crates/maestro-models/tests/fixtures/`. They are committed data, and no script or
+certificate library issues them. Each one expires on 2126-10-18, so none of them
+lapses during a test run. The three server-side certificates start on 2019-06-01,
+before 2019-07-01, because Apple's TLS policy refuses a server certificate issued on
+or after that date that is valid for more than 825 days. The client pair starts on
+2026-10-17.
+
+| Files | Subject | Made as |
+| --- | --- | --- |
+| `socks-tls/cert.pem`, `cert.der`, `key.der` | `CN=destination.invalid`, names `destination.invalid` and `localhost` | Self-signed server certificate over the committed key. It is its own trust anchor. |
+| `cloud-authentication/server-ca.pem` | `CN=Controlled Maestro ADC server authority` | Self-signed authority, `CA:TRUE`, key usage `keyCertSign` and `cRLSign`. Its key is not kept. |
+| `cloud-authentication/server.pem`, `server-key.der` | `CN=localhost`, names `localhost` and `127.0.0.1` | Server certificate over the committed key, signed by the server authority. |
+| `cloud-authentication/ca.pem`, `client.pem`, `client-key.der` | `CN=Controlled Maestro ADC CA`, `CN=Controlled ADC Client` | Left as issued: the recorded chain hashes depend on them. |
+
+The server certificates carry `serverAuth` and `digitalSignature, keyEncipherment`
+with `CA:FALSE`, signed with SHA-256 and a random serial.
+
+To replace the SOCKS certificate, issue a new self-signed certificate over the same
+committed key with the subject and names above, then commit the PEM and DER forms
+together. To replace the cloud server certificate, make a new authority key and
+re-issue `server-ca.pem` and `server.pem` together, because the authority key behind
+the committed `server-ca.pem` is not kept. Keep the 2019-06-01 start and the 2126
+expiry on all three server-side certificates.
 
 ### Code scanning
 
@@ -1256,10 +1285,10 @@ Neither family writes harness text.
 
 The `command` family replaces an interpreted stand-in for a program the
 product launches by name. Every scenario works on every platform except `labelled`,
-`stdio`, `hold` and `forward`, and the `SIGTERM`, `SIGKILL` and `SIGRTMAX` signals of
-`output`. Those scenarios, `SIGTERM` and `SIGKILL` need Unix; `SIGRTMAX` needs Linux.
-Install the artifact under the name the product uses,
-then write `command` on the first line of `<alias>.fixture` followed by a JSON
+`stdio`, `hold`, `forward`, `hold-hangup` and `await-release`, and the `SIGTERM`,
+`SIGKILL` and `SIGRTMAX` signals of `output`. Those scenarios, `SIGTERM` and
+`SIGKILL` need Unix; `SIGRTMAX` needs Linux. Install the artifact under the name the
+product uses, then write `command` on the first line of `<alias>.fixture` followed by a JSON
 object whose `scenario` selects one finite behaviour. The fixture parses the whole
 record before any effect and rejects an unknown scenario or field, including in the
 `labelled`, `stdio` and `package` scenarios that declare no fields of their own.
@@ -1275,6 +1304,10 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `holder` | Starts the program named by `descendant` with a shared input pipe, writes `stdout` and `stderr`, and exits at once. The descendant receives end-of-input when the holder ends, so it runs after it, and it keeps the inherited streams open until it finishes. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `hold-hangup` | Requires one socket path. Registers the hangup, prints `ready` on a line of its own, and when the hangup arrives writes `h` to the socket and runs on until terminated. |
+| `await-release` | Requires one socket path. Writes `w` to it, then ends once it receives one byte. |
+| `report-environment` | Prints `seen:<ROLE>\|<MAESTRO_PANE_ID>\|<working directory>` on a line of its own, then runs on until terminated. |
+| `metadata` | Requires `metadata` first and fails anything else before any effect. Reads and prints the file named by `declared` when an operand is `--no-deps`, and the file named by `resolved` otherwise. The files are read on each run, so a test rewrites them between runs. Optional `argv_log` (`path`, `mark`) appends the invocation as `output` does. |
 | `forward` | Appends `marker`, then replaces itself with `program`, which receives the untouched operands. |
 | `prefixed` | Requires `--prefix` and a prefix operand first. For `root`, writes the prefix followed by `suffix` and a newline. Every other invocation appends its operands to `log`, one per line. |
 
@@ -1299,6 +1332,20 @@ configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it. A `hold`
 record may omit `ready` when no caller reads that marker. A `holder` names its
 descendant by an installed alias, whose own record gives that descendant its work.
+
+The conventions checker's architecture tests answer its Cargo metadata and compiler
+queries the same way. `Workspace::metadata_command` installs a `metadata` Cargo whose
+`declared` and `resolved` files sit in the fixture workspace, and `Workspace::command`
+installs an `output` compiler that prints a host line, fails, or prints text without
+one. Both probes run in a child, and a failing alias stands in for a compiler wrapper
+that must never run. A test that holds a writer open does so on the alias's `.fixture`
+record, because a writer on the executable itself makes the launch fail with
+`Text file busy`.
+
+The daemon's layout-apply tests launch these as pane commands. The test owns a Unix
+socket and a thread that answers `w` and `h` records: a `hold-hangup` leaf keeps its
+pane alive through the hangup, and an `await-release` leaf ends only after that
+hangup was reported, so the ordering needs no file polling.
 
 A command that only prints installation output uses the `output` scenario. The
 command-line startup tests install it as `controlled-npm` and write its two install
@@ -1487,6 +1534,9 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
+| `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
+| `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
 | `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |

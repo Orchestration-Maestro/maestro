@@ -183,10 +183,9 @@ fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> 
 fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut format = Command::new(cargo);
     format.current_dir(checkout).arg("fmt");
-    let mut conventions = Command::new(cargo);
-    conventions
-        .current_dir(checkout)
-        .args(["test", "-p", "maestro-test-conventions", "--locked"]);
+    // The suite's probes install the prepared native fixture, which only the recipe prepares.
+    let mut conventions = Command::new("just");
+    conventions.current_dir(checkout).arg("test-conventions");
     let mut smoke = Command::new(std::env::current_exe()?);
     smoke.arg("check-browser-smoke");
     let active = checkout

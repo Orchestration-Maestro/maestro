@@ -424,6 +424,196 @@ fn malformed_chat_records_have_no_partial_effects() {
     }
 }
 
+/// The metadata stand-in reads its documents when it runs and answers only the metadata operation.
+#[cfg(unix)]
+#[test]
+fn metadata_stand_in_serves_declared_and_resolved_documents_per_run() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let declared = root.path().join("declared.json");
+    let resolved = root.path().join("resolved.json");
+    let log = root.path().join("order");
+    let record = json!({
+        "scenario": "metadata",
+        "declared": declared,
+        "resolved": resolved,
+        "argv_log": {"path": log, "mark": "cargo"}
+    });
+    let cargo = command_alias(root.path(), "cargo", &record);
+    let run = |operands: &[&str]| Command::new(&cargo).args(operands).output().unwrap();
+    for (document, operands, expected) in [
+        (
+            "first",
+            &["metadata", "--no-deps", "--offline"][..],
+            &b"first"[..],
+        ),
+        ("second", &["metadata", "--no-deps"][..], b"second"),
+        (
+            "third",
+            &["metadata", "--filter-platform", "x"][..],
+            b"third",
+        ),
+    ] {
+        let target = if operands.contains(&"--no-deps") {
+            &declared
+        } else {
+            &resolved
+        };
+        std::fs::write(target, document).unwrap();
+        let output = run(operands);
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected);
+    }
+    // Another operation is refused without output, and only served runs are logged.
+    let refused = run(&["build"]);
+    assert!(!refused.status.success());
+    assert!(refused.stdout.is_empty());
+    assert_eq!(
+        std::fs::read(&log).unwrap(),
+        b"cargo\0metadata\0--no-deps\0--offline\0cargo\0metadata\0--no-deps\0cargo\0metadata\0--filter-platform\0x\0"
+    );
+}
+
+/// A metadata record that omits a document or names an unknown field is rejected before it serves or logs.
+#[cfg(unix)]
+#[test]
+fn malformed_metadata_records_serve_and_log_nothing() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let declared = root.path().join("declared.json");
+    std::fs::write(&declared, "served").unwrap();
+    let log = root.path().join("order");
+    let argv_log = json!({"path": log, "mark": "cargo"});
+    for record in [
+        json!({"scenario": "metadata", "declared": declared, "argv_log": argv_log}),
+        json!({
+            "scenario": "metadata",
+            "declared": declared,
+            "resolved": declared,
+            "argv_log": argv_log,
+            "unknown": true
+        }),
+    ] {
+        let cargo = command_alias(root.path(), "cargo", &record);
+        // `--no-deps` selects the declared document, which exists, so only a
+        // rejected record keeps the stream and the log empty.
+        let run = Command::new(cargo)
+            .args(["metadata", "--no-deps"])
+            .output()
+            .unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty(), "served {record}");
+        assert!(!log.exists(), "logged {record}");
+    }
+}
+
+/// The held leaf reports readiness, takes the hangup without ending, and tells the socket.
+#[cfg(unix)]
+#[test]
+fn hold_hangup_reports_ready_then_signals_the_socket_and_runs_on() {
+    use std::os::unix::net::UnixListener;
+    use std::os::unix::process::ExitStatusExt;
+    let root = Scratch::new().unwrap();
+    let socket = root.path().join("hangup");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let holder = command_alias(
+        root.path(),
+        "holder",
+        &serde_json::json!({"scenario": "hold-hangup"}),
+    );
+    let mut child = Command::new(holder)
+        .arg(&socket)
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut line = String::new();
+    output.read_line(&mut line).unwrap();
+    output.read_line(&mut line).unwrap();
+    assert_eq!(line, "\nready\n");
+    let pid = rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap();
+    rustix::process::kill_process(pid, rustix::process::Signal::HUP).unwrap();
+    let mut told = [0];
+    listener.accept().unwrap().0.read_exact(&mut told).unwrap();
+    assert_eq!(told, *b"h");
+    // The hangup did not end it: only the termination does.
+    assert!(child.try_wait().unwrap().is_none());
+    child.kill().unwrap();
+    assert_eq!(child.wait().unwrap().signal(), Some(9));
+}
+
+/// The waiting leaf announces itself and ends only once the socket releases it.
+#[cfg(unix)]
+#[test]
+fn await_release_ends_only_after_the_socket_sends_a_byte() {
+    use std::os::unix::net::UnixListener;
+    let root = Scratch::new().unwrap();
+    let socket = root.path().join("release");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let waiter = command_alias(
+        root.path(),
+        "waiter",
+        &serde_json::json!({"scenario": "await-release"}),
+    );
+    let mut child = Command::new(waiter).arg(&socket).spawn().unwrap();
+    let (mut stream, _) = listener.accept().unwrap();
+    let mut announced = [0];
+    stream.read_exact(&mut announced).unwrap();
+    assert_eq!(announced, *b"w");
+    assert!(child.try_wait().unwrap().is_none());
+    stream.write_all(b"x").unwrap();
+    assert!(child.wait().unwrap().success());
+}
+
+/// The environment report names the role, pane and directory the product launched it with.
+#[cfg(unix)]
+#[test]
+fn report_environment_names_role_pane_and_directory_then_runs_on() {
+    let root = Scratch::new().unwrap();
+    let reporter = command_alias(
+        root.path(),
+        "reporter",
+        &serde_json::json!({"scenario": "report-environment"}),
+    );
+    let mut child = Command::new(reporter)
+        .current_dir(root.path())
+        .env("ROLE", "tests")
+        .env_remove("MAESTRO_PANE_ID")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut text = String::new();
+    output.read_line(&mut text).unwrap();
+    output.read_line(&mut text).unwrap();
+    assert_eq!(
+        text,
+        format!("\nseen:<tests>|<>|<{}>\n", root.path().display())
+    );
+    assert!(child.try_wait().unwrap().is_none());
+    child.kill().unwrap();
+    child.wait().unwrap();
+}
+
+/// Coordination scenarios refuse a missing or extra socket path before any effect.
+#[cfg(unix)]
+#[test]
+fn coordination_scenarios_require_exactly_one_socket_operand() {
+    let root = Scratch::new().unwrap();
+    for (name, scenario) in [("holder", "hold-hangup"), ("waiter", "await-release")] {
+        let path = command_alias(
+            root.path(),
+            name,
+            &serde_json::json!({"scenario": scenario}),
+        );
+        for operands in [vec![], vec!["a", "b"]] {
+            let output = Command::new(&path).args(operands).output().unwrap();
+            assert!(!output.status.success(), "{name}");
+            assert!(output.stdout.is_empty(), "{name}");
+        }
+    }
+}
+
 /// Install one alias with a `command` family record.
 #[cfg(unix)]
 fn command_alias(root: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
