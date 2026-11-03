@@ -629,7 +629,7 @@ fn process_capture_consumers_may_declare_the_owner() {
 }
 
 #[test]
-fn process_leaf_cannot_depend_on_cancellation() {
+fn process_owner_cannot_depend_on_cancellation() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-process", "maestro-cancellation"]);
     for (kind, extra) in DECLARATIONS.iter().chain(&[
@@ -643,7 +643,11 @@ fn process_leaf_cannot_depend_on_cancellation() {
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("maestro-process must not depend on workspace crate maestro-cancellation".into()),
+            Err(if kind.ends_with("dev-dependencies") {
+                "internal dev dependency requires declared dependency-free test support: maestro-process -> maestro-cancellation".into()
+            } else {
+                "forbidden production dependency: maestro-process -> maestro-cancellation".into()
+            }),
             "{kind}{extra}"
         );
     }
@@ -3589,6 +3593,35 @@ fn guest_schema_validation_edge_is_native_development_only() {
     assert_eq!(
         caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
         Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
+    );
+}
+
+/// The native process owner reads POSIX shell operands from the text leaf, which gains no edge.
+#[test]
+fn text_leaf_serves_the_process_owner_without_gaining_an_edge() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-process", "maestro-text"]);
+    workspace.member(
+        "maestro-process",
+        "maestro-process",
+        r#"[dependencies]
+maestro-text = { path = "../maestro-text" }
+"#,
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-text", "maestro-process"]);
+    workspace.member(
+        "maestro-text",
+        "maestro-text",
+        r#"[dependencies]
+maestro-process = { path = "../maestro-process" }
+"#,
+    );
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err("maestro-text must not depend on workspace crate maestro-process".into())
     );
 }
 

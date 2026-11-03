@@ -9,14 +9,14 @@ mod author;
 mod browser_launch;
 mod cargo;
 #[cfg(unix)]
+mod chat;
 mod child;
 mod clipboard;
-#[cfg(unix)]
 mod command;
+mod component;
 mod credentials;
 mod echo;
 mod editor;
-#[cfg(unix)]
 mod exec;
 mod git;
 mod notification;
@@ -27,6 +27,7 @@ mod search;
 #[cfg(unix)]
 mod termination;
 mod tooling_command;
+mod tooling_sources;
 mod tooling_wrapper;
 #[cfg(unix)]
 mod trash;
@@ -38,10 +39,13 @@ enum Request {
     /// Report the native launch and exchange raw streams.
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for a controlled native program.
-    #[cfg(unix)]
     Command(command::Record, Vec<OsString>),
-    /// Act as the native child a byte-level operation launched.
+    /// Stand in for the programs the interactive mode launches.
     #[cfg(unix)]
+    Chat(chat::Record, Vec<OsString>),
+    /// Stand in for the programs a guest component executes.
+    Component(component::Record, Vec<OsString>),
+    /// Act as the native child a byte-level operation launched.
     Child(child::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
@@ -63,7 +67,6 @@ enum Request {
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
     /// Exchange controlled command payload bytes.
-    #[cfg(unix)]
     Exec(exec::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     Rpc(rpc::Record),
@@ -72,6 +75,8 @@ enum Request {
     Search(search::Record, Vec<OsString>),
     /// Stand in for a repository command a recipe resolves by name.
     ToolingCommand(tooling_command::Record, Vec<OsString>),
+    /// Stand in for the Cargo the fixture-sources setup runs.
+    ToolingSources(tooling_sources::Record, Vec<OsString>),
     /// Stand in for a compiler wrapper a fixture build runs.
     ToolingWrapper(tooling_wrapper::Record, Vec<OsString>),
     /// Move or remove caller-owned files on the trash program's behalf.
@@ -117,9 +122,12 @@ impl Request {
         let text = std::fs::read_to_string(path)?;
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
-            #[cfg(unix)]
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             #[cfg(unix)]
+            Some("chat") => Ok(Self::Chat(chat::Record::parse(&text)?, operands)),
+            Some("component-exec") => {
+                Ok(Self::Component(component::Record::parse(&text)?, operands))
+            }
             Some("child") => Ok(Self::Child(child::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
@@ -140,13 +148,16 @@ impl Request {
                 credentials::Record::parse(&text)?,
                 operands,
             )),
-            #[cfg(unix)]
             Some("exec") => Ok(Self::Exec(exec::Record::parse(&text)?, operands)),
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
             Some("tooling-command") => Ok(Self::ToolingCommand(
                 tooling_command::Record::parse(&text)?,
+                operands,
+            )),
+            Some("tooling-sources") => Ok(Self::ToolingSources(
+                tooling_sources::Record::parse(&text)?,
                 operands,
             )),
             Some("tooling-wrapper") => Ok(Self::ToolingWrapper(
@@ -165,9 +176,10 @@ pub(super) fn run() -> io::Result<()> {
     match Request::read(std::env::args_os().skip(1).collect())? {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
-        #[cfg(unix)]
         Request::Command(record, operands) => command::run(&record, &operands),
         #[cfg(unix)]
+        Request::Chat(record, operands) => chat::run(&record, &operands),
+        Request::Component(record, operands) => component::run(&record, &operands),
         Request::Child(record, operands) => child::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
@@ -179,12 +191,12 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
-        #[cfg(unix)]
         Request::Exec(record, operands) => exec::run(&record, &operands),
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
         Request::ToolingCommand(record, operands) => tooling_command::run(&record, &operands),
+        Request::ToolingSources(record, operands) => tooling_sources::run(&record, &operands),
         Request::ToolingWrapper(record, operands) => tooling_wrapper::run(&record, &operands),
         #[cfg(unix)]
         Request::Trash(record, operands) => trash::run(&record, &operands),

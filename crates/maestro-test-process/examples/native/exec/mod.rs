@@ -25,15 +25,29 @@ pub(super) enum Record {
     Malformed {},
     /// Report the directory this process inherited.
     Cwd {},
-    /// Announce readiness, then finish after one release byte.
+    /// Write the partial streams, announce readiness, then finish after one release byte.
     Holder {
         /// Parent-owned readiness and release channel.
         port: u16,
+        /// Bytes written to standard output before readiness.
+        #[serde(default)]
+        stdout: Vec<u8>,
+        /// Bytes written to standard error before readiness.
+        #[serde(default)]
+        stderr: Vec<u8>,
     },
-    /// Answer every TERM until killed, released by one byte or disconnected.
+    /// Write the partial streams, then answer every TERM until killed, released by one byte
+    /// or disconnected.
+    #[cfg(unix)]
     Stubborn {
         /// Parent-owned readiness and question channel.
         port: u16,
+        /// Bytes written to standard output before readiness.
+        #[serde(default)]
+        stdout: Vec<u8>,
+        /// Bytes written to standard error before readiness.
+        #[serde(default)]
+        stderr: Vec<u8>,
     },
     /// Leave a linked descendant holding both pipes after this process exits.
     Descendant {
@@ -61,6 +75,7 @@ pub(super) enum Record {
         port: u16,
     },
     /// Report this process's session and process group.
+    #[cfg(unix)]
     Identity {},
     /// Answer each question under the default termination action.
     Yielding {
@@ -78,6 +93,7 @@ pub(super) enum Record {
         port: u16,
     },
     /// Finish after one termination signal, without polling or a deadline.
+    #[cfg(unix)]
     Blocked {
         /// Exit code to report once the termination signal was handled.
         code: Option<i32>,
@@ -168,17 +184,28 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         Record::Utf8 { port, split } => payloads::utf8(*port, *split),
         Record::Malformed {} => payloads::malformed(),
         Record::Cwd {} => payloads::cwd(),
-        Record::Holder { port } => payloads::holder(*port),
-        Record::Stubborn { port } => payloads::stubborn(*port),
+        Record::Holder {
+            port,
+            stdout,
+            stderr,
+        } => payloads::holder(*port, stdout, stderr),
+        #[cfg(unix)]
+        Record::Stubborn {
+            port,
+            stdout,
+            stderr,
+        } => payloads::stubborn(*port, stdout, stderr),
         Record::Descendant { .. } => payloads::descendant(),
         Record::Exchange { port } => payloads::exchange(*port),
         Record::Raw { port } => payloads::raw(*port),
         Record::Interleaved { port } => payloads::interleaved(*port),
         Record::Termination { port } => payloads::termination(*port),
+        #[cfg(unix)]
         Record::Identity {} => payloads::identity(),
         Record::Yielding { port } => payloads::yielding(*port),
         Record::TreeRoot { port } => payloads::tree_root(*port),
         Record::TreeLeaf { port } => payloads::tree_leaf(*port),
+        #[cfg(unix)]
         Record::Blocked { code, port } => payloads::blocked(*code, *port),
         Record::Grace { pid } => payloads::grace(*pid),
     }

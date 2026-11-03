@@ -606,14 +606,15 @@ fn failing_widget(api: &ExtensionAPI<Local>) -> WidgetContent {
 async fn reload_during_shell(directory: &Path) {
     let started = directory.join("shell-started");
     let release = directory.join("shell-release");
+    let held = super::gate(&release);
     let script = super::scripted(
         directory,
         "reload-shell",
-        &format!(
-            ": > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'shell done\\n'",
-            started.display(),
-            release.display()
-        ),
+        &json!([
+            {"mark": {"path": started}},
+            {"hold": {"path": release}},
+            {"print": "shell done\n"},
+        ]),
     );
     let shell = super::bash::shelling(directory, &script).await;
     let ((), errors) = super::driving(&shell, async {
@@ -623,7 +624,7 @@ async fn reload_during_shell(directory: &Path) {
         submit(&shell.mode, "/reload");
         assert!(admitted(&shell.runtime).await.is_empty());
         assert!(shell.loader.calls.borrow().contains(&"reload"));
-        std::fs::write(&release, "").unwrap();
+        drop(held);
         while super::active(&shell).is_some() {
             tokio::task::yield_now().await;
         }

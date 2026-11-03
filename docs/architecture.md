@@ -159,8 +159,8 @@ recoverable in-place byte publication. See [file locking](locking.md) for the du
 copy and replay order.
 Feature owners retain serialization, symbolic-link policy and scheduling.
 
-The process leaf `maestro-process` is declared core below layer 0 with no workspace
-dependencies, including path and cancellation. Only tools, packages, credentials,
+The process owner `maestro-process` is declared core below layer 0 and depends only
+on `maestro-text` for POSIX shell operand serialization. Only tools, packages, credentials,
 detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.

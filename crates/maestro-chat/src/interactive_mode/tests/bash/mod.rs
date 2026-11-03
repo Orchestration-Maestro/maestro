@@ -4,8 +4,9 @@ mod lifecycle;
 use super::super::bash::component_address;
 use super::typed::{recalled, submit};
 use super::{
-    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, holding, isolated,
-    scripted, start_shells, started, transcript_positions, until_complete, until_exists,
+    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, gate, holding,
+    install, isolated, printing, scripted, start_shells, started, transcript_positions,
+    until_complete, until_exists,
 };
 use crate::BashExecutionComponent;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
@@ -18,6 +19,41 @@ use std::{
     rc::Rc,
     task::{Context, Poll, Waker},
 };
+
+/// Installs a shell that creates `marker`, then prints `process output`.
+fn marked_output(directory: &Path, marker: &Path) -> String {
+    scripted(
+        directory,
+        "shell",
+        &serde_json::json!([{"mark": {"path": marker}}, {"print": "process output\n"}]),
+    )
+}
+
+/// Installs a shell that, for each command, creates `<command>-started`, waits on the gate at
+/// `<command>-release` and prints `<command> output`.
+fn commands_held_until_released(directory: &Path) -> String {
+    scripted(directory, "shell", &held_command_steps())
+}
+
+/// A program a user command names directly, holding its operand like
+/// [`commands_held_until_released`] holds each command.
+fn gated_program(directory: &Path) -> std::path::PathBuf {
+    install(
+        directory,
+        "gated",
+        "chat",
+        &serde_json::json!({"scenario": "shell", "steps": held_command_steps()}),
+    )
+}
+
+/// The steps shared by the shells that hold each command until its own gate is released.
+fn held_command_steps() -> serde_json::Value {
+    serde_json::json!([
+        {"mark": {"command": "-started"}},
+        {"hold": {"command": "-release"}},
+        {"print-command": {"before": "", "after": " output\n"}},
+    ])
+}
 
 /// A started mode whose shell runs `script`.
 pub(super) async fn shelling(directory: &Path, script: &str) -> World {
@@ -125,7 +161,7 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
     isolated(
         "command_submission_keeps_exact_prefix_and_whitespace_rules",
         async |directory| {
-            let script = scripted(directory, "shell", "printf 'ran\\n'");
+            let script = printing(directory, "shell", "ran\n");
             let world = shelling(directory, &script).await;
             let ((), errors) = (driving(&world, async {
                 let mut rows = 0;
@@ -155,14 +191,15 @@ fn busy_shell_restores_selected_input_without_history() {
         async |directory| {
             let started = directory.join("started");
             let release = directory.join("release");
+            let held = gate(&release);
             let script = scripted(
                 directory,
                 "shell",
-                &format!(
-                    ": > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'ran\\n'",
-                    started.display(),
-                    release.display()
-                ),
+                &serde_json::json!([
+                    {"mark": {"path": started}},
+                    {"hold": {"path": release}},
+                    {"print": "ran\n"},
+                ]),
             );
             let world = shelling(directory, &script).await;
             let ((), errors) = (driving(&world, async {
@@ -175,13 +212,13 @@ fn busy_shell_restores_selected_input_without_history() {
                     assert!(!recalled(&world.mode.editor).contains(&text.to_owned()));
                 }
                 assert_eq!(warnings(&world), 2);
-                std::fs::write(&release, "").unwrap();
+                drop(held);
                 // The shell row, and a spacer and a text row for each warning.
                 until_complete(&world, 5).await;
             }))
             .await;
             assert!(errors.is_empty(), "{errors:?}");
-            assert!(started.exists() && release.exists());
+            assert!(started.exists());
         },
     );
 }
@@ -363,11 +400,7 @@ fn shell_interception_and_operations_share_one_retained_row_and_settle() {
 /// A whole intercepted result shows its output and records it once, without a process.
 async fn whole_result_keeps_one_recorded_row(directory: &Path) {
     let marker = directory.join("whole-ran");
-    let script = scripted(
-        directory,
-        "shell",
-        &format!(": > {}\nprintf 'process output\\n'", marker.display()),
-    );
+    let script = marked_output(directory, &marker);
     let (world, seen, errors) = settled(
         directory,
         &script,
@@ -394,7 +427,7 @@ async fn whole_result_keeps_one_recorded_row(directory: &Path) {
 
 /// A double prefix keeps the intercepted output out of the context.
 async fn excluded_result_records_its_exclusion(directory: &Path) {
-    let script = scripted(directory, "shell", "printf 'unused\\n'");
+    let script = printing(directory, "shell", "unused\n");
     let (world, seen, errors) =
         settled(directory, &script, whole("kept out", None), "!!echo y").await;
     assert!(errors.is_empty(), "{errors:?}");
@@ -407,11 +440,7 @@ async fn excluded_result_records_its_exclusion(directory: &Path) {
 /// Operations an extension supplies run the command in place of the local shell.
 async fn supplied_operations_run_the_command(directory: &Path) {
     let marker = directory.join("operations-ran");
-    let script = scripted(
-        directory,
-        "shell",
-        &format!(": > {}\nprintf 'process output\\n'", marker.display()),
-    );
+    let script = marked_output(directory, &marker);
     let operations =
         maestro_app::local::create_local_bash_operations(String::new(), Some(script.clone()));
     let answer: Answer = Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
@@ -433,7 +462,7 @@ async fn supplied_operations_run_the_command(directory: &Path) {
 
 /// A rejected execution completes the row as failed and records nothing.
 async fn rejected_execution_fails_the_row(directory: &Path) {
-    let script = scripted(directory, "shell", "printf 'unused\\n'");
+    let script = printing(directory, "shell", "unused\n");
     let missing = maestro_app::local::create_local_bash_operations(
         String::new(),
         Some("/nonexistent/shell".to_owned()),
@@ -506,7 +535,7 @@ struct Placement {
 /// Submits both prefix forms while a response streams: the command keeps one retained row
 /// in the pending area, never in the transcript, through every interception branch.
 async fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool)) {
-    let script = scripted(directory, "streaming-shell", "printf 'ran\n'");
+    let script = printing(directory, "streaming-shell", "ran\n");
     let supplied =
         maestro_app::local::create_local_bash_operations(String::new(), Some(script.clone()));
     let cases = [
@@ -612,7 +641,7 @@ fn shell_hooks_preserve_selected_arguments_and_read_current_session_after_await(
 
 /// The handler sees the trimmed selection and the session's own directory.
 async fn hook_reads_the_selected_arguments(directory: &Path) {
-    let script = scripted(directory, "shell", "printf 'ran\\n'");
+    let script = printing(directory, "shell", "ran\n");
     let cwd = directory.to_str().unwrap().to_owned();
     let answer: Answer = Rc::new(|event: &mut maestro_app::UserBashEvent| {
         assert_eq!(event.command, "echo kept");
@@ -639,7 +668,7 @@ async fn hook_reads_the_selected_arguments(directory: &Path) {
 
 /// A handler that rewrites the event cannot change what runs or what is recorded.
 async fn hook_cannot_rewrite_the_selection(directory: &Path) {
-    let script = scripted(directory, "shell", "printf 'ran\\n'");
+    let script = printing(directory, "shell", "ran\n");
     let rewrite: Answer = Rc::new(|event: &mut maestro_app::UserBashEvent| {
         event.command = "mutated".to_owned();
         event.exclude_from_context = false;
@@ -698,7 +727,7 @@ fn awaiting_interception(
 
 /// A replacement during a pending hook records the answer into the session current after it.
 async fn replaced_session_during_interception_records_there(directory: &Path) {
-    let script = scripted(directory, "shell", "printf 'not run\\n'");
+    let script = printing(directory, "shell", "not run\n");
     let reached = Rc::new(tokio::sync::Notify::new());
     let resume = Rc::new(tokio::sync::Notify::new());
     let seen: Seen = Rc::default();
@@ -816,7 +845,7 @@ fn shell_result_fields_reach_completion_without_projection_loss() {
     isolated(
         "shell_result_fields_reach_completion_without_projection_loss",
         async |directory| {
-            let script = scripted(directory, "shell", "printf 'not run\n'");
+            let script = printing(directory, "shell", "not run\n");
             for case in FIELD_CASES {
                 let (world, _, errors) =
                     settled(directory, &script, fields(case), "!cat file").await;
@@ -936,11 +965,8 @@ fn shell_completion_from_replaced_session_is_retired() {
     isolated(
         "shell_completion_from_replaced_session_is_retired",
         async |directory| {
-            let script = scripted(
-                directory,
-                "shell",
-                ": > \"$2-started\"\nwhile [ ! -e \"$2-release\" ]; do :; done\nprintf '%s output\\n' \"$2\"",
-            );
+            let script = commands_held_until_released(directory);
+            let old_gate = gate(&directory.join("old-release"));
             let world = replacing(directory, &script).await;
             async {
                 let ((), errors) = driving(&world, async {
@@ -948,7 +974,7 @@ fn shell_completion_from_replaced_session_is_retired() {
                     until_exists(&directory.join("old-started")).await;
                     let old_session = world.host.session();
                     let replacement = start_replacement(&world);
-                    std::fs::write(directory.join("old-release"), "").unwrap();
+                    drop(old_gate);
                     replacement.await.unwrap();
                     assert!(!Rc::ptr_eq(&old_session, &world.host.session()));
                     until_command_settles(&world).await;
@@ -965,10 +991,10 @@ fn shell_completion_from_replaced_session_is_retired() {
                     );
                     // A new session typed in the editor disposes the running command's session
                     // and resets: neither its row nor its output survives the release.
+                    let second_gate = gate(&directory.join("second-release"));
                     submit(
                         &world.mode,
-                        "!: > second-started; while [ ! -e second-release ]; do :; done; \
-                         printf 'second output\\n'",
+                        &format!("!'{}' second", gated_program(directory).display()),
                     );
                     until_exists(&directory.join("second-started")).await;
                     let second_session = world.host.session();
@@ -976,7 +1002,7 @@ fn shell_completion_from_replaced_session_is_retired() {
                     assert!(admitted(&world.runtime).await.is_empty());
                     let rows = transcript(&world).join("\n");
                     assert!(rows.contains("New session started"), "{rows}");
-                    std::fs::write(directory.join("second-release"), "").unwrap();
+                    drop(second_gate);
                     until_idle(&second_session).await;
                     assert!(active(&world).is_none());
                     submit(&world.mode, "later");
@@ -1005,7 +1031,7 @@ fn intercepted_shell_recording_failure_releases_active_row() {
             use std::os::unix::fs::PermissionsExt;
             let history = directory.join("history");
             std::fs::create_dir(&history).unwrap();
-            let script = scripted(directory, "shell", "printf 'not run\n'");
+            let script = printing(directory, "shell", "not run\n");
             let seen: Seen = Rc::default();
             let world = Setup {
                 configure: Box::new(move |settings: &mut SettingsManager| {
@@ -1068,7 +1094,7 @@ fn native_shell_output_paints_chunks_once() {
     isolated(
         "native_shell_output_paints_chunks_once",
         async |directory| {
-            let script = scripted(directory, "shell", "printf 'chunk\\n'");
+            let script = printing(directory, "shell", "chunk\n");
             let world = shelling(directory, &script).await;
             let errors = async {
                 let ((), errors) = driving(&world, async {
@@ -1098,11 +1124,9 @@ fn overlapping_shell_rows_release_only_their_own_claim() {
     isolated(
         "overlapping_shell_rows_release_only_their_own_claim",
         async |directory| {
-            let script = scripted(
-                directory,
-                "shell",
-                ": > \"$2-started\"\nwhile [ ! -e \"$2-release\" ]; do :; done\nprintf '%s output\\n' \"$2\"",
-            );
+            let script = commands_held_until_released(directory);
+            let older_gate = gate(&directory.join("older-release"));
+            let newer_gate = gate(&directory.join("newer-release"));
             let world = shelling(directory, &script).await;
             let errors = async {
                 let ((), errors) = driving(&world, async {
@@ -1111,13 +1135,13 @@ fn overlapping_shell_rows_release_only_their_own_claim() {
                     let newer = start_command(&world, "newer");
                     until_exists(&directory.join("newer-started")).await;
                     let newer_row = active(&world).expect("the newer row produces output");
-                    std::fs::write(directory.join("older-release"), "").unwrap();
+                    drop(older_gate);
                     older.await.unwrap().unwrap();
                     assert!(
                         active(&world).is_some_and(|row| Rc::ptr_eq(&row, &newer_row)),
                         "the older row's release leaves the newer row's claim"
                     );
-                    std::fs::write(directory.join("newer-release"), "").unwrap();
+                    drop(newer_gate);
                     newer.await.unwrap().unwrap();
                     assert!(active(&world).is_none(), "the last row gives up its claim");
                 })
@@ -1149,14 +1173,16 @@ fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
         async |directory| {
             let started = directory.join("drain-started");
             let release = directory.join("drain-release");
+            let held = gate(&release);
             let script = scripted(
                 directory,
                 "shell",
-                &format!(
-                    "printf 'first\\n'\n: > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'second\\n'",
-                    started.display(),
-                    release.display()
-                ),
+                &serde_json::json!([
+                    {"print": "first\n"},
+                    {"mark": {"path": started}},
+                    {"hold": {"path": release}},
+                    {"print": "second\n"},
+                ]),
             );
             let world = shelling(directory, &script).await;
             let errors = async {
@@ -1174,7 +1200,7 @@ fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
                         painted.contains("Running..."),
                         "the row is not complete: {painted}"
                     );
-                    std::fs::write(&release, "").unwrap();
+                    drop(held);
                     until_complete(&world, 1).await;
                 })
                 .await;
@@ -1222,7 +1248,7 @@ fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
             let script = scripted(
                 directory,
                 "shell",
-                &format!(": > {}\nwhile :; do :; done", started.display()),
+                &serde_json::json!([{"mark": {"path": started}}, "block"]),
             );
             let world = shelling(directory, &script).await;
             let errors = async {

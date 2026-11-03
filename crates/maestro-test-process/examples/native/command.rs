@@ -1,14 +1,15 @@
 //! Finite controlled program stand-ins selected by a sibling JSON record.
 
 use std::ffi::{OsStr, OsString};
-use std::io::{self, Read, Write};
-use std::os::unix::net::UnixStream;
-use std::os::unix::process::CommandExt;
+use std::io::{self, Write};
 
 use maestro_test_process::child::{leave, read_input, variable, write_stderr, write_stdout};
+#[cfg(unix)]
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
-use signal_hook::consts::{SIGHUP, SIGTERM};
+
+#[cfg(unix)]
+mod unix;
 
 /// Native termination instead of a numeric status.
 #[derive(Deserialize)]
@@ -17,6 +18,7 @@ pub(super) enum ExitSignal {
     #[serde(rename = "SIGTERM")]
     Terminate,
     /// Terminate with the native SIGKILL, which leaves no exit code.
+    #[cfg(unix)]
     #[serde(rename = "SIGKILL")]
     Kill,
     /// Terminate with a Linux real-time signal, which no shared name reports.
@@ -90,7 +92,8 @@ impl Streams {
         }
         write_stderr(&self.stderr)?;
         match self.signal {
-            Some(ExitSignal::Terminate) => kill_process(getpid(), Signal::TERM)?,
+            Some(ExitSignal::Terminate) => terminate()?,
+            #[cfg(unix)]
             Some(ExitSignal::Kill) => kill_process(getpid(), Signal::KILL)?,
             #[cfg(target_os = "linux")]
             Some(ExitSignal::Realtime) => {
@@ -128,26 +131,6 @@ pub(super) struct Manifest {
     contents: String,
 }
 
-/// A process that records readiness, blocks on a permit and then finishes when released.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Hold {
-    /// Marker written immediately before blocking, when a reader waits for it.
-    ready: Option<String>,
-    /// FIFO read after the marker, which returns when the test writes a byte to it.
-    permit: String,
-    /// FIFO read before the permit, whose writer may have opened it first.
-    late: Option<String>,
-    /// Bytes written to standard output after the gate.
-    stdout: Vec<u8>,
-    /// Bytes written to standard error after the gate.
-    stderr: Vec<u8>,
-    /// Append performed after the gate.
-    append: Option<Append>,
-    /// Append performed when this process receives SIGTERM; it then exits with status 0.
-    terminate: Option<Append>,
-}
-
 /// Program scenarios, parsed completely before any file or stream effect.
 #[derive(Deserialize)]
 #[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
@@ -155,6 +138,7 @@ pub(super) enum Record {
     /// Write independent raw streams and end with the selected status or signal.
     Output(Streams),
     /// Report the first operand on both streams, then echo one line of input.
+    #[cfg(unix)]
     Labelled {},
     /// Print the recorded values in order, separated by `|`.
     Report {
@@ -162,6 +146,7 @@ pub(super) enum Record {
         fields: Vec<Field>,
     },
     /// Print the operands, the invoked name, one input line and the working directory.
+    #[cfg(unix)]
     Stdio {},
     /// Answer package-manager queries from the recorded values.
     Npm {
@@ -175,7 +160,8 @@ pub(super) enum Record {
         log: Option<ArgvLog>,
     },
     /// Record readiness, block on a permit, then finish or wait for termination.
-    Hold(Hold),
+    #[cfg(unix)]
+    Hold(unix::Hold),
     /// Start a descendant that holds the shared streams, then end at once.
     Holder {
         /// Bytes written to standard output before this process ends.
@@ -186,6 +172,7 @@ pub(super) enum Record {
         descendant: String,
     },
     /// Record the invocation, then replace this process with the recorded program.
+    #[cfg(unix)]
     Forward {
         /// Append performed before the program runs.
         marker: Append,
@@ -206,8 +193,10 @@ pub(super) enum Record {
     /// Record one package-manager command and answer it.
     Package {},
     /// Hold the hangup, report readiness, then tell the socket operand once it arrives.
+    #[cfg(unix)]
     HoldHangup {},
     /// Read one release byte from the socket operand, then end.
+    #[cfg(unix)]
     AwaitRelease {},
     /// Report the role, pane and working directory, then stay alive until terminated.
     ReportEnvironment {},
@@ -235,17 +224,49 @@ impl Record {
         let json = text
             .strip_prefix("command\n")
             .ok_or_else(|| io::Error::other("missing command family"))?;
-        serde_json::from_str(json).map_err(io::Error::other)
+        let record: Self = serde_json::from_str(json).map_err(io::Error::other)?;
+        if !cfg!(unix)
+            && matches!(
+                record,
+                Self::Output(Streams {
+                    signal: Some(_),
+                    ..
+                })
+            )
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "termination signal requires Unix",
+            ));
+        }
+        Ok(record)
     }
+}
+
+/// End this process by the native SIGTERM.
+#[cfg(unix)]
+fn terminate() -> io::Result<()> {
+    kill_process(getpid(), Signal::TERM).map_err(Into::into)
+}
+
+/// Report that this platform cannot deliver a Unix termination signal.
+#[cfg(not(unix))]
+fn terminate() -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "termination signal requires Unix",
+    ))
 }
 
 /// Run the selected stand-in with its untouched native operands.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
         Record::Output(streams) => streams.run(operands),
-        Record::Labelled {} => labelled(operands),
+        #[cfg(unix)]
+        Record::Labelled {} => unix::labelled(operands),
         Record::Report { fields } => report(fields, operands),
-        Record::Stdio {} => stdio(operands),
+        #[cfg(unix)]
+        Record::Stdio {} => unix::stdio(operands),
         Record::Npm {
             view,
             root,
@@ -258,13 +279,15 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             log.as_ref(),
             operands,
         ),
-        Record::Hold(hold) => Hold::run(hold),
+        #[cfg(unix)]
+        Record::Hold(hold) => unix::Hold::run(hold),
         Record::Holder {
             stdout,
             stderr,
             descendant,
         } => holder(stdout, stderr, descendant),
-        Record::Forward { marker, program } => forward(marker, program, operands),
+        #[cfg(unix)]
+        Record::Forward { marker, program } => unix::forward(marker, program, operands),
         Record::Query {
             prefix,
             denied,
@@ -272,8 +295,10 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             code,
         } => query(operands, prefix, denied, error, *code),
         Record::Package {} => package(operands),
-        Record::HoldHangup {} => hold_hangup(operands),
-        Record::AwaitRelease {} => await_release(operands),
+        #[cfg(unix)]
+        Record::HoldHangup {} => unix::hold_hangup(operands),
+        #[cfg(unix)]
+        Record::AwaitRelease {} => unix::await_release(operands),
         Record::ReportEnvironment {} => report_environment(),
         Record::Metadata {
             declared,
@@ -284,38 +309,11 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     }
 }
 
-/// The single socket path a coordination scenario needs.
-fn socket_path(operands: &[OsString]) -> io::Result<&OsString> {
-    match operands {
-        [path] => Ok(path),
-        _ => Err(io::Error::other("expected one socket path")),
-    }
-}
-
 /// Stay alive until the process is terminated.
 fn remain() -> ! {
     loop {
         std::thread::park();
     }
-}
-
-/// Queue the hangup before readiness, so one that arrives early is not lost, then tell the
-/// socket with `h` and run on.
-fn hold_hangup(operands: &[OsString]) -> io::Result<()> {
-    let path = socket_path(operands)?;
-    let mut reader = trap(SIGHUP)?;
-    write_stdout(b"\nready\n")?;
-    reader.read_exact(&mut [0])?;
-    UnixStream::connect(path)?.write_all(b"h")?;
-    remain()
-}
-
-/// Announce with `w`, then wait for the release byte without polling.
-fn await_release(operands: &[OsString]) -> io::Result<()> {
-    let mut socket = UnixStream::connect(socket_path(operands)?)?;
-    socket.write_all(b"w")?;
-    socket.read_exact(&mut [0])?;
-    leave(0)
 }
 
 /// Print `seen:<ROLE>|<MAESTRO_PANE_ID>|<working directory>` on its own line, then run on.
@@ -380,26 +378,6 @@ fn report(fields: &[Field], operands: &[OsString]) -> io::Result<()> {
     write_stdout(values.join("|").as_bytes())
 }
 
-/// Print the operands, the invoked name, one input line and the working directory.
-fn stdio(operands: &[OsString]) -> io::Result<()> {
-    let mut operands_text = String::new();
-    for operand in operands {
-        operands_text.push('<');
-        operands_text.push_str(&operand.to_string_lossy());
-        operands_text.push('>');
-    }
-    let invoked = std::env::args_os().next().unwrap_or_default();
-    let name = std::path::Path::new(&invoked)
-        .file_name()
-        .unwrap_or(invoked.as_os_str());
-    let name = name.to_string_lossy();
-    write_stdout(format!("{operands_text}out-{name}\n").as_bytes())?;
-    write_stderr(format!("err-{name}\n").as_bytes())?;
-    let line = read_line()?;
-    write_stdout(format!("stdin:{}\n", String::from_utf8_lossy(&line)).as_bytes())?;
-    write_stdout(format!("{}\n", std::env::current_dir()?.to_string_lossy()).as_bytes())
-}
-
 /// Answer a package-manager query, or fail for an invocation the record does not admit.
 fn npm(
     view: Option<&str>,
@@ -451,51 +429,6 @@ fn holder(stdout: &[u8], stderr: &[u8], descendant: &str) -> io::Result<()> {
     leave(0)
 }
 
-/// Append the marker, then replace this process with the recorded program.
-fn forward(marker: &Append, program: &str, operands: &[OsString]) -> io::Result<()> {
-    append_to(marker)?;
-    Err(std::process::Command::new(program).args(operands).exec())
-}
-
-impl Hold {
-    /// Drain the shared input, announce readiness, wait for the release and report.
-    fn run(&self) -> io::Result<()> {
-        let termination = self.terminate.as_ref().map(|_| trap(SIGTERM)).transpose()?;
-        drop(read_input()?);
-        if let Some(ready) = &self.ready {
-            std::fs::write(ready, b"ready")?;
-        }
-        if let Some(late) = &self.late {
-            wait_for_release(late)?;
-        }
-        wait_for_release(&self.permit)?;
-        write_stdout(&self.stdout)?;
-        write_stderr(&self.stderr)?;
-        if let Some(append) = &self.append {
-            append_to(append)?;
-        }
-        if let (Some(mut signal), Some(terminate)) = (termination, &self.terminate) {
-            // The handler writes into the pipe, so this wait blocks until SIGTERM arrives.
-            signal.read_exact(&mut [0; 1])?;
-            append_to(terminate)?;
-        }
-        leave(0)
-    }
-}
-
-/// A read end that becomes readable when this process's handler for `signal` writes one byte.
-fn trap(signal: i32) -> io::Result<UnixStream> {
-    let (reader, writer) = UnixStream::pair()?;
-    signal_hook::low_level::pipe::register(signal, writer).map_err(io::Error::other)?;
-    Ok(reader)
-}
-
-/// Blocks until the test writes one byte, which is the only release a gate waits for.
-fn wait_for_release(path: &str) -> io::Result<()> {
-    let mut release = std::fs::File::open(path)?;
-    release.read_exact(&mut [0; 1])
-}
-
 /// Append the working directory and then the recorded bytes to one file.
 fn append_to(append: &Append) -> io::Result<()> {
     let mut line = Vec::new();
@@ -529,33 +462,6 @@ fn append_bytes(path: &str, bytes: &[u8]) -> io::Result<()> {
         .create(true)
         .open(path)?;
     file.write_all(bytes)
-}
-
-/// Echo the first operand on both streams, then one line of standard input.
-fn labelled(operands: &[OsString]) -> io::Result<()> {
-    let Some(label) = operands.first() else {
-        return Err(io::Error::other("missing labelled operand"));
-    };
-    let label = label.to_string_lossy();
-    write_stdout(format!("{label}\n").as_bytes())?;
-    write_stderr(format!("{label}-err\n").as_bytes())?;
-    let line = read_line()?;
-    write_stdout(format!("stdin:{}\n", String::from_utf8_lossy(&line)).as_bytes())
-}
-
-/// One line of standard input, read without consuming bytes past its newline.
-fn read_line() -> io::Result<Vec<u8>> {
-    let mut line = Vec::new();
-    let mut byte = [0; 1];
-    loop {
-        match rustix::io::read(rustix::stdio::stdin(), &mut byte) {
-            // An ended or unreadable input reports the value read so far, as a shell's
-            // failed `read` does.
-            Ok(0) | Err(_) => return Ok(line),
-            Ok(_) if byte[0] == b'\n' => return Ok(line),
-            Ok(_) => line.push(byte[0]),
-        }
-    }
 }
 
 /// Report a package root for `value`, or the recorded refusal for the denied value.

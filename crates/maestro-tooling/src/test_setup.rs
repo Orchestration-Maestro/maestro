@@ -214,7 +214,8 @@ fn cache_home(target: &Path) -> PathBuf {
 
 /// Stage each component the setup example exported in `output`, with the example files it was
 /// built from: those the example reported in Cargo's dependency file, or those the base recorded
-/// for a component it supplied.
+/// for a component it supplied. The file also exports what nextest hands the tests beside the
+/// components, so only the entries in the component namespace stage.
 fn stage_components(
     checkout: &Path,
     output: &Path,
@@ -228,6 +229,9 @@ fn stage_components(
         let (variable, source) = line
             .split_once('=')
             .ok_or_else(|| io::Error::other(format!("invalid component entry: {line}")))?;
+        if validate_variable(variable).is_err() {
+            continue;
+        }
         let staged = output.join(format!("{variable}.wasm"));
         if Path::new(source) != staged {
             copy(Path::new(source), &staged)?;

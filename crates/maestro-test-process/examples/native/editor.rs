@@ -23,7 +23,7 @@ pub(super) struct Record {
     argv: Option<String>,
     /// Environment variable holding the destination for the edited filename.
     result: Option<String>,
-    /// Destination for the edited file's bytes before the edit.
+    /// Destination for a copy of the edited file as it was before the edit, keeping its mode.
     before: Option<String>,
     /// Destination for the three standard descriptors' identities, read on Linux.
     descriptors: Option<String>,
@@ -195,7 +195,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         argv(path, operands)?;
     }
     if let Some(path) = &record.before {
-        std::fs::write(path, std::fs::read(&file)?)?;
+        std::fs::copy(&file, path)?;
     }
     if let Some(path) = &record.descriptors {
         descriptors(path)?;

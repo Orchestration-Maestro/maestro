@@ -4,9 +4,9 @@ use super::super::queues::{CompactionQueuedMessage, RestoreQueuedMessagesOptions
 use super::bash::shelling;
 use super::typed::{poll, recalled, submit};
 use super::{
-    Held, Setup, World, answer, border_row, driving, echoing_shell, holding, isolated, painted,
-    rendered_border, scripted, select_level, start_commands, start_shells, started, streaming,
-    transcript_positions,
+    Held, Setup, World, answer, border_row, driving, echoing_shell, gate, holding, isolated,
+    painted, rendered_border, scripted, select_level, start_commands, start_shells, started,
+    streaming, transcript_positions,
 };
 use crate::BashExecutionComponent;
 use crate::InteractiveMode;
@@ -28,6 +28,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     future::Future,
+    os::unix::net::UnixListener,
     path::Path,
     pin::Pin,
     rc::Rc,
@@ -1890,22 +1891,18 @@ impl Interrupt {
     }
 }
 
-/// The file whose creation lets the held shell end.
+/// The socket whose listener, once dropped, lets the held shell end.
 const HELD_RELEASE: &str = "held-release";
 
-/// A started mode whose shell waits for the release file.
-pub(super) async fn held_shell(directory: &Path) -> World {
-    let release = directory.join(HELD_RELEASE);
-    let _ = std::fs::remove_file(&release);
+/// A started mode whose shell waits for its gate, and the gate: dropping it releases the shell.
+pub(super) async fn held_shell(directory: &Path) -> (World, UnixListener) {
+    let held = gate(&directory.join(HELD_RELEASE));
     let script = scripted(
         directory,
         "shell",
-        &format!(
-            "while [ ! -e {} ]; do :; done\nprintf 'held\\n'",
-            release.display()
-        ),
+        &json!([{"hold": {"path": directory.join(HELD_RELEASE)}}, {"print": "held\n"}]),
     );
-    shelling(directory, &script).await
+    (shelling(directory, &script).await, held)
 }
 
 /// Submits the held shell command and returns the command it admitted once the session
@@ -1930,11 +1927,6 @@ pub(super) fn start_held(world: &World) -> LocalFuture {
 /// settles.
 pub(super) async fn until_settled(command: LocalFuture) {
     command.await.expect("the held shell settles");
-}
-
-/// Lets the held shell's script end so its command can settle.
-fn release_held(directory: &Path) {
-    std::fs::write(directory.join(HELD_RELEASE), "").unwrap();
 }
 
 /// Presses the interrupt key, recording whether the response was already stopped at each
@@ -2011,7 +2003,7 @@ fn assert_border(world: &World, selection: Interrupt) {
 /// Runs the interrupt selection in `world`, returning the mode's work failures.
 async fn interrupt_in(
     world: &World,
-    directory: &Path,
+    held: UnixListener,
     selection: Interrupt,
     signal: Option<Cancellation>,
 ) -> Vec<Box<dyn std::error::Error>> {
@@ -2029,7 +2021,7 @@ async fn interrupt_in(
         assert_interrupt(world, selection, signal.as_ref(), &stopped);
         assert_border(world, selection);
         if let Some(command) = command {
-            release_held(directory);
+            drop(held);
             until_settled(command).await;
         }
     })
@@ -2039,16 +2031,16 @@ async fn interrupt_in(
 
 /// Runs one interrupt selection over a fresh mode and checks its outcome.
 async fn interrupt_case(directory: &Path, selection: Interrupt) {
-    let world = held_shell(directory).await;
+    let (world, held) = held_shell(directory).await;
     select_level(&world, ThinkingLevel::High);
     world.mode.editor.set_text(selection.draft());
     let errors = if selection.streaming {
         holding(&world, |signal| {
-            interrupt_in(&world, directory, selection, Some(signal))
+            interrupt_in(&world, held, selection, Some(signal))
         })
         .await
     } else {
-        interrupt_in(&world, directory, selection, None).await
+        interrupt_in(&world, held, selection, None).await
     };
     assert!(errors.is_empty(), "{errors:?}");
 }

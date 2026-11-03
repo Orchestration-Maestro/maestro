@@ -481,6 +481,14 @@ fn send_fragments(stream: &mut UnixStream) {
     }
 }
 
+/// How a full accept queue shows to a client: Apple kernels refuse it like a missing listener,
+/// other kernels hold the bounded connect until its deadline.
+const FULL_QUEUE_ERROR: io::ErrorKind = if cfg!(target_vendor = "apple") {
+    io::ErrorKind::ConnectionRefused
+} else {
+    io::ErrorKind::TimedOut
+};
+
 /// Fills an unaccepted listener, which remains available for a controlled interval.
 fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
     use maestro_ipc::local_socket::connect_local_stream_until;
@@ -488,16 +496,17 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
     let listener = UnixListener::bind(path).unwrap();
     rustix::net::listen(&listener, 1).unwrap();
     let mut clients = Vec::new();
-    loop {
+    let ended = loop {
         let result = connect_local_stream_until(path, Instant::now() + SHORT);
         let Ok(LocalStream::UdSocket(stream)) = result else {
-            break;
+            break result.err().map(|error| error.kind());
         };
         if stream.inner().peer_addr().is_err() {
-            break;
+            break None;
         }
         clients.push(stream);
-    }
+    };
+    assert_eq!(ended, Some(FULL_QUEUE_ERROR));
     let path = path.to_owned();
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(300));
@@ -514,19 +523,26 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
 fn saturated_initial_connections_keep_the_stop_deadline() {
     let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "full");
-    let peer = saturated_endpoint(Path::new(&selection.api_socket_path));
+    let api = Path::new(&selection.api_socket_path);
+    let peer = saturated_endpoint(api);
     let start = Instant::now();
     let result = stop_with_timeout(&selection, SHORT);
     let elapsed = start.elapsed();
     peer.join().unwrap();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
-    assert_eq!(
-        result,
-        Err(still_reachable(
-            "full",
-            &[Path::new(&selection.api_socket_path)]
-        ))
-    );
+    if cfg!(target_vendor = "apple") {
+        // The refusal is all the kernel reports, so the daemon reads as unreachable.
+        let native = io::Error::from_raw_os_error(rustix::io::Errno::CONNREFUSED.raw_os_error());
+        assert_eq!(
+            result,
+            Err(format!(
+                "daemon full is not running or cannot be reached at {}: {native}",
+                api.display()
+            ))
+        );
+    } else {
+        assert_eq!(result, Err(still_reachable("full", &[api])));
+    }
 }
 
 #[test]
@@ -539,17 +555,24 @@ fn saturated_client_probes_keep_the_stop_deadline() {
         Some(0),
     );
     let peer = saturated_endpoint(&selection.client_socket_path);
+    request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
+    // Joining the endpoint is the signal that it has removed the API socket.
+    assert_eq!(api.finish().request, STOP_LINE);
     let start = Instant::now();
-    let result = stop_with_timeout(&selection, SHORT);
+    let result = await_shutdown(&selection, Instant::now() + SHORT, SHORT);
     let elapsed = start.elapsed();
-    api.finish();
     peer.join().unwrap();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
-    assert_eq!(
-        result,
-        Err(still_reachable(
-            "full-client",
-            &[&selection.client_socket_path]
-        ))
-    );
+    if cfg!(target_vendor = "apple") {
+        // The refused client socket reads as shut down.
+        assert_eq!(result, Ok(()));
+    } else {
+        assert_eq!(
+            result,
+            Err(still_reachable(
+                "full-client",
+                &[&selection.client_socket_path]
+            ))
+        );
+    }
 }

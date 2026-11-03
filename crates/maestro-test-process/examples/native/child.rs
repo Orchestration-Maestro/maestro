@@ -5,6 +5,7 @@ use std::io::{self, Read, Write};
 use std::process::{Command, Stdio};
 
 use maestro_test_process::child::{connect, leave, read_input, write_stderr, write_stdout};
+#[cfg(unix)]
 use rustix::process::{getpgrp, getsid};
 use serde::Deserialize;
 
@@ -35,11 +36,13 @@ pub(super) enum Record {
         stderr: Vec<u8>,
     },
     /// Announce this process and its group, then await the release byte.
+    #[cfg(unix)]
     Grouped {
         /// Parent-owned port.
         port: u16,
     },
     /// Answer the retained challenge, then end like the original child.
+    #[cfg(unix)]
     Challenge {
         /// Parent-owned port.
         port: u16,
@@ -56,6 +59,7 @@ pub(super) enum Record {
         holder: String,
     },
     /// Report this process identity, optionally leaving a group peer, then await input.
+    #[cfg(unix)]
     Identity {
         /// Installed alias whose record holds a group peer on the same session.
         holder: Option<String>,
@@ -84,7 +88,9 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             stdout,
             stderr,
         } => announce(*port, *stdin, stdout, stderr),
+        #[cfg(unix)]
         Record::Grouped { port } => grouped(*port),
+        #[cfg(unix)]
         Record::Challenge { port } => challenge(*port),
         Record::Early {
             stdout,
@@ -92,16 +98,19 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             code,
             holder,
         } => early(stdout, stderr, *code, holder),
+        #[cfg(unix)]
         Record::Identity { holder } => identity(holder.as_deref()),
     }
 }
 
 /// This process's group identity, in the width a process id uses.
+#[cfg(unix)]
 fn group() -> io::Result<u64> {
     u64::try_from(getpgrp().as_raw_pid()).map_err(io::Error::other)
 }
 
 /// This process's session identity, in the width a process id uses.
+#[cfg(unix)]
 fn session() -> io::Result<u64> {
     u64::try_from(getsid(None)?.as_raw_pid()).map_err(io::Error::other)
 }
@@ -151,6 +160,7 @@ fn announce(port: u16, stdin: bool, stdout: &[u8], stderr: &[u8]) -> io::Result<
 }
 
 /// Report this process and its group, then await the parent's release byte.
+#[cfg(unix)]
 fn grouped(port: u16) -> io::Result<()> {
     let mut socket = connect(port)?;
     socket.write_all(&u64::from(std::process::id()).to_be_bytes())?;
@@ -160,6 +170,7 @@ fn grouped(port: u16) -> io::Result<()> {
 }
 
 /// Answer the retained challenge with the identity and nonce the parent expects.
+#[cfg(unix)]
 fn challenge(port: u16) -> io::Result<()> {
     let mut socket = connect(port)?;
     let id = u64::from(std::process::id());
@@ -188,6 +199,7 @@ fn early(stdout: &[u8], stderr: &[u8], code: u8, holder: &str) -> io::Result<()>
 }
 
 /// Report identity on standard output, optionally leaving a group peer, then await input.
+#[cfg(unix)]
 fn identity(holder: Option<&str>) -> io::Result<()> {
     let report = serde_json::json!([u64::from(std::process::id()), group()?, session()?]);
     let mut line = serde_json::to_vec(&report)?;

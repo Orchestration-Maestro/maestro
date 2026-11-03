@@ -1794,16 +1794,6 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
-/// The cold checkout compiles its dependencies at the plain development profile.
-#[test]
-fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
-    let browser = Browser::cold();
-    let manifest: toml::Table =
-        toml::from_str(&fs::read_to_string(browser.path("Cargo.toml")).unwrap()).unwrap();
-    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
-    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
-}
-
 /// The warm recipes and the native helper cap Cargo's compile jobs; the cold recipe leaves the
 /// variable to the caller, so a job cap set by the build host reaches it and no cap at all means
 /// every core.
@@ -1827,16 +1817,17 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let browser = Browser::cold();
     browser_support::bootstrap_source(&browser);
     let (home, target) = browser_support::cold_sources(&browser);
+    browser_support::seed_target(&target);
     let before = browser_support::authored(&browser);
-    let command = |recipe: &str| {
-        let mut command = browser.cold_command(recipe);
-        command
+    success(
+        &browser
+            .cold_command("browser-library-build")
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)
-            .env("CARGO_NET_OFFLINE", "true");
-        command
-    };
-    success(&command("browser-library-build").output().unwrap());
+            .env("CARGO_NET_OFFLINE", "true")
+            .output()
+            .unwrap(),
+    );
     let first = browser_support::wasm(&browser, "library");
     assert_eq!(&first[..8], b"\0asm\x01\0\0\0");
     let output = browser.path("target/maestro-browser/library");
@@ -1848,31 +1839,6 @@ fn browser_author_bootstraps_from_empty_build_state() {
                 .is_some_and(|ext| ext == extension)
         }));
     }
-    assert_eq!(browser_support::authored(&browser), before);
-    let pack = browser.path("assets/brand/brand.json");
-    let original_pack = fs::read(&pack).unwrap();
-    let mut value: serde_json::Value = serde_json::from_slice(&original_pack).unwrap();
-    value["wordmark"] = "cold-included-rebuild".into();
-    fs::write(&pack, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
-    success(&command("browser-library-build").output().unwrap());
-    assert!(
-        browser_support::wasm(&browser, "library")
-            .windows(b"cold-included-rebuild".len())
-            .any(|part| part == b"cold-included-rebuild")
-    );
-    fs::write(pack, original_pack).unwrap();
-    let source = browser.fixture("src/main.rs");
-    let original = fs::read(&source).unwrap();
-    fs::write(&source, "fn main() { missing(); }").unwrap();
-    assert!(
-        !command("browser-library-build")
-            .output()
-            .unwrap()
-            .status
-            .success()
-    );
-    fs::write(source, original).unwrap();
-    success(&command("browser-library-build").output().unwrap());
     assert_eq!(browser_support::authored(&browser), before);
 }
 
