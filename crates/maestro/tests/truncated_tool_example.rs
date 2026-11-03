@@ -11,28 +11,21 @@ use std::{
 /// Component path inherited by the checked child, whose environment is cleared.
 const COMPONENT: &str = "MAESTRO_TRUNCATED_TOOL_COMPONENT";
 
-/// Returns supplied process streams and status without interpreting search operands.
-const SEARCH_PROCESS: &str = r#"#!/usr/bin/python3
-import json, os, sys
-from pathlib import Path
-root = Path(__file__).parent
-(root / "invocation.json").write_text(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd()}))
-if (root / "vanish").exists():
-    Path(__file__).unlink()
-sys.stdout.buffer.write((root / "stdout").read_bytes())
-sys.stderr.buffer.write((root / "stderr").read_bytes())
-sys.exit(int((root / "code").read_text()))
-"#;
-
 /// Runs each process fixture on a checked child PATH, independent of installed search tools.
 fn isolated(name: &str) -> bool {
     if maestro_test_process::selection().is_child() {
         return false;
     }
     let directory = maestro_test_directory::Scratch::new().unwrap();
-    let executable = directory.path().join("rg");
-    std::fs::write(&executable, SEARCH_PROCESS).unwrap();
-    std::fs::set_permissions(executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let record = json!({
+        "scenario": "supplied",
+        "observation": directory.path().join("invocation.json"),
+        "stdout": directory.path().join("stdout"),
+        "stderr": directory.path().join("stderr"),
+        "code": directory.path().join("code"),
+        "marker": directory.path().join("vanish"),
+    });
+    crate::support::native::install(directory.path(), "rg", "search", &record);
     let component =
         std::env::var(COMPONENT).expect("nextest author-component setup builds truncated_tool");
     let environment = BTreeMap::from([

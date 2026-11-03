@@ -204,6 +204,13 @@ pub(super) enum Record {
     },
     /// Record one package-manager command and answer it.
     Package {},
+    /// Answer a package-manager query that receives its prefix as the first operands.
+    Prefixed {
+        /// Text appended to the prefix operand for a root query.
+        suffix: String,
+        /// File that records every other invocation's operands, one per line.
+        log: String,
+    },
 }
 
 impl Record {
@@ -249,6 +256,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             code,
         } => query(operands, prefix, denied, error, *code),
         Record::Package {} => package(operands),
+        Record::Prefixed { suffix, log } => prefixed(operands, suffix, log),
     }
 }
 
@@ -508,5 +516,29 @@ fn package(operands: &[OsString]) -> io::Result<()> {
         Some("install") => {}
         _ => leave(1),
     }
+    leave(0)
+}
+
+/// Answer a `root` query from the prefix operand, or record the invocation.
+fn prefixed(operands: &[OsString], suffix: &str, log: &str) -> io::Result<()> {
+    let [option, prefix, rest @ ..] = operands else {
+        return Err(io::Error::other("expected a prefix followed by a command"));
+    };
+    if option.as_os_str() != OsStr::new("--prefix") {
+        return Err(io::Error::other("expected the `--prefix` option"));
+    }
+    if rest.first().is_some_and(|command| command == "root") {
+        let mut root = prefix.as_encoded_bytes().to_vec();
+        root.extend_from_slice(suffix.as_bytes());
+        root.push(b'\n');
+        write_stdout(&root)?;
+        leave(0);
+    }
+    let mut line = Vec::new();
+    for operand in operands {
+        line.extend_from_slice(operand.as_encoded_bytes());
+        line.push(b'\n');
+    }
+    append_bytes(log, &line)?;
     leave(0)
 }

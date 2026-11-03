@@ -149,6 +149,7 @@ if let Some(warning) = committed.dir_sync {
 }
 ```
 
-The component files facade uses this recoverable in-place contract. Its guest
-operations remain undelivered; see the
+The delivered component files facade uses this recoverable in-place contract.
+The [host-I/O guide](extensions/host_io.md#native-file-checks) records its Linux
+native file checks. Windows/macOS qualification remains undelivered; see the
 [component host contract](specs/extension-host.md).

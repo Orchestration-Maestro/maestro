@@ -128,10 +128,13 @@ impl Browser {
         let mut command = super::toolchain_support::command("just");
         command.arg(recipe);
         self.configure(&mut command);
+        command.env("CARGO_BUILD_JOBS", "3");
         command
     }
 
-    /// Run a cold recipe with private Cargo state excluded from compiler-cache keys.
+    /// Run a cold recipe with private Cargo state excluded from compiler-cache keys. Its compile
+    /// jobs keep the caller's cap, or every core without one: the test reserves every core for the
+    /// cold compile.
     pub fn cold_command(&self, recipe: &str) -> Command {
         let mut command = self.workspace.toolchain_command("just");
         command.arg(recipe);
@@ -144,7 +147,8 @@ impl Browser {
         let mut command = super::toolchain_support::command(env!("CARGO_BIN_EXE_development"));
         command
             .args(["browser-author", operation])
-            .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"));
+            .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"))
+            .env("CARGO_BUILD_JOBS", "3");
         self.configure(&mut command);
         if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
             command.env("LLVM_PROFILE_FILE", profile);
@@ -156,7 +160,6 @@ impl Browser {
     fn configure(&self, command: &mut Command) {
         command
             .current_dir(self.workspace.path())
-            .env("CARGO_BUILD_JOBS", "3")
             .env("CARGO_TARGET_DIR", target_directory())
             .env("TRUNK_SKIP_VERSION_CHECK", "true")
             // Trunk's completion emoji depends on LANG, even with piped output.

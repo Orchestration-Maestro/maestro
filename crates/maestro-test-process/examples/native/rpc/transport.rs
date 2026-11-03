@@ -2,7 +2,7 @@
 
 use std::io;
 
-use maestro_test_process::child::{connect, receive, write_stdout};
+use maestro_test_process::child::write_stdout;
 use serde_json::{Map, Value, json};
 
 use super::{Commands, drain, emit, refuse, respond, state};
@@ -90,7 +90,10 @@ fn malformed() -> io::Result<()> {
 }
 
 /// Write split UTF-8, CRLF, Unicode separators and an unterminated tail on acknowledged release.
+#[cfg(unix)]
 pub(super) fn fragments(port: u16) -> io::Result<()> {
+    use maestro_test_process::child::{connect, receive};
+
     let mut control = connect(port)?;
     for chunk in [
         &b"{\"type\":\"a\",\"text\":\"\xc3"[..],

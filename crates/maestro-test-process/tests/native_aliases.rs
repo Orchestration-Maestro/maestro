@@ -571,6 +571,49 @@ fn command_stand_in_holds_streams_until_a_descendant_is_released() {
     assert_eq!(held, "earlytail");
 }
 
+/// Malformed native-child records fail before any stream, socket or descendant effect.
+#[cfg(unix)]
+#[test]
+fn malformed_child_records_have_no_partial_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let report = json!({"scenario": "arguments"});
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let mut invalid = vec![
+        json!({"scenario": "unknown"}),
+        // The command family owns raw stream output, so the child family has no such scenario.
+        json!({"scenario": "output", "stdout": [], "stderr": [], "code": 0}),
+        json!({"scenario": "pending", "unknown": true}),
+        json!({"scenario": "relay", "ready": false, "tail": [], "unknown": true}),
+        json!({"scenario": "identity", "holder": "missing", "unknown": true}),
+        json!({"scenario": "announce", "port": listener.local_addr().unwrap().port(),
+            "stdin": "false", "stdout": [], "stderr": []}),
+    ];
+    for (field, value) in [("scenario", json!(7)), ("scenario", json!("announce"))] {
+        let mut record = report.clone();
+        record[field] = value;
+        invalid.push(record);
+    }
+    let mut unknown = report;
+    unknown["unknown"] = json!(true);
+    invalid.push(unknown);
+    for record in invalid {
+        let path = root.path().join("record");
+        std::fs::write(&path, format!("child\n{record}")).unwrap();
+        // An accepted record reports the working directory and operands, so only a
+        // rejected record leaves standard output empty.
+        let run = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(path)
+            .args(["operand"])
+            .current_dir(root.path())
+            .output()
+            .unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty(), "partial effects for {record}");
+    }
+}
+
 /// Concurrent installations leave launchable copies with independently mutable ages.
 #[test]
 fn parallel_installs_launch_independent_copies_while_siblings_are_live() {

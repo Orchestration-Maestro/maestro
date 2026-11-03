@@ -4,6 +4,7 @@
 //! helper that handles the signal still receives it.
 #![cfg(target_os = "linux")]
 use super::{World, isolated, isolated_output, started};
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, tui::InputHandler};
 use std::{
     io::{BufRead, BufReader, Lines, Write},
@@ -22,7 +23,7 @@ fn suspended(test: &str, body: impl AsyncFnOnce(&World)) -> Option<Output> {
         test,
         "child",
         &[],
-        "exec setsid \"$@\"",
+        IsolatedSetup::new().new_session(),
         async |directory: &Path| {
             let world = started(directory).await;
             body(&world).await;

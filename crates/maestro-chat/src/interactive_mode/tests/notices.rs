@@ -2,9 +2,11 @@
 use super::typed::{poll, recalled, waiting};
 use super::{Setup, VERSION, World, cases, isolated_package, painted, started};
 use maestro_app::is_whitespace_scalar;
+use maestro_test_process::IsolatedSetup;
 use maestro_theme::ThemeColor;
 use maestro_tui::{Component, TerminalCapabilities};
 use serde::Deserialize;
+use std::ffi::OsStr;
 
 /// Every recorded changelog case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_notices.json");
@@ -595,12 +597,12 @@ fn changelog_startup_reports_only_recorded_versions() {
         .into_iter()
         .enumerate()
     {
-        let mut env = Vec::new();
+        let mut env: Vec<(&OsStr, &OsStr)> = Vec::new();
         if let Some(value) = &input.offline {
-            env.push(("MAESTRO_OFFLINE", value.as_str()));
+            env.push((OsStr::new("MAESTRO_OFFLINE"), OsStr::new(value)));
         }
         if let Some(value) = &input.override_value {
-            env.push(("MAESTRO_TELEMETRY", value.as_str()));
+            env.push((OsStr::new("MAESTRO_TELEMETRY"), OsStr::new(value)));
         }
         super::isolated_case(TEST, &index.to_string(), &env, async |directory| {
             reporting_case(directory, &input, expected).await;
@@ -1078,7 +1080,7 @@ fn tmux_warning_selects_first_reachable_policy() {
         super::isolated_case(
             TEST,
             &index.to_string(),
-            &[("MAESTRO_TMUX_CASE", &encoded)],
+            &[(OsStr::new("MAESTRO_TMUX_CASE"), OsStr::new(&encoded))],
             async |directory| {
                 install_command(directory, "tmux", TMUX_SCRIPT);
                 let world = Setup::default().build(directory);
@@ -1143,7 +1145,10 @@ fn startup_checks_start_in_order_without_blocking_prompts() {
         super::isolated_case(
             TEST,
             &index.to_string(),
-            &[("MAESTRO_NOTICE_INHERITED", "retained")],
+            &[(
+                OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                OsStr::new("retained"),
+            )],
             async |root| {
                 (completion_order(root, order)).await;
             },
@@ -1423,7 +1428,10 @@ fn tmux_probe_uses_both_options_concurrently() {
     super::isolated_case(
         TEST,
         "child",
-        &[("MAESTRO_NOTICE_INHERITED", "retained")],
+        &[(
+            OsStr::new("MAESTRO_NOTICE_INHERITED"),
+            OsStr::new("retained"),
+        )],
         async |root| {
             install_command(root, "tmux", GATED_TMUX);
             let mut gates = NativeGates::new(root);
@@ -1453,8 +1461,11 @@ fn tmux_query_failures_and_timeout_are_silent() {
     if let Some(output) = super::isolated_output(
         TEST,
         "missing",
-        &[],
-        "trap '' XFSZ; PATH=/nonexistent/maestro-programs",
+        &[(
+            OsStr::new("PATH"),
+            OsStr::new("/nonexistent/maestro-programs"),
+        )],
+        IsolatedSetup::new().file_size_continues(),
         async |root| {
             let world = Setup::default().build(root);
             assert_eq!(world.mode.run_tmux_show("extended-keys").await, None);
@@ -1465,7 +1476,10 @@ fn tmux_query_failures_and_timeout_are_silent() {
     super::isolated_case(
         TEST,
         "deadline",
-        &[("MAESTRO_NOTICE_INHERITED", "retained")],
+        &[(
+            OsStr::new("MAESTRO_NOTICE_INHERITED"),
+            OsStr::new("retained"),
+        )],
         async |root| {
             let world = Setup::default().build(root);
             install_command(root, "tmux", GATED_TMUX);
@@ -1511,7 +1525,7 @@ fn tmux_capture_uses_raw_status_and_two_second_settlement() {
     super::isolated_case(
         TEST,
         "signal",
-        &[("MAESTRO_TMUX_CASE", &case)],
+        &[(OsStr::new("MAESTRO_TMUX_CASE"), OsStr::new(&case))],
         async |root| {
             install_command(root, "tmux", TMUX_SCRIPT);
             let world = Setup::default().build(root);
@@ -1629,9 +1643,16 @@ fn startup_offline_selection_reaches_each_existing_operation() {
                 TEST,
                 &format!("{index}-{skip}"),
                 &[
-                    ("MAESTRO_OFFLINE", "1"),
-                    ("MAESTRO_SKIP_VERSION_CHECK", if skip { "1" } else { "" }),
-                    ("MAESTRO_TMUX_CASE", &case),
+                    (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
+                    (
+                        OsStr::new("MAESTRO_SKIP_VERSION_CHECK"),
+                        if skip {
+                            OsStr::new("1")
+                        } else {
+                            OsStr::new("")
+                        },
+                    ),
+                    (OsStr::new("MAESTRO_TMUX_CASE"), OsStr::new(&case)),
                 ],
                 async |root| {
                     offline_consumers(root, offline, skip).await;
@@ -1955,7 +1976,13 @@ fn initialization_case(test: &str, body: impl AsyncFnOnce(&std::path::Path)) {
     super::isolated_case(
         test,
         "child",
-        &[("PATH", &path), ("MAESTRO_NOTICE_INHERITED", "retained")],
+        &[
+            (OsStr::new("PATH"), OsStr::new(&path)),
+            (
+                OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                OsStr::new("retained"),
+            ),
+        ],
         async |root| {
             std::fs::create_dir_all(root.join("probes/bin")).unwrap();
             install_command(&root.join("probes"), "fd", INIT_SCRIPT);
