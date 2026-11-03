@@ -360,7 +360,9 @@ decoding them, and returns a read failure unchanged:
 # use maestro_extensions_wasm::streams::read_to_end;
 # async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
 # let child = api.native_io().spawn("git".into(), vec![], Default::default()).await?;
-let log = read_to_end(child.stdout().unwrap()).await?;
+let log = if let Some(stdout) = child.stdout() {
+    read_to_end(stdout).await?
+} else { Vec::new() };
 # Ok(())
 # }
 ```
