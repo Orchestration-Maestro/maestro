@@ -28,8 +28,7 @@ pub fn component_engine(cache: Option<Cache>) -> wasmtime::Result<Engine> {
 /// Returns the one engine every loaded component in this process reuses.
 ///
 /// A component keeps its own workers, stores and instances; the engine itself
-/// holds no per-component state, so one shared engine costs one setup instead of
-/// one per extension instance, and memory no longer grows with instance count.
+/// holds no per-component state, so the process pays one engine setup.
 /// The optional user cache is configured once, as in the first load.
 ///
 /// # Errors

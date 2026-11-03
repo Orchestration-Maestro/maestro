@@ -42,7 +42,7 @@ fn engine_keeps_wasmtime_defaults_off_x86_64() {
     );
 }
 
-/// The process reuses one engine, so loads never pay one per extension instance.
+/// The accessor returns the same engine on every call.
 #[test]
 fn process_engine_reuses_one_engine() {
     let first = process_engine().unwrap();
