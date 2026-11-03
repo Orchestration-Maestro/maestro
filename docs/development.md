@@ -259,12 +259,13 @@ including page creation, fail immediately with a connection-closed error. Script
 arguments in the browser fixtures are JSON-encoded before evaluation so quotes in
 embedded document scripts remain data in the containing page.
 
-One deliberate policy-negative export, `inline_programs_preserve_text_policies_and_order`, must
-produce exactly one `TypeError` with message `window.complete is not a function`
-from `about:srcdoc`. Its ordinary assertions still run; absent, repeated or other
-errors fail. Error accounting stays attached until the page closes. Browser,
-server and temporary preparation are closed or removed on both outcomes; a
-cleanup failure does not skip the other resource or replace an assertion failure.
+One deliberate policy-negative export,
+`inline_programs_preserve_text_policies_and_order`, must produce exactly one
+`TypeError` with message `window.complete is not a function` from `about:srcdoc`.
+Its ordinary assertions still run; absent, repeated or other errors fail. Error
+accounting stays attached until the page closes. Browser, server and temporary
+preparation are closed or removed on both outcomes; a cleanup failure does not
+skip the other resource or replace an assertion failure.
 
 The command first runs the Rust driver regressions from `maestro-test-browser`'s one
 integration target. This test-only crate owns the browser stack and reuses
