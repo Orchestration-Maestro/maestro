@@ -67,9 +67,9 @@ search prints its own line.
 `input::session_picker::select_session` present a supplied component in a frame
 writer: focus moves before the first frame, and everything a presentation
 started stops with it, whether it closes, is cancelled or fails. The
-configuration presentation starts a theme watch and stops it; the session
-presentation has no theme and stops only the writer. The explicit-exit
-notification ends the process after those effects.
+configuration presentation starts a theme watch only for a custom theme and stops
+any watch it starts; the session presentation has no theme and stops only the
+writer. The explicit-exit notification ends the process after those effects.
 `input::selector::SelectorHost::native` supplies the native terminal frame
 writer. Before it presents, the session selector loads the configured
 keybindings and installs that manager, so the search field and the list dispatch
