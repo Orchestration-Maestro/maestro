@@ -16,8 +16,8 @@ unconnected Unix streams with close-on-exec protection on every Unix platform,
 including Apple targets. It uses the MIT OR Apache-2.0 licence. The IPC owner
 retains its absolute-deadline retry loop: a full Unix accept queue must not count
 as a successful connection merely because the descriptor is writable.
-On Apple targets the kernel refuses a connection to a full queue exactly as it refuses one
-to a missing listener, so the loop sees saturation as a refusal and returns it unchanged.
+On Apple targets the kernel refuses a connection to a full queue, as it does for a
+missing listener, so the loop returns saturation as a refusal.
 
 The locked dependency closure is:
 

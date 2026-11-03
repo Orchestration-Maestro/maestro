@@ -55,7 +55,8 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// there saturation shows as connection-refused, never as a timeout.
 ///
 /// # Errors
-/// Returns path or connection errors, or timed-out while the accept queue stays full.
+/// Returns path or connection errors, or timed-out while the accept queue stays full on Linux;
+/// Apple kernels return connection-refused instead.
 pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
     let address = SocketAddrUnix::new(path)?;
     let fd = nonblocking_local_socket()?;
