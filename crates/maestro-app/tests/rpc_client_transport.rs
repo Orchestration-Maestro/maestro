@@ -441,9 +441,9 @@ fn pending_calls_ignore_null_and_malformed_lines_before_a_matching_reply() {
         let client = started(&peer, Scenario::Malformed, &json!({})).await;
         let mut events = events(&client);
         let mut state = pin!(client.get_state());
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         assert_eq!(events.recv().await.unwrap(), json!({"type": "barrier"}));
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         let (state, abort) = tokio::join!(state, client.abort());
         assert_eq!(state.unwrap().session_id, "s");
         abort.unwrap();

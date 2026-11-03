@@ -9,10 +9,9 @@ use super::{
     until_complete, until_exists,
 };
 use crate::BashExecutionComponent;
+use futures_util::FutureExt;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
 use std::{cell::RefCell, error::Error, future::Future, path::Path, pin::Pin, rc::Rc};
-
-use futures_util::FutureExt;
 
 /// Installs a shell that creates `marker`, then prints `process output`.
 fn marked_output(directory: &Path, marker: &Path) -> String {

@@ -276,14 +276,14 @@ fn dialog_deadline_keeps_zero_and_exact_boundary() {
         assert_eq!(client.next().await["timeout"], 0.0);
         let mut bounded = pin!(ui.input("t".into(), None, timed(Some(1000.0))));
         assert_eq!(client.next().await["timeout"], 1000.0);
-        assert!((bounded.as_mut()).now_or_never().is_none());
+        assert!(bounded.as_mut().now_or_never().is_none());
         tokio::time::advance(Duration::from_millis(999)).await;
-        assert!((bounded.as_mut()).now_or_never().is_none());
+        assert!(bounded.as_mut().now_or_never().is_none());
         tokio::time::advance(Duration::from_millis(1)).await;
-        assert!(matches!((bounded.as_mut()).now_or_never(), Some(Ok(None))));
+        assert!(matches!(bounded.as_mut().now_or_never(), Some(Ok(None))));
         tokio::time::advance(Duration::from_secs(3600)).await;
-        assert!((waiting.as_mut()).now_or_never().is_none());
-        assert!((zero.as_mut()).now_or_never().is_none());
+        assert!(waiting.as_mut().now_or_never().is_none());
+        assert!(zero.as_mut().now_or_never().is_none());
     });
 }
 
@@ -340,7 +340,7 @@ fn editor_has_no_deadline_or_signal() {
         let request = client.next().await;
         assert_eq!(request.get("timeout"), None);
         tokio::time::advance(Duration::from_secs(3600)).await;
-        assert!((editor.as_mut()).now_or_never().is_none());
+        assert!(editor.as_mut().now_or_never().is_none());
         respond(&client, &request, &json!({"value": "done"}));
         assert_eq!(editor.await.unwrap().as_deref(), Some("done"));
     });

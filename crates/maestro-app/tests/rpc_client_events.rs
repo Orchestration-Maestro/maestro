@@ -160,15 +160,15 @@ fn request_deadline_keeps_exact_boundary_and_stderr() {
             tokio::task::yield_now().await;
         }
         let mut state = pin!(client.get_state());
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         next_of(&mut events, "received").await;
         tokio::time::advance(Duration::from_millis(29_999)).await;
         // Each turn lets a deadline that has come run before the request is looked at.
         tokio::task::yield_now().await;
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         tokio::time::advance(Duration::from_millis(1)).await;
         tokio::task::yield_now().await;
-        let Some(Err(error)) = (state.as_mut()).now_or_never() else {
+        let Some(Err(error)) = state.as_mut().now_or_never() else {
             panic!("the request times out at 30 seconds");
         };
         assert!(
@@ -200,7 +200,7 @@ fn request_deadlines_hold_through_a_delayed_first_poll() {
         next_of(&mut events, "peer_ready").await;
         let (release, hold) = hold_clock();
         let mut request = pin!(client.abort());
-        assert!((request.as_mut()).now_or_never().is_none());
+        assert!(request.as_mut().now_or_never().is_none());
         // The deadline's task first runs only after the caller's own work has taken the
         // executor past 29,999 of its 30,000 milliseconds.
         tokio::time::advance(DEADLINE.saturating_sub(Duration::from_millis(1))).await;
@@ -208,7 +208,7 @@ fn request_deadlines_hold_through_a_delayed_first_poll() {
         tokio::task::yield_now().await;
         assert!(
             matches!(
-                (request.as_mut()).now_or_never(),
+                request.as_mut().now_or_never(),
                 Some(Err(RpcClientError::RequestTimeout { .. }))
             ),
             "the request expires at the deadline fixed when it was sent"
@@ -232,8 +232,8 @@ fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
             let mut collect = pin!(client.collect_events(timeout));
             if boundary > 0 {
                 tokio::time::advance(Duration::from_millis(boundary - 1)).await;
-                assert!((idle.as_mut()).now_or_never().is_none());
-                assert!((collect.as_mut()).now_or_never().is_none());
+                assert!(idle.as_mut().now_or_never().is_none());
+                assert!(collect.as_mut().now_or_never().is_none());
                 tokio::time::advance(Duration::from_millis(1)).await;
             }
             let idle = idle.await.unwrap_err();
@@ -260,20 +260,20 @@ fn waits_hold_their_deadlines_through_a_delayed_first_poll() {
         // Both deadline tasks first run only after 16 of their 17 milliseconds have
         // passed, as the caller's own work makes them.
         tokio::time::advance(Duration::from_millis(16)).await;
-        assert!((idle.as_mut()).now_or_never().is_none());
-        assert!((collected.as_mut()).now_or_never().is_none());
+        assert!(idle.as_mut().now_or_never().is_none());
+        assert!(collected.as_mut().now_or_never().is_none());
         tokio::time::advance(Duration::from_millis(1)).await;
         tokio::task::yield_now().await;
         assert!(
             matches!(
-                (idle.as_mut()).now_or_never(),
+                idle.as_mut().now_or_never(),
                 Some(Err(RpcClientError::IdleTimeout { .. }))
             ),
             "the idle wait expires at the deadline fixed when it was registered"
         );
         assert!(
             matches!(
-                (collected.as_mut()).now_or_never(),
+                collected.as_mut().now_or_never(),
                 Some(Err(RpcClientError::CollectionTimeout { .. }))
             ),
             "the collection expires at the deadline fixed when it was registered"
@@ -296,21 +296,21 @@ fn waits_ignore_events_after_their_deadline() {
         let mut idle = pin!(client.wait_for_idle(timeout));
         let mut collected = pin!(client.collect_events(timeout));
         let mut prompted = pin!(client.prompt_and_wait("hello", None, timeout));
-        assert!((prompted.as_mut()).now_or_never().is_none());
+        assert!(prompted.as_mut().now_or_never().is_none());
         next_of(&mut events, "received").await;
         tokio::time::advance(Duration::from_secs(1)).await;
         client.abort().await.unwrap();
         assert!(matches!(
-            (idle.as_mut()).now_or_never(),
+            idle.as_mut().now_or_never(),
             Some(Err(RpcClientError::IdleTimeout { .. }))
         ));
         assert!(matches!(
-            (collected.as_mut()).now_or_never(),
+            collected.as_mut().now_or_never(),
             Some(Err(RpcClientError::CollectionTimeout { .. }))
         ));
         assert!(
             matches!(
-                (prompted.as_mut()).now_or_never(),
+                prompted.as_mut().now_or_never(),
                 Some(Err(RpcClientError::CollectionTimeout { .. }))
             ),
             "a prompt admitted after the collection's deadline times out"
@@ -331,12 +331,12 @@ fn answers_after_their_deadline_reach_listeners() {
         next_of(&mut events, "peer_ready").await;
         let (release, hold) = hold_clock();
         let mut first = pin!(client.abort());
-        assert!((first.as_mut()).now_or_never().is_none());
+        assert!(first.as_mut().now_or_never().is_none());
         next_of(&mut events, "received").await;
         tokio::time::advance(Duration::from_secs(30)).await;
         client.abort().await.unwrap();
         assert!(matches!(
-            (first.as_mut()).now_or_never(),
+            first.as_mut().now_or_never(),
             Some(Err(RpcClientError::RequestTimeout { .. }))
         ));
         assert_eq!(next_of(&mut events, "response").await["id"], "req_1");
@@ -360,7 +360,7 @@ fn work_expired_before_the_child_ends_keeps_its_timeout() {
         let (release, hold) = hold_clock();
         let mut idle = pin!(client.wait_for_idle(Some(DEADLINE)));
         let mut state = pin!(client.get_state());
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         next_of(&mut events, "received").await;
         tokio::time::advance(DEADLINE).await;
         assert!(
@@ -370,14 +370,14 @@ fn work_expired_before_the_child_ends_keeps_its_timeout() {
         while !client.get_stderr().contains("late") {
             tokio::task::yield_now().await;
         }
-        let Some(Err(error)) = (state.as_mut()).now_or_never() else {
+        let Some(Err(error)) = state.as_mut().now_or_never() else {
             panic!("the expired request has settled");
         };
         assert_eq!(
             error.to_string(),
             "Timeout waiting for response to get_state. Stderr: "
         );
-        let Some(Err(error)) = (idle.as_mut()).now_or_never() else {
+        let Some(Err(error)) = idle.as_mut().now_or_never() else {
             panic!("the expired wait has settled");
         };
         assert_eq!(
@@ -401,11 +401,11 @@ fn answers_before_the_deadline_count_when_consumed_after_it() {
         let (release, hold) = hold_clock();
         let mut idle = pin!(client.wait_for_idle(Some(DEADLINE)));
         let mut answered = pin!(client.abort());
-        assert!((answered.as_mut()).now_or_never().is_none());
+        assert!(answered.as_mut().now_or_never().is_none());
         next_of(&mut events, "answered").await;
         tokio::time::advance(DEADLINE).await;
-        assert!(matches!((answered.as_mut()).now_or_never(), Some(Ok(()))));
-        assert!(matches!((idle.as_mut()).now_or_never(), Some(Ok(()))));
+        assert!(matches!(answered.as_mut().now_or_never(), Some(Ok(()))));
+        assert!(matches!(idle.as_mut().now_or_never(), Some(Ok(()))));
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
@@ -423,7 +423,7 @@ fn stops_before_the_deadline_count_when_consumed_after_it() {
         let (release, hold) = hold_clock();
         let mut idle = pin!(client.wait_for_idle(Some(DEADLINE)));
         let mut state = pin!(client.get_state());
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         next_of(&mut events, "received").await;
         client.stop().await.unwrap();
         tokio::time::advance(DEADLINE).await;
@@ -568,7 +568,7 @@ fn stop_and_exit_settle_only_owned_calls_and_waits() {
 fn stopped<T>(
     future: std::pin::Pin<&mut impl std::future::Future<Output = Result<T, RpcClientError>>>,
 ) -> bool {
-    matches!((future).now_or_never(), Some(Err(RpcClientError::Stopped)))
+    matches!(future.now_or_never(), Some(Err(RpcClientError::Stopped)))
 }
 
 #[test]
@@ -583,7 +583,7 @@ fn child_exit_settles_work_while_a_descendant_keeps_the_output_open() {
         let (release, hold) = hold_clock();
         let mut idle = pin!(client.wait_for_idle(None));
         let mut state = pin!(client.get_state());
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         next_of(&mut events, "descendant_ready").await;
         let mut control = std::io::BufReader::new(peer.control());
         let mut descendant_pid = String::new();
@@ -614,13 +614,13 @@ fn work_registered_during_termination_settles_when_it_ends() {
         next_of(&mut events, "peer_ready").await;
         let (release, hold) = hold_clock();
         let mut stop = pin!(client.stop());
-        assert!((stop.as_mut()).now_or_never().is_none());
+        assert!(stop.as_mut().now_or_never().is_none());
         while !client.get_stderr().contains("terminating") {
             tokio::task::yield_now().await;
         }
         let mut idle = pin!(client.wait_for_idle(None));
         let mut state = pin!(client.get_state());
-        assert!((state.as_mut()).now_or_never().is_none());
+        assert!(state.as_mut().now_or_never().is_none());
         tokio::time::advance(Duration::from_millis(1000)).await;
         stop.await.unwrap();
         assert!(
@@ -651,7 +651,7 @@ fn cancelled_and_failed_operations_release_only_their_own_resources() {
         client.start().await.unwrap();
         next_of(&mut events, "peer_ready").await;
         let mut dropped = Box::pin(client.get_state());
-        assert!((dropped.as_mut()).now_or_never().is_none());
+        assert!(dropped.as_mut().now_or_never().is_none());
         drop(dropped);
         let late = next_of(&mut events, "response").await;
         assert_eq!(

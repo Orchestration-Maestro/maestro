@@ -56,7 +56,12 @@ fn sized_transcript_of(name: &str, units: usize, unit: char) -> String {
     let fixed = format!("=== SESSION: {name} ===\n[USER]\n=== END SESSION ===\n")
         .encode_utf16()
         .count();
-    let filler = (units - fixed) / unit.len_utf16();
+    let padding = units - fixed;
+    assert!(
+        padding.is_multiple_of(unit.len_utf16()),
+        "the requested size fits whole `{unit}` units"
+    );
+    let filler = padding / unit.len_utf16();
     message("user", serde_json::json!(unit.to_string().repeat(filler)))
 }
 

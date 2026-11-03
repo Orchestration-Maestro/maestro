@@ -338,7 +338,7 @@ fn tool_estimates_tokens_and_bucket_boundaries() {
                 4001, 8000, 8001, 16000, 16001, 32000, 32001,
             ])
         );
-        // Every label's lower and upper bound lands in that label's own bucket.
+        // The first and last values of every bucket land in that label's own bucket.
         assert_eq!(
             read["histogram"],
             serde_json::json!([5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1])
@@ -731,7 +731,6 @@ fn tool_report_opens_the_page_with_the_recorded_arguments() {
 fn viewer_program() -> &'static str {
     match std::env::consts::OS {
         "macos" => "open",
-        "windows" => "explorer.exe",
         _ => "xdg-open",
     }
 }

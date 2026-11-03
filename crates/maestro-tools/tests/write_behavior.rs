@@ -270,12 +270,12 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
         input(&path, "x"),
         Some(signal.clone()),
     );
-    assert!((&mut call).now_or_never().is_none());
+    assert!(call.as_mut().now_or_never().is_none());
     let mut next = next_in_line(&path, &journal);
-    assert!((&mut next).now_or_never().is_none());
+    assert!(next.as_mut().now_or_never().is_none());
     signal.abort();
-    assert!((&mut call).now_or_never().is_none());
-    assert!((&mut next).now_or_never().is_none());
+    assert!(call.as_mut().now_or_never().is_none());
+    assert!(next.as_mut().now_or_never().is_none());
     finish.open();
     journal.push(ready(&mut call).err().unwrap().message);
     ready(&mut next).unwrap();
@@ -316,17 +316,17 @@ fn write_abort_keeps_queue_until_pending_operation_settles() {
         input(&path, "x"),
         Some(signal.clone()),
     );
-    assert!((&mut call).now_or_never().is_none());
+    assert!(call.as_mut().now_or_never().is_none());
     let successor = Arc::new(ScriptedWrite::new(&Journal::default()));
     let mut next = start(
         &tool_over(&successor, "/work"),
         input(&path, "second"),
         None,
     );
-    assert!((&mut next).now_or_never().is_none());
+    assert!(next.as_mut().now_or_never().is_none());
     signal.abort();
-    assert!((&mut call).now_or_never().is_none());
-    assert!((&mut next).now_or_never().is_none());
+    assert!(call.as_mut().now_or_never().is_none());
+    assert!(next.as_mut().now_or_never().is_none());
     assert!(successor.names().is_empty());
     finish.open();
     journal.push(ready(&mut call).err().unwrap().message);
@@ -391,7 +391,7 @@ fn write_waiting_abort_preserves_predecessor_order() {
         held.push("a:end");
         Ok(())
     });
-    assert!((&mut a).now_or_never().is_none());
+    assert!(a.as_mut().now_or_never().is_none());
     let signal = Cancellation::new();
     let ops = Arc::new(ScriptedWrite::new(&journal));
     let mut b = start(
@@ -399,11 +399,11 @@ fn write_waiting_abort_preserves_predecessor_order() {
         input(&path, "x"),
         Some(signal.clone()),
     );
-    assert!((&mut b).now_or_never().is_none());
+    assert!(b.as_mut().now_or_never().is_none());
     signal.abort();
-    assert!((&mut b).now_or_never().is_none());
+    assert!(b.as_mut().now_or_never().is_none());
     let mut c = next_in_line(&path, &journal);
-    assert!((&mut c).now_or_never().is_none());
+    assert!(c.as_mut().now_or_never().is_none());
     open_a.open();
     ready(&mut a).unwrap();
     assert_eq!(ready(&mut b).err().unwrap().message, "Operation aborted");
@@ -532,7 +532,7 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
         runtime::run(anchored).unwrap();
         assert_eq!(ops.names(), ["mkdir", "write"]);
         let mut needs = start(&tool_over(&ops, "relative"), input("rel.txt", "x"), None);
-        assert!(matches!((&mut needs).now_or_never(), Some(Err(_))));
+        assert!(matches!(needs.as_mut().now_or_never(), Some(Err(_))));
         assert_eq!(ops.names().len(), 2);
     }
     if isolated(test, "bound", &[]) {

@@ -46,9 +46,9 @@ fn mutation_queue_keeps_invocation_order_before_waiting() {
     let dotted = format!("{}/missing-dir/../same.txt", dir.text());
     let mut a = queue(&first, tracked(&journal, "a", Some(gate_a)));
     let mut b = queue(&dotted, tracked(&journal, "b", None));
-    assert!((b.as_mut().now_or_never()).is_none());
+    assert!(b.as_mut().now_or_never().is_none());
     assert!(journal.entries().is_empty());
-    assert!((a.as_mut().now_or_never()).is_none());
+    assert!(a.as_mut().now_or_never().is_none());
     assert_eq!(journal.entries(), ["a:start"]);
     open_a.open();
     ready(&mut a).unwrap();
@@ -72,7 +72,7 @@ fn mutation_queue_different_paths_can_finish_out_of_order() {
         &format!("{}/b.txt", dir.text()),
         tracked(&journal, "b", None),
     );
-    assert!((a.as_mut().now_or_never()).is_none());
+    assert!(a.as_mut().now_or_never().is_none());
     ready(&mut b).unwrap();
     open_a.open();
     ready(&mut a).unwrap();
@@ -93,8 +93,8 @@ fn mutation_queue_serializes_existing_symlink_aliases() {
     let (open_a, gate_a) = Gate::new();
     let mut a = queue(&target, tracked(&journal, "a", Some(gate_a)));
     let mut b = queue(&alias, tracked(&journal, "b", None));
-    assert!((a.as_mut().now_or_never()).is_none());
-    assert!((b.as_mut().now_or_never()).is_none());
+    assert!(a.as_mut().now_or_never().is_none());
+    assert!(b.as_mut().now_or_never().is_none());
     assert_eq!(journal.entries(), ["a:start"]);
     open_a.open();
     ready(&mut a).unwrap();
@@ -143,7 +143,7 @@ fn mutation_queue_raw_names_preserve_literal_path_identity() {
         let (open_a, gate_a) = Gate::new();
         let mut a = queue(&spell(&first), tracked(&journal, "a", Some(gate_a)));
         let mut b = queue(&spell(&second), tracked(&journal, "b", None));
-        assert!((a.as_mut().now_or_never()).is_none());
+        assert!(a.as_mut().now_or_never().is_none());
         let shared = match b.as_mut().now_or_never() {
             None => true,
             Some(result) => {
@@ -177,8 +177,8 @@ fn mutation_queue_failure_does_not_poison_following_work() {
         Err::<&str, _>(failure)
     });
     let mut b = queue(&path, || async { Ok("second success") });
-    assert!((a.as_mut().now_or_never()).is_none());
-    assert!((b.as_mut().now_or_never()).is_none());
+    assert!(a.as_mut().now_or_never().is_none());
+    assert!(b.as_mut().now_or_never().is_none());
     open_a.open();
     let error = ready(&mut a).unwrap_err();
     assert_eq!(error, expected_error);
@@ -196,11 +196,11 @@ fn mutation_queue_dropped_middle_waiter_preserves_active_head() {
     let journal = Journal::default();
     let (open_a, gate_a) = Gate::new();
     let mut a = queue(&path, tracked(&journal, "a", Some(gate_a)));
-    assert!((a.as_mut().now_or_never()).is_none());
+    assert!(a.as_mut().now_or_never().is_none());
     let b = queue(&path, tracked(&journal, "b", None));
     let mut c = queue(&path, tracked(&journal, "c", None));
     drop(b);
-    assert!((c.as_mut().now_or_never()).is_none());
+    assert!(c.as_mut().now_or_never().is_none());
     assert_eq!(journal.entries(), ["a:start"]);
     open_a.open();
     ready(&mut a).unwrap();
@@ -209,9 +209,9 @@ fn mutation_queue_dropped_middle_waiter_preserves_active_head() {
 
     let (open_d, gate_d) = Gate::new();
     let mut d = queue(&path, tracked(&journal, "d", Some(gate_d)));
-    assert!((d.as_mut().now_or_never()).is_none());
+    assert!(d.as_mut().now_or_never().is_none());
     let mut waiting_last = queue(&path, tracked(&journal, "e", None));
-    assert!((waiting_last.as_mut().now_or_never()).is_none());
+    assert!(waiting_last.as_mut().now_or_never().is_none());
     drop(waiting_last);
     open_d.open();
     ready(&mut d).unwrap();
