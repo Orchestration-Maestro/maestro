@@ -210,38 +210,19 @@ fn refresh_and_removal_leave_no_stale_shadow_copies() {
         .unwrap()
         .clone();
     // The last registration owns the protocol.
-    assert_eq!(live_shadow_message(&witness).as_deref(), Some("third"));
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("third"));
     // Each refresh re-asserts its own registration without leaving a stale copy behind.
     registries[0].refresh().unwrap();
-    assert_eq!(live_shadow_message(&witness).as_deref(), Some("first"));
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("first"));
     registries[1].refresh().unwrap();
-    assert_eq!(live_shadow_message(&witness).as_deref(), Some("second"));
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("second"));
     registries[0].unregister_provider("first").unwrap();
-    assert_eq!(live_shadow_message(&witness).as_deref(), Some("second"));
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("second"));
     registries[2].unregister_provider("third").unwrap();
-    assert_eq!(live_shadow_message(&witness).as_deref(), Some("second"));
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("second"));
     // A removal must not resurrect registrations from a source that already left.
     registries[1].unregister_provider("second").unwrap();
-    assert!(live_shadow_message(&witness).is_none());
-}
-
-/// Invoke the live `stale-shadow` protocol callback over a retained witness model.
-fn live_shadow_message(witness: &maestro_models::Model) -> Option<String> {
-    maestro_models::get_api_provider(&witness.api).and_then(|provider| {
-        provider
-            .stream
-            .call(
-                witness.clone(),
-                maestro_models::Context {
-                    messages: vec![],
-                    system_prompt: None,
-                    tools: None,
-                },
-                maestro_models::ProviderInvocation::Threaded(None, None),
-            )
-            .err()
-            .map(|error| error.message)
-    })
+    assert!(dynamic::live_failure(&witness).is_none());
 }
 
 #[test]

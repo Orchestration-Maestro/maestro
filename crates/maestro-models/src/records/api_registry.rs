@@ -35,7 +35,7 @@ struct ApiRegistrations {
     /// Checked providers keyed by protocol identity in registration order.
     entries: IndexMap<String, Registration>,
     /// Per protocol, the registrations each newer same-protocol registration replaced,
-    /// most recent first.
+    /// oldest first, so the last entry is the one removed by the live registration.
     shadowed: HashMap<String, Vec<Registration>>,
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -153,10 +153,8 @@ pub fn unregister_api_providers(source_id: &str) {
     let retired = with_registry(|registry| {
         let mut superseded: Vec<Registration> = Vec::new();
         for list in registry.shadowed.values_mut() {
-            for entry in list.extract_if(.., |entry| entry.source_id.as_deref() == Some(source_id))
-            {
-                superseded.push(entry);
-            }
+            superseded
+                .extend(list.extract_if(.., |entry| entry.source_id.as_deref() == Some(source_id)));
         }
         let matched: Vec<_> = registry
             .entries
