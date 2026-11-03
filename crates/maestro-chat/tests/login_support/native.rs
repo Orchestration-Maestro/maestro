@@ -1,21 +1,13 @@
 //! Isolated native browser helpers, never a live desktop service.
+use crate::native_alias;
 use maestro_chat::LoginDialogPlatform;
 use maestro_tui::Component;
 use std::{
     io::{BufRead, BufReader, Read, Write},
     net::TcpListener,
-    process::{Command, Stdio},
+    process::Stdio,
 };
 
-/// Controlled helper records argv before waiting for explicit release.
-const HELPER: &str = r"#!/usr/bin/python3
-import json, os, socket, sys
-with socket.create_connection(('127.0.0.1', int(os.environ['MAESTRO_BROWSER_PORT']))) as stream:
-    stream.sendall((json.dumps([os.path.basename(sys.argv[0]), sys.argv[1:]])+'\n').encode())
-    assert stream.recv(1) == b'!'
-    stream.sendall(b'done')
-sys.exit(1)
-";
 /// URL with shell metacharacters must remain one literal operand.
 const URL: &str = "https://auth.example.test/a b?x=%PATH%&y=$(never-run);\"!VALUE!";
 /// Child-side default launch, returning while its helper remains blocked.
@@ -52,30 +44,23 @@ pub fn launch() {
         return;
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    std::fs::write(scratch.path().join("helper-source"), HELPER).unwrap();
-    for program in ["open", "explorer.exe", "xdg-open"] {
-        assert!(
-            Command::new("install")
-                .args(["-m", "0700"])
-                .arg(scratch.path().join("helper-source"))
-                .arg(scratch.path().join(program))
-                .status()
-                .unwrap()
-                .success()
-        );
-    }
     for program in ["open", "explorer.exe", "xdg-open", "missing"] {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        if program != "missing" {
+            native_alias::install(
+                scratch.path(),
+                program,
+                "browser_launch",
+                &serde_json::json!({ "port": port }),
+            );
+        }
         let command = maestro_test_process::TestProcess::current(
             "native_browser_launch_is_detached_and_uses_one_literal_argument",
         )
         .unwrap()
         .nocapture()
         .case(program)
-        .env(
-            "MAESTRO_BROWSER_PORT",
-            listener.local_addr().unwrap().port().to_string(),
-        )
         .env(
             "PATH",
             scratch
