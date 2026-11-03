@@ -1338,8 +1338,9 @@ struct FailureOutcome {
     selected: Option<String>,
     /// The recorded effects, the error last.
     events: Vec<Event>,
-    /// The session scope afterwards.
-    scope: Vec<(String, Option<ThinkingLevel>)>,
+    /// The session scope afterwards, when recorded.
+    #[serde(default)]
+    scope: Option<Vec<(String, Option<ThinkingLevel>)>>,
     /// The footer's provider count, when it was set.
     count: Option<f64>,
     /// Whether the subscription notice was shown.
@@ -1380,6 +1381,7 @@ fn model_selection_failure_reports_without_success_effects() {
                 }
                 _ => panic!("a recorded failure"),
             }
+            let retained = scope_of(&world);
             model_command(&world, Some("alpha".into()));
             let [kind, ..] = expected.events.last().unwrap().as_slice() else {
                 panic!("a final error");
@@ -1395,7 +1397,13 @@ fn model_selection_failure_reports_without_success_effects() {
             if expected.selected.is_none() {
                 assert_eq!(world.mode.footer.render(80), footer);
             }
-            settled(&world, &expected.scope, expected.count, expected.shown);
+            // A case that records no scope checks the refusal keeps the one it started with.
+            settled(
+                &world,
+                expected.scope.as_deref().unwrap_or(&retained),
+                expected.count,
+                expected.shown,
+            );
         }
     });
 }

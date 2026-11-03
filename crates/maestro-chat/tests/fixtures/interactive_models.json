@@ -913,12 +913,6 @@
           "error"
         ]
       ],
-      "scope": [
-        [
-          "a/alpha",
-          null
-        ]
-      ],
       "count": null,
       "shown": false
     }
