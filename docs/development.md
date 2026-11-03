@@ -174,9 +174,10 @@ builds the owner's declared platform handle, so identity comparisons hold on
 both targets.
 
 Compilation does not replace the browser assertions below.
-The theme examples `brand_themes` and `browser_author_inputs` run their author
-work on native targets; their browser entrypoints do nothing. Native usage
-messages and generated filenames are unchanged.
+The theme generators `brand_themes` and `browser_author_inputs` are repository
+scripts under `crates/maestro-theme/scripts`; they run their author work on native
+targets, and their browser entrypoints do nothing. Native usage messages and
+generated filenames are unchanged.
 
 ## Browser integration qualification
 
@@ -484,7 +485,7 @@ fonts, glyphs and mark paths. `maestro-brand` parses and projects those values;
 Changing a pack does not rename the command, environment variables or settings
 directory, and does not install that pack into a running application.
 
-Use the existing [brand theme example](theme.md#brand-pack) to try a pack without
+Use the existing [brand theme generator](theme.md#brand-pack) to try a pack without
 changing shipped files. Run this from the checkout root:
 
 ```sh
