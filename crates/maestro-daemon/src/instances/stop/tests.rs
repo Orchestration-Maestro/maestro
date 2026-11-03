@@ -556,10 +556,11 @@ fn saturated_client_probes_keep_the_stop_deadline() {
     );
     let peer = saturated_endpoint(&selection.client_socket_path);
     request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
+    // Joining the endpoint is the signal that it has removed the API socket.
+    assert_eq!(api.finish().request, STOP_LINE);
     let start = Instant::now();
     let result = await_shutdown(&selection, Instant::now() + SHORT, SHORT);
     let elapsed = start.elapsed();
-    api.finish();
     peer.join().unwrap();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
     if cfg!(target_vendor = "apple") {
