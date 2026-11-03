@@ -36,6 +36,8 @@ mod frame_writer_imports;
 pub use factory::{
     Installation, artifact_factory, artifact_factory_with_io, artifact_factory_with_stdout,
 };
+/// Typed native file imports use the existing native request pump.
+mod file_imports;
 mod guest_calls;
 mod guest_component;
 mod guest_editor;
