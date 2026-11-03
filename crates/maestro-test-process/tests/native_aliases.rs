@@ -378,6 +378,126 @@ fn metadata_stand_in_serves_declared_and_resolved_documents_per_run() {
     );
 }
 
+/// Install the command-family alias `name` selected by `record`.
+#[cfg(unix)]
+fn command_alias(root: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
+    let path = root.join(name);
+    install_executable(&artifact(), &path).unwrap();
+    std::fs::write(
+        root.join(format!("{name}.fixture")),
+        format!("command\n{record}"),
+    )
+    .unwrap();
+    path
+}
+
+/// The held leaf reports readiness, takes the hangup without ending, and tells the socket.
+#[cfg(unix)]
+#[test]
+fn hold_hangup_reports_ready_then_signals_the_socket_and_runs_on() {
+    use std::os::unix::net::UnixListener;
+    use std::os::unix::process::ExitStatusExt;
+    let root = Scratch::new().unwrap();
+    let socket = root.path().join("hangup");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let holder = command_alias(
+        root.path(),
+        "holder",
+        &serde_json::json!({"scenario": "hold-hangup"}),
+    );
+    let mut child = Command::new(holder)
+        .arg(&socket)
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut line = String::new();
+    output.read_line(&mut line).unwrap();
+    output.read_line(&mut line).unwrap();
+    assert_eq!(line, "\nready\n");
+    let pid = rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap();
+    rustix::process::kill_process(pid, rustix::process::Signal::HUP).unwrap();
+    let mut told = [0];
+    listener.accept().unwrap().0.read_exact(&mut told).unwrap();
+    assert_eq!(told, *b"h");
+    // The hangup did not end it: only the termination does.
+    assert!(child.try_wait().unwrap().is_none());
+    child.kill().unwrap();
+    assert_eq!(child.wait().unwrap().signal(), Some(9));
+}
+
+/// The waiting leaf announces itself and ends only once the socket releases it.
+#[cfg(unix)]
+#[test]
+fn await_release_ends_only_after_the_socket_sends_a_byte() {
+    use std::os::unix::net::UnixListener;
+    let root = Scratch::new().unwrap();
+    let socket = root.path().join("release");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let waiter = command_alias(
+        root.path(),
+        "waiter",
+        &serde_json::json!({"scenario": "await-release"}),
+    );
+    let mut child = Command::new(waiter).arg(&socket).spawn().unwrap();
+    let (mut stream, _) = listener.accept().unwrap();
+    let mut announced = [0];
+    stream.read_exact(&mut announced).unwrap();
+    assert_eq!(announced, *b"w");
+    assert!(child.try_wait().unwrap().is_none());
+    stream.write_all(b"x").unwrap();
+    assert!(child.wait().unwrap().success());
+}
+
+/// The environment report names the role, pane and directory the product launched it with.
+#[cfg(unix)]
+#[test]
+fn report_environment_names_role_pane_and_directory_then_runs_on() {
+    let root = Scratch::new().unwrap();
+    let reporter = command_alias(
+        root.path(),
+        "reporter",
+        &serde_json::json!({"scenario": "report-environment"}),
+    );
+    let mut child = Command::new(reporter)
+        .current_dir(root.path())
+        .env("ROLE", "tests")
+        .env_remove("MAESTRO_PANE_ID")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut text = String::new();
+    output.read_line(&mut text).unwrap();
+    output.read_line(&mut text).unwrap();
+    assert_eq!(
+        text,
+        format!("\nseen:<tests>|<>|<{}>\n", root.path().display())
+    );
+    assert!(child.try_wait().unwrap().is_none());
+    child.kill().unwrap();
+    child.wait().unwrap();
+}
+
+/// Coordination scenarios refuse a missing or extra socket path before any effect.
+#[cfg(unix)]
+#[test]
+fn coordination_scenarios_require_exactly_one_socket_operand() {
+    let root = Scratch::new().unwrap();
+    for (name, scenario) in [("holder", "hold-hangup"), ("waiter", "await-release")] {
+        let path = command_alias(
+            root.path(),
+            name,
+            &serde_json::json!({"scenario": scenario}),
+        );
+        for operands in [vec![], vec!["a", "b"]] {
+            let output = Command::new(&path).args(operands).output().unwrap();
+            assert!(!output.status.success(), "{name}");
+            assert!(output.stdout.is_empty(), "{name}");
+        }
+    }
+}
+
 /// Concurrent installations leave launchable copies with independently mutable ages.
 #[test]
 fn parallel_installs_launch_independent_copies_while_siblings_are_live() {

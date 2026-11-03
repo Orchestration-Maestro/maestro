@@ -1,7 +1,8 @@
 //! Finite controlled program stand-ins selected by a sibling JSON record.
 
 use std::ffi::{OsStr, OsString};
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
+use std::os::unix::net::UnixStream;
 
 use maestro_test_process::child::{leave, variable, write_stderr, write_stdout};
 use rustix::process::{Signal, getpid, kill_process};
@@ -79,6 +80,12 @@ pub(super) enum Record {
     },
     /// Record one package-manager command and answer it.
     Package {},
+    /// Hold the hangup, report readiness, then tell the socket operand once it arrives.
+    HoldHangup {},
+    /// Read one release byte from the socket operand, then end.
+    AwaitRelease {},
+    /// Report the role, pane and working directory, then stay alive until terminated.
+    ReportEnvironment {},
     /// Serve a Cargo metadata document read at run time.
     Metadata {
         /// Document served when the operands select declared members only.
@@ -137,12 +144,66 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             code,
         } => query(operands, prefix, denied, error, *code),
         Record::Package {} => package(operands),
+        Record::HoldHangup {} => hold_hangup(operands),
+        Record::AwaitRelease {} => await_release(operands),
+        Record::ReportEnvironment {} => report_environment(),
         Record::Metadata {
             declared,
             resolved,
             argv_log,
         } => metadata(operands, declared, resolved, argv_log.as_ref()),
     }
+}
+
+/// The single socket path a coordination scenario needs.
+fn socket_path(operands: &[OsString]) -> io::Result<&OsString> {
+    match operands {
+        [path] => Ok(path),
+        _ => Err(io::Error::other("expected one socket path")),
+    }
+}
+
+/// Stay alive until the process is terminated.
+fn remain() -> ! {
+    loop {
+        std::thread::park();
+    }
+}
+
+/// Queue the hangup before readiness, so one that arrives early is not lost, then tell the
+/// socket with `h` and run on.
+fn hold_hangup(operands: &[OsString]) -> io::Result<()> {
+    let path = socket_path(operands)?;
+    let (writer, mut reader) = UnixStream::pair()?;
+    signal_hook::low_level::pipe::register(signal_hook::consts::SIGHUP, writer)?;
+    write_stdout(b"\nready\n")?;
+    reader.read_exact(&mut [0])?;
+    UnixStream::connect(path)?.write_all(b"h")?;
+    remain()
+}
+
+/// Announce with `w`, then wait for the release byte without polling.
+fn await_release(operands: &[OsString]) -> io::Result<()> {
+    let mut socket = UnixStream::connect(socket_path(operands)?)?;
+    socket.write_all(b"w")?;
+    socket.read_exact(&mut [0])?;
+    leave(0)
+}
+
+/// Print `seen:<ROLE>|<MAESTRO_PANE_ID>|<working directory>` on its own line, then run on.
+fn report_environment() -> io::Result<()> {
+    let variable = |name| std::env::var(name).unwrap_or_default();
+    let directory = std::env::current_dir()?;
+    write_stdout(
+        format!(
+            "\nseen:<{}>|<{}>|<{}>\n",
+            variable("ROLE"),
+            variable("MAESTRO_PANE_ID"),
+            directory.display()
+        )
+        .as_bytes(),
+    )?;
+    remain()
 }
 
 /// Serve the declared document for `--no-deps` and the resolved one otherwise.

@@ -1193,7 +1193,7 @@ currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
 tests), the command-line startup tests, the conventions checker's architecture
-tests and the daemon's notification and repository discovery cases. Local setup builds the example with the locked host `dev` profile
+tests and the daemon's notification, layout-apply and repository discovery cases. Local setup builds the example with the locked host `dev` profile
 and reads Cargo's emitted executable path. It records source inputs, content digest
 and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1247,6 +1247,9 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `hold-hangup` | Requires one socket path. Registers the hangup, prints `ready` on a line of its own, and when the hangup arrives writes `h` to the socket and runs on until terminated. |
+| `await-release` | Requires one socket path. Writes `w` to it, then ends once it receives one byte. |
+| `report-environment` | Prints `seen:<ROLE>\|<MAESTRO_PANE_ID>\|<working directory>` on a line of its own, then runs on until terminated. |
 | `metadata` | Requires `metadata` first and fails anything else before any effect. Reads and prints the file named by `declared` when an operand is `--no-deps`, and the file named by `resolved` otherwise. The files are read on each run, so a test rewrites them between runs. Optional `argv_log` (`path`, `mark`) appends the invocation as `output` does. |
 
 A controlled package command for the package manager settings records its
@@ -1278,6 +1281,11 @@ one. Both probes run in a child, and a failing alias stands in for a compiler wr
 that must never run. A test that holds a writer open does so on the alias's `.fixture`
 record, because a writer on the executable itself makes the launch fail with
 `Text file busy`.
+
+The daemon's layout-apply tests launch these as pane commands. The test owns a Unix
+socket and a thread that answers `w` and `h` records: a `hold-hangup` leaf keeps its
+pane alive through the hangup, and an `await-release` leaf ends only after that
+hangup was reported, so the ordering needs no file polling.
 
 A command that only prints installation output uses the `output` scenario. The
 command-line startup tests install it as `controlled-npm` and write its two install
@@ -1376,6 +1384,9 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
+| `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
+| `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | A native program, not an interpreter: the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
 | `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
