@@ -77,6 +77,7 @@ where
     let mut escalation = None;
     let mut stopped = false;
     child.apply(options.stderr);
+    let keep_stderr = on_data.is_some() || options.stderr == OutputMode::Capture;
     while child.stdout.is_some() || child.stderr.is_some() || status.is_none() {
         tokio::select! {
             biased;
@@ -92,8 +93,7 @@ where
                 child.kill_if_running().await?;
             }
             () = fires(&mut grace) => {
-                let keep = on_data.is_some() || options.stderr == OutputMode::Capture;
-                drain_ready(child, &mut on_data, keep)?;
+                drain_ready(child, &mut on_data, keep_stderr)?;
                 break;
             }
             value = child.child.wait(), if status.is_none() => {
@@ -102,7 +102,7 @@ where
                 grace = timer(options.post_exit_grace);
             }
             value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => deliver(&mut child.out, value, &mut on_data, OutputStream::Stdout)?,
-            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == OutputMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value, &mut on_data, OutputStream::Stderr)?,
+            value = fill(&mut child.stderr, &mut child.err, keep_stderr), if child.stderr.is_some() => deliver(&mut child.err, value, &mut on_data, OutputStream::Stderr)?,
         }
     }
     child.stdout = None;

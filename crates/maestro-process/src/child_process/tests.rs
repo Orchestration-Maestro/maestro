@@ -1,7 +1,8 @@
 //! Private collector, grace and escalation behaviour.
 #![cfg(unix)]
 use super::{
-    CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
+    CapturedChild, OutputStream, SpawnSyncError, Termination, WaitOptions, capture, fill,
+    wait_for_child_process, wait_for_child_process_with_sink,
 };
 use super::{OutputMode, SpawnSyncOptions};
 use children::async_command;
@@ -279,34 +280,91 @@ fn grace_deadline_begins_after_child_exit() {
     });
 }
 
+/// An exited child whose pipes are replaced by readable ones, with their writers.
+async fn exited_child_with_open_pipes() -> (CapturedChild, std::io::PipeWriter, std::io::PipeWriter)
+{
+    // The writer only supplies an exited child; its own output is not used.
+    let mut child = CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
+    child.child.wait().await.unwrap();
+    let (out_reader, out_writer) = std::io::pipe().unwrap();
+    let (err_reader, err_writer) = std::io::pipe().unwrap();
+    child.stdout = Some(
+        tokio::process::ChildStdout::from_std(std::os::fd::OwnedFd::from(out_reader).into())
+            .unwrap(),
+    );
+    child.stderr = Some(
+        tokio::process::ChildStderr::from_std(std::os::fd::OwnedFd::from(err_reader).into())
+            .unwrap(),
+    );
+    (child, out_writer, err_writer)
+}
+
+/// Writes to both pipes and advances the clock past the grace before the wait runs again,
+/// so the pipes are readable and the grace is due in the same wake-up.
+async fn feed_then_expire<F: Future + Unpin>(
+    wait: &mut F,
+    mut out_writer: std::io::PipeWriter,
+    mut err_writer: std::io::PipeWriter,
+) -> F::Output {
+    assert!(is_pending(wait).await, "the open pipes hold the wait");
+    std::io::Write::write_all(&mut out_writer, b"late").unwrap();
+    std::io::Write::write_all(&mut err_writer, b"warn").unwrap();
+    tokio::time::advance(Duration::from_millis(100)).await;
+    wait.await
+}
+
 #[test]
 fn output_buffered_when_the_grace_expires_is_collected() {
-    // The write and the clock advance both land before the wait runs again, so the
-    // pipe is readable and the grace is due in the same wake-up.
+    let capture = |stderr| {
+        paused_runtime().block_on(async {
+            let (mut child, out, err) = exited_child_with_open_pipes().await;
+            let options = WaitOptions {
+                stderr,
+                post_exit_grace: Some(Duration::from_millis(100)),
+            };
+            let mut wait = Box::pin(wait_for_child_process(
+                &mut child,
+                options,
+                std::future::pending(),
+                None,
+            ));
+            let output = feed_then_expire(&mut wait, out, err).await.unwrap();
+            (output.stdout, output.stderr)
+        })
+    };
+    assert_eq!(
+        capture(OutputMode::Capture),
+        (b"late".to_vec(), b"warn".to_vec())
+    );
+    assert_eq!(capture(OutputMode::Discard), (b"late".to_vec(), Vec::new()));
+}
+
+#[test]
+fn output_buffered_when_the_grace_expires_reaches_the_sink() {
     paused_runtime().block_on(async {
-        let mut child =
-            CapturedChild::spawn(&mut async_command(children::output_writer, &[])).unwrap();
-        child.child.wait().await.unwrap();
-        let (reader, mut writer) = std::io::pipe().unwrap();
-        child.stdout = Some(
-            tokio::process::ChildStdout::from_std(std::os::fd::OwnedFd::from(reader).into())
-                .unwrap(),
-        );
-        child.stderr = None;
+        let (mut child, out, err) = exited_child_with_open_pipes().await;
         let options = WaitOptions {
+            stderr: OutputMode::Discard,
             post_exit_grace: Some(Duration::from_millis(100)),
-            ..WaitOptions::default()
         };
-        let mut wait = Box::pin(wait_for_child_process(
+        let mut chunks = Vec::new();
+        let mut sink = |stream: OutputStream, bytes: &[u8]| chunks.push((stream, bytes.to_vec()));
+        let mut wait = Box::pin(wait_for_child_process_with_sink(
             &mut child,
             options,
             std::future::pending(),
-            None,
+            &mut sink,
         ));
-        assert!(is_pending(&mut wait).await, "the open pipe holds the wait");
-        std::io::Write::write_all(&mut writer, b"late").unwrap();
-        tokio::time::advance(Duration::from_millis(100)).await;
-        assert_eq!(wait.await.unwrap().stdout, b"late");
+        let output = feed_then_expire(&mut wait, out, err).await.unwrap();
+        assert!(output.stdout.is_empty() && output.stderr.is_empty());
+        drop(wait);
+        assert_eq!(
+            chunks,
+            [
+                (OutputStream::Stdout, b"late".to_vec()),
+                (OutputStream::Stderr, b"warn".to_vec())
+            ]
+        );
     });
 }
 
