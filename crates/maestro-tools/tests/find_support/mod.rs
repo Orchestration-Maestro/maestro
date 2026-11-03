@@ -326,15 +326,7 @@ struct Native {
 /// Install one finite native search scenario from the prepared artifact.
 #[cfg(unix)]
 pub fn alias(root: &std::path::Path, name: &str, record: &Value) {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .expect("nextest native-fixture setup supplies the artifact");
-    std::fs::write(
-        root.join(format!("{name}.fixture")),
-        format!("search\n{record}"),
-    )
-    .unwrap();
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &root.join(name))
-        .unwrap();
+    crate::read_support::native_alias(root, name, "search", record);
 }
 /// Install an `fd` program that records its operands and return the file it writes.
 #[cfg(unix)]

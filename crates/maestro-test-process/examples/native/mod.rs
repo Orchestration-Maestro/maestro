@@ -17,12 +17,16 @@ mod component;
 mod credentials;
 mod echo;
 mod editor;
+#[cfg(unix)]
+mod exec;
 mod git;
 mod notification;
 mod observe;
 mod rpc;
 #[cfg(unix)]
 mod search;
+#[cfg(unix)]
+mod termination;
 mod tooling_command;
 mod tooling_wrapper;
 #[cfg(unix)]
@@ -62,6 +66,9 @@ enum Request {
     BrowserLaunch(browser_launch::Record, Vec<OsString>),
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
+    /// Exchange controlled command payload bytes.
+    #[cfg(unix)]
+    Exec(exec::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     Rpc(rpc::Record),
     /// Produce controlled search bytes without interpreting native operands.
@@ -140,6 +147,8 @@ impl Request {
                 credentials::Record::parse(&text)?,
                 operands,
             )),
+            #[cfg(unix)]
+            Some("exec") => Ok(Self::Exec(exec::Record::parse(&text)?, operands)),
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
@@ -178,6 +187,8 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Exec(record, operands) => exec::run(&record, &operands),
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
