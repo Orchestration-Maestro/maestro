@@ -91,7 +91,7 @@ pub(super) async fn foreign_page(page: &mut Page<'_>) -> io::Result<(BrowserCont
 }
 
 /// Mount the exact pointer-reporting document with nested, SVG and decoy variations.
-pub(super) const MOUNT: &str = r#"async (nested=false, count=0, svg=false) => {
+pub(super) const MOUNT: &str = r#"async (nested=false, count=0, svg=false, setup='window.done=Promise.resolve();') => {
   const {program_input}=await import('/programs.js');
   for(let i=0;i<=count;i++) {
     const frame=document.createElement('iframe');if(i===0) frame.id='obsolete';
@@ -105,7 +105,7 @@ pub(super) const MOUNT: &str = r#"async (nested=false, count=0, svg=false) => {
   const box=doc.createElement('div');box.id='probe:"雪]';doc.body.append(box);
   const target=doc.createElement('iframe');target.sandbox='allow-scripts allow-modals';
   target.srcdoc=program_input('click-document').replace('<head>','<head><meta http-equiv="x-test" content="retained">')
-    .replace('</script>','window.S={value:"right",started:true};window.done=Promise.resolve();</script>')
+    .replace('</script>','window.S={value:"right",started:true};'+setup+'</script>')
     +(svg?'<body><svg width="200" height="40"><rect id="target" width="150" height="30"/></svg>':'<body><button id="target" onclick="window.S.clicked=true">click</button>')+'</body>';
   const loaded=new Promise(resolve=>target.onload=resolve);box.append(target);await loaded;
   window.selected=target;return true;
@@ -117,7 +117,7 @@ pub(super) fn state() -> serde_json::Value {
 }
 
 /// Raise an actual unhandled srcdoc exception and await the document's load signal.
-pub(super) const POLICY: &str = r"(async () => {
-  const frame=document.createElement('iframe');frame.srcdoc='<script>window.complete()</script>';
+pub(super) const POLICY: &str = r"async (script='window.complete()') => {
+  const frame=document.createElement('iframe');frame.srcdoc='<script>'+script+'</script>';
   const loaded=new Promise(resolve=>frame.onload=resolve);document.body.append(frame);await loaded;
-})()";
+}";

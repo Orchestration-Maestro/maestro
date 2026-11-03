@@ -253,8 +253,13 @@ lifetime. Browser events route by session; export, binding and input operations
 wait for their own completion signals without command deadlines.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
-page crashes and unexpected browser disconnection fail the command. One deliberate
-policy-negative export, `inline_programs_preserve_text_policies_and_order`, must
+page crashes and unexpected browser disconnection fail the command. An acknowledged
+browser close or a lost connection ends command admission: later operations,
+including page creation, fail immediately with a connection-closed error. Script
+arguments in the browser fixtures are JSON-encoded before evaluation so quotes in
+embedded document scripts remain data in the containing page.
+
+One deliberate policy-negative export, `inline_programs_preserve_text_policies_and_order`, must
 produce exactly one `TypeError` with message `window.complete is not a function`
 from `about:srcdoc`. Its ordinary assertions still run; absent, repeated or other
 errors fail. Error accounting stays attached until the page closes. Browser,

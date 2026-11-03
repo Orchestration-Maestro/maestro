@@ -81,7 +81,7 @@ fn page_errors_stay_with_their_own_session() {
 fn unexpected_page_errors_fail() {
     let error = run(fixture(&[], async |browser, origin| {
         browser
-            .check(&format!("{origin}/"), "inventory", POLICY)
+            .check(&format!("{origin}/"), "inventory", &format!("({POLICY})()"))
             .await
             .map(|_| ())
     }))
@@ -95,7 +95,11 @@ fn unexpected_page_errors_fail() {
 fn expected_policy_error_matches_once() {
     run(fixture(&[], async |browser, origin| {
         browser
-            .check(&format!("{origin}/"), POLICY_EXPORT, POLICY)
+            .check(
+                &format!("{origin}/"),
+                POLICY_EXPORT,
+                &format!("({POLICY})()"),
+            )
             .await?;
         assert!(browser.lines().iter().any(|line| line.ends_with("1/1")));
         Ok(())
@@ -124,7 +128,7 @@ fn expected_policy_error_is_required() {
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
 fn extra_policy_errors_fail() {
-    let expression = format!("(async () => {{ await {POLICY}; await {POLICY}; }})()");
+    let expression = format!("(async () => {{ await ({POLICY})(); await ({POLICY})(); }})()");
     let error = run(fixture(&[], async |browser, origin| {
         browser
             .check(&format!("{origin}/"), POLICY_EXPORT, &expression)
@@ -142,7 +146,10 @@ fn extra_policy_errors_fail() {
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
 fn different_policy_errors_fail() {
-    let expression = POLICY.replace("window.complete()", "throw TypeError('different sentinel')");
+    let expression = format!(
+        "({POLICY})({})",
+        json!("throw TypeError('different sentinel')")
+    );
     let error = run(fixture(&[], async |browser, origin| {
         browser
             .check(&format!("{origin}/"), POLICY_EXPORT, &expression)
@@ -276,13 +283,14 @@ fn sandbox_inspection_propagates_target_errors() {
         } else {
             Vec::new()
         };
-        let mount = if pending {
-            MOUNT.replace("window.done=Promise.resolve();", "window.done=new Promise(()=>{});Object.defineProperty(window,'S',{get(){parent.postMessage({removeOnState:true},'*');return {started:true};}});")
+        let setup = if pending {
+            "window.done=new Promise(()=>{});Object.defineProperty(window,'S',{get(){parent.postMessage({removeOnState:true},'*');return {started:true};}});"
         } else {
-            MOUNT.to_owned()
+            "window.done=Promise.resolve();"
         };
         let expression = format!(
-            "(async()=>{{await ({mount})();addEventListener('message',event=>{{if(event.source===selected.contentWindow&&event.data?.removeOnState){{window.removed=true;selected.remove();}}}});if(!{pending}) selected.remove();return inspectSandbox({},'state');}})()",
+            "(async()=>{{await ({MOUNT})(false,0,false,{});addEventListener('message',event=>{{if(event.source===selected.contentWindow&&event.data?.removeOnState){{window.removed=true;selected.remove();}}}});if(!{pending}) selected.remove();return inspectSandbox({},'state');}})()",
+            json!(setup),
             json!(ID)
         );
         run(fixture(&args, async |browser, origin| {
@@ -475,8 +483,8 @@ async fn delivery(shared: bool, mode: Delivery) -> io::Result<()> {
     };
     fixture(&args,async |browser,origin| {
         let mut page=browser.page("delivery").await?;page.initialize().await?;page.navigate(&format!("{origin}/")).await?;
-        let mount=if untrusted {MOUNT.replace("window.done=Promise.resolve();", "window.done=Promise.resolve();const scroll=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(...args){scroll.apply(this,args);this.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,composed:true}));};")} else {MOUNT.to_owned()};
-        page.evaluate(&format!("({mount})()")).await?;
+        let setup=if untrusted {"window.done=Promise.resolve();const scroll=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(...args){scroll.apply(this,args);this.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,composed:true}));};"} else {"window.done=Promise.resolve();"};
+        page.evaluate(&format!("({MOUNT})(false,0,false,{})",json!(setup))).await?;
         let targets=page.send(None,"Target.getTargets",json!({})).await?;
         let selected=targets["targetInfos"].as_array().unwrap().iter().find(|target| target["type"]=="iframe");
         assert_eq!(selected.is_none(),shared,"actual selected-renderer route");

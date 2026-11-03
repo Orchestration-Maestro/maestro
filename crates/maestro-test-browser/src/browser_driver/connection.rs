@@ -11,8 +11,10 @@ use std::{collections::HashMap, io};
 
 /// Correlates responses while nested binding operations service the same socket.
 pub(super) struct Dispatcher {
-    /// Sole browser-control transport.
-    connection: Connection<CdpEventMessage>,
+    /// Sole browser-control transport, absent once the connection ends.
+    connection: Option<Connection<CdpEventMessage>>,
+    /// Browser-close command awaiting acknowledgement.
+    closing: Option<CallId>,
     /// Responses received while servicing another pending operation.
     responses: HashMap<CallId, Response>,
 }
@@ -21,7 +23,8 @@ impl Dispatcher {
     /// Connect to the launched browser's advertised endpoint.
     pub async fn connect(url: &str) -> io::Result<Self> {
         Ok(Self {
-            connection: Connection::connect(url).await.map_err(io::Error::other)?,
+            connection: Some(Connection::connect(url).await.map_err(io::Error::other)?),
+            closing: None,
             responses: HashMap::new(),
         })
     }
@@ -33,9 +36,16 @@ impl Dispatcher {
         method: &'static str,
         params: Value,
     ) -> io::Result<CallId> {
-        self.connection
+        let id = self
+            .connection
+            .as_mut()
+            .ok_or_else(disconnected)?
             .submit_command(method.into(), session.cloned(), params)
-            .map_err(io::Error::other)
+            .map_err(io::Error::other)?;
+        if session.is_none() && method == "Browser.close" {
+            self.closing = Some(id);
+        }
+        Ok(id)
     }
 
     /// Take the response for an outstanding operation, retaining other correlations.
@@ -51,14 +61,51 @@ impl Dispatcher {
 
     /// Flush commands and read the next event, retaining intervening responses.
     pub async fn next(&mut self) -> io::Result<Option<CdpJsonEventMessage>> {
-        match self.connection.next().await {
+        match self
+            .connection
+            .as_mut()
+            .ok_or_else(disconnected)?
+            .next()
+            .await
+        {
             Some(Ok(Message::Response(response))) => {
+                let closing = self.closing == Some(response.id);
+                if closing {
+                    self.closing = None;
+                }
+                if closing && response.error.is_none() && response.result.is_some() {
+                    self.disconnect();
+                }
                 self.responses.insert(response.id, response);
                 Ok(None)
             }
             Some(Ok(Message::Event(event))) => event.try_into().map(Some).map_err(io::Error::other),
-            Some(Err(error)) => Err(io::Error::other(error)),
-            None => Err(io::Error::other("unexpected browser disconnection")),
+            Some(Err(error)) => {
+                self.disconnect();
+                Err(io::Error::new(
+                    io::ErrorKind::NotConnected,
+                    format!("browser connection closed: {error}"),
+                ))
+            }
+            None => {
+                self.disconnect();
+                Err(disconnected())
+            }
         }
     }
+
+    /// Retire the transport and pending correlations for every terminal outcome.
+    fn disconnect(&mut self) {
+        self.connection = None;
+        self.closing = None;
+        self.responses.clear();
+    }
 }
+
+/// Report command admission on a connection that has already ended.
+fn disconnected() -> io::Error {
+    io::Error::new(io::ErrorKind::NotConnected, "browser connection closed")
+}
+
+#[cfg(test)]
+mod tests;
