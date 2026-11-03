@@ -61,6 +61,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
+    "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-lock",

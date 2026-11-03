@@ -38,3 +38,7 @@ fall back to compilation. Each load keeps its own Store. The Git build includes
 the host executable's modification time in cache keys. The test setup aligns
 executable timestamps before warming every exported component, so separate test
 binaries reuse compatible entries.
+
+The runtime and native test host enable `gc` and `gc-drc` for WebAssembly
+exceptions. This lets separately built C engines return stack-unwinding failures
+through their component interface without poisoning the instance.

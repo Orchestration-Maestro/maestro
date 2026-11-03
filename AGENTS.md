@@ -182,14 +182,16 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   existing theme paths may re-export moved types, not duplicate implementations.
   Land this contract before creating the leaves; size moves by net added
   production lines with matching moved/deleted counts, not claimed savings.
-- `maestro-process` is a declared core leaf below layer 0 with no workspace
-  dependencies, including the path and cancellation leaves. Only tools, packages,
-  credentials, detection, the application, the daemon, the toolkit and the terminal adapter may depend on it, on native targets. It owns native child-process
+- `maestro-process` is a declared core owner below layer 0 depending only on
+  `maestro-text`, which owns shared POSIX shell operand serialization. Only tools, packages,
+  credentials, detection, the application, the daemon, the toolkit and the terminal
+  adapter may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
   all output handling. Its retained-front byte queue is shared by pane-process input
   and native terminal output; callers own readiness and lifecycle policy. It also owns
   native termination-signal delivery, their idempotent removal and the prepared
-  default action, while each native mode keeps its own exit policy. Synchronous capture follows the timeout handling in
+  default action, while each native mode keeps its own exit policy. Synchronous
+  capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
 - `maestro-listing` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path utility. It lists one directory's entries sorted
@@ -296,7 +298,7 @@ development edge for component tests of the native schema validator,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
 development edge for the product's one engine configuration,
 and the native, non-optional dev-dependencies
-of the twenty-six declared callers on `maestro-test-process`, the owner of
+of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
