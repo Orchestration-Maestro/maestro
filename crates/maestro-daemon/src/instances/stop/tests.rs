@@ -364,11 +364,12 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(STOPPED)), Some(0));
     let client = Endpoint::bind(&client_path, None, None);
     request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
+    // Joining the endpoint is the signal that it has removed the API socket.
+    assert_eq!(api.finish().request, STOP_LINE);
     assert_eq!(
         await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("work", &[&client_path]))
     );
-    assert_eq!(api.finish().request, STOP_LINE);
     client.finish();
 }
 
