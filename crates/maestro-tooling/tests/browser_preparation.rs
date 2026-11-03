@@ -11,9 +11,7 @@ use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use maestro_tooling as tooling;
 
-use crate::{
-    browser_author_build::browser_support, recipe_support::install_executable, toolchain_support,
-};
+use crate::{browser_author_build::browser_support, recipe_support::scenario, toolchain_support};
 
 /// Tests the fixture crate records, as nextest names them inside its `maestro-tooling` package.
 const BROWSER_TESTS: [&str; 2] = ["first", "second"];
@@ -137,11 +135,16 @@ fn run_shard(root: &Path, config: &Path, shard: u32) -> Vec<String> {
         .collect()
 }
 
-/// Stand-in for `just` and `cargo` that records its arguments and the variables that decide
-/// Cargo's output, then fails the build recipe to show that one failure does not end the setup.
-const RECORDING_TOOL: &str = "#!/bin/sh\n\
-    { echo \"call $*\"; env | grep -E '^(CARGO_TARGET_DIR|RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|LLVM_PROFILE_FILE|CARGO_LLVM_COV|__CARGO_LLVM_COV|RUSTC_WRAPPER)' | sort; } >> \"$CALLS\"\n\
-    [ \"$1\" != browser-library-build ]\n";
+/// The variables that decide Cargo's output, which the stand-ins for `just` and `cargo` record.
+const RECORDED_VARIABLES: [&str; 7] = [
+    "CARGO_TARGET_DIR",
+    "RUSTFLAGS",
+    "CARGO_ENCODED_RUSTFLAGS",
+    "LLVM_PROFILE_FILE",
+    "CARGO_LLVM_COV",
+    "__CARGO_LLVM_COV",
+    "RUSTC_WRAPPER",
+];
 
 /// The library lint `browser-check` runs after repairing formatting.
 const LIBRARY_LINT: &str =
@@ -213,17 +216,17 @@ fn browser_setup_lints_the_library_as_browser_check_does() {
     assert_eq!(recipe_lints, [LIBRARY_LINT]);
 }
 
-/// Put recording `just` and `cargo` in `root/bin`; both append to `root/calls.log`.
+/// Put recording `just` and `cargo` in `root/bin`; both append to `root/calls.log` and fail the
+/// build recipe, to show that one failure does not end the setup.
 fn install_stubs(root: &Path) {
-    fs::create_dir(root.join("bin")).unwrap();
-    let log = format!("\"{}\"", root.join("calls.log").display());
-    fs::write(
-        root.join("stub.sh"),
-        RECORDING_TOOL.replace("\"$CALLS\"", &log),
-    )
-    .unwrap();
+    let record = serde_json::json!({
+        "scenario": "call-log",
+        "path": root.join("calls.log"),
+        "prefixes": RECORDED_VARIABLES,
+        "refuse": "browser-library-build",
+    });
     for name in ["just", "cargo"] {
-        install_executable(&root.join("stub.sh"), &root.join("bin").join(name));
+        scenario(&root.join("bin"), name, &record);
     }
 }
 

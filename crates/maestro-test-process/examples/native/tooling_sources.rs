@@ -1,8 +1,9 @@
-//! The Cargo the fixture-sources setup runs: it vendors a source set and builds the seed units.
+//! The Cargo and recipe tools the fixture-sources and browser setups run.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use maestro_test_process::child::{leave, write_stderr, write_stdout};
 use serde::Deserialize;
@@ -29,27 +30,65 @@ const UNITS: [(&str, &str); 4] = [
 /// The operation the stand-in fails after recording itself.
 #[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
-enum Operation {
+pub(super) enum Operation {
     /// `cargo vendor` fails.
     Vendor,
     /// `cargo build` fails.
     Build,
 }
 
-/// Where the stand-in records its calls and which operation fails, parsed before any effect.
+/// One stand-in's complete behavior, parsed before any stream or file effect.
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Record {
-    /// File that receives the arguments of every vendor call.
-    calls: PathBuf,
-    /// File that receives the arguments of every build call.
-    builds: PathBuf,
-    /// The operation that fails, if any.
-    fails: Option<Operation>,
+#[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
+pub(super) enum Record {
+    /// Record the vendor and build calls, fail one of them on request, and run the setup steps.
+    Sources {
+        /// File that receives the arguments of every vendor call.
+        calls: PathBuf,
+        /// File that receives the arguments of every build call.
+        builds: PathBuf,
+        /// The operation that fails, if any.
+        fails: Option<Operation>,
+    },
+    /// Print each operand on its own line, then the authored diagnostic, and end with the status.
+    Operands {
+        /// Standard error text.
+        stderr: String,
+        /// Exit status.
+        code: u8,
+    },
+    /// Act as a Trunk hook: copy the stylesheet, report the hook environment, end with its status.
+    TrunkHook,
+    /// Append the call and the matching variables to a log and refuse one chosen first operand.
+    CallLog {
+        /// Destination appended to, created when it is absent.
+        path: String,
+        /// Variable name prefixes whose variables are recorded, sorted by their lines.
+        prefixes: Vec<String>,
+        /// First operand that ends the invocation with status 1.
+        refuse: String,
+    },
+    /// Append the operands to the log `CARGO_CALLS` names and report one artifact per name.
+    Artifacts {
+        /// Targets reported as compiled to `/built/<name>.wasm`.
+        names: Vec<String>,
+    },
+    /// Append the operands to the `cargo-log` beside the directory holding this alias, refuse the
+    /// phase `MAESTRO_FAIL_PHASE` names, skip the phases that need no build, and run the real
+    /// Cargo for the rest.
+    ConsumerCargo {
+        /// The real Cargo.
+        cargo: String,
+    },
+    /// Print `cargo` and the operands, and replace one named program with a copy of this alias.
+    Announce {
+        /// A program, relative to the working directory, that prints `example`.
+        rebuilt: Option<String>,
+    },
 }
 
 impl Record {
-    /// Read a tooling-sources record, rejecting unknown fields.
+    /// Read a tooling-sources record, rejecting unknown scenarios and fields.
     pub(super) fn parse(text: &str) -> io::Result<Self> {
         let json = text
             .strip_prefix("tooling-sources\n")
@@ -58,27 +97,47 @@ impl Record {
     }
 }
 
-/// Record the call, then build or vendor as its first operand asks.
+/// Run the selected stand-in with its untouched native operands.
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
+    match record {
+        Record::Sources {
+            calls,
+            builds,
+            fails,
+        } => sources(calls, builds, *fails, args),
+        Record::Operands { stderr, code } => {
+            let lines: Vec<_> = args.iter().map(|arg| arg.to_string_lossy()).collect();
+            write_stdout(format!("{}\n", lines.join("\n")).as_bytes())?;
+            write_stderr(stderr.as_bytes())?;
+            leave(i32::from(*code))
+        }
+        Record::TrunkHook => trunk_hook(args),
+        Record::CallLog {
+            path,
+            prefixes,
+            refuse,
+        } => call_log(path, prefixes, refuse, args),
+        Record::Artifacts { names } => artifacts(names, args),
+        Record::ConsumerCargo { cargo } => consumer_cargo(Path::new(cargo), args),
+        Record::Announce { rebuilt } => announce(rebuilt.as_deref(), args),
+    }
+}
+
+/// Record the call, then build or vendor as its first operand asks.
+fn sources(
+    calls: &Path,
+    builds: &Path,
+    fails: Option<Operation>,
+    args: &[OsString],
+) -> io::Result<()> {
     let building = args.first().is_some_and(|operation| operation == "build");
     let (log, operation, message) = if building {
-        (&record.builds, Operation::Build, "build exploded\n")
+        (builds, Operation::Build, "build exploded\n")
     } else {
-        (&record.calls, Operation::Vendor, "vendor exploded\n")
+        (calls, Operation::Vendor, "vendor exploded\n")
     };
-    let line = args
-        .iter()
-        .map(|arg| arg.to_string_lossy())
-        .collect::<Vec<_>>()
-        .join(" ");
-    writeln!(
-        std::fs::File::options()
-            .append(true)
-            .create(true)
-            .open(log)?,
-        "{line}"
-    )?;
-    if record.fails == Some(operation) {
+    append(log, &operands(args))?;
+    if fails == Some(operation) {
         write_stderr(message.as_bytes())?;
         leave(1);
     }
@@ -91,6 +150,131 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
         std::fs::create_dir_all(destination)?;
         write_stdout(SOURCES)
     }
+}
+
+/// Copy the stylesheet, report the hook's operand and environment, end with `MAESTRO_HOOK_STATUS`.
+fn trunk_hook(args: &[OsString]) -> io::Result<()> {
+    std::fs::copy("assets/app.css", "hook.css")?;
+    let mut lines = vec![
+        args.first()
+            .ok_or_else(|| io::Error::other("missing hook operand"))?
+            .to_string_lossy()
+            .into_owned(),
+    ];
+    for name in [
+        "TRUNK_PROFILE",
+        "TRUNK_HTML_FILE",
+        "TRUNK_SOURCE_DIR",
+        "TRUNK_DIST_DIR",
+        "TRUNK_PUBLIC_URL",
+        "TRUNK_STAGING_DIR",
+        "MAESTRO_HOOK_INHERITED",
+    ] {
+        lines.push(required(name)?);
+    }
+    std::fs::write("hook-environment", lines.join("\n") + "\n")?;
+    let status = required("MAESTRO_HOOK_STATUS")?
+        .parse::<u8>()
+        .map_err(io::Error::other)?;
+    leave(i32::from(status))
+}
+
+/// Record the call and the selected variables, then refuse the first operand the record names.
+fn call_log(path: &str, prefixes: &[String], refuse: &str, args: &[OsString]) -> io::Result<()> {
+    let mut environment: Vec<_> = std::env::vars_os()
+        .map(|(name, value)| format!("{}={}", name.to_string_lossy(), value.to_string_lossy()))
+        .filter(|line| {
+            prefixes
+                .iter()
+                .any(|prefix| line.starts_with(prefix.as_str()))
+        })
+        .collect();
+    environment.sort_unstable();
+    let mut text = format!("call {}", operands(args));
+    for line in environment {
+        text.push('\n');
+        text.push_str(&line);
+    }
+    append(path, &text)?;
+    if args
+        .first()
+        .is_some_and(|first| first == OsStr::new(refuse))
+    {
+        leave(1);
+    }
+    Ok(())
+}
+
+/// Record the build and report each named target as compiled.
+fn artifacts(names: &[String], args: &[OsString]) -> io::Result<()> {
+    append(required("CARGO_CALLS")?, &operands(args))?;
+    for name in names {
+        let message = serde_json::json!({
+            "reason": "compiler-artifact",
+            "target": {"name": name},
+            "filenames": [format!("/built/{name}.wasm")],
+        });
+        write_stdout(format!("{message}\n").as_bytes())?;
+    }
+    Ok(())
+}
+
+/// Record the call in the log beside the directory holding this alias, then refuse, skip or
+/// forward it.
+fn consumer_cargo(cargo: &Path, args: &[OsString]) -> io::Result<()> {
+    let executable = std::env::current_exe()?;
+    let log = executable
+        .parent()
+        .and_then(Path::parent)
+        .ok_or_else(|| io::Error::other("the alias has no checkout directory"))?
+        .join("cargo-log");
+    append(log, &operands(args))?;
+    let phase = args.first().map(|first| first.to_string_lossy());
+    if std::env::var("MAESTRO_FAIL_PHASE")
+        .is_ok_and(|fail| !fail.is_empty() && phase.as_deref() == Some(fail.as_str()))
+    {
+        leave(17);
+    }
+    if matches!(phase.as_deref(), Some("hakari" | "test" | "nextest")) {
+        return Ok(());
+    }
+    let status = Command::new(cargo).args(args).status()?;
+    leave(status.code().unwrap_or(1))
+}
+
+/// Print the call; where a program is named, replace it with one that prints `example`.
+fn announce(rebuilt: Option<&str>, args: &[OsString]) -> io::Result<()> {
+    write_stdout(format!("cargo {}\n", operands(args)).as_bytes())?;
+    let Some(path) = rebuilt else {
+        return Ok(());
+    };
+    std::fs::copy(std::env::current_exe()?, path)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755))?;
+    }
+    std::fs::write(format!("{path}.fixture"), "echo\nexample\n")
+}
+
+/// Append one line to a log, creating it when it is absent.
+fn append(path: impl AsRef<Path>, text: &str) -> io::Result<()> {
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    writeln!(file, "{text}")
+}
+
+/// The operands as one space-separated line.
+fn operands(args: &[OsString]) -> String {
+    let words: Vec<_> = args.iter().map(|arg| arg.to_string_lossy()).collect();
+    words.join(" ")
+}
+
+/// The text of a variable this stand-in requires.
+fn required(name: &str) -> io::Result<String> {
+    std::env::var(name).map_err(|error| io::Error::other(format!("{name}: {error}")))
 }
 
 /// Leave the units of a build in the profile directory of `CARGO_TARGET_DIR`.
