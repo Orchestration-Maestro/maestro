@@ -2,6 +2,8 @@
 
 This package adapts MIT-licensed text from the following copyright holders.
 
+## Jesse Vincent
+
 MIT License
 
 Copyright (c) 2025 Jesse Vincent
@@ -96,6 +98,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Siqi Chen
 
 MIT License
 
