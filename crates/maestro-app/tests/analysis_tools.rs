@@ -2,11 +2,15 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::analysis_fixtures::Run;
+#[cfg(not(windows))]
+use crate::analysis_fixtures::{arguments, clock};
 use crate::analysis_fixtures::{
-    arguments, clock, opened, page_data, root, run_tools, scratch, with_controlled_viewer,
+    opened, page_data, root, run_tools, scratch, with_controlled_viewer,
 };
+#[cfg(not(windows))]
 use crate::isolated_home::with_environment;
 use serde_json::Value;
+#[cfg(not(windows))]
 use std::io::{BufRead, BufReader, Read, Write};
 
 /// The shared identity pack the page takes its colors from.
@@ -723,6 +727,7 @@ fn tool_report_opens_the_page_with_the_recorded_arguments() {
 }
 
 /// The viewer program the platform opener starts, named as the opener names it.
+#[cfg(not(windows))]
 fn viewer_program() -> &'static str {
     match std::env::consts::OS {
         "macos" => "open",
@@ -732,6 +737,7 @@ fn viewer_program() -> &'static str {
 }
 
 /// Install the controlled viewer that announces its own launch on `port`.
+#[cfg(not(windows))]
 fn install_viewer(directory: &std::path::Path, program: &str, port: u16) {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
@@ -748,6 +754,9 @@ fn install_viewer(directory: &std::path::Path, program: &str, port: u16) {
     .expect("the viewer record is writable");
 }
 
+// Windows resolves the viewer through its own directories before `PATH`, so the
+// installed viewer never receives the launch on that platform.
+#[cfg(not(windows))]
 #[test]
 fn tool_report_starts_the_platform_viewer_with_the_written_page() {
     let path = "$BASE/bin";
