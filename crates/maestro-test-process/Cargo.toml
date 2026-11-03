@@ -9,7 +9,7 @@ autotests = false
 
 [[example]]
 name = "native_fixture"
-path = "examples/native_fixture.rs"
+path = "tests/support/native_fixture.rs"
 harness = false
 test = false
 
