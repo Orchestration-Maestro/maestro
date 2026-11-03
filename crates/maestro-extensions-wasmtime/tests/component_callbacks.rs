@@ -7,7 +7,7 @@ use std::rc::Rc;
 use super::callback_ordering::{Instance, Pair, local};
 
 /// Calls a retained renderer with a complete message built from `message`.
-fn render(
+pub(super) fn render(
     call: &MessageRendererCall<Value, maestro_extensions::Local>,
     message: &Value,
     expanded: bool,
@@ -20,7 +20,7 @@ fn render(
 }
 
 /// Looks up `custom_type`'s renderer in `instance` through the runner.
-fn renderer(
+pub(super) fn renderer(
     instance: &Instance,
     custom_type: &str,
 ) -> MessageRendererCall<Value, maestro_extensions::Local> {
@@ -31,7 +31,7 @@ fn renderer(
 }
 
 /// A complete message of `custom_type`.
-fn message(custom_type: &str) -> Value {
+pub(super) fn message(custom_type: &str) -> Value {
     json!({"role":"custom", "customType":custom_type, "content":"", "display":true, "timestamp":0})
 }
 
