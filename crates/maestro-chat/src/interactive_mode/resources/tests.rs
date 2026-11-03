@@ -1,7 +1,7 @@
 //! The loaded-resource listing through the mode's startup and retained sections.
 use super::{
     HomeLookup, ResourceItem, ShowLoadedResourcesOptions, build_scope_groups, format_context_path,
-    format_display_path, format_scope_groups, get_short_path,
+    format_display_path, format_scope_groups, get_short_path, prompt_label, prompt_names_by_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
 use crate::interactive_mode::tests::{
@@ -779,5 +779,58 @@ fn resource_listing_reads_each_input_once_before_ordering() {
         assert_eq!((visited, emitted), (count, count));
         assert_eq!(rescanned, count * (count + 1) / 2);
         assert!(rescanned > 2 * count);
+    }
+}
+
+/// The prompt templates at `count` distinct paths, each named after its index.
+fn prompt_templates(count: usize) -> Vec<PromptTemplate> {
+    (0..count)
+        .rev()
+        .map(|index| Recorded {
+            file_path: format!("/p/{index:04}.md"),
+            name: format!("p{index:04}"),
+            source_info: None,
+        })
+        .map(Recorded::into_template)
+        .collect()
+}
+
+#[test]
+fn prompt_labels_read_each_template_once_before_naming_paths() {
+    for count in [64, 128, 256] {
+        let templates = prompt_templates(count);
+        let reads = Cell::new(0);
+        let names = prompt_names_by_path(templates.iter().inspect(|_| reads.set(reads.get() + 1)));
+        assert_eq!((names.len(), reads.get()), (count, count));
+        let lookups = Cell::new(0);
+        let home = || {
+            lookups.set(lookups.get() + 1);
+            Ok(HOME.to_owned())
+        };
+        for template in &templates {
+            let item = ResourceItem {
+                path: &template.file_path,
+                source_info: Some(&template.source_info),
+            };
+            assert_eq!(
+                prompt_label(&names, &item, &home).unwrap(),
+                format!("/{}", template.name)
+            );
+        }
+        assert_eq!((reads.get(), lookups.get()), (count, 0));
+        let rescanned = Cell::new(0);
+        let rescans: usize = templates
+            .iter()
+            .map(|template| {
+                templates
+                    .iter()
+                    .inspect(|_| rescanned.set(rescanned.get() + 1))
+                    .position(|other| other.file_path == template.file_path)
+                    .unwrap()
+                    + 1
+            })
+            .sum();
+        assert_eq!(rescans, count * (count + 1) / 2);
+        assert!(rescanned.get() > 2 * count);
     }
 }
