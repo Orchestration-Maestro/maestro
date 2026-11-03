@@ -1243,24 +1243,18 @@ fn startup_checks_snapshot_packages_before_input_hooks() {
             },
             None,
         );
-        *slot.borrow_mut() = Some(world.host.session().settings_manager().clone());
+        let settings = world.host.session().settings_manager().clone();
+        *slot.borrow_mut() = Some(settings.clone());
         let mut run = Box::pin(world.mode.run());
         assert!(poll(&mut run).is_none());
         super::prompts::until_waiting(&world.mode, run.as_mut()).await;
         assert_eq!(
-            world
-                .host
-                .session()
-                .settings_manager()
-                .borrow()
-                .get_project_settings()
-                .0["packages"],
+            settings.borrow().get_project_settings().0["packages"],
             serde_json::json!(["npm:after"])
         );
         let ((), errors) = super::driving(&world, until_notice(&world, "- before")).await;
         assert!(errors.is_empty());
         drop(run);
-        let settings = world.host.session().settings_manager().clone();
         settings
             .borrow_mut()
             .set_project_packages(vec![maestro_app::PackageSource::Source(
