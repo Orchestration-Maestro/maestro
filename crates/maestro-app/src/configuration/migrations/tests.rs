@@ -101,7 +101,7 @@ fn directory_link_collision_removes_only_source_entry() {
     .unwrap()
     .nocapture()
     .case("*")
-    .env("MAESTRO_CODING_AGENT_DIR", &root)
+    .env("MAESTRO_CODING_AGENT_DIR", root)
     .output()
     .unwrap();
     assert!(output.status.success(), "{output:?}");
