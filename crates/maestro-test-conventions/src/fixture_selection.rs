@@ -73,11 +73,22 @@ fn selected(config: &Value) -> Result<BTreeSet<&str>, String> {
             .get("filter")
             .and_then(Value::as_str)
             .ok_or("native-fixture rule requires a filter string in .config/nextest.toml")?;
-        for atom in filter.split("package(").skip(1) {
-            let (name, _) = atom
-                .split_once(')')
-                .ok_or("unclosed native-fixture package atom in .config/nextest.toml")?;
-            packages.insert(name.trim().trim_start_matches('='));
+        for term in filter.split('|').map(str::trim) {
+            let name = term
+                .strip_prefix("package(=")
+                .and_then(|name| name.strip_suffix(')'))
+                .filter(|name| {
+                    !name.is_empty()
+                        && name
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+                })
+                .ok_or_else(|| {
+                    format!(
+                        ".config/nextest.toml: native-fixture filter terms must be exactly package(=NAME), found {term:?}"
+                    )
+                })?;
+            packages.insert(name);
         }
     }
     Ok(packages)
@@ -89,42 +100,19 @@ mod tests {
     use cargo_metadata::{Metadata, MetadataCommand};
     use maestro_test_directory::Scratch;
 
-    /// A complete native-fixture rule, independent of the graph policy under test.
-    const CONFIG: &str = r#"
-[scripts.setup.native-fixture]
-command = "development nextest-setup native-fixture"
-[[profile.default.scripts]]
-setup = "native-fixture"
-filter = """
-package(=maestro)
-| package(=maestro-agent)
-| package(=maestro-app)
-| package(=maestro-catalog)
-| package(=maestro-chat)
-| package(=maestro-cli)
-| package(=maestro-credentials)
-| package(=maestro-daemon)
-| package(=maestro-detection)
-| package(=maestro-extensions)
-| package(=maestro-extensions-wasmtime)
-| package(=maestro-ipc)
-| package(=maestro-lock)
-| package(=maestro-models)
-| package(=maestro-packages)
-| package(=maestro-process)
-| package(=maestro-resources)
-| package(=maestro-rpc)
-| package(=maestro-session)
-| package(=maestro-settings)
-| package(=maestro-test-conventions)
-| package(=maestro-test-process)
-| package(=maestro-theme)
-| package(=maestro-tooling)
-| package(=maestro-tools)
-| package(=maestro-tui)
-| package(=maestro-tui-crossterm)
-"""
-"#;
+    /// A complete native-fixture rule built from the declared caller policy.
+    fn config() -> String {
+        let filter = TEST_PROCESS_CALLERS
+            .iter()
+            .copied()
+            .chain([TEST_PROCESS])
+            .map(|name| format!("package(={name})"))
+            .collect::<Vec<_>>()
+            .join("\n| ");
+        format!(
+            "[scripts.setup.native-fixture]\ncommand = 'development nextest-setup native-fixture'\n[[profile.default.scripts]]\nsetup = 'native-fixture'\nfilter = \"\"\"\n{filter}\n\"\"\"\n"
+        )
+    }
 
     /// A workspace containing the fixture owner and the supplied nextest configuration.
     fn workspace(config: &str) -> (Scratch, Metadata) {
@@ -149,7 +137,7 @@ package(=maestro)
 
     #[test]
     fn native_fixture_setup_serves_every_test_process_caller() {
-        let config = CONFIG.replace("| package(=maestro-cli)\n", "");
+        let config = config().replace("| package(=maestro-cli)\n", "");
         let (root, metadata) = workspace(&config);
 
         let error = check(root.path(), &metadata).unwrap_err();
@@ -159,7 +147,7 @@ package(=maestro)
 
     #[test]
     fn native_fixture_setup_names_only_test_process_callers() {
-        let config = CONFIG.replace(
+        let config = config().replace(
             "package(=maestro-cli)",
             "package(=maestro-cli) | package(=maestro-text) | package(=maestro-json)",
         );
@@ -177,7 +165,7 @@ package(=maestro)
 
     #[test]
     fn matching_native_fixture_selection_passes() {
-        let (root, metadata) = workspace(CONFIG);
+        let (root, metadata) = workspace(&config());
 
         assert_eq!(check(root.path(), &metadata), Ok(()));
     }
@@ -186,13 +174,38 @@ package(=maestro)
     fn other_profiles_cannot_supply_missing_default_fixture_callers() {
         let config = format!(
             "{}\n[[profile.ci.scripts]]\nsetup = 'native-fixture'\nfilter = 'package(=maestro-cli)'\n",
-            CONFIG.replace("| package(=maestro-cli)\n", "")
+            config().replace("| package(=maestro-cli)\n", "")
         );
         let (root, metadata) = workspace(&config);
 
         let error = check(root.path(), &metadata).unwrap_err();
 
         assert!(error.contains("missing package(=maestro-cli)"), "{error}");
+    }
+
+    #[test]
+    fn native_fixture_selection_rejects_narrowed_package_terms() {
+        let config = config().replace(
+            "package(=maestro-cli)",
+            "package(=maestro-cli) & test(startup_stdout::)",
+        );
+        let (root, metadata) = workspace(&config);
+
+        let error = check(root.path(), &metadata).unwrap_err();
+
+        assert!(error.contains("package(=NAME)"), "{error}");
+        assert!(error.contains("startup_stdout::"), "{error}");
+    }
+
+    #[test]
+    fn native_fixture_selection_rejects_negated_package_terms() {
+        let config = config().replace("package(=maestro-cli)", "not package(=maestro-cli)");
+        let (root, metadata) = workspace(&config);
+
+        let error = check(root.path(), &metadata).unwrap_err();
+
+        assert!(error.contains("package(=NAME)"), "{error}");
+        assert!(error.contains("not package(=maestro-cli)"), "{error}");
     }
 
     #[test]

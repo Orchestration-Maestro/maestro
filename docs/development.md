@@ -1194,10 +1194,11 @@ is [Rust test children](specs/test-processes.md).
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
 `maestro-test-process` and every crate the crate graph allows to depend on it.
-A crate becomes a consumer by becoming a declared caller in the
-[crate graph](specs/maestro-port.md#test-process-owner); adding fixture tests
-inside a declared caller needs no shared selection or docs edit.
-The conventions check rejects missing or extra crates in the setup filter.
+To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
+add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
+`.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
+shared selection or docs edit. The conventions check rejects missing or extra
+crates and requires every filter term to be exactly `package(=name)`, joined by `|`.
 Run `just prepare-tests` before a filtered nextest run on any declared caller.
 Local setup builds the example with the locked host `dev` profile and reads Cargo's
 emitted executable path. It records source inputs, content digest and host in
