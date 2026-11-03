@@ -10,15 +10,9 @@ use super::{
 };
 use crate::BashExecutionComponent;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
-use std::{
-    cell::RefCell,
-    error::Error,
-    future::Future,
-    path::Path,
-    pin::Pin,
-    rc::Rc,
-    task::{Context, Poll, Waker},
-};
+use std::{cell::RefCell, error::Error, future::Future, path::Path, pin::Pin, rc::Rc};
+
+use futures_util::FutureExt;
 
 /// Installs a shell that creates `marker`, then prints `process output`.
 fn marked_output(directory: &Path, marker: &Path) -> String {
@@ -70,20 +64,12 @@ pub(super) async fn shelling(directory: &Path, script: &str) -> World {
     world
 }
 
-/// Polls `future` once with a waker that observes nothing.
-fn poll_once<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
-    match Pin::new(future).poll(&mut Context::from_waker(Waker::noop())) {
-        Poll::Ready(output) => Some(output),
-        Poll::Pending => None,
-    }
-}
-
 /// Submits `text` while a waiting input observes it, and returns what reached that input.
 fn delivered(world: &World, text: &str) -> Vec<String> {
     let mut waiter: Pin<Box<dyn Future<Output = String>>> = Box::pin(world.mode.get_user_input());
-    assert!(poll_once(&mut waiter).is_none());
+    assert!(waiter.as_mut().now_or_never().is_none());
     submit(&world.mode, text);
-    poll_once(&mut waiter).into_iter().collect()
+    waiter.as_mut().now_or_never().into_iter().collect()
 }
 
 /// One submitted text, where it goes, and what the ordinary input received.

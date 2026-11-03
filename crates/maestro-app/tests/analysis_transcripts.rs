@@ -48,10 +48,16 @@ fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
 
 /// A journal whose wrapped transcript is exactly `units` UTF-16 units long.
 fn sized_transcript(name: &str, units: usize) -> String {
+    sized_transcript_of(name, units, 'x')
+}
+
+/// A journal of `units` UTF-16 units whose message text is `unit` repeated.
+fn sized_transcript_of(name: &str, units: usize, unit: char) -> String {
     let fixed = format!("=== SESSION: {name} ===\n[USER]\n=== END SESSION ===\n")
         .encode_utf16()
         .count();
-    message("user", serde_json::json!("x".repeat(units - fixed)))
+    let filler = (units - fixed) / unit.len_utf16();
+    message("user", serde_json::json!(unit.to_string().repeat(filler)))
 }
 
 #[test]
@@ -214,14 +220,19 @@ fn transcript_blocks_keep_only_the_text_discriminant() {
 
 /// One split case: two sessions of `sizes`, and the lines it must report.
 fn split_case(base: &str, name: &str, sizes: (usize, usize), expected: &[&str]) {
+    split_case_of(base, name, sizes, 'x', expected);
+}
+
+/// One split case of `unit`-filled sessions, and the lines it must report.
+fn split_case_of(base: &str, name: &str, sizes: (usize, usize), unit: char, expected: &[&str]) {
     let project = format!("{base}/{name}");
     std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
     sessions(
         base,
         &project,
         &[
-            ("a.jsonl", &sized_transcript("a.jsonl", sizes.0)),
-            ("b.jsonl", &sized_transcript("b.jsonl", sizes.1)),
+            ("a.jsonl", &sized_transcript_of("a.jsonl", sizes.0, unit)),
+            ("b.jsonl", &sized_transcript_of("b.jsonl", sizes.1, unit)),
         ],
     );
     let output = format!("{base}/{name}-out");
@@ -267,6 +278,38 @@ fn transcript_splits_at_utf16_limit_without_splitting_sessions() {
                 &[
                     "Wrote session-transcripts-000.txt (100000 chars)\n",
                     "Wrote session-transcripts-001.txt (100000 chars)\n",
+                    "Created 2 transcript file(s)",
+                ],
+            );
+        },
+    );
+}
+
+#[test]
+fn transcript_splits_by_utf16_units_with_supplementary_characters() {
+    with_isolated_home(
+        "transcript_splits_by_utf16_units_with_supplementary_characters",
+        |base| {
+            // A supplementary character is two UTF-16 units, so a character count would
+            // pack each pair into one file and report half its size.
+            split_case_of(
+                base,
+                "supplementary-joined",
+                (50_000, 49_996),
+                '\u{1f600}',
+                &[
+                    "Wrote session-transcripts-000.txt (99998 chars)\n",
+                    "Created 1 transcript file(s)",
+                ],
+            );
+            split_case_of(
+                base,
+                "supplementary-separate",
+                (50_002, 49_998),
+                '\u{1f600}',
+                &[
+                    "Wrote session-transcripts-000.txt (50002 chars)\n",
+                    "Wrote session-transcripts-001.txt (49998 chars)\n",
                     "Created 2 transcript file(s)",
                 ],
             );

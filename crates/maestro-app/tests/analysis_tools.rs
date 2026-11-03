@@ -3,9 +3,11 @@
 
 use crate::analysis_fixtures::Run;
 use crate::analysis_fixtures::{
-    opened, page_data, root, run_tools, scratch, with_controlled_viewer,
+    arguments, clock, opened, page_data, root, run_tools, scratch, with_controlled_viewer,
 };
+use crate::isolated_home::with_environment;
 use serde_json::Value;
+use std::io::{BufRead, BufReader, Read, Write};
 
 /// The shared identity pack the page takes its colors from.
 const BRAND: &str = include_str!("../../../assets/brand/brand.json");
@@ -94,6 +96,10 @@ fn tool_arguments_and_recursive_file_selection() {
             maestro_path::join(&[&sessions, "link.jsonl"]),
         )
         .expect("the fixture link is creatable");
+        // A link to the walked directory must not enter it a second time or loop.
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&sessions, maestro_path::join(&[&sessions, "loop"]))
+            .expect("the directory link is creatable");
         let output = maestro_path::join(&[&root(&scratch), "ignored.html"]);
         let report = maestro_path::join(&[&root(&scratch), "report.html"]);
         let run = run_tools(&[
@@ -250,12 +256,43 @@ fn tool_result_text_keeps_images_and_other_blocks() {
     });
 }
 
+/// One result per token-histogram boundary, as UTF-16 units of result text.
+///
+/// Four units make one estimated token; the 1- and 5-unit entries cover the rounding
+/// up from a partial token.
+const BUCKET_SAMPLES: [usize; 24] = [
+    0,
+    1,
+    4,
+    5,
+    50 * 4,
+    51 * 4,
+    100 * 4,
+    101 * 4,
+    250 * 4,
+    251 * 4,
+    500 * 4,
+    501 * 4,
+    1000 * 4,
+    1001 * 4,
+    2000 * 4,
+    2001 * 4,
+    4000 * 4,
+    4001 * 4,
+    8000 * 4,
+    8001 * 4,
+    16_000 * 4,
+    16_001 * 4,
+    32_000 * 4,
+    32_001 * 4,
+];
+
 #[test]
 fn tool_estimates_tokens_and_bucket_boundaries() {
     with_controlled_viewer("tool_estimates_tokens_and_bucket_boundaries", |_base| {
         let scratch = scratch();
         let sessions = maestro_path::join(&[&root(&scratch), "sessions"]);
-        let samples = [0_usize, 1, 4, 5, 200, 32_000 * 4, 32_001 * 4];
+        let samples = BUCKET_SAMPLES;
         let entries = samples
             .iter()
             .enumerate()
@@ -292,11 +329,15 @@ fn tool_estimates_tokens_and_bucket_boundaries() {
         let read = &data["tools"][0];
         assert_eq!(
             read["samples"],
-            serde_json::json!([0, 1, 1, 2, 50, 32000, 32001])
+            serde_json::json!([
+                0, 1, 1, 2, 50, 51, 100, 101, 250, 251, 500, 501, 1000, 1001, 2000, 2001, 4000,
+                4001, 8000, 8001, 16000, 16001, 32000, 32001,
+            ])
         );
+        // Every label's lower and upper bound lands in that label's own bucket.
         assert_eq!(
             read["histogram"],
-            serde_json::json!([5, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1])
+            serde_json::json!([5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1])
         );
     });
 }
@@ -677,6 +718,86 @@ fn tool_report_opens_the_page_with_the_recorded_arguments() {
                 [output],
                 "the opener receives the written page path"
             );
+        },
+    );
+}
+
+/// The viewer program the platform opener starts, named as the opener names it.
+fn viewer_program() -> &'static str {
+    match std::env::consts::OS {
+        "macos" => "open",
+        "windows" => "explorer.exe",
+        _ => "xdg-open",
+    }
+}
+
+/// Install the controlled viewer that announces its own launch on `port`.
+fn install_viewer(directory: &std::path::Path, program: &str, port: u16) {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    std::fs::create_dir_all(directory).expect("the viewer directory is creatable");
+    let entry = directory.join(program);
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &entry)
+        .expect("the viewer installs");
+    let mut record = entry.as_os_str().to_owned();
+    record.push(".fixture");
+    std::fs::write(
+        record,
+        format!("browser_launch\n{}", serde_json::json!({"port": port})),
+    )
+    .expect("the viewer record is writable");
+}
+
+#[test]
+fn tool_report_starts_the_platform_viewer_with_the_written_page() {
+    let path = "$BASE/bin";
+    with_environment(
+        "tool_report_starts_the_platform_viewer_with_the_written_page",
+        &[("PATH", path)],
+        |base| {
+            let program = viewer_program();
+            let listener =
+                std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port is bound");
+            let port = listener
+                .local_addr()
+                .expect("the bound address is readable")
+                .port();
+            install_viewer(
+                std::path::Path::new(base).join("bin").as_path(),
+                program,
+                port,
+            );
+            let sessions = maestro_path::join(&[base, "sessions"]);
+            write(&sessions, &[("a.jsonl", String::new())]);
+            let output = maestro_path::join(&[base, "report.html"]);
+            let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+            let code = maestro_app::developer_tools::tool_stats::main(
+                &arguments(&["--sessions-dir", &sessions, "--output", &output]),
+                &clock,
+                &mut stdout,
+                &mut stderr,
+            )
+            .expect("the report writes its page");
+            assert_eq!(code, std::process::ExitCode::SUCCESS);
+            // The viewer announces its own program name and one literal operand.
+            let (mut launched, _) = listener.accept().expect("the viewer starts");
+            let mut announced = String::new();
+            BufReader::new(launched.try_clone().expect("the announcement is readable"))
+                .read_line(&mut announced)
+                .expect("the viewer announces its launch");
+            let (named, operands): (String, Vec<String>) =
+                serde_json::from_str(announced.trim_end()).expect("the launch is recorded as JSON");
+            assert_eq!(named, program);
+            assert_eq!(operands, std::slice::from_ref(&output));
+            // The complete page exists while the viewer still waits.
+            let page = std::fs::read_to_string(&output).expect("the page is written");
+            assert!(page.starts_with("<!doctype html>"), "{page:.40}");
+            launched.write_all(b"!").expect("the viewer is released");
+            let mut done = String::new();
+            launched
+                .read_to_string(&mut done)
+                .expect("the viewer finishes");
+            assert_eq!(done, "done");
         },
     );
 }

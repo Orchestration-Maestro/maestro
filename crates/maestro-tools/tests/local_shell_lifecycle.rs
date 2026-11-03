@@ -1,7 +1,7 @@
 //! Local shell grace and completed observer lifetimes.
 #![cfg(unix)]
 #![cfg(test)]
-use crate::{process_support, read_support, runtime::run_paused};
+use crate::{read_support, runtime::run_paused};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
@@ -360,10 +360,9 @@ struct ChildWitness {
 
 impl ChildWitness {
     /// Saves settlement so a completed future is never polled twice.
-    async fn poll(&mut self, operation: &mut Operation<'_>) {
+    fn poll(&mut self, operation: &mut Operation<'_>) {
         if self.settled.is_none()
-            && let Poll::Ready(result) =
-                process_support::poll_once(&mut std::pin::Pin::new(operation)).await
+            && let Some(result) = std::pin::Pin::new(operation).now_or_never()
         {
             self.settled = Some(result);
         }
@@ -376,7 +375,7 @@ impl ChildWitness {
         receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
     ) -> Vec<u8> {
         loop {
-            self.poll(operation).await;
+            self.poll(operation);
             while let Ok(chunk) = receiver.try_recv() {
                 self.bytes.extend(chunk);
             }
@@ -401,14 +400,14 @@ async fn drive_timeout(
 ) {
     let start = tokio::time::Instant::now();
     tokio::time::advance(Duration::from_millis(24)).await;
-    witness.poll(operation).await;
+    witness.poll(operation);
     assert!(witness.settled.is_none());
     connection.write_all(b"a").unwrap();
     assert_eq!(witness.line(operation, receiver).await, b"alive\n");
     tokio::time::advance(Duration::from_millis(1)).await;
     tokio::time::sleep(Duration::ZERO).await;
     assert_eq!(start.elapsed(), Duration::from_millis(25));
-    witness.poll(operation).await;
+    witness.poll(operation);
 }
 
 /// Releases both waits, terminating a known PID if its control channel is closed.
@@ -425,7 +424,7 @@ async fn settle_child(
         maestro_tools::utils::shell::kill_process_tree(pid);
     }
     while witness.settled.is_none() {
-        witness.poll(operation).await;
+        witness.poll(operation);
         tokio::task::yield_now().await;
     }
 }
@@ -469,7 +468,7 @@ async fn termination_case(stop: Stop) {
         let socket = connection.insert(listener.accept().unwrap().0);
         witness.pid = Some(std::str::from_utf8(&line).unwrap().trim().parse().unwrap());
         match stop {
-            Stop::Abort => witness.poll(&mut operation).await,
+            Stop::Abort => witness.poll(&mut operation),
             Stop::Timeout => {
                 drive_timeout(&mut witness, &mut operation, &mut receiver, socket).await;
             }

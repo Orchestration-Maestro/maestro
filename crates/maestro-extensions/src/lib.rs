@@ -37,6 +37,9 @@
 pub mod callbacks;
 /// Ordered shared channel delivery.
 pub mod event_bus;
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;
 pub use callbacks::CallbackEmitter;
 pub use event_bus::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,

@@ -20,6 +20,7 @@ maestro-path = { path = "../maestro-path" }
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["test-util"] }
 maestro-catalog = { path = "../maestro-catalog" }
 maestro-credentials = { path = "../maestro-credentials" }

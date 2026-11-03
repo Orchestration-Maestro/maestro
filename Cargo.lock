@@ -3955,6 +3955,7 @@ dependencies = [
 name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "indexmap 2.14.2",
  "maestro-credentials",
  "maestro-dependencies",
@@ -4149,6 +4150,7 @@ dependencies = [
  "maestro-catalog",
  "maestro-credentials",
  "maestro-dependencies",
+ "maestro-extensions",
  "maestro-listeners",
  "maestro-models",
  "maestro-path",
@@ -4372,6 +4374,7 @@ dependencies = [
 name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "git-url-parse",
  "maestro-dependencies",
  "maestro-json",
@@ -4419,6 +4422,7 @@ dependencies = [
 name = "maestro-process"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "maestro-dependencies",
  "maestro-test-directory",
  "maestro-test-process",

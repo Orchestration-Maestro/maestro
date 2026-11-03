@@ -83,6 +83,8 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-t
 js-sys = "=0.3.106"
 
 [dev-dependencies]
+maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }
+maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
 serde = { workspace = true, features = ["rc"] }
 serde_json.workspace = true
