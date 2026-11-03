@@ -1527,7 +1527,9 @@ file-size handling, then process-count limit. The builder writes that request in
 the child's environment and the child applies it through
 `IsolatedSetup::apply_requested` before its body, holding the returned guard. The
 runner keeps its own modes, limits, session and environment, and a refused effect
-stops the child before anything is observed.
+stops the child before anything is observed. The umask contains only octal permission
+bits (`000` through `777`); the child checks its conversion to the platform's native
+mode type before applying it.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the

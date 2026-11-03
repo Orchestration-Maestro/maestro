@@ -10,7 +10,7 @@ use std::io;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use rustix::fs::Mode;
+use rustix::fs::{Mode, RawMode};
 use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
 
 /// The variable that carries one launch's setup request into the child.
@@ -127,7 +127,9 @@ impl IsolatedSetup {
     /// handling, then the process-count limit. Returns the effect the operating system refused.
     fn apply(self) -> Result<SetupGuard, SetupError> {
         if let Some(mask) = self.umask {
-            rustix::process::umask(Mode::from_bits_retain(mask));
+            let mode = RawMode::try_from(mask)
+                .map_err(|_| SetupError::Entry(format!("umask={mask:03o}")))?;
+            rustix::process::umask(Mode::from_bits_retain(mode));
         }
         if self.new_session {
             new_session()?;
