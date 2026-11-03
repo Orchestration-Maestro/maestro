@@ -165,6 +165,12 @@ impl RecordedExtension {
         let source_info = self.source_info.into_source_info(&self.path);
         (self.path, source_info)
     }
+
+    /// The extension's path and the provenance its compact label reads.
+    pub(super) fn into_label_loaded(self) -> (String, SourceInfo) {
+        let source_info = self.source_info.into_label_info(&self.path);
+        (self.path, source_info)
+    }
 }
 
 /// One recorded path that failed to load.
@@ -522,5 +528,5 @@ pub(super) fn listings(test: &str) {
 
 /// The source and scope of `recorded`, for comparison with a found provenance.
 pub(super) fn identity(recorded: &RecordedSource) -> (&str, SourceScope) {
-    (&recorded.source, recorded.scope)
+    (&recorded.source, recorded.compared_scope())
 }

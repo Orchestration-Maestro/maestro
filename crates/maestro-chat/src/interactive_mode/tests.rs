@@ -133,7 +133,8 @@ fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
     );
 }
 
-/// Installs the `fd` and `rg` the binary directory is searched for before the command path.
+/// Installs stub `fd` and `rg` in the binary directory, which is searched before the
+/// command path.
 fn controlled_search_programs(directory: &Path) {
     let bin = directory.join("bin");
     for name in ["fd", "rg"] {
