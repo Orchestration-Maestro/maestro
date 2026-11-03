@@ -11,15 +11,7 @@ use super::{
 use crate::BashExecutionComponent;
 use futures_util::FutureExt;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
-use std::{
-    cell::RefCell,
-    error::Error,
-    future::Future,
-    path::Path,
-    pin::Pin,
-    rc::Rc,
-    sync::Mutex,
-};
+use std::{cell::RefCell, error::Error, future::Future, path::Path, pin::Pin, rc::Rc, sync::Mutex};
 use tokio::sync::oneshot;
 
 /// Installs a shell that creates `marker`, then prints `process output`.
