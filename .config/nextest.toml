@@ -27,7 +27,36 @@ setup = "cargo-checks"
 command = "target/test-setup/development nextest-setup native-fixture"
 
 [[profile.default.scripts]]
-filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-process) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | package(maestro-app) | (package(maestro-cli) & test(startup_stdout::)) | (package(maestro-daemon) & test(/desktop_notification::|repository_discovery::repository_reftable_queries_use_native_process_owner/)) | (package(maestro-chat) & binary_id(maestro-chat::example/rpc_extension_ui))"
+# Select the test-process owner and every declared TEST_PROCESS_CALLERS crate.
+filter = """
+package(=maestro)
+| package(=maestro-agent)
+| package(=maestro-app)
+| package(=maestro-catalog)
+| package(=maestro-chat)
+| package(=maestro-cli)
+| package(=maestro-credentials)
+| package(=maestro-daemon)
+| package(=maestro-detection)
+| package(=maestro-extensions)
+| package(=maestro-extensions-wasmtime)
+| package(=maestro-ipc)
+| package(=maestro-lock)
+| package(=maestro-models)
+| package(=maestro-packages)
+| package(=maestro-process)
+| package(=maestro-resources)
+| package(=maestro-rpc)
+| package(=maestro-session)
+| package(=maestro-settings)
+| package(=maestro-test-conventions)
+| package(=maestro-test-process)
+| package(=maestro-theme)
+| package(=maestro-tooling)
+| package(=maestro-tools)
+| package(=maestro-tui)
+| package(=maestro-tui-crossterm)
+"""
 setup = "native-fixture"
 
 [scripts.setup.fixture-sources]

@@ -101,6 +101,24 @@ impl Workspace {
             serde_json::to_vec_pretty(&entries).unwrap(),
         )
         .unwrap();
+        if entries.contains_key(policy::TEST_PROCESS) {
+            let filter = policy::TEST_PROCESS_CALLERS
+                .iter()
+                .copied()
+                .chain([policy::TEST_PROCESS])
+                .map(|name| format!("package(={name})"))
+                .collect::<Vec<_>>()
+                .join(" | ");
+            let config = self.root.path().join(".config");
+            fs::create_dir_all(&config).unwrap();
+            fs::write(
+                config.join("nextest.toml"),
+                format!(
+                    "[profile.default]\nslow-timeout = {{ period = '30s', terminate-after = 4 }}\n[scripts.setup.native-fixture]\ncommand = 'development nextest-setup native-fixture'\n[[profile.default.scripts]]\nsetup = 'native-fixture'\nfilter = '{filter}'\n"
+                ),
+            )
+            .unwrap();
+        }
     }
 }
 

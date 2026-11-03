@@ -9,7 +9,7 @@ pub(crate) mod metadata;
 /// Package dependency and component-export boundaries.
 pub(crate) mod packages;
 /// Scoped crate ownership and direct-dependency rules.
-mod policy;
+pub(crate) mod policy;
 /// Opt-in helper activation boundaries.
 mod test_support;
 use metadata::{canonical, check_kind, members};
