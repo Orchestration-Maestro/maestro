@@ -149,11 +149,11 @@ fn native_child_keeps_literal_arguments_and_cwd() {
     std::fs::create_dir(&outside).unwrap();
     let mut rpc = loaded(&root);
     let operands = ["space value", "$HOME; `literal`", "line\nbreak", "Ω雪", ""];
-    let child = child(&root, "arguments", &json!({"scenario":"arguments"}));
+    let producer = child(&root, "arguments", &json!({"scenario":"arguments"}));
     for cwd in [None, Some(outside.to_str().unwrap())] {
         call(
             &mut rpc,
-            &json!({"op":"spawn","command":child,"args":operands,"cwd":cwd}),
+            &json!({"op":"spawn","command":producer,"args":operands,"cwd":cwd}),
         );
         let bytes = drain(&mut rpc, false);
         let value: Value = serde_json::from_slice(&bytes).unwrap();
@@ -255,12 +255,12 @@ fn native_child_keeps_descriptor_selection() {
             json!(selected.map(|selection| selection == "pipe"))
         );
         for (fd, selection) in selected.into_iter().enumerate() {
-            let child = std::fs::read_link(format!("/proc/{pid}/fd/{fd}")).unwrap();
+            let descriptor = std::fs::read_link(format!("/proc/{pid}/fd/{fd}")).unwrap();
             let parent = std::fs::read_link(format!("/proc/{}/fd/{fd}", rpc.pid())).unwrap();
             match selection {
-                "inherit" => assert_eq!(child, parent),
-                "ignore" => assert_eq!(child, std::path::Path::new("/dev/null")),
-                _ => assert_ne!(child, parent),
+                "inherit" => assert_eq!(descriptor, parent),
+                "ignore" => assert_eq!(descriptor, std::path::Path::new("/dev/null")),
+                _ => assert_ne!(descriptor, parent),
             }
         }
         release(socket);
@@ -339,6 +339,7 @@ fn native_child_completion_keeps_output_close_order() {
 fn native_child_keeps_exit_and_signal_distinct() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    // The initial record only installs the alias; each iteration selects its own record.
     let producer = command(
         &root,
         "output",
@@ -422,6 +423,7 @@ fn select_identity(
 fn native_child_group_signal_keeps_direct_fallback() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    // The initial records only install the aliases; each iteration selects both records.
     let holder = child(&root, "grouped", &json!({"scenario":"grouped","port":0}));
     let producer = child(
         &root,
@@ -442,8 +444,8 @@ fn native_child_group_signal_keeps_direct_fallback() {
         while !line.ends_with(b"\n") {
             line.extend(prefix(&mut rpc, false, 1));
         }
-        let identity: Vec<u64> = serde_json::from_slice(&line).unwrap();
-        assert_eq!(identity[0], pid);
+        let ids: Vec<u64> = serde_json::from_slice(&line).unwrap();
+        assert_eq!(ids[0], pid);
         let group = -i32::try_from(pid).unwrap();
         if detached {
             use std::io::Read;
@@ -452,14 +454,14 @@ fn native_child_group_signal_keeps_direct_fallback() {
             let mut inherited = [0; 8];
             socket.read_exact(&mut inherited).unwrap();
             assert_eq!(u64::from_be_bytes(inherited), pid);
-            assert_eq!(identity, [pid, pid, pid]);
+            assert_eq!(ids, [pid, pid, pid]);
             call(
                 &mut rpc,
                 &json!({"op":"signal_pid","pid":group,"signal":"SIGKILL"}),
             );
             assert_eq!(socket.read(&mut [0]).unwrap(), 0);
         } else {
-            assert_ne!(identity[1], pid);
+            assert_ne!(ids[1], pid);
             assert!(
                 answer(
                     &mut rpc,
@@ -650,7 +652,7 @@ fn native_io_keeps_full_user_basics() {
     std::fs::write(&target, b"symlink\0\xfe").unwrap();
     std::os::unix::fs::symlink("../linked 雪", &link).unwrap();
     let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
-    let mut child = root
+    let mut process = root
         .command(&[
             "--mode",
             "rpc",
@@ -672,8 +674,8 @@ fn native_io_keeps_full_user_basics() {
         .spawn()
         .unwrap();
     let input = b"input\0\xff\xe2\x82\xac";
-    child.stdin.take().unwrap().write_all(input).unwrap();
-    let output = child.wait_with_output().unwrap();
+    process.stdin.take().unwrap().write_all(input).unwrap();
+    let output = process.wait_with_output().unwrap();
     assert!(output.status.success(), "{output:?}");
     assert_eq!(
         output.stdout,

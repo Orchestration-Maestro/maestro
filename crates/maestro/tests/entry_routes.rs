@@ -266,8 +266,7 @@ fn forced_update_uses_configured_manager_without_release_fetch() {
     std::fs::create_dir_all(package.join("bin")).unwrap();
     let binary = package.join("bin/maestro");
     std::fs::copy(env!("CARGO_BIN_EXE_maestro"), &binary).unwrap();
-    let script = root.path("bin/npm");
-    crate::support::native::install(
+    let script = crate::support::native::install(
         &root.path("bin"),
         "npm",
         "command",
