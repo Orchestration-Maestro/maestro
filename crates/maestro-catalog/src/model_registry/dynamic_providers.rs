@@ -244,16 +244,30 @@ impl CatalogState {
             .collect();
         for definition in definitions {
             let identity = (provider.into(), definition.id.clone());
-            if let Some(headers) = super::composition::ordered(definition.headers.clone())
-                .filter(|headers| !headers.is_empty())
+            let overridden = self
+                .model_overrides
+                .get(provider)
+                .and_then(|overrides| overrides.get(&definition.id))
+                .cloned();
+            let mut headers = definition.headers.clone();
+            if let Some(extra) = overridden
+                .as_ref()
+                .and_then(|fields| fields.headers.clone())
+            {
+                headers.get_or_insert_default().extend(extra);
+            }
+            if let Some(headers) =
+                super::composition::ordered(headers).filter(|headers| !headers.is_empty())
             {
                 self.model_headers.insert(identity, headers);
             } else {
                 self.model_headers.remove(&identity);
             }
-            models.push(Arc::new(RwLock::new(descriptor(
-                definition, provider, config,
-            ))));
+            let mut model = descriptor(definition, provider, config);
+            if let Some(fields) = overridden {
+                super::composition::apply(&mut model, fields);
+            }
+            models.push(Arc::new(RwLock::new(model)));
         }
         self.models = Arc::new(RwLock::new(models));
     }

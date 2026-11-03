@@ -10,21 +10,7 @@ use recipe_support::Workspace;
 #[test]
 fn browser_setup_errors_reach_stderr_and_transcript() {
     if let Ok(stage) = std::env::var("MAESTRO_SETUP_FAILURE") {
-        if stage == "recipe" {
-            let _workspace = Workspace::new();
-        } else {
-            let browser = Browser::new();
-            fs::write(
-                browser.fixture("Cargo.toml"),
-                "invalid_manifest_marker = [\n",
-            )
-            .unwrap();
-            if stage == "lockfile" {
-                browser.generate_lockfile();
-            } else {
-                browser_support::cold_sources(&browser);
-            }
-        }
+        fail_setup(&stage);
         panic!("setup must fail");
     }
     let mut failures = Vec::new();
@@ -66,6 +52,112 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+/// Make the named setup fail, leaving its diagnostics in the transcript and on stderr.
+fn fail_setup(stage: &str) {
+    if stage == "recipe" {
+        let workspace = Workspace::new();
+        recipe_package(&workspace);
+        let mut command = workspace.toolchain_command(env!("CARGO"));
+        command.arg("build");
+        assert!(!recipe_support::setup_status(&mut command).success());
+        return;
+    }
+    let browser = Browser::new();
+    fs::write(
+        browser.fixture("Cargo.toml"),
+        "invalid_manifest_marker = [\n",
+    )
+    .unwrap();
+    if stage == "lockfile" {
+        browser.generate_lockfile();
+        return;
+    }
+    let status = recipe_support::setup_status(
+        toolchain_support::command(env!("CARGO_BIN_EXE_development"))
+            .args(["nextest-setup", "fixture-sources", "workspace"])
+            .current_dir(browser.workspace.path()),
+    );
+    assert!(!status.success());
+}
+
+/// A dependency-free package in the recipe workspace, so its build compiles something.
+fn recipe_package(workspace: &Workspace) {
+    fs::create_dir_all(workspace.path().join("src")).unwrap();
+    fs::write(workspace.path().join("src/lib.rs"), "").unwrap();
+    fs::write(
+        workspace.path().join("Cargo.toml"),
+        "[package]\nname = 'setup-failure'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
+    )
+    .unwrap();
+}
+
+/// Lockfile regeneration resolves the fixture's crates from the run's prepared sources.
+#[test]
+fn browser_lockfile_generation_resolves_prepared_sources() {
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    assert!(
+        browser
+            .workspace
+            .path()
+            .with_file_name("cargo-home/config.toml")
+            .is_file(),
+        "lockfile generation must resolve through a private source configuration"
+    );
+}
+
+/// Lockfile generation and metadata queries finish while the shared Cargo home is unusable.
+#[test]
+fn browser_resolution_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "browser_resolution_never_reaches_the_shared_cargo_home",
+            &[(
+                "MAESTRO_TEST_WORKSPACE_CARGO_SOURCES",
+                recipe_support::prepared_workspace_sources(),
+            )],
+        );
+        return;
+    }
+    let sources = std::env::var_os("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES")
+        .expect("the parent must prepare workspace sources before isolating Cargo home");
+    assert!(std::path::Path::new(&sources).is_file());
+    let browser = Browser::new();
+    browser.generate_lockfile();
+    let (home, _) = browser_support::cold_sources(&browser);
+    success(
+        &browser
+            .cargo()
+            .env("CARGO_HOME", home)
+            .args([
+                "metadata",
+                "--offline",
+                "--format-version",
+                "1",
+                "--manifest-path",
+            ])
+            .arg(browser.fixture("Cargo.toml"))
+            .output()
+            .unwrap(),
+    );
+}
+
+/// Source preparation also precedes Cargo-home isolation without nextest setup exports.
+#[test]
+fn browser_resolution_prepares_sources_outside_nextest() {
+    let output = maestro_test_process::TestProcess::named(
+        "browser_author_build::browser_resolution_never_reaches_the_shared_cargo_home",
+    )
+    .unwrap()
+    .env_remove("MAESTRO_TEST_CARGO_SOURCES")
+    .env_remove("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES")
+    .env_remove("MAESTRO_SHARED_CARGO_HOME_UNUSABLE")
+    .env_remove("NEXTEST_ENV")
+    .output()
+    .unwrap();
+    success(&output);
+}
+
 #[test]
 fn browser_clean_preserves_authored_inputs() {
     let browser = Browser::new();
@@ -97,7 +189,7 @@ fn browser_clean_preserves_authored_inputs() {
 }
 
 #[path = "fixtures/browser_support.rs"]
-mod browser_support;
+pub(crate) mod browser_support;
 use browser_support::{Browser, success};
 use std::fs;
 
@@ -633,7 +725,8 @@ fn browser_wasm_closure_excludes_native_engines() {
     fs::write(&manifest, original).unwrap();
     fs::write(browser.fixture("Cargo.lock"), lock).unwrap();
     success(&browser.run("browser-library-build"));
-    let tree = toolchain_support::command("cargo")
+    let tree = browser
+        .cargo()
         .args([
             "tree",
             "--locked",
@@ -1619,7 +1712,8 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
 
 /// Qualify the actual resolved graph, not only the manifest spelling.
 fn assert_fixture_independent(browser: &Browser) {
-    let metadata = toolchain_support::command(env!("CARGO"))
+    let metadata = browser
+        .cargo()
         .args([
             "metadata",
             "--locked",
@@ -1658,15 +1752,9 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
             .unwrap(),
     );
     assert_eq!(
-        target.canonicalize().unwrap(),
-        std::path::Path::new(env!("CARGO_BIN_EXE_development"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .canonicalize()
-            .unwrap(),
-        "warm browser recipes must reuse the test build's actual Cargo target"
+        target,
+        browser_support::target_directory(),
+        "warm browser recipes must reuse the run's shared Cargo target"
     );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
@@ -1706,6 +1794,34 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
+/// The cold checkout compiles its dependencies at the plain development profile.
+#[test]
+fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
+    let browser = Browser::cold();
+    let manifest: toml::Table =
+        toml::from_str(&fs::read_to_string(browser.path("Cargo.toml")).unwrap()).unwrap();
+    let packages = manifest["profile"]["dev"]["package"].as_table().unwrap();
+    assert_eq!(packages.keys().collect::<Vec<_>>(), ["*"]);
+}
+
+/// The warm recipes and the native helper cap Cargo's compile jobs; the cold recipe leaves the
+/// variable to the caller, so a job cap set by the build host reaches it and no cap at all means
+/// every core.
+#[test]
+fn browser_cold_recipes_inherit_the_job_cap_and_warm_recipes_keep_three() {
+    let browser = Browser::cold();
+    let jobs = |command: &std::process::Command| {
+        command
+            .get_envs()
+            .find(|(name, _)| *name == "CARGO_BUILD_JOBS")
+            .map(|(_, value)| value.map(std::ffi::OsStr::to_owned))
+    };
+    assert_eq!(jobs(&browser.cold_command("recipe")), None);
+    for command in [browser.command("recipe"), browser.native_command("build")] {
+        assert_eq!(jobs(&command), Some(Some("3".into())));
+    }
+}
+
 #[test]
 fn browser_author_bootstraps_from_empty_build_state() {
     let browser = Browser::cold();
@@ -1713,7 +1829,7 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     let before = browser_support::authored(&browser);
     let command = |recipe: &str| {
-        let mut command = browser.command(recipe);
+        let mut command = browser.cold_command(recipe);
         command
             .env("CARGO_HOME", &home)
             .env("CARGO_TARGET_DIR", &target)

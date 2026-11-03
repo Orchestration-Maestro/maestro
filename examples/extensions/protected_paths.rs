@@ -1,4 +1,5 @@
 //! An opt-in tool-call hook that blocks writes and edits to illustrative path substrings.
+// maestro-component: MAESTRO_PROTECTED_PATHS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

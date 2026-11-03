@@ -4,7 +4,6 @@ use super::{
     InteractiveMode,
     startup::{ExpandableText, TextFactory},
 };
-use crate::components::shorten_home_path;
 use diagnostics::SourceInfos;
 use indexmap::IndexMap;
 use maestro_app::{
@@ -143,7 +142,7 @@ fn read<T>(lock: &RwLock<T>) -> RwLockReadGuard<'_, T> {
 /// # Errors
 /// Returns the failure of the home lookup.
 fn format_display_path(path: &str, home: &HomeLookup<'_>) -> io::Result<String> {
-    Ok(shorten_home_path(path, Some(&home()?)))
+    Ok(maestro_path::shorten_home(path, &home()?))
 }
 
 /// Displays a context file relative to `cwd` when it lies inside it. A file elsewhere, or

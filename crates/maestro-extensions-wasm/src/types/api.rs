@@ -164,6 +164,8 @@ port! {
 
     }
     asynchronous {
+        /// Calls a factory-time operation on the original settings or package owner.
+        fn call_host_operation<'a>(operation: crate::bindings::maestro::extension::host::HostOperation) -> Value;
         /// Selects the supplied model through the host.
         fn set_model<'a>(model: Model) -> bool;
         /// Executes a literal program and argument vector through the host.
@@ -241,5 +243,15 @@ impl ExtensionAPI {
         let data = serde_json::to_string(args).map_err(|error| error.to_string())?;
         let value = self.0.native_helper(operation, &data)?;
         serde_json::from_str(&value).map_err(|error| error.to_string())
+    }
+}
+
+impl ExtensionAPI {
+    /// Calls the host without requiring a session or command context.
+    pub(crate) fn call_host_operation(
+        &self,
+        operation: crate::bindings::maestro::extension::host::HostOperation,
+    ) -> ExtensionFuture<'_, Value> {
+        self.0.call_host_operation(operation)
     }
 }

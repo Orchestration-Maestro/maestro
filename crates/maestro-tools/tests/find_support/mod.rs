@@ -323,29 +323,21 @@ struct Native {
     spawn_error: bool,
     abort: Option<String>,
 }
-/// Install an executable via a child so no parent-owned writable descriptor survives.
+/// Install one finite native search scenario from the prepared artifact.
 #[cfg(unix)]
-pub fn executable(root: &Scratch, name: &str, body: &str) {
-    let source = root.file(&format!("{name}.source"), body.as_bytes());
-    assert!(
-        std::process::Command::new("install")
-            .args(["-m", "0700", &source])
-            .arg(root.path().join(name))
-            .status()
-            .unwrap()
-            .success()
-    );
+pub fn alias(root: &std::path::Path, name: &str, record: &Value) {
+    crate::read_support::native_alias(root, name, "search", record);
 }
 /// Install an `fd` program that records its operands and return the file it writes.
 #[cfg(unix)]
 pub fn recorder(root: &Scratch) -> std::path::PathBuf {
     let args = root.path().join("args.json");
-    executable(root, "fd", &native_script(&Native::default(), &args));
+    alias(root.path(), "fd", &native_record(&Native::default(), &args));
     args
 }
 /// Encode a producer's bytes and exit policy independently of the tool's operands.
 #[cfg(unix)]
-fn native_script(input: &Native, args: &std::path::Path) -> String {
+fn native_record(input: &Native, args: &std::path::Path) -> Value {
     let records = input.records.as_ref().map_or_else(
         || "/work/z\0/work/a\0/work/z".to_owned(),
         |paths| paths.join("\0"),
@@ -355,17 +347,9 @@ fn native_script(input: &Native, args: &std::path::Path) -> String {
     } else {
         records + "\0"
     };
-    let termination = input.signal_exit.as_ref().map_or(String::new(), |s| {
-        assert_eq!(s, "SIGTERM");
-        "os.kill(os.getpid(),signal.SIGTERM)".into()
-    });
-    format!(
-        "#!/usr/bin/python3\nimport sys,json,os,signal\njson.dump(sys.argv[1:],open({},'w'))\nsys.stdout.buffer.write({}.encode())\nsys.stderr.buffer.write({}.encode())\n{termination}\nsys.exit({})\n",
-        json!(args.to_str().unwrap()),
-        json!(records),
-        json!(input.stderr),
-        input.code.unwrap_or(0)
-    )
+    json!({"scenario":"response", "args":args, "stdout":records.into_bytes(),
+        "stderr":input.stderr.as_bytes(), "code":input.code.unwrap_or(0),
+        "signal":input.signal_exit})
 }
 /// Invoke a controlled native program through the actual discovery and process owners.
 #[cfg(unix)]
@@ -375,11 +359,11 @@ pub fn check_controlled(test: &str) {
         let input: Native = serde_json::from_value(c.input.clone()).unwrap();
         let root = Scratch::new().unwrap();
         let args = root.path().join("args.json");
-        let body = native_script(&input, &args);
+        let record = native_record(&input, &args);
         if input.spawn_error {
             root.file("fd", b"not executable");
         } else {
-            executable(&root, "fd", &body);
+            alias(root.path(), "fd", &record);
         }
         let fetches = Arc::new(AtomicUsize::new(0));
         let updates = Arc::new(AtomicUsize::new(0));

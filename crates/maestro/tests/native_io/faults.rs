@@ -15,6 +15,19 @@ use std::{
 /// A real application adapter whose output consumer supplies one selected failure.
 struct FailedIo(Rc<dyn NativeIo>);
 impl NativeIo for FailedIo {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        self.0.save_file(path, bytes, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        self.0.file_mode(path)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.set_file_mode(path, mode)
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.create_dir(path, mode)
+    }
+
     fn watch(
         &self,
         path: String,
@@ -121,13 +134,14 @@ fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local>
                     agent_dir: "/controlled-agent".into(),
                 },
                 Rc::clone(&io),
+                None,
             ),
         ))))
     })
 }
 
 /// Creates the normal embedding session with an explicitly swapped native capability.
-pub(super) async fn session(
+pub(crate) async fn session(
     root: &Root,
     local: &Rc<tokio::task::LocalSet>,
     io: Rc<dyn NativeIo>,
@@ -211,7 +225,8 @@ fn native_child_read_failure_follows_the_real_prefix() {
     local.block_on(&runtime,async {
         let io = Rc::new(FailedIo(maestro_app::extension_native_io::extension_native_io(&local)));
         let session = session(&root,&local,io).await;
-        let reply = answer(&session,json!({"op":"spawn","command":"python3","args":["-c","import os; os.write(1,b'\\x00\\xff\\x01')"],"env":[],"stdio":["ignore","pipe","ignore"]})).await;
+        let producer = crate::support::native::install(&root.path("bin"),"output","command",&json!({"scenario":"output","stdout":[0,255,1],"stderr":[],"code":0}));
+        let reply = answer(&session,json!({"op":"spawn","command":producer,"args":[],"env":[],"stdio":["ignore","pipe","ignore"]})).await;
         assert!(reply["value"].as_u64().unwrap() > 0);
         let mut prefix = Vec::new();
         while prefix.len() < 3 {

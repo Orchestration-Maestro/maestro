@@ -575,7 +575,7 @@ fn local_bash_sink_uses_native_child_waiter() {
     use std::io::Write;
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
-    let root = crate::read_support::Scratch::new().unwrap();
+    let (root, _parent) = crate::read_support::spaced_scratch();
     crate::runtime::run(async {
         let tool = maestro_tools::local::create_bash_tool_definition::<()>(
             root.text(),
@@ -587,9 +587,12 @@ fn local_bash_sink_uses_native_child_waiter() {
         let updates = Rc::new(RefCell::new(Vec::new()));
         let values = updates.clone();
         let weak = Rc::downgrade(&values);
-        let command = format!(
-            "python3 -c \"import socket,os; s=socket.create_connection(('127.0.0.1',{port})); assert s.recv(1)==b'x'; os.write(1,b'one'); assert s.recv(1)==b'x'; os.write(2,b'two')\""
+        let payload = crate::read_support::payload(
+            root.path(),
+            "exchange",
+            &json!({"scenario": "exchange", "port": port}),
         );
+        let command = crate::read_support::shell_operand(&payload);
         let mut future = (tool.execute)(
             "id".into(),
             maestro_tools::BashToolInput {
@@ -636,9 +639,10 @@ fn local_renderer_binding_drops_executable_owners() {
     let env = crate::display_support::Env::with(
         crate::display_support::shipped_theme("dark", None),
         Rc::new(crate::display_support::NoLanguages),
-    );
+    )
+    .unwrap();
     let recorded = json!({"readme":"/opt/maestro/README.md","bindings":[]});
-    let setup = crate::display_support::Setup::from(&recorded);
+    let setup = crate::display_support::Setup::from(&recorded).unwrap();
     let _bindings = crate::display_support::bind(&crate::display_support::expand_keys(&recorded));
     let args = json!({});
     let row = crate::display_support::context::<ToolRendererState>(&args, &setup, &env, None);
@@ -956,7 +960,7 @@ fn check_read_context(input: &Value, expected: &Value) {
         signal.abort();
     }
     release.send(()).unwrap();
-    let result = future.now_or_never().unwrap();
+    let result = crate::runtime::run(future);
     if state == "cancel" {
         assert_eq!(json!({"error":result.err().unwrap().message}), *expected);
         assert_eq!(*seen.lock().unwrap(), ["access", "mime"]);

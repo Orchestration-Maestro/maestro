@@ -18,6 +18,8 @@ pub struct Repository {
     pub target: std::path::PathBuf,
     /// Initially installed commit.
     pub original: String,
+    /// Native stand-in that refuses unexpected dependency installation.
+    pub npm: std::path::PathBuf,
 }
 impl Repository {
     /// Creates local repositories without network access.
@@ -50,12 +52,23 @@ impl Repository {
             &["clone", remote.to_str().unwrap(), target.to_str().unwrap()],
         );
         let original = git(&target, &["rev-parse", "HEAD"]);
+        let npm = super::native_support::command(
+            scratch.path(),
+            "npm",
+            &serde_json::json!({
+                "scenario": "output",
+                "stdout": [],
+                "stderr": [],
+                "code": 97
+            }),
+        );
         Self {
             scratch,
             seed,
             remote,
             target,
             original,
+            npm,
         }
     }
     /// Publishes a distinguishable commit to the local bare remote.
@@ -87,8 +100,8 @@ impl Repository {
             })]);
         // Unexpected dependency installation fails instead of reaching a registry.
         settings.borrow_mut().set_npm_command(Some(
-            ["/bin/sh", "-c", "exit 97"]
-                .map(|value| maestro_settings::SettingsListEntry::String(value.into()))
+            [self.npm.to_string_lossy().into_owned()]
+                .map(maestro_settings::SettingsListEntry::String)
                 .to_vec(),
         ));
         let local = Rc::new(tokio::task::LocalSet::new());

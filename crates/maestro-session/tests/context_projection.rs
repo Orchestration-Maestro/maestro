@@ -1,6 +1,7 @@
 //! Supplied-entry context projection witnesses.
 #![cfg(test)]
 use maestro_request::presence::Presence;
+use maestro_request::types::UserContent;
 use serde::Deserialize;
 
 #[test]
@@ -144,10 +145,13 @@ fn projection_defers_typed_message_reads() {
         let context = support::session_context::context(&case.args).unwrap();
         let message = &context.messages[0];
         if case.id == "future-content" {
-            assert!(
+            // A typed read leaves out a block it does not know, so the entry has to reach its
+            // caller in the recorded form.
+            let typed =
                 maestro_request::messages::CustomMessage::<serde_json::Value>::deserialize(message)
-                    .is_err()
-            );
+                    .unwrap();
+            assert_eq!(typed.content, UserContent::Blocks(Vec::new()));
+            assert_eq!(message["content"][0]["type"], "future");
         } else {
             assert!(maestro_models::Message::deserialize(message).is_err());
         }

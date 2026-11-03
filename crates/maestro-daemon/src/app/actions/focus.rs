@@ -59,6 +59,25 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         Some((workspace, tab))
     }
 
+    /// Remembers `previous` for last-pane navigation unless `pane` of `workspace` is that focus.
+    pub fn record_pane_focus_change(
+        &mut self,
+        previous: Option<PaneFocusTarget>,
+        workspace: usize,
+        pane: PaneId,
+    ) {
+        let Some(workspace) = self.topology.workspaces.get(workspace) else {
+            return;
+        };
+        let target = PaneFocusTarget {
+            workspace_id: workspace.id.clone(),
+            pane_id: pane,
+        };
+        if previous.as_ref() != Some(&target) {
+            self.previous_pane_focus = previous;
+        }
+    }
+
     /// Focuses a live pane across workspace and tab boundaries.
     pub fn focus_pane_in_workspace(&mut self, workspace: usize, pane: PaneId) -> bool {
         let Some(target) = self.topology.workspaces.get(workspace) else {
@@ -83,6 +102,23 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         self.previous_pane_focus = previous;
         self.sync_copy_mode_with_focus();
         true
+    }
+
+    /// Marks every pane of the active tab seen.
+    pub fn mark_active_tab_seen(&mut self) {
+        let active = self
+            .active
+            .and_then(|index| self.topology.workspaces.get_mut(index));
+        if let Some(workspace) = active {
+            // Reselecting the active tab marks its panes seen and changes nothing else.
+            workspace.switch_tab(workspace.active_tab);
+        }
+    }
+
+    /// Returns to terminal input after a focus change, keeping copy context only on its pane.
+    pub fn settle_terminal_mode_after_focus(&mut self) {
+        self.mode = Mode::Terminal;
+        self.sync_copy_mode_with_focus();
     }
 
     /// Toggles focus to the previous live pane, discarding stale history.

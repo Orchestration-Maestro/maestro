@@ -40,6 +40,21 @@ fn socket_identity_records_native_device_and_inode() {
     fs::remove_file(path).unwrap();
 }
 
+/// The errno a nonblocking connect reports for a full accept queue: a refusal on Apple, where a
+/// full queue refuses like a missing listener.
+#[cfg(target_vendor = "apple")]
+const FULL_QUEUE_ERRNO: rustix::io::Errno = rustix::io::Errno::CONNREFUSED;
+/// The error kind the bounded connect returns for a full accept queue.
+#[cfg(target_vendor = "apple")]
+const FULL_QUEUE_KIND: io::ErrorKind = io::ErrorKind::ConnectionRefused;
+/// The errno a nonblocking connect reports for a full accept queue: would-block on Linux.
+#[cfg(not(target_vendor = "apple"))]
+const FULL_QUEUE_ERRNO: rustix::io::Errno = rustix::io::Errno::AGAIN;
+/// The error kind the bounded connect returns for a full accept queue: the retry on would-block
+/// ends in a timeout.
+#[cfg(not(target_vendor = "apple"))]
+const FULL_QUEUE_KIND: io::ErrorKind = io::ErrorKind::TimedOut;
+
 #[test]
 fn saturated_backlog_never_returns_an_unconnected_stream() {
     use rustix::net::{SocketAddrUnix, connect, listen};
@@ -55,14 +70,14 @@ fn saturated_backlog_never_returns_an_unconnected_stream() {
         let fd = nonblocking_local_socket().unwrap();
         match connect(&fd, &address) {
             Ok(()) => clients.push(fd),
-            Err(rustix::io::Errno::AGAIN) => break,
+            Err(error) if error == FULL_QUEUE_ERRNO => break,
             Err(error) => panic!("unexpected connect failure: {error}"),
         }
     }
     let start = Instant::now();
     let result = connect_local_stream_until(&path, start + Duration::from_millis(75));
     assert!(start.elapsed() < Duration::from_secs(1));
-    assert_eq!(result.unwrap_err().kind(), io::ErrorKind::TimedOut);
+    assert_eq!(result.unwrap_err().kind(), FULL_QUEUE_KIND);
 }
 
 #[test]

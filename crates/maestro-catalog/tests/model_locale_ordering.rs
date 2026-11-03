@@ -97,7 +97,8 @@ fn run_locale_child(name: &str, index: usize, environment: &HashMap<String, Stri
             .unwrap()
             .case(index),
         &operands,
-    );
+    )
+    .unwrap();
 }
 #[cfg(not(target_arch = "wasm32"))]
 #[test]

@@ -1,9 +1,12 @@
 //! Browser tool views.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use crate::tools::types::ToolUiError;
 pub mod artifacts;
 /// Document-extraction cards.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod extract_document;
 /// JavaScript execution cards and browser-local hidden tool registration.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod javascript_repl;
 
 /// Named browser renderer registrations.
@@ -15,10 +18,15 @@ pub mod types;
 pub mod renderers;
 #[cfg(test)]
 mod tests;
+/// Rendered-value projections of prepared tool records for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub(crate) mod view;
 
 pub use renderer_registry::{get_tool_renderer, register_tool_renderer};
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use renderers::default_renderer::{DefaultRenderer, status};
 use std::cell::Cell;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use types::{ToolParams, ToolRenderResult, ToolResultMessageView};
 thread_local! {
     /// Current dispatch policy, independent of registrations.
@@ -31,6 +39,7 @@ pub fn set_show_json_mode(enabled: bool) {
 /// Route original operands to the selected custom or default renderer.
 /// # Errors
 /// Returns an operand-type mismatch, decoder, formatter or custom renderer failure.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub fn render_tool<P: 'static, D: 'static>(
     tool_name: &str,
     params: Option<ToolParams<'_, P>>,
@@ -45,6 +54,7 @@ pub fn render_tool<P: 'static, D: 'static>(
     )
 }
 /// Dispatch with a retained binding while keeping JSON mode and default rendering shared.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 fn render_with_binding<P: 'static, D: 'static>(
     binding: impl FnOnce() -> Option<types::ToolRendererBinding>,
     params: Option<ToolParams<'_, P>>,

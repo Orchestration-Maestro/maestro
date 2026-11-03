@@ -104,6 +104,7 @@ fn payload_case(input: &Value, expected: &Value, simple: bool) {
         let value = &input["options"];
         request::simple_options(
             &model,
+            &context,
             &crate::SimpleStreamOptions {
                 common: common(value),
                 reasoning: value

@@ -56,6 +56,14 @@ pub fn content(text: &str, is_custom: bool) -> ToolRenderResult {
         is_custom,
     }
 }
+/// The values the browser renders from a prepared built-in card.
+/// # Panics
+/// Panics if the content is not a built-in card.
+#[cfg(not(target_arch = "wasm32"))]
+#[must_use]
+pub fn view(shown: &ToolRenderResult) -> serde_json::Value {
+    maestro_web::test_support::prepared_view(shown.content.as_ref()).unwrap()
+}
 pub fn reset() {
     let old = TOOL_RENDERERS.with(std::cell::RefCell::take);
     drop(old);

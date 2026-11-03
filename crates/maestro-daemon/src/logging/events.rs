@@ -24,7 +24,7 @@ pub fn shutdown(role: &'static str) {
 }
 
 /// Api request started.
-pub fn api_request_started(request_id: &str, method: &'static str, changes_ui: bool) {
+pub fn api_request_started(request_id: &str, method: &str, changes_ui: bool) {
     let event = "api.request.start";
     let subsystem = "api";
     let outcome = "started";
@@ -55,7 +55,7 @@ pub fn api_request_started(request_id: &str, method: &'static str, changes_ui: b
 /// Api request completed.
 pub fn api_request_completed(
     request_id: &str,
-    method: &'static str,
+    method: &str,
     outcome: &'static str,
     changes_ui: bool,
 ) {
@@ -85,7 +85,7 @@ fn is_routine_api_method(method: &str) -> bool {
 }
 
 /// Api request failed.
-pub fn api_request_failed(request_id: &str, method: &'static str, err: &str) {
+pub fn api_request_failed(request_id: &str, method: &str, err: &str) {
     tracing::warn!(
         event = "api.request.fail",
         subsystem = "api",

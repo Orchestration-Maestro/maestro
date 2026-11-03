@@ -7,6 +7,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread::JoinHandle;
 
 /// The canonical stop request line.
@@ -25,11 +26,15 @@ const REFUSED: &[u8] =
 /// The stop budget the short-deadline cases use.
 const SHORT: Duration = Duration::from_millis(75);
 
+/// The budget for a stop exchange whose outcome the reply decides; no scheduling stall spends it.
+const EXCHANGE: Duration = Duration::from_secs(5);
+
 /// How a controlled API endpoint treats the stop connection.
 enum Answer {
     /// Reads the request, then writes these bytes and closes.
     Bytes(&'static [u8]),
-    /// Reads the request and keeps the connection open without replying.
+    /// Reads the request, announces it on [`Endpoint::holding`] and keeps the connection open
+    /// without replying until the endpoint ends.
     Hold,
     /// Sends a reply in fragments for longer than the stop budget.
     Fragments,
@@ -46,12 +51,22 @@ struct Seen {
     probes: usize,
 }
 
+/// What the serving thread shares with its [`Endpoint`].
+struct Signals {
+    /// Tells a lasting endpoint to end at its next connection.
+    released: Arc<AtomicBool>,
+    /// Sent once a held connection has delivered its request line.
+    holding: Sender<()>,
+}
+
 /// A controlled endpoint that disappears after a number of probes or stays until finished.
 struct Endpoint {
     /// The bound socket path.
     path: PathBuf,
     /// Tells a lasting endpoint to end at its next connection.
     released: Arc<AtomicBool>,
+    /// Receives one message when a [`Answer::Hold`] endpoint has read the request.
+    holding: Receiver<()>,
     /// The serving thread.
     peer: JoinHandle<std::io::Result<Seen>>,
 }
@@ -64,14 +79,24 @@ impl Endpoint {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         let listener = UnixListener::bind(path).unwrap();
         let released = Arc::new(AtomicBool::new(false));
-        let flag = Arc::clone(&released);
+        let (sender, holding) = channel();
+        let signals = Signals {
+            released: Arc::clone(&released),
+            holding: sender,
+        };
         let owned = path.to_owned();
-        let peer = std::thread::spawn(move || serve(&listener, &owned, answer, probes, &flag));
+        let peer = std::thread::spawn(move || serve(&listener, &owned, answer, probes, &signals));
         Self {
             path: path.to_owned(),
             released,
+            holding,
             peer,
         }
+    }
+
+    /// Blocks until a held connection has delivered its request line.
+    fn wait_holding(&self) {
+        self.holding.recv().unwrap();
     }
 
     /// Ends the endpoint, waking a lasting one with one last connection.
@@ -90,7 +115,7 @@ fn serve(
     path: &Path,
     answer: Option<Answer>,
     probes: Option<usize>,
-    released: &AtomicBool,
+    signals: &Signals,
 ) -> std::io::Result<Seen> {
     let mut request = String::new();
     let mut held = None;
@@ -104,6 +129,7 @@ fn serve(
             Answer::Hold => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
                 held = Some(stream);
+                signals.holding.send(()).unwrap();
             }
             Answer::Fragments => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
@@ -115,7 +141,7 @@ fn serve(
     let mut count = 0;
     while probes != Some(count) {
         listener.accept()?;
-        if released.load(Ordering::SeqCst) {
+        if signals.released.load(Ordering::SeqCst) {
             return Ok(Seen {
                 request,
                 probes: count,
@@ -292,11 +318,29 @@ fn a_silent_reachable_daemon_exhausts_the_stop_budget() {
     let selection = named(&root, "silent");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Hold), None);
+    // A peer that never answers ends the exchange at its deadline; a read that ignored the
+    // deadline would never return.
+    let (ours, silent_peer) = UnixStream::pair().unwrap();
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        send_stop_request(LocalStream::UdSocket(ours.into()), Instant::now() + SHORT),
+        Ok(None)
+    );
+    drop(silent_peer);
+    // The exchange waits on the silent endpoint under its own budget, in a thread of its own.
+    let exchange = {
+        let selection = selection.clone();
+        std::thread::spawn(move || request_stop(&selection, Instant::now() + EXCHANGE))
+    };
+    // The endpoint has read the request; only the wait is short. A request that never arrives
+    // leaves this wait to the runner's hang limit.
+    api.wait_holding();
+    assert_eq!(
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("silent", &[&path]))
     );
+    // Ending the endpoint closes the held connection, which ends the exchange without a reply.
     assert_eq!(api.finish().request, STOP_LINE);
+    assert_eq!(exchange.join().unwrap(), Ok(()));
 }
 
 #[test]
@@ -305,8 +349,9 @@ fn a_responding_reachable_daemon_still_exhausts_the_stop_budget() {
     let selection = named(&root, "lingering");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Bytes(STOPPED)), None);
+    request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("lingering", &[&path]))
     );
     assert_eq!(api.finish().request, STOP_LINE);
@@ -330,7 +375,7 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
 
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(REFUSED)), None);
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        stop_with_timeout(&selection, EXCHANGE),
         Err("server is shutting down".to_owned())
     );
     assert_eq!(api.finish().request, STOP_LINE);
@@ -340,7 +385,7 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
         .unwrap_err()
         .to_string();
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(b"not json\n")), None);
-    assert_eq!(stop_with_timeout(&selection, SHORT), Err(malformed));
+    assert_eq!(stop_with_timeout(&selection, EXCHANGE), Err(malformed));
     assert_eq!(api.finish().request, STOP_LINE);
     std::fs::remove_file(&api_path).unwrap();
 
@@ -359,11 +404,13 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
     // The API socket disappears but the client socket stays.
     let api = Endpoint::bind(&api_path, Some(Answer::Bytes(STOPPED)), Some(0));
     let client = Endpoint::bind(&client_path, None, None);
+    request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
+    // Joining the endpoint is the signal that it has removed the API socket.
+    assert_eq!(api.finish().request, STOP_LINE);
     assert_eq!(
-        stop_with_timeout(&selection, SHORT),
+        await_shutdown(&selection, Instant::now() + SHORT, SHORT),
         Err(still_reachable("work", &[&client_path]))
     );
-    assert_eq!(api.finish().request, STOP_LINE);
     client.finish();
 }
 
@@ -391,7 +438,7 @@ fn stop_reply(bytes: &'static [u8]) -> Result<(), String> {
         Some(Answer::Bytes(bytes)),
         Some(0),
     );
-    let result = stop_with_timeout(&selection, SHORT);
+    let result = stop_with_timeout(&selection, EXCHANGE);
     api.finish();
     result
 }
@@ -434,6 +481,14 @@ fn send_fragments(stream: &mut UnixStream) {
     }
 }
 
+/// How a full accept queue shows to a client: Apple kernels refuse it like a missing listener,
+/// other kernels hold the bounded connect until its deadline.
+const FULL_QUEUE_ERROR: io::ErrorKind = if cfg!(target_vendor = "apple") {
+    io::ErrorKind::ConnectionRefused
+} else {
+    io::ErrorKind::TimedOut
+};
+
 /// Fills an unaccepted listener, which remains available for a controlled interval.
 fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
     use maestro_ipc::local_socket::connect_local_stream_until;
@@ -441,16 +496,17 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
     let listener = UnixListener::bind(path).unwrap();
     rustix::net::listen(&listener, 1).unwrap();
     let mut clients = Vec::new();
-    loop {
+    let ended = loop {
         let result = connect_local_stream_until(path, Instant::now() + SHORT);
         let Ok(LocalStream::UdSocket(stream)) = result else {
-            break;
+            break result.err().map(|error| error.kind());
         };
         if stream.inner().peer_addr().is_err() {
-            break;
+            break None;
         }
         clients.push(stream);
-    }
+    };
+    assert_eq!(ended, Some(FULL_QUEUE_ERROR));
     let path = path.to_owned();
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(300));
@@ -467,19 +523,26 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
 fn saturated_initial_connections_keep_the_stop_deadline() {
     let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "full");
-    let peer = saturated_endpoint(Path::new(&selection.api_socket_path));
+    let api = Path::new(&selection.api_socket_path);
+    let peer = saturated_endpoint(api);
     let start = Instant::now();
     let result = stop_with_timeout(&selection, SHORT);
     let elapsed = start.elapsed();
     peer.join().unwrap();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
-    assert_eq!(
-        result,
-        Err(still_reachable(
-            "full",
-            &[Path::new(&selection.api_socket_path)]
-        ))
-    );
+    if cfg!(target_vendor = "apple") {
+        // The refusal is all the kernel reports, so the daemon reads as unreachable.
+        let native = io::Error::from_raw_os_error(rustix::io::Errno::CONNREFUSED.raw_os_error());
+        assert_eq!(
+            result,
+            Err(format!(
+                "daemon full is not running or cannot be reached at {}: {native}",
+                api.display()
+            ))
+        );
+    } else {
+        assert_eq!(result, Err(still_reachable("full", &[api])));
+    }
 }
 
 #[test]
@@ -492,17 +555,24 @@ fn saturated_client_probes_keep_the_stop_deadline() {
         Some(0),
     );
     let peer = saturated_endpoint(&selection.client_socket_path);
+    request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
+    // Joining the endpoint is the signal that it has removed the API socket.
+    assert_eq!(api.finish().request, STOP_LINE);
     let start = Instant::now();
-    let result = stop_with_timeout(&selection, SHORT);
+    let result = await_shutdown(&selection, Instant::now() + SHORT, SHORT);
     let elapsed = start.elapsed();
-    api.finish();
     peer.join().unwrap();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
-    assert_eq!(
-        result,
-        Err(still_reachable(
-            "full-client",
-            &[&selection.client_socket_path]
-        ))
-    );
+    if cfg!(target_vendor = "apple") {
+        // The refused client socket reads as shut down.
+        assert_eq!(result, Ok(()));
+    } else {
+        assert_eq!(
+            result,
+            Err(still_reachable(
+                "full-client",
+                &[&selection.client_socket_path]
+            ))
+        );
+    }
 }

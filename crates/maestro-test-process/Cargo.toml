@@ -7,6 +7,12 @@ repository.workspace = true
 publish = false
 autotests = false
 
+[[example]]
+name = "native_fixture"
+path = "examples/native_fixture.rs"
+harness = false
+test = false
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
@@ -14,8 +20,14 @@ path = "tests/integration.rs"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true, features = ["std", "fs", "stdio", "process"] }
+signal-hook.workspace = true
+
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+serde.workspace = true
 maestro-test-directory.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

@@ -1,4 +1,5 @@
 //! An extension that sets the label shown when thinking blocks are hidden.
+// maestro-component: MAESTRO_HIDDEN_THINKING_LABEL_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

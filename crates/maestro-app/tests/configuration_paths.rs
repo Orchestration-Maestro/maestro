@@ -539,7 +539,8 @@ fn native_agent_root_reads_disposable_environment() {
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
             ],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(output, ["agent-directory-ok", env!("CARGO_PKG_VERSION")]);
     }
 }
@@ -558,6 +559,7 @@ fn native_probe_rejects_missing_selection() {
                 &[],
                 &[],
             )
+            .expect("child starts")
         })
         .is_err(),
         "unselected probe returned success"
@@ -599,7 +601,60 @@ fn native_probe_preserves_cwd_and_environment_order() {
             ("MAESTRO_PROBE_PATH", &std::env::var("PATH").unwrap()),
         ],
         &[KEY],
-    );
+    )
+    .expect("child starts");
     assert_eq!(records, ["first", "second"]);
     assert_eq!(std::env::var_os(KEY), before);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn workspace_skill_path_resolves_the_shipped_safety_guide() {
+    let root = if cfg!(windows) {
+        r"C:\maestro"
+    } else {
+        "/opt/maestro"
+    };
+    assert_eq!(
+        std::path::Path::new(&paths::get_workspace_skill_path(root).unwrap()),
+        std::path::Path::new(root).join("docs/skills/workspace/SKILL.md")
+    );
+    let package = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+    let path = paths::get_workspace_skill_path(package).unwrap();
+    let skill = std::fs::read_to_string(path).unwrap();
+    for instruction in [
+        "name: workspace",
+        "MAESTRO_ENV",
+        "--help",
+        "--current",
+        "maestro attach --daemon",
+        "Do not answer an approval",
+        "Do not use bare `maestro` for discovery",
+    ] {
+        assert!(skill.contains(instruction), "missing {instruction}");
+    }
+}
+
+/// Only forward-slash home forms expand, keeping the suffix exactly as authored.
+#[test]
+fn directory_paths_expand_only_forward_slash_home_forms() {
+    for (written, expected) in [
+        ("~/a//b", r"C:\h/a//b"),
+        ("~/x", r"C:\h/x"),
+        ("~/", r"C:\h/"),
+        ("~", r"C:\h"),
+    ] {
+        assert_eq!(
+            paths::expand_tilde_path(written, || Ok(r"C:\h".to_owned())).unwrap(),
+            expected
+        );
+    }
+    assert_eq!(
+        paths::expand_tilde_path("~/x", || Ok("/h/".to_owned())).unwrap(),
+        "/h//x"
+    );
+    for written in [r"~\x", r"~\"] {
+        let unread = || Err(io::Error::other("home was read"));
+        assert_eq!(paths::expand_tilde_path(written, unread).unwrap(), written);
+    }
 }

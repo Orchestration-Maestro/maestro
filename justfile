@@ -8,8 +8,9 @@ setup:
     mise exec -- prek install
 
 # Formatting, lint, public documentation and the checkout's workspace conventions.
-check:
+check: prepare-tests
     cargo fmt --all
+    just example-index-check
     just _check --workspace
     if [ -f crates/maestro-models/examples/browser_import_check.rs ]; then just check-browser-smoke; fi
 
@@ -18,11 +19,16 @@ check:
 _check *selection:
     cargo hakari verify
     @cargo clippy {{quote(selection)}} --all-targets --locked -- -D warnings
+    @cargo clippy {{quote(selection)}} --all-targets --locked --target x86_64-pc-windows-gnu -- -D warnings
     @RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc {{quote(selection)}} --no-deps --locked
     cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean
 
+# Stage the development tool that nextest's component setup runs.
+prepare-tests:
+    @if [ -d crates/maestro-tooling ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup; fi
+
 # Run all workspace tests.
-test *args:
+test *args: prepare-tests
     @cargo nextest run --workspace --locked {{quote(args)}}
     @cargo test --workspace --locked --doc {{quote(args)}}
 
@@ -45,6 +51,10 @@ prepublish: clean build check
 pre-commit:
     cargo run --quiet --locked -p maestro-tooling --bin development -- pre-commit
 
+# Run the conventions checker's own suite with its prepared native fixture.
+test-conventions: prepare-tests
+    @cargo nextest run -p maestro-test-conventions --locked
+
 # Remove models compilation outputs only.
 models-clean:
     cargo clean -p maestro-models
@@ -64,7 +74,7 @@ models-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-models --locked
 
 # Run native models tests with literal argument forwarding.
-models-test *args:
+models-test *args: prepare-tests
     @cargo nextest run -p maestro-models --locked {{quote(args)}}
     @cargo test -p maestro-models --locked --doc {{quote(args)}}
 
@@ -85,7 +95,7 @@ agent-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-agent --locked
 
 # Run native agent tests with literal argument forwarding.
-agent-test *args:
+agent-test *args: prepare-tests
     @cargo nextest run -p maestro-agent --locked {{quote(args)}}
     @cargo test -p maestro-agent --locked --doc {{quote(args)}}
 
@@ -106,7 +116,7 @@ tui-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-tui --locked
 
 # Run native tui tests with literal argument forwarding.
-tui-test *args:
+tui-test *args: prepare-tests
     @cargo nextest run -p maestro-tui --locked {{quote(args)}}
     @cargo test -p maestro-tui --locked --doc {{quote(args)}}
 
@@ -129,7 +139,7 @@ app-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build -p maestro-app --locked
 
 # Run native app tests with literal argument forwarding.
-app-test *args:
+app-test *args: prepare-tests
     @cargo nextest run -p maestro-app --locked {{quote(args)}}
     @cargo test -p maestro-app --locked --doc {{quote(args)}}
 
@@ -152,7 +162,7 @@ dev-compile: models-dev browser-dev-compile
 models-dev-compile: models-dev
 
 # Run the terminal wrapping integration tests explicitly.
-tui-test-ansi *args:
+tui-test-ansi *args: prepare-tests
     @cargo nextest run -p maestro-tui --locked --test integration ansi_wrapping:: {{quote(args)}}
 
 # Compile standalone prerequisites before copying prepared assets.
@@ -267,10 +277,10 @@ browser-test:
     node crates/maestro-web/tests/sandbox_loading_support/run.cjs
     node crates/maestro-app/tests/browser/analysis_page.cjs
 
-# Render the extension index from each example's own documentation.
+# Generate the extension index, example targets and workspace-derived guide lock.
 example-index:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index
 
-# Check the tracked extension index without rewriting it.
+# Check generated extension files without rewriting them.
 example-index-check:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index --check

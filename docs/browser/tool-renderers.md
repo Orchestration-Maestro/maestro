@@ -32,8 +32,13 @@ custom renderers can retain their own shared data in the returned recipe.
 
 `ToolRenderer<P, D, C>` and `ToolRenderResult<C>` take the produced content as a
 third type parameter. In the browser build its default is `Box<dyn DomContent>`
-(see [page content](frontend.md#page-content)); native builds prepare the same
-owned records for type checking and tests, with nothing to paint.
+(see [page content](frontend.md#page-content)). A native build has nothing to
+paint, so it keeps registration and lookup but leaves out `BashRenderer`,
+`CalculateRenderer`, `GetCurrentTimeRenderer`, `JavaScriptReplRenderer`,
+`ExtractDocumentRenderer`, `ArtifactsToolRenderer`, `DefaultRenderer`,
+`ExpandableSection`, `ToolParams` and `render_tool`. The crate's own tests compile
+these through its off-by-default `test-support` feature. `artifact_pill`,
+`render_header` and `render_collapsible_header` are browser-only.
 `ToolRendererBinding::from_dom` retains a renderer that names that content type
 explicitly. `tools::dom::render_tool` is the same function as `render_tool`.
 

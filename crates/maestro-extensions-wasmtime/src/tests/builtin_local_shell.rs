@@ -54,6 +54,7 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
 fn builtin_local_shell_retains_exit_timeout_and_abort_outcomes() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
+        .start_paused(true)
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
@@ -86,6 +87,27 @@ async fn execute(runner: &ExtensionRunner<Local>, request: Value) -> Value {
     serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
 }
 
+/// Runs `output`, signals readiness over loopback, then sleeps, all on the paused clock.
+/// A blocking task waits for the signal, and the runtime does not auto-advance the clock while
+/// it runs, so timers move only once the output is written, however slowly the shell started.
+async fn execute_timed(runner: &ExtensionRunner<Local>, mut request: Value, output: &str) -> Value {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    request["shell"] = "/bin/bash".into();
+    request["command"] = format!(
+        "{output}; : > /dev/tcp/127.0.0.1/{}; exec /bin/sleep 60",
+        address.port()
+    )
+    .into();
+    let command = runner.get_command("local-shell").unwrap().command;
+    let ready = tokio::task::spawn_blocking(move || listener.accept().map(drop));
+    let result = (command.handler)(request.to_string(), runner.create_command_context()).await;
+    // Release the wait before decoding can panic, even if the command never signalled.
+    drop(std::net::TcpStream::connect(address));
+    ready.await.unwrap().unwrap();
+    serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
+}
+
 /// Missing status, optional seconds and cancellation retain the native driver's outcomes.
 async fn local_cancellation(runner: &ExtensionRunner<Local>, cwd: &std::path::Path) {
     let killed = execute(
@@ -94,9 +116,9 @@ async fn local_cancellation(runner: &ExtensionRunner<Local>, cwd: &std::path::Pa
     )
     .await;
     assert_eq!(killed, json!({"bytes":b"killed","result":{"Ok":null}}));
-    let request = json!({"cwd":cwd,"command":"printf ready; exec /bin/sleep 60","timeout":1.5});
+    let request = json!({"cwd":cwd,"timeout":1.5});
     assert_eq!(
-        execute(runner, request.clone()).await,
+        execute_timed(runner, request.clone(), "printf ready").await,
         json!({"bytes":b"ready","result":{"Err":"timeout:1.5"}})
     );
     for timeout in [None, Some(1.5)] {
@@ -106,7 +128,7 @@ async fn local_cancellation(runner: &ExtensionRunner<Local>, cwd: &std::path::Pa
         request["abort"] = true.into();
         request["timeout"] = json!(timeout);
         assert_eq!(
-            execute(runner, request).await,
+            execute_timed(runner, request, "printf ready").await,
             json!({"bytes":b"ready","result":{"Err":"aborted"}})
         );
         assert!(signal.is_aborted());
@@ -193,8 +215,9 @@ async fn local_streams_and_environment(runner: &ExtensionRunner<Local>, cwd: &st
 async fn local_artifacts(runner: &ExtensionRunner<Local>, cwd: &std::path::Path) {
     for abort in [false, true] {
         let signal = bind_signal(runner);
-        let observed = execute(runner, json!({"mode":"tool","cwd":cwd,"signal":abort,"abort":abort,"timeout":1.5,
-            "command":"head -c 60000 /dev/zero | tr '\\0' x; printf '\\nready'; exec /bin/sleep 60"})).await;
+        let request = json!({"mode":"tool","cwd":cwd,"signal":abort,"abort":abort,"timeout":1.5});
+        let output = "head -c 60000 /dev/zero | tr '\\0' x; printf '\\nready'";
+        let observed = execute_timed(runner, request, output).await;
         let error = observed["tool"]["Err"].as_str().unwrap();
         let status = if abort {
             "Command aborted"

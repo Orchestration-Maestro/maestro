@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+#[cfg(unix)]
+use crate::recipe_support;
 use crate::recipe_support::write_input;
 use crate::toolchain_support;
 
@@ -254,9 +256,12 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
     )
     .unwrap();
     let binary = compile_toolchain_probe(&fixture);
+    let home = fixture.root.path().join("cargo-home");
+    fs::remove_dir_all(&home).unwrap();
     let profile = fixture.root.path().join("parent.profraw");
     let parent = Command::new(&binary)
         .current_dir(fixture.root.path())
+        .env("CARGO_HOME", &home)
         .env("MAESTRO_PROBE_CARGO", env!("CARGO"))
         .env("CARGO_TARGET_DIR", fixture.root.path().join("target"))
         .env("RUSTFLAGS", "-C instrument-coverage")
@@ -276,31 +281,68 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
             .join("target/wasm32-unknown-unknown/debug/libwasm_child.rlib")
             .is_file()
     );
+    assert!(
+        home.join(".package-cache").is_file(),
+        "the probe's wasm build must use the private Cargo home"
+    );
     assert_profile_counters(&profile);
+}
+
+/// Generate a fixture's lock file with its Cargo state kept in a private home.
+fn generate_private_lock(root: &Path) {
+    assert!(
+        toolchain_support::fixture_command(env!("CARGO"), root, None)
+            .unwrap()
+            .arg("generate-lockfile")
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        root.join("cargo-home/.package-cache").is_file(),
+        "lock generation must use a private Cargo home"
+    );
 }
 
 /// Compile an instrumented parent independently of the integration runner's instrumentation.
 fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
-    let lock = toolchain_support::command(env!("CARGO"))
-        .current_dir(fixture.root.path())
-        .arg("generate-lockfile")
-        .output()
-        .unwrap();
-    assert!(lock.status.success());
+    generate_private_lock(fixture.root.path());
+    let parent = fixture.root.path().join("parent");
+    fs::create_dir(&parent).unwrap();
+    let owner = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-test-process");
+    let manifest = format!(
+        "[package]\nname = 'toolchain-probe'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n[dependencies.maestro-test-process]\npath = {}\n[[bin]]\nname = 'parent'\npath = 'parent.rs'\n",
+        toml::Value::String(owner.to_str().unwrap().to_owned())
+    );
+    fs::write(parent.join("Cargo.toml"), manifest).unwrap();
     fs::write(
-        fixture.root.path().join("toolchain_support.rs"),
-        include_str!("fixtures/toolchain_support.rs"),
+        parent.join("Cargo.lock"),
+        include_bytes!("../../../Cargo.lock"),
     )
     .unwrap();
-    let source = fixture.root.path().join("parent.rs");
-    fs::write(&source, include_str!("fixtures/child_toolchain_probe.rs")).unwrap();
-    let binary = fixture.root.path().join("parent");
-    let compile = toolchain_support::command("rustc")
-        .current_dir(fixture.root.path())
-        .args(["--cfg", "test", "-C", "instrument-coverage"])
-        .arg(&source)
-        .arg("-o")
-        .arg(&binary)
+    fs::write(
+        parent.join("parent.rs"),
+        include_str!("fixtures/child_toolchain_probe.rs"),
+    )
+    .unwrap();
+    probe_profiles(&parent);
+    let native = Path::new(env!("CARGO_BIN_EXE_development"))
+        .parent()
+        .unwrap();
+    let profile = native.file_name().unwrap().to_str().unwrap();
+    let profile = if profile == "debug" { "dev" } else { profile };
+    let compile = toolchain_support::command(env!("CARGO"))
+        .current_dir(&parent)
+        .args([
+            "rustc",
+            "--profile",
+            profile,
+            "--bin",
+            "parent",
+            "--target-dir",
+        ])
+        .arg(native.parent().unwrap())
+        .args(["--", "-C", "instrument-coverage"])
         .output()
         .unwrap();
     assert!(
@@ -308,7 +350,37 @@ fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
         "{}",
         String::from_utf8_lossy(&compile.stderr)
     );
-    binary
+    native.join(format!("parent{}", std::env::consts::EXE_SUFFIX))
+}
+
+/// Match the prepared native build's profiles for the probe's dependency closure.
+fn probe_profiles(parent: &Path) {
+    let output = toolchain_support::command(env!("CARGO"))
+        .current_dir(parent)
+        .args(["metadata", "--format-version", "1"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let names: std::collections::BTreeSet<_> = metadata["packages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|package| package["name"].as_str().unwrap())
+        .collect();
+    let mut workspace: toml::Table = toml::from_str(include_str!("../../../Cargo.toml")).unwrap();
+    workspace["profile"]["dev"]["package"]
+        .as_table_mut()
+        .unwrap()
+        .retain(|name, _| name == "*" || names.contains(name));
+    let path = parent.join("Cargo.toml");
+    let mut manifest: toml::Table = toml::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+    manifest.insert("profile".into(), workspace.remove("profile").unwrap());
+    fs::write(path, toml::to_string(&manifest).unwrap()).unwrap();
 }
 
 /// Inspect actual parent counters after the instrumented process exits normally.
@@ -379,9 +451,9 @@ fn main() {
         writeln!(log, "{phase}").unwrap();
         if env::var("MAESTRO_FAIL_PHASE").ok().as_deref() == Some(&phase) { std::process::exit(17); }
     }
-    if env::args().nth(1).as_deref() != Some("format") {
+    if env::args().nth(1).as_deref() == Some("clippy") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
-            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
+            for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
                 let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
                 assert!(output.status.success());
                 assert_eq!(output.stdout, b"formatted");
@@ -389,7 +461,7 @@ fn main() {
         }
     }
     if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
-        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].into_iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
+        for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
@@ -1369,14 +1441,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
         "[workspace]\nmembers = ['assets-source']\nresolver = '3'\n",
     )
     .unwrap();
-    assert!(
-        toolchain_support::command(env!("CARGO"))
-            .arg("generate-lockfile")
-            .current_dir(fixture.root.path())
-            .status()
-            .unwrap()
-            .success()
-    );
+    generate_private_lock(fixture.root.path());
     let args = [
         "copy-binary-assets".into(),
         source.clone().into_os_string(),
@@ -2120,10 +2185,6 @@ fn selection_metadata() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/selection-metadata.json")
 }
 
-/// Fixture member names in metadata order.
-const MEMBERS: &str = "a, f, b, c, d, e, g, alone, nested, maestro-test-conventions-old, \
-external-reader, shared, maestro-models, maestro-web";
-
 /// Stage the supplied checkout paths in the fixture repository.
 fn stage_paths(root: &Path, paths: &[&str]) {
     for path in paths {
@@ -2228,11 +2289,11 @@ fn assert_commands_exclude_canary(fixture: &Fixture) {
     );
 }
 
-/// The check recipe invocation, or an empty string when the hook never reached it.
+/// The verification invocation, or an empty string when the hook never reached it.
 fn check_invocation(fixture: &Fixture) -> String {
     invocations(fixture)
         .into_iter()
-        .find(|line| line.starts_with("_check|"))
+        .find(|line| line.starts_with("clippy|") || line.starts_with("_check|"))
         .unwrap_or_default()
 }
 
@@ -2327,6 +2388,7 @@ fn assert_hook_restages_only_captured_paths(driver: &str) {
         fs::write(fixture.root.path().join(name), "staged").unwrap();
     }
     git(fixture.root.path(), &add);
+    stage_paths(fixture.root.path(), &["crates/a/src/lib.rs"]);
     let output = run_hook(&fixture, driver)
         .env("MAESTRO_ACTIVE_SMOKE", "true")
         .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
@@ -2369,7 +2431,11 @@ fn assert_hook_phase(phase: &str) {
     git(fixture.root.path(), &["init", "--quiet"]);
     stage_paths(
         fixture.root.path(),
-        &["Cargo.toml", "crates/maestro-test-conventions/src/lib.rs"],
+        &[
+            "Cargo.toml",
+            "crates/maestro-test-conventions/src/lib.rs",
+            "crates/maestro-models/src/lib.rs",
+        ],
     );
     let output = run_hook(&fixture, "maestro_hook_messages_follow_phase_results")
         .env("MAESTRO_FAIL_PHASE", phase)
@@ -2378,9 +2444,9 @@ fn assert_hook_phase(phase: &str) {
         .unwrap();
     let text = stdout(&output);
     assert!(text.contains("Running formatting, linting, and type checking...\n"));
-    let selected = format!("Selected crates: {MEMBERS}\n");
+    let selected = "Selected crates: maestro-test-conventions, maestro-models\n";
     assert_eq!(
-        text.contains(&selected),
+        text.contains(selected),
         phase != "format",
         "{phase}: {text}"
     );
@@ -2402,7 +2468,7 @@ fn assert_hook_phase(phase: &str) {
     assert_hook_phases_reached(&fixture, phase);
     if phase != "format" {
         assert!(
-            text.find(&selected).unwrap() < text.find("✅").unwrap_or(text.len()),
+            text.find(selected).unwrap() < text.find("✅").unwrap_or(text.len()),
             "{phase}: {text}"
         );
     }
@@ -2411,7 +2477,7 @@ fn assert_hook_phase(phase: &str) {
 /// Assert the announcement and failure line a failing phase prints.
 fn assert_hook_failure_lines(phase: &str, text: &str) {
     let (announcement, failure) = match phase {
-        "format" | "_check" => (
+        "format" | "clippy" => (
             "Running formatting, linting, and type checking...\n",
             "❌ Checks failed. Please fix the errors before committing.\n",
         ),
@@ -2432,10 +2498,10 @@ fn assert_hook_failure_lines(phase: &str, text: &str) {
 /// Assert the hook stopped after the failing phase.
 fn assert_hook_phases_reached(fixture: &Fixture, phase: &str) {
     let reached: &[&str] = match phase {
-        "format" => &["format"],
-        "_check" => &["format", "metadata", "_check"],
-        "conventions" => &["format", "metadata", "_check", "conventions"],
-        _ => &["format", "metadata", "_check", "conventions", "smoke"],
+        "format" => &["metadata", "format"],
+        "clippy" => &["metadata", "format", "clippy"],
+        "conventions" => &["metadata", "format", "clippy", "conventions"],
+        _ => &["metadata", "format", "clippy", "conventions", "smoke"],
     };
     let ran = invocations(fixture);
     assert_eq!(ran.len(), reached.len(), "{phase}: {ran:?}");
@@ -2447,7 +2513,7 @@ fn assert_hook_phases_reached(fixture: &Fixture, phase: &str) {
 #[test]
 fn maestro_hook_messages_follow_phase_results() {
     drive();
-    for phase in ["format", "_check", "conventions", "smoke", "success"] {
+    for phase in ["format", "clippy", "conventions", "smoke", "success"] {
         assert_hook_phase(phase);
     }
 
@@ -2462,7 +2528,7 @@ fn maestro_hook_messages_follow_phase_results() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(stdout(&output).contains("✅ All pre-commit checks passed!\n"));
-    assert_eq!(fixture.receipt("phases"), b"fmt\n_check\n");
+    assert!(!fixture.root.path().join("receipt/phases").exists());
 }
 
 #[test]
@@ -2470,14 +2536,14 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
     drive();
     for (name, active, expected) in [
         ("crates/maestro-models/src/lib.rs", true, "smoke\n"),
-        ("crates/shared/src/lib.rs", true, "smoke\n"),
-        ("Cargo.toml", true, "smoke\n"),
+        ("crates/shared/src/lib.rs", true, ""),
+        ("Cargo.toml", true, ""),
         ("crates/alone/src/lib.rs", true, ""),
         ("crates/maestro-models/src/lib.rs", false, ""),
         (
             "crates/maestro-test-conventions/src/lib.rs",
             true,
-            "conventions\nsmoke\n",
+            "conventions\n",
         ),
         (
             "crates/maestro-test-conventions/tests/integration.rs",
@@ -2517,6 +2583,108 @@ fn maestro_hook_selects_extra_steps_from_original_paths() {
 
 #[cfg(unix)]
 #[test]
+fn consumer_workspace_cargo_state_stays_beside_the_checkout() {
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let home = scratch.path().join("cargo-home");
+    assert!(
+        home.join(".package-cache").is_file(),
+        "lock generation must use a private Cargo home"
+    );
+    fs::remove_dir_all(&home).unwrap();
+    let metadata = consumer_cargo(
+        &workspace,
+        &["metadata", "--offline", "--format-version", "1"],
+    );
+    assert!(metadata.status.success());
+    assert!(
+        home.join(".package-cache").is_file(),
+        "consumer Cargo runs must use the private Cargo home"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn consumer_workspace_never_reaches_the_shared_cargo_home() {
+    if !recipe_support::without_shared_cargo_home() {
+        recipe_support::rerun_without_shared_cargo_home(
+            "consumer_workspace_never_reaches_the_shared_cargo_home",
+            &[],
+        );
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let metadata = consumer_cargo(
+        &workspace,
+        &["metadata", "--offline", "--format-version", "1"],
+    );
+    assert!(metadata.status.success());
+}
+
+/// A staged change to the conventions checker runs its suite through the recipe that prepares the native fixture.
+#[cfg(unix)]
+#[test]
+fn maestro_hook_conventions_suite_runs_through_the_prepared_recipe() {
+    drive();
+    let scratch = Scratch::new().unwrap();
+    let workspace = consumer_workspace(scratch.path());
+    let checker = add_conventions_checker(&workspace);
+    fs::write(checker.join("src/lib.rs"), "//! Checker, edited.\n").unwrap();
+    git(
+        &workspace,
+        &["add", "--", "crates/maestro-test-conventions/src/lib.rs"],
+    );
+    let output = run_consumer_hook(
+        "maestro_hook_conventions_suite_runs_through_the_prepared_recipe",
+        &workspace,
+    );
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
+    assert!(
+        log.lines()
+            .any(|line| line == "nextest run -p maestro-test-conventions --locked"),
+        "{log}"
+    );
+    assert!(!log.contains("test -p maestro-test-conventions"), "{log}");
+}
+
+/// Add and commit a `maestro-test-conventions` member to the consumer workspace and return its directory.
+#[cfg(unix)]
+fn add_conventions_checker(workspace: &Path) -> PathBuf {
+    let checker = workspace.join("crates/maestro-test-conventions");
+    fs::create_dir_all(checker.join("src")).unwrap();
+    fs::write(
+        checker.join("Cargo.toml"),
+        "[package]\nname = \"maestro-test-conventions\"\nversion = \"0.0.0\"\nedition = \"2024\"\npublish = false\n",
+    )
+    .unwrap();
+    fs::write(checker.join("src/lib.rs"), "//! Checker.\n").unwrap();
+    fs::write(
+        workspace.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"leaf\", \"caller\", \"crates/maestro-test-conventions\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
+    let lock = consumer_toolchain(workspace)
+        .args(["generate-lockfile", "--offline"])
+        .output()
+        .unwrap();
+    assert!(lock.status.success());
+    git(
+        workspace,
+        &["add", "--", "Cargo.toml", "Cargo.lock", "crates"],
+    );
+    commit_staged_fixture(workspace);
+    checker
+}
+
+#[cfg(unix)]
+#[test]
 fn maestro_hook_checks_only_selected_packages() {
     drive();
     let scratch = Scratch::new().unwrap();
@@ -2524,6 +2692,9 @@ fn maestro_hook_checks_only_selected_packages() {
     let leaf = workspace.join("leaf/src/lib.rs");
     fs::write(&leaf, LEAF_SOURCE.replace("    7", "    8")).unwrap();
     git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
+    let home = scratch.path().join("cargo-home");
+    // The hook's own Cargo runs must recreate the private home the workspace setup left.
+    let _ = fs::remove_dir_all(&home);
     let output = run_consumer_hook("maestro_hook_checks_only_selected_packages", &workspace);
     assert!(
         output.status.success(),
@@ -2531,8 +2702,12 @@ fn maestro_hook_checks_only_selected_packages() {
         stdout(&output),
         String::from_utf8_lossy(&output.stderr)
     );
+    assert!(
+        home.join(".package-cache").is_file(),
+        "the hook's Cargo runs must use the private Cargo home"
+    );
     let text = stdout(&output);
-    assert!(text.contains("Selected crates: leaf, caller\n"), "{text}");
+    assert!(text.contains("Selected crates: leaf\n"), "{text}");
     assert!(text.ends_with("✅ All pre-commit checks passed!\n"));
     let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
     let commands: Vec<&str> = log.lines().collect();
@@ -2543,13 +2718,14 @@ fn maestro_hook_checks_only_selected_packages() {
             .count()
     };
     assert_eq!(ran("fmt "), 1, "{log}");
-    assert_eq!(ran("hakari "), 1, "{log}");
+    assert!(commands.contains(&"fmt -p leaf"), "{log}");
+    assert_eq!(ran("hakari "), 0, "{log}");
     assert_eq!(
         commands
             .iter()
             .find(|line| line.starts_with("clippy "))
             .copied(),
-        Some("clippy -p leaf -p caller --all-targets --locked -- -D warnings"),
+        Some("clippy -p leaf --all-targets --locked -- -D warnings"),
         "{log}"
     );
     assert_eq!(
@@ -2557,7 +2733,7 @@ fn maestro_hook_checks_only_selected_packages() {
             .iter()
             .find(|line| line.starts_with("doc "))
             .copied(),
-        Some("doc -p leaf -p caller --no-deps --locked"),
+        None,
         "{log}"
     );
     assert_eq!(
@@ -2566,16 +2742,14 @@ fn maestro_hook_checks_only_selected_packages() {
             .filter(|line| line.starts_with("test "))
             .copied()
             .collect::<Vec<_>>(),
-        [
-            "test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean"
-        ],
+        Vec::<&str>::new(),
         "{log}"
     );
     assert!(!log.contains("--workspace"), "{log}");
 }
 
 #[test]
-fn maestro_hook_workspace_inputs_keep_the_full_gate() {
+fn maestro_hook_workspace_inputs_do_not_run_crate_checks() {
     drive();
     for path in [
         "Cargo.toml",
@@ -2591,22 +2765,26 @@ fn maestro_hook_workspace_inputs_keep_the_full_gate() {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
         stage_paths(fixture.root.path(), &[path]);
-        let output = run_hook(&fixture, "maestro_hook_workspace_inputs_keep_the_full_gate")
-            .env("MAESTRO_ACTIVE_SMOKE", "true")
-            .output()
-            .unwrap();
+        let output = run_hook(
+            &fixture,
+            "maestro_hook_workspace_inputs_do_not_run_crate_checks",
+        )
+        .env("MAESTRO_ACTIVE_SMOKE", "true")
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "{path}: {}",
             String::from_utf8_lossy(&output.stderr)
         );
-        assert!(
-            stdout(&output).contains(&format!("Selected crates: {MEMBERS}\n")),
-            "{path}"
-        );
-        assert_eq!(check_invocation(&fixture), "_check|--workspace", "{path}");
-        assert_eq!(smoke_runs(&fixture), 1, "{path}");
         let conventions = path.starts_with("crates/maestro-test-conventions/");
+        let check = if conventions {
+            "clippy|-p|maestro-test-conventions|--all-targets|--locked|--|-D|warnings"
+        } else {
+            ""
+        };
+        assert_eq!(check_invocation(&fixture), check, "{path}");
+        assert_eq!(smoke_runs(&fixture), 0, "{path}");
         assert_eq!(
             invocations(&fixture)
                 .iter()
@@ -2619,11 +2797,17 @@ fn maestro_hook_workspace_inputs_keep_the_full_gate() {
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
     stage_paths(fixture.root.path(), &["Cargo.toml", "crates/a/src/lib.rs"]);
-    let output = run_hook(&fixture, "maestro_hook_workspace_inputs_keep_the_full_gate")
-        .output()
-        .unwrap();
+    let output = run_hook(
+        &fixture,
+        "maestro_hook_workspace_inputs_do_not_run_crate_checks",
+    )
+    .output()
+    .unwrap();
     assert!(output.status.success());
-    assert_eq!(check_invocation(&fixture), "_check|--workspace");
+    assert_eq!(
+        check_invocation(&fixture),
+        "clippy|-p|a|--all-targets|--locked|--|-D|warnings"
+    );
 }
 
 #[test]
@@ -2663,8 +2847,10 @@ fn maestro_hook_renames_check_both_previous_and_new_owners() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    // `b` reaches only `b` and `d`, `alone` only itself, so each owner adds its own members.
-    assert_eq!(check_invocation(&fixture), "_check|-p|b|-p|d|-p|alone");
+    assert_eq!(
+        check_invocation(&fixture),
+        "clippy|-p|b|-p|alone|--all-targets|--locked|--|-D|warnings"
+    );
     assert!(!fixture.root.path().join("crates/b/src/moved.rs").exists());
     let listed = String::from_utf8(git(fixture.root.path(), &["ls-files"]).stdout).unwrap();
     assert!(!listed.contains("crates/b/src/moved.rs"), "{listed}");
@@ -2702,6 +2888,8 @@ fn maestro_hook_reports_metadata_errors_before_running_checks() {
         let ran = invocations(&fixture);
         assert!(
             !ran.iter().any(|line| line.starts_with("_check|")
+                || line.starts_with("clippy|")
+                || line.starts_with("format|")
                 || line == "conventions"
                 || line == "smoke"),
             "{case}: {ran:?}"
@@ -2719,12 +2907,21 @@ fn maestro_hook_reports_metadata_errors_before_running_checks() {
     .output()
     .unwrap();
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(invocations(&fixture), ["format"]);
+    assert_eq!(
+        invocations(&fixture),
+        [
+            &format!(
+                "metadata|--format-version|1|--no-deps|--manifest-path|{}|--locked",
+                fixture.root.path().join("Cargo.toml").display()
+            ),
+            "format|-p|a"
+        ]
+    );
 }
 
 #[cfg(unix)]
 #[test]
-fn maestro_hook_missing_check_tool_reports_failure() {
+fn maestro_hook_does_not_require_check_recipe_tool() {
     use std::os::unix::fs::symlink;
 
     drive();
@@ -2734,25 +2931,18 @@ fn maestro_hook_missing_check_tool_reports_failure() {
     let tools = fixture.root.path().join("tools");
     fs::create_dir_all(&tools).unwrap();
     symlink(resolve("git"), tools.join("git")).unwrap();
-    let output = run_hook(&fixture, "maestro_hook_missing_check_tool_reports_failure")
+    let output = run_hook(&fixture, "maestro_hook_does_not_require_check_recipe_tool")
         .env("PATH", &tools)
         .output()
         .unwrap();
-    assert_eq!(output.status.code(), Some(1));
-    let text = stdout(&output);
     assert!(
-        text.ends_with("❌ Checks failed. Please fix the errors before committing.\n"),
-        "{text}"
-    );
-    assert!(!text.contains("All pre-commit checks passed"));
-    let unavailable = Command::new("maestro-missing-check-tool-probe")
-        .output()
-        .unwrap_err()
-        .to_string();
-    assert!(
-        String::from_utf8_lossy(&output.stderr).contains(&unavailable),
+        output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        check_invocation(&fixture),
+        "clippy|-p|a|--all-targets|--locked|--|-D|warnings"
     );
 }
 
@@ -2802,7 +2992,7 @@ fn assert_recipe_phase_failure(phase: &str, expected: &[&str]) {
 #[test]
 fn maestro_hook_scoped_failures_stop_later_phases() {
     drive();
-    for (phase, reached) in [("format", 1usize), ("conventions", 4), ("smoke", 5)] {
+    for (phase, reached) in [("format", 2usize), ("conventions", 4), ("smoke", 5)] {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
         stage_paths(
@@ -2811,6 +3001,7 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
                 "Cargo.toml",
                 "a space.rs",
                 "crates/maestro-test-conventions/src/lib.rs",
+                "crates/maestro-models/src/lib.rs",
             ],
         );
         let output = run_hook(&fixture, "maestro_hook_scoped_failures_stop_later_phases")
@@ -2828,14 +3019,7 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
     }
 
     #[cfg(unix)]
-    for (phase, expected) in [
-        ("hakari", &["fmt", "hakari"][..]),
-        ("clippy", &["fmt", "hakari", "clippy"][..]),
-        ("doc", &["fmt", "hakari", "clippy", "doc"][..]),
-        ("test", &["fmt", "hakari", "clippy", "doc", "test"][..]),
-    ] {
-        assert_recipe_phase_failure(phase, expected);
-    }
+    assert_recipe_phase_failure("clippy", &["fmt", "clippy"]);
 
     let fixture = Fixture::new();
     let output = run_hook(&fixture, "maestro_hook_scoped_failures_stop_later_phases")
@@ -2853,7 +3037,16 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(invocations(&fixture), ["format"]);
+    assert_eq!(
+        invocations(&fixture),
+        [
+            &format!(
+                "metadata|--format-version|1|--no-deps|--manifest-path|{}|--locked",
+                fixture.root.path().join("Cargo.toml").display()
+            ),
+            "format|-p|a"
+        ]
+    );
 }
 
 #[test]
@@ -2861,8 +3054,8 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
     drive();
     for (paths, active, expected) in [
         (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
-        (vec!["crates/shared/src/lib.rs"], true, 1),
-        (vec!["Cargo.toml"], true, 1),
+        (vec!["crates/shared/src/lib.rs"], true, 0),
+        (vec!["Cargo.toml"], true, 0),
         (vec!["crates/alone/src/lib.rs"], true, 0),
         (vec!["crates/maestro-models/src/lib.rs"], false, 0),
     ] {
@@ -2998,7 +3191,11 @@ fn maestro_hook_missing_tool_announces_failed_step() {
         git(fixture.root.path(), &["init", "--quiet"]);
         stage_paths(
             fixture.root.path(),
-            &["Cargo.toml", "crates/maestro-test-conventions/src/lib.rs"],
+            &[
+                "Cargo.toml",
+                "crates/maestro-test-conventions/src/lib.rs",
+                "crates/maestro-models/src/lib.rs",
+            ],
         );
         let output = run_hook(&fixture, "maestro_hook_missing_tool_announces_failed_step")
             .env("MAESTRO_MISSING_PHASE", phase)
@@ -3028,8 +3225,7 @@ fn consumer_workspace(root: &Path) -> PathBuf {
         workspace.join("justfile"),
     )
     .unwrap();
-    let lock = toolchain_support::command("cargo")
-        .current_dir(&workspace)
+    let lock = consumer_toolchain(&workspace)
         .args(["generate-lockfile", "--offline"])
         .output()
         .unwrap();
@@ -3052,7 +3248,7 @@ fn write_consumer_tool(workspace: &Path) {
     fs::write(
         workspace.join("bin/cargo"),
         format!(
-            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$(dirname \"$0\")/../cargo-log\"\nif [ -n \"${{MAESTRO_FAIL_PHASE:-}}\" ] && [ \"$1\" = \"$MAESTRO_FAIL_PHASE\" ]; then exit 17; fi\ncase \"$1\" in\n  hakari|test) exit 0 ;;\nesac\nexec '{cargo}' \"$@\"\n"
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$(dirname \"$0\")/../cargo-log\"\nif [ -n \"${{MAESTRO_FAIL_PHASE:-}}\" ] && [ \"$1\" = \"$MAESTRO_FAIL_PHASE\" ]; then exit 17; fi\ncase \"$1\" in\n  hakari|test|nextest) exit 0 ;;\nesac\nexec '{cargo}' \"$@\"\n"
         ),
     )
     .unwrap();
@@ -3101,6 +3297,12 @@ fn commit_fixture(workspace: &Path) {
             "caller",
         ],
     );
+    commit_staged_fixture(workspace);
+}
+
+/// Commit staged fixture inputs with the controlled local author.
+#[cfg(unix)]
+fn commit_staged_fixture(workspace: &Path) {
     git(
         workspace,
         &[
@@ -3147,6 +3349,10 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
         .env("MAESTRO_RECEIPT", workspace.join("receipt"))
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .env(
+            "CARGO_HOME",
+            toolchain_support::home(workspace.parent().unwrap()),
+        )
+        .env(
             "PATH",
             format!(
                 "{}:{}",
@@ -3160,11 +3366,20 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
     command
 }
 
+/// Start a native toolchain command in the consumer workspace, with Cargo state kept beside the
+/// checkout and outside its repository.
+#[cfg(unix)]
+fn consumer_toolchain(workspace: &Path) -> Command {
+    let mut command =
+        toolchain_support::fixture_command("cargo", workspace.parent().unwrap(), None).unwrap();
+    command.current_dir(workspace);
+    command
+}
+
 /// Run one native Cargo command inside the consumer workspace.
 #[cfg(unix)]
 fn consumer_cargo(workspace: &Path, args: &[&str]) -> Output {
-    toolchain_support::command("cargo")
-        .current_dir(workspace)
+    consumer_toolchain(workspace)
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .args(args)
         .output()
@@ -3173,7 +3388,7 @@ fn consumer_cargo(workspace: &Path, args: &[&str]) -> Output {
 
 #[cfg(unix)]
 #[test]
-fn maestro_hook_reverse_dependent_lint_is_not_skipped() {
+fn maestro_hook_unstaged_dependent_warning_does_not_block() {
     drive();
     let scratch = Scratch::new().unwrap();
     let workspace = consumer_workspace(scratch.path());
@@ -3203,74 +3418,46 @@ fn maestro_hook_reverse_dependent_lint_is_not_skipped() {
         String::from_utf8_lossy(&control.stderr)
     );
     let output = run_consumer_hook(
-        "maestro_hook_reverse_dependent_lint_is_not_skipped",
-        &workspace,
-    );
-    assert_eq!(output.status.code(), Some(1), "{}", stdout(&output));
-    let text = format!(
-        "{}{}",
-        stdout(&output),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert!(text.contains("caller/src/lib.rs"), "{text}");
-    assert!(text.contains("deprecated"), "{text}");
-    assert_reverse_dependent_arguments(&workspace);
-
-    fs::write(&leaf, LEAF_SOURCE).unwrap();
-    git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
-    let output = run_consumer_hook(
-        "maestro_hook_reverse_dependent_lint_is_not_skipped",
+        "maestro_hook_unstaged_dependent_warning_does_not_block",
         &workspace,
     );
     assert!(
         output.status.success(),
-        "{}\n{}",
-        stdout(&output),
+        "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-}
-
-/// Assert the hook's Clippy invocation names the leaf and its caller.
-#[cfg(unix)]
-fn assert_reverse_dependent_arguments(workspace: &Path) {
-    let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
-    let clippy = log
-        .lines()
-        .rfind(|line| line.starts_with("clippy "))
-        .unwrap_or_default();
-    assert!(
-        clippy.contains("-p leaf") && clippy.contains("-p caller"),
-        "{log}"
+    let caller = consumer_cargo(
+        &workspace,
+        &[
+            "clippy",
+            "-p",
+            "caller",
+            "--all-targets",
+            "--locked",
+            "--",
+            "-D",
+            "warnings",
+        ],
     );
+    assert!(!caller.status.success());
+    assert!(String::from_utf8_lossy(&caller.stderr).contains("deprecated"));
 }
 
 #[cfg(unix)]
 #[test]
-fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
+fn maestro_hook_staged_clippy_warning_blocks_after_restaging() {
     drive();
     let scratch = Scratch::new().unwrap();
     let workspace = consumer_workspace(scratch.path());
     let caller = workspace.join("caller/src/lib.rs");
     fs::write(
         &caller,
-        "pub fn doubled() -> u32 {\n    leaf::value() * 2\n}\n",
+        "//! Caller crate.\n\n/// Doubles the leaf value.\npub fn doubled() -> u32 {\nlet unused = 1;\nleaf::value() * 2\n}\n",
     )
     .unwrap();
     git(&workspace, &["add", "--", "caller/src/lib.rs"]);
-    let control = toolchain_support::command("cargo")
-        .current_dir(&workspace)
-        .env("CARGO_TARGET_DIR", workspace.join("target"))
-        .env("RUSTDOCFLAGS", "-D warnings -D missing_docs")
-        .args(["doc", "-p", "leaf", "--no-deps", "--locked"])
-        .output()
-        .unwrap();
-    assert!(
-        control.status.success(),
-        "leaf-only control: {}",
-        String::from_utf8_lossy(&control.stderr)
-    );
     let output = run_consumer_hook(
-        "maestro_hook_scoped_docs_still_deny_missing_documentation",
+        "maestro_hook_staged_clippy_warning_blocks_after_restaging",
         &workspace,
     );
     assert_eq!(output.status.code(), Some(1), "{}", stdout(&output));
@@ -3279,19 +3466,26 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
         stdout(&output),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(text.contains("missing documentation"), "{text}");
+    assert!(text.contains("unused variable"), "{text}");
+    let staged = git(&workspace, &["show", ":caller/src/lib.rs"]).stdout;
+    assert_eq!(staged, fs::read(&caller).unwrap());
+    assert!(
+        String::from_utf8(staged)
+            .unwrap()
+            .contains("    let unused = 1;")
+    );
     assert!(text.contains("caller"), "{text}");
     let log = fs::read_to_string(workspace.join("cargo-log")).unwrap();
-    let doc = log
-        .lines()
-        .find(|line| line.starts_with("doc "))
-        .unwrap_or_default();
-    assert!(doc.contains("-p caller"), "{log}");
+    assert!(
+        log.lines()
+            .any(|line| line == "clippy -p caller --all-targets --locked -- -D warnings"),
+        "{log}"
+    );
 
     fs::write(&caller, CALLER_SOURCE).unwrap();
     git(&workspace, &["add", "--", "caller/src/lib.rs"]);
     let output = run_consumer_hook(
-        "maestro_hook_scoped_docs_still_deny_missing_documentation",
+        "maestro_hook_staged_clippy_warning_blocks_after_restaging",
         &workspace,
     );
     assert!(
@@ -3302,67 +3496,559 @@ fn maestro_hook_scoped_docs_still_deny_missing_documentation() {
     );
 }
 
+/// The files the test build's author preparation is checked against.
+#[cfg(unix)]
+const AUTHOR_SETUP_SOURCES: [&str; 8] = [
+    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/src/tests/build.rs",
+    "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
+    "crates/maestro-tooling/src/example_files.rs",
+    "crates/maestro-tooling/src/example_files/components.rs",
+    "crates/maestro-tooling/src/example_files/preparation.rs",
+    "crates/maestro-extensions-wasm/Cargo.toml",
+    "Cargo.lock",
+];
+
+/// Gives `path` the modification time `time`.
+#[cfg(unix)]
+fn set_modified(path: &Path, time: std::time::SystemTime) {
+    fs::File::options()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_modified(time)
+        .unwrap();
+}
+
+/// Gives `path` the modification time `age` ago.
+#[cfg(unix)]
+fn set_age(path: &Path, age: std::time::Duration) {
+    set_modified(path, std::time::SystemTime::now() - age);
+}
+
+/// Lays out a profile directory with a built example, a fake Cargo that rebuilds it and every
+/// source an hour old. Returns the profile directory and the example.
+#[cfg(unix)]
+fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+    let profile = root.join("target/debug");
+    fs::create_dir_all(profile.join("deps")).unwrap();
+    fs::create_dir_all(profile.join("examples")).unwrap();
+    for source in AUTHOR_SETUP_SOURCES {
+        let path = root.join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::File::create(&path).unwrap();
+        set_age(&path, std::time::Duration::from_secs(3600));
+    }
+    let example = profile.join("examples/prepare_author_component");
+    fs::write(&example, "#!/bin/sh\necho example\n").unwrap();
+    fs::write(
+        root.join("cargo"),
+        "#!/bin/sh\necho cargo \"$@\"\nprintf '#!/bin/sh\\necho example\\n' > target/debug/examples/prepare_author_component\nchmod +x target/debug/examples/prepare_author_component\n",
+    )
+    .unwrap();
+    for path in [&example, &root.join("cargo")] {
+        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    (profile, example)
+}
+
 /// Run the test build's author preparation only while it is newer than its sources.
 #[cfg(unix)]
 #[test]
 fn author_setup_runs_the_built_example_only_while_fresh() {
-    use std::os::unix::fs::PermissionsExt;
     use std::time::{Duration, SystemTime};
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
-    let profile = root.join("target/debug");
-    fs::create_dir_all(profile.join("deps")).unwrap();
-    fs::create_dir_all(profile.join("examples")).unwrap();
-    let sources = [
-        "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
-        "crates/maestro-extensions-wasm/src/tests/build.rs",
-        "crates/maestro-tooling/src/example_files.rs",
-        "crates/maestro-extensions-wasm/Cargo.toml",
-        "Cargo.lock",
-    ];
-    let earlier = SystemTime::now() - Duration::from_secs(3600);
-    for source in sources {
-        let path = root.join(source);
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::File::create(path)
-            .unwrap()
-            .set_modified(earlier)
-            .unwrap();
-    }
-    let example = profile.join("examples/prepare_author_component");
-    for (path, name) in [(&example, "example"), (&root.join("cargo"), "cargo")] {
-        fs::write(path, format!("#!/bin/sh\necho {name} \"$@\"\n")).unwrap();
-        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
-    }
+    let (profile, example) = author_setup_checkout(root);
     let run = || run_author_setup(root, &profile);
     assert_eq!(run(), "example\n");
-    for source in sources {
-        let file = fs::File::options()
-            .write(true)
-            .open(root.join(source))
-            .unwrap();
-        file.set_modified(SystemTime::now() + Duration::from_secs(60))
-            .unwrap();
-        assert!(run().starts_with("cargo run "), "{source}");
-        file.set_modified(earlier).unwrap();
+    for source in AUTHOR_SETUP_SOURCES {
+        set_modified(
+            &root.join(source),
+            SystemTime::now() + Duration::from_secs(60),
+        );
+        assert!(run().starts_with("cargo build "), "{source}");
+        set_age(&root.join(source), Duration::from_secs(3600));
     }
     fs::remove_file(&example).unwrap();
-    assert!(run().starts_with("cargo run "));
+    assert!(run().starts_with("cargo build "));
 }
 
-/// Run the author setup script from `root` with `profile` as nextest's artifact directory.
+/// Record the example's linked library, `age` old, beside its current and older hashed builds.
+/// Returns the older build's path.
 #[cfg(unix)]
-fn run_author_setup(root: &Path, profile: &Path) -> String {
-    let output = Command::new("sh")
-        .arg(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.config/prepare-author-component.sh"),
-        )
+fn example_builds_on_library(
+    root: &Path,
+    profile: &Path,
+    age: std::time::Duration,
+) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    fs::write(
+        root.join("Cargo.lock"),
+        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
+    )
+    .unwrap();
+    set_age(
+        &root.join("Cargo.lock"),
+        std::time::Duration::from_secs(3600),
+    );
+    let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
+    let copy = profile.join("examples/prepare_author_component-1");
+    fs::write(&copy, "#!/bin/sh\necho copy\n").unwrap();
+    fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::hard_link(
+        profile.join("examples/prepare_author_component"),
+        profile.join("examples/prepare_author_component-a1"),
+    )
+    .unwrap();
+    for (target, name, hash, dependencies) in [
+        (
+            "maestro-extensions-wasm-1",
+            "example-prepare_author_component",
+            10,
+            vec![("maestro_request", 21)],
+        ),
+        (
+            "maestro-extensions-wasm-a1",
+            "example-prepare_author_component",
+            11,
+            vec![("maestro_request", 21)],
+        ),
+        ("maestro-request-1", "lib-maestro_request", 21, vec![]),
+    ] {
+        cargo_fingerprint(profile, target, name, hash, &dependencies);
+    }
+    for name in ["prepare_author_component.d", "prepare_author_component-1.d"] {
+        fs::write(profile.join("examples").join(name), information).unwrap();
+    }
+    let library = profile.join("deps/libmaestro_request-1.rlib");
+    fs::write(&library, b"").unwrap();
+    set_age(&library, age);
+    copy
+}
+
+/// Write the dependency records and little-endian hash Cargo leaves for one compiled target.
+#[cfg(unix)]
+pub(super) fn cargo_fingerprint(
+    profile: &Path,
+    target: &str,
+    name: &str,
+    hash: u64,
+    dependencies: &[(&str, u64)],
+) {
+    let directory = profile.join(".fingerprint").join(target);
+    fs::create_dir_all(&directory).unwrap();
+    let dependencies: Vec<_> = dependencies
+        .iter()
+        .map(|(name, hash)| serde_json::json!([0, name, false, hash]))
+        .collect();
+    fs::write(
+        directory.join(name),
+        hash.to_le_bytes()
+            .map(|byte| format!("{byte:02x}"))
+            .concat(),
+    )
+    .unwrap();
+    fs::write(
+        directory.join(format!("{name}.json")),
+        serde_json::to_vec(&serde_json::json!({"deps": dependencies})).unwrap(),
+    )
+    .unwrap();
+}
+
+/// A newer build of a linked crate under another hash does not outdate the consumer.
+#[cfg(unix)]
+#[test]
+fn author_setup_ignores_unlinked_builds_of_a_consumers_library() {
+    use std::time::{Duration, SystemTime};
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(30));
+    let consumer = profile.join("deps/integration-b1");
+    fs::copy(&example, &consumer).unwrap();
+    cargo_fingerprint(
+        &profile,
+        "maestro-extensions-wasmtime-b1",
+        "test-integration-test-integration",
+        12,
+        &[("maestro_request", 21)],
+    );
+    let old = SystemTime::now() - Duration::from_mins(20);
+    set_modified(&consumer, old);
+    set_age(&example, Duration::from_mins(10));
+    let unrelated = profile.join("deps/libmaestro_request-2.rlib");
+    fs::write(&unrelated, b"").unwrap();
+    cargo_fingerprint(
+        &profile,
+        "maestro-request-2",
+        "lib-maestro_request",
+        22,
+        &[],
+    );
+
+    assert_eq!(run_author_setup(root, &profile), "example\n");
+    assert_eq!(
+        fs::metadata(&consumer).unwrap().modified().unwrap(),
+        fs::metadata(&example).unwrap().modified().unwrap()
+    );
+}
+
+/// A library the example builds on, rebuilt after the example, outdates it as well, and
+/// only a rebuild of the example brings its code up to date.
+#[cfg(unix)]
+#[test]
+fn author_setup_rebuilds_an_example_that_a_library_has_outdated() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&example, Duration::from_mins(30));
+    let output = run_author_setup(root, &profile);
+    assert!(output.starts_with("cargo build "), "{output}");
+    assert!(output.ends_with("example\n"), "{output}");
+}
+
+/// Cargo leaves a copy of the example under each older hash, which no library rebuild
+/// updates, so only the example the launcher runs decides whether it needs a rebuild.
+#[cfg(unix)]
+#[test]
+fn author_setup_ignores_an_outdated_copy_of_the_example_under_an_older_hash() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    let copy = example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&copy, Duration::from_mins(30));
+    set_age(&example, Duration::from_mins(5));
+    assert_eq!(run_author_setup(root, &profile), "example\n");
+}
+
+/// Without fingerprints, setup conservatively counts check-only metadata. When Cargo leaves
+/// the example as it is, setup logs the fact and still runs it.
+#[cfg(unix)]
+#[test]
+fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
+    use std::time::Duration;
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let (profile, example) = author_setup_checkout(root);
+    example_builds_on_library(root, &profile, Duration::from_mins(15));
+    set_age(&example, Duration::from_mins(10));
+    fs::remove_dir_all(profile.join(".fingerprint")).unwrap();
+    let check_only = profile.join("deps/libmaestro_request-2.rmeta");
+    fs::write(&check_only, b"").unwrap();
+    set_age(&check_only, Duration::from_mins(1));
+    fs::write(root.join("cargo"), "#!/bin/sh\necho cargo \"$@\"\n").unwrap();
+    let output = author_setup(root, &profile);
+    let (printed, logged) = (stdout(&output), String::from_utf8_lossy(&output.stderr));
+    assert!(output.status.success(), "{logged}");
+    assert!(printed.starts_with("cargo build "), "{printed}");
+    assert!(printed.ends_with("example\n"), "{printed}");
+    assert!(logged.contains("Cargo kept the setup example"), "{logged}");
+}
+
+/// Build a dependency-free workspace with a transitive library and an author example. The
+/// transitive library's build script has its own file name, which names its Cargo crate.
+fn cache_fixture(root: &Path) {
+    toolchain_support::declare_toolchain(root, include_str!("../../../rust-toolchain.toml"))
+        .unwrap();
+    for (path, text) in [
+        (
+            "Cargo.toml",
+            "[workspace]\nmembers=['app','middle','leaf']\nresolver='3'\n",
+        ),
+        (
+            "app/Cargo.toml",
+            "[package]\nname='app'\nversion='0.0.0'\nedition='2024'\n[dependencies]\nmiddle={path='../middle'}\n[features]\nother=['middle/other']\n",
+        ),
+        (
+            "app/src/main.rs",
+            "fn main() { println!(\"{}\", middle::value()); }",
+        ),
+        (
+            "app/examples/prepare_author_component.rs",
+            "fn main() { println!(\"{}\", middle::value()); }",
+        ),
+        (
+            "middle/Cargo.toml",
+            "[package]\nname='middle'\nversion='0.0.0'\nedition='2024'\n[dependencies]\naliased_leaf={package='leaf',path='../leaf'}\n[features]\nother=['aliased_leaf/other']\n",
+        ),
+        (
+            "middle/src/lib.rs",
+            "pub fn value() -> u32 { aliased_leaf::value() }",
+        ),
+        (
+            "leaf/Cargo.toml",
+            "[package]\nname='leaf'\nversion='0.0.0'\nedition='2024'\nbuild='build/main.rs'\n[features]\nother=[]\n",
+        ),
+        ("leaf/build/main.rs", "fn main() {}"),
+        ("leaf/src/lib.rs", "pub fn value() -> u32 { 42 }"),
+    ] {
+        write_input(root, path, text);
+    }
+    cache_cargo(root, &["generate-lockfile", "--offline"]);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--bins",
+            "--examples",
+        ],
+    );
+}
+
+/// Run Cargo with fixture-local state and build outputs.
+fn cache_cargo(root: &Path, args: &[&str]) {
+    let result = toolchain_support::fixture_command(env!("CARGO"), root, None)
+        .unwrap()
+        .env("CARGO_TARGET_DIR", root.join("target"))
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+/// Give all initial build outputs a fixed time before introducing an unrelated build.
+fn age_cache_outputs(profile: &Path) {
+    use std::time::{Duration, UNIX_EPOCH};
+    for folder in [profile, &profile.join("deps"), &profile.join("examples")] {
+        for entry in fs::read_dir(folder).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_file() {
+                fs::File::options()
+                    .write(true)
+                    .open(path)
+                    .unwrap()
+                    .set_modified(UNIX_EPOCH + Duration::from_secs(100))
+                    .unwrap();
+            }
+        }
+    }
+}
+
+/// The pinned Cargo layout identifies exact transitive builds after another package selection.
+#[test]
+fn cache_normalization_reads_the_pinned_cargo_builds() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "leaf",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let expected = UNIX_EPOCH + Duration::from_secs(200);
+    fs::File::options()
+        .write(true)
+        .open(&example)
+        .unwrap()
+        .set_modified(expected)
+        .unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        expected
+    );
+}
+
+/// A build script's run is no linked library build, whatever file Cargo names it after, so the
+/// consumers of a library with one share the example's time.
+#[test]
+fn cache_normalization_skips_build_scripts_named_after_their_file() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    fs::File::options()
+        .write(true)
+        .open(example)
+        .unwrap()
+        .set_modified(UNIX_EPOCH + Duration::from_secs(200))
+        .unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let modified = |name: &str| {
+        fs::metadata(profile.join(name))
+            .unwrap()
+            .modified()
+            .unwrap()
+    };
+    let suffix = std::env::consts::EXE_SUFFIX;
+    assert_eq!(
+        modified(&format!("app{suffix}")),
+        modified(&format!("examples/prepare_author_component{suffix}"))
+    );
+}
+
+/// Rebuilding an exact linked library keeps its existing consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    let source = root.join("leaf/src/lib.rs");
+    fs::write(&source, fs::read(&source).unwrap()).unwrap();
+    cache_cargo(root, &["build", "--offline", "--locked", "-p", "leaf"]);
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert_eq!(
+        result.status.code(),
+        Some(3),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+}
+
+/// Cleaning libraries before another feature build leaves their older consumers stale.
+#[test]
+fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
+    use std::time::{Duration, UNIX_EPOCH};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    cache_fixture(root);
+    let profile = root.join("target/debug");
+    age_cache_outputs(&profile);
+    fs::write(root.join("leaf/src/lib.rs"), "pub fn value() -> u32 { 43 }").unwrap();
+    cache_cargo(
+        root,
+        &[
+            "clean",
+            "--offline",
+            "--locked",
+            "-p",
+            "middle",
+            "-p",
+            "leaf",
+        ],
+    );
+    cache_cargo(
+        root,
+        &[
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "app",
+            "--examples",
+            "--features",
+            "other",
+        ],
+    );
+    let example = profile.join("examples").join(format!(
+        "prepare_author_component{}",
+        std::env::consts::EXE_SUFFIX
+    ));
+    let fresh = fs::metadata(example).unwrap().modified().unwrap();
+
+    let result = Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(&profile)
+        .env_remove("TEST_ARCHIVE")
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let consumer = profile.join(format!("app{}", std::env::consts::EXE_SUFFIX));
+    assert_eq!(
+        fs::metadata(consumer).unwrap().modified().unwrap(),
+        UNIX_EPOCH + Duration::from_secs(100)
+    );
+    assert!(fresh > UNIX_EPOCH + Duration::from_secs(100));
+}
+
+/// Run the author setup from `root` with `profile` as nextest's artifact directory.
+#[cfg(unix)]
+fn author_setup(root: &Path, profile: &Path) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["nextest-setup", "author-component"])
         .current_dir(root)
+        .env_remove("TEST_PREPARE_OUTPUT")
+        .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"))
+        .env_remove("TEST_ARCHIVE")
         .output()
-        .unwrap();
+        .unwrap()
+}
+
+/// Run the author setup, which must succeed, and return what it printed.
+#[cfg(unix)]
+fn run_author_setup(root: &Path, profile: &Path) -> String {
+    let output = author_setup(root, profile);
     assert!(
         output.status.success(),
         "{}",
@@ -3392,7 +4078,7 @@ fn example_index_discovers_independent_additions() {
     fs::write(folder.join("nested/helper.rs"), "//! A helper.\n").unwrap();
     fs::write(folder.join("nested.md"), "# Nested usage\n").unwrap();
     fs::write(folder.join("alpha.md"), "# Alpha usage\n\nDetails.\n").unwrap();
-    let cargo = Path::new("unused-cargo");
+    let cargo = Path::new(env!("CARGO"));
     assert_eq!(
         tooling::run(&["example-index".into()], cargo, root.path()).unwrap(),
         std::process::ExitCode::SUCCESS
@@ -3426,6 +4112,15 @@ fn example_index_discovers_independent_additions() {
 fn example_checkout(root: &Path) {
     let folder = root.join("examples/extensions");
     let local = root.join("crates/maestro-extensions-wasm/examples");
+    let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
+    fs::create_dir_all(&fixture).unwrap();
+    fs::write(
+        fixture.join("Cargo.toml.in"),
+        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\n[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro/crates/maestro-extensions-wasm\" }\n[workspace]\n",
+    ).unwrap();
+    fs::write(fixture.join("Cargo.lock"), "version = 4\n").unwrap();
+    fs::write(root.join("Cargo.lock"), "version = 4\n").unwrap();
+
     fs::create_dir_all(&folder).unwrap();
     fs::create_dir_all(&local).unwrap();
     fs::write(
@@ -3435,9 +4130,11 @@ fn example_checkout(root: &Path) {
     .unwrap();
     fs::write(
         root.join("crates/maestro-extensions-wasm/Cargo.toml"),
-        "[package]\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
     )
     .unwrap();
+    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/src")).unwrap();
+    fs::write(root.join("crates/maestro-extensions-wasm/src/lib.rs"), "").unwrap();
     fs::write(
         local.join("prepare_author_component.rs"),
         "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n",
@@ -3451,7 +4148,7 @@ fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::Exit
     if check {
         args.push("--check".into());
     }
-    tooling::run(&args, Path::new("unused-cargo"), root)
+    tooling::run(&args, Path::new(env!("CARGO")), root)
 }
 
 /// Example sources supply manifest targets without rewriting runtime preparation.
@@ -3494,7 +4191,7 @@ fn example_index_renders_targets() {
     );
     assert_eq!(
         rendered.0,
-        "[package]\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
     );
     assert_eq!(
         rendered.1,
@@ -3513,13 +4210,79 @@ fn example_index_renders_targets() {
     );
 }
 
+/// Guest dependency changes are detected without repairing files until generation is requested.
+#[test]
+fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    example_checkout(root.path());
+    example_index(root.path(), false).unwrap();
+    let lock = root
+        .path()
+        .join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.lock");
+    let before = fs::read(&lock).unwrap();
+    assert!(String::from_utf8_lossy(&before).contains("name = \"hello-extension\""));
+    let guest = root
+        .path()
+        .join("crates/maestro-extensions-wasm/Cargo.toml");
+    let mut manifest = fs::read_to_string(&guest).unwrap();
+    manifest.push_str("leaf = { path = \"../leaf\" }\n");
+    fs::write(&guest, manifest).unwrap();
+    let leaf = root.path().join("crates/leaf");
+    fs::create_dir_all(leaf.join("src")).unwrap();
+    fs::write(leaf.join("src/lib.rs"), "").unwrap();
+    fs::write(
+        leaf.join("Cargo.toml"),
+        "[package]\nname = \"leaf\"\nversion = \"1.2.3\"\n",
+    )
+    .unwrap();
+    fs::write(
+        root.path().join("Cargo.lock"),
+        "version = 4\n\n[[package]]\nname = \"leaf\"\nversion = \"1.2.3\"\n",
+    )
+    .unwrap();
+    let error = example_index(root.path(), true).unwrap_err().to_string();
+    assert!(error.contains("hello-extension/Cargo.lock"), "{error}");
+    assert!(error.contains("run just example-index"), "{error}");
+    assert_eq!(fs::read(&lock).unwrap(), before);
+    example_index(root.path(), false).unwrap();
+    let after = fs::read_to_string(&lock).unwrap();
+    assert!(after.contains("name = \"leaf\"\nversion = \"1.2.3\""));
+    example_index(root.path(), true).unwrap();
+}
+
+/// Resolver failures retain Cargo's diagnostic without replacing the guide lock.
+#[test]
+fn example_index_preserves_guide_lock_on_resolver_failure() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    example_checkout(root.path());
+    example_index(root.path(), false).unwrap();
+    let fixture = root
+        .path()
+        .join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
+    let lock = fixture.join("Cargo.lock");
+    let before = fs::read(&lock).unwrap();
+    let manifest = fixture.join("Cargo.toml.in");
+    let malformed = format!("{}\n[package]\n", fs::read_to_string(&manifest).unwrap());
+    fs::write(manifest, malformed).unwrap();
+    for check in [false, true] {
+        let error = example_index(root.path(), check).unwrap_err().to_string();
+        assert!(
+            error.contains("cannot derive the guide lock from the workspace lock:"),
+            "{error}"
+        );
+        assert!(error.contains("duplicate key"), "{error}");
+        assert!(error.contains("[package]"), "{error}");
+        assert_eq!(fs::read(&lock).unwrap(), before);
+    }
+}
+
 /// The tracked repository index is exactly the table rendered from its files.
 #[test]
 fn shipped_example_index_matches_documentation() {
     let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     tooling::run(
         &["example-index".into(), "--check".into()],
-        Path::new("unused-cargo"),
+        Path::new(env!("CARGO")),
         &checkout,
     )
     .unwrap();

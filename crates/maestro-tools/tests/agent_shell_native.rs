@@ -199,7 +199,7 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
         .unwrap()
         .as_str()
         .unwrap();
-    assert!(text.contains("[Showing lines 1002-3001 of 3001. Full output: <artifact>]"));
+    assert!(text.contains("[Showing lines 1001-3000 of 3000. Full output: <artifact>]"));
     if status == 7 {
         assert!(text.ends_with("\n\nCommand exited with code 7"));
     }
@@ -324,7 +324,8 @@ fn bash_tool_finishes_after_inherited_pipe_grace() {
             }
         };
         let (mut root, _) = listener.accept().await.unwrap();
-        let mut holder = read_support::pipe_holder(pid).await;
+        let holder = read_support::grace_holder(dir.path(), pid);
+        let mut holder = read_support::pipe_holder(&holder).await;
         root.write_all(b"exit\n").await.unwrap();
         let result = execution.await.unwrap();
         assert_eq!(

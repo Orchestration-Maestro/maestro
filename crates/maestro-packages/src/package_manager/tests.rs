@@ -1,7 +1,7 @@
-//! Environment and home decision boundaries with native witnesses.
+//! Environment recovery boundaries with native witnesses.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use super::operations::{home, recover_environment};
+use super::operations::recover_environment;
 use std::{cell::Cell, collections::BTreeMap, io};
 
 #[cfg(unix)]
@@ -42,25 +42,6 @@ fn empty_linux_environment_recovery_preserves_entries() {
         .is_empty()
     );
 }
-#[test]
-fn home_lookup_uses_truthy_environment_before_platform_fallback() {
-    assert_eq!(
-        home(Some("/explicit/home".into()), || panic!("eager fallback")).unwrap(),
-        "/explicit/home"
-    );
-    for explicit in [None, Some(String::new())] {
-        let reads = Cell::new(0);
-        assert_eq!(
-            home(explicit, || {
-                reads.set(reads.get() + 1);
-                Ok("/platform/home".into())
-            })
-            .unwrap(),
-            "/platform/home"
-        );
-        assert_eq!(reads.get(), 1);
-    }
-}
 #[cfg(target_os = "linux")]
 #[test]
 fn native_empty_environment_recovery_reads_procfs() {
@@ -78,19 +59,26 @@ fn native_empty_environment_recovery_reads_procfs() {
             result.get("MAESTRO_ENV_SENTINEL").map(String::as_str),
             Some("a=b")
         );
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let alias = scratch.path().join("sentinel");
+        maestro_test_process::install_command(
+            &alias,
+            r#"{"scenario":"report","fields":[{"variable":"MAESTRO_ENV_SENTINEL"}]}"#,
+        )
+        .unwrap();
         let output = NativePackageOperations::new(
             std::rc::Rc::new(|| false),
             &std::rc::Rc::new(tokio::task::LocalSet::new()),
         )
-        .run_command_sync(
-            "/bin/sh",
-            &["-c".into(), "printf '%s' \"$MAESTRO_ENV_SENTINEL\"".into()],
-        )
+        .run_command_sync(&alias.to_string_lossy(), &[])
         .unwrap();
         assert_eq!(output.stdout, "a=b");
         return;
     }
     let profile = std::env::var_os("LLVM_PROFILE_FILE");
+    // The prepared fixture stays reachable from a cleared child, so the case can install a
+    // stand-in without repeating the artifact path.
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE");
     let output = maestro_test_process::TestProcess::current(
         "package_manager::tests::native_empty_environment_recovery_reads_procfs",
     )
@@ -101,6 +89,11 @@ fn native_empty_environment_recovery_reads_procfs() {
         profile
             .iter()
             .map(|value| ("MAESTRO_EXPECT_PROFILE", value)),
+    )
+    .envs(
+        artifact
+            .iter()
+            .map(|value| ("MAESTRO_NATIVE_FIXTURE", value)),
     )
     .case("*")
     .env("MAESTRO_ENV_SENTINEL", "a=b")
@@ -136,20 +129,14 @@ fn native_manager(
 #[cfg(unix)]
 fn latest_version_rejects_empty_capture_with_authored_message() {
     for (output, expected) in [
-        ("\"2\"", Some("2")),
-        (" \u{feff}\"2\"\n", Some("2")),
-        ("", None),
-        ("\u{85}\"2\"", None),
-        ("bad", None),
+        (b"\"2\"".to_vec(), Some("2")),
+        (" \u{feff}\"2\"\n".as_bytes().to_vec(), Some("2")),
+        (Vec::new(), None),
+        ("\u{85}\"2\"".as_bytes().to_vec(), None),
+        (b"bad".to_vec(), None),
     ] {
-        let script = format!("printf '%s' '{output}' #");
-        let settings = maestro_settings::Settings(
-            serde_json::json!({"npmCommand":["/bin/sh","-c",script]})
-                .as_object()
-                .unwrap()
-                .clone(),
-        );
-        let manager = native_manager(settings);
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let manager = native_manager(answering(&scratch, &output));
         let result = runtime::run(manager.latest_npm_version("x"));
         if let Some(expected) = expected {
             assert_eq!(result.unwrap(), expected);
@@ -162,19 +149,40 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
             assert!(result.is_err());
         }
     }
-    let settings = maestro_settings::Settings(
-        serde_json::json!({"npmCommand":["/bin/sh","-c","printf '\\357\\273\\277' #"]})
-            .as_object()
-            .unwrap()
-            .clone(),
-    );
-    let manager = native_manager(settings);
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let manager = native_manager(answering(&scratch, b"\xef\xbb\xbf"));
     assert_eq!(
         runtime::run(manager.latest_npm_version("example"))
             .unwrap_err()
             .to_string(),
         "Empty response from npm view"
     );
+}
+
+/// Settings whose package command prints `stdout` and succeeds.
+#[cfg(unix)]
+fn answering(
+    scratch: &maestro_test_directory::Scratch,
+    stdout: &[u8],
+) -> maestro_settings::Settings {
+    let alias = scratch.path().join("npm");
+    maestro_test_process::install_command(
+        &alias,
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": stdout,
+            "stderr": [],
+            "code": 0
+        })
+        .to_string(),
+    )
+    .unwrap();
+    maestro_settings::Settings(
+        serde_json::json!({"npmCommand": [alias.to_string_lossy()]})
+            .as_object()
+            .unwrap()
+            .clone(),
+    )
 }
 
 #[test]

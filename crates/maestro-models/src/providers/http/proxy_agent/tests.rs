@@ -411,7 +411,7 @@ async fn framing_exchange(credentials: &str, surplus: bool) {
     server.finish().unwrap();
 }
 
-mod deadlines;
+pub(in crate::providers::http) mod deadlines;
 
 #[test]
 fn socks_request_response_conversions_keep_wire_fields() {
@@ -480,9 +480,9 @@ fn socks_connection_failure_never_replays_body() {
 #[test]
 fn socks_proxy_resolution_errors_close_without_request_bytes() {
     run(async {
-        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-        let address = listener.local_addr().unwrap();
-        drop(listener);
+        let reserved = tokio::net::TcpSocket::new_v4().unwrap();
+        reserved.bind("127.0.0.1:0".parse().unwrap()).unwrap();
+        let address = reserved.local_addr().unwrap();
         for proxy in ["socks5h://".to_owned(), format!("socks5h://{address}")] {
             let result =
                 sender(url::Url::parse(&proxy).unwrap())(request("http://destination.invalid/"))

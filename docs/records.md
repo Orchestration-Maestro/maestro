@@ -296,9 +296,13 @@ current epoch milliseconds and append without removing prior entries.
 ## Wire records and helpers
 
 Messages and content serialize with their fixed role/type tags, even when used
-alone. Tagged unions decode by their role/type. Optional absent fields are omitted;
-explicit null is retained for supported thinking/routing fields and open tool
-details. Signature
+alone. Tagged unions decode by their role/type; an unknown block type in user or assistant
+content, and an unknown role among a model request's messages, is left out, while anything
+else malformed still fails. Known record fields reject repeated members as their decoders
+require. Open JSON in tool-call arguments and tool-result details keeps the last value of
+a repeated key; ignored fields remain ignored.
+Optional absent fields are omitted; explicit null is retained for supported
+thinking/routing fields and open tool details. Signature
 strings remain opaque; the separate signature metadata record accepts version 1.
 
 `Usage::total_tokens` keeps the presence of the saved count. An omitted total
@@ -331,7 +335,7 @@ ordered cancellable events through the ordinary invocation interface. See the
 ## Resolved request authentication
 
 `maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
-ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
+optional endpoint, ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
 

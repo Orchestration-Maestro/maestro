@@ -1,4 +1,5 @@
 //! A todo tool whose result snapshots follow the active session branch.
+// maestro-component: MAESTRO_TODO_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

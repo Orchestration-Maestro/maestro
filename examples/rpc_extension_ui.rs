@@ -253,17 +253,14 @@ mod native {
 }
 
 #[cfg(all(test, any(unix, windows)))]
-#[allow(
-    dead_code,
-    reason = "Shared terminal controls also serve other scenarios."
-)]
-#[path = "../crates/maestro-test-terminal/src/recording_terminal.rs"]
-mod recording_terminal;
+use maestro_tui::test_support::recording_terminal;
 
 #[cfg(test)]
 #[cfg(any(unix, windows))]
 mod tests {
     use super::*;
+    use maestro_test_directory::Scratch;
+    use maestro_test_process::rpc_peer::{self, Scenario};
 
     /// A Unicode line separator belongs to the JSON string, not to the wire framing.
     #[test]
@@ -356,32 +353,72 @@ mod tests {
         }
     }
 
-    /// Windows uses the same pipe conversation and retained terminal lifecycle.
-    #[cfg(windows)]
+    /// Installs the prepared native peer that answers one example interaction.
+    fn install(root: &Scratch, scenario: Scenario) -> std::path::PathBuf {
+        let entry = root
+            .path()
+            .join(format!("peer{}", std::env::consts::EXE_SUFFIX));
+        rpc_peer::install(&entry, scenario).unwrap();
+        entry
+    }
+
+    /// Builds a command for one installed native peer.
+    fn peer(root: &Scratch, scenario: Scenario) -> std::process::Command {
+        std::process::Command::new(install(root, scenario))
+    }
+
+    /// The repository root, which holds the shipped client example.
+    fn checkout() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+    }
+
+    /// Runs the client example against an installed native peer and collects its output.
+    fn run_example(scenario: Scenario, prompt: Option<&str>) -> std::process::Output {
+        let root = Scratch::new().unwrap();
+        let entry = install(&root, scenario);
+        let mut command = std::process::Command::new("python3");
+        command
+            .arg(checkout().join("examples/sdk/rpc.py"))
+            .env("PYTHONDONTWRITEBYTECODE", "1");
+        if let Some(prompt) = prompt {
+            command.args(["--prompt", prompt]);
+        }
+        command.arg("--").arg(entry).output().unwrap()
+    }
+
+    /// Every record the client example printed, in order.
+    fn printed(output: &std::process::Output) -> Vec<serde_json::Value> {
+        String::from_utf8(output.stdout.clone())
+            .unwrap()
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect()
+    }
+
+    /// The record types the client example printed, in order.
+    fn kinds(records: &[serde_json::Value]) -> Vec<&str> {
+        records
+            .iter()
+            .map(|record| record["type"].as_str().unwrap_or_default())
+            .collect()
+    }
+
+    /// A child's exit status reaches the caller beside the retained terminal lifecycle.
     #[test]
-    fn windows_rpc_child_keeps_exit_status_and_terminal_lifecycle() {
+    fn rpc_child_keeps_exit_status_and_terminal_lifecycle() {
         run_async(async {
-            let mut peer = std::process::Command::new("powershell.exe");
-            peer.args(["-NoProfile", "-NonInteractive", "-Command", r#"
-[Console]::WriteLine('{"type":"extension_ui_request","id":"ready","method":"notify","message":"Windows peer ready"}')
-$line = [Console]::ReadLine()
-if ($line -notlike '*"type":"prompt"*' -or $line -notlike '*"message":"hello"*') { exit 12 }
-exit 7
-"#]);
-            let case = run_case(peer, vec![("Windows peer ready", "hello\r")]).await;
+            let root = Scratch::new().unwrap();
+            let case = run_case(
+                peer(&root, Scenario::PromptExit),
+                vec![("Native peer ready", "hello\r")],
+            )
+            .await;
             assert_eq!(case.status.code(), Some(7));
-            assert!(case.raw.contains("Windows peer ready"));
+            assert!(case.raw.contains("Native peer ready"));
             assert_eq!(case.steps, 1);
             assert_eq!(case.lifecycle, ["start", "stop"]);
         });
-    }
-
-    /// Keeps the existing pipe fixtures as ordinary shell commands.
-    #[cfg(unix)]
-    fn shell(script: &str) -> std::process::Command {
-        let mut command = std::process::Command::new("sh");
-        command.args(["-c", script]);
-        command
     }
 
     /// Quitting gives the child its ordinary termination signal before reaping it.
@@ -389,11 +426,11 @@ exit 7
     #[test]
     fn quitting_delivers_ordinary_termination_before_reaping_the_rpc_child() {
         run_async(async {
-            let root = maestro_test_directory::Scratch::new().unwrap();
+            let root = Scratch::new().unwrap();
             let marker = root.path().join("terminated");
-            let mut peer = std::process::Command::new("python3");
-            peer.args(["-c", TERMINATION_PEER]).arg(&marker);
-            let case = run_case(peer, vec![("Waiting for termination", "\x04")]).await;
+            let mut command = peer(&root, Scenario::TerminationMarker);
+            command.env("PEER_MARKER", &marker);
+            let case = run_case(command, vec![("Waiting for termination", "\x04")]).await;
             assert!(case.status.success());
             assert_eq!(case.steps, 1);
             assert_eq!(case.lifecycle, ["start", "stop"]);
@@ -404,24 +441,14 @@ exit 7
         });
     }
 
-    /// Blocks termination before readiness so even an early signal is consumed by sigwait.
-    #[cfg(unix)]
-    const TERMINATION_PEER: &str = r#"
-import json, signal, sys
-signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
-print(json.dumps({"type":"extension_ui_request", "id":"ready", "method":"notify", "message":"Waiting for termination"}), flush=True)
-signal.sigwait({signal.SIGTERM})
-with open(sys.argv[1], "w", encoding="utf-8") as marker:
-    marker.write("SIGTERM")
-"#;
-
     /// The real toolkit receives keys while a controlled peer checks correlated wire replies.
     #[cfg(unix)]
     #[test]
     fn streamed_rpc_dialogs_keep_replies_and_terminal_lifecycle() {
         run_async(async {
+            let root = Scratch::new().unwrap();
             let case = run_case(
-                shell(RPC_PEER),
+                peer(&root, Scenario::DialogTour),
                 vec![
                     ("RPC Chat", "hello\r"),
                     ("Dangerous command?", "\r"),
@@ -481,8 +508,9 @@ with open(sys.argv[1], "w", encoding="utf-8") as marker:
                     ],
                 ),
             ] {
+                let root = Scratch::new().unwrap();
                 let case = run_case(
-                    shell(LOCAL_PEER),
+                    peer(&root, Scenario::LocalDialogTour),
                     vec![
                         ("RPC Chat", "/select\r"),
                         ("Pick a color", select),
@@ -514,7 +542,12 @@ with open(sys.argv[1], "w", encoding="utf-8") as marker:
     #[test]
     fn rpc_notifications_retain_their_severity_in_visible_text() {
         run_async(async {
-            let case = run_case(shell(NOTIFICATION_PEER), vec![("RPC Chat", "hello\r")]).await;
+            let root = Scratch::new().unwrap();
+            let case = run_case(
+                peer(&root, Scenario::Notifications),
+                vec![("RPC Chat", "hello\r")],
+            )
+            .await;
             assert!(case.status.success());
             assert_eq!(case.steps, 1);
             let output = maestro_app::strip_ansi(&case.raw).unwrap();
@@ -529,24 +562,14 @@ with open(sys.argv[1], "w", encoding="utf-8") as marker:
         });
     }
 
-    /// The protocol carries an optional kind, independently of the message wording.
-    #[cfg(unix)]
-    const NOTIFICATION_PEER: &str = r#"
-read -r line || exit 8
-printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":true}'
-printf '%s\n' '{"type":"extension_ui_request","id":"a","method":"notify","message":"default notice"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"b","method":"notify","notifyType":"info","message":"information"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"c","method":"notify","notifyType":"warning","message":"warning"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notifyType":"error","message":"failure"}'
-"#;
-
     /// Selected strings retain whitespace and empty values in correlated replies.
     #[cfg(unix)]
     #[test]
     fn selection_replies_preserve_padded_and_empty_values() {
         run_async(async {
+            let root = Scratch::new().unwrap();
             let case = run_case(
-                shell(SELECTION_PEER),
+                peer(&root, Scenario::SelectionReplies),
                 vec![("Padded choice", "\r"), ("Empty choice", "\r")],
             )
             .await;
@@ -555,29 +578,17 @@ printf '%s\n' '{"type":"extension_ui_request","id":"d","method":"notify","notify
         });
     }
 
-    /// A peer validates both the identifier and exact serialized selection value.
-    #[cfg(unix)]
-    const SELECTION_PEER: &str = r#"
-printf '%s\n' '{"type":"extension_ui_request","id":"padded","method":"select","title":"Padded choice","options":[" Allow "]}'
-read -r line || exit 11
-case "$line" in *'"id":"padded"'*'"value":" Allow "'*) ;; *) exit 12;; esac
-printf '%s\n' '{"type":"extension_ui_request","id":"empty","method":"select","title":"Empty choice","options":[""]}'
-read -r line || exit 13
-case "$line" in *'"id":"empty"'*'"value":""'*) ;; *) exit 14;; esac
-case "$line" in *'"cancelled":true'*) exit 15;; esac
-"#;
-
     /// Dialog chrome and option labels cannot execute controls before approval.
     #[cfg(unix)]
     #[test]
     fn dialog_text_cannot_issue_clipboard_commands_before_approval() {
         run_async(async {
-            let peer = r#"
-printf '%s\n' '{"type":"extension_ui_request","id":"approval","method":"select","title":"Approve sudo echo \u001b]52;c;YWJj\u0007?","options":["Allow \u001b]52;c;YWJj\u0007"]}'
-read -r line || exit 11
-case "$line" in *'"id":"approval"'*'"value":"Allow \u001b]52;c;YWJj\u0007"'*) ;; *) exit 12;; esac
-"#;
-            let case = run_case(shell(peer), vec![("Approve sudo echo", "\r")]).await;
+            let root = Scratch::new().unwrap();
+            let case = run_case(
+                peer(&root, Scenario::DialogText),
+                vec![("Approve sudo echo", "\r")],
+            )
+            .await;
             assert!(case.status.success(), "peer status: {}", case.status);
             assert_eq!(case.steps, 1);
             assert!(
@@ -592,12 +603,12 @@ case "$line" in *'"id":"approval"'*'"value":"Allow \u001b]52;c;YWJj\u0007"'*) ;;
     #[test]
     fn approval_dialog_preserves_multiline_command_text() {
         run_async(async {
-            let peer = r#"
-printf '%s\n' '{"type":"extension_ui_request","id":"approval","method":"confirm","title":"Dangerous command","message":"sudo echo first\n\necho second"}'
-read -r line || exit 11
-case "$line" in *'"id":"approval"'*'"confirmed":true'*) ;; *) exit 12;; esac
-"#;
-            let case = run_case(shell(peer), vec![("Dangerous command", "\r")]).await;
+            let root = Scratch::new().unwrap();
+            let case = run_case(
+                peer(&root, Scenario::MultilineCommand),
+                vec![("Dangerous command", "\r")],
+            )
+            .await;
             assert!(case.status.success(), "peer status: {}", case.status);
             assert_eq!(case.steps, 1);
             let output = maestro_app::strip_ansi(&case.raw).unwrap();
@@ -618,7 +629,12 @@ case "$line" in *'"id":"approval"'*'"confirmed":true'*) ;; *) exit 12;; esac
     #[test]
     fn streamed_literal_text_cannot_issue_terminal_control_commands() {
         run_async(async {
-            let case = run_case(shell(LITERAL_PEER), vec![("RPC Chat", "hello\r")]).await;
+            let root = Scratch::new().unwrap();
+            let case = run_case(
+                peer(&root, Scenario::LiteralText),
+                vec![("RPC Chat", "hello\r")],
+            )
+            .await;
             assert!(case.status.success());
             assert!(
                 !case.raw.contains("\x1b]52;"),
@@ -631,64 +647,85 @@ case "$line" in *'"id":"approval"'*'"confirmed":true'*) ;; *) exit 12;; esac
         });
     }
 
-    /// Complete and split clipboard controls reach the same literal-text boundary.
-    #[cfg(unix)]
-    const LITERAL_PEER: &str = r#"
-read -r line || exit 8
-printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":false,"error":"error \u001b]52;c;?\u0007 text"}'
-printf '%s\n' '{"type":"agent_start"}'
-printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"visible \u001b]52;c;?\u0007 end\nsecond line"}}'
-printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":" split \u001b]"}}'
-printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"52;c;?\u0007 end"}}'
-printf '%s\n' '{"type":"tool_execution_start","toolName":"tool \u001b]52;c;?\u0007 name"}'
-printf '%s\n' '{"type":"agent_end","messages":[]}'
-"#;
+    /// The client example keeps LF framing, Unicode separators and a cancelled dialog.
+    #[test]
+    fn sdk_example_keeps_records_and_cancels_startup_dialogs() {
+        let output = run_example(Scenario::UnicodeState, None);
 
-    /// The peer must receive only the final ordinary prompt with the first identifier.
-    #[cfg(unix)]
-    const LOCAL_PEER: &str = r#"
-read -r line || exit 8
-case "$line" in *'"message":"after local"'*) ;; *) exit 9;; esac
-case "$line" in *'"id":"req_1"'*) ;; *) exit 10;; esac
-printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":true}'
-exit 0
-"#;
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let records = printed(&output);
+        assert_eq!(
+            records.last().unwrap()["data"]["sessionName"],
+            "a\u{2028}b\u{2029}c"
+        );
+    }
 
-    /// A shell peer uses only pipes and completion signals, without a model or a clock.
-    #[cfg(unix)]
-    const RPC_PEER: &str = r#"
-read -r line || exit 91
-case "$line" in *'"id":"req_1"'*) ;; *) exit 92;; esac
-case "$line" in *'"message":"hello"'*) ;; *) exit 93;; esac
-printf '%s\n' '{"type":"response","id":"req_1","command":"prompt","success":false,"error":"controlled refusal"}'
-printf '%s\n' '{"type":"agent_start"}' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"first\u2028second"}}'
-printf '%s\n' '{"type":"extension_ui_request","id":"s","method":"select","title":"Dangerous command?","options":["Allow","Block"]}'
-read -r line || exit 94
-case "$line" in *'"id":"s"'*) ;; *) exit 95;; esac
-case "$line" in *'"value":"Allow"'*) ;; *) exit 96;; esac
-printf '%s\n' '{"type":"extension_ui_request","id":"c","method":"confirm","title":"Clear session?","message":"All messages will be lost."}'
-read -r line || exit 97
-case "$line" in *'"id":"c"'*) ;; *) exit 98;; esac
-case "$line" in *'"confirmed":true'*) ;; *) exit 99;; esac
-printf '%s\n' '{"type":"extension_ui_request","id":"i","method":"input","title":"Enter a value","placeholder":"type something..."}'
-read -r line || exit 100
-case "$line" in *'"id":"i"'*) ;; *) exit 101;; esac
-case "$line" in *'"value":"answer"'*) ;; *) exit 102;; esac
-printf '%s\n' '{"type":"extension_ui_request","id":"e","method":"editor","title":"Edit some text","prefill":"Line 1\nLine 2\nLine 3"}'
-read -r line || exit 103
-case "$line" in *'"id":"e"'*) ;; *) exit 104;; esac
-case "$line" in *'"value":"Line 1\nLine 2\nLine 3"'*) ;; *) exit 105;; esac
-printf '%s\n' '{"type":"extension_ui_request","id":"n","method":"notify","message":"Editor prefilled"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"t","method":"setTitle","title":"RPC Demo"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"st","method":"setStatus","statusKey":"rpc-demo","statusText":"Turns: 1"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"w","method":"setWidget","widgetKey":"rpc-demo","widgetLines":["Loaded and ready."]}'
-printf '%s\n' '{"type":"extension_ui_request","id":"p","method":"set_editor_text","text":"preset"}'
-printf '%s\n' '{"type":"extension_ui_request","id":"a","method":"notify","message":"Abort now"}'
-read -r line || exit 106
-case "$line" in *'"id":"req_2"'*) ;; *) exit 107;; esac
-case "$line" in *'"type":"abort"'*) ;; *) exit 108;; esac
-printf '%s\n' '{"type":"response","id":"req_2","command":"abort","success":true}' '{"type":"agent_end","messages":[]}'
-printf '%s\n' 'controlled peer exited' >&2
-exit 7
-"#;
+    /// The client example accepts a prompt and waits for the terminal event it follows.
+    #[test]
+    fn sdk_example_accepts_a_prompt_and_waits_for_agent_end() {
+        let output = run_example(Scenario::PromptAcceptance, Some("Check fixture"));
+
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let records = printed(&output);
+        assert_eq!(records.last().unwrap()["id"], "prompt");
+        assert!(kinds(&records).contains(&"agent_end"));
+    }
+
+    /// Acceptance before the terminal event still reads until the run ends.
+    #[test]
+    fn sdk_example_keeps_reading_until_the_run_ends() {
+        let output = run_example(Scenario::EndAfterAcceptance, Some("Check fixture"));
+
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let records = printed(&output);
+        let kinds = kinds(&records);
+        let ended = kinds.iter().position(|kind| *kind == "agent_end").unwrap();
+        let accepted = kinds.iter().rposition(|kind| *kind == "response").unwrap();
+        assert_eq!(kinds.last(), Some(&"agent_end"));
+        assert!(accepted < ended, "{kinds:?}");
+    }
+
+    /// A run that ends after acceptance fails instead of waiting for the run.
+    #[test]
+    fn sdk_example_fails_when_the_stream_ends_after_acceptance() {
+        let output = run_example(Scenario::AcceptedEof, Some("Check fixture"));
+
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("EOF"));
+    }
+
+    /// A nonzero child status reaches the client example's caller.
+    #[test]
+    fn sdk_example_reports_a_nonzero_child_status() {
+        let output = run_example(Scenario::ExitAfterReply, None);
+
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("status 3"));
+    }
+
+    /// Refusal and a stream that ends early fail without waiting for a run.
+    #[test]
+    fn sdk_example_fails_on_refusal_and_premature_end() {
+        for (scenario, expected) in [
+            (Scenario::RefusedState, "refused"),
+            (Scenario::EarlyEof, "EOF"),
+        ] {
+            let output = run_example(scenario, None);
+
+            assert!(!output.status.success(), "{expected}");
+            assert!(String::from_utf8_lossy(&output.stderr).contains(expected));
+        }
+    }
 }

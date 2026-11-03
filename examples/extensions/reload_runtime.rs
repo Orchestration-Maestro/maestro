@@ -1,4 +1,5 @@
 //! A command that reloads runtime resources and a tool that queues that command.
+// maestro-component: MAESTRO_RELOAD_RUNTIME_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

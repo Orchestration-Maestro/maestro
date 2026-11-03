@@ -108,6 +108,35 @@ pub trait Response {
 }
 /// Application-supplied native effects available to component resources.
 pub trait NativeIo {
+    /// Saves bytes in place, preserving native identity and existing permissions.
+    ///
+    /// Unix creation applies `mode` filtered by umask before writing bytes.
+    /// Success carries an optional durability or recovery-cleanup warning.
+    /// Final symbolic links are followed, including dangling targets.
+    /// Unlocked readers may observe partial bytes during a save.
+    ///
+    /// # Errors
+    /// Returns native save failures. An interrupted write is completed from its
+    /// recovery record by the next coordinated writer.
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>>;
+    /// Reads native Unix permission bits, including file type bits.
+    ///
+    /// # Errors
+    /// Returns native metadata errors or unsupported on non-Unix hosts.
+    fn file_mode(&self, path: &str) -> Result<u32, String>;
+    /// Changes native Unix permission bits, following symbolic links.
+    ///
+    /// # Errors
+    /// Returns native permission errors or unsupported on non-Unix hosts.
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String>;
+    /// Creates directories recursively with the requested Unix creation mode.
+    ///
+    /// Existing directories are unchanged. Windows does not configure ACLs.
+    ///
+    /// # Errors
+    /// Returns native directory creation errors.
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String>;
+
     /// Watches a supplied native file without a callback-scoped lifetime.
     ///
     /// # Errors

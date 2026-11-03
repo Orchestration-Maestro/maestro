@@ -75,12 +75,13 @@ mod tests {
     }
 
     #[test]
-    fn maestro_credentials_publish_before_failed_write() {
+    fn refused_write_disappears_at_the_next_read() {
         let inner = Arc::new(InMemoryAuthStorageBackend::default());
         let storage = AuthStorage::from_storage(RefusingWrites(Arc::clone(&inner)));
         storage.set("openai", api_key("one"));
-        assert_eq!(storage.get("openai"), Some(api_key("one")));
-        assert_eq!(storage.list(), ["openai"]);
+        assert_eq!(storage.get("openai"), None);
+        assert!(storage.list().is_empty());
+        assert!(!storage.has("openai"));
         assert_eq!(memory_text(&inner), None);
         let errors = storage.drain_errors();
         assert_eq!(errors.len(), 1);
@@ -126,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn unrelated_external_records_survive_without_import() {
+    fn unrelated_external_records_survive_and_are_read() {
         let dir = TempDir::new("external");
         let path = dir.path("auth.json");
         write_file(
@@ -148,12 +149,12 @@ mod tests {
             read_file(&path),
             pretty_keys(&[("openai", "o"), ("google", "g")])
         );
-        assert_eq!(storage.list(), ["openai"]);
-        assert!(!storage.has("google"));
+        assert_eq!(storage.list(), ["openai", "google"]);
+        assert!(storage.has("google"));
     }
 
     #[test]
-    fn rewritten_file_keeps_reread_order_while_listing_keeps_accepted_order() {
+    fn rewritten_file_keeps_reread_order_and_listing_follows_it() {
         let dir = TempDir::new("reordered");
         let path = dir.path("auth.json");
         write_file(&path, &pretty_keys(&[("a", "1"), ("b", "2")]));
@@ -161,7 +162,7 @@ mod tests {
         write_file(&path, &pretty_keys(&[("b", "2"), ("a", "1")]));
         storage.set("a", api_key("3"));
         assert_eq!(read_file(&path), pretty_keys(&[("b", "2"), ("a", "3")]));
-        assert_eq!(storage.list(), ["a", "b"]);
+        assert_eq!(storage.list(), ["b", "a"]);
     }
 
     #[test]
@@ -198,6 +199,42 @@ mod tests {
             read_file(&path),
             pretty_keys(&[("google", "g"), ("openai", "o")])
         );
+    }
+
+    #[test]
+    fn reading_a_repaired_document_keeps_writes_blocked() {
+        for initially_valid in [false, true] {
+            let dir = TempDir::new("repaired");
+            let path = dir.path("auth.json");
+            let repaired = pretty_keys(&[("google", "g")]);
+            write_file(
+                &path,
+                if initially_valid {
+                    &repaired
+                } else {
+                    "{invalid-json"
+                },
+            );
+            let storage = AuthStorage::create(&path);
+            if initially_valid {
+                write_file(&path, "not json");
+                storage.reload();
+            }
+            write_file(&path, &repaired);
+            assert_eq!(storage.list(), ["google"]);
+            assert_eq!(storage.get("google"), Some(api_key("g")));
+            storage.set("openai", api_key("o"));
+            assert_eq!(read_file(&path), repaired);
+            assert_eq!(storage.drain_errors().len(), 1);
+
+            storage.reload();
+            storage.set("openai", api_key("o"));
+            assert_eq!(
+                read_file(&path),
+                pretty_keys(&[("google", "g"), ("openai", "o")])
+            );
+            assert!(storage.drain_errors().is_empty());
+        }
     }
 
     #[test]
@@ -621,7 +658,8 @@ mod tests {
         crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_keeps_result_domain",
             &std::env::var(CASE_ENV).unwrap_or_default(),
-        ));
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -642,6 +680,7 @@ mod tests {
         crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_short_circuits_earlier_sources",
             &std::env::var(CASE_ENV).unwrap_or_default(),
-        ));
+        ))
+        .unwrap();
     }
 }

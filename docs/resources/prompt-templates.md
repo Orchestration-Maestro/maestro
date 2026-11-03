@@ -162,9 +162,12 @@ assert_eq!(expand_prompt_template("/review src tests", &templates),
     "Review src; remaining: tests; all: src tests");
 ```
 
-Expansion selects the first exact name after a leading `/`, splitting the name at
-an ASCII space. Argument parsing removes single/double quote delimiters; only
-unquoted spaces and tabs separate arguments. Empty quoted fragments disappear and
+Expansion selects the first exact name after a leading `/`, ending the name at
+the first whitespace scalar (space, tab, newline or any other). The name must
+contain at least one non-whitespace character; `/` and `/ x` stay unchanged.
+Argument parsing
+removes single/double quote delimiters; only unquoted whitespace scalars separate
+arguments. Empty quoted fragments disappear and
 backslashes remain literal. Original `$1`, `$2`, `$ARGUMENTS`, `$@`, `${@:N}` and
 `${@:N:L}` markers select arguments; inserted text is never rescanned. Missing
 positional arguments insert empty text. Slice start zero selects from the first

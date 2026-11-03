@@ -667,10 +667,7 @@ fn events_agent_start_selects_working_visibility_and_message() {
                 if shown_progress { started } else { Vec::new() }
             );
             shown(&world, &expected);
-            assert_eq!(
-                world.mode.working.loading_animation.borrow().is_some(),
-                visible
-            );
+            assert_eq!(world.mode.working_loader().is_some(), visible);
             // The live setting is read at each event, in both directions.
             let settings = Rc::clone(world.host.session().settings_manager());
             settings
@@ -1121,7 +1118,7 @@ fn events_agent_end_clears_transient_rows_before_shutdown() {
                 progress(&effects),
                 if shown_progress { cleared } else { Vec::new() }
             );
-            assert!(world.mode.working.loading_animation.borrow().is_none());
+            assert!(world.mode.working_loader().is_none());
             // The stopped row leaves no animation waiting: a second later nothing is pending.
             let later = Duration::from_millis(world.runtime.millis() + 1000);
             for result in world.runtime.advance_to(later) {
@@ -1313,7 +1310,7 @@ fn seen(world: &World) -> Rc<RefCell<Vec<Seen>>> {
                 .to_owned();
             sink.borrow_mut().push(Seen {
                 kind,
-                loading: mode.working.loading_animation.borrow().is_some(),
+                loading: mode.working_loader().is_some(),
                 streaming: mode.streaming.borrow().is_some(),
                 pending: mode.pending_tools.borrow().keys().cloned().collect(),
                 chat: mode.chat_container.render(100).join("\n"),
@@ -1569,7 +1566,7 @@ async fn visible_while_streaming(world: &World, visible: bool) -> (Vec<String>, 
     prompted(world, move |_, stream| {
         let mode = mode.upgrade().unwrap();
         port(&mode).set_working_visible(visible).unwrap();
-        let running = mode.working.loading_animation.borrow().is_some();
+        let running = mode.working_loader().is_some();
         sink.replace(Some((mode.status_container.render(100), running)));
         stream.end(Some(shared(&json!([]), "stop", None)));
     })
@@ -1605,7 +1602,7 @@ fn events_working_controls_update_retained_loader() {
                 } => {
                     ui.set_working_indicator(Some(frames(&[]))).unwrap();
                     ui.set_working_visible(visible).unwrap();
-                    assert!(world.mode.working.loading_animation.borrow().is_none());
+                    assert!(world.mode.working_loader().is_none());
                 }
                 StreamOp::Indicator { indicator } => {
                     ui.set_working_indicator(Some(frames(&["OLD"]))).unwrap();
@@ -1635,7 +1632,7 @@ async fn hidden_row_releases_its_timer(directory: &Path) {
     drawn(&world);
     assert!(world.runtime.pending() > 0);
     ui.set_working_visible(false).unwrap();
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.status_container.render(100).is_empty());
     let later = Duration::from_millis(world.runtime.millis() + 1000);
     for result in world.runtime.advance_to(later) {

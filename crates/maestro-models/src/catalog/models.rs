@@ -1,7 +1,7 @@
 #![doc = include_str!("../../../../docs/models/catalog.md")]
 
 use super::models_generated;
-use crate::{Model, ModelThinkingLevel, Provider, Usage, UsageCost};
+use crate::{Model, ModelThinkingLevel, Provider};
 use ModelThinkingLevel::{High, Low, Medium, Minimal, Off, Xhigh};
 use indexmap::IndexMap;
 use std::sync::LazyLock;
@@ -36,18 +36,7 @@ pub fn get_models(provider: &str) -> Vec<Model> {
         .unwrap_or_default()
 }
 
-/// Update each reported category's flat-rate cost and their left-to-right sum.
-/// Token counts are unchanged; the returned borrow is the supplied usage's cost record.
-/// The descriptor need not belong to the catalog.
-pub fn calculate_cost<'a>(model: &Model, usage: &'a mut Usage) -> &'a mut UsageCost {
-    usage.cost.input = (model.cost.input / 1_000_000.0) * usage.input;
-    usage.cost.output = (model.cost.output / 1_000_000.0) * usage.output;
-    usage.cost.cache_read = (model.cost.cache_read / 1_000_000.0) * usage.cache_read;
-    usage.cost.cache_write = (model.cost.cache_write / 1_000_000.0) * usage.cache_write;
-    usage.cost.total =
-        usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
-    &mut usage.cost
-}
+pub use maestro_request::types::calculate_cost;
 
 /// Compare only provider and ID; either absent operand is unequal.
 /// Any supplied descriptors may be compared, independently of catalog membership.

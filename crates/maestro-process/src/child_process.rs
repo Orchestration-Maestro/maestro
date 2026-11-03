@@ -362,8 +362,8 @@ async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
 /// and gives empty bytes for each abandoned stream; completed streams keep retained bytes.
 /// [`OutputMode::Discard`] also drops stderr bytes retained by an earlier wait.
 /// A `post_exit_grace` ends the wait that long after the exit with retained
-/// bytes; without one the wait ends at the exit and both end-of-file
-/// events. The future is dropped when this function returns.
+/// bytes, after reading what the pipes already hold; without one the wait ends at
+/// the exit and both end-of-file events. The future is dropped when this function returns.
 ///
 /// With `on_data`, newly consumed chunks go synchronously to the sink instead of
 /// retained output, including stderr regardless of [`OutputMode`]. Earlier
@@ -642,23 +642,22 @@ async fn capture(
     Err(SpawnSyncError::Timeout)
 }
 
-/// Starts a caller-built command, then transfers input and waits in an owned worker.
+/// Starts a caller-built command in a new Unix session, then transfers input and waits in an
+/// owned worker. The command leaves the caller's process group, so a stop signal sent to that
+/// group, such as a terminal suspend, does not reach it.
 ///
 /// Stdout/stderr use the null device. Input errors are ignored; normal waiting
 /// reaps the direct child. Dropping the handle neither joins nor cancels the worker.
 ///
 /// # Errors
 /// Returns native startup or worker/runtime construction errors unchanged.
-pub fn spawn(
-    mut command: Command,
-    input: Option<Vec<u8>>,
-) -> io::Result<std::thread::JoinHandle<()>> {
+pub fn spawn(command: Command, input: Option<Vec<u8>>) -> io::Result<std::thread::JoinHandle<()>> {
     let (sender, receiver) = std::sync::mpsc::sync_channel(0);
     let worker = std::thread::Builder::new().spawn(move || {
         let started = runtime().and_then(|runtime| {
             let guard = runtime.enter();
-            let child = CapturedChild::spawn_with(
-                &mut command,
+            let child = CapturedChild::spawn_with_stdio(
+                command,
                 [
                     if input.is_some() {
                         Stdio::piped()
@@ -668,6 +667,7 @@ pub fn spawn(
                     Stdio::null(),
                     Stdio::null(),
                 ],
+                true,
             )?;
             drop(guard);
             Ok((runtime, child))
@@ -693,4 +693,4 @@ pub fn spawn(
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

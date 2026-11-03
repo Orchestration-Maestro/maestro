@@ -12,6 +12,10 @@ stable sorting and comparator lifetime.
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
   and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
   terminal input, tool output and message framing keep their own BOM policy.
+- **Byte-line framing.** `line_decoder::ByteLineDecoder` retains unfinished bytes and
+  ends lines at CR, LF and CRLF, emitting CR immediately and skipping one following
+  LF across chunks. `flush` returns a final unterminated line. HTTP and guest
+  provider readers share it; each keeps its UTF-8, BOM and event-dispatch policy.
 - **UTF-8 decoding.** `decode_utf8` removes one initial byte-order mark and uses
   lossy UTF-8 decoding for invalid bytes. Attachments and HTTP response readers
   share this decoder.
@@ -68,5 +72,37 @@ assert!(is_whitespace_scalar('\u{feff}') && !is_whitespace_scalar('\u{85}'));
 assert_eq!(utf16_order("\u{1f600}", "\u{e000}"), Ordering::Less);
 assert_eq!(escape("'", EscapeMode::HtmlDecimal).len(), 5);
 ```
+
+## Local dates and times
+
+The optional `date-time-format` feature exports
+`date_time_format::LocaleDateTimeFormat`. It captures the same locale observations
+as number formatting and accepts Gregorian local `[year, month, day]` and
+`[hour, minute, second]` fields. The caller supplies the clock and time zone.
+Native callers can use the re-export `maestro_theme::LocaleDateTimeFormat`.
+The extension helper keeps its existing input and output; browser surfaces
+continue to use browser formatting.
+
+The formatter uses one numeric date-plus-time profile with Gregorian, Buddhist,
+or Persian default calendars. It preserves local digits, two-digit widths,
+day-period text, punctuation and directional marks. It rejects invalid fields.
+It does not accept arbitrary patterns, calendar overrides or time-zone options.
+
+An exact locale row wins. Otherwise the locked locale fallback engine walks
+language and script parents while retaining the original territory's hour cycle
+and calendar through representative rows. Unsupported languages use a root
+recipe, not en-US. A missing environment, `C`, or `POSIX` still selects en-US;
+an empty selected value selects `und`. For example, `fr-CA` uses
+`2026-10-27 09 h 25 min 07 s`, while an unknown language in Iran uses a Persian
+root date with a twenty-four-hour clock.
+
+Committed data derives from CLDR JSON 48.2.0, under Unicode-3.0. The
+[asset notes](../crates/maestro-text/data/date-time/README.md) document the schema,
+pinned archive hashes, recorded pattern choices, licence, and the Rust
+regeneration/check commands. The generator verifies the recorded JSON inputs
+before writing any asset. Builds and data generation need neither Node nor
+network access. Output follows that pinned data version; other platform releases can
+choose different defaults. Maestro does not claim full platform equivalence for
+arbitrary locale extensions or locale and region combinations outside the recorded data.
 
 Dependencies are listed in [text libraries](libraries/text.md).

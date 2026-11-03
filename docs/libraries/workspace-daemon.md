@@ -1,7 +1,9 @@
 # Workspace daemon libraries
 
-`maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled.
-No Tokio or asynchronous feature is enabled. It uses the Apache-2.0 licence option.
+`maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled and
+its `tokio` feature enabled, for the daemon's asynchronous API socket. The feature adds
+edges to the already-locked `tokio =1.53.3` and `futures-core =0.3.34`, not new
+packages. It uses the Apache-2.0 licence option.
 It also uses the already-locked `rustix =1.1.5` on Unix with default features
 disabled and `std` and `net` enabled, under the MIT OR Apache-2.0 licence.
 `rustix` supplies the bounded connection attempts and the named native
@@ -14,6 +16,8 @@ unconnected Unix streams with close-on-exec protection on every Unix platform,
 including Apple targets. It uses the MIT OR Apache-2.0 licence. The IPC owner
 retains its absolute-deadline retry loop: a full Unix accept queue must not count
 as a successful connection merely because the descriptor is writable.
+On Apple targets the kernel refuses a connection to a full queue, as it does for a
+missing listener, so the loop returns saturation as a refusal.
 
 The locked dependency closure is:
 
@@ -193,3 +197,11 @@ The lock file also lists the frame library's optional terminal backends, which n
 enabled feature builds.
 
 See [multiplexer rendering](../multiplexer.md#rendering) for the public operations.
+
+## Command discovery
+
+`maestro-cli` uses `clap =4.6.7` with default features disabled and `std`,
+`help`, `usage` and `string` for command metadata and help. It uses
+`clap_complete =4.6.5` with defaults disabled to render bash, elvish, fish,
+PowerShell and zsh completions. Both use the MIT OR Apache-2.0 licence.
+The existing chat argument parser continues to consume chat input.

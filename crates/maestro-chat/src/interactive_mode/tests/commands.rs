@@ -5,7 +5,7 @@ use super::super::bash::component_address;
 use super::typed::{poll, recalled, waiting};
 use super::{
     ManualRuntime, Setup, World, admitted, cases, isolated, isolated_case, isolated_output,
-    painted, scripted, submit, with_held_response,
+    painted, submit, with_held_response,
 };
 use crate::InteractiveMode;
 use maestro_app::{
@@ -14,6 +14,7 @@ use maestro_app::{
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -85,7 +86,7 @@ impl Guard {
     /// process reports them too, then vetoes while `veto` holds.
     fn decide(&self) -> SessionBeforeSwitchResult {
         if let Some(mode) = self.mode.borrow().upgrade() {
-            let released = mode.working.loading_animation.borrow().is_none();
+            let released = mode.working_loader().is_none();
             let empty = mode.status_container.children().borrow().is_empty();
             println!("\nPROBE released={released} empty={empty}");
             self.requests.borrow_mut().push((released, empty));
@@ -361,7 +362,7 @@ async fn new_session_case(directory: &Path, input: &NewInput, expected: &NewExpe
     submit(&world.mode, "/new");
     assert!(settled(&world).await.is_empty());
     assert_eq!(*guard.requests.borrow(), [(true, true)]);
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.status_container.children().borrow().is_empty());
     assert_left(&world, &old, &before, expected);
 }
@@ -427,7 +428,8 @@ fn new_session_stops_progress_honors_veto_and_uses_runtime_failure_route() {
         };
         let case = format!("fatal{index}");
         let body = async |directory: &Path| fatal_case(directory, input).await;
-        let Some(output) = isolated_output(TEST, &case, &[], "trap '' XFSZ", body) else {
+        let setup = IsolatedSetup::new().file_size_continues();
+        let Some(output) = isolated_output(TEST, &case, &[], setup, body) else {
             continue;
         };
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -523,7 +525,7 @@ fn new_session_shows_later_responses_and_compaction() {
 /// session that `veto` decides, and checks that only a kept session keeps them.
 async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
     let guard = Guard::default();
-    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    let script = super::echoing_script(directory);
     let world = commanding(directory, Some(script), &guard, None).await;
     with_held_response(&world, async |_| {
         for row in rows {
@@ -710,7 +712,7 @@ fn starts(world: &World) -> (Starts, Box<dyn Fn()>) {
     let recorded = Rc::clone(&seen);
     let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
         if let (AgentSessionEvent::CompactionStart { .. }, Some(mode)) = (event, mode.upgrade()) {
-            let released = mode.working.loading_animation.borrow().is_none();
+            let released = mode.working_loader().is_none();
             recorded.borrow_mut().push(released);
         }
     }));
@@ -748,10 +750,7 @@ async fn compaction_case(directory: &Path, input: CompactInput, expected: &Compa
     }
     assert!(seen.borrow().is_empty() && guard.instructions.borrow().is_empty());
     assert_eq!(world.mode.status_container.render(80), status);
-    assert_eq!(
-        world.mode.working.loading_animation.borrow().is_some(),
-        input.loader
-    );
+    assert_eq!(world.mode.working_loader().is_some(), input.loader);
     warned(&world, chat);
 }
 

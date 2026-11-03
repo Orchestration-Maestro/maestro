@@ -13,6 +13,12 @@ use maestro_extensions_wasm::{
 use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/renderer_listeners.rs"]
+mod renderer_listeners;
+#[cfg(target_arch = "wasm32")]
+use renderer_listeners::register_listeners;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/api.rs"]
 mod api;
 #[cfg(target_arch = "wasm32")]
@@ -67,8 +73,16 @@ mod builtin_signals;
 #[path = "context_bridge/builtin_write.rs"]
 mod builtin_write;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/callbacks.rs"]
+mod callbacks;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/context_matrix.rs"]
+mod context_matrix;
+#[cfg(target_arch = "wasm32")]
+use callbacks::{components, listeners, ordering};
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/credentials.rs"]
 mod credentials;
@@ -164,6 +178,9 @@ mod model_protocol_routes;
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if std::env::var_os("MAESTRO_HOST_OPERATIONS_REQUEST").is_some() {
+            return host_operations::observe(&api).await;
+        }
         check_start(&api)?;
         load_time::publish(&api)?;
         providers::factory(&api)?;
@@ -220,45 +237,6 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     })
 }
 
-/// Registers real same-instance listeners, including recursive synchronous emission.
-#[cfg(target_arch = "wasm32")]
-fn register_listeners(api: &ExtensionAPI) -> Result<(), String> {
-    for label in ["g1", "g2"] {
-        let events = api.events();
-        api.events().on(
-            "renderer-created",
-            Rc::new(move |data, emitter| {
-                let name = data[0].as_str().ok_or("missing name")?;
-                emitter.emit("trace", serde_json::json!(format!("{label}:{name}")))?;
-                if label == "g1" && name == "listener-error" {
-                    return Err("guest listener failure".into());
-                }
-                if name == "listener-tail" {
-                    return Ok(Some(listener_tail(events.clone(), label)));
-                }
-                if label == "g1" && name == "reentry" {
-                    emitter.emit("renderer-created", serde_json::json!(["inner", false]))?;
-                }
-                Ok(None)
-            }),
-        )?;
-    }
-    Ok(())
-}
-
-/// Creates a separately owned continuation for one listener prefix.
-#[cfg(target_arch = "wasm32")]
-fn listener_tail(
-    events: maestro_extensions_wasm::EventBus,
-    label: &'static str,
-) -> ExtensionFuture<'static, ()> {
-    Box::pin(async move {
-        events
-            .emit("trace", serde_json::json!(format!("{label}:tail")))
-            .await
-    })
-}
-
 /// Uses independently supplied native command contexts and controllable pending operations.
 #[cfg(target_arch = "wasm32")]
 fn command(
@@ -266,6 +244,10 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
+    if let Some(ops) = args.strip_prefix("listen:") {
+        let ops = ops.to_owned();
+        return Box::pin(async move { listeners::run(api, &ops, context).await });
+    }
     if args == "model-protocol-routes" {
         return Box::pin(async { Err(model_protocol_routes::command().await?) });
     }
@@ -351,8 +333,8 @@ fn context_command(
         if args == "healthy-admitted" {
             return retained::healthy(context).await;
         }
-        if args == "exec shell" {
-            return Err(exec::shell(&api)?);
+        if let Some(program) = args.strip_prefix("exec shell:") {
+            return Err(exec::shell(&api, program)?);
         }
         if let Some(request) = args.strip_prefix("exec imports:") {
             return Err(exec::observe(&api, &context, request).await?);
@@ -394,6 +376,10 @@ async fn context_result(
     args: &str,
     context: &maestro_extensions_wasm::ExtensionCommandContext,
 ) -> Result<(), String> {
+    if let Some(request) = args.strip_prefix("context matrix ") {
+        let result = context_matrix::observe(context, request).await;
+        return Err(serde_json::to_string(&result).map_err(|error| error.to_string())?);
+    }
     if args == "trap" || args == "pending" {
         context.get_system_prompt()?;
         context.wait_for_idle().await?;
@@ -440,9 +426,12 @@ fn session_start(
     context: maestro_extensions_wasm::ExtensionContext,
 ) -> ExtensionFuture<'_, Option<maestro_extensions_wasm::ExtensionEventResult>> {
     Box::pin(async move {
-        let ExtensionEvent::Session(SessionEvent::Start(_)) = event else {
+        let ExtensionEvent::Session(SessionEvent::Start(start)) = event else {
             return Err("session-start callback received another event".into());
         };
+        if let Some(result) = context_matrix::start(&context, &start.previous_session_file) {
+            return Err(serde_json::to_string(&result).map_err(|error| error.to_string())?);
+        }
         if context.get_system_prompt()? == "canonical imports" {
             return Err(reads::observe(&context)?.to_string());
         }
@@ -480,6 +469,8 @@ impl Drop for ReleaseTrap {
 #[cfg(target_arch = "wasm32")]
 fn register_callbacks(api: &ExtensionAPI) -> maestro_extensions_wasm::ExtensionResult<()> {
     register_listeners(api)?;
+    ordering::register(api)?;
+    components::register(api)?;
     builtin::register(api)
 }
 
@@ -533,3 +524,7 @@ fn check_start(api: &ExtensionAPI) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/host_operations.rs"]
+mod host_operations;

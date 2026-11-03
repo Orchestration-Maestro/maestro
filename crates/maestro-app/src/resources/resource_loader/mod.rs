@@ -296,7 +296,7 @@ pub struct DefaultResourceLoader<E: ExtensionExecution = Threaded> {
     /// The bus shared by loaded extensions.
     event_bus: EventBusController<E>,
     /// Resolves configured and explicit sources.
-    package_manager: DefaultPackageManager<NativePackageOperations>,
+    package_manager: Rc<DefaultPackageManager<NativePackageOperations>>,
     /// The remaining inputs.
     options: ResourceLoaderOptions<E>,
     /// Current results.
@@ -365,7 +365,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
             agent_dir,
             settings_manager,
             event_bus,
-            package_manager,
+            package_manager: Rc::new(package_manager),
             options: resources,
             state,
         }

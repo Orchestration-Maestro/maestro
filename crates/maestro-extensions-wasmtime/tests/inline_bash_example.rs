@@ -33,20 +33,18 @@ impl ExtensionUIContextPort for Ui {
 async fn loaded(cwd: &str) -> (ExtensionRunner<Local>, Rc<Ui>) {
     static COMPONENT: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     let path = COMPONENT.get_or_init(|| {
-        std::env::var("MAESTRO_INLINE_BASH_COMPONENT").unwrap_or_else(|_| {
-            super::extension_guide::cargo::component(
-                std::path::Path::new(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../maestro-extensions-wasm"
-                )),
-                &["--example", "inline_bash"],
-                "inline_bash",
-            )
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_owned()
-        })
+        super::extension_guide::cargo::component(
+            std::path::Path::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../maestro-extensions-wasm"
+            )),
+            &["--example", "inline_bash"],
+            "inline_bash",
+        )
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned()
     });
     let runtime = create_extension_runtime::<Local>();
     let bus = create_event_bus_for::<Local>(
@@ -82,7 +80,7 @@ async fn input(runner: &ExtensionRunner<Local>, text: &str) -> InputEventResult 
             .unwrap();
     let original = images.clone();
     let result = runner
-        .emit_input(text, &mut images, InputSource::Interactive)
+        .emit_input(text, &mut images, InputSource::Interactive, None)
         .await
         .unwrap();
     assert_eq!(images, original);
@@ -153,7 +151,7 @@ fn inline_bash_preserves_whole_line_commands_and_expands_without_ui() {
             InputSource::Extension,
         ] {
             let result = runner
-                .emit_input("!{printf headless}", &mut Presence::Missing, source)
+                .emit_input("!{printf headless}", &mut Presence::Missing, source, None)
                 .await
                 .unwrap();
             let InputEventResult::Transform(transform) = result else {

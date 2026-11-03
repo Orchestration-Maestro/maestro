@@ -85,16 +85,14 @@ pub(super) fn register(api: &ExtensionAPI, io: Rc<dyn NativeIo>) -> ExtensionRes
         }),
     )
 }
-/// Polls the same future once and retains it only while it is pending.
+/// Polls the same future once and retains it, finished or not, for the next command.
 async fn start(slot: &Slot, mut work: ExtensionFuture<'static, Value>) -> ExtensionResult<Value> {
     let polled = std::future::poll_fn(|cx| Poll::Ready(work.as_mut().poll(cx))).await;
-    match polled {
-        Poll::Ready(result) => result,
-        Poll::Pending => {
-            *slot.pending.borrow_mut() = Some(work);
-            Ok(json!(true))
-        }
-    }
+    *slot.pending.borrow_mut() = Some(match polled {
+        Poll::Ready(result) => Box::pin(std::future::ready(result)),
+        Poll::Pending => work,
+    });
+    Ok(json!(true))
 }
 /// Admits or resumes an operation on the original retained resources.
 async fn execute(io: Rc<dyn NativeIo>, slot: &Rc<Slot>, args: &str) -> ExtensionResult<Value> {
@@ -113,7 +111,7 @@ async fn execute(io: Rc<dyn NativeIo>, slot: &Rc<Slot>, args: &str) -> Extension
                 .ok_or("no pending HTTP operation")?;
             return work.await;
         }
-        "aborted" | "drop_response" | "drop_body" | "close" => {
+        "aborted" | "drop_pending" | "drop_response" | "drop_body" | "close" => {
             return observe(slot, action["op"].as_str().unwrap_or_default());
         }
         "read" | "start_read" | "text" | "json" | "aliases" => {
@@ -146,6 +144,9 @@ fn observe(slot: &Slot, operation: &str) -> ExtensionResult<Value> {
                     .as_ref()
                     .is_some_and(AbortSignal::aborted)
             ));
+        }
+        "drop_pending" => {
+            slot.pending.borrow_mut().take();
         }
         "drop_response" => {
             slot.response.borrow_mut().take();

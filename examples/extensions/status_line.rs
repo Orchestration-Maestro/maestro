@@ -1,4 +1,5 @@
 //! Shows themed turn progress as persistent footer status.
+// maestro-component: MAESTRO_STATUS_LINE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

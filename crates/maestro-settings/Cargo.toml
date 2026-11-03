@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+ryu-js.workspace = true
 maestro-json = { path = "../maestro-json" }
 maestro-path = { path = "../maestro-path" }
 maestro-resources = { path = "../maestro-resources" }
@@ -24,6 +25,9 @@ maestro-lock = { path = "../maestro-lock" }
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
+
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true, features = ["std", "process"] }
 
 [dev-dependencies]
 tokio = { version = "=1.53.3", default-features = false, features = ["sync", "rt"] }

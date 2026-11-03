@@ -145,7 +145,7 @@ fn configured_dialog(
         TerminalImage::new(|_| None, || 1),
         Some(false),
     ));
-    let (theme_state, theme) = published::published(&colors(0));
+    let (theme_state, theme) = published::published(&colors(0)).unwrap();
     let events = Rc::new(RefCell::new(Vec::new()));
     let submits = events.clone();
     let cancels = events.clone();
@@ -286,10 +286,7 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
         );
         assert_eq!(std::fs::read(&target).unwrap(), b"unrelated target bytes");
         std::fs::remove_file(&path).unwrap();
-        install_script(
-            "inspect-mode",
-            "#!/bin/sh\nfor file; do :; done\n/bin/cp -p \"$file\" \"${0%/*}/mode\"\nexit 1\n",
-        );
+        install_inspector();
         host.spy.clock.set_environment("VISUAL", "inspect-mode");
         host.dialog.handle_input("\x07").unwrap();
         let copied = std::fs::metadata(std::env::temp_dir().join("mode")).unwrap();
@@ -544,27 +541,27 @@ fn editor_dialog_cancel_wins_external_binding_collision() {
 fn editor_dialog_observes_live_bindings_but_captures_help() {
     input_group("editor_dialog_observes_live_bindings_but_captures_help");
 }
-/// Installs a controlled Unix editor through a child, never executing a freshly written inode.
+/// Installs a controlled Unix editor from the prepared native artifact.
+#[cfg(unix)]
+fn install(name: &str, record: &Value) {
+    crate::native_alias::install(&std::env::temp_dir(), name, "editor", record);
+}
+/// Installs a controlled Unix editor that records its launch, then writes `content`.
 #[cfg(unix)]
 fn install_editor(name: &str, content: &[u8], status: i32) {
-    install_script(name, &editor_script(content, status));
+    install(name, &edit_record(content, status));
 }
 /// Builds the controlled edit effects and records actual argv plus original bytes.
 #[cfg(unix)]
-fn editor_script(content: &[u8], status: i32) -> String {
-    let exit = if status < 0 {
-        "kill -TERM $$".to_owned()
-    } else {
-        format!("exit {status}")
-    };
-    let mut escaped = String::new();
-    for byte in content {
-        std::fmt::Write::write_fmt(&mut escaped, format_args!("\\{byte:03o}")).unwrap();
-    }
-
-    format!(
-        "#!/bin/sh\nfor file; do :; done\nprintf '%s\\0' \"$0\" \"$@\" > \"${{0%/*}}/argv\"\n/bin/cp \"$file\" \"${{0%/*}}/before\"\nprintf '{escaped}' > \"$file\"\n{exit}\n"
-    )
+fn edit_record(content: &[u8], status: i32) -> Value {
+    let root = std::env::temp_dir();
+    serde_json::json!({
+        "argv": root.join("argv"),
+        "before": root.join("before"),
+        "content": content,
+        "code": u8::try_from(status.max(0)).unwrap_or(0),
+        "signal": (status < 0).then_some("SIGTERM"),
+    })
 }
 
 #[test]
@@ -1087,22 +1084,32 @@ struct FaultExpected {
     /// Complete post-failure state.
     snapshot: Snapshot,
 }
-/// Installs exact shell bytes through the same child-owned executable creation boundary.
+/// Installs an editor that copies the file's mode to `mode`, then fails.
 #[cfg(unix)]
-fn install_script(name: &str, source: &str) {
-    let root = std::env::temp_dir();
-    let source_path = root.join("script-source");
-    std::fs::write(&source_path, source).unwrap();
-    assert!(
-        std::process::Command::new("/usr/bin/install")
-            .args(["-m", "0700"])
-            .arg(&source_path)
-            .arg(root.join(name))
-            .status()
-            .unwrap()
-            .success()
+fn install_inspector() {
+    install(
+        "inspect-mode",
+        &serde_json::json!({"copy": std::env::temp_dir().join("mode"), "code": 1}),
     );
-    std::fs::remove_file(source_path).unwrap();
+}
+/// Installs the editor that reaches the fault's own file effect.
+#[cfg(unix)]
+fn install_fault(visual: &str, fault: &str) {
+    if fault.contains("read") {
+        install(visual, &serde_json::json!({"remove": true}));
+    }
+    if fault == "unlink" {
+        install(
+            visual,
+            &serde_json::json!({"content": b"edited\n", "read_only_parent": true}),
+        );
+    }
+}
+/// Asserts whether a refusing directory left the edit's temporary file behind.
+#[cfg(unix)]
+fn assert_temporary_file(root: &std::path::Path, survived: bool) {
+    let path = root.join("maestro-extension-editor-1767323045006.md");
+    assert_eq!(path.is_file(), survived);
 }
 #[test]
 #[cfg(unix)]
@@ -1133,18 +1140,7 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
             EditorOptions::default(),
         );
         install_editor(&input.visual, b"edited\n", 0);
-        if input.fault.contains("read") {
-            install_script(
-                &input.visual,
-                "#!/bin/sh\nfor file; do :; done\n/bin/rm \"$file\"\n",
-            );
-        }
-        if input.fault == "unlink" {
-            install_script(
-                &input.visual,
-                "#!/bin/sh\nfor file; do :; done\nprintf 'edited\\n' > \"$file\"\n/bin/chmod 0500 \"${0%/*}\"\n",
-            );
-        }
+        install_fault(&input.visual, &input.fault);
         if input.fault.contains("write") {
             std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o500)).unwrap();
         }
@@ -1176,6 +1172,7 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
         snapshot(&host, &expected.snapshot);
         let pending = host.spy.events.borrow().len();
         assert_eq!(pending > 0, !input.fault.contains("start"));
+        assert_temporary_file(&root, input.fault == "unlink");
         let _ = std::fs::remove_file(root.join("maestro-extension-editor-1767323045006.md"));
     }
 }
@@ -1274,8 +1271,8 @@ fn native_case(input: NativeInput, expected: NativeExpected) {
     for file in ["argv", "before", "descriptors"] {
         let _ = std::fs::remove_file(root.join(file));
     }
-    let script = native_script(&input.scenario);
-    install_script("native-editor", &script);
+    let record = native_record(&input.scenario);
+    install("native-editor", &record);
     let command = input
         .editor
         .replace("<node> <controlled-editor>", "native-editor")
@@ -1416,7 +1413,7 @@ fn selected_executable(index: usize) {
 
 /// Builds distinct native child outcomes below the product launch boundary.
 #[cfg(target_os = "linux")]
-fn native_script(scenario: &str) -> String {
+fn native_record(scenario: &str) -> Value {
     let content: &[u8] = if scenario == "invalid_utf8" {
         &[0xef, 0xbb, 0xbf, b'a', 0xff, b'\n']
     } else {
@@ -1427,20 +1424,14 @@ fn native_script(scenario: &str) -> String {
         "signal" => -15,
         _ => 0,
     };
-    let mut script = editor_script(content, status);
-    script = script.replacen("for file; do :; done", "for file; do :; done\nexec 3<&0 4>&1 5>&2\n/usr/bin/stat -L -c '%d %i %f %r' /proc/$$/fd/3 /proc/$$/fd/4 /proc/$$/fd/5 > \"${0%/*}/descriptors\"", 1);
-    for (name, effect) in [
-        ("missing_read", "/bin/rm \"$file\""),
-        (
-            "cleanup_directory",
-            "/bin/rm \"$file\"; /bin/mkdir \"$file\"",
-        ),
-    ] {
-        if scenario == name {
-            script = script.replace("exit 0", effect);
-        }
+    let mut record = edit_record(content, status);
+    record["descriptors"] = serde_json::json!(std::env::temp_dir().join("descriptors"));
+    match scenario {
+        "missing_read" => record["remove"] = serde_json::json!(true),
+        "cleanup_directory" => record["directory"] = serde_json::json!(true),
+        _ => {}
     }
-    script
+    record
 }
 
 /// Each recording has one named public witness; shell-boundary rows also have their private owner.

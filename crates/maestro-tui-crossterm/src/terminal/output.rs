@@ -9,10 +9,10 @@ use std::time::Duration;
 
 use chrono::{DateTime, Local, TimeZone};
 use tokio::sync::mpsc::UnboundedSender;
-use tokio::task::JoinHandle;
+use tokio::task::{JoinHandle, LocalSet};
 use tokio::time::{Instant, MissedTickBehavior, interval_at};
 
-use super::{ProcessTerminal, Shared};
+use super::{OutputPort, ProcessTerminal, Shared};
 use crate::output_errors::FailureSource;
 
 /// Cloneable byte admission into the running terminal's ordered output.
@@ -67,22 +67,76 @@ impl Write for OutputWriter {
     }
 }
 
+/// A standard byte writer that follows its terminal's output lifecycle.
+///
+/// Writes join the existing admission sender while queued output runs. Before start,
+/// after stop and for synchronous destinations, they use inherited stdout; flush makes
+/// buffered bytes visible. A queued write or flush checks admission, not physical delivery.
+/// The active-route lock is acquired before the admission sender's lock.
+#[derive(Clone, Default)]
+pub struct StandardOutput {
+    /// Serializes foreign writes with output acquisition and final drain.
+    active: Arc<Mutex<Option<OutputWriter>>>,
+}
+impl Write for StandardOutput {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        let mut active = self.active.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(writer) = active.as_mut() {
+            writer.write(bytes)
+        } else {
+            io::stdout().lock().write(bytes)
+        }
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        let mut active = self.active.lock().unwrap_or_else(PoisonError::into_inner);
+        active
+            .as_mut()
+            .map_or_else(|| io::stdout().flush(), Write::flush)
+    }
+}
+
+impl Shared {
+    /// Publishes the current admission sender before another thread can use stdout.
+    pub(super) fn open_output(self: &Rc<Self>, local: &LocalSet) -> io::Result<()> {
+        let mut active = self
+            .stdout
+            .active
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        self.output.open(local, Rc::downgrade(self))?;
+        *active = self.output.output_writer();
+        Ok(())
+    }
+
+    /// Keeps inherited writes behind the final drain and descriptor restoration.
+    pub(super) fn finish_output(&self) -> io::Result<()> {
+        let mut active = self
+            .stdout
+            .active
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        *active = None;
+        self.output.finish()
+    }
+}
+
 /// Enables bracketed paste.
 pub(super) const PASTE_ON: &str = "\x1b[?2004h";
 
 /// Disables bracketed paste.
 pub(super) const PASTE_OFF: &str = "\x1b[?2004l";
 
-/// Asks the terminal which enhanced keyboard flags it runs.
-pub(super) const KEYBOARD_QUERY: &str = "\x1b[?u";
+/// Requests enhanced keyboard flags 1, 2 and 4; the terminal keeps the ones it supports.
+pub(super) const KEYBOARD_PUSH: &str = "\x1b[>7u";
 
-/// Enables enhanced keyboard flags 1, 2 and 4.
-pub(super) const KEYBOARD_ON: &str = "\x1b[>7u";
+/// Asks which enhanced keyboard flags the terminal runs, then for its device attributes. Every
+/// terminal answers the second question, so that reply tells the first went unanswered.
+pub(super) const KEYBOARD_QUERY: &str = "\x1b[?u\x1b[c";
 
-/// Pops the enhanced keyboard flags pushed by [`KEYBOARD_ON`].
+/// Pops the enhanced keyboard flags requested by [`KEYBOARD_PUSH`].
 pub(super) const KEYBOARD_POP: &str = "\x1b[<u";
 
-/// Enables modified-key reporting for terminals that do not answer the keyboard query.
+/// Enables modified-key reporting for terminals that run no enhanced keyboard flags.
 pub(super) const FALLBACK_ON: &str = "\x1b[>4;2m";
 
 /// Disables the modified-key reporting enabled by [`FALLBACK_ON`].

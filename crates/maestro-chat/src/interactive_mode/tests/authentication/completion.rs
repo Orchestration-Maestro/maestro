@@ -9,6 +9,7 @@ use super::{
 };
 use crate::AuthType;
 use maestro_app::{DEFAULT_MODEL_PER_PROVIDER, Model, OAuthCredentials, OAuthError};
+use std::ffi::OsStr;
 use std::{
     error::Error,
     sync::{Arc, Mutex, RwLock},
@@ -209,12 +210,19 @@ fn authentication_completion_reports_default_selection_failure() {
                 let world = started_with(directory, None).await;
                 register(&world, "openai", &[&default]);
                 refuse_recording(&world, directory);
+                let cause = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(world.host.session().session_file().unwrap())
+                    .unwrap_err();
                 complete(&world, "openai", kind, placeholder(&world))
                     .await
                     .unwrap();
-                let prefix = format!("Error: {label}, but selecting its default model failed: ");
-                assert!(notes(&world, &prefix), "the setter's failure is reported");
-                assert!(notes(&world, ". Use /model to select a model."));
+                let reported = format!(
+                    "Error: {label}, but selecting its default model failed: \
+                     {cause}. Use /model to select a model."
+                );
+                assert!(notes(&world, &reported), "the setter's failure is reported");
                 assert!(notes(&world, &saved(label)));
                 assert!(!notes(&world, "Selected"), "no success is reported");
                 assert_eq!(
@@ -229,8 +237,13 @@ fn authentication_completion_reports_default_selection_failure() {
 
 #[test]
 fn authentication_completion_selects_each_provider_default_and_updates_presentation() {
-    isolated(
+    super::isolated_case(
         "authentication_completion_selects_each_provider_default_and_updates_presentation",
+        "child",
+        &[
+            (OsStr::new("CLOUDFLARE_ACCOUNT_ID"), OsStr::new("account")),
+            (OsStr::new("CLOUDFLARE_GATEWAY_ID"), OsStr::new("gateway")),
+        ],
         async |directory| {
             let defaults: Vec<(String, String)> = DEFAULT_MODEL_PER_PROVIDER
                 .read()
@@ -238,7 +251,7 @@ fn authentication_completion_selects_each_provider_default_and_updates_presentat
                 .iter()
                 .map(|(provider, id)| (provider.clone(), id.clone()))
                 .collect();
-            assert_eq!(defaults.len(), 31, "every configured default is covered");
+            assert_eq!(defaults.len(), 32, "every configured default is covered");
             for (kind, label) in LABELS {
                 let world = started_with(directory, None).await;
                 let unknown = placeholder(&world).read().unwrap().clone();
@@ -324,7 +337,7 @@ async fn count_failures(directory: &std::path::Path) {
     );
 }
 
-/// The count reads the scoped candidates instead of the available ones.
+/// The count reads the scoped candidates instead of the three available providers.
 async fn scoped_count(directory: &std::path::Path, scoped: &[&str], expected: f64) {
     let world = started_with(directory, None).await;
     for provider in ["a", "b", "c"] {
@@ -351,6 +364,12 @@ fn authentication_completion_preserves_refresh_and_count_failure_boundaries() {
             count_failures(directory).await;
             scoped_count(directory, &["a/one", "b/one"], 2.0).await;
             scoped_count(directory, &["a/one"], 1.0).await;
+            // Scoped built-in models without credentials count above the available providers.
+            let unavailable = ["openai", "anthropic", "google"]
+                .map(|provider| format!("{provider}/{}", default_of(provider)));
+            let mut wider = vec!["a/one", "b/one", "c/one"];
+            wider.extend(unavailable.iter().map(String::as_str));
+            scoped_count(directory, &wider, 6.0).await;
         },
     );
 }

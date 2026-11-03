@@ -5,7 +5,7 @@ mod completion;
 mod navigation;
 mod subscription;
 
-use super::actions::install;
+use super::install_output;
 use super::models::{
     editor, editor_focused, refuse_availability, refuse_refresh, register_configured,
     replace_session, replaceable, scope, shows_only, submit_held,
@@ -24,6 +24,7 @@ use maestro_app::{
 use maestro_tui::{Component, Focusable, KeybindingKeys};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value, json};
+use std::ffi::OsStr;
 use std::{
     any::Any,
     borrow::Cow,
@@ -107,7 +108,7 @@ fn panel_rows(world: &World) -> String {
 /// opens no browser.
 fn quiet_browser(directory: &Path) {
     for name in ["xdg-open", "open"] {
-        install(directory, name, "#!/bin/sh\n");
+        install_output(&directory.join("bin"), name, b"", 0);
     }
 }
 
@@ -584,7 +585,7 @@ fn logout_options_keep_saved_kinds_and_stable_names() {
     isolated_case(
         TEST,
         "child",
-        &[("LC_ALL", "en_US.UTF-8")],
+        &[(OsStr::new("LC_ALL"), OsStr::new("en_US.UTF-8"))],
         async |directory| {
             for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate()
             {
@@ -958,7 +959,7 @@ fn logout_persistence_failure_remains_a_store_diagnostic() {
             assert_eq!(
                 accepted(&world),
                 expected.accepted,
-                "memory loses the credential"
+                "the next read restores the credential whose removal was not persisted"
             );
             let backing = std::fs::read_to_string(root.join("auth.json")).unwrap();
             let document: Map<String, Value> = serde_json::from_str(&backing).unwrap();

@@ -1,4 +1,5 @@
 //! A prompt-guidance extension that reads the supplied prompt options.
+// maestro-component: MAESTRO_PROMPT_CUSTOMIZER_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,

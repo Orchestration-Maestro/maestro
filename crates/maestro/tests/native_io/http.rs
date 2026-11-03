@@ -1,10 +1,10 @@
 //! Loopback requests through the compiled author and application HTTP owner.
-use super::{command_answer, loaded};
+use super::{HeldProvider, command_answer, connected, loaded};
 use crate::support::{Root, rpc::Rpc};
 use serde_json::{Value, json};
 use std::{
     io::{Read, Write},
-    net::TcpListener,
+    net::{TcpListener, TcpStream},
 };
 
 /// Requires a successful HTTP operation without flattening its returned JSON.
@@ -15,7 +15,7 @@ fn call(rpc: &mut Rpc, data: &Value) -> Value {
 }
 
 /// Reads only the endpoint's request, preserving raw bytes and absent wire framing.
-fn request(stream: &mut std::net::TcpStream) -> (String, Vec<u8>) {
+fn request(stream: &mut TcpStream) -> (String, Vec<u8>) {
     let mut head = Vec::new();
     while !head.ends_with(b"\r\n\r\n") {
         let mut byte = [0];
@@ -180,18 +180,48 @@ fn native_fetch_returns_non_success_responses() {
     rpc.finish();
 }
 
-/// Aborts the original active-run signal at one selected HTTP phase.
-fn abort_phase(body: bool) {
-    let root = Root::new();
-    let provider = super::HeldProvider::new();
-    let mut rpc = super::connected(&root, &provider.base);
+/// Starts a guest fetch and observes both held HTTP and model requests.
+fn held_fetch(root: &Root, provider: &HeldProvider, path: &str) -> (Rpc, TcpStream, String) {
+    let mut rpc = connected(root, &provider.base);
     let endpoint = TcpListener::bind("127.0.0.1:0").unwrap();
-    let url = format!("http://{}/held", endpoint.local_addr().unwrap());
+    let url = format!("http://{}/{path}", endpoint.local_addr().unwrap());
     assert!(call(&mut rpc, &json!({"op":"arm", "url":url})).is_null());
-    rpc.request(json!({"type":"prompt", "message":"held-http"}));
+    rpc.request(json!({"type":"prompt", "message":format!("{path}-http")}));
     let (mut socket, _) = endpoint.accept().unwrap();
     request(&mut socket);
     assert_eq!(provider.request.recv().unwrap()["model"], "controlled");
+    (rpc, socket, url)
+}
+
+/// Requires the caller signal to stay live until explicitly aborted.
+fn caller_signal_live(rpc: &mut Rpc) {
+    assert_eq!(call(rpc, &json!({"op":"aborted"})), false);
+    rpc.request(json!({"type":"abort"}));
+    assert_eq!(call(rpc, &json!({"op":"aborted"})), true);
+}
+
+#[test]
+fn native_fetch_drop_cancels_attempt_without_aborting_caller() {
+    let root = Root::new();
+    let provider = HeldProvider::new();
+    let (mut rpc, mut socket, _) = held_fetch(&root, &provider, "pending");
+
+    call(&mut rpc, &json!({"op":"drop_pending"}));
+
+    assert_eq!(
+        socket.read(&mut [0]).unwrap(),
+        0,
+        "fetch must release its transport"
+    );
+    caller_signal_live(&mut rpc);
+    rpc.finish();
+}
+
+/// Aborts the original active-run signal at one selected HTTP phase.
+fn abort_phase(body: bool) {
+    let root = Root::new();
+    let provider = HeldProvider::new();
+    let (mut rpc, mut socket, url) = held_fetch(&root, &provider, "held");
     if body {
         socket
             .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 9\r\nConnection: close\r\n\r\nfirst")
@@ -421,15 +451,8 @@ fn native_response_text_uses_the_existing_decoder() {
 fn native_response_close_keeps_caller_signal_live() {
     for close in [true, false] {
         let root = Root::new();
-        let provider = super::HeldProvider::new();
-        let mut rpc = super::connected(&root, &provider.base);
-        let endpoint = TcpListener::bind("127.0.0.1:0").unwrap();
-        let url = format!("http://{}/retained", endpoint.local_addr().unwrap());
-        call(&mut rpc, &json!({"op":"arm", "url":url}));
-        rpc.request(json!({"type":"prompt", "message":"retained-http"}));
-        let (mut socket, _) = endpoint.accept().unwrap();
-        request(&mut socket);
-        assert_eq!(provider.request.recv().unwrap()["model"], "controlled");
+        let provider = HeldProvider::new();
+        let (mut rpc, mut socket, _) = held_fetch(&root, &provider, "retained");
         socket
             .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 99\r\nConnection: close\r\n\r\nfirst")
             .unwrap();
@@ -457,9 +480,7 @@ fn native_response_close_keeps_caller_signal_live() {
             0,
             "consumer must release its transport"
         );
-        assert_eq!(call(&mut rpc, &json!({"op":"aborted"})), false);
-        rpc.request(json!({"type":"abort"}));
-        assert_eq!(call(&mut rpc, &json!({"op":"aborted"})), true);
+        caller_signal_live(&mut rpc);
         rpc.finish();
     }
 }

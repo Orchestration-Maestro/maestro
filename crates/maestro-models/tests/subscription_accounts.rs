@@ -1,6 +1,8 @@
 //! Subscription account authorization through caller-supplied HTTP effects.
 #![cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
+use crate::native_peer::read_peer;
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Fetch, HttpResponse, refresh_anthropic_token};
 #[cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
@@ -107,10 +109,10 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
 static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Callback-only interaction starts real loopback requests after receiving state.
+/// Hands the announced authorization address to the browser.
 struct Callback {
-    /// Owned peer producer, observed after login returns.
-    peer: maestro_models::EventStream<tokio::task::JoinHandle<tokio::net::TcpStream>, ()>,
+    /// Delivers the single address announced by login.
+    sender: tokio::sync::mpsc::UnboundedSender<String>,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Callback {
@@ -118,47 +120,7 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
         &self,
         info: maestro_models::OAuthAuthInfo,
     ) -> Result<(), maestro_models::OAuthError> {
-        let url = url::Url::parse(&info.url).unwrap();
-        let state = url
-            .query_pairs()
-            .find(|(key, _)| key == "state")
-            .unwrap()
-            .1
-            .into_owned();
-        let peer = tokio::spawn(async move {
-            let client = reqwest::Client::new();
-            let rejected = client
-                .get("http://127.0.0.1:53692/callback?error=%3Cscript%3E%26%22%27")
-                .send()
-                .await
-                .unwrap();
-            assert_eq!(rejected.status(), 400);
-            assert_eq!(
-                rejected.headers()["content-type"],
-                "text/html; charset=utf-8"
-            );
-            assert!(
-                rejected
-                    .text()
-                    .await
-                    .unwrap()
-                    .contains("Error: &lt;script&gt;&amp;&quot;&#39;")
-            );
-            let mut connection = tokio::net::TcpStream::connect("127.0.0.1:53692")
-                .await
-                .unwrap();
-            let accepted = raw_callback(
-                &mut connection,
-                &format!("/callback?code=callback-code&state={state}"),
-            )
-            .await;
-            assert!(accepted.starts_with("HTTP/1.1 200"));
-            assert!(
-                accepted.contains("Anthropic authentication completed. You can close this window.")
-            );
-            connection
-        });
-        self.peer.push(peer);
+        self.sender.send(info.url).unwrap();
         Ok(())
     }
     fn on_prompt(
@@ -169,18 +131,69 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
-/// Interaction which must never run after native binding failure.
-struct Uncalled;
+/// Reject one callback before accepting the announced state on a retained connection.
+async fn callback_browser(
+    mut announced: tokio::sync::mpsc::UnboundedReceiver<String>,
+) -> tokio::net::TcpStream {
+    let url = url::Url::parse(&announced.recv().await.unwrap()).unwrap();
+    let fields: BTreeMap<_, _> = url.query_pairs().collect();
+    let redirect = url::Url::parse(&fields["redirect_uri"]).unwrap();
+    let port = redirect.port().unwrap();
+    let state = &fields["state"];
+    let client = reqwest::Client::new();
+    let rejected = client
+        .get(format!(
+            "http://127.0.0.1:{port}/callback?error=%3Cscript%3E%26%22%27"
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(rejected.status(), 400);
+    assert_eq!(
+        rejected.headers()["content-type"],
+        "text/html; charset=utf-8"
+    );
+    assert!(
+        rejected
+            .text()
+            .await
+            .unwrap()
+            .contains("Error: &lt;script&gt;&amp;&quot;&#39;")
+    );
+    let mut connection = tokio::net::TcpStream::connect(("127.0.0.1", port))
+        .await
+        .unwrap();
+    let accepted = raw_callback(
+        &mut connection,
+        &format!("/callback?code=callback-code&state={state}"),
+    )
+    .await;
+    assert!(accepted.starts_with("HTTP/1.1 200"));
+    assert!(accepted.contains("Anthropic authentication completed. You can close this window."));
+    connection
+}
+
 #[cfg(not(target_arch = "wasm32"))]
-impl maestro_models::OAuthLoginCallbacks for Uncalled {
-    fn on_auth(&self, _: maestro_models::OAuthAuthInfo) -> Result<(), maestro_models::OAuthError> {
-        panic!("binding failure must precede auth")
+/// Interaction that records the announced authorization address, then declines to continue.
+#[derive(Default)]
+struct Announcing {
+    /// Address announced by the sign-in.
+    url: std::sync::Mutex<Option<String>>,
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl maestro_models::OAuthLoginCallbacks for Announcing {
+    fn on_auth(
+        &self,
+        info: maestro_models::OAuthAuthInfo,
+    ) -> Result<(), maestro_models::OAuthError> {
+        *self.url.lock().unwrap() = Some(info.url);
+        Err(maestro_models::DiagnosticErrorInfo::error("declined").into())
     }
     fn on_prompt(
         &self,
         _: maestro_models::OAuthPrompt,
     ) -> maestro_models::BoxFuture<Result<String, maestro_models::OAuthError>> {
-        panic!("binding failure must precede prompt")
+        panic!("declining the announcement must precede the prompt")
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -277,30 +290,6 @@ async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
-/// Read peer bytes after readiness, including the shutdown EOF.
-///
-/// A closed listener answers bytes written after its close with a reset, which some hosts,
-/// macOS among them, report before the end of stream, and Windows may report as an aborted
-/// connection, so either also reads as the end.
-async fn read_peer(peer: &mut tokio::net::TcpStream, bytes: &mut [u8]) -> usize {
-    loop {
-        peer.readable().await.unwrap();
-        match peer.try_read(bytes) {
-            Ok(count) => return count,
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
-            Err(error)
-                if matches!(
-                    error.kind(),
-                    std::io::ErrorKind::ConnectionAborted | std::io::ErrorKind::ConnectionReset
-                ) =>
-            {
-                return 0;
-            }
-            Err(error) => panic!("{error}"),
-        }
-    }
-}
-#[cfg(not(target_arch = "wasm32"))]
 /// Read one complete HTTP response while keeping the admitted connection open.
 async fn raw_callback(peer: &mut tokio::net::TcpStream, target: &str) -> String {
     write_peer(
@@ -381,13 +370,14 @@ mod oauth_callback {
                 assert_eq!(body["code"], "callback-code");
                 Box::pin(std::future::ready(Ok(json_response(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#))))
             });
-            let callbacks = Arc::new(Callback {
-                peer: maestro_models::EventStream::new(|_| false, |_| ()),
-            });
-            let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch))
-                .await
-                .unwrap();
-            let mut peer = callbacks.peer.next().await.unwrap().await.unwrap();
+            // Login announces one authorization URL, so the channel cannot grow.
+            let (sender, announced) = tokio::sync::mpsc::unbounded_channel();
+            let callbacks = Arc::new(Callback { sender });
+            let (result, mut peer) = tokio::join!(
+                maestro_models::login_anthropic(callbacks, Some(fetch)),
+                callback_browser(announced)
+            );
+            let result = result.unwrap();
             // The completed response established admission on this same keep-alive peer.
             write_peer(
                 &mut peer,
@@ -448,14 +438,26 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn subscription_occupied_port_reports_native_error() {
+    fn subscription_occupied_port_falls_back_to_a_free_port() {
         crate::runtime::run(async {
             let _permit = PORT.acquire().await.unwrap();
             let listener = bind_callback_probe();
-            let error = maestro_models::login_anthropic(Arc::new(Uncalled), None)
+            let callbacks = Arc::new(Announcing::default());
+            let error = maestro_models::login_anthropic(callbacks.clone(), None)
                 .await
                 .unwrap_err();
-            assert!(error.errno.is_some());
+            assert_eq!(error.to_string(), "declined");
+            let announced = callbacks.url.lock().unwrap().clone().unwrap();
+            let announced = url::Url::parse(&announced).unwrap();
+            let redirect = announced
+                .query_pairs()
+                .find(|(key, _)| key == "redirect_uri")
+                .unwrap()
+                .1
+                .into_owned();
+            let redirect = url::Url::parse(&redirect).unwrap();
+            assert_ne!(redirect.port(), Some(53692));
+            assert!(redirect.port().is_some());
             drop(listener);
             let _released = bind_callback_probe();
         });

@@ -35,7 +35,9 @@ impl Browser {
     /// Prepare isolated inputs without locking the shared Trunk build output.
     /// Every build command must supply its own Cargo target directory.
     pub fn cold() -> Self {
-        Self::prepare(None)
+        let browser = Self::prepare(None);
+        browser.workspace.use_plain_dev_profile();
+        browser
     }
 
     /// Copy authored inputs while retaining any shared-output lock.
@@ -103,10 +105,18 @@ impl Browser {
         browser
     }
 
+    /// Resolve the fixture manifest's crates from the run's prepared sources, in a private Cargo
+    /// home. Builds that share the test build's target, and resolution of the whole workspace,
+    /// keep the shared home, so their compiled dependencies stay fresh.
+    pub fn cargo(&self) -> Command {
+        self.workspace.use_prepared_sources();
+        self.workspace.toolchain_command(env!("CARGO"))
+    }
+
     pub fn generate_lockfile(&self) {
         record("phase: cargo generate-lockfile");
         let status = super::recipe_support::setup_status(
-            super::toolchain_support::command("cargo")
+            self.cargo()
                 .args(["generate-lockfile", "--offline", "--manifest-path"])
                 .arg(self.fixture("Cargo.toml")),
         );
@@ -118,6 +128,17 @@ impl Browser {
         let mut command = super::toolchain_support::command("just");
         command.arg(recipe);
         self.configure(&mut command);
+        command.env("CARGO_BUILD_JOBS", "3");
+        command
+    }
+
+    /// Run a cold recipe with private Cargo state excluded from compiler-cache keys. Its compile
+    /// jobs keep the caller's cap, or every core without one: the test reserves every core for the
+    /// cold compile.
+    pub fn cold_command(&self, recipe: &str) -> Command {
+        let mut command = self.workspace.toolchain_command("just");
+        command.arg(recipe);
+        self.configure(&mut command);
         command
     }
 
@@ -126,7 +147,8 @@ impl Browser {
         let mut command = super::toolchain_support::command(env!("CARGO_BIN_EXE_development"));
         command
             .args(["browser-author", operation])
-            .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"));
+            .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"))
+            .env("CARGO_BUILD_JOBS", "3");
         self.configure(&mut command);
         if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
             command.env("LLVM_PROFILE_FILE", profile);
@@ -138,15 +160,7 @@ impl Browser {
     fn configure(&self, command: &mut Command) {
         command
             .current_dir(self.workspace.path())
-            .env("CARGO_BUILD_JOBS", "3")
-            .env(
-                "CARGO_TARGET_DIR",
-                Path::new(env!("CARGO_BIN_EXE_development"))
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap(),
-            )
+            .env("CARGO_TARGET_DIR", target_directory())
             .env("TRUNK_SKIP_VERSION_CHECK", "true")
             // Trunk's completion emoji depends on LANG, even with piped output.
             .env("LANG", "C.UTF-8");
@@ -163,6 +177,22 @@ impl Browser {
     pub fn fixture(&self, path: &str) -> PathBuf {
         self.path(FIXTURE).join(path)
     }
+}
+
+/// The target directory every browser build shares: the run's prepared one when nextest supplies
+/// it, otherwise the one the test build wrote.
+pub fn target_directory() -> PathBuf {
+    std::env::var_os("MAESTRO_BROWSER_TARGET_DIR").map_or_else(
+        || {
+            Path::new(env!("CARGO_BIN_EXE_development"))
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf()
+        },
+        PathBuf::from,
+    )
 }
 
 pub fn success(output: &Output) {
@@ -264,17 +294,16 @@ pub fn get(port: u16, path: &str) -> (String, Vec<u8>) {
 pub fn native_tool(browser: &Browser, command: &mut Command, name: &str) -> PathBuf {
     let tool = Command::new("which").arg(name).output().unwrap();
     assert!(tool.status.success());
-    let directory = browser.path("native-bin");
-    fs::create_dir_all(&directory).unwrap();
-    super::recipe_support::install_executable(
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/native_tool.sh"),
-        &directory.join(name),
-    );
+    super::recipe_support::forwarder(&browser.path("native-bin"), name);
     let log = browser.path("native-log");
     command
         .env(
             "PATH",
-            format!("{}:{}", directory.display(), std::env::var("PATH").unwrap()),
+            format!(
+                "{}:{}",
+                browser.path("native-bin").display(),
+                std::env::var("PATH").unwrap()
+            ),
         )
         .env(
             "MAESTRO_NATIVE_TOOL",
@@ -353,41 +382,20 @@ fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>
     }
 }
 
-/// Stage complete locked sources and create initially empty cold compilation directories.
+/// Reuse locked dependency sources with initially empty Cargo home and target directories.
 pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
-    let sources = browser.path("local-sources");
-    record("phase: cargo vendor cold sources");
-    let mut child = super::toolchain_support::command(env!("CARGO"))
-        .current_dir(browser.workspace.path())
-        .args(["vendor", "--locked", "--offline", "--sync"])
-        .arg(browser.fixture("Cargo.toml"))
-        .arg(&sources)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .unwrap();
-    let stderr = child.stderr.take().unwrap();
-    let (send, receive) = std::sync::mpsc::channel();
-    let reader = super::recipe_support::capture_lines(move || stderr, send);
-    let staged = child.wait_with_output().unwrap();
-    reader.join().unwrap();
-    drop(receive);
-    record(format!("phase: cargo vendor complete {}", staged.status));
-    success(&staged);
+    let sources = super::recipe_support::prepared_workspace_sources();
     let home = browser.path("cold-home");
     let target = browser.path("cold-target");
     fs::create_dir(&home).unwrap();
     fs::create_dir(&target).unwrap();
     assert_eq!(fs::read_dir(&home).unwrap().count(), 0);
     assert_eq!(fs::read_dir(&target).unwrap().count(), 0);
-    fs::write(
-        home.join("config.toml"),
-        format!(
-            "{}\n[net]\noffline = true\n",
-            String::from_utf8(staged.stdout).unwrap()
-        ),
-    )
-    .unwrap();
+    record(format!(
+        "phase: copy prepared sources {}",
+        sources.display()
+    ));
+    fs::copy(sources, home.join("config.toml")).unwrap();
     (home, target)
 }
 

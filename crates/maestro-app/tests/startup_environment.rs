@@ -295,12 +295,23 @@ fn report_with_skip_flag() -> usize {
 fn package_tree(base: &str, name: &str) -> (Root, std::path::PathBuf) {
     let root = Root::new(base, name);
     let marker = std::path::PathBuf::from(&root.path).join("acquired");
+    let command = crate::native::command(
+        std::path::Path::new(&root.path),
+        "acquire",
+        &json!({
+            "scenario": "output",
+            "stdout": [],
+            "stderr": [],
+            "code": 0,
+            "append": {"path": marker, "cwd": false, "bytes": b"acquired"}
+        }),
+    );
     std::fs::create_dir_all(format!("{}/.maestro", root.project())).unwrap();
     std::fs::write(
         format!("{}/.maestro/settings.json", root.project()),
         json!({
             "packages": ["npm:missing@1.0.0"],
-            "npmCommand": ["/bin/sh", "-c", format!("printf acquired >> {}", marker.display())],
+            "npmCommand": [command.display().to_string()],
         })
         .to_string(),
     )
