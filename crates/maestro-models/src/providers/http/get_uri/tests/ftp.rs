@@ -832,23 +832,25 @@ fn ftp_closes_control_and_data_connections() {
 #[test]
 fn ftp_cancelled_load_releases_the_connection() {
     crate::tests::runtime::run(async {
-        // The server sends these bytes and keeps the completion back, so the load can only end by
-        // being cancelled.
+        // The server sends these bytes, keeps the data connection open and holds the completion
+        // back, so only the cancellation can close the load's end of either connection.
+        let (_piece, pieces) = gated();
+        let (close, closing) = gated();
         let peer = ftp_server::serve(vec![Scenario {
             transfer: Transfer {
                 completion: None,
-                dribble: Some(whole(&[b"half a script"])),
-                ..Transfer::body(Vec::new())
+                ..dribbled(&[b"half a script"], pieces, closing)
             },
             ..Scenario::default()
         }])
         .unwrap();
         let mut running = loading(source(&peer, "", "/script.pac")).await;
-        // Cancelling earlier races the peer's reply and accept, so the data connection it
-        // closes would not be the one the peer observes.
+        // Cancelling earlier races the peer's reply and accept, so the peer would not observe the
+        // data connection.
         running.reached(&peer, &marker("piece-0"), 1).await;
         running.pending("the load must still be reading when it is cancelled");
         running.cancel().await;
+        drop(close);
         let closed = peer.finish().unwrap();
         assert!(closed.control, "the control connection closed");
         assert!(closed.data, "the pending data connection closed");
