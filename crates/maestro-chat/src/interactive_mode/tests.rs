@@ -58,7 +58,7 @@ use maestro_app::{
     load_extension_from_factory, strip_ansi,
 };
 use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
-use maestro_test_process::TestProcess;
+use maestro_test_process::{IsolatedSetup, TestProcess};
 use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
@@ -72,6 +72,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
     error::Error,
+    ffi::OsStr,
     future::Future,
     io,
     path::Path,
@@ -127,15 +128,21 @@ fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
 /// directory, with no inherited environment apart from the command path and `envs`, so
 /// no developer credential reaches it. The child's temporary directory is that root's
 /// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
-/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
-/// instead of ending the child.
+/// Wayland one. The file-size signal keeps the child alive, so a write over a lowered
+/// limit fails instead of ending the child.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    envs: &[(&str, &str)],
+    envs: &[(&OsStr, &OsStr)],
     body: impl AsyncFnOnce(&Path),
 ) {
-    if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
+    if let Some(output) = isolated_output(
+        test,
+        case,
+        envs,
+        IsolatedSetup::new().file_size_continues(),
+        body,
+    ) {
         assert!(
             output.status.success(),
             "child probe failed: {}",
@@ -145,17 +152,18 @@ pub(super) fn isolated_case(
 }
 
 /// Runs `body` as `case` of `test` in the child [`isolated_case`] describes, after `setup`
-/// runs in the child's shell, and returns that child's output to the parent; the child
-/// itself returns nothing.
+/// is applied at the child's entry, and returns that child's output to the parent; the
+/// child itself returns nothing.
 pub(super) fn isolated_output(
     test: &str,
     case: &str,
-    envs: &[(&str, &str)],
-    setup: &str,
+    envs: &[(&OsStr, &OsStr)],
+    setup: IsolatedSetup,
     body: impl AsyncFnOnce(&Path),
 ) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
+        let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
             on_tasks(body(Path::new(&directory)));
@@ -172,17 +180,17 @@ pub(super) fn isolated_output(
         root.join("bin").display(),
         std::env::var("PATH").unwrap_or_default()
     );
-    let mut all = vec![
-        (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
-        ("PATH", &path),
-        ("WAYLAND_DISPLAY", "maestro-test"),
+    let mut all: Vec<(&OsStr, &OsStr)> = vec![
+        (OsStr::new(ENV_AGENT_DIR.as_str()), root.as_os_str()),
+        (OsStr::new("PATH"), OsStr::new(&path)),
+        (OsStr::new("WAYLAND_DISPLAY"), OsStr::new("maestro-test")),
     ];
-    all.extend_from_slice(envs);
+    all.extend(envs.iter().copied());
     let output = TestProcess::current(test)
         .unwrap()
         .env_clear()
         .case(case)
-        .shell_setup("/bin/bash", setup)
+        .setup(setup)
         .temp_dir(root.join("tmp"))
         .nocapture()
         .single_threaded()

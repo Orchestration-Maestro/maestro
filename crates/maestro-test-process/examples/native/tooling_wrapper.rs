@@ -11,9 +11,9 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
 pub(super) enum Record {
-    /// Drop the fixture's Cargo home and run the wrapper this one replaced.
+    /// Drop the fixture's Cargo home and target directory and run the wrapper this one replaced.
     HideHome,
-    /// Record the Cargo home the compiler saw, then run the compiler.
+    /// Record the Cargo home and target directory the compiler saw, then run the compiler.
     Recording,
 }
 
@@ -36,21 +36,25 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             forward(
                 Command::new(wrapper)
                     .args(operands)
-                    .env_remove("CARGO_HOME"),
+                    .env_remove("CARGO_HOME")
+                    .env_remove("CARGO_TARGET_DIR"),
             )
         }
         Record::Recording => {
-            let mut log = std::env::current_exe()?.into_os_string();
-            log.push(".log");
-            let mut file = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(log)?;
-            writeln!(
-                file,
-                "{}",
-                std::env::var("CARGO_HOME").unwrap_or_else(|_| "unset".to_owned())
-            )?;
+            for (suffix, variable) in [(".log", "CARGO_HOME"), (".target.log", "CARGO_TARGET_DIR")]
+            {
+                let mut log = std::env::current_exe()?.into_os_string();
+                log.push(suffix);
+                let mut file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(log)?;
+                writeln!(
+                    file,
+                    "{}",
+                    std::env::var(variable).unwrap_or_else(|_| "unset".to_owned())
+                )?;
+            }
             let (compiler, arguments) = operands
                 .split_first()
                 .ok_or_else(|| io::Error::other("missing compiler operand"))?;

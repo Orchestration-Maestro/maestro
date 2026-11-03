@@ -12,6 +12,7 @@ use maestro_app::{
 use maestro_tui::autocomplete::{AutocompleteSuggestions, CompletionOptions, CursorPosition};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, Cancellation};
 use serde::Deserialize;
+use std::ffi::OsStr;
 use std::{
     cell::RefCell,
     future::Future,
@@ -814,9 +815,9 @@ fn interactive_initialization_prepares_search_tools_before_first_completion() {
         test,
         "managed",
         &[
-            ("PATH", "probes:/bin"),
-            ("MAESTRO_OFFLINE", "1"),
-            ("MAESTRO_TEST_TOOL_PATH", &tool_path),
+            (OsStr::new("PATH"), OsStr::new("probes:/bin")),
+            (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
+            (OsStr::new("MAESTRO_TEST_TOOL_PATH"), OsStr::new(&tool_path)),
         ],
         async |directory| {
             let managed = directory.join("bin");
@@ -855,9 +856,9 @@ fn interactive_initialization_starts_both_search_programs_before_either_finishes
         test,
         "child",
         &[
-            ("PATH", "probes:/bin"),
-            ("MAESTRO_OFFLINE", "1"),
-            ("MAESTRO_TEST_TOOL_PATH", &tool_path),
+            (OsStr::new("PATH"), OsStr::new("probes:/bin")),
+            (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
+            (OsStr::new("MAESTRO_TEST_TOOL_PATH"), OsStr::new(&tool_path)),
         ],
         async |directory| {
             let probes = directory.join("probes");
@@ -889,9 +890,9 @@ fn file_completion_consumes_the_search_owner_fd_path() {
         test,
         "child",
         &[
-            ("PATH", "probes:/bin"),
-            ("MAESTRO_OFFLINE", "1"),
-            ("MAESTRO_TEST_TOOL_PATH", &tool_path),
+            (OsStr::new("PATH"), OsStr::new("probes:/bin")),
+            (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
+            (OsStr::new("MAESTRO_TEST_TOOL_PATH"), OsStr::new(&tool_path)),
         ],
         async |directory| {
             let (input, expected) = case(test, "fd-route");
@@ -952,9 +953,10 @@ fn search_download_policy(test: &str, initialize: bool) {
         ("online", Some(false), "", 2),
         ("environment", None, "1", 0),
     ] {
-        let mut envs = vec![("PATH", "missing-helpers")];
+        let mut envs: Vec<(&OsStr, &OsStr)> =
+            vec![(OsStr::new("PATH"), OsStr::new("missing-helpers"))];
         if !environment.is_empty() {
-            envs.push(("MAESTRO_OFFLINE", environment));
+            envs.push((OsStr::new("MAESTRO_OFFLINE"), OsStr::new(environment)));
         }
         isolated_case(test, case, &envs, async |directory| {
             assert_eq!(

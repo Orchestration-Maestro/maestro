@@ -1,4 +1,11 @@
-//! Owned native filesystem notifications.
+//! Native filesystem access through the retained host capability.
+//!
+//! Obtain [`crate::io::NativeIo`] from [`crate::ExtensionAPI::native_io`]. Its
+//! `save_file`, `file_mode`, `set_file_mode` and `create_dir` methods use authored
+//! native paths directly, without converting them for the guest standard library.
+//! Saves return an optional postcommit durability warning, not a second failure.
+//! Unix hosts expose native permission bits; other hosts reject mode reads and
+//! changes rather than inventing POSIX bits. Watches retain their own lifetime.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

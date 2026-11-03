@@ -1130,7 +1130,9 @@ the child before making the shared Cargo home unusable. The cold test copies onl
 the source configuration into its initially empty Cargo home. Its Cargo target
 directory also starts empty, so the recipes still prove compilation from clean state.
 The cold recipe uses `fixture_command` to keep its private home out of the
-compiler wrapper's cache keys.
+compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
+by the build host applies, and with none Cargo compiles with every core the test reserves.
+The other recipe tests keep three jobs.
 
 Cargo builds that share one target directory with other builds, the test build's or the
 one the browser author setup prepares, keep the shared home.
@@ -1145,16 +1147,20 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
-On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at the prepared
-fixture's `hide-home` wrapper, installed as `rustc-wrapper` in the fixture root.
-The wrapper unsets `CARGO_HOME` and runs the original wrapper, which it reads from
-`MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache` hashes every `CARGO_*` variable into the
-key of each rustc call, so a wrapper that saw the private home would give the
-registry crates of each fixture a key that no other fixture shares. Cargo itself
-keeps the private home and its lock.
-`fixture_command_hides_cargo_home_from_the_compiler_wrapper` runs a fixture build
-behind the `recording` wrapper, which logs the `CARGO_HOME` its compiler saw, and
-checks that it never sees one.
+On Unix, when `RUSTC_WRAPPER` or, failing that, `CARGO_BUILD_RUSTC_WRAPPER` is set,
+`fixture_command` points `RUSTC_WRAPPER` at the prepared fixture's `hide-home`
+wrapper, installed as `rustc-wrapper` in the fixture root. Shared CI sets the second
+variable. The wrapper unsets `CARGO_HOME` and `CARGO_TARGET_DIR` and runs the
+original wrapper, which it reads from `MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache`
+hashes every `CARGO_*` variable into the key of each rustc call, so a wrapper that
+saw the private home or the per-run target directory would give the registry crates
+of each fixture a key that no other fixture shares. Cargo itself keeps both
+variables and passes the compiler its output directory explicitly.
+`fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper` runs a
+fixture build behind the `recording` wrapper, which logs the `CARGO_HOME` and the
+`CARGO_TARGET_DIR` its compiler saw, and checks that it never sees either.
+`fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper` does the same for a
+wrapper inherited as `CARGO_BUILD_RUSTC_WRAPPER`.
 
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
@@ -1220,10 +1226,11 @@ currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
 tests), the command-line startup tests, the conventions checker's architecture
-tests, the daemon's notification, layout-apply and repository discovery cases and
-the terminal client example's tests. Local setup builds the example with the
-locked host `dev` profile and reads Cargo's emitted executable path. It records
-source inputs, content digest and host in
+tests, the daemon's notification, layout-apply and repository discovery cases,
+the terminal client example's tests and the composition root's `native_io`,
+`truncated_tool_example` and `entry_routes` tests. Local setup builds the example
+with the locked host `dev` profile and reads Cargo's emitted executable path.
+It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1279,6 +1286,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `await-release` | Requires one socket path. Writes `w` to it, then ends once it receives one byte. |
 | `report-environment` | Prints `seen:<ROLE>\|<MAESTRO_PANE_ID>\|<working directory>` on a line of its own, then runs on until terminated. |
 | `metadata` | Requires `metadata` first and fails anything else before any effect. Reads and prints the file named by `declared` when an operand is `--no-deps`, and the file named by `resolved` otherwise. The files are read on each run, so a test rewrites them between runs. Optional `argv_log` (`path`, `mark`) appends the invocation as `output` does. |
+| `prefixed` | Requires `--prefix` and a prefix operand first. For `root`, writes the prefix followed by `suffix` and a newline. Every other invocation appends its operands to `log`, one per line. |
 
 A controlled package command for the package manager settings records its
 acquisitions without a package manager:
@@ -1359,8 +1367,8 @@ behavior; an unknown family, scenario or field fails before any effect.
 | --- | --- |
 | `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
 | `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
-| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home. |
-| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` to observe the same boundary. |
+| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
+| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
 
 A runner that starts `just build` in a recipe workspace therefore never needs
 Cargo, `mise` or `watchexec` of its own: each call reaches the installed alias,
@@ -1393,8 +1401,7 @@ sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
-records. Other tooling fixture families and Unix `shell_setup` keep their existing
-contracts.
+records. Other tooling fixture families keep their existing contracts.
 
 #### Retained native boundaries
 
@@ -1571,6 +1578,7 @@ The finite scenarios use these fields:
 | Scenario | Fields and behavior |
 | --- | --- |
 | `response` | `args` records the JSON operand array; `stdout` and `stderr` are byte arrays. `code` selects the status; optional `signal: "SIGTERM"` ends by native signal instead. |
+| `supplied` | Writes `{"argv": [...], "cwd": ...}` to `observation`. Reads the two streams and numeric status from the files named by `stdout`, `stderr` and `code`, so a test can change the outcome between searches. If the file named by `marker` exists, removes its own executable before reporting, as when a running search's installation is replaced. |
 | `probe` | `name`, optional `log`, `stdout` byte array and `code`. Appends `name` and the operands to the log, requires exactly `--version`, then returns the version bytes and status. Discovery checks launchability, not version compatibility. |
 | `marker` | Writes `text` to `path`. With `copy_input: true`, copies the first operand's file to stdout, like a search preprocessor. Execute it once as a positive control, remove the sentinel, then assert hostile search operands never recreate it. |
 | `probe-wait` | Connects to Unix `socket`, writes `ready`, then waits for a byte or EOF. Dropping discovery must stop this real process. |
@@ -1595,6 +1603,56 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Native IO children
+
+On Unix, install the same artifact as the program a byte-level operation launches.
+Write `child` on the first line of `<alias>.fixture` and a JSON object whose
+`scenario` selects one finite behavior. The fixture parses the whole record before
+any stream, socket or descendant effect, and it rejects an unknown scenario or
+field. To write both streams and exit, use the `command` family's `output`
+scenario.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `pending` | Writes `00 ff e2` on standard output and `error` with a NUL on standard error, releases when one input byte arrives, then writes `82 ac` followed by that byte, writes `last` on standard error and relays the rest of standard input. Every write is acknowledged by the bytes the test reads, so no chunk boundary is assumed. |
+| `arguments` | Reports the working directory and the untouched operands as one JSON array. |
+| `relay` | Writes `ready` when its `ready` field is true, relays standard input to standard output until it ends, then writes the `tail` bytes on standard error. |
+| `announce` | Sends its process id, eight bytes big-endian, on the parent's `port`, waits for one release byte, writes the `stdout` and `stderr` byte arrays, then exits with status 0. The required boolean `stdin` selects the release source: standard input when true, the parent socket when false. |
+| `grouped` | Sends its process id and group id on the parent's `port`, waits for the release byte, then exits with status 0. |
+| `challenge` | Sends its process id and session id, reads a 16-byte challenge, answers with its process id and that challenge, waits for the release byte, then exits with status 23. |
+| `early` | Writes the `stdout` and `stderr` byte arrays, starts `holder` with both pipes inherited, then exits with `code` while that descendant keeps them. |
+| `identity` | Writes `[process id, group id, session id]` and a newline, starts `holder` when one is named, then waits for one input byte. |
+
+A controlled child that reports a prefix before its caller releases it:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("child");
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &alias,
+    )?;
+    let record = serde_json::json!({"scenario": "announce", "port": 5091,
+        "stdin": false, "stdout": [], "stderr": []});
+    std::fs::write(directory.path().join("child.fixture"), format!("child\n{record}"))?;
+    Ok(())
+}
+```
+
+Pass the alias absolute path as the command the native operation launches, and
+seed the record with the port the parent test listens on. The `early` and
+`identity` scenarios name a second alias in `holder`; install that one with a
+`grouped`, `announce` or `relay` record so the descendant has its own protocol.
+
+The native I/O component captures the active run's signal before spawning an
+abort-bound child. After subscribing, it also checks whether cancellation already
+happened during spawn. The abort fixture waits on standard input, so releasing
+the child handle closes that input and ends the child even if signal binding fails.
+Watch payloads belong to one registration: opening a watch discards any unconsumed
+payload from the closed registration.
 
 #### Clipboard bytes
 
@@ -1760,10 +1818,15 @@ zero, sends standard output there and checks the prefix through that same open
 file. Nonempty files or nonzero cursors are rejected before launch, including
 append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
-descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
-executable replaces the shell, in the interpreter the caller names by absolute
-path: neither this process's `PATH` nor the child's selects it, and a relative
-path is refused before anything runs.
+descriptor or setup setting. `setup` (Unix) carries an `IsolatedSetup` request.
+The child applies its effects in a fixed order: umask, new session, nonterminating
+file-size handling, then process-count limit. The builder writes that request into
+the child's environment and the child applies it through
+`IsolatedSetup::apply_requested` before its body, holding the returned guard. The
+runner keeps its own modes, limits, session and environment, and a refused effect
+stops the child before anything is observed. The umask contains only octal permission
+bits (`000` through `777`); the child checks its conversion to the platform's native
+mode type before applying it.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
@@ -1771,9 +1834,11 @@ selected test starts; callers still check its exit status and scenario output.
 `env_clear()` preserves the inherited coverage profile destination, and later
 caller edits can override or remove it. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
-reaping. Settings helpers select supplied complete nested identities with `named`
-and apply shell setup through `shell_setup`, keeping reports separate from exit
-status checks.
+reaping. Call `CheckedChild::start` when the test uses its own command to launch
+the selected child; it proves the same prologue and reaps a failed start. Settings
+helpers select supplied complete nested identities with `named` and request a
+process-count limit through `setup`, keeping reports separate from exit status
+checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
