@@ -108,15 +108,17 @@ async fn socks_exchange(directive: &str) {
     );
 }
 
-/// Refuse each complete SOCKS request and retain its ordered destination before closing.
+/// Record each connection's label, then refuse its SOCKS request and retain the destination.
 fn refusing_peer(
     label: u8,
     trace: std::sync::mpsc::Sender<u8>,
 ) -> (loopback::Routed, std::sync::mpsc::Receiver<Vec<u8>>) {
     let (sent, received) = std::sync::mpsc::channel();
     let server = loopback::start_routed(Arc::new(move |mut socket| {
-        let address = socks::negotiate_reply(&mut socket, false, &[5, 5, 0, 1, 0, 0, 0, 0, 0, 0])?;
+        // Record before writing the refusal so the client cannot reach
+        // the next candidate first.
         trace.send(label).unwrap();
+        let address = socks::negotiate_reply(&mut socket, false, &[5, 5, 0, 1, 0, 0, 0, 0, 0, 0])?;
         sent.send(address.host).unwrap();
         assert!(socks::failed_frames(&mut socket, &[])?.is_empty());
         Ok(())

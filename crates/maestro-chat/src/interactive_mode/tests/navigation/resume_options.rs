@@ -6,6 +6,7 @@ use maestro_app::{
     AgentSessionRuntime, ExtensionFactory, Local, Presence, ReadonlySessionManager,
     SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionChangeResult, SwitchSessionOptions,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::Component;
 use serde_json::json;
 use std::{
@@ -247,7 +248,8 @@ fn cases() -> [Case; 6] {
 /// Checks in a child process that an unreadable session ends it with status 1.
 fn fatal_resume_ends_the_process(test: &str) {
     for (case, retained) in [("fatal", false), ("fatal-retained", true)] {
-        let output = isolated_output(test, case, &[], "trap '' XFSZ", async move |directory| {
+        let setup = IsolatedSetup::new().file_size_continues();
+        let output = isolated_output(test, case, &[], setup, async move |directory| {
             let world = Setup::default().build(directory);
             start(&world).await;
             let path = saved(&directory.join("saved"), "broken", &json!(5), "broken");

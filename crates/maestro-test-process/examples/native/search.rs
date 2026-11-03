@@ -58,6 +58,19 @@ pub(super) enum Record {
         /// Native termination instead of a numeric exit.
         signal: Option<ExitSignal>,
     },
+    /// Report the operands and directory, then supplied stream files and status.
+    Supplied {
+        /// Destination for the `{"argv": [...], "cwd": ...}` observation.
+        observation: String,
+        /// File whose bytes become standard output.
+        stdout: String,
+        /// File whose bytes become standard error.
+        stderr: String,
+        /// File whose trimmed text becomes the exit status.
+        code: String,
+        /// Marker file whose presence removes this executable before it reports.
+        marker: Option<String>,
+    },
     /// Observe discovery's version probe independently of version text and status.
     Probe {
         /// Optional append-only probe log.
@@ -155,6 +168,63 @@ fn arguments(path: &str, operands: &[OsString]) -> io::Result<()> {
     std::fs::write(path, serde_json::to_vec(&operands)?)
 }
 
+/// Report the operands and directory, then the supplied stream files and status.
+fn supplied(
+    observation: &str,
+    [stdout, stderr, code]: [&str; 3],
+    marker: Option<&str>,
+    operands: &[OsString],
+) -> io::Result<()> {
+    let operands: Vec<_> = operands
+        .iter()
+        .map(|value| value.to_string_lossy())
+        .collect();
+    let report = serde_json::json!({"argv": operands, "cwd": std::env::current_dir()?});
+    std::fs::write(observation, serde_json::to_vec(&report)?)?;
+    if marker.is_some_and(|path| std::path::Path::new(path).exists()) {
+        std::fs::remove_file(std::env::current_exe()?)?;
+    }
+    write_stdout(&std::fs::read(stdout)?)?;
+    write_stderr(&std::fs::read(stderr)?)?;
+    let status: i32 = std::fs::read_to_string(code)?
+        .trim()
+        .parse()
+        .map_err(io::Error::other)?;
+    leave(status)
+}
+
+/// Announce readiness, then hold the connection until the consumer is done.
+fn probe_wait(path: &str) -> io::Result<()> {
+    let mut socket = UnixStream::connect(path)?;
+    socket.write_all(b"ready")?;
+    receive(&mut socket).map(|_| ())
+}
+
+/// Mark the configured shell choice, then replace this process with the real shell.
+fn chosen_shell(operands: &[OsString]) -> io::Result<()> {
+    write_stdout(b"chosen-shell\n")?;
+    Err(std::process::Command::new("/bin/bash")
+        .args(operands)
+        .exec())
+}
+
+/// Record the operands, write the two streams, then end with the status or signal.
+fn response(
+    args: &str,
+    [stdout, stderr]: [&Vec<u8>; 2],
+    code: u8,
+    signal: Option<&ExitSignal>,
+    operands: &[OsString],
+) -> io::Result<()> {
+    arguments(args, operands)?;
+    write_stdout(stdout)?;
+    write_stderr(stderr)?;
+    if let Some(ExitSignal::Terminate) = signal {
+        kill_process(getpid(), Signal::TERM)?;
+    }
+    leave(i32::from(code))
+}
+
 /// Write the selected response without harness bytes or a command parser.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
@@ -164,15 +234,19 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             stderr,
             code,
             signal,
-        } => {
-            arguments(args, operands)?;
-            write_stdout(stdout)?;
-            write_stderr(stderr)?;
-            if let Some(ExitSignal::Terminate) = signal {
-                kill_process(getpid(), Signal::TERM)?;
-            }
-            leave(i32::from(*code))
-        }
+        } => response(args, [stdout, stderr], *code, signal.as_ref(), operands),
+        Record::Supplied {
+            observation,
+            stdout,
+            stderr,
+            code,
+            marker,
+        } => supplied(
+            observation,
+            [stdout, stderr, code],
+            marker.as_deref(),
+            operands,
+        ),
         Record::Probe {
             log,
             name,
@@ -184,11 +258,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             text,
             copy_input,
         } => marker(path, text, *copy_input, operands),
-        Record::ProbeWait { socket } => {
-            let mut socket = UnixStream::connect(socket)?;
-            socket.write_all(b"ready")?;
-            receive(&mut socket).map(|_| ())
-        }
+        Record::ProbeWait { socket } => probe_wait(socket),
         Record::FindTerm { socket } => find_term(socket),
         Record::GrepTerm {
             socket,
@@ -200,12 +270,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             chunks,
             code,
         } => chunks_output(socket, chunks, *code),
-        Record::ChosenShell {} => {
-            write_stdout(b"chosen-shell\n")?;
-            Err(std::process::Command::new("/bin/bash")
-                .args(operands)
-                .exec())
-        }
+        Record::ChosenShell {} => chosen_shell(operands),
         Record::CompletionWait { stdout, port } => completion_wait(stdout, *port),
         Record::CompletionStream { stderr, stdout } => completion_stream(*stderr, stdout),
         Record::CompletionDescendant { port, holder } => completion_descendant(*port, holder),

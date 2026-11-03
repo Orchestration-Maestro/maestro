@@ -11,6 +11,10 @@
 //! share one cleared child per distinct environment through [`run_per_environment`]. A child
 //! that replaces `HOME` keeps this process's Linux user cache through [`user_cache_home`].
 //!
+//! An isolated child that needs its own file creation mode, process-count limit, file-size
+//! handling or session names those effects with [`IsolatedSetup`] on the builder and applies
+//! them at its entry through [`IsolatedSetup::apply_requested`].
+//!
 //! For a native backend that owns its operands or raw byte framing, repository preparation
 //! supplies the harness-free `native_fixture` example through `MAESTRO_NATIVE_FIXTURE`.
 //! [`install_executable`] copies it to caller-owned aliases without opening a writable
@@ -29,6 +33,8 @@ pub mod git_command;
 mod proof;
 pub mod rpc_peer;
 mod selection;
+#[cfg(unix)]
+mod setup;
 mod test_process;
 
 pub use alone::run_alone;
@@ -40,6 +46,8 @@ pub use error::TestProcessError;
 pub use executable::install_executable;
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use selection::test_name;
+#[cfg(unix)]
+pub use setup::{IsolatedSetup, SetupError, SetupGuard};
 pub use test_process::TestProcess;
 
 /// Controlled loopback HTTP fixtures.

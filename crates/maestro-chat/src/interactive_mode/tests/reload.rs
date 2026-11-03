@@ -13,8 +13,10 @@ use maestro_app::{
     SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionBeforeTreeEvent,
     SessionBeforeTreeResult, SettingsManager, StopReason, SwitchSessionOptions, WidgetContent,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Cancellation, Component, EditorComponent, Focusable, Text};
 use serde_json::json;
+use std::ffi::OsStr;
 use std::{
     cell::{Cell, RefCell},
     future::Future,
@@ -306,8 +308,11 @@ fn reload_listing_failure_restores_captured_editor() {
     if let Some(output) = isolated_output(
         "reload_listing_failure_restores_captured_editor",
         "child",
-        &[],
-        "trap '' XFSZ; export HOME=$'\\xff'",
+        &[(
+            OsStr::new("HOME"),
+            std::os::unix::ffi::OsStrExt::from_bytes(b"\xff"),
+        )],
+        IsolatedSetup::new().file_size_continues(),
         async |directory| failed_reload(directory, "listing").await,
     ) {
         assert!(
@@ -1029,7 +1034,7 @@ fn fatal_replacements(test: &str) {
             test,
             operation,
             &[],
-            "trap '' XFSZ",
+            IsolatedSetup::new().file_size_continues(),
             async move |directory| {
                 let world = Setup {
                     create: Some(Rc::new(|_| {

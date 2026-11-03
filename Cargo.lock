@@ -4530,6 +4530,7 @@ dependencies = [
  "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",
