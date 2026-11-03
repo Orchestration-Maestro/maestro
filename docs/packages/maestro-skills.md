@@ -24,6 +24,9 @@ Add the absolute pack path to `packages` in your user or project settings:
 
 The application resolves the package and loads its enabled skills when it starts
 or reloads resources. The content-only pack does not require a build.
+[Manifest mode](../specs/manifest-mode.md) can also select the pack: a
+manifest lists the same path as a package source, and the manifest's skill
+filters control its skills.
 [Default base-package installation](https://github.com/Orchestration-Maestro/maestro/issues/1578)
 is not delivered; local-path loading does not depend on it.
 

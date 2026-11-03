@@ -129,8 +129,8 @@ translate instructions written for another environment.
 
 ### Packages and selection
 
-The [development skills](packages/maestro-skills.md) live in the catalog
-repository, maestro-manifests, as one collection, not the skill format itself.
+The [development skills](packages/maestro-skills.md) are one collection, not the
+skill format itself; they live in the catalog repository, maestro-manifests.
 Follow that page to load a checkout of it. To author a package, use
 [package discovery](packages.md#conventional-resource-discovery): package content goes
 in `skills/`, or a `maestro.skills` list selects its paths. For example:
