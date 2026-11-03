@@ -759,6 +759,9 @@ product's one engine configuration. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
 dependency, supplies name-ordered directory reads to the guest examples. It permits
 no normal or build dependency on the listing leaf.
+`maestro` to `maestro-lock`, declared as a native, non-optional development
+dependency, serializes the executable's file-trigger test on the shared host
+fixture. It permits no normal or build edge.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
