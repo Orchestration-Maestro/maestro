@@ -193,7 +193,8 @@ fn start(pair: &mut Pair) -> Vec<tokio::task::JoinHandle<()>> {
         .collect()
 }
 
-/// Admits `b`'s retained waiting tail, reporting the subscription that admitted it.
+/// Admits `b`'s retained waiting tail, returning the subscriber and the
+/// queued continuations.
 async fn admit_waiting_tail(
     pair: &mut Pair,
 ) -> (Subscription<Local>, Vec<tokio::task::JoinHandle<()>>) {

@@ -443,7 +443,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": null
         },
         "executed": true
@@ -489,7 +489,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": ""
         },
         "executed": true
@@ -535,7 +535,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": 0
         },
         "executed": true
@@ -581,7 +581,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": false
         },
         "executed": true
@@ -608,7 +608,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "z": 1,
           "a": null
         },
@@ -625,7 +625,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "z": 1,
           "a": null
         },
@@ -642,7 +642,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": {
             "z": 1,
             "a": null
@@ -706,7 +706,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": [
             null,
             false,
@@ -760,7 +760,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": "\ufeff\u0085\u96ea"
         },
         "executed": true

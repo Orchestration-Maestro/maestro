@@ -71,7 +71,7 @@ struct Validated {
     phase: String,
     /// Arguments the executor received, `null` included.
     #[serde(default, deserialize_with = "present")]
-    arguments: Option<Value>,
+    received: Option<Value>,
     /// Failure of the phase that stopped the call.
     error: Option<String>,
     /// Whether the wrapped executor ran.
@@ -226,9 +226,9 @@ fn prepared_arguments_reach_validation_before_execution() {
                 _ => outcome.invalid,
             };
             assert_eq!(error, expected.error, "case {index}");
-            if let Some(arguments) = &expected.arguments {
+            if let Some(received) = &expected.received {
                 let executed = outcome.executed.unwrap().to_string();
-                assert_eq!(executed, arguments.to_string(), "case {index}");
+                assert_eq!(executed, received.to_string(), "case {index}");
             }
         }
     });
