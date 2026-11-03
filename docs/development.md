@@ -1449,11 +1449,11 @@ On Unix, install the same artifact as the program a byte-level operation launche
 Write `child` on the first line of `<alias>.fixture` and a JSON object whose
 `scenario` selects one finite behavior. The fixture parses the whole record before
 any stream, socket or descendant effect, and it rejects an unknown scenario or
-field.
+field. A child that only writes both streams and exits is the `command` family's
+`output` scenario.
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. |
 | `pending` | Writes `00 ff e2` on standard output and `error` with a NUL on standard error, releases when one input byte arrives, then writes `82 ac` followed by that byte, writes `last` on standard error and relays the rest of standard input. Every write is acknowledged by the bytes the test reads, so no chunk boundary is assumed. |
 | `arguments` | Reports the working directory and the untouched operands as one JSON array. |
 | `relay` | Writes `ready` when its `ready` field is true, relays standard input to standard output until it ends, then writes the `tail` bytes on standard error. |

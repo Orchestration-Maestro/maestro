@@ -298,6 +298,8 @@ fn malformed_child_records_have_no_partial_effects() {
     let report = json!({"scenario": "arguments"});
     let mut invalid = vec![
         json!({"scenario": "unknown"}),
+        // The command family owns raw stream output, so the child family has no such scenario.
+        json!({"scenario": "output", "stdout": [], "stderr": [], "code": 0}),
         json!({"scenario": "pending", "unknown": true}),
         json!({"scenario": "relay", "ready": false, "tail": [], "unknown": true}),
         json!({"scenario": "identity", "holder": "missing", "unknown": true}),

@@ -212,7 +212,7 @@ fn native_child_read_failure_follows_the_real_prefix() {
     local.block_on(&runtime,async {
         let io = Rc::new(FailedIo(maestro_app::extension_native_io::extension_native_io(&local)));
         let session = session(&root,&local,io).await;
-        let producer = crate::support::native::install(&root.path("bin"),"output","child",&json!({"scenario":"output","stdout":[0,255,1],"stderr":[],"code":0}));
+        let producer = crate::support::native::install(&root.path("bin"),"output","command",&json!({"scenario":"output","stdout":[0,255,1],"stderr":[],"code":0}));
         let reply = answer(&session,json!({"op":"spawn","command":producer,"args":[],"env":[],"stdio":["ignore","pipe","ignore"]})).await;
         assert!(reply["value"].as_u64().unwrap() > 0);
         let mut prefix = Vec::new();

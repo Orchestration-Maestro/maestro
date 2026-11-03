@@ -12,15 +12,6 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
 pub(super) enum Record {
-    /// Write the supplied streams, then end with the supplied status.
-    Output {
-        /// Standard output bytes.
-        stdout: Vec<u8>,
-        /// Standard error bytes.
-        stderr: Vec<u8>,
-        /// Status after the writes.
-        code: u8,
-    },
     /// Report two prefixes, release on one input byte, then relay the remaining input.
     Pending {},
     /// Report the working directory and the untouched operands as one JSON array.
@@ -82,15 +73,6 @@ impl Record {
 /// Run the selected child with its untouched native operands.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
-        Record::Output {
-            stdout,
-            stderr,
-            code,
-        } => {
-            write_stdout(stdout)?;
-            write_stderr(stderr)?;
-            leave(i32::from(*code))
-        }
         Record::Pending {} => pending(),
         Record::Arguments {} => arguments(operands),
         Record::Relay { ready, tail } => relay(*ready, tail),

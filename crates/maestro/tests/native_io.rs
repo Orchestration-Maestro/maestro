@@ -84,6 +84,11 @@ fn child(root: &Root, name: &str, record: &Value) -> std::path::PathBuf {
     crate::support::native::install(&root.path("bin"), name, "child", record)
 }
 
+/// Installs the prepared native program whose record selects one producer.
+fn command(root: &Root, name: &str, record: &Value) -> std::path::PathBuf {
+    crate::support::native::install(&root.path("bin"), name, "command", record)
+}
+
 #[test]
 fn native_child_streams_bytes_while_input_is_pending() {
     let root = Root::new();
@@ -334,10 +339,15 @@ fn native_child_completion_keeps_output_close_order() {
 fn native_child_keeps_exit_and_signal_distinct() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let producer = command(
+        &root,
+        "output",
+        &json!({"scenario":"output","stdout":[],"stderr":[],"code":0}),
+    );
     for code in [0, 7] {
-        let producer = child(
-            &root,
-            "output",
+        crate::support::native::select(
+            &producer,
+            "command",
             &json!({"scenario":"output","stdout":[],"stderr":[],"code":code}),
         );
         call(
@@ -393,24 +403,35 @@ fn native_child_kill_controls_the_retained_child() {
     rpc.finish();
 }
 
-/// Installs the identity child, with a group peer when the run is detached.
-fn identity(root: &Root, port: u16, detached: bool) -> std::path::PathBuf {
-    let holder =
-        detached.then(|| child(root, "grouped", &json!({"scenario":"grouped","port":port})));
-    child(
-        root,
-        "identity",
-        &json!({"scenario":"identity","holder":holder}),
-    )
+/// Selects the identity child's record and the port its group peer reports on.
+fn select_identity(
+    holder: &std::path::Path,
+    producer: &std::path::Path,
+    port: u16,
+    detached: bool,
+) {
+    crate::support::native::select(holder, "child", &json!({"scenario":"grouped","port":port}));
+    crate::support::native::select(
+        producer,
+        "child",
+        &json!({"scenario":"identity","holder":detached.then_some(holder)}),
+    );
 }
 
 #[test]
 fn native_child_group_signal_keeps_direct_fallback() {
     let root = Root::new();
     let mut rpc = loaded(&root);
+    let holder = child(&root, "grouped", &json!({"scenario":"grouped","port":0}));
+    let producer = child(
+        &root,
+        "identity",
+        &json!({"scenario":"identity","holder":null}),
+    );
     for detached in [true, false] {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let producer = identity(&root, listener.local_addr().unwrap().port(), detached);
+        let port = listener.local_addr().unwrap().port();
+        select_identity(&holder, &producer, port, detached);
         let pid = call(
             &mut rpc,
             &json!({"op":"spawn","command":producer,"args":[],"detached":detached}),
@@ -669,7 +690,7 @@ fn native_io_keeps_full_user_basics() {
 fn native_io_adapters_keep_the_same_author_contract() {
     let root = Root::new();
     let mut rpc = loaded(&root);
-    let producer = child(
+    let producer = command(
         &root,
         "output",
         &json!({"scenario":"output","stdout":[],"stderr":[],"code":0}),
