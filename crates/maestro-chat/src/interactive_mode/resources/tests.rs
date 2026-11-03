@@ -788,7 +788,6 @@ fn resource_listing_reads_each_input_once_before_ordering() {
 /// The prompt templates at `count` distinct paths, each named after its index.
 fn prompt_templates(count: usize) -> Vec<PromptTemplate> {
     (0..count)
-        .rev()
         .map(|index| Recorded {
             file_path: format!("/p/{index:04}.md"),
             name: format!("p{index:04}"),
@@ -852,9 +851,9 @@ fn prompt_labels_read_each_template_once_before_naming_paths() {
             let found = templates
                 .iter()
                 .inspect(|_| rescans.set(rescans.get() + 1))
-                .find(|other| other.file_path == item.path);
-            assert!(found.is_some(), "every emitted label names a prompt");
-            Ok(found.map_or_else(String::new, |found| format!("/{}", found.name)))
+                .find(|other| other.file_path == item.path)
+                .ok_or("every emitted label names a prompt")?;
+            Ok(format!("/{}", found.name))
         });
         assert_eq!(rescanned, expanded, "both labellers name the same rows");
         assert!(
