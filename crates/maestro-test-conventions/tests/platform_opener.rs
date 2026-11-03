@@ -153,6 +153,43 @@ fn platform_viewers_respect_closure_parameters_and_captures() {
 }
 
 #[test]
+fn platform_viewers_distinguish_clap_names_from_process_operands() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat"]);
+    let cases = [
+        "use clap::Command; fn cli() { Command::new(\"open\").about(\"Open a URL or path\"); }",
+        "fn cli() { clap::Command::new(r#\"open\"#); }",
+        "use clap::{Command as CliCommand}; fn cli() { CliCommand::new(\"open\"); }",
+        "use clap as cli; fn cli() { cli::Command::new(\"open\"); }",
+        "use clap::{self as cli}; fn cli() { cli::Command::new(\"open\"); }",
+        "fn cli() { use clap::Command; capture!(Command::new(\"open\")); }",
+        "use clap::Command; fn cli() { let build = || Command::new(\"open\"); }",
+        "use clap::Command; fn cli() { Command::new(\"xdg-open\"); Command::new(\"explorer.exe\"); }",
+        "use clap::Command; fn cli() { let name = \"open\"; Command::new(name); }",
+        "use clap::Command; fn cli() { Command::new(\"open\",); }",
+    ];
+    for contents in cases {
+        let path = source(&workspace, "maestro-chat", "src/viewer.rs", contents);
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{contents}");
+        for launch in [
+            "fn launch() { std::process::Command::new(\"open\"); }",
+            "fn launch() { maestro_process::command(\"open\"); }",
+            "fn launch() { let program = \"open\"; std::process::Command::new(program); }",
+            "mod nested { use std::process::Command; fn launch() { Command::new(\"open\"); } }",
+            "fn launch() { clap::Command::new({ std::process::Command::new(\"open\"); \"open\" }); }",
+            "mod nested { #[cfg(unix)] use std::process::Command; #[cfg(windows)] use clap::Command; fn launch() { Command::new(\"open\"); } }",
+            "mod nested { #[cfg(windows)] use clap::Command; #[cfg(unix)] use std::process::Command; fn launch() { Command::new(\"open\"); } }",
+        ] {
+            std::fs::write(&path, format!("{contents}\n{launch}")).unwrap();
+            let error = check_workspace(workspace.root.path()).unwrap_err();
+            assert!(error.contains("viewer.rs:2: platform viewer"), "{error}");
+            assert!(!error.contains("viewer.rs:1:"), "{error}");
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+}
+
+#[test]
 fn platform_viewers_accept_owner_calls_and_distinct_process_policies() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-app"]);
