@@ -3,13 +3,14 @@
 use maestro_extensions::{
     Cancellation, CommandContextOperations, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, MessageRenderOptions,
-    create_extension_runtime, types::ProviderActions,
+    Subscription, create_extension_runtime, types::ProviderActions,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::{mpsc, oneshot};
 
 use super::callback_ordering::{Instance, Pair, local};
+use super::component_callbacks::{message, render, renderer};
 
 /// Suspensions entered by command roots, with the sender that resumes each.
 type Entered = mpsc::UnboundedSender<(&'static str, oneshot::Sender<()>)>;
@@ -159,6 +160,31 @@ fn retained_component_subscriptions_and_tails_release_independently() {
     });
 }
 
+/// A dropped view releases while an admitted tail and its subscription stay live.
+#[test]
+fn retained_view_releases_between_a_pending_tail_and_its_subscription() {
+    local(async {
+        let mut pair = Pair::new().await;
+        let (ready, pending) = admit_waiting_tail(&mut pair).await;
+        let view = render(&renderer(&pair.a, "scoped-view"), &message("scoped"), false)
+            .unwrap()
+            .unwrap();
+        assert!(!pair.a.released("scoped"));
+        drop(view);
+        pair.wait_release("a:scoped").await;
+        assert!(
+            pair.a.released("scoped"),
+            "the dropped view kept its only owner"
+        );
+        assert!(!pair.b.released("r"), "the view's release settled the tail");
+        ready.unsubscribe();
+        pair.b.program(r#"[{"op":"off","id":"r"}]"#).await;
+        finish_tails(&mut pair, pending).await;
+        pair.wait_release("b:r").await;
+        assert!(pair.b.released("r"));
+    });
+}
+
 /// Starts every queued continuation on the local task set.
 fn start(pair: &mut Pair) -> Vec<tokio::task::JoinHandle<()>> {
     pair.queued()
@@ -167,10 +193,11 @@ fn start(pair: &mut Pair) -> Vec<tokio::task::JoinHandle<()>> {
         .collect()
 }
 
-/// Unsubscribing keeps an admitted pending tail and its capture until the tail settles.
-async fn removal_leaves_an_admitted_tail_running(pair: &mut Pair) {
-    let signal = Cancellation::new();
-    pair.b.bind_context(signal_context(signal.clone()));
+/// Admits `b`'s retained waiting tail, returning the subscriber and the
+/// queued continuations.
+async fn admit_waiting_tail(
+    pair: &mut Pair,
+) -> (Subscription<Local>, Vec<tokio::task::JoinHandle<()>>) {
     let (entered, waiting) = oneshot::channel();
     let entered = RefCell::new(Some(entered));
     let ready = pair.b.events.on(
@@ -186,6 +213,14 @@ async fn removal_leaves_an_admitted_tail_running(pair: &mut Pair) {
     pair.bus.emit("rx", Value::Null).await;
     let pending = start(pair);
     waiting.await.unwrap();
+    (ready, pending)
+}
+
+/// Unsubscribing keeps an admitted pending tail and its capture until the tail settles.
+async fn removal_leaves_an_admitted_tail_running(pair: &mut Pair) {
+    let signal = Cancellation::new();
+    pair.b.bind_context(signal_context(signal.clone()));
+    let (ready, pending) = admit_waiting_tail(pair).await;
     ready.unsubscribe();
     pair.b
         .program(r#"[{"op":"off","id":"r"},{"op":"off","id":"r"}]"#)
