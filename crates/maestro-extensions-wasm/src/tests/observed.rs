@@ -119,6 +119,8 @@ pub struct Observed {
     pub dropped: Vec<u32>,
     /// Resources handed to the extension that it has not dropped.
     pub live: usize,
+    /// Table keys of identities the extension handed to the host, which the host drops itself.
+    pub handed_over: Vec<u32>,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
     /// Tool registrations the guest attempted, admitted or not, in attempt order.
