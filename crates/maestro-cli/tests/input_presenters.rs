@@ -468,6 +468,10 @@ fn a_dropped_presentation_stops_the_writer_and_closes_the_watch() {
         vec!["start", "stop"],
         "dropping the presentation stops the writer it started"
     );
+    assert!(
+        harness.terminal.writes().concat().ends_with("\x1b[?25h"),
+        "dropping the presentation shows the cursor last"
+    );
     assert_eq!(
         watched.borrow().as_slice(),
         ["watch", "watch-stop"],
