@@ -227,7 +227,10 @@ fn retryable_stop_failures_defer_to_socket_reachability() {
         Some(Answer::Close),
         Some(3),
     );
-    assert_eq!(stop_with_timeout(&selection, EXCHANGE), Ok(()));
+    assert_eq!(
+        stop_with_timeout(&selection, Duration::from_secs(5)),
+        Ok(())
+    );
     assert_eq!(api.finish().probes, 3);
 }
 
@@ -276,7 +279,10 @@ fn an_empty_stop_response_defers_to_socket_shutdown() {
         Some(2),
     );
     let client = Endpoint::bind(&selection.client_socket_path, None, Some(5));
-    assert_eq!(stop_with_timeout(&selection, EXCHANGE), Ok(()));
+    assert_eq!(
+        stop_with_timeout(&selection, Duration::from_secs(5)),
+        Ok(())
+    );
     let api = api.finish();
     assert_eq!(api.request, STOP_LINE);
     assert_eq!(api.probes, 2);
