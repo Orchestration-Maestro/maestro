@@ -103,6 +103,15 @@ pub fn get_docs_path() -> std::io::Result<String> {
     paths::get_docs_path(&get_package_dir()?)
 }
 
+/// Resolve the shipped workspace skill in the running process's package directory.
+///
+/// # Errors
+/// Returns package-directory or working-directory failures.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_workspace_skill_path() -> std::io::Result<String> {
+    paths::get_workspace_skill_path(&get_package_dir()?)
+}
+
 /// Resolve the examples directory of the running process's package directory.
 ///
 /// # Errors

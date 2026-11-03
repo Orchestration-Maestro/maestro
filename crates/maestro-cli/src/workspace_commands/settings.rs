@@ -1,4 +1,5 @@
 //! Presentation of application-owned workspace settings operations.
+use maestro_app::daemon::DEFAULTS_TEXT;
 use maestro_app::presentation_data::keybindings::{
     KeybindingsReset, reset_multiplexer_keybindings,
 };
@@ -54,6 +55,23 @@ fn present_reset(
     if let Some(error) = reset.dir_sync {
         writeln!(stderr, "Keybindings reset; directory sync warning: {error}")?;
     }
+    Ok(0)
+}
+
+/// Print annotated workspace defaults without loading user settings.
+///
+/// # Errors
+/// Returns output failures unchanged.
+pub fn run_defaults(
+    args: &[String],
+    stdout: &mut dyn Write,
+    stderr: &mut dyn Write,
+) -> io::Result<i32> {
+    if !args.is_empty() {
+        writeln!(stderr, "usage: maestro settings defaults")?;
+        return Ok(2);
+    }
+    stdout.write_all(DEFAULTS_TEXT.as_bytes())?;
     Ok(0)
 }
 

@@ -211,12 +211,14 @@ fn native_launches() {
     use maestro_app::utils::clipboard::{ClipboardOperations, NativeClipboardOperations};
     use maestro_app::{OutputMode, SpawnSyncOptions};
     use tokio::process::Command;
+    let root = crate::native::Scratch::new();
+    let echo = crate::native::clipboard_alias(&root, "echo", r#"{"scenario":"echo","code":7}"#);
     for (stdout, stderr) in [
         (OutputMode::Capture, OutputMode::Discard),
         (OutputMode::Discard, OutputMode::Capture),
     ] {
-        let mut command = Command::new("python3");
-        command.args(["-c", "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read()); sys.stderr.write(sys.argv[1]); sys.exit(7)", "diagnostic"]);
+        let mut command = Command::new(&echo);
+        command.arg("diagnostic");
         let output = NativeClipboardOperations
             .spawn_sync(
                 &mut command,
@@ -248,8 +250,13 @@ fn native_launches() {
         );
     }
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let mut command = Command::new("python3");
-    command.args(["-c", "import socket,sys; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(sys.stdin.buffer.read()); s.close()", &listener.local_addr().unwrap().port().to_string()]);
+    let port = listener.local_addr().unwrap().port();
+    let send = crate::native::clipboard_alias(
+        &root,
+        "send",
+        &format!(r#"{{"scenario":"send","port":{port}}}"#),
+    );
+    let command = Command::new(send);
     NativeClipboardOperations
         .spawn(command, Some(b"background\0".to_vec()))
         .unwrap();
@@ -257,4 +264,33 @@ fn native_launches() {
     let mut bytes = Vec::new();
     std::io::Read::read_to_end(&mut stream, &mut bytes).unwrap();
     assert_eq!(bytes, b"background\0");
+}
+
+/// Installs a fixture alias where no system installer answers on the path.
+#[cfg(unix)]
+#[test]
+fn aliases_install_without_a_system_installer() {
+    let name = "aliases_install_without_a_system_installer";
+    if !maestro_test_process::selection().is_child() {
+        let empty = crate::native::Scratch::new();
+        std::fs::create_dir(empty.join("empty")).unwrap();
+        let environment = std::collections::BTreeMap::from([
+            ("PATH", empty.join("empty")),
+            (
+                "MAESTRO_NATIVE_FIXTURE",
+                std::env::var("MAESTRO_NATIVE_FIXTURE")
+                    .expect("run just prepare-tests, then run these tests with cargo nextest"),
+            ),
+        ]);
+        maestro_test_process::run_per_environment(name, [()], |()| environment.clone()).unwrap();
+        return;
+    }
+    let root = crate::native::Scratch::new();
+    let fill = crate::native::clipboard_alias(
+        &root,
+        "wl-paste",
+        r#"{"scenario":"fill","byte":9,"count":3}"#,
+    );
+    let output = std::process::Command::new(&fill).output().unwrap();
+    assert_eq!(output.stdout, [9, 9, 9]);
 }
