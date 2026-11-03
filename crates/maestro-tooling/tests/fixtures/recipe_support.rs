@@ -59,7 +59,7 @@ pub fn wrapper(directory: &Path, name: &str) -> PathBuf {
 }
 
 /// Install the prepared artifact as one alias with its complete fixture record.
-fn installed(directory: &Path, name: &str, contents: &str) -> PathBuf {
+pub fn installed(directory: &Path, name: &str, contents: &str) -> PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     fs::create_dir_all(directory).unwrap();

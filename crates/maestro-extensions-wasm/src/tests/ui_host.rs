@@ -711,12 +711,14 @@ impl State {
     }
 
     /// The nested call of the factory under `factory`, with a fresh terminal, the dark theme and,
-    /// for a footer, the footer metadata.
+    /// for a footer, the footer metadata; the factory is queued for release once it has run.
     fn local_factory(
         &mut self,
         factory: &Resource<super::host::Identity>,
         footer: bool,
     ) -> wasmtime::Result<host::LocalFactory> {
+        self.observed
+            .register(format!("factory {}", factory.rep()), factory.rep());
         Ok(host::LocalFactory {
             target: self.table.get(factory)?.0,
             tui: self.push(Tui)?,
@@ -768,7 +770,7 @@ impl State {
 
     /// Retains every optional capability of a factory component in its shown slot.
     fn factory_slot(
-        &self,
+        &mut self,
         key: String,
         built: host::FactoryComponent,
     ) -> wasmtime::Result<WidgetSlot> {
@@ -776,6 +778,7 @@ impl State {
             .dispose
             .map(|dispose| self.table.get(&dispose).map(|identity| identity.0))
             .transpose()?;
+        self.observed.handed_over.push(built.component.rep());
         Ok(WidgetSlot {
             key,
             component: built.component.rep(),

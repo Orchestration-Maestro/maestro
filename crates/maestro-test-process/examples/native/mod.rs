@@ -27,6 +27,7 @@ mod search;
 #[cfg(unix)]
 mod termination;
 mod tooling_command;
+mod tooling_sources;
 mod tooling_wrapper;
 #[cfg(unix)]
 mod trash;
@@ -74,6 +75,8 @@ enum Request {
     Search(search::Record, Vec<OsString>),
     /// Stand in for a repository command a recipe resolves by name.
     ToolingCommand(tooling_command::Record, Vec<OsString>),
+    /// Stand in for the Cargo the fixture-sources setup runs.
+    ToolingSources(tooling_sources::Record, Vec<OsString>),
     /// Stand in for a compiler wrapper a fixture build runs.
     ToolingWrapper(tooling_wrapper::Record, Vec<OsString>),
     /// Move or remove caller-owned files on the trash program's behalf.
@@ -153,6 +156,10 @@ impl Request {
                 tooling_command::Record::parse(&text)?,
                 operands,
             )),
+            Some("tooling-sources") => Ok(Self::ToolingSources(
+                tooling_sources::Record::parse(&text)?,
+                operands,
+            )),
             Some("tooling-wrapper") => Ok(Self::ToolingWrapper(
                 tooling_wrapper::Record::parse(&text)?,
                 operands,
@@ -189,6 +196,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
         Request::ToolingCommand(record, operands) => tooling_command::run(&record, &operands),
+        Request::ToolingSources(record, operands) => tooling_sources::run(&record, &operands),
         Request::ToolingWrapper(record, operands) => tooling_wrapper::run(&record, &operands),
         #[cfg(unix)]
         Request::Trash(record, operands) => trash::run(&record, &operands),
