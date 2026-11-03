@@ -2,7 +2,7 @@
 
 use std::{
     ffi::OsString,
-    io::{self, BufRead, Write},
+    io::{self, Write},
     net::TcpStream,
 };
 
@@ -223,6 +223,8 @@ pub(super) fn blocked(code: Option<i32>, port: Option<u16>) -> io::Result<()> {
 /// Write grace bytes into another process's output descriptor.
 #[cfg(target_os = "linux")]
 pub(super) fn grace(pid: u32) -> io::Result<()> {
+    use std::io::BufRead;
+
     let mut target = std::fs::OpenOptions::new()
         .write(true)
         .open(format!("/proc/{pid}/fd/1"))?;
