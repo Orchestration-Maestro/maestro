@@ -48,6 +48,8 @@ struct Running<T> {
     consumed: tokio::sync::watch::Receiver<usize>,
     /// The bytes consumed before the work started.
     before: usize,
+    /// Cancels the task.
+    task: tokio::task::AbortHandle,
 }
 
 impl<T: std::fmt::Debug + Send + 'static> Running<T> {
@@ -58,18 +60,29 @@ impl<T: std::fmt::Debug + Send + 'static> Running<T> {
         let before = *consumed.borrow();
         let (started, start) = oneshot::channel();
         let (report, ended) = oneshot::channel();
-        tokio::spawn(async move {
+        let task = tokio::spawn(async move {
             // The rest of this poll runs `work` up to its first wait before the body resumes.
             started.send(()).ok();
             let output = work.await;
             report.send((Instant::now(), output)).ok();
-        });
+        })
+        .abort_handle();
         start.await.expect("the task starts");
         Self {
             ended,
             consumed,
             before,
+            task,
         }
+    }
+
+    /// Cancel the work and require that it never reported an end.
+    async fn cancel(self) {
+        self.task.abort();
+        assert!(
+            self.ended.await.is_err(),
+            "cancelling the work must drop it before it ends"
+        );
     }
 
     /// Require that the work has not ended yet.
@@ -819,29 +832,23 @@ fn ftp_closes_control_and_data_connections() {
 #[test]
 fn ftp_cancelled_load_releases_the_connection() {
     crate::tests::runtime::run(async {
-        // The server sends these bytes and keeps the data connection open, so the load can only
-        // end by being cancelled.
+        // The server sends these bytes and keeps the completion back, so the load can only end by
+        // being cancelled.
         let peer = ftp_server::serve(vec![Scenario {
             transfer: Transfer {
                 completion: None,
-                ..Transfer::body(b"half a script".to_vec())
+                dribble: Some(whole(&[b"half a script"])),
+                ..Transfer::body(Vec::new())
             },
             ..Scenario::default()
         }])
         .unwrap();
-        let uri = url::Url::parse(&source(&peer, "", "/script.pac")).unwrap();
-        let task = tokio::spawn(async move {
-            let fetch = configured_fetch(Route::default());
-            get_uri::load(&uri, None, &fetch).await
-        });
-        peer.reached("RETR", 1).await;
-        assert!(
-            !task.is_finished(),
-            "the load must still be reading when it is cancelled"
-        );
-        task.abort();
-        let outcome = task.await.expect_err("cancelling the load fails it");
-        assert!(outcome.is_cancelled(), "{outcome}");
+        let mut running = loading(source(&peer, "", "/script.pac")).await;
+        // Cancelling earlier races the peer's reply and accept, so the data connection it
+        // closes would not be the one the peer observes.
+        running.reached(&peer, &marker("piece-0"), 1).await;
+        running.pending("the load must still be reading when it is cancelled");
+        running.cancel().await;
         let closed = peer.finish().unwrap();
         assert!(closed.control, "the control connection closed");
         assert!(closed.data, "the pending data connection closed");
