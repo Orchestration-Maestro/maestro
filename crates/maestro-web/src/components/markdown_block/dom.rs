@@ -45,8 +45,8 @@ impl DomContent for MarkdownBlock {
         self.update(&root, view)?;
         Ok(root)
     }
-    /// Republish changed source; otherwise refresh listings in place, replacing only the code,
-    /// label or copy-control children that changed.
+    /// Republish changed source; otherwise refresh listings in place, replacing only the code
+    /// or copy-control children that changed.
     fn update(&self, root: &DomRoot, view: &DomView) -> Result<(), ToolUiError> {
         let published = root
             .owner

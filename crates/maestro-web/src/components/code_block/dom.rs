@@ -109,8 +109,9 @@ impl Listing {
     }
     /// Change only the label, body, text and title that differ.
     ///
-    /// Changed highlighting replaces the code children and a changed title rebuilds the copy
-    /// control's children; the other nodes keep their selection and copy feedback.
+    /// Changed highlighting replaces the code children, a changed language replaces the label
+    /// text and a changed title rebuilds the copy control's children; the other nodes keep
+    /// their selection and copy feedback.
     ///
     /// The copy control's labels follow `view`'s localization from now on.
     pub(crate) fn update(
