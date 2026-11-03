@@ -365,13 +365,15 @@ Conventions reject a platform temporary directory that migrated-crate test code
 names itself. Test-owned code is a test file layout and every item inside an
 inherited `cfg(test)` context, closures and macro arguments included; the
 `temp_dir` spelling is rejected there as a call, as a value or inside macro
-tokens, and its import is rejected anywhere in the crate, whatever the alias.
-The check follows no bindings or data flow. Tests that observe the platform
-directory, name an uncreated socket path under it or pass it as the owner's
-parent read it through `maestro_test_directory::temporary_root`, and directory
-creation and removal go through `Scratch`. The check covers the crates the
-migration onto `maestro-test-directory` has reached, and each batch adds its
-crates until the last one removes the scope. The diagnostic names
+tokens, and its import is rejected anywhere in the crate, whatever the alias. A
+method named `temp_dir` is the receiver's own API, never the platform spelling,
+so a call on a receiver is accepted while every member of its arguments stays
+checked. The check follows no bindings or data flow. Tests that observe the
+platform directory, name an uncreated socket path under it or pass it as the
+owner's parent read it through `maestro_test_directory::temporary_root`, and
+directory creation and removal go through `Scratch`. The check covers the
+crates the migration onto `maestro-test-directory` has reached, and each batch
+adds its crates until the last one removes the scope. The diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.

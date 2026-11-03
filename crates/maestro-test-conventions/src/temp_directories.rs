@@ -102,7 +102,8 @@ impl<'ast> Visit<'ast> for References {
 
     /// Method names are the receiver's own API, never a platform-directory
     /// spelling: the standard function is always a call through a path.
-    /// Members stay visited inside the receiver and the arguments.
+    /// Members stay visited inside the receiver and the arguments, while
+    /// expression attributes are not visited because they never name a call.
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
         self.visit_expr(&call.receiver);
         for argument in &call.args {

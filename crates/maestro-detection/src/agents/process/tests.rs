@@ -14,10 +14,6 @@ fn foreground_process(
     }
 }
 
-fn temp_detection_path() -> maestro_test_directory::Scratch {
-    maestro_test_directory::Scratch::new().expect("test directory should be created")
-}
-
 #[test]
 fn borrowed_process_recognizes_wrapped_agent_without_a_job_copy() {
     let process = foreground_process(42, "node", &["node", "/path/to/bin/codex"]);
@@ -444,7 +440,7 @@ fn command_line_helper_name_does_not_match_a_substring() {
 
 #[test]
 fn symlinked_executable_resolves_agent_identity() {
-    let dir = temp_detection_path();
+    let dir = maestro_test_directory::Scratch::new().expect("test directory should be created");
     let target = dir.path().join("cursor-agent");
     let link = dir.path().join("agent");
     std::fs::File::create_new(&target).expect("target should be created");

@@ -282,7 +282,6 @@ fn pac_retains_globals_and_replaces_changed_sources() {
             .err()
             .unwrap();
         assert!(error.to_string().contains("CHANGED 1"), "{error}");
-        std::fs::remove_file(path).unwrap();
     });
 }
 

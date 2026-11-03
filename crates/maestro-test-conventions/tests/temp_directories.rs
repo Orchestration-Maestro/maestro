@@ -250,6 +250,16 @@ fn test_process_builder_method_call_is_accepted() {
 }
 
 #[test]
+fn platform_directory_passed_to_a_method_call_is_rejected() {
+    check(
+        "maestro-app",
+        "tests/support/child.rs",
+        "//! Child processes.\n\n#[test]\nfn launches_the_selected_child_in_its_own_temporary_directory() {\n    let mut child = maestro_test_process::TestProcess::current(\"name\").unwrap();\n    child.current_dir(std::env::temp_dir());\n}\n",
+        &[6],
+    );
+}
+
+#[test]
 fn packages_reads_the_platform_directory_into_a_setting() {
     check(
         "maestro-packages",
