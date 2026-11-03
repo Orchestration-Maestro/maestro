@@ -1,7 +1,8 @@
 //! Controlled native programs for the interactive mode's process witnesses.
 
 use std::ffi::OsString;
-use std::io;
+use std::io::{self, Write};
+use std::path::Path;
 
 use serde::Deserialize;
 
@@ -67,6 +68,15 @@ impl Record {
             .ok_or_else(|| io::Error::other("missing chat family"))?;
         serde_json::from_str(json).map_err(io::Error::other)
     }
+}
+
+/// Append `bytes` to the log at `path`, creating it first.
+fn append(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
+    std::fs::File::options()
+        .append(true)
+        .create(true)
+        .open(path)?
+        .write_all(bytes)
 }
 
 /// Run the selected program with its untouched native operands.

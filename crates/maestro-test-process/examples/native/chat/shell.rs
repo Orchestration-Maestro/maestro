@@ -1,7 +1,7 @@
 //! The configured shell of the interactive mode: finite steps run for each command it is given.
 
 use std::ffi::OsString;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::os::unix::net::UnixStream;
 
 use maestro_test_process::child::{leave, write_stdout};
@@ -85,11 +85,7 @@ pub(super) fn run(steps: &[Step], operands: &[OsString]) -> io::Result<()> {
             )?,
             Step::Mark(target) => drop(std::fs::File::create(path(target, operands)?)?),
             Step::Hold(target) => hold(&path(target, operands)?),
-            Step::Log(log) => std::fs::File::options()
-                .append(true)
-                .create(true)
-                .open(log)?
-                .write_all(b"\n")?,
+            Step::Log(log) => super::append(log, b"\n")?,
             Step::Block => super::signals::pause()?,
             Step::Exit(code) => leave(i32::from(*code)),
         }

@@ -1249,7 +1249,8 @@ Neither family writes harness text.
 
 The `command` family replaces an interpreted stand-in for a program the
 product launches by name. Every scenario works on every platform except `labelled`
-and the `SIGTERM` and `SIGRTMAX` signals of `output`, which need Unix and Linux. Install the artifact under the name the product uses,
+and the `SIGTERM` and `SIGRTMAX` signals of `output`. `labelled` and `SIGTERM` need
+Unix; `SIGRTMAX` needs Linux. Install the artifact under the name the product uses,
 then write `command` on the first line of `<alias>.fixture` followed by a JSON
 object whose `scenario` selects one finite behaviour. The fixture parses the whole
 record before any effect and rejects an unknown scenario or field, including in the
@@ -1314,7 +1315,7 @@ root and keep `MAESTRO_NATIVE_FIXTURE` in the cleared child's environment, becau
 | Scenario | Fields and behavior |
 | --- | --- |
 | `shell` | `steps` run in order for each `<shell> -c <command>`: `{"print": text}`, `{"print-command": {"before", "after"}}` (the command text between two texts), `{"mark": target}` (create an empty file), `{"hold": target}`, `{"log": path}` (append one empty line), `"block"` (wait for a signal) and `{"exit": status}`. A target is `{"path": p}` or `{"command": suffix}`, the command text followed by the suffix. |
-| `tmux` | Answers `show -gv extended-keys` and `show -gv extended-keys-format` with the `extended_keys` and `extended_keys_format` replies (`text`, optional `code`, optional `signal` to end by SIGTERM after writing). |
+| `tmux` | Answers `show -gv extended-keys` and `show -gv extended-keys-format` with the `extended_keys` and `extended_keys_format` replies (`text`, optional `code`, optional `signal`, `"SIGTERM"`, to end by that signal after writing). |
 | `gated-tmux`, `gated-package`, `gated-probe` | Require the operands of the query, report the launch (`argv`, `cwd`, and `MAESTRO_NOTICE_INHERITED`) as JSON in `<directory>/<name>.ready`, wait for the line `go` in `<name>.permit`, then answer. The tmux query ignores SIGTERM. |
 | `package-version` | Appends the working directory and each operand, joined by `\|`, to `log` and prints `"2"`. |
 | `package-remote` | Appends one JSON line (`cwd`, `argv`, `prompt`) to `log` and answers `rev-parse HEAD`, `rev-parse --abbrev-ref @{upstream}` and `ls-remote origin refs/heads/main`. |
@@ -1356,8 +1357,8 @@ can play: one that creates a file and one that reruns a test binary. The compone
 passes the alias path and its literal operands through the same request it always
 used. `touch` works on every platform and `rerun` needs Unix. A child that holds a
 connection, answers termination or splits output across pipe writes uses the `exec`
-family, a program that only writes both streams and ends uses the `command` family's
-`output` scenario, and one that reports its working directory and operands uses the
+family. A program that only writes both streams and ends uses the `command` family's
+`output` scenario. One that reports its working directory and operands uses the
 `child` family's `arguments` scenario.
 
 | Scenario | Fields and behavior |
@@ -1655,8 +1656,9 @@ cases; the fixture never replaces or downloads it.
 #### Command payloads
 
 Install the same artifact as the program under test to observe command
-execution without an interpreter. `stubborn`, `identity` and `blocked` need Unix. Write `exec` on the first line of
-`<alias>.fixture`, followed by one JSON object with a `scenario` field. The whole
+execution without an interpreter. `stubborn`, `identity` and `blocked` need Unix.
+Write `exec` on the first line of `<alias>.fixture`, followed by one JSON object
+with a `scenario` field. The whole
 record is parsed before any stream, socket or directory changes; unknown fields
 and unknown scenarios fail first.
 

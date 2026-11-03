@@ -17,6 +17,15 @@ pub(crate) enum ExitSignal {
     Terminate,
 }
 
+impl ExitSignal {
+    /// Deliver this signal to the running process.
+    pub(super) fn raise(&self) -> io::Result<()> {
+        match self {
+            Self::Terminate => Ok(kill_process(getpid(), Signal::TERM)?),
+        }
+    }
+}
+
 /// The answer to `auth status`.
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -83,11 +92,7 @@ pub(super) fn run(gh: &Gh, operands: &[OsString]) -> io::Result<()> {
         .collect();
     let mut line = serde_json::to_vec(&argv).map_err(io::Error::other)?;
     line.push(b'\n');
-    std::fs::File::options()
-        .append(true)
-        .create(true)
-        .open(Path::new(&gh.state).join("argv.jsonl"))?
-        .write_all(&line)?;
+    super::append(Path::new(&gh.state).join("argv.jsonl"), &line)?;
     if operands.starts_with(&["auth".into(), "status".into()]) {
         return authenticate(&gh.auth);
     }
@@ -99,8 +104,8 @@ fn authenticate(auth: &Auth) -> io::Result<()> {
     if auth.remove_self {
         std::fs::remove_file(std::env::current_exe()?)?;
     }
-    if let Some(ExitSignal::Terminate) = auth.signal {
-        kill_process(getpid(), Signal::TERM)?;
+    if let Some(signal) = &auth.signal {
+        signal.raise()?;
     }
     leave(i32::from(auth.exit))
 }

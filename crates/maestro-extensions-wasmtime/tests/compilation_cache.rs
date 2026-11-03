@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 use super::components::{TracedBus, loader, local};
+use super::example_process::record;
 use maestro_extensions::load_extensions;
 use maestro_extensions_wasmtime::component_engine;
 use maestro_test_directory::Scratch;
@@ -238,10 +239,8 @@ fn share_compiled_bytes(test: &str, archived: bool) {
 
 /// Records that the setup example reruns `test` in the copied executable `binary`.
 fn rerun_in(example: &Path, binary: &Path, test: &str) {
-    let mut record = example.as_os_str().to_owned();
-    record.push(".fixture");
     let rerun = serde_json::json!({"scenario":"rerun", "binary":binary, "test":test});
-    std::fs::write(record, format!("component-exec\n{rerun}")).unwrap();
+    record(example, "component-exec", &rerun);
 }
 
 /// `binary` run in `configured`'s environment and directory, without its harness arguments.

@@ -1,14 +1,16 @@
 //! Terminal multiplexer, package manager and Git programs of the startup notices.
 
 use std::ffi::OsString;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead};
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use maestro_test_process::child::{leave, write_stdout};
-use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
+
+use super::append;
+use super::share::ExitSignal;
 
 /// The options a multiplexer query may name.
 const OPTIONS: [&str; 2] = ["extended-keys", "extended-keys-format"];
@@ -22,9 +24,9 @@ pub(crate) struct Reply {
     /// Status when no signal is selected.
     #[serde(default)]
     code: u8,
-    /// End by the native termination signal after writing.
+    /// Native termination instead of a status, after writing.
     #[serde(default)]
-    signal: bool,
+    signal: Option<ExitSignal>,
 }
 
 /// The option a `show -gv <option>` query names.
@@ -46,8 +48,8 @@ pub(super) fn tmux(keys: &Reply, format: &Reply, operands: &[OsString]) -> io::R
         format
     };
     write_stdout(reply.text.as_bytes())?;
-    if reply.signal {
-        kill_process(getpid(), Signal::TERM)?;
+    if let Some(signal) = &reply.signal {
+        signal.raise()?;
     }
     leave(i32::from(reply.code))
 }
@@ -130,11 +132,7 @@ pub(super) fn package_version(log: &str, operands: &[OsString]) -> io::Result<()
         line.extend_from_slice(operand.as_encoded_bytes());
     }
     line.push(b'\n');
-    std::fs::File::options()
-        .append(true)
-        .create(true)
-        .open(log)?
-        .write_all(&line)?;
+    append(log, &line)?;
     write_stdout(b"\"2\"")?;
     leave(0)
 }
@@ -152,11 +150,7 @@ pub(super) fn package_remote(log: &str, operands: &[OsString]) -> io::Result<()>
     }))
     .map_err(io::Error::other)?;
     line.push(b'\n');
-    std::fs::File::options()
-        .append(true)
-        .create(true)
-        .open(log)?
-        .write_all(&line)?;
+    append(log, &line)?;
     let answer = match argv.iter().map(|operand| &**operand).collect::<Vec<_>>()[..] {
         ["rev-parse", "HEAD"] => format!("{}\n", "a".repeat(40)),
         ["rev-parse", "--abbrev-ref", "@{upstream}"] => "origin/main\n".into(),

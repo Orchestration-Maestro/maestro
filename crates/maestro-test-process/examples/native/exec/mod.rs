@@ -36,9 +36,9 @@ pub(super) enum Record {
         #[serde(default)]
         stderr: Vec<u8>,
     },
-    #[cfg(unix)]
     /// Write the partial streams, then answer every TERM until killed, released by one byte
     /// or disconnected.
+    #[cfg(unix)]
     Stubborn {
         /// Parent-owned readiness and question channel.
         port: u16,
@@ -74,8 +74,8 @@ pub(super) enum Record {
         /// Parent-owned release channel.
         port: u16,
     },
-    #[cfg(unix)]
     /// Report this process's session and process group.
+    #[cfg(unix)]
     Identity {},
     /// Answer each question under the default termination action.
     Yielding {
@@ -92,8 +92,8 @@ pub(super) enum Record {
         /// Parent-owned control channel.
         port: u16,
     },
-    #[cfg(unix)]
     /// Finish after one termination signal, without polling or a deadline.
+    #[cfg(unix)]
     Blocked {
         /// Exit code to report once the termination signal was handled.
         code: Option<i32>,

@@ -88,17 +88,21 @@ impl GroupMember {
         }
     }
 
-    /// The member's report once it exits: `TSTP`, or nothing when it received no stop.
+    /// The member's report once it exits after the stop the caller expects: `TSTP`.
     ///
-    /// A stop the caller expects is awaited before any input is given, so the member's own
-    /// report decides its exit; with none expected the member exits on its input.
-    fn finish(mut self, stop_expected: bool) -> Option<String> {
-        if !stop_expected && let Some(mut input) = self.input.take() {
-            let _ = input.write_all(b"\n");
-        }
+    /// The member's own report decides its exit, so no input is given first.
+    fn finish_after_stop(mut self) -> Option<String> {
         let report = self.reports.next().map(Result::unwrap);
         assert!(self.child.wait().unwrap().success());
         report
+    }
+
+    /// The member's report once input ends it: nothing, since it received no stop.
+    fn finish_by_input(mut self) -> Option<String> {
+        if let Some(mut input) = self.input.take() {
+            let _ = input.write_all(b"\n");
+        }
+        self.finish_after_stop()
     }
 }
 
@@ -125,7 +129,7 @@ fn suspend_resume_restores_the_ui_once() {
             let member = GroupMember::start(directory);
             world.mode.editor.handle_input(CTRL_Z);
             assert_eq!(world.terminal.events(), ["start", "stop"]);
-            assert_eq!(member.finish(true).as_deref(), Some("TSTP"));
+            assert_eq!(member.finish_after_stop().as_deref(), Some("TSTP"));
             let mut resumed = world.runtime.take_futures();
             assert_eq!(resumed.len(), 1);
             world.terminal.clear_writes();
@@ -165,7 +169,7 @@ fn suspend_failure_releases_both_temporary_registrations() {
             world.runtime.settle().unwrap();
             assert_eq!(world.runtime.futures(), 0);
             assert_eq!(world.terminal.events(), ["start", "stop"]);
-            assert_eq!(member.finish(false), None);
+            assert_eq!(member.finish_by_input(), None);
             println!("PROBE released");
             signal("-INT");
         },

@@ -62,8 +62,13 @@ pub fn install(
     let program = directory.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
     maestro_test_process::install_executable(Path::new(&artifact), &program)
         .expect("the fixture installs");
-    let mut record = program.clone().into_os_string();
+    record(&program, family, scenario);
+    program
+}
+
+/// Records the `family` scenario the installed fixture `program` plays.
+pub fn record(program: &Path, family: &str, scenario: &serde_json::Value) {
+    let mut record = program.as_os_str().to_owned();
     record.push(".fixture");
     std::fs::write(record, format!("{family}\n{scenario}")).expect("the record is writable");
-    program
 }

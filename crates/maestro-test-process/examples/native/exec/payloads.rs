@@ -87,9 +87,9 @@ pub(super) fn holder(port: u16, stdout: &[u8], stderr: &[u8]) -> io::Result<()> 
     write_stdout(b"bye")
 }
 
-#[cfg(unix)]
 /// Write the partial streams, then answer every TERM with `bye` and `T` until killed, released
 /// or disconnected.
+#[cfg(unix)]
 pub(super) fn stubborn(port: u16, stdout: &[u8], stderr: &[u8]) -> io::Result<()> {
     write_stdout(stdout)?;
     write_stderr(stderr)?;
@@ -104,8 +104,8 @@ pub(super) fn stubborn(port: u16, stdout: &[u8], stderr: &[u8]) -> io::Result<()
     Ok(())
 }
 
-#[cfg(unix)]
 /// Report each queued termination until the parent kills this process.
+#[cfg(unix)]
 fn answer_each_termination(mut notifications: Termination, mut socket: TcpStream) {
     while notifications.wait().is_ok() {
         if write_stdout(b"bye").is_err() || socket.write_all(b"T").is_err() {
@@ -177,8 +177,8 @@ pub(super) fn termination(port: u16) -> io::Result<()> {
     std::fs::write("survived", b"survived")
 }
 
-#[cfg(unix)]
 /// Report the session and process group this process leads or belongs to.
+#[cfg(unix)]
 pub(super) fn identity() -> io::Result<()> {
     let session = rustix::process::getsid(None).map_err(io::Error::from)?;
     let group = rustix::process::getpgrp();
@@ -215,9 +215,9 @@ pub(super) fn tree_leaf(port: u16) -> io::Result<()> {
     receive(&mut socket).map(|_| ())
 }
 
-#[cfg(unix)]
 /// Finish after one termination signal, reporting it with `code` when supplied.
 /// Announce readiness on `port`, when supplied, only after registering TERM.
+#[cfg(unix)]
 pub(super) fn blocked(code: Option<i32>, port: Option<u16>) -> io::Result<()> {
     let mut notifications = Termination::new()?;
     let mut socket = port.map(connect).transpose()?;

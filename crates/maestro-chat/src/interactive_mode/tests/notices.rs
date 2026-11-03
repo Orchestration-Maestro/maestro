@@ -1046,7 +1046,7 @@ fn reply(result: &TmuxResult) -> serde_json::Value {
     serde_json::json!({
         "text": result.text,
         "code": result.code.unwrap_or(0),
-        "signal": result.signal.unwrap_or(false),
+        "signal": result.signal.unwrap_or(false).then_some("SIGTERM"),
     })
 }
 
@@ -1509,7 +1509,7 @@ fn tmux_query_failures_and_timeout_are_silent() {
 fn tmux_capture_uses_raw_status_and_two_second_settlement() {
     const TEST: &str = "tmux_capture_uses_raw_status_and_two_second_settlement";
     super::isolated_case(TEST, "signal", &[], async |root| {
-        let keys = serde_json::json!({"text": "off\n", "signal": true});
+        let keys = serde_json::json!({"text": "off\n", "signal": "SIGTERM"});
         let format = serde_json::json!({"text": "xterm\n"});
         install_tmux(root, &keys, &format);
         let world = Setup::default().build(root);
