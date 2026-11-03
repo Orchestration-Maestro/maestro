@@ -273,7 +273,9 @@ fn binding_called_from(session: &str, context: i64, id: i64) -> Value {
     let payload = json!({"id":id,"name":"inspectSandbox","args":["probe:\"雪]","state"]});
     json!({
         "method":"Runtime.bindingCalled","sessionId":session,
-        "params":{"name":"__maestroDriver","executionContextId":context,"payload":payload.to_string()}
+        "params":{
+            "name":"__maestroDriver","executionContextId":context,"payload":payload.to_string()
+        }
     })
 }
 
@@ -609,8 +611,9 @@ fn held_result(id: &Value) -> Value {
 }
 
 /// Interrupt the frame's setup at the command `interruption` names; true when that command is
-/// left unanswered, as Chromium leaves a command of a removed renderer. Each interruption also
-/// answers the held root evaluation, so a driver that ignores the interruption returns at once.
+/// left unanswered, as Chromium leaves a command of a removed renderer. `RemovedWithOwnCall` and
+/// `RootException` also answer the held root evaluation, so a driver that ignores the interruption
+/// returns at once; the main loop answers it after `RemovedWithRootCall` records its reply.
 async fn interrupt(
     socket: &mut WebSocketStream<TcpStream>,
     interruption: Interruption,
