@@ -1197,7 +1197,8 @@ currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
 tests), the command-line startup tests, the daemon's notification and repository
-discovery cases and the terminal client example's tests. Local setup builds the
+discovery cases and `maestro-chat` (the interactive mode's tests and the terminal
+client example's tests). Local setup builds the
 example with the locked host `dev` profile and reads Cargo's emitted executable
 path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1285,6 +1286,59 @@ and stages native copies of both preparation examples. It also reports the two
 finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
+
+#### Interactive-mode stand-ins
+
+On Unix, the `chat` family stands in for the programs the interactive mode launches:
+its shell, external editor, clipboard reader, search probes, multiplexer, package
+manager, Git and GitHub command line. Install the artifact under the name the mode
+resolves from `PATH`, then write `chat` on the first line of `<alias>.fixture`
+followed by a JSON object whose `scenario` selects one finite behavior. The fixture
+parses the whole record before any effect and rejects an unknown scenario, step,
+frame or field. The interactive-mode tests install each alias in their disposable
+root and keep `MAESTRO_NATIVE_FIXTURE` in the cleared child's environment, because
+`env_clear` drops it.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `shell` | `steps` run in order for each `<shell> -c <command>`: `{"print": text}`, `{"print-command": {"before", "after"}}` (the command text between two texts), `{"mark": target}` (create an empty file), `{"hold": target}`, `{"log": path}` (append one empty line), `"block"` (wait for a signal) and `{"exit": status}`. A target is `{"path": p}` or `{"command": suffix}`, the command text followed by the suffix. |
+| `edit` | Records every operand, one per line, in `<report>/argv`, copies the edited file (the last operand) to `<report>/before` with its permission bits, writes `content` over it and ends with `status`. |
+| `paste` | Prints `types` for `--list-types` and `image` for any other request. |
+| `announce` | Connects to the Unix socket `socket`, sends `name` and a newline, then waits until the test closes the connection. |
+| `tmux` | Answers `show -gv extended-keys` and `show -gv extended-keys-format` with the `extended_keys` and `extended_keys_format` replies (`text`, optional `code`, optional `signal` to end by SIGTERM after writing). |
+| `gated-tmux`, `gated-package`, `gated-probe` | Require the operands of the query, report the launch (`argv`, `cwd`, and `MAESTRO_NOTICE_INHERITED`) as JSON in `<directory>/<name>.ready`, wait for the line `go` in `<name>.permit`, then answer. The tmux query ignores SIGTERM. |
+| `package-version` | Appends the working directory and each operand, joined by `\|`, to `log` and prints `"2"`. |
+| `package-remote` | Appends one JSON line (`cwd`, `argv`, `prompt`) to `log` and answers `rev-parse HEAD`, `rev-parse --abbrev-ref @{upstream}` and `ls-remote origin refs/heads/main`. |
+| `gh` | `state` receives `argv.jsonl`, one JSON array per call, and the copied document. `auth status` follows `auth` (`exit`, `remove_self`, `signal`). `gist create` plays `gist.frames` against its last operand: `{"stdout": bytes}`, `{"stderr": bytes}`, `{"send": bytes}` and `"hold"` on the control connection at `gist.port`, `"release"`, `{"chmod": octal}` and `{"copy": name}`, then ends with `gist.exit`. |
+| `pause` | Waits until a signal ends the process. |
+| `group-member` | Prints `ready` once it handles the stop signal, then prints `TSTP` if the stop arrives, or ends silently when a byte of input arrives first. |
+
+A held shell waits on a gate the test owns. Bind a Unix listener at the target path
+before the command starts; the shell connects and waits. Dropping the listener
+releases it, whether the shell connected before or after. A `release` frame asks the
+test for one grant on the control connection by sending `R` and waits for any reply.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let shell = directory.path().join("shell");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &shell)?;
+    let gate = std::os::unix::net::UnixListener::bind(directory.path().join("job-release"))?;
+    let steps = r#"[{"mark": {"command": "-started"}}, {"hold": {"command": "-release"}},
+        {"print-command": {"before": "", "after": " output\n"}}]"#;
+    let mut record = shell.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, format!("chat\n{{\"scenario\":\"shell\",\"steps\":{steps}}}"))?;
+    // Configure the shell path, run `!job`, wait for `job-started`, then release it.
+    drop(gate);
+    Ok(())
+}
+```
+
+A search probe that only answers, a quiet browser opener and a hook that only refuses
+use the `command` family's `output` scenario instead.
 
 #### Repository recipe stand-ins
 

@@ -1,0 +1,120 @@
+//! Controlled native programs for the interactive mode's process witnesses.
+
+use std::ffi::OsString;
+use std::io;
+
+use serde::Deserialize;
+
+mod editor;
+mod notices;
+mod share;
+mod shell;
+mod signals;
+
+/// Interactive-mode scenarios, parsed completely before any file, socket or stream effect.
+#[derive(Deserialize)]
+#[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
+pub(super) enum Record {
+    /// Run the recorded steps as the configured shell would run a command.
+    Shell {
+        /// Ordered effects, ending the process after the last.
+        steps: Vec<shell::Step>,
+    },
+    /// Stand in for the external editor.
+    Edit {
+        /// Directory that receives the `argv` and `before` observations.
+        report: String,
+        /// Text the editor writes over the edited file.
+        content: String,
+        /// Status the editor ends with.
+        status: u8,
+    },
+    /// Stand in for the Wayland clipboard reader.
+    Paste {
+        /// Text answering `--list-types`.
+        types: String,
+        /// Bytes answering every other request.
+        image: Vec<u8>,
+    },
+    /// Announce this probe on the test's socket and wait until the test closes it.
+    Announce {
+        /// Unix socket the test listens on.
+        socket: String,
+        /// Text sent first, followed by a newline.
+        name: String,
+    },
+    /// Answer a terminal multiplexer option query with the recorded results.
+    Tmux {
+        /// Result for `extended-keys`.
+        extended_keys: notices::Reply,
+        /// Result for `extended-keys-format`.
+        extended_keys_format: notices::Reply,
+    },
+    /// Answer a terminal multiplexer option query after the test's permit.
+    GatedTmux {
+        /// Directory holding the `.ready` and `.permit` pipes.
+        directory: String,
+    },
+    /// Answer a package version query after the test's permit.
+    GatedPackage {
+        /// Directory holding the `.ready` and `.permit` pipes.
+        directory: String,
+    },
+    /// Answer a search program's version probe after the test's permit.
+    GatedProbe {
+        /// Directory holding the `.ready` and `.permit` pipes.
+        directory: String,
+    },
+    /// Answer a configured package-manager version query and log it.
+    PackageVersion {
+        /// File each invocation appends its directory and operands to.
+        log: String,
+    },
+    /// Answer the Git queries of a package update check and log them.
+    PackageRemote {
+        /// File each invocation appends one JSON observation to.
+        log: String,
+    },
+    /// Stand in for the GitHub command line.
+    Gh(share::Gh),
+    /// Report the process id, then wait until a signal ends the process.
+    Pause {},
+    /// Report readiness, then report a stop signal or end when input arrives.
+    GroupMember {},
+}
+
+impl Record {
+    /// Reject unknown scenarios and fields before effects.
+    pub(super) fn parse(text: &str) -> io::Result<Self> {
+        let json = text
+            .strip_prefix("chat\n")
+            .ok_or_else(|| io::Error::other("missing chat family"))?;
+        serde_json::from_str(json).map_err(io::Error::other)
+    }
+}
+
+/// Run the selected program with its untouched native operands.
+pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
+    match record {
+        Record::Shell { steps } => shell::run(steps, operands),
+        Record::Edit {
+            report,
+            content,
+            status,
+        } => editor::edit(report, content, *status, operands),
+        Record::Paste { types, image } => editor::paste(types, image, operands),
+        Record::Announce { socket, name } => signals::announce(socket, name),
+        Record::Tmux {
+            extended_keys,
+            extended_keys_format,
+        } => notices::tmux(extended_keys, extended_keys_format, operands),
+        Record::GatedTmux { directory } => notices::gated_tmux(directory, operands),
+        Record::GatedPackage { directory } => notices::gated_package(directory, operands),
+        Record::GatedProbe { directory } => notices::gated_probe(directory, operands),
+        Record::PackageVersion { log } => notices::package_version(log, operands),
+        Record::PackageRemote { log } => notices::package_remote(log, operands),
+        Record::Gh(gh) => share::run(gh, operands),
+        Record::Pause {} => signals::pause(),
+        Record::GroupMember {} => signals::group_member(),
+    }
+}

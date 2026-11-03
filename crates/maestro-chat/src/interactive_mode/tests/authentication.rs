@@ -5,7 +5,7 @@ mod completion;
 mod navigation;
 mod subscription;
 
-use super::actions::install;
+use super::install_output;
 use super::models::{
     editor, editor_focused, refuse_availability, refuse_refresh, register_configured,
     replace_session, replaceable, scope, shows_only, submit_held,
@@ -108,7 +108,7 @@ fn panel_rows(world: &World) -> String {
 /// opens no browser.
 fn quiet_browser(directory: &Path) {
     for name in ["xdg-open", "open"] {
-        install(directory, name, "#!/bin/sh\n");
+        install_output(&directory.join("bin"), name, b"", 0);
     }
 }
 

@@ -1,6 +1,6 @@
 //! Completion witnesses through the interactive mode's own provider.
 
-use super::{Setup, World, isolated, isolated_case, start};
+use super::{Setup, World, install, install_output, isolated, isolated_case, start};
 use crate::interactive_mode::autocomplete::{
     get_autocomplete_source_tag, prefix_autocomplete_description,
 };
@@ -12,6 +12,7 @@ use maestro_app::{
 use maestro_tui::autocomplete::{AutocompleteSuggestions, CompletionOptions, CursorPosition};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, Cancellation};
 use serde::Deserialize;
+use serde_json::json;
 use std::ffi::OsStr;
 use std::{
     cell::RefCell,
@@ -778,55 +779,45 @@ fn autocomplete_handles_survive_mode_release_without_retaining_mode_cycles() {
     });
 }
 
-/// Installs `text` as an executable through a child process, never in-process.
-///
-/// The probe commands precede the shell commands; the installing child receives the
-/// path the parent inherited under its own name.
-fn script(path: &Path, text: &str) {
-    let tool_path = std::env::var("MAESTRO_TEST_TOOL_PATH").unwrap_or_default();
-    let source = path.with_extension("source");
-    std::fs::write(&source, text).unwrap();
-    let status = std::process::Command::new("install")
-        .args(["-m", "0700"])
-        .arg(&source)
-        .arg(path)
-        .env("PATH", tool_path)
-        .status()
-        .unwrap_or_else(|error| panic!("install runs: {error}"));
-    assert!(status.success(), "the fixture executable installs");
-}
-
-/// The handshake probe both search programs run when the other must be in flight.
-fn handshake(marker: &Path, own: &str, other: &str) -> String {
-    format!(
-        "#!/bin/sh\n: > '{}/{}'\ni=0\nwhile [ ! -f '{}/{}' ]; do\ni=$((i+1))\n[ \"$i\" -gt 200000 ] && exit 1\ndone\nexit 0\n",
-        marker.display(),
-        own,
-        marker.display(),
-        other
-    )
+/// Accepts both search probes' announcements before releasing either, so each is in flight
+/// while the other runs; the thread returns the announced names in order.
+fn both_probes_announce(socket: &std::path::Path) -> std::thread::JoinHandle<Vec<String>> {
+    let listener = std::os::unix::net::UnixListener::bind(socket).unwrap();
+    std::thread::spawn(move || {
+        let mut held = Vec::new();
+        let mut names = Vec::new();
+        for _ in 0..2 {
+            let (stream, _) = listener.accept().unwrap();
+            let mut name = String::new();
+            std::io::BufRead::read_line(&mut std::io::BufReader::new(&stream), &mut name).unwrap();
+            names.push(name.trim_end().to_owned());
+            held.push(stream);
+        }
+        // Closing the connections releases both probes together.
+        drop(held);
+        names.sort();
+        names
+    })
 }
 
 #[test]
 fn interactive_initialization_prepares_search_tools_before_first_completion() {
     let test = "interactive_initialization_prepares_search_tools_before_first_completion";
-    let tool_path = std::env::var("PATH").unwrap_or_default();
     isolated_case(
         test,
         "managed",
         &[
             (OsStr::new("PATH"), OsStr::new("probes:/bin")),
             (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
-            (OsStr::new("MAESTRO_TEST_TOOL_PATH"), OsStr::new(&tool_path)),
         ],
         async |directory| {
             let managed = directory.join("bin");
             std::fs::create_dir_all(&managed).unwrap();
-            script(&managed.join("fd"), "#!/bin/sh\nexit 0\n");
+            install_output(&managed, "fd", b"", 0);
             let elsewhere = directory.join("elsewhere");
             std::fs::create_dir(&elsewhere).unwrap();
             std::fs::create_dir(elsewhere.join("bin")).unwrap();
-            script(&elsewhere.join("bin").join("fd"), "#!/bin/sh\nexit 1\n");
+            install_output(&elsewhere.join("bin"), "fd", b"", 1);
             let world = Setup {
                 cwd: Some(elsewhere.to_str().unwrap().to_owned()),
                 ..Setup::default()
@@ -851,32 +842,25 @@ fn interactive_initialization_prepares_search_tools_before_first_completion() {
 #[test]
 fn interactive_initialization_starts_both_search_programs_before_either_finishes() {
     let test = "interactive_initialization_starts_both_search_programs_before_either_finishes";
-    let tool_path = std::env::var("PATH").unwrap_or_default();
     isolated_case(
         test,
         "child",
         &[
             (OsStr::new("PATH"), OsStr::new("probes:/bin")),
             (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
-            (OsStr::new("MAESTRO_TEST_TOOL_PATH"), OsStr::new(&tool_path)),
         ],
         async |directory| {
             let probes = directory.join("probes");
             std::fs::create_dir(&probes).unwrap();
-            let marker = directory.join("markers");
-            std::fs::create_dir(&marker).unwrap();
-            script(
-                &probes.join("fd"),
-                &handshake(&marker, "fd.started", "rg.started"),
-            );
-            script(
-                &probes.join("rg"),
-                &handshake(&marker, "rg.started", "fd.started"),
-            );
+            let socket = directory.join("probe-gate");
+            let announced = both_probes_announce(&socket);
+            for name in ["fd", "rg"] {
+                let scenario = json!({"scenario": "announce", "socket": socket, "name": name});
+                install(&probes, name, "chat", &scenario);
+            }
             let world = Setup::default().build(directory);
             start(&world).await;
-            assert!(marker.join("fd.started").exists());
-            assert!(marker.join("rg.started").exists());
+            assert_eq!(announced.join().unwrap(), ["fd", "rg"]);
             assert_eq!(world.mode.fd_path.borrow().as_deref(), Some("fd"));
         },
     );
@@ -885,24 +869,19 @@ fn interactive_initialization_starts_both_search_programs_before_either_finishes
 #[test]
 fn file_completion_consumes_the_search_owner_fd_path() {
     let test = "file_completion_consumes_the_search_owner_fd_path";
-    let tool_path = std::env::var("PATH").unwrap_or_default();
     isolated_case(
         test,
         "child",
         &[
             (OsStr::new("PATH"), OsStr::new("probes:/bin")),
             (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
-            (OsStr::new("MAESTRO_TEST_TOOL_PATH"), OsStr::new(&tool_path)),
         ],
         async |directory| {
             let (input, expected) = case(test, "fd-route");
             let query = input.query.unwrap();
             let managed = directory.join("bin");
             std::fs::create_dir_all(&managed).unwrap();
-            script(
-                &managed.join("fd"),
-                "#!/bin/sh\nprintf 'target-unique.rs\\000'\n",
-            );
+            install_output(&managed, "fd", b"target-unique.rs\0", 0);
             let world = Setup::default().build(directory);
             start(&world).await;
             assert!(

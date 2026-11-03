@@ -1,9 +1,9 @@
 //! Model selection, model scopes and the subscription notice through the mode's installed
 //! callbacks, its registered keys, the real panels and an in-memory catalog.
-use super::actions::{install, run_action, shows};
+use super::actions::{run_action, shows};
 use super::transcript::assistant;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, isolated, started};
+use super::{Setup, World, install, isolated, started};
 use crate::ModelSelectorComponent;
 use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
@@ -17,6 +17,7 @@ use maestro_app::{
 use maestro_test_process::TestProcess;
 use maestro_tui::{Component, Input, Text, tui::InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
+use serde_json::json;
 use std::{
     any::Any,
     cell::RefCell,
@@ -737,12 +738,13 @@ fn key_command(
 ) {
     let name = format!("lookup{case}");
     if !directory.join("bin").join(&name).exists() {
-        let output = key.map_or("exit 1".to_owned(), |key| format!("printf '%s' '{key}'"));
-        let log = lookup_log(directory, case);
+        let answer = key.map_or(json!({"exit": 1}), |key| json!({"print": key}));
+        let steps = json!([{"log": lookup_log(directory, case)}, answer]);
         install(
-            directory,
+            &directory.join("bin"),
             &name,
-            &format!("#!/bin/sh\necho >> '{}'\n{output}\n", log.display()),
+            "chat",
+            &json!({"scenario": "shell", "steps": steps}),
         );
     }
     let credential = serde_json::json!({"type": "api_key", "key": format!("!{name}")});

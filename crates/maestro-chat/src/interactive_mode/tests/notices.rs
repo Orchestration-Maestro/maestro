@@ -979,10 +979,11 @@ fn native_package_world_with(
         )
         .unwrap();
     }
-    let observed = root.join("npm-observed");
-    let script = format!(
-        "printf '%s\\n' \"$PWD|$0|$1|$2|$3\" >> '{}'; printf '\"2\"'",
-        observed.display()
+    let version = super::install(
+        &root.join("bin"),
+        "package-version",
+        "chat",
+        &serde_json::json!({"scenario": "package-version", "log": root.join("npm-observed")}),
     );
     let world = Setup {
         options,
@@ -993,12 +994,9 @@ fn native_package_world_with(
             settings.set_project_packages(vec![maestro_app::PackageSource::Source(
                 "npm:before".into(),
             )]);
-            settings.set_npm_command(Some(
-                ["/bin/sh", "-c", &script]
-                    .into_iter()
-                    .map(|s| maestro_app::SettingsListEntry::String(s.into()))
-                    .collect(),
-            ));
+            settings.set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+                version.to_str().unwrap().into(),
+            )]));
         }),
         ..Setup::default()
     }
@@ -1043,30 +1041,41 @@ struct WarningExpected {
     warning: Option<String>,
 }
 
-/// One finite interpreter process for each native query, with no subprocesses.
-const TMUX_SCRIPT: &str = r"#!/usr/bin/python3
-import json, os, signal, sys
-assert sys.argv[1:3] == ['show', '-gv'] and len(sys.argv) == 4
-assert sys.argv[3] in ['extended-keys', 'extended-keys-format']
-case = json.loads(os.environ['MAESTRO_TMUX_CASE'])
-row = case['ext' if sys.argv[3] == 'extended-keys' else 'format']
-sys.stdout.write(row['text'])
-sys.stdout.flush()
-if row.get('signal'):
-    os.kill(os.getpid(), signal.SIGTERM)
-sys.exit(row.get('code') or 0)
-";
+/// The recorded reply a multiplexer query gets, as the fixture's record spells it.
+fn reply(result: &TmuxResult) -> serde_json::Value {
+    serde_json::json!({
+        "text": result.text,
+        "code": result.code.unwrap_or(0),
+        "signal": result.signal.unwrap_or(false),
+    })
+}
 
-/// Installs an executable through the existing checked child owner.
-fn install_command(root: &std::path::Path, name: &str, script: &str) {
-    let source = root.join(format!("{name}.py"));
-    std::fs::write(&source, script).unwrap();
-    super::native::install_executable(&source, &root.join("bin").join(name))
-        .expect("install starts");
-    assert_eq!(
-        std::fs::read_to_string(root.join("bin").join(name)).unwrap(),
-        script
-    );
+/// Installs the native program `scenario` of the interactive-mode fixture family as `name` in
+/// the command directory of `root`.
+fn install_command(root: &std::path::Path, name: &str, scenario: &serde_json::Value) {
+    super::install(&root.join("bin"), name, "chat", scenario);
+}
+
+/// Installs a multiplexer that answers `keys` and `format` for its two option queries.
+fn install_tmux(root: &std::path::Path, keys: &serde_json::Value, format: &serde_json::Value) {
+    let scenario = serde_json::json!({
+        "scenario": "tmux",
+        "extended_keys": keys,
+        "extended_keys_format": format,
+    });
+    install_command(root, "tmux", &scenario);
+}
+
+/// The scenario of a program that reports its launch and waits for a permit in `root`.
+fn gated(scenario: &str, root: &std::path::Path) -> serde_json::Value {
+    serde_json::json!({"scenario": scenario, "directory": root})
+}
+
+/// Installs a multiplexer whose two queries both succeed with their usual answers.
+fn install_ready_tmux(root: &std::path::Path) {
+    let keys = serde_json::json!({"text": "off\n"});
+    let format = serde_json::json!({"text": "xterm\n"});
+    install_tmux(root, &keys, &format);
 }
 
 #[test]
@@ -1076,27 +1085,21 @@ fn tmux_warning_selects_first_reachable_policy() {
         .into_iter()
         .enumerate()
     {
-        let encoded = serde_json::to_string(&input).unwrap();
-        super::isolated_case(
-            TEST,
-            &index.to_string(),
-            &[(OsStr::new("MAESTRO_TMUX_CASE"), OsStr::new(&encoded))],
-            async |directory| {
-                install_command(directory, "tmux", TMUX_SCRIPT);
-                let world = Setup::default().build(directory);
-                assert_eq!(input.op, "tmux");
-                if let Some(value) = &input.tmux {
-                    world.runtime.set_environment("TMUX", value);
-                }
-                async {
-                    let (warning, errors) =
-                        super::driving(&world, world.mode.check_tmux_keyboard_setup()).await;
-                    assert!(errors.is_empty());
-                    assert_eq!(warning, expected.warning);
-                }
-                .await;
-            },
-        );
+        super::isolated_case(TEST, &index.to_string(), &[], async |directory| {
+            install_tmux(directory, &reply(&input.ext), &reply(&input.format));
+            let world = Setup::default().build(directory);
+            assert_eq!(input.op, "tmux");
+            if let Some(value) = &input.tmux {
+                world.runtime.set_environment("TMUX", value);
+            }
+            async {
+                let (warning, errors) =
+                    super::driving(&world, world.mode.check_tmux_keyboard_setup()).await;
+                assert!(errors.is_empty());
+                assert_eq!(warning, expected.warning);
+            }
+            .await;
+        });
     }
 }
 
@@ -1283,22 +1286,6 @@ async fn until_notice(world: &World, text: &str) {
     }
 }
 
-/// Native children acknowledge their exact operands before waiting for a permit.
-const GATED_TMUX: &str = r"#!/usr/bin/python3
-import json, os, signal, sys
-assert sys.argv[1:3] == ['show', '-gv'] and len(sys.argv) == 4
-name = sys.argv[3]
-assert name in ['extended-keys', 'extended-keys-format']
-root = os.environ['MAESTRO_CODING_AGENT_DIR']
-signal.signal(signal.SIGTERM, signal.SIG_IGN)
-with open(os.path.join(root, name + '.ready'), 'w') as ready:
-    json.dump({'argv':sys.argv[1:], 'cwd':os.getcwd(), 'inherited':os.environ.get('MAESTRO_NOTICE_INHERITED')}, ready)
-with open(os.path.join(root, name + '.permit')) as permit:
-    assert permit.readline() == 'go\n'
-sys.stdout.write('off\n' if name == 'extended-keys' else 'xterm\n')
-sys.stdout.flush()
-";
-
 /// One joined peer for native readiness and independently released queries.
 struct NativeGates {
     /// The finite query names whose descriptors this peer owns.
@@ -1433,7 +1420,7 @@ fn tmux_probe_uses_both_options_concurrently() {
             OsStr::new("retained"),
         )],
         async |root| {
-            install_command(root, "tmux", GATED_TMUX);
+            install_command(root, "tmux", &gated("gated-tmux", root));
             let mut gates = NativeGates::new(root);
             let world = Setup::default().build(root);
             world.runtime.set_environment("TMUX", "session");
@@ -1482,7 +1469,7 @@ fn tmux_query_failures_and_timeout_are_silent() {
         )],
         async |root| {
             let world = Setup::default().build(root);
-            install_command(root, "tmux", GATED_TMUX);
+            install_command(root, "tmux", &gated("gated-tmux", root));
             let mut gates = NativeGates::new(root);
             let mut keys = world.mode.run_tmux_show("extended-keys");
             let mut format = world.mode.run_tmux_show("extended-keys-format");
@@ -1521,30 +1508,26 @@ fn tmux_query_failures_and_timeout_are_silent() {
 #[test]
 fn tmux_capture_uses_raw_status_and_two_second_settlement() {
     const TEST: &str = "tmux_capture_uses_raw_status_and_two_second_settlement";
-    let case = serde_json::json!({"ext":{"text":"off\n","signal":true},"format":{"text":"xterm\n","code":0}}).to_string();
-    super::isolated_case(
-        TEST,
-        "signal",
-        &[(OsStr::new("MAESTRO_TMUX_CASE"), OsStr::new(&case))],
-        async |root| {
-            install_command(root, "tmux", TMUX_SCRIPT);
-            let world = Setup::default().build(root);
-            let query = world.mode.run_tmux_show("extended-keys");
-            let tasks = capture_tasks(&world);
-            assert_eq!(query.await, None);
-            finish_captures(tasks).await;
-            let wrong = maestro_app::exec_command(
-                "tmux",
-                &["show".into(), "-gv".into(), "extended-keys".into()],
-                root.to_str().unwrap(),
-                maestro_app::ExecOptions::default(),
-            )
-            .await
-            .unwrap();
-            assert_eq!((wrong.code, wrong.killed), (0, false));
-            assert_eq!(wrong.stdout, "off\n");
-        },
-    );
+    super::isolated_case(TEST, "signal", &[], async |root| {
+        let keys = serde_json::json!({"text": "off\n", "signal": true});
+        let format = serde_json::json!({"text": "xterm\n"});
+        install_tmux(root, &keys, &format);
+        let world = Setup::default().build(root);
+        let query = world.mode.run_tmux_show("extended-keys");
+        let tasks = capture_tasks(&world);
+        assert_eq!(query.await, None);
+        finish_captures(tasks).await;
+        let wrong = maestro_app::exec_command(
+            "tmux",
+            &["show".into(), "-gv".into(), "extended-keys".into()],
+            root.to_str().unwrap(),
+            maestro_app::ExecOptions::default(),
+        )
+        .await
+        .unwrap();
+        assert_eq!((wrong.code, wrong.killed), (0, false));
+        assert_eq!(wrong.stdout, "off\n");
+    });
 }
 
 #[test]
@@ -1634,9 +1617,6 @@ fn notice_traversals_consume_each_input_once() {
 #[test]
 fn startup_offline_selection_reaches_each_existing_operation() {
     const TEST: &str = "startup_offline_selection_reaches_each_existing_operation";
-    let case =
-        serde_json::json!({"ext":{"text":"off\n","code":0},"format":{"text":"xterm\n","code":0}})
-            .to_string();
     for (index, offline) in [None, Some(false), Some(true)].into_iter().enumerate() {
         for skip in [false, true] {
             super::isolated_case(
@@ -1652,7 +1632,6 @@ fn startup_offline_selection_reaches_each_existing_operation() {
                             OsStr::new("")
                         },
                     ),
-                    (OsStr::new("MAESTRO_TMUX_CASE"), OsStr::new(&case)),
                 ],
                 async |root| {
                     offline_consumers(root, offline, skip).await;
@@ -1664,7 +1643,7 @@ fn startup_offline_selection_reaches_each_existing_operation() {
 
 /// Observes explicit offline forwarding at the actual request and native command consumers.
 async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: bool) {
-    install_command(root, "tmux", TMUX_SCRIPT);
+    install_ready_tmux(root);
     let (fetch, requests) = reporting_transport();
     let world = native_package_world_with(
         root,
@@ -1726,18 +1705,6 @@ fn rescanning_visits(entries: &[maestro_app::ChangelogEntry]) -> usize {
     visits.get()
 }
 
-/// One finite native package probe at its actual argument and working-directory boundary.
-const GATED_PACKAGE: &str = r"#!/usr/bin/python3
-import json, os, sys
-assert sys.argv[1:] == ['view', 'before', 'version', '--json']
-root = os.environ['MAESTRO_CODING_AGENT_DIR']
-with open(os.path.join(root, 'package.ready'), 'w') as ready:
-    json.dump({'argv':sys.argv[1:], 'cwd':os.getcwd(), 'inherited':os.environ.get('MAESTRO_NOTICE_INHERITED')}, ready)
-with open(os.path.join(root, 'package.permit')) as permit:
-    assert permit.readline() == 'go\n'
-sys.stdout.write(json.dumps('2'))
-";
-
 /// A controlled successful release over the existing finite-stream fixture pattern.
 fn successful_release(
     release: std::sync::Arc<tokio::sync::Notify>,
@@ -1764,8 +1731,8 @@ fn successful_release(
 
 /// Checks each producer's appended transcript slice in its completion order.
 async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
-    install_command(root, "tmux", GATED_TMUX);
-    install_command(root, "npm", GATED_PACKAGE);
+    install_command(root, "tmux", &gated("gated-tmux", root));
+    install_command(root, "npm", &gated("gated-package", root));
     let mut gates =
         NativeGates::with_names(root, &["package", "extended-keys", "extended-keys-format"]);
     let release = std::sync::Arc::new(tokio::sync::Notify::new());
@@ -1836,20 +1803,11 @@ fn completion_world(root: &std::path::Path, fetch: maestro_app::Fetch) -> World 
 
 /// Native metadata proves the fresh manager uses the ambient agent root, not services' root.
 async fn assert_current_agent_root(world: &World, root: &std::path::Path) {
-    let script = r"#!/usr/bin/python3
-import json, os, sys
-root = os.environ['MAESTRO_CODING_AGENT_DIR']
-with open(os.path.join(root, 'git-observed'), 'a') as record:
-    record.write(json.dumps({'cwd':os.getcwd(), 'argv':sys.argv[1:], 'prompt':os.environ.get('GIT_TERMINAL_PROMPT')}) + '\n')
-if sys.argv[1:] == ['rev-parse', 'HEAD']:
-    print('a' * 40)
-elif sys.argv[1:] == ['rev-parse', '--abbrev-ref', '@{upstream}']:
-    print('origin/main')
-else:
-    assert sys.argv[1:] == ['ls-remote', 'origin', 'refs/heads/main']
-    print('b' * 40 + '\trefs/heads/main')
-";
-    install_command(root, "git", script);
+    let scenario = serde_json::json!({
+        "scenario": "package-remote",
+        "log": root.join("git-observed"),
+    });
+    install_command(root, "git", &scenario);
     let checkout = root.join("git/example.test/team/repo");
     std::fs::create_dir_all(&checkout).unwrap();
     let session = world.host.session();
@@ -1959,17 +1917,6 @@ async fn ready_prefix_root(root: &std::path::Path) {
     );
 }
 
-/// A single search probe paused on the shared native producer gate.
-const INIT_SCRIPT: &str = r"#!/usr/bin/python3
-import json, os, sys
-assert sys.argv[1:] == ['--version']
-root = os.environ['MAESTRO_CODING_AGENT_DIR']
-with open(os.path.join(root, 'init.ready'), 'w') as ready:
-    json.dump({'argv': sys.argv[1:], 'cwd': os.getcwd(), 'inherited': os.environ.get('MAESTRO_NOTICE_INHERITED')}, ready)
-with open(os.path.join(root, 'init.permit')) as permit:
-    assert permit.readline() == 'go\n'
-";
-
 /// Runs one initialization witness with search discovery outside its managed directory.
 fn initialization_case(test: &str, body: impl AsyncFnOnce(&std::path::Path)) {
     let path = format!("probes/bin:{}", std::env::var("PATH").unwrap());
@@ -1985,8 +1932,8 @@ fn initialization_case(test: &str, body: impl AsyncFnOnce(&std::path::Path)) {
         ],
         async |root| {
             std::fs::create_dir_all(root.join("probes/bin")).unwrap();
-            install_command(&root.join("probes"), "fd", INIT_SCRIPT);
-            super::scripted(&root.join("bin"), "rg", "exit 0");
+            install_command(&root.join("probes"), "fd", &gated("gated-probe", root));
+            super::install_output(&root.join("bin"), "rg", b"", 0);
             body(root).await;
         },
     );
