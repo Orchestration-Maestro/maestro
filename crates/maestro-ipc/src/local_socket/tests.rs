@@ -40,6 +40,17 @@ fn socket_identity_records_native_device_and_inode() {
     fs::remove_file(path).unwrap();
 }
 
+/// What a full accept queue reports: Linux would-block, which the bounded connect retries into
+/// a timeout, and a refusal on Apple, where a full queue refuses like a missing listener.
+const FULL_QUEUE: (rustix::io::Errno, io::ErrorKind) = if cfg!(target_vendor = "apple") {
+    (
+        rustix::io::Errno::CONNREFUSED,
+        io::ErrorKind::ConnectionRefused,
+    )
+} else {
+    (rustix::io::Errno::AGAIN, io::ErrorKind::TimedOut)
+};
+
 #[test]
 fn saturated_backlog_never_returns_an_unconnected_stream() {
     use rustix::net::{SocketAddrUnix, connect, listen};
@@ -55,14 +66,14 @@ fn saturated_backlog_never_returns_an_unconnected_stream() {
         let fd = nonblocking_local_socket().unwrap();
         match connect(&fd, &address) {
             Ok(()) => clients.push(fd),
-            Err(rustix::io::Errno::AGAIN) => break,
+            Err(error) if error == FULL_QUEUE.0 => break,
             Err(error) => panic!("unexpected connect failure: {error}"),
         }
     }
     let start = Instant::now();
     let result = connect_local_stream_until(&path, start + Duration::from_millis(75));
     assert!(start.elapsed() < Duration::from_secs(1));
-    assert_eq!(result.unwrap_err().kind(), io::ErrorKind::TimedOut);
+    assert_eq!(result.unwrap_err().kind(), FULL_QUEUE.1);
 }
 
 #[test]

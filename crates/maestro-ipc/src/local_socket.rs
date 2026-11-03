@@ -49,6 +49,11 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// An expired deadline still permits one nonblocking attempt, so probes can distinguish
 /// an absent endpoint from a full accept queue without extending the caller's budget.
 ///
+/// A full accept queue reaches the caller as the platform reports it. Linux fails the attempt
+/// with would-block, so the call retries until the deadline and then times out. Apple kernels
+/// refuse the connection at once, exactly as they do for a socket file with no listener, so
+/// there saturation shows as connection-refused, never as a timeout.
+///
 /// # Errors
 /// Returns path or connection errors, or timed-out while the accept queue stays full.
 pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
