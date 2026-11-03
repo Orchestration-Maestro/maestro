@@ -324,7 +324,8 @@ fn bash_tool_finishes_after_inherited_pipe_grace() {
             }
         };
         let (mut root, _) = listener.accept().await.unwrap();
-        let mut holder = read_support::pipe_holder(pid).await;
+        let holder = read_support::grace_holder(dir.path(), pid);
+        let mut holder = read_support::pipe_holder(&holder).await;
         root.write_all(b"exit\n").await.unwrap();
         let result = execution.await.unwrap();
         assert_eq!(

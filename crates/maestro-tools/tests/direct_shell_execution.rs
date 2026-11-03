@@ -479,8 +479,9 @@ fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
             while !prefix.contains('\n') {
                 prefix.push_str(&receiver.recv().await.unwrap());
             }
-            let pid = prefix.trim().parse().unwrap();
-            let mut holder = read_support::pipe_holder(pid).await;
+            let pid = prefix.trim().parse::<u32>().unwrap();
+            let holder = read_support::grace_holder(dir.path(), pid);
+            let mut holder = read_support::pipe_holder(&holder).await;
             holder
                 .stdin
                 .as_mut()

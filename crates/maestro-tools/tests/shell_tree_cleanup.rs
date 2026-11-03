@@ -1,11 +1,13 @@
 //! Native tree cleanup observed through live descendant control channels.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::read_support::{self, Scratch};
 use crate::runtime::run;
 use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_tools::utils::shell::{
     kill_process_tree, kill_tracked_detached_children, track_detached_child_pid,
 };
+use serde_json::json;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 
@@ -25,14 +27,15 @@ fn native_tree_kill_terminates_descendants() {
     }
     run(async {
         let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
-        let script = "import os,socket,sys\nchild=os.fork()\ns=socket.create_connection(('127.0.0.1',int(sys.argv[1])))\ns.sendall(b'READY')\ns.recv(1)\nif child: os.waitpid(child,0)";
-        let mut command = tokio::process::Command::new("python3");
-        command.args([
-            "-c",
-            script,
-            &listener.local_addr().unwrap().port().to_string(),
-        ]);
-        let mut child = CapturedChild::spawn_detached(command).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let root = Scratch::new().unwrap();
+        let program = read_support::payload(
+            root.path(),
+            "tree",
+            &json!({"scenario": "tree-root", "port": port}),
+        );
+        let mut child =
+            CapturedChild::spawn_detached(tokio::process::Command::new(&program)).unwrap();
         let pid = child.id().unwrap();
         let guard = Cleanup(pid);
         let mut sockets = Vec::new();
@@ -53,9 +56,12 @@ fn native_tree_kill_terminates_descendants() {
         assert_killed(&mut child).await;
         drop(guard);
 
-        let mut direct = tokio::process::Command::new("python3");
-        direct.args(["-c", "import socket,sys,time; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(b'READY'); s.recv(1)", &listener.local_addr().unwrap().port().to_string()]);
-        let mut child = CapturedChild::spawn(&mut direct).unwrap();
+        let direct = read_support::payload(
+            root.path(),
+            "leaf",
+            &json!({"scenario": "tree-leaf", "port": port}),
+        );
+        let mut child = CapturedChild::spawn(&mut tokio::process::Command::new(direct)).unwrap();
         let guard = Cleanup(child.id().unwrap());
         let (mut socket, _) = listener.accept().await.unwrap();
         let mut greeting = [0; 5];
