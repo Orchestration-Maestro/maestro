@@ -1,6 +1,7 @@
 //! Directive boundaries over caller-escaped literal tag spans.
 use crate::rules::lines::Input;
 use maestro_text::is_whitespace_scalar;
+use std::ops::Range;
 
 /// A raw directive's safe payload and original consumed byte count.
 pub(super) struct Html {
@@ -350,6 +351,93 @@ fn append_tag(output: &mut String, tag: &str) {
             _ => output.push(scalar),
         }
     }
+}
+
+/// Authored spans whose angle delimiters the caller displays literally.
+///
+/// One pass over the whole document, so a block that starts inside a span still reads the
+/// delimiter policy its opening angle established. Code-held bytes are skipped, because
+/// the caller keeps them out of its escaping step.
+pub(crate) fn escaped_spans(source: &str) -> Vec<Range<usize>> {
+    let code = code_regions(source);
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    while let Some(start) = first_outside(source, cursor, b'<', &code) {
+        cursor = start + 1;
+        match literal(&source[start..]) {
+            Some(Literal::Opening) => {
+                let Some(end) = first_outside(source, start, b'>', &code) else {
+                    spans.push(start..source.len());
+                    break;
+                };
+                spans.push(start..end + 1);
+                cursor = end + 1;
+            }
+            Some(Literal::Closing(width)) => {
+                spans.push(start..start + width);
+                cursor = start + width;
+            }
+            _ => {}
+        }
+    }
+    spans
+}
+
+/// Byte ranges of the code spans and fences the caller preserves instead of escaping.
+///
+/// Its own code shape decides each one: a fence is three backticks closed by the next
+/// three, and an inline span is one backtick holding at least one character that is
+/// neither a backtick nor a line break. An inline span never crosses a line break, so a
+/// stray single backtick leaves the blocks after it to the ordinary literal-angle policy.
+fn code_regions(source: &str) -> Vec<Range<usize>> {
+    let mut regions = Vec::new();
+    let mut cursor = 0;
+    while let Some(found) = source[cursor..].find('`') {
+        let open = cursor + found;
+        cursor = open + 1;
+        if let Some(end) = fence_end(source, open).or_else(|| span_end(source, open)) {
+            regions.push(open..end);
+            cursor = end;
+        }
+    }
+    regions
+}
+
+/// Exclusive end of the fence opening at `open`, when a later three-backtick run
+/// closes it.
+fn fence_end(source: &str, open: usize) -> Option<usize> {
+    let body = open + 3;
+    if source.get(open..body)? != "```" {
+        return None;
+    }
+    Some(body + source.get(body..)?.find("```")? + 3)
+}
+
+/// Exclusive end of the inline span opening at `open`, when one line closes it.
+fn span_end(source: &str, open: usize) -> Option<usize> {
+    let body = source.get(open + 1..)?;
+    let close = body.find('`')?;
+    let content = &body[..close];
+    (!content.is_empty() && !content.contains('\n')).then_some(open + close + 2)
+}
+
+/// First `wanted` byte at or after `from` that no code range holds.
+fn first_outside(source: &str, from: usize, wanted: u8, code: &[Range<usize>]) -> Option<usize> {
+    let mut cursor = from;
+    loop {
+        let found = cursor + source[cursor..].bytes().position(|byte| byte == wanted)?;
+        let held = code.partition_point(|region| region.end <= found);
+        match code.get(held).filter(|region| region.contains(&found)) {
+            Some(region) => cursor = region.end,
+            None => return Some(found),
+        }
+    }
+}
+
+/// Whether `offset` is the closing angle of one escaped span.
+pub(crate) fn is_escaped_span_close(spans: &[Range<usize>], offset: usize) -> bool {
+    let index = spans.partition_point(|span| span.end <= offset);
+    spans.get(index).is_some_and(|span| span.end == offset + 1)
 }
 
 /// Hide caller-escaped angle delimiters only in the emphasis mask's coordinate space.

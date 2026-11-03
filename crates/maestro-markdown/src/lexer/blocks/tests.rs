@@ -15,6 +15,7 @@ pub(in crate::lexer) fn lexer() -> Lexer<'static, Infallible> {
         options: MarkedOptions::Terminal,
         definitions: HashMap::new(),
         scopes: HashMap::new(),
+        escaped_spans: Vec::new(),
     }
 }
 

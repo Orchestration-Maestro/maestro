@@ -41,6 +41,8 @@ pub(crate) struct Lexer<'a, E> {
     pub(crate) definitions: HashMap<String, Definition>,
     /// Inline source provenance captured during block recognition.
     pub(crate) scopes: HashMap<ScopeKey, ScopeSource>,
+    /// Authored angle spans the escaped browser policy displays literally.
+    escaped_spans: Vec<Range<usize>>,
 }
 impl<'a, E> Lexer<'a, E> {
     /// Parse owned source without borrowing the caller's buffer.
@@ -51,6 +53,13 @@ impl<'a, E> Lexer<'a, E> {
     ) -> Result<Document, E> {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.reference_indexes += 1);
+        let escaped_spans = if options == (MarkedOptions::Browser { escape_html: true }) {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.escaped_bytes += source.len());
+            tokenizer::escaped_spans(&source)
+        } else {
+            Vec::new()
+        };
         let mut lexer = Self {
             tokenizer,
             error: None,
@@ -61,6 +70,7 @@ impl<'a, E> Lexer<'a, E> {
             options,
             definitions: HashMap::new(),
             scopes: HashMap::new(),
+            escaped_spans,
         };
         let mut nodes = lexer.blocks(ScopeSource::identity(&source));
         if let Some(error) = lexer.error {
@@ -132,6 +142,14 @@ impl<'a, E> Lexer<'a, E> {
                 source.len()
             }
         }
+    }
+
+    /// Whether the escaped browser policy displays the angle at this operand offset as
+    /// text, so a closing angle never opens a container.
+    pub(super) fn is_escaped_closer(&self, source: &Segmented, offset: usize) -> bool {
+        source.native(&(offset..offset + 1)).is_some_and(|native| {
+            tokenizer::is_escaped_span_close(&self.escaped_spans, native.start)
+        })
     }
 
     /// Recognize the container a dispatch step admits through its own frame.

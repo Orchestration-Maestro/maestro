@@ -2121,8 +2121,13 @@
         "text": "x"
       },
       {
-        "kind": "quote",
-        "children": []
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": ">"
+          }
+        ]
       }
     ]
   }
