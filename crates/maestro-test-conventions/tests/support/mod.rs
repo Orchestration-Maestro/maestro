@@ -91,6 +91,7 @@ impl Workspace {
         std::fs::write(tests.join("integration.rs"), modules.concat()).unwrap();
     }
 
+    /// Writes the crate list, overwriting nextest config when it includes the test-process owner.
     pub fn list(&self, entries: &[(&str, &str)]) {
         let entries: serde_json::Map<String, serde_json::Value> = entries
             .iter()

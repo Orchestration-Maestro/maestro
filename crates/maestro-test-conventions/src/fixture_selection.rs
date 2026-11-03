@@ -110,7 +110,14 @@ mod tests {
             .collect::<Vec<_>>()
             .join("\n| ");
         format!(
-            "[scripts.setup.native-fixture]\ncommand = 'development nextest-setup native-fixture'\n[[profile.default.scripts]]\nsetup = 'native-fixture'\nfilter = \"\"\"\n{filter}\n\"\"\"\n"
+            r#"[scripts.setup.native-fixture]
+command = 'development nextest-setup native-fixture'
+[[profile.default.scripts]]
+setup = 'native-fixture'
+filter = """
+{filter}
+"""
+"#
         )
     }
 
