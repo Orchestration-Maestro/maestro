@@ -60,13 +60,14 @@ The process tests run their controlled children as Rust. On Unix the test-proces
 and `process`, so a child replaces one of its standard descriptors with the null device and
 applies its own umask, process-count limit and session without unsafe code; the process
 tests share that one operation. The mode and `umask` calls are the only items behind `fs`.
-The process tests also use `nix =0.31.3` (MIT), defaults off with `signal`, the
-version and feature the process wrapper already compiles, as a development
-dependency: a child blocks signals with its safe `sigprocmask` before it replaces
-itself with the test executable. The `maestro` composition tests inherit the same
-workspace pin and `signal` feature. Their checked children block termination before
-replacing themselves with the test executable, then wait with `sigwait` after
-reporting readiness. No package version changes.
+
+The process tests also use `nix =0.31.3` (MIT), defaults off with `signal`, the version
+and feature the process wrapper already compiles, as a development dependency: a child
+blocks signals with its safe `sigprocmask` before it replaces itself with the test
+executable. The `maestro` composition tests inherit the same workspace pin and `signal`
+feature. Their checked children block termination before replacing themselves with the
+test executable, then wait with `sigwait` after reporting readiness. No package version
+changes.
 
 The test-process owner's single harness-free native fixture inherits the existing
 workspace `serde` and `serde_json` pins, including `float_roundtrip`, for its
