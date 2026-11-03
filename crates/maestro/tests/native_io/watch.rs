@@ -82,6 +82,45 @@ fn native_watch_failures_do_not_leak_callbacks() {
     rpc.finish();
 }
 
+#[test]
+fn native_watch_reopen_discards_closed_payload() {
+    let root = Root::new();
+    let path = root.path("closed Ω.txt");
+    let next = root.path("current Ω.txt");
+    std::fs::write(&path, "before").unwrap();
+    std::fs::write(&next, "before").unwrap();
+    let mut rpc = loaded(&root);
+    call(
+        &mut rpc,
+        &json!({"op":"watch", "path":path, "self_close":true}),
+    );
+    std::fs::write(&path, "closed delivery").unwrap();
+    assert_eq!(call(&mut rpc, &json!({"op":"released", "count":1})), 1);
+
+    call(&mut rpc, &json!({"op":"watch", "path":next}));
+    rpc.send(&json!({"type":"prompt", "id":"next-watch",
+        "message":"/native-watch {\"op\":\"next\"}"}));
+    std::fs::write(&next, "current delivery").unwrap();
+    let mut reply = Value::Null;
+    loop {
+        let record = rpc.read();
+        if let Some(text) = record["title"]
+            .as_str()
+            .and_then(|title| title.strip_prefix("NATIVE-IO:"))
+        {
+            reply = serde_json::from_str(text).unwrap();
+        }
+        if record["type"] == "response" && record["id"] == "next-watch" {
+            assert_eq!(record["success"], true, "{record}");
+            break;
+        }
+    }
+    assert_eq!(reply, json!({"value":{"path":next}}));
+    call(&mut rpc, &json!({"op":"drop"}));
+    assert_eq!(call(&mut rpc, &json!({"op":"released", "count":2})), 2);
+    rpc.finish();
+}
+
 /// Checks retained identity, callback emission and release through generated imports.
 pub(super) fn adapter_contract(root: &Root, rpc: &mut crate::support::rpc::Rpc) {
     let path = root.path("adapter Ω.txt");
