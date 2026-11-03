@@ -1,7 +1,7 @@
 //! Native rendering and keyboard observations of the complete visible-state inventory.
 use super::{buttons, provider};
 use crate::contributions_support::{
-    call, computed, container, driver, host, page_module, rgb, text, view,
+    call, computed, container, driver, host, page_module, rgb, select, shadow_paints, text, view,
 };
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
@@ -81,26 +81,58 @@ fn set_actions(card: &mut CustomProviderCard, count: usize) {
 }
 /// Measure native text and controls, rather than reading authored declarations.
 fn painted_parts(root: &Element, presentation: &BrandPresentation<'_>) {
-    let name = root
-        .query_selector(".maestro-provider-name")
-        .unwrap()
-        .unwrap();
-    let details = root
-        .query_selector(".maestro-provider-details")
-        .unwrap()
-        .unwrap();
+    painted_card(root, presentation);
+    painted_actions(root, presentation);
+}
+/// The card paints its own border around measured text, without a clipping surface.
+fn painted_card(root: &Element, presentation: &BrandPresentation<'_>) {
+    let name = select(root, ".maestro-provider-name");
+    let details = select(root, ".maestro-provider-details");
+    let border = rgb(presentation.colors["border"]);
+    assert_eq!(
+        computed(root, "border-top-style"),
+        "solid",
+        "the card paints its own border"
+    );
+    assert_eq!(
+        computed(root, "border-top-width"),
+        "1px",
+        "the card paints its own border"
+    );
     assert_eq!(
         computed(root, "border-top-color"),
-        rgb(presentation.colors["border"])
+        border,
+        "the card paints its own border"
     );
     assert_eq!(computed(root, "background-color"), "rgba(0, 0, 0, 0)");
+    for overflow in ["overflow-x", "overflow-y"] {
+        assert_eq!(
+            computed(root, overflow),
+            "visible",
+            "the card adds no clipping surface"
+        );
+    }
     assert_eq!(computed(&name, "color"), rgb(presentation.colors["text"]));
     assert_eq!(
         computed(&details, "color"),
         rgb(presentation.colors["muted"])
     );
-    assert!(name.get_bounding_client_rect().height() > 0.0);
+    let bounds = root.get_bounding_client_rect();
+    for painted in [&name, &details] {
+        let rect = painted.get_bounding_client_rect();
+        assert!(
+            rect.width() > 0.0 && rect.height() > 0.0,
+            "text paints its box"
+        );
+        assert!(
+            rect.top() >= bounds.top() && rect.bottom() <= bounds.bottom(),
+            "text paints inside the card"
+        );
+    }
     assert!(details.get_bounding_client_rect().top() >= name.get_bounding_client_rect().bottom());
+}
+/// Every action paints its own label inside the shared control without clipping it.
+fn painted_actions(root: &Element, presentation: &BrandPresentation<'_>) {
     let controls = buttons(root);
     for button in &controls {
         assert_eq!(computed(button, "color"), rgb(presentation.colors["text"]));
@@ -147,7 +179,6 @@ fn painted_dot(
         / f64::from(root.unchecked_ref::<HtmlElement>().offset_width());
     let gap = label.get_bounding_client_rect().left() - dot.get_bounding_client_rect().right();
     assert_eq!(computed(&row, "display"), "flex");
-    assert_eq!(computed(&row, "column-gap"), "4px");
     // Zoomed bounding rectangles carry native floating-point rounding.
     assert!((gap - 4.0 * scale).abs() < 0.03);
 }
@@ -214,8 +245,11 @@ async fn keyboard_card(view: &Rc<DomView>, page: &JsValue) {
     );
     call(page, "finish", &js_sys::Array::of1(&controls[0])).await;
     let accent = rgb(view.pack.presentation(view.mode).unwrap().colors["accent"]);
-    assert_ne!(computed(&controls[0], "box-shadow"), "none");
-    assert_eq!(computed(&controls[0], "border-top-color"), accent);
+    assert!(shadow_paints(&computed(&controls[0], "box-shadow")));
+    assert!(
+        computed(&controls[0], "box-shadow").contains(&accent),
+        "focus paints an accent ring around the control"
+    );
     driver("driverPress", "Enter").await;
     assert_eq!(count.get(), 1);
     for expected in [&controls[1], &controls[2], &after] {

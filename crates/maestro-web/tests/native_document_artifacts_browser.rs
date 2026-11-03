@@ -129,15 +129,13 @@ async fn assert_page_geometry(
     let sheet = select(node, "section.docx");
     assert_eq!(computed(&sheet, "background-color"), "rgb(255, 255, 255)");
     assert_eq!(computed(&sheet, "color"), "rgb(0, 0, 0)");
-    assert_eq!(computed(&sheet, "padding-top"), "32px");
-    assert_eq!(computed(&sheet, "box-shadow"), "none");
     assert!(
         (sheet.get_bounding_client_rect().width() - f64::from(width)).abs() < 1.0,
         "{}",
         case.name
     );
-    assert_eq!(computed(&sheet, "overflow-x"), "auto");
-    assert_contained_content(node, &sheet, case);
+    assert_painted_page(&sheet, case);
+    assert_contained_content(node, &sheet, (case, width)).await;
     let text = call(page, "select", &js_sys::Array::of1(&sheet))
         .await
         .as_string()
@@ -148,23 +146,102 @@ async fn assert_page_geometry(
     viewport.remove_child(&root.node).unwrap();
 }
 
-/// Wrapping text, wide tables and inline images stay within their document page.
-fn assert_contained_content(node: &Element, sheet: &Element, case: &Package) {
-    use crate::contributions_support::computed;
+/// The page paints its own padding, then measured text inside it.
+fn assert_painted_page(sheet: &Element, case: &Package) {
+    let page = sheet.get_bounding_client_rect();
+    assert!(page.height() > 0.0, "{} paints its page", case.name);
+    let Some(text) = sheet.query_selector("p").unwrap() else {
+        return;
+    };
+    let painted = text.get_bounding_client_rect();
+    assert!(
+        painted.width() > 0.0 && painted.height() > 0.0,
+        "{} paints its text",
+        case.name
+    );
+    assert!(
+        painted.left() - page.left() >= 30.0 && painted.top() - page.top() >= 30.0,
+        "{}: the page paints its own padding around the text",
+        case.name
+    );
+}
+
+/// Wrapped text, ready images and wide tables stay inside their painted page.
+async fn assert_contained_content(node: &Element, sheet: &Element, (case, width): (&Package, i32)) {
+    let page_width = sheet.get_bounding_client_rect().width();
+    assert_wrapped_text(node, (page_width, case));
+    assert_ready_images(node, (page_width, case)).await;
+    assert_table_scrolling(node, (page_width, case, width));
+}
+
+/// Paragraphs and spans wrap their text instead of overflowing their page.
+fn assert_wrapped_text(node: &Element, (page_width, case): (f64, &Package)) {
     for selector in ["p", "span"] {
-        if let Some(text) = node.query_selector(selector).unwrap() {
-            assert_eq!(computed(&text, "overflow-wrap"), "break-word");
+        let painted = node.query_selector_all(selector).unwrap();
+        for index in 0..painted.length() {
+            let element: HtmlElement = painted.item(index).unwrap().unchecked_into();
+            assert!(
+                element.scroll_width() <= element.client_width(),
+                "{}: {selector} wraps inside its page",
+                case.name
+            );
+            assert!(
+                element.get_bounding_client_rect().width() <= page_width + 1.0,
+                "{}: {selector} stays inside its page",
+                case.name
+            );
         }
     }
-    if case.images > 0 {
-        let image = select(node, "img");
+}
+
+/// Every inline image has a ready resource and paints at a nonzero size inside its page.
+async fn assert_ready_images(node: &Element, (page_width, case): (f64, &Package)) {
+    if case.images == 0 {
+        return;
+    }
+    let images = node.query_selector_all("img").unwrap();
+    for index in 0..images.length() {
+        let image: Element = images.item(index).unwrap().unchecked_into();
+        let source = image.get_attribute("src").unwrap_or_default();
         assert!(
-            image.get_bounding_client_rect().width() <= sheet.get_bounding_client_rect().width()
+            !fetch_bytes(&source).await.is_empty(),
+            "{}: the image resource is ready",
+            case.name
+        );
+        let painted = image.get_bounding_client_rect();
+        assert!(
+            painted.width() > 0.0 && painted.height() > 0.0,
+            "{}: the image paints at a nonzero size",
+            case.name
+        );
+        assert!(
+            painted.width() <= page_width + 1.0,
+            "{}: the image stays inside its page",
+            case.name
         );
     }
-    if case.tables > 0 {
-        assert_eq!(computed(&select(node, "table"), "display"), "block");
-        assert_eq!(computed(&select(node, "table"), "overflow-x"), "auto");
+}
+
+/// A table stays inside its page, and scrolls horizontally where the page is narrow.
+fn assert_table_scrolling(node: &Element, (page_width, case, width): (f64, &Package, i32)) {
+    if case.tables == 0 {
+        return;
+    }
+    let tables = node.query_selector_all("table").unwrap();
+    for index in 0..tables.length() {
+        let table: HtmlElement = tables.item(index).unwrap().unchecked_into();
+        assert!(
+            table.get_bounding_client_rect().width() <= page_width + 1.0,
+            "{}: the table stays inside its page",
+            case.name
+        );
+        if width <= 240 {
+            assert!(
+                table.scroll_width() > table.client_width(),
+                "{}: the wide table scrolls horizontally",
+                case.name
+            );
+        }
     }
 }
 

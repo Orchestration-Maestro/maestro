@@ -9,9 +9,10 @@ The seven input types are text, email, password, number, URL, telephone and
 search; small, medium (default) and large sizes select the field height. The
 browser owns editing, validation, selection and autocomplete. A non-empty label
 names the field through `aria-labelledby`; a required labelled field appends the
-localized required marker. A non-empty error shows below the field and marks it
-`aria-invalid`. Empty identifiers, names, placeholders and numeric bounds leave
-their attributes out.
+localized required marker. A non-empty error shows below the field, marks it
+`aria-invalid` and describes it through `aria-describedby`; clearing the error
+removes both attributes. Empty identifiers, names, placeholders and numeric
+bounds leave their attributes out.
 
 `update(view, props)` changes the field in place. It keeps native edits while the
 supplied value stays the same and assigns a changed supplied value. The input,
@@ -334,10 +335,11 @@ The card starts in manual mode and displays the supplied model count. Set
 omits that row. Names, protocol spellings and URLs remain literal native text.
 
 Call `DomContent::update` after changing operands. Existing buttons keep their
-nodes, focus and selection while their actions remain present. Activation reads
-the most recently published callback and provider handle, including later edits
-to that provider. It releases component borrows before calling the action, so the
-action may update its containing card. Removing an action releases its binding;
+nodes and focus while their actions remain present. The selection survives an
+update only while the text is unchanged, because localization replaces the text
+nodes inside those buttons. Activation reads the most recently published callback
+and provider handle, including later edits to that provider. It releases component
+borrows before calling the action, so the action may update its containing card. Removing an action releases its binding;
 disconnected roots perform no action, and reconnecting restores delivery without
 a second registration. Dropping `DomRoot` releases every retained binding even
 when the page still holds its nodes. Localization failures leave the last
