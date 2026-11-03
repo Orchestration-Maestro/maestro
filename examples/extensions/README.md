@@ -38,10 +38,11 @@ steps.
 Component preparation reads the source markers at run time. Each variable names
 one example; the shared author and context variables are reserved.
 
-The table below is generated from each Rust file's opening documentation and
-Markdown page's heading. Do not edit its rows by hand. `just example-index-check`
-checks that it is current. Keep descriptions and run commands in the example's
-own files, not in this page or `docs/examples.md`.
+The table below is generated from each example's opening documentation and
+Markdown page's heading. A directory example adds one row, from its `main.rs`;
+its support files need no summary. Do not edit its rows by hand.
+`just example-index-check` checks that it is current. Keep descriptions and run
+commands in the example's own files, not in this page or `docs/examples.md`.
 
 The component setup reads source markers at run time; it has no shared example
 list. See [adding an example](../../docs/examples.md).
@@ -82,12 +83,6 @@ resolving conflicts, then regenerate the table.
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
 | `custom_message_provider.md` | Custom message provider |
 | `custom_message_provider/main.rs` | Opt-in registration of a custom message-stream provider. |
-| `custom_message_provider/oauth.rs` | Subscription sign-in through the host's HTTP and interaction interfaces. |
-| `custom_message_provider/request.rs` | Conversation conversion and HTTP parameters for the custom message protocol. |
-| `custom_message_provider/response.rs` | Ordered provider events reduced into one shared assistant message. |
-| `custom_message_provider/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |
-| `custom_message_provider/stream.rs` | A custom message-stream implementation using the host's transport and event buffer. |
-| `custom_message_provider/transport.rs` | The extension client's transient-failure retries over host-owned HTTP attempts. |
 | `dirty_repo_guard.md` | Dirty repo guard |
 | `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |
