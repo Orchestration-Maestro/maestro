@@ -112,7 +112,7 @@ async fn proxy_eof_without_terminal_settles_as_error_case() {
     let mut expected = canonical_message();
     expected["stopReason"] = json!("error");
     expected["errorMessage"] = json!(PREMATURE);
-    expected["usage"] = serde_json::from_str(&zero()).unwrap();
+    expected["usage"] = maestro_models::test_support::zero_usage();
     assert_eq!(partial.message(), expected);
 }
 
@@ -309,7 +309,7 @@ async fn proxy_transport_failure_retains_partial_case() {
     let mut expected = canonical_message();
     expected["stopReason"] = json!("error");
     expected["errorMessage"] = json!("body failed");
-    expected["usage"] = serde_json::from_str(&zero()).unwrap();
+    expected["usage"] = maestro_models::test_support::zero_usage();
     assert_eq!(run.message(), expected);
 }
 
