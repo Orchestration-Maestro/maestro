@@ -150,14 +150,13 @@ impl<'a> Page<'a> {
             json!({"width":1280,"height":720,"deviceScaleFactor":1.25,"mobile":false}),
         )
         .await?;
-        if self.name == "tile_dom_remove_does_not_open_and_uses_current_callback" {
-            self.command(
-                Some(&session),
-                "Emulation.setTouchEmulationEnabled",
-                json!({"enabled":true}),
-            )
-            .await?;
-        }
+        // The desktop pointer media stays in place unless the export requests touch input.
+        self.command(
+            Some(&session),
+            "Emulation.setTouchEmulationEnabled",
+            json!({"enabled": self.name == "tile_dom_remove_does_not_open_and_uses_current_callback"}),
+        )
+        .await?;
         Ok(())
     }
 
@@ -190,7 +189,7 @@ impl<'a> Page<'a> {
         Ok(())
     }
 
-    /// Navigate and wait for this document's own complete-state signal.
+    /// Navigate, wait for the committed document's default context and its complete-state signal.
     ///
     /// # Errors
     /// Returns navigation, page or disconnection failures.
@@ -202,8 +201,27 @@ impl<'a> Page<'a> {
         if let Some(error) = response.get("errorText") {
             return Err(io::Error::other(format!("navigation failed: {error}")));
         }
-        self.evaluate("new Promise(resolve => document.readyState === 'complete' ? resolve() : addEventListener('load', resolve, {once:true}))").await?;
+        let frame = string(&response, "frameId")?.to_owned();
+        self.await_committed_context(&frame).await?;
+        self.main_frame = Some(frame);
+        self.evaluate_in(&self.root_context()?, "new Promise(resolve => document.readyState === 'complete' ? resolve() : addEventListener('load', resolve, {once:true}))", true).await?;
         self.phase("page loaded");
+        Ok(())
+    }
+
+    /// Wait for the navigation's committed frame to announce a new default execution context so
+    /// the readiness evaluation lands in the world the committed document announces itself.
+    async fn await_committed_context(&mut self, frame: &str) -> io::Result<()> {
+        let previous = self.contexts.get(frame).map(|context| context.id);
+        while self
+            .contexts
+            .get(frame)
+            .is_none_or(|context| Some(context.id) == previous)
+        {
+            if let Some(event) = self.dispatcher.next().await? {
+                self.event(event).await?;
+            }
+        }
         Ok(())
     }
 
@@ -575,13 +593,11 @@ pub(super) fn string<'a>(value: &'a Value, key: &str) -> io::Result<&'a str> {
 /// Preserve synchronous and asynchronous evaluation failures without losing their description.
 fn evaluation(response: &Value) -> io::Result<Value> {
     if let Some(details) = response.get("exceptionDetails") {
-        return Err(io::Error::other(
-            details["exception"]["description"]
-                .as_str()
-                .or_else(|| details["text"].as_str())
-                .unwrap_or("browser evaluation failed")
-                .to_owned(),
-        ));
+        let description = details["exception"]["description"]
+            .as_str()
+            .or_else(|| details["text"].as_str())
+            .unwrap_or("browser evaluation failed");
+        return Err(io::Error::other(description.to_owned()));
     }
     Ok(response["result"]["value"].clone())
 }

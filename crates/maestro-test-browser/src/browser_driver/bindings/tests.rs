@@ -335,6 +335,7 @@ fn shared_reply(call: &Value) -> Option<Value> {
         | "Runtime.runIfWaitingForDebugger"
         | "Runtime.releaseObject"
         | "Emulation.setDeviceMetricsOverride"
+        | "Emulation.setTouchEmulationEnabled"
         | "Target.closeTarget"
         | "Target.disposeBrowserContext" => json!({}),
         _ => return None,
@@ -558,6 +559,162 @@ fn page_exception_during_iframe_setup_fails_the_command() {
         let error = outcome.unwrap_err().to_string();
         assert!(error.contains("Error: page failed"), "{error}");
     });
+}
+/// Every key name the qualification exports press resolves on the press path, with the accepted
+/// chord modifiers.
+#[test]
+fn press_resolves_every_key_name_the_qualification_exports_press() {
+    for chord in [
+        "Space",
+        "Enter",
+        "Escape",
+        "Tab",
+        "Backspace",
+        "ArrowUp",
+        "ArrowDown",
+        "Shift+Enter",
+        "Shift+Tab",
+    ] {
+        let mut parts = chord.split('+');
+        let key = parts.next_back().unwrap();
+        assert!(key_definition(key).is_some(), "{chord} does not resolve");
+        for modifier in parts {
+            assert!(
+                ["Alt", "Control", "Meta", "Shift"].contains(&modifier),
+                "{chord} has an unknown modifier"
+            );
+        }
+    }
+    assert!(
+        key_definition("Mute").is_none(),
+        "unmapped names stay known"
+    );
+}
+
+/// Navigation readiness runs in the announced committed world, not in a context-free root
+/// evaluation that arrives before the commit.
+#[test]
+fn navigation_readiness_waits_for_the_committed_default_context() {
+    block_on(async {
+        let (mut dispatcher, peer) = connect_peer(navigating_peer).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "navigate", &mut lines, &expected)
+            .await
+            .unwrap();
+        page.navigate("fixture").await.unwrap();
+        assert_eq!(page.root_context().unwrap().id, 2);
+        page.close().await.unwrap();
+        peer.await.unwrap();
+    });
+}
+
+/// A scripted peer that answers the navigation before the commit and rejects a context-free root
+/// evaluation until the committed document announces its own default world.
+async fn navigating_peer(mut socket: WebSocketStream<TcpStream>) -> Option<()> {
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        if method == "Page.navigate" {
+            send(
+                &mut socket,
+                json!({"id":call["id"],"result":{"frameId":"committed","loaderId":"loader"}}),
+            )
+            .await;
+            send(
+                &mut socket,
+                json!({"method":"Runtime.executionContextDestroyed","sessionId":"session",
+                    "params":{"executionContextUniqueId":"root-world"}}),
+            )
+            .await;
+            send(
+                &mut socket,
+                json!({"method":"Page.frameNavigated","sessionId":"session",
+                    "params":{"type":"Navigation","frame":{"id":"committed","loaderId":"loader1","url":"fixture",
+                        "domainAndRegistry":"","securityOrigin":"null","mimeType":"text/html",
+                        "secureContextType":"InsecureScheme","crossOriginIsolatedContextType":"NotIsolated",
+                        "gatedAPIFeatures":[]}}}),
+            )
+            .await;
+            send(&mut socket, context_created("session", 2, "committed")).await;
+            continue;
+        }
+        if method == "Runtime.evaluate" && call["params"]["contextId"].is_null() {
+            send(
+                &mut socket,
+                json!({"id":call["id"],"error":{"code":-32000,
+                    "message":"Cannot find default execution context"}}),
+            )
+            .await;
+            continue;
+        }
+        if method == "Runtime.evaluate" && call["params"]["contextId"] == 2 {
+            let expression = call["params"]["expression"].as_str().unwrap_or_default();
+            assert!(expression.starts_with("new Promise"), "{expression}");
+            let _ = expression;
+            send(
+                &mut socket,
+                json!({"id":call["id"],"result":{"result":{"value":null}}}),
+            )
+            .await;
+            continue;
+        }
+        let result = shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}"));
+        let leave = method == "Target.disposeBrowserContext";
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if leave {
+            return Some(());
+        }
+    }
+    None
+}
+
+/// Page creation announces the desktop pointer: touch emulation stays off unless the export opts
+/// in, mirroring the render environment the tests expect.
+#[test]
+fn page_creation_emulates_a_desktop_pointer() {
+    block_on(async {
+        let (mut dispatcher, peer) =
+            connect_peer(move |socket| desktop_pointer(socket, false)).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "desktop", &mut lines, &expected)
+            .await
+            .unwrap();
+        page.initialize().await.unwrap();
+        page.close().await.unwrap();
+        peer.await.unwrap();
+    });
+}
+
+/// Serve the setup sequence and demand the desktop-pointer announcement first.
+async fn desktop_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) -> Option<()> {
+    let mut announced = false;
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        if method == "Emulation.setDeviceMetricsOverride" {
+            assert_eq!(call["params"]["mobile"], false);
+            send(&mut socket, json!({"id":call["id"],"result":{}})).await;
+            continue;
+        }
+        if method == "Emulation.setTouchEmulationEnabled" {
+            assert_eq!(call["params"]["enabled"], touch);
+            send(&mut socket, json!({"id":call["id"],"result":{}})).await;
+            announced = true;
+            continue;
+        }
+        if method == "Runtime.enable" {
+            send(&mut socket, json!({"id":call["id"],"result":{}})).await;
+            continue;
+        }
+        let result = shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}"));
+        let leave = method == "Target.disposeBrowserContext";
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if leave {
+            return Some(());
+        }
+    }
+    assert!(announced, "the desktop pointer was never announced");
+    None
 }
 
 /// Attach an iframe during the held evaluation, then interrupt its setup as `interruption` says.

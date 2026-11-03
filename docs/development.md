@@ -274,6 +274,12 @@ raised during that setup still fail the command. Browser events route by
 session; export, binding and input operations wait for their own completion
 signals without command deadlines.
 
+Every page presents a desktop pointer: touch emulation stays off unless the
+export asks for it, so media queries such as `(hover: hover)` behave like they
+do on a real desktop. A navigation waits for the committed main frame's own
+default execution context before it evaluates readiness, because the browser
+answers a navigation before the renderer commits the document.
+
 The driver launches Chromium with `--no-startup-window`, so the only pages in
 the browser are the ones the driver opens. Each switch a test supplies must be
 written `--key` or `--key=value`; anything else is refused before launch, and

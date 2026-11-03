@@ -5,7 +5,10 @@ use super::{
     page::{Context, Page, string},
     scripts,
 };
-use chromiumoxide::{keys::get_key_definition, types::CdpJsonEventMessage};
+use chromiumoxide::{
+    keys::{KeyDefinition, get_key_definition},
+    types::CdpJsonEventMessage,
+};
 use serde_json::{Value, json};
 use std::{collections::HashMap, io};
 
@@ -213,7 +216,7 @@ impl Page<'_> {
         let (key, modifiers) = parts
             .split_last()
             .ok_or_else(|| io::Error::other("missing keyboard key"))?;
-        let definition = get_key_definition(key)
+        let definition = key_definition(key)
             .ok_or_else(|| io::Error::other(format!("unknown keyboard key {key}")))?;
         let mut mask = 0;
         for modifier in modifiers {
@@ -306,6 +309,28 @@ fn accessibility(node: &Value, nodes: &HashMap<&str, &Value>, output: &mut Strin
             }
         }
     }
+}
+
+/// Key names the browser input protocol resolves beyond the library's own US table, each carrying
+/// the key, code, key code and typed text the dispatcher expects.
+const EXTRA_KEYS: [(&str, KeyDefinition); 1] = [(
+    "Space",
+    KeyDefinition {
+        key: " ",
+        key_code: 32,
+        code: "Space",
+        text: Some(" "),
+    },
+)];
+
+/// Resolve one authored key name into a real key definition.
+fn key_definition(name: &str) -> Option<&'static KeyDefinition> {
+    get_key_definition(name).or_else(|| {
+        EXTRA_KEYS
+            .iter()
+            .find(|(extra, _)| *extra == name)
+            .map(|(_, definition)| definition)
+    })
 }
 
 #[cfg(test)]
