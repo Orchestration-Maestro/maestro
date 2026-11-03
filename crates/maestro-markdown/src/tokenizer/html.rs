@@ -1,6 +1,7 @@
 //! Directive boundaries over caller-escaped literal tag spans.
 use crate::rules::lines::Input;
 use maestro_text::is_whitespace_scalar;
+use std::ops::Range;
 
 /// A raw directive's safe payload and original consumed byte count.
 pub(super) struct Html {
@@ -350,6 +351,44 @@ fn append_tag(output: &mut String, tag: &str) {
             _ => output.push(scalar),
         }
     }
+}
+
+/// Authored spans whose angle delimiters the caller displays literally.
+///
+/// One pass over the whole document, so a block that starts inside a span still reads the
+/// delimiter policy its opening angle established.
+pub(crate) fn escaped_spans(source: &str) -> Vec<Range<usize>> {
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    while let Some(relative) = source[cursor..].find('<') {
+        let start = cursor + relative;
+        cursor = match literal(&source[start..]) {
+            Some(Literal::Opening) => {
+                let Some(end) = source[start..].find('>') else {
+                    spans.push(start..source.len());
+                    break;
+                };
+                spans.push(start..start + end + 1);
+                start + end + 1
+            }
+            Some(Literal::Closing(width)) => {
+                spans.push(start..start + width);
+                start + width
+            }
+            Some(Literal::Bare) => {
+                spans.push(start..start + 1);
+                start + 1
+            }
+            None => start + 1,
+        };
+    }
+    spans
+}
+
+/// Whether `offset` is the closing angle of one escaped span.
+pub(crate) fn closes_escaped_span(spans: &[Range<usize>], offset: usize) -> bool {
+    let index = spans.partition_point(|span| span.end <= offset);
+    spans.get(index).is_some_and(|span| span.end == offset + 1)
 }
 
 /// Hide caller-escaped angle delimiters only in the emphasis mask's coordinate space.

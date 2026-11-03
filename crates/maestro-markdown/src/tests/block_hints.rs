@@ -86,3 +86,21 @@ fn block_hint_work_grows_with_equations_and_urls() {
         }
     }
 }
+
+#[test]
+fn clipped_escaped_angle_keeps_its_closing_angle_literal() {
+    let source = "<https://example.test/$$x$$>";
+    let escaped = crate::MarkedOptions::Browser { escape_html: true };
+    assert_eq!(
+        hinted_blocks(source, escaped, Delimited("$$", "$$")),
+        ["<https://example.test/", "block $$x$$", ">"]
+    );
+    assert_eq!(
+        hinted_blocks(
+            source,
+            crate::MarkedOptions::Browser { escape_html: false },
+            Delimited("$$", "$$"),
+        ),
+        ["<https://example.test/", "block $$x$$"]
+    );
+}
