@@ -167,11 +167,16 @@ mod native {
     #[must_use]
     pub fn failure(registry: &maestro_catalog::ModelRegistry, provider: &str, id: &str) -> String {
         let model = registry.find(provider, id).unwrap().read().unwrap().clone();
-        let callback = maestro_models::get_api_provider(&model.api).unwrap();
+        live_failure(&model).unwrap()
+    }
+    /// Invoke the current protocol registered for a model, returning its failure message.
+    #[must_use]
+    pub fn live_failure(model: &maestro_models::Model) -> Option<String> {
+        let callback = maestro_models::get_api_provider(&model.api)?;
         callback
             .stream
             .call(
-                model,
+                model.clone(),
                 maestro_models::Context {
                     messages: vec![],
                     system_prompt: None,
@@ -180,8 +185,7 @@ mod native {
                 maestro_models::ProviderInvocation::Threaded(None, None),
             )
             .err()
-            .unwrap()
-            .message
+            .map(|error| error.message)
     }
     /// File effects with an observable read boundary.
     pub struct CountFile(pub Arc<std::sync::atomic::AtomicUsize>);

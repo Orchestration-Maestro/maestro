@@ -124,7 +124,13 @@ started calls remain valid independently of registry membership.
 For direct catalog work, `context.model_registry()?` exposes
 `register_provider`, `unregister_provider` and `refresh`. These mutate that
 catalog, not the facade's pre-bind queue. Refresh reloads the model file and
-replays retained providers in registration order. Invalid incoming metadata
+replays retained providers in registration order. Refresh and removal touch only
+that catalog's own registrations: providers another session in the same process
+registered stay registered, and removing an entry puts back the registration it
+displaced. A session reload also keeps its catalog's registrations, so an
+extension that stops registering loses its provider only after the catalog stops
+retaining it.
+Invalid incoming metadata
 changes nothing; a later OAuth transformation or replay failure can leave
 already-applied effects visible. Do not assume registration is a transaction.
 

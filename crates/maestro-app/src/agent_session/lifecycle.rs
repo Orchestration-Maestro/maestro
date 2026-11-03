@@ -210,7 +210,6 @@ impl AgentSession<Local> {
         flush.await;
         self.settings_manager.borrow_mut().reload_from_storage();
         self.sync_queue_modes_from_settings();
-        maestro_models::reset_api_providers();
         self.resource_loader.reload().await.map_err(thrown)?;
         self.model_registry
             .set_base_model_files(self.resource_loader.get_model_files())
