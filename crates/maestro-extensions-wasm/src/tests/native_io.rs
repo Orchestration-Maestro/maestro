@@ -993,3 +993,24 @@ fn native_watch_failures_do_not_leak_callbacks() -> ExtensionResult<()> {
     sibling.close()?;
     Ok(())
 }
+
+#[test]
+fn native_stream_read_to_end_retains_bytes_and_read_errors() -> ExtensionResult<()> {
+    let host = Controlled::default();
+    host.observe().native_io.stdout = vec![vec![], vec![0, 255], b"tail\n".to_vec()];
+    let io = captured_api(&host)?.native_io();
+    let child =
+        super::block_on(io.spawn("read-to-end".into(), Vec::new(), SpawnOptions::default()))?;
+    assert_eq!(
+        super::block_on(crate::streams::read_to_end(child.stdout().unwrap()))?,
+        b"\0\xfftail\n"
+    );
+    host.observe().native_io.read_error = Some("controlled stream read failure".into());
+    let child =
+        super::block_on(io.spawn("read-to-end".into(), Vec::new(), SpawnOptions::default()))?;
+    assert_eq!(
+        super::block_on(crate::streams::read_to_end(child.stdout().unwrap())),
+        Err("controlled stream read failure".into())
+    );
+    Ok(())
+}

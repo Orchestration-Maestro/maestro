@@ -797,6 +797,8 @@ fn enhanced_navigation_forms_keep_event_and_modifier_fields() {
     }
 }
 
+/// Modifier words match on either side of the key, and misspelled, repeated or
+/// dangling words do not.
 #[test]
 fn modifier_words_match_before_or_after_the_key() {
     let mut protocol = ProtocolGuard::new(false);
