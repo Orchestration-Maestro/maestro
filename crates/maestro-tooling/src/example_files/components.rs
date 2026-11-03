@@ -6,7 +6,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// Gather documented files recursively in portable path order, excluding index pages.
+/// Gather documented files recursively in portable path order, excluding index pages and the
+/// support files of a directory example.
 ///
 /// # Errors
 /// Returns directory-read failures.
