@@ -249,7 +249,9 @@ the driver scrolls `#target` into that document's view immediately, then sends
 move, press and release there. A frame that shares its parent's renderer uses
 that renderer's native content quad. The driver releases lookup handles after
 success and failure, and retains attached renderer sessions only for the page's
-lifetime. Browser events route by session; export, binding and input operations
+lifetime. Every attached iframe has its default execution context tracked,
+including frames whose scripts are already running when they attach.
+Browser events route by session; export, binding and input operations
 wait for their own completion signals without command deadlines.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,

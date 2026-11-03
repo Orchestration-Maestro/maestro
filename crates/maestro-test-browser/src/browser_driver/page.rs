@@ -399,14 +399,12 @@ impl<'a> Page<'a> {
         }
     }
 
-    /// Initialize attached iframe renderers before resuming their authored scripts.
+    /// Track attached renderers and enable iframe events even when scripts are already running.
     async fn attached(&mut self, params: &Value) -> io::Result<()> {
         let session = SessionId::from(string(params, "sessionId")?.to_owned());
-        if params["waitingForDebugger"] == true {
-            self.sessions.insert(session.clone());
-            if params["targetInfo"]["type"] == "iframe" {
-                self.initialize_session(&session).await?;
-            }
+        self.sessions.insert(session.clone());
+        if params["targetInfo"]["type"] == "iframe" {
+            self.initialize_session(&session).await?;
         }
         self.command(Some(&session), "Runtime.runIfWaitingForDebugger", json!({}))
             .await?;
