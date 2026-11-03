@@ -77,7 +77,10 @@ and `agent_end`, not just the successful response. It leaves stderr separate and
 checks the child's exit status. Use plain prompt text: an extension slash
 command handled without a run does not produce `agent_end`. The example does
 not track automatic retries or overflow recovery after the first run. Use the
-[typed Rust client](client.md) for reusable subprocess operations.
+[typed Rust client](client.md) for reusable subprocess operations. The
+[SDK example index](../examples/sdk/README.md#check-the-example) gives the command
+that runs the example's checks; those checks are Rust tests whose peers are native
+Rust programs, so only the example itself runs under Python 3.
 
 ## Framing
 
