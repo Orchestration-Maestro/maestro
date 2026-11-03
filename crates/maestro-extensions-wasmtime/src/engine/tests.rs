@@ -1,4 +1,5 @@
-//! The engine compiles the same code on every host, and it loads exception code.
+//! The engine compiles the same code on every host and loads modules that
+//! throw WebAssembly exceptions.
 use super::component_engine;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use wasmtime::{Config, Engine, Module};
