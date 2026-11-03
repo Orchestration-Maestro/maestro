@@ -1,15 +1,15 @@
 //! Artifact initialization uses the existing native factory and its original facade.
 use crate::{
+    component_engine,
     guest_calls::{Call, Callbacks},
     lifecycle::{self, replies::Replies},
     local_resources::Pump,
-    process_engine,
 };
 use maestro_extensions::{ExtensionFactory, ExtensionWidgets, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
-    Store,
+    Cache, Store,
     component::{Component, Linker},
 };
 
@@ -153,8 +153,8 @@ async fn execute(
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) -> wasmtime::Result<()> {
-    // The engine is shared; each instance still owns its worker, store and compiled code.
-    let engine = process_engine()?;
+    // The user cache is optional; unavailable storage must not prevent loading.
+    let engine = component_engine(Cache::from_file(None).ok())?;
     let component = Component::from_file(&engine, path)?;
     let mut linker = Linker::new(&engine);
     lifecycle::link(&mut linker)?;

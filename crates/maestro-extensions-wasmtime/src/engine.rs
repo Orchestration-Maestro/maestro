@@ -1,9 +1,5 @@
 //! The one engine configuration every component engine is built from.
-use std::sync::OnceLock;
-use wasmtime::{Cache, Config, Engine, Error, Result};
-
-/// The engine every loaded component in this process reuses.
-static PROCESS_ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
+use wasmtime::{Cache, Config, Engine};
 
 /// Creates the async component engine, with `cache` as its compiled-code store.
 ///
@@ -23,22 +19,6 @@ pub fn component_engine(cache: Option<Cache>) -> wasmtime::Result<Engine> {
     }
     config.cache(cache);
     Engine::new(&config)
-}
-
-/// Returns the one engine every loaded component in this process reuses.
-///
-/// A component keeps its own workers, stores and instances; the engine itself
-/// holds no per-component state, so one shared engine costs one setup instead of
-/// one per extension instance, and memory no longer grows with instance count.
-/// The optional user cache is configured once, as in the first load.
-///
-/// # Errors
-/// Returns Wasmtime's failure to configure the engine.
-pub fn process_engine() -> Result<Engine> {
-    let configured = PROCESS_ENGINE.get_or_init(|| {
-        component_engine(Cache::from_file(None).ok()).map_err(|error| error.to_string())
-    });
-    configured.clone().map_err(Error::msg)
 }
 
 #[cfg(test)]

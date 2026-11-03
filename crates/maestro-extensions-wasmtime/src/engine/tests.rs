@@ -1,5 +1,5 @@
 //! The engine's compiled code does not depend on the CPU that builds it.
-use super::{component_engine, process_engine};
+use super::component_engine;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use wasmtime::{Config, Engine};
 
@@ -40,12 +40,4 @@ fn engine_keeps_wasmtime_defaults_off_x86_64() {
         identity(&component_engine(None).unwrap()),
         identity(&default_engine())
     );
-}
-
-/// The process reuses one engine, so loads never pay one per extension instance.
-#[test]
-fn process_engine_reuses_one_engine() {
-    let first = process_engine().unwrap();
-    let second = process_engine().unwrap();
-    assert!(Engine::same(&first, &second));
 }
