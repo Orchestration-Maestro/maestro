@@ -130,6 +130,14 @@ pub(crate) fn install(staged: &Path, target: &Path) -> io::Result<()> {
 pub(crate) fn command(program: impl AsRef<OsStr>, checkout: &Path, target: &Path) -> Command {
     let mut command = Command::new(program);
     command.current_dir(checkout);
+    isolate(&mut command, target);
+    command.env("CARGO_BUILD_JOBS", "3");
+    command
+}
+
+/// Build `command` in `target` without the runner's instrumentation and with the compiler
+/// wrapper that preceded coverage restored.
+pub(crate) fn isolate(command: &mut Command, target: &Path) {
     if nonempty("__CARGO_LLVM_COV_RUSTC_WRAPPER").is_some() {
         match nonempty("__CARGO_LLVM_COV_RUSTC_WRAPPER_PRE_EXISTING") {
             Some(wrapper) => command.env("RUSTC_WRAPPER", wrapper),
@@ -141,9 +149,7 @@ pub(crate) fn command(program: impl AsRef<OsStr>, checkout: &Path, target: &Path
     }
     command
         .env("CARGO_TARGET_DIR", target)
-        .env("CARGO_BUILD_JOBS", "3")
         .env("TRUNK_SKIP_VERSION_CHECK", "true");
-    command
 }
 
 /// Run `command`. The command line when it did not succeed.
