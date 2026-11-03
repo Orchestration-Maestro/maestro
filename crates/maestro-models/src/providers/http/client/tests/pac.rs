@@ -232,7 +232,9 @@ fn pac_unknown_candidates_advance_but_invalid_urls_fail() {
 #[test]
 fn pac_retains_globals_and_replaces_changed_sources() {
     crate::tests::runtime::run(async {
-        let path = std::env::temp_dir().join(format!("maestro-pac-retain-{}", std::process::id()));
+        let scratch =
+            maestro_test_directory::Scratch::new().expect("test directory should be created");
+        let path = scratch.path().join("maestro-pac-retain");
         let script =
             "var counter = 0; function FindProxyForURL() { return 'INITIAL ' + (++counter); }";
         std::fs::write(&path, script).unwrap();

@@ -38,17 +38,16 @@ fn publish_link(
 
 /// Create an isolated directory for one Windows filesystem witness.
 #[cfg(windows)]
-fn scratch(name: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!("maestro-links-{}-{name}", std::process::id()));
-    fs::create_dir(&root).unwrap();
+fn scratch() -> maestro_test_directory::Scratch {
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    fs::canonicalize(root).unwrap()
+    maestro_test_directory::Scratch::new().expect("test directory should be created")
 }
 
 #[cfg(windows)]
 #[test]
 fn directory_link_publication_retires_source() {
-    let root = scratch("retirement");
+    let root = scratch();
+    let root = root.path();
     let referent = root.join("original");
     fs::create_dir(&referent).unwrap();
     fs::write(referent.join("payload"), b"retained").unwrap();
@@ -59,13 +58,13 @@ fn directory_link_publication_retires_source() {
     assert!(fs::symlink_metadata(&source).is_err());
     assert_eq!(fs::read(target.join("payload")).unwrap(), b"retained");
     assert!(fs::symlink_metadata(&target).unwrap().is_symlink());
-    fs::remove_dir_all(root).unwrap();
 }
 
 #[cfg(windows)]
 #[test]
 fn failed_directory_link_publication_cleans_staging_and_retries() {
-    let root = scratch("retry");
+    let root = scratch();
+    let root = root.path();
     let referent = root.join("original");
     fs::create_dir(&referent).unwrap();
     fs::write(referent.join("payload"), b"retained").unwrap();
@@ -92,7 +91,8 @@ fn directory_link_collision_removes_only_source_entry() {
         migrate_tools_to_bin(&mut |_, _| panic!("collision is not a move")).unwrap();
         return;
     }
-    let root = scratch("collision");
+    let root = scratch();
+    let root = root.path();
     fs::create_dir(root.join("tools")).unwrap();
     fs::create_dir(root.join("bin")).unwrap();
     fs::create_dir(root.join("original")).unwrap();
@@ -116,7 +116,6 @@ fn directory_link_collision_removes_only_source_entry() {
         fs::read(root.join("original/payload")).unwrap(),
         b"retained"
     );
-    fs::remove_dir_all(root).unwrap();
 }
 
 /// Both managed-binary shapes and session equivalents use the same settlement seam.
@@ -135,12 +134,9 @@ fn moved_absolute_links_retain_readable_sources_until_settlement() {
 fn check_absolute_batch(alias: &str, referent: &str, obstruction: &str) {
     use super::{PreparedMove, relocate};
     use std::{fs, os::unix::fs::symlink};
-    let root = std::env::temp_dir().join(format!(
-        "maestro-settlement-{}-{alias}-{obstruction}",
-        std::process::id()
-    ));
-    fs::create_dir(&root).unwrap();
-    let root = fs::canonicalize(root).unwrap();
+    // Settlement compares canonical identities, so inputs use the canonical spelling.
+    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let root = scratch.path();
     let source = root.join("source");
     let target = root.join("target");
     fs::create_dir(&source).unwrap();
@@ -187,7 +183,6 @@ fn check_absolute_batch(alias: &str, referent: &str, obstruction: &str) {
             break;
         }
     }
-    fs::remove_dir_all(root).unwrap();
 }
 
 /// Failed batches preserve readable sources and clean only their own links.
