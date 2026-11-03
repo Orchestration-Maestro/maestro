@@ -404,7 +404,12 @@ fn clipboard_absence_is_silent_and_does_not_edit() {
                 cases::<NoImage, Text>("clipboard_absence_is_silent_and_does_not_edit")
                     .swap_remove(0);
             assert_eq!(input.op, "paste-none");
-            install_chat(directory, "wl-paste", &pasting("text/plain\n", &[]));
+            // The reader holds image bytes it must not be asked for: only the offered types decide.
+            install_chat(
+                directory,
+                "wl-paste",
+                &pasting("text/plain\n", b"bytes that must stay unread"),
+            );
             let world = started(directory).await;
             world.mode.editor.set_text(&expected.text);
             world.runtime.settle().unwrap();
