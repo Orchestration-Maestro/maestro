@@ -3,7 +3,7 @@
 //! Dynamic provider retention and catalog replay.
 use crate::dynamic;
 use crate::support;
-use maestro_catalog::{ModelRegistry, ProviderConfigInput};
+use maestro_catalog::{ModelRegistry, ProviderCallbacks, ProviderConfigInput};
 use maestro_models::SharedHandle;
 use std::sync::{Arc, RwLock};
 
@@ -92,11 +92,42 @@ fn display_name_precedence_keeps_present_empty_names() {
     assert_eq!(registry.get_provider_display_name("unlisted"), "Registered");
 }
 
+/// Register the peer instance's same-name account entry, bundled-protocol override and
+/// own protocol, each under its own ownership identity.
+fn register_peer_entries() -> ModelRegistry {
+    let second = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+    second
+        .register_provider(
+            "shared",
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
+                base_url: Some("https://second.invalid/v1".into()),
+                callbacks: ProviderCallbacks {
+                    oauth: Some(dynamic::oauth("Peer account")),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })),
+        )
+        .unwrap();
+    let override_config = SharedHandle::new(RwLock::new(ProviderConfigInput {
+        api: Some("openai-completions".into()),
+        base_url: Some("https://override.invalid".into()),
+        ..Default::default()
+    }));
+    dynamic::callback(&override_config, "peer-override");
+    second
+        .register_provider("override", override_config)
+        .unwrap();
+    let own_protocol = dynamic::config(&["peer"]);
+    own_protocol.write().unwrap().api = Some("peer-api".into());
+    dynamic::callback(&own_protocol, "peer-own");
+    second.register_provider("peer-own", own_protocol).unwrap();
+    second
+}
+
 #[test]
-fn refresh_keeps_another_instances_registrations_and_retires_only_unrenewed_own_ones() {
-    if dynamic::isolated(
-        "refresh_keeps_another_instances_registrations_and_retires_only_unrenewed_own_ones",
-    ) {
+fn refresh_and_removal_keep_another_instances_registrations() {
+    if dynamic::isolated("refresh_and_removal_keep_another_instances_registrations") {
         return;
     }
     let first = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
@@ -109,23 +140,53 @@ fn refresh_keeps_another_instances_registrations_and_retires_only_unrenewed_own_
     }
     dynamic::callback(&config, "first");
     first.register_provider("p", config).unwrap();
-    let second = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
-    assert!(maestro_models::get_api_provider("instance-api").is_some());
-    assert!(maestro_models::get_oauth_provider("p").is_some());
-    assert_eq!(second.get_provider_display_name("p"), "Dynamic OAuth");
-    second.refresh().unwrap();
-    assert!(maestro_models::get_api_provider("instance-api").is_some());
-    assert!(maestro_models::get_oauth_provider("p").is_some());
+    first
+        .register_provider(
+            "shared",
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
+                base_url: Some("https://first.invalid/v1".into()),
+                ..Default::default()
+            })),
+        )
+        .unwrap();
+    register_peer_entries();
+    let peer_account = maestro_models::get_oauth_provider("shared").unwrap();
+    let peer_override = maestro_models::get_api_provider("openai-completions").unwrap();
+    let peer_own = maestro_models::get_api_provider("peer-api").unwrap();
+    let shadow = dynamic::config(&["shadow"]);
+    shadow.write().unwrap().api = Some("peer-api".into());
+    dynamic::callback(&shadow, "first-shadow");
+    first.register_provider("shadow", shadow).unwrap();
+    assert_eq!(peer_account.name(), "Peer account");
+    first.refresh().unwrap();
     assert_eq!(first.get_provider_display_name("p"), "P");
-    assert_eq!(second.get_provider_display_name("p"), "Dynamic OAuth");
-    first.refresh().unwrap();
     assert_eq!(dynamic::failure(&first, "p", "m"), "first");
-    assert!(maestro_models::get_oauth_provider("p").is_some());
-    first.begin_reload();
-    first.refresh().unwrap();
-    assert!(maestro_models::get_api_provider("instance-api").is_none());
-    assert!(maestro_models::get_oauth_provider("p").is_none());
-    assert_eq!(first.get_provider_display_name("p"), "p");
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_account,
+        &maestro_models::get_oauth_provider("shared").unwrap()
+    ));
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_override.stream,
+        &maestro_models::get_api_provider("openai-completions")
+            .unwrap()
+            .stream
+    ));
+    // This registry's own retained shadow asserts itself again over the peer's protocol.
+    assert_eq!(dynamic::failure(&first, "shadow", "shadow"), "first-shadow");
+    first.unregister_provider("shadow").unwrap();
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_own.stream,
+        &maestro_models::get_api_provider("peer-api").unwrap().stream
+    ));
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_account,
+        &maestro_models::get_oauth_provider("shared").unwrap()
+    ));
+    first.unregister_provider("shared").unwrap();
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_account,
+        &maestro_models::get_oauth_provider("shared").unwrap()
+    ));
 }
 
 #[test]
@@ -212,7 +273,12 @@ fn registered_oauth_label_precedes_current_global_provider() {
         );
     }
     registry.unregister_provider("p").unwrap();
-    assert_eq!(registry.get_provider_display_name("p"), "p");
+    // The removal keeps the globally installed registration that displaced this one.
+    assert_eq!(
+        maestro_models::get_oauth_provider("p").unwrap().name(),
+        "Other Instance"
+    );
+    assert_eq!(registry.get_provider_display_name("p"), "Other Instance");
 }
 
 #[test]

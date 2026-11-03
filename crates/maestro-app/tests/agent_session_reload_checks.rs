@@ -16,7 +16,7 @@ use maestro_settings::MessageDeliveryMode;
 use serde_json::json;
 use std::{rc::Rc, sync::RwLock};
 
-/// The probe protocol the reload-owner test registers through an extension route.
+/// The probe protocol whose provider this test registers through an extension route.
 const PROBE_API: &str = "probe-stream";
 
 #[test]
@@ -68,7 +68,7 @@ impl<E: ProviderExecution, O> Invoke<E, ProviderCall<E, O>> for Probe {
 }
 
 #[test]
-fn reload_retires_a_provider_the_reload_window_does_not_renew() {
+fn reload_keeps_extension_registered_provider() {
     on_task_set(|_| async {
         let register: ExtensionFactory<Local> = Rc::new(|api| {
             Box::pin(async move {
@@ -92,8 +92,8 @@ fn reload_retires_a_provider_the_reload_window_does_not_renew() {
         .await;
         assert!(maestro_models::get_api_provider(PROBE_API).is_some());
         h.session.reload().await.unwrap();
-        assert!(maestro_models::get_api_provider(PROBE_API).is_none());
+        assert!(maestro_models::get_api_provider(PROBE_API).is_some());
         h.registry.refresh().unwrap();
-        assert!(maestro_models::get_api_provider(PROBE_API).is_none());
+        assert!(maestro_models::get_api_provider(PROBE_API).is_some());
     });
 }

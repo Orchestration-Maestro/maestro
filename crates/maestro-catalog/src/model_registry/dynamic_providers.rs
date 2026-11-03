@@ -89,7 +89,7 @@ impl ModelRegistry {
         drop(retired);
         if removed {
             maestro_models::unregister_api_providers(&self.provider_source(provider_name));
-            maestro_models::unregister_oauth_provider(provider_name);
+            self.retire_own_account(provider_name);
             self.refresh()?;
         }
         Ok(())
@@ -103,14 +103,13 @@ impl ModelRegistry {
         let existing = {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
             if let Some(existing) = state.registered_providers.get_mut(provider) {
-                existing.2 = true;
                 SharedHandle::clone(&existing.1)
             } else {
                 let ordinal = state.next_provider;
                 state.next_provider += 1;
                 state
                     .registered_providers
-                    .insert(provider.into(), (ordinal, config, true));
+                    .insert(provider.into(), (ordinal, config));
                 return;
             }
         };
@@ -160,10 +159,17 @@ fn install_operations(
         .oauth
         .clone();
     if let Some(inner) = oauth {
-        register_oauth_provider(SharedHandle::new(RegisteredOAuth {
+        let entry: maestro_models::OAuthProviderHandle = SharedHandle::new(RegisteredOAuth {
             id: provider.into(),
             inner,
-        }));
+        });
+        register_oauth_provider(SharedHandle::clone(&entry));
+        registry
+            .state
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .installed_account
+            .insert(provider.to_owned(), entry);
     }
     let callback = {
         let config = config.read().unwrap_or_else(PoisonError::into_inner);

@@ -22,9 +22,8 @@ overlays keep the loading rules below, including one-level routing overlays.
 
 `set_base_model_files` replaces the ordered base files below the construction-time
 files and refreshes the registry, replaying dynamic providers. An empty base that
-was already empty leaves the current catalog untouched, unless a reload window is
-open: that refresh always runs, so it can retire registrations no route renewed.
-Session construction and reload use this operation for base-package contributions.
+was already empty leaves the current catalog untouched. Session construction and
+reload use this operation for base-package contributions.
 
 [Configure custom models](models/custom.md) walks through editing `models.json`,
 local endpoints, field defaults and compatibility settings.
@@ -86,29 +85,28 @@ the preceding file diagnostic before reloading. `get_error` returns an owned
 
 Construction loads without resetting shared account or protocol registrations.
 `refresh` clears request sources and the preceding file diagnostic, removes this
-registry's own protocol and account registrations, restores the bundled protocols
-in place, loads the underlying catalog, then replays this registry's retained
-providers in live insertion order. Replacement keeps its slot; removal skips a
-pending provider; removal followed by insertion moves it to the end. Callback
-additions are visited during that replay. A transformation failure stops replay
-with earlier effects still visible. See [OAuth transformations](models/oauth.md)
-for the delegated account behavior.
+registry's own protocol and account registrations, loads the underlying catalog,
+then replays this registry's retained providers in live insertion order.
+Replacement keeps its slot; removal skips a pending provider; removal followed by
+insertion moves it to the end. Callback additions are visited during that replay.
+A transformation failure stops replay with earlier effects still visible. See
+[OAuth transformations](models/oauth.md) for the delegated account behavior.
 
 Registrations are owned. Every dynamic registration this registry installs carries
 an ownership identity derived from a process-unique registry instance and the
 registration name, and removal goes through that identity. A refresh or removal
-therefore replaces only this registry's own entries plus the bundled protocols;
-registrations another registry instance or an extension holds in the same process
-stay registered, whoever reloads. Failed registrations keep this rule too: a
-registration whose transformation fails leaves its own installed protocols and
-account entries with the registry, and the next refresh removes them again.
+therefore touches only this registry's own entries: registrations another registry
+instance or an extension holds in the same process stay registered, whoever
+reloads. Removing an entry also puts back the registration it displaced, which is
+the bundled protocol when the entry had shadowed one. An account entry is removed
+only while the live share under that name is still the one this registry
+installed. Failed registrations keep the ownership rule too: a registration whose
+transformation fails leaves its own installed protocols and account entries with
+the registry, and the next refresh removes them again.
 
-A reload opens this registry's reload window and closes it at the following
-refresh. During the window, newly retained registrations are marked renewed; the
-closing refresh additionally removes every retained registration no route renewed
-and its installed pieces. That is how a dropped extension loses its provider: the
-extension stopped registering, so nothing renews its registration, and no later
-refresh without a window restores it.
+A reload keeps every retained registration. It reloads the base files and replays
+the catalog's own providers, so its registered providers come back by the next
+refresh even while an extension has stopped registering.
 
 ## Callback re-entry
 

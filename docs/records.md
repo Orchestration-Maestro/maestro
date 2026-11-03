@@ -7,8 +7,9 @@ for installation, offline executable examples and the delivered protocol/account
 options through replaceable registered protocol callbacks. An invocable model
 need not belong to a catalog. Registration wraps both callbacks with a protocol
 check. Replacing a protocol preserves its position but replaces its source owner;
-source removal affects only registrations still owned by that source. Retained
-handles remain usable after replacement, removal or clear.
+source removal affects only registrations still owned by that source, and puts
+back the registration each removed entry displaced. Retained handles remain
+usable after replacement, removal or clear.
 
 `TextContent::new(text)` moves an owned string into a text block unchanged and
 leaves its model-specific signature absent. It preserves empty text, whitespace,

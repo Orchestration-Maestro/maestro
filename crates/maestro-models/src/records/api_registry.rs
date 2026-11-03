@@ -7,6 +7,7 @@ use super::types::{
 use crate::SharedHandle;
 use crate::builtins::built_in_providers;
 use indexmap::IndexMap;
+use std::collections::HashMap;
 
 /// Raw invocation callback retained by registration.
 pub type ApiStreamFunction = StreamFunction<ProviderStreamOptions>;
@@ -29,17 +30,25 @@ struct Registration {
     /// Identifier of the extension that owns this registration.
     source_id: Option<String>,
 }
+/// Live protocol registrations plus the predecessors their replacements displaced.
+struct ApiRegistrations {
+    /// Checked providers keyed by protocol identity in registration order.
+    entries: IndexMap<String, Registration>,
+    /// Per protocol, the registrations each newer same-protocol registration replaced,
+    /// most recent first.
+    shadowed: HashMap<String, Vec<Registration>>,
+}
 #[cfg(not(target_arch = "wasm32"))]
 /// Process-wide ordered API registrations protected for native callers.
-static REGISTRY: std::sync::LazyLock<std::sync::Mutex<IndexMap<String, Registration>>> =
+static REGISTRY: std::sync::LazyLock<std::sync::Mutex<ApiRegistrations>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new(seeded()));
 #[cfg(target_arch = "wasm32")]
 thread_local! {
 /// Browser-thread API registrations in insertion order.
-static REGISTRY: std::cell::RefCell<IndexMap<String, Registration>> = std::cell::RefCell::new(seeded()); }
+static REGISTRY: std::cell::RefCell<ApiRegistrations> = std::cell::RefCell::new(seeded()); }
 crate::records::platform_store_accessor!(
     /// Access the native shared or browser-local registration map.
-    with_registry, REGISTRY, IndexMap<String, Registration>
+    with_registry, REGISTRY, ApiRegistrations
 );
 /// API guard retaining the original callback independently of registry changes.
 struct Checked<K: StreamOptionsFamily> {
@@ -87,49 +96,133 @@ fn registration(provider: ApiProvider, source_id: Option<String>) -> Registratio
     }
 }
 /// The bundled protocols, registered before the first lookup or change.
-fn seeded() -> IndexMap<String, Registration> {
-    built_in_providers()
-        .into_iter()
-        .map(|provider| (provider.api.clone(), registration(provider, None)))
-        .collect()
+fn seeded() -> ApiRegistrations {
+    ApiRegistrations {
+        entries: built_in_providers()
+            .into_iter()
+            .map(|provider| (provider.api.clone(), registration(provider, None)))
+            .collect(),
+        shadowed: HashMap::new(),
+    }
 }
 /// Insert checked callbacks, keeping an existing protocol's original position.
+/// A replaced registration stays recorded, so the replacing registrar's removal
+/// restores it instead of leaving the displaced owner registered with nothing.
 pub fn register_api_provider(provider: ApiProvider, source_id: Option<String>) {
     let entry = registration(provider, source_id);
-    let retired = with_registry(|registry| registry.insert(entry.provider.api.clone(), entry));
+    let source = entry.source_id.clone();
+    let api = entry.provider.api.clone();
+    let retired = with_registry(|registry| {
+        match registry.entries.insert(api, entry) {
+            // A source replacing its own registration already owns the protocol slot.
+            Some(previous) if previous.source_id != source => {
+                let record = previous.provider.api.clone();
+                registry.shadowed.entry(record).or_default().push(previous);
+                None
+            }
+            previous => previous,
+        }
+    });
     drop(retired);
 }
 /// Retain a checked provider handle independently of future registry changes.
 #[must_use]
 pub fn get_api_provider(api: &str) -> Option<ApiProvider> {
-    with_registry(|registry| registry.get(api).map(|entry| entry.provider.clone()))
+    with_registry(|registry| {
+        registry
+            .entries
+            .get(api)
+            .map(|entry| entry.provider.clone())
+    })
 }
 /// Retain checked providers in original registration order.
 #[must_use]
 pub fn get_api_providers() -> Vec<ApiProvider> {
     with_registry(|registry| {
         registry
+            .entries
             .values()
             .map(|entry| entry.provider.clone())
             .collect()
     })
 }
-/// Remove registrations whose current owner matches the supplied identity.
+/// Remove registrations whose current owner matches the supplied identity and restore
+/// the registration their replacement displaced.
 pub fn unregister_api_providers(source_id: &str) {
     let retired = with_registry(|registry| {
-        let keys: Vec<_> = registry
+        let mut superseded: Vec<Registration> = Vec::new();
+        for list in registry.shadowed.values_mut() {
+            retire_stale_copies(list, source_id, &mut superseded);
+        }
+        let matched: Vec<_> = registry
+            .entries
             .iter()
             .filter(|(_, entry)| entry.source_id.as_deref() == Some(source_id))
             .map(|(api, _)| api.clone())
             .collect();
-        keys.into_iter()
-            .filter_map(|key| registry.shift_remove(&key))
-            .collect::<Vec<_>>()
+        for api in &matched {
+            restore_or_remove(registry, api, source_id, &mut superseded);
+        }
+        superseded
     });
     drop(retired);
 }
+
+/// Retire the shadow copies `source_id` superseded, from the top of the stack down.
+fn retire_stale_copies(
+    list: &mut Vec<Registration>,
+    source_id: &str,
+    superseded: &mut Vec<Registration>,
+) {
+    while list
+        .last()
+        .is_some_and(|entry| entry.source_id.as_deref() == Some(source_id))
+    {
+        let Some(entry) = list.pop() else {
+            break;
+        };
+        superseded.push(entry);
+    }
+}
+
+/// Retire the registration `api` currently holds for `source_id`, installing the
+/// registration its replacement displaced, and collect everything retired.
+fn restore_or_remove(
+    registry: &mut ApiRegistrations,
+    api: &str,
+    source_id: &str,
+    superseded: &mut Vec<Registration>,
+) {
+    let mut replacement = None;
+    {
+        let shadow = registry.shadowed.entry(api.to_owned()).or_default();
+        while replacement.is_none() {
+            match shadow.pop() {
+                Some(entry) if entry.source_id.as_deref() == Some(source_id) => {
+                    superseded.push(entry);
+                }
+                Some(entry) => replacement = Some(entry),
+                None => break,
+            }
+        }
+    }
+    let Some(index) = registry.entries.get_index_of(api) else {
+        return;
+    };
+    if let Some(restored) = replacement {
+        if let Some((_, slot)) = registry.entries.get_index_mut(index) {
+            superseded.push(std::mem::replace(slot, restored));
+        }
+    } else if let Some((_, entry)) = registry.entries.shift_remove_entry(api) {
+        superseded.push(entry);
+    }
+}
 /// Remove all registrations without invalidating retained handles.
 pub fn clear_api_providers() {
-    let retired = with_registry(std::mem::take);
+    let retired = with_registry(|registry| {
+        let retired = std::mem::take(&mut registry.entries);
+        registry.shadowed.clear();
+        retired
+    });
     drop(retired);
 }
