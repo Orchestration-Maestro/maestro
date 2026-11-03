@@ -614,6 +614,27 @@ program uses only the common peer. Check both programs for unused support:
 cargo clippy -p maestro-models --all-targets --locked -- -D warnings
 ```
 
+### TLS fixture certificates
+
+The provider tests trust fixed certificates under
+`crates/maestro-models/tests/fixtures/`. They are committed data, and no script or
+certificate library issues them. Every certificate starts on 2019-06-01 and expires
+on 2126-10-18, so none of them lapses during a test run. They start before 2019-07-01
+because Apple's TLS policy refuses a server certificate issued on or after that date
+that is valid for more than 825 days.
+
+| Files | Subject | Made as |
+| --- | --- | --- |
+| `socks-tls/cert.pem`, `cert.der`, `key.der` | `CN=destination.invalid`, names `destination.invalid` and `localhost` | Self-signed server certificate over the committed key. It is its own trust anchor. |
+| `cloud-authentication/server-ca.pem` | `CN=Controlled Maestro ADC server authority` | Self-signed authority, `CA:TRUE`, key usage `keyCertSign` and `cRLSign`. |
+| `cloud-authentication/server.pem`, `server-key.der` | `CN=localhost`, names `localhost` and `127.0.0.1` | Server certificate over the committed key, signed by the server authority. |
+| `cloud-authentication/ca.pem`, `client.pem`, `client-key.der` | `CN=Controlled Maestro ADC CA`, `CN=Controlled ADC Client` | Left as issued: the recorded chain hashes depend on them. |
+
+The server certificates carry `serverAuth` and `digitalSignature, keyEncipherment`
+with `CA:FALSE`, signed with SHA-256 and a random serial. To replace one, issue a new
+certificate over the same committed key with the subject and names above, commit the
+PEM and DER forms together, and keep the dates.
+
 ### Code scanning
 
 Open the repository's **Security > Code scanning** page to inspect CodeQL alerts.
