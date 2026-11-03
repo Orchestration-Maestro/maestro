@@ -174,9 +174,10 @@ builds the owner's declared platform handle, so identity comparisons hold on
 both targets.
 
 Compilation does not replace the browser assertions below.
-The theme examples `brand_themes` and `browser_author_inputs` run their author
-work on native targets; their browser entrypoints do nothing. Native usage
-messages and generated filenames are unchanged.
+The theme generators `brand_themes` and `browser_author_inputs` are repository
+scripts under `crates/maestro-theme/scripts`; they run their author work on native
+targets, and their browser entrypoints do nothing. Native usage messages and
+generated filenames are unchanged.
 
 ## Browser integration qualification
 
@@ -484,7 +485,7 @@ fonts, glyphs and mark paths. `maestro-brand` parses and projects those values;
 Changing a pack does not rename the command, environment variables or settings
 directory, and does not install that pack into a running application.
 
-Use the existing [brand theme example](theme.md#brand-pack) to try a pack without
+Use the existing [brand theme generator](theme.md#brand-pack) to try a pack without
 changing shipped files. Run this from the checkout root:
 
 ```sh
@@ -602,6 +603,16 @@ stay in their existing integration-test support modules.
 
 Use the shared fixture without changing the caller's assertions or adding a
 production feature for test access.
+
+Keep a crate's `examples/` directory for examples written for users. Put a program
+that exists for tests, checks or test preparation (a native test child, a fixture
+component, a browser compile witness, a terminal debugging program) in
+`tests/support/`, registered as an `[[example]]` target with an explicit `path`, as
+the models crate's browser witnesses are. Put a program that maintains repository
+files or reports on recorded data (a generator, a report tool) in the crate's
+`scripts/` directory, registered the same way. Both keep the `[[example]]` kind, so
+`cargo run -p <crate> --example <name>` and `target/<profile>/examples/<name>` stay
+the same.
 
 ### FTP peer support
 
@@ -1088,14 +1099,17 @@ directory in what it compiles, so the setup and the tests must name the same one
 test that built into a differently spelled directory recompiled every dependency. Output
 built for one checkout path serves another, so each test's copy of the checkout reuses it.
 
-`browser_author_bootstraps_from_empty_build_state` builds from an empty state on
-purpose, so the setup is not run for it. Its checkout drops the per-package
-optimization levels of the root manifest, which only pay off for tests that run the
-optimized crates repeatedly, and the test reserves every core with `threads-required`,
-so other tests do not stretch its compiler jobs past the hang limit. A recipe that fails during setup prints a
-warning and does not stop the run; the tests run the same recipes and report the
-failure. Plain Cargo tests, and nextest runs without the setup, use the test build's own
-target directory.
+`browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
+unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
+crates compile in it: the workspace-sources setup below provides the registry units. The
+test reserves every core with `threads-required`, so other tests do not stretch its
+compiler jobs past the hang limit. The test checks one cold build and its outputs.
+Rebuilds after a change to an included file, a source error and its repair belong to
+`browser_author_included_files_rebuild_without_source_changes` and
+`browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup
+prints a warning and does not stop the run; the tests run the same recipes and report
+the failure. Plain Cargo tests, and nextest runs without the setup, use the test build's
+own target directory.
 
 ### Cargo state of tooling fixtures
 
@@ -1128,14 +1142,28 @@ source-preparation helper is also Unix-only; Windows compiles the shared fixture
 helpers without the browser tests. The setup exports
 `MAESTRO_TEST_WORKSPACE_CARGO_SOURCES` from `target/workspace-sources/<hash>/`.
 This uses the same vendor operation with a wider dependency set, including Git
-sources. The key covers the workspace and member manifests, the browser manifest
-and both lockfiles. Dependency changes select a new directory; Rust-only edits
-reuse it because workspace sources are read from the checkout. Outside nextest,
-the first cold-source caller runs the same setup. The browser shared-home isolation
-test prepares both source sets in its parent and forwards their configuration paths to
-the child before making the shared Cargo home unusable. The cold test copies only
-the source configuration into its initially empty Cargo home. Its Cargo target
-directory also starts empty, so the recipes still prove compilation from clean state.
+sources. The key covers the workspace and member manifests, the browser manifest, both
+lockfiles and `rust-toolchain.toml`. Dependency or toolchain changes select a new
+directory; Rust-only edits reuse it because workspace sources are read from the
+checkout. Outside nextest, the first cold-source caller runs the same setup. The browser
+shared-home isolation test prepares both source sets in its parent and forwards their
+configuration paths to the child before making the shared Cargo home unusable. The cold
+test copies only the source configuration into its initially empty Cargo home.
+
+The same setup also builds the cold bootstrap's native targets once per key, with the
+commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
+units of registry crates and deletes the units and outputs of workspace members, the
+examples and `debug/incremental`. A member's binary has a name no package spells, so its
+output in `deps` goes with the fingerprint that shares its hash. The setup then
+publishes the result as `seed` beside the configuration. A failed build leaves no seed
+and the next run continues it. The cold test copies the seed into its empty Cargo target
+directory and checks that it holds compiled units but none of a workspace member's. The
+recipes then compile Maestro's crates and the WebAssembly fixture from nothing, and
+every registry crate is already built. The test keeps the root manifest's per-package
+optimization levels, since the seed holds the optimized parsers. A shard that runs the
+cold test builds the seed in the setup, once while the key stays the same; the test
+never pays for it.
+
 The cold recipe uses `fixture_command` to keep its private home out of the
 compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
 by the build host applies, and with none Cargo compiles with every core the test reserves.
@@ -1481,6 +1509,13 @@ behavior; an unknown family, scenario or field fails before any effect.
 | --- | --- |
 | `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
 | `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-sources` `sources` | Records `cargo vendor` calls in the record's `calls` file and `cargo build` calls in `builds`; writes `vendor exploded` or `build exploded` and ends with status 1 when `fails` names that operation. Otherwise a build leaves the seed units in `CARGO_TARGET_DIR/debug`, and a vendor creates the last operand as a directory and prints the vendored-source configuration. The fixture-sources setup installs it as `cargo`. |
+| `tooling-sources` `operands` | Prints each operand on its own line, writes the record's `stderr` text, and ends with the record's `code`. Tests use it to prove an adapter passes literal operands, diagnostics and the status through unchanged. |
+| `tooling-sources` `trunk-hook` | Copies `assets/app.css` to `hook.css`, writes the first operand and the `TRUNK_*` and `MAESTRO_HOOK_INHERITED` variables, one per line, to `hook-environment`, and ends with the status in `MAESTRO_HOOK_STATUS`. Installed as an authored build hook. |
+| `tooling-sources` `call-log` | Appends `call` and the operands to the record's `path`, followed by every variable whose name starts with one of the record's `prefixes`, sorted. Ends with status 1 when the first operand is the record's `refuse`. |
+| `tooling-sources` `artifacts` | Appends the operands to the file `CARGO_CALLS` names, then reports one compiled artifact per name in the record, at `/built/<name>.wasm`. |
+| `tooling-sources` `consumer-cargo` | Appends the operands to `cargo-log`, beside the directory holding the alias. Ends with status 17 when `MAESTRO_FAIL_PHASE` names the first operand, succeeds without work for `hakari`, `test` and `nextest`, and runs the record's `cargo` for everything else. |
+| `tooling-sources` `announce` | Prints `cargo` and the operands. When the record names `rebuilt`, it also replaces that path with a copy of itself that prints `example`. |
 | `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
 | `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
 

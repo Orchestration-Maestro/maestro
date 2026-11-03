@@ -123,7 +123,7 @@ Loading publishes its local selected list only after its complete transformation
 chain succeeds. Public regression witnesses in
 [`catalog_reentry.rs`](../crates/maestro-catalog/tests/catalog_reentry.rs) exercise
 these boundaries, live replay, owned diagnostics and native/local callers; the
-[browser example](../crates/maestro-catalog/examples/browser_catalog_check.rs)
+[browser witness](../crates/maestro-catalog/tests/support/browser_catalog_check.rs)
 provides compile-only evidence for local browser effects.
 
 ## Dynamic providers

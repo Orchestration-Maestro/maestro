@@ -4,9 +4,9 @@ mod lifecycle;
 use super::super::bash::component_address;
 use super::typed::{recalled, submit};
 use super::{
-    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, gate, holding,
-    install, isolated, printing, scripted, start_shells, started, transcript_positions,
-    until_complete, until_exists,
+    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, gate, held_at,
+    holding, install, isolated, printing, scripted, settle_shell, start_shell, start_shells,
+    started, take_admitted, transcript_positions,
 };
 use crate::BashExecutionComponent;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
@@ -17,8 +17,10 @@ use std::{
     path::Path,
     pin::Pin,
     rc::Rc,
+    sync::Mutex,
     task::{Context, Poll, Waker},
 };
+use tokio::sync::oneshot;
 
 /// Installs a shell that creates `marker`, then prints `process output`.
 fn marked_output(directory: &Path, marker: &Path) -> String {
@@ -163,22 +165,37 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
         async |directory| {
             let script = printing(directory, "shell", "ran\n");
             let world = shelling(directory, &script).await;
-            let ((), errors) = (driving(&world, async {
+            let (_, errors) = (driving(&world, async {
                 let mut rows = 0;
+                let mut failures = Vec::new();
                 for case in CASES {
                     assert!(active(&world).is_none(), "{:?}", case.text);
                     let delivered = delivered(&world, case.text);
                     assert_eq!(delivered, case.delivered, "{:?}", case.text);
                     assert_eq!(recalled(&world.mode.editor)[0], case.history);
                     rows += usize::from(case.shell);
-                    until_complete(&world, rows).await;
+                    failures.extend(settled_submission(&world, case.shell).await);
                 }
                 assert_eq!(world.mode.chat_container.children().borrow().len(), rows);
+                failures
             }))
             .await;
             assert!(errors.is_empty(), "{errors:?}");
         },
     );
+}
+
+/// Awaits the command the submission admitted, when the text selected one, and returns the
+/// failures it reported, as the other witness paths collect theirs.
+async fn settled_submission(world: &World, shell: bool) -> Vec<Box<dyn Error>> {
+    if !shell {
+        return Vec::new();
+    }
+    take_admitted(&world.runtime)
+        .await
+        .err()
+        .into_iter()
+        .collect()
 }
 
 /// The busy command's exact warning.
@@ -202,9 +219,9 @@ fn busy_shell_restores_selected_input_without_history() {
                 ]),
             );
             let world = shelling(directory, &script).await;
-            let ((), errors) = (driving(&world, async {
-                submit(&world.mode, "!first");
-                until_exists(&started).await;
+            let (mut errors, driven) = (driving(&world, async {
+                let command = start_shell(&world, "!first");
+                let running = held_at(held).await;
                 assert!(world.host.session().is_bash_running());
                 for text in ["!second", "!!second"] {
                     submit(&world.mode, text);
@@ -212,11 +229,18 @@ fn busy_shell_restores_selected_input_without_history() {
                     assert!(!recalled(&world.mode.editor).contains(&text.to_owned()));
                 }
                 assert_eq!(warnings(&world), 2);
-                drop(held);
+                drop(running);
+                let errors = settle_shell(command).await;
+                assert!(
+                    active(&world).is_none(),
+                    "the completed row gives up its claim"
+                );
                 // The shell row, and a spacer and a text row for each warning.
-                until_complete(&world, 5).await;
+                assert_eq!(world.mode.chat_container.children().borrow().len(), 5);
+                errors
             }))
             .await;
+            errors.extend(driven);
             assert!(errors.is_empty(), "{errors:?}");
             assert!(started.exists());
         },
@@ -335,21 +359,12 @@ fn result(output: &str, exit_code: Option<f64>) -> maestro_app::BashResult {
     }
 }
 
-/// Waits for the submitted shell row to appear and then to settle.
-async fn until_command_settles(world: &World) {
-    for _ in 0..10_000 {
-        if active(world).is_some() {
-            break;
-        }
-        tokio::task::yield_now().await;
-    }
-    for _ in 0..10_000 {
-        if active(world).is_none() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("the shell command settled");
+/// Submits `text` and waits for the command it runs to settle, returning what it reported.
+async fn settled_command(world: &World, text: &str) -> Vec<Box<dyn Error>> {
+    let command = start_shell(world, text);
+    let (mut errors, driven) = driving(world, settle_shell(command)).await;
+    errors.extend(driven);
+    errors
 }
 
 /// Submits `text` in a fresh mode answering `user_bash` through `answer`, and settles it.
@@ -360,15 +375,7 @@ async fn settled(
     text: &str,
 ) -> (World, Seen, Vec<Box<dyn Error>>) {
     let (world, seen) = intercepting_world(directory, script, answer).await;
-    let errors = async {
-        let ((), errors) = driving(&world, async {
-            submit(&world.mode, text);
-            until_command_settles(&world).await;
-        })
-        .await;
-        errors
-    }
-    .await;
+    let errors = settled_command(&world, text).await;
     (world, seen, errors)
 }
 
@@ -572,18 +579,7 @@ async fn streaming_placement(directory: &Path, (text, excluded): (&'static str, 
 /// Runs one streaming placement case and checks the retained row it left.
 async fn placement_case(directory: &Path, script: &str, case: &Placement) {
     let (world, seen) = intercepting_world(directory, script, Rc::clone(&case.answer)).await;
-    let errors = async {
-        holding(&world, |_| async {
-            let ((), errors) = driving(&world, async {
-                submit(&world.mode, case.text);
-                until_command_settles(&world).await;
-            })
-            .await;
-            errors
-        })
-        .await
-    }
-    .await;
+    let errors = holding(&world, |_| settled_command(&world, case.text)).await;
     assert!(errors.is_empty(), "{errors:?}");
     assert_eq!(seen.borrow().len(), 1, "{}", case.text);
     assert_eq!(
@@ -749,24 +745,21 @@ async fn replaced_session_during_interception_records_there(directory: &Path) {
     world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     let retired = world.host.session();
-    let errors = async {
-        let ((), errors) = driving(&world, async {
-            submit(&world.mode, "!echo kept");
-            reached.notified().await;
-            let replaced = world
-                .host
-                .new_session(maestro_app::NewSessionCommandOptions::default())
-                .await
-                .expect("the replacement session starts");
-            assert!(!replaced.cancelled);
-            assert!(!Rc::ptr_eq(&retired, &world.host.session()));
-            resume.notify_one();
-            until_command_settles(&world).await;
-        })
-        .await;
-        errors
-    }
+    let (mut errors, driven) = driving(&world, async {
+        let command = start_shell(&world, "!echo kept");
+        reached.notified().await;
+        let replaced = world
+            .host
+            .new_session(maestro_app::NewSessionCommandOptions::default())
+            .await
+            .expect("the replacement session starts");
+        assert!(!replaced.cancelled);
+        assert!(!Rc::ptr_eq(&retired, &world.host.session()));
+        resume.notify_one();
+        settle_shell(command).await
+    })
     .await;
+    errors.extend(driven);
     assert!(errors.is_empty(), "{errors:?}");
     assert_eq!(seen.borrow().len(), 1);
     assert_eq!(
@@ -953,74 +946,80 @@ fn recorded_in(session: &Rc<maestro_app::AgentSession>) -> Vec<String> {
         .collect()
 }
 
-/// Yields until `session` runs no shell command.
-async fn until_idle(session: &maestro_app::AgentSession) {
-    while session.is_bash_running() {
-        tokio::task::yield_now().await;
-    }
-}
-
 #[test]
 fn shell_completion_from_replaced_session_is_retired() {
     isolated(
         "shell_completion_from_replaced_session_is_retired",
         async |directory| {
             let script = commands_held_until_released(directory);
-            let old_gate = gate(&directory.join("old-release"));
             let world = replacing(directory, &script).await;
-            async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!old");
-                    until_exists(&directory.join("old-started")).await;
-                    let old_session = world.host.session();
-                    let replacement = start_replacement(&world);
-                    drop(old_gate);
-                    replacement.await.unwrap();
-                    assert!(!Rc::ptr_eq(&old_session, &world.host.session()));
-                    until_command_settles(&world).await;
-                    let rows = transcript(&world).join("\n");
-                    assert!(rows.contains("old output"), "the old row completes: {rows}");
-                    assert!(
-                        recorded(&world).is_empty(),
-                        "the replacement session records nothing"
-                    );
-                    assert_eq!(
-                        recorded_in(&old_session),
-                        ["old output\n"],
-                        "the old command recorded into its own session"
-                    );
-                    // A new session typed in the editor disposes the running command's session
-                    // and resets: neither its row nor its output survives the release.
-                    let second_gate = gate(&directory.join("second-release"));
-                    submit(
-                        &world.mode,
-                        &format!("!'{}' second", gated_program(directory).display()),
-                    );
-                    until_exists(&directory.join("second-started")).await;
-                    let second_session = world.host.session();
-                    submit(&world.mode, "/new");
-                    assert!(admitted(&world.runtime).await.is_empty());
-                    let rows = transcript(&world).join("\n");
-                    assert!(rows.contains("New session started"), "{rows}");
-                    drop(second_gate);
-                    until_idle(&second_session).await;
-                    assert!(active(&world).is_none());
-                    submit(&world.mode, "later");
-                    let rows = transcript(&world).join("\n");
-                    assert!(!rows.contains("output"), "nothing old survives: {rows}");
-                    assert!(recorded_in(&world.host.session()).is_empty());
-                    submit(&world.mode, "!printf 'third output\\n'");
-                    until_command_settles(&world).await;
-                    let rows = transcript(&world).join("\n");
-                    assert!(rows.contains("third output"), "{rows}");
-                    assert_eq!(recorded_in(&world.host.session()), ["third output\n"]);
-                })
-                .await;
-                assert!(errors.is_empty(), "{errors:?}");
-            }
+            let (mut errors, driven) = driving(&world, async {
+                let mut errors = command_outlives_its_session(&world, directory).await;
+                errors.extend(disposed_command_is_retired(&world, directory).await);
+                errors
+            })
             .await;
+            errors.extend(driven);
+            assert!(errors.is_empty(), "{errors:?}");
         },
     );
+}
+
+/// Releases a held command after its session is replaced, and checks where its output landed.
+async fn command_outlives_its_session(world: &World, directory: &Path) -> Vec<Box<dyn Error>> {
+    let old_gate = gate(&directory.join("old-release"));
+    let old = start_shell(world, "!old");
+    let running = held_at(old_gate).await;
+    let old_session = world.host.session();
+    let replacement = start_replacement(world);
+    drop(running);
+    replacement.await.unwrap();
+    assert!(!Rc::ptr_eq(&old_session, &world.host.session()));
+    let errors = settle_shell(old).await;
+    let rows = transcript(world).join("\n");
+    assert!(rows.contains("old output"), "the old row completes: {rows}");
+    assert!(
+        recorded(world).is_empty(),
+        "the replacement session records nothing"
+    );
+    assert_eq!(
+        recorded_in(&old_session),
+        ["old output\n"],
+        "the old command recorded into its own session"
+    );
+    errors
+}
+
+/// Types a new session over a running command, and checks the disposal leaves nothing behind.
+async fn disposed_command_is_retired(world: &World, directory: &Path) -> Vec<Box<dyn Error>> {
+    let second_gate = gate(&directory.join("second-release"));
+    let second = start_shell(
+        world,
+        &format!("!'{}' second", gated_program(directory).display()),
+    );
+    let running = held_at(second_gate).await;
+    let second_session = world.host.session();
+    submit(&world.mode, "/new");
+    assert!(admitted(&world.runtime).await.is_empty());
+    let rows = transcript(world).join("\n");
+    assert!(rows.contains("New session started"), "{rows}");
+    drop(running);
+    let mut errors = settle_shell(second).await;
+    assert!(active(world).is_none());
+    assert!(
+        !second_session.is_bash_running(),
+        "the disposed session runs no command"
+    );
+    submit(&world.mode, "later");
+    let rows = transcript(world).join("\n");
+    assert!(!rows.contains("output"), "nothing old survives: {rows}");
+    assert!(recorded_in(&world.host.session()).is_empty());
+    let third = start_shell(world, "!printf 'third output\\n'");
+    errors.extend(settle_shell(third).await);
+    let rows = transcript(world).join("\n");
+    assert!(rows.contains("third output"), "{rows}");
+    assert_eq!(recorded_in(&world.host.session()), ["third output\n"]);
+    errors
 }
 
 #[test]
@@ -1062,15 +1061,9 @@ fn intercepted_shell_recording_failure_releases_active_row() {
                 .map(str::to_owned)
                 .expect("the session file");
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o400)).unwrap();
-            let errors = async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!echo kept");
-                    until_command_settles(&world).await;
-                })
-                .await;
-                errors
-            }
-            .await;
+            let command = start_shell(&world, "!echo kept");
+            let (mut errors, driven) = driving(&world, settle_shell(command)).await;
+            errors.extend(driven);
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o600)).unwrap();
             assert_eq!(errors.len(), 1, "the recording failure is preserved");
             let message = errors[0].to_string();
@@ -1096,15 +1089,9 @@ fn native_shell_output_paints_chunks_once() {
         async |directory| {
             let script = printing(directory, "shell", "chunk\n");
             let world = shelling(directory, &script).await;
-            let errors = async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!true");
-                    until_complete(&world, 1).await;
-                })
-                .await;
-                errors
-            }
-            .await;
+            let (mut errors, driven) =
+                driving(&world, settle_shell(start_shell(&world, "!true"))).await;
+            errors.extend(driven);
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world);
             assert_eq!(
@@ -1131,17 +1118,17 @@ fn overlapping_shell_rows_release_only_their_own_claim() {
             let errors = async {
                 let ((), errors) = driving(&world, async {
                     let older = start_command(&world, "older");
-                    until_exists(&directory.join("older-started")).await;
+                    let older_running = held_at(older_gate).await;
                     let newer = start_command(&world, "newer");
-                    until_exists(&directory.join("newer-started")).await;
+                    let newer_running = held_at(newer_gate).await;
                     let newer_row = active(&world).expect("the newer row produces output");
-                    drop(older_gate);
+                    drop(older_running);
                     older.await.unwrap().unwrap();
                     assert!(
                         active(&world).is_some_and(|row| Rc::ptr_eq(&row, &newer_row)),
                         "the older row's release leaves the newer row's claim"
                     );
-                    drop(newer_gate);
+                    drop(newer_running);
                     newer.await.unwrap().unwrap();
                     assert!(active(&world).is_none(), "the last row gives up its claim");
                 })
@@ -1166,72 +1153,51 @@ fn start_command(
     tokio::task::spawn_local(async move { mode.handle_bash_command(command, false).await })
 }
 
+/// The shell row paints each streamed chunk as it arrives, in order, and keeps its loader
+/// until the command's delivery ends. The lifecycle witness beside it, which acknowledges the
+/// same phases through the mode's own caller, covers that caller's delivery path; this one
+/// keeps the submission's path and checks the transcript it leaves, while
+/// `native_shell_output_paints_chunks_once` still drives a real child.
 #[test]
 fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
     isolated(
         "shell_paints_streamed_chunks_in_order_before_its_row_completes",
         async |directory| {
-            let started = directory.join("drain-started");
-            let release = directory.join("drain-release");
-            let held = gate(&release);
-            let script = scripted(
-                directory,
-                "shell",
-                &serde_json::json!([
-                    {"print": "first\n"},
-                    {"mark": {"path": started}},
-                    {"hold": {"path": release}},
-                    {"print": "second\n"},
-                ]),
+            let (parked, parked_reached) = oneshot::channel();
+            let (release, released) = oneshot::channel();
+            let script = Rc::new(lifecycle::Script {
+                before: vec!["first\n"],
+                after: vec!["last\n"],
+                parked: Mutex::new(Some(parked)),
+                release: Mutex::new(Some(released)),
+            });
+            let shell = printing(directory, "shell", "unused\n");
+            let (world, _seen) =
+                intercepting_world(directory, &shell, lifecycle::scripting(&script)).await;
+            submit(&world.mode, "!drain");
+            let caller = take_admitted(&world.runtime);
+            let mut running = lifecycle::Running::start(world, caller, Some(parked_reached)).await;
+            running.first_chunk_applied();
+            let held = painted(&running.row);
+            assert!(
+                !held.contains("last"),
+                "the released chunk waits for the delivery: {held}"
             );
-            let world = shelling(directory, &script).await;
-            let errors = async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!drain");
-                    until_exists(&started).await;
-                    let row = active(&world).expect("the row produces output");
-                    until_painted(&row, "first").await;
-                    let painted = maestro_tui::Component::render(&*row, 80).join("\n");
-                    assert!(
-                        !painted.contains("second"),
-                        "the command still runs: {painted}"
-                    );
-                    assert!(
-                        painted.contains("Running..."),
-                        "the row is not complete: {painted}"
-                    );
-                    drop(held);
-                    until_complete(&world, 1).await;
-                })
-                .await;
-                errors
-            }
-            .await;
-            assert!(errors.is_empty(), "{errors:?}");
-            let rows = transcript(&world);
+            running.release_and_record(release).await;
+            running.drained().await;
+            running.completed();
+            let rows = transcript(&running.world);
             let first = rows.iter().position(|row| row.contains("first"));
-            let second = rows.iter().position(|row| row.contains("second"));
-            assert!(first < second, "the chunks keep their order: {rows:?}");
+            let last = rows.iter().position(|row| row.contains("last"));
+            assert!(first < last, "the chunks keep their order: {rows:?}");
             assert_eq!(
                 rows.iter().filter(|row| row.contains("first")).count(),
                 1,
                 "the first chunk is painted once: {rows:?}"
             );
-            assert_eq!(recorded(&world).len(), 1);
-            assert_eq!(recorded(&world)[0]["output"], "first\nsecond\n");
+            assert_eq!(recorded(&running.world).len(), 1);
         },
     );
-}
-
-/// Waits until the row paints `chunk`, yielding so the delivery reaches it.
-async fn until_painted(row: &BashExecutionComponent, chunk: &str) {
-    for _ in 0..10_000 {
-        if painted(row).contains(chunk) {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("the row paints {chunk}");
 }
 
 /// The painted rows of one shell row at width 80.
@@ -1245,23 +1211,23 @@ fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
         "cancelled_shell_settles_its_row_and_records_the_cancellation",
         async |directory| {
             let started = directory.join("cancel-started");
+            let held = gate(&started);
             let script = scripted(
                 directory,
                 "shell",
-                &serde_json::json!([{"mark": {"path": started}}, "block"]),
+                &serde_json::json!([{"hold": {"path": started}}]),
             );
             let world = shelling(directory, &script).await;
-            let errors = async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!cancel");
-                    until_exists(&started).await;
-                    world.host.session().abort_bash();
-                    until_complete(&world, 1).await;
-                })
-                .await;
+            let (mut errors, driven) = (driving(&world, async {
+                let command = start_shell(&world, "!cancel");
+                let running = held_at(held).await;
+                world.host.session().abort_bash();
+                let errors = settle_shell(command).await;
+                drop(running);
                 errors
-            }
+            }))
             .await;
+            errors.extend(driven);
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world).join("\n");
             assert!(rows.contains("(cancelled)"), "{rows}");

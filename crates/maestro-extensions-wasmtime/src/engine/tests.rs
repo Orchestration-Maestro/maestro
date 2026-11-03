@@ -1,7 +1,18 @@
-//! The engine's compiled code does not depend on the CPU that builds it.
-use super::component_engine;
+//! The engine compiles the same code on every host and loads modules that
+//! throw WebAssembly exceptions.
+use super::{component_engine, process_engine};
 use std::hash::{DefaultHasher, Hash, Hasher};
-use wasmtime::{Config, Engine};
+use wasmtime::{Config, Engine, Module};
+
+/// A module whose one function throws a declared exception tag.
+///
+/// Sections, in their required order: a `() -> ()` type, a function of that
+/// type, one tag of that type, and a body that throws tag 0.
+const EXCEPTION_MODULE: &[u8] = b"\x00asm\x01\x00\x00\x00\
+\x01\x04\x01\x60\x00\x00\
+\x03\x02\x01\x00\
+\x0d\x03\x01\x00\x00\
+\x0a\x06\x01\x04\x00\x08\x00\x0b";
 
 /// Reduces an engine's compiled-code compatibility identity to one number.
 fn identity(engine: &Engine) -> u64 {
@@ -32,6 +43,13 @@ fn engine_matches_an_explicit_baseline_target() {
     );
 }
 
+/// The component engine loads code that raises a WebAssembly exception.
+#[test]
+fn engine_loads_webassembly_exceptions() {
+    let engine = component_engine(None).unwrap();
+    Module::new(&engine, EXCEPTION_MODULE).unwrap();
+}
+
 /// Other architectures keep Wasmtime's defaults, which tune code to the host's CPU features.
 #[test]
 #[cfg(not(target_arch = "x86_64"))]
@@ -40,4 +58,12 @@ fn engine_keeps_wasmtime_defaults_off_x86_64() {
         identity(&component_engine(None).unwrap()),
         identity(&default_engine())
     );
+}
+
+/// The accessor returns the same engine on every call.
+#[test]
+fn process_engine_reuses_one_engine() {
+    let first = process_engine().unwrap();
+    let second = process_engine().unwrap();
+    assert!(Engine::same(&first, &second));
 }

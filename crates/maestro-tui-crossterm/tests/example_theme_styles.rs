@@ -1,7 +1,7 @@
 //! Regression witnesses for the demonstration theme callbacks.
 #![cfg(unix)]
 
-#[path = "../examples/test_themes/color.rs"]
+#[path = "support/test_themes/color.rs"]
 mod color;
 
 #[test]
@@ -66,11 +66,11 @@ fn example_decoration_reopens_matching_closes() {
     }
 }
 
-#[path = "../examples/test_themes/default_editor_theme.rs"]
+#[path = "support/test_themes/default_editor_theme.rs"]
 mod default_editor_theme;
-#[path = "../examples/test_themes/default_markdown_theme.rs"]
+#[path = "support/test_themes/default_markdown_theme.rs"]
 mod default_markdown_theme;
-#[path = "../examples/test_themes/default_select_list_theme.rs"]
+#[path = "support/test_themes/default_select_list_theme.rs"]
 mod default_select_list_theme;
 
 /// Checks the selection mapping for either factory's independently built callbacks.

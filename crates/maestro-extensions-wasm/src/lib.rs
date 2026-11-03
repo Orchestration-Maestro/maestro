@@ -135,7 +135,7 @@ mod schema_error;
 #[cfg(target_arch = "wasm32")]
 pub mod stream;
 #[cfg(target_arch = "wasm32")]
-pub use stream::{complete, complete_simple, stream, stream_simple};
+pub use stream::{complete, complete_simple, stream, stream_simple, stream_simple_via};
 
 pub mod wasi;
 

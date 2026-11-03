@@ -3,7 +3,7 @@ use super::{AsyncLockUpdate, AuthStorageBackend, AuthStorageError, AuthStorageFu
 use maestro_lock::{CreationMode, WriteLock};
 use std::fs::{self, OpenOptions, TryLockError};
 use std::io::{self, ErrorKind};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 /// Number of waits before scheduled acquisition gives up on contention.
@@ -137,31 +137,31 @@ fn lock_error(error: TryLockError) -> AuthStorageError {
 
 /// Create the file with `{}` only if absent, following dangling links; an existing file is never opened for writing.
 fn initialize(path: &Path) -> io::Result<()> {
-    let mut candidate = path.to_path_buf();
-    loop {
-        let mut open = OpenOptions::new();
-        open.write(true).create_new(true);
-        #[cfg(unix)]
-        std::os::unix::fs::OpenOptionsExt::mode(&mut open, 0o600);
-        match open.open(&candidate) {
-            Ok(mut file) => {
-                io::Write::write_all(&mut file, b"{}")?;
-                #[cfg(unix)]
-                file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?;
-                return Ok(());
-            }
-            Err(error) if error.kind() == ErrorKind::AlreadyExists => {
-                match fs::metadata(&candidate) {
-                    Err(missing) if missing.kind() == ErrorKind::NotFound => {
-                        let link = fs::read_link(&candidate)?;
-                        candidate = candidate.parent().unwrap_or(Path::new("")).join(link);
-                    }
-                    Err(other) => return Err(other),
-                    Ok(_) => return Ok(()),
-                }
-            }
-            Err(error) => return Err(error),
+    maestro_path::resolve_final_links(path, create_missing).map(|_| ())
+}
+
+/// Create `candidate` with `{}` when nothing is there, returning `None`. A dangling link yields
+/// its target for the next candidate; an existing file ends the walk unchanged.
+fn create_missing(candidate: &Path) -> io::Result<Option<PathBuf>> {
+    let mut open = OpenOptions::new();
+    open.write(true).create_new(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut open, 0o600);
+    match open.open(candidate) {
+        Ok(mut file) => {
+            io::Write::write_all(&mut file, b"{}")?;
+            #[cfg(unix)]
+            file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?;
+            Ok(None)
         }
+        Err(error) if error.kind() == ErrorKind::AlreadyExists => match fs::metadata(candidate) {
+            Err(missing) if missing.kind() == ErrorKind::NotFound => {
+                fs::read_link(candidate).map(Some)
+            }
+            Err(other) => Err(other),
+            Ok(_) => Ok(None),
+        },
+        Err(error) => Err(error),
     }
 }
 

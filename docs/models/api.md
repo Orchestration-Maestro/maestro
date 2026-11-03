@@ -262,9 +262,10 @@ a custom callback can fail immediately; bundled registration settles adapter
 setup failures into error streams. Direct module simple functions can return
 missing-key setup errors before creating a stream; root simple forwarding settles
 them. Mode-aware registered entries (`stream_for`, `stream_simple_for`,
-`complete_for`, `complete_simple_for`) require the caller's submission facility and
-retain local hooks in the selected producer. The default three-argument entries
-keep their threaded options and provider-owned default admission. See [linkage](module-linkage.md).
+`stream_simple_via_for`, `complete_for`, `complete_simple_for`) require the caller's
+submission facility and retain local hooks in the selected producer. The default
+three-argument entries keep their threaded options and provider-owned default
+admission. See [linkage](module-linkage.md).
 
 The [failure and cancellation example](../../crates/maestro-models/tests/model_guide_examples/streams.rs),
 `maestro_guide_observes_failure_and_cancellation`, cancels only after visible text
@@ -303,7 +304,7 @@ for actual variables, explicit-key precedence and endpoint environment policy.
 Browser targets have no process environment discovery. Supply an explicit key
 or an application-controlled proxy/injected client, considering browser origin
 and credential exposure policy. The extended
-[browser import example](../../crates/maestro-models/examples/browser_import_check.rs)
+[browser import witness](../../crates/maestro-models/tests/support/browser_import_check.rs)
 compiles typed model, context, tool, options and a retained local client with an
 explicit key. It does not start a request, native callback listener, cloud
 credential flow or native socket. `maestro_browser_environment_has_no_key`

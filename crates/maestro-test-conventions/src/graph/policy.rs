@@ -36,6 +36,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-cli", "maestro-listeners"),
     ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
+    ("maestro", "maestro-lock"),
 ];
 
 /// Whether the policy permits this internal development edge between the two crates.
@@ -61,6 +62,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
+    "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-ipc",
     "maestro-lock",
