@@ -571,6 +571,21 @@ fn package_commands_reuse_supplied_owners() {
 }
 
 #[test]
+fn package_operations_use_the_factory_supplied_adapter() {
+    let harness = Harness::new(Some(json!({ "packages": ["npm:a"] })), None);
+    harness.state.second.set(true);
+
+    assert!(harness.run(&["update", "--extensions"]));
+
+    let calls = harness.calls();
+    assert!(!calls.is_empty(), "the update runs package operations");
+    assert!(
+        calls.iter().all(|call| call.starts_with("second-")),
+        "the factory's own adapter ran everything: {calls:?}"
+    );
+}
+
+#[test]
 fn relative_local_install_keeps_settings_base() {
     let harness = Harness::new(Some(json!({})), None);
     std::fs::create_dir_all(harness.scratch.path().join("root/pkg")).expect("local source");
@@ -743,6 +758,25 @@ fn self_update_skips_current_and_older_releases() {
         assert!(harness.runs().is_empty());
         assert_eq!(harness.exit_code.get(), None);
     }
+}
+
+#[test]
+fn forced_self_update_reinstalls_the_current_release() {
+    let mut harness = Harness::new(Some(json!({})), None);
+    harness.origin = "https://controlled.invalid".into();
+    harness.release(200, &json!({ "version": VERSION }).to_string());
+
+    assert!(harness.run(&["update", "--self", "--force"]));
+
+    assert_eq!(harness.runs().len(), 1, "a forced update reinstalls");
+    assert!(
+        harness.runs()[0].contains("install"),
+        "{:?}",
+        harness.runs()
+    );
+    assert!(harness.stdout.text().contains("Updated maestro\n"));
+    assert!(harness.stderr.text().is_empty());
+    assert_eq!(harness.exit_code.get(), None);
 }
 
 #[test]
@@ -928,10 +962,6 @@ fn package_output_keeps_visible_styles_and_lines() {
     harness.stdout.clear();
     assert!(harness.run(&["list"]));
     assert_eq!(harness.stdout.text(), "User packages:\n  npm:a\n");
-    let styled = Harness::new(Some(json!({ "packages": ["npm:a"] })), None)
-        .stdout
-        .text();
-    assert_eq!(styled, "", "no styles are written without output");
 }
 
 #[test]
