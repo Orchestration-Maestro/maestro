@@ -358,15 +358,20 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn link_cycle_fails_initialization_and_creates_no_file() {
+    fn link_cycle_is_refused_by_the_lock_and_keeps_both_links() {
         let dir = TempDir::without_forks("cycle");
         let first = dir.path("first.json");
         let second = dir.path("second.json");
         std::os::unix::fs::symlink("second.json", &first).unwrap();
         std::os::unix::fs::symlink("first.json", &second).unwrap();
         let backend = FileAuthStorageBackend::new(&first);
-        let result = backend.with_lock(&mut |_| panic!("initialization precedes the callback"));
-        assert!(result.is_err());
+        let error = backend
+            .with_lock(&mut |_| panic!("initialization precedes the callback"))
+            .unwrap_err();
+        let refusal = error
+            .downcast_ref::<std::io::Error>()
+            .expect("the lock reports its native refusal");
+        assert_eq!(refusal.to_string(), "symbolic link chain exceeds 40 links");
         for link in [&first, &second] {
             assert!(std::fs::read_link(link).is_ok(), "{link} is still a link");
         }
