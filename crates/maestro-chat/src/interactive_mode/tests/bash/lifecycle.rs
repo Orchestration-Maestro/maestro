@@ -18,15 +18,15 @@ use std::{
 use tokio::sync::oneshot;
 
 /// A scripted shell: its chunks before and after the release, and where it reports its park.
-struct Script {
+pub(super) struct Script {
     /// The chunks emitted before it waits for its release.
-    before: Vec<&'static str>,
+    pub(super) before: Vec<&'static str>,
     /// The chunks emitted after the release.
-    after: Vec<&'static str>,
+    pub(super) after: Vec<&'static str>,
     /// Reports that the script parked, for a script that waits at all.
-    parked: Mutex<Option<oneshot::Sender<()>>>,
+    pub(super) parked: Mutex<Option<oneshot::Sender<()>>>,
     /// The test's release, which the script waits for.
-    release: Mutex<Option<oneshot::Receiver<()>>>,
+    pub(super) release: Mutex<Option<oneshot::Receiver<()>>>,
 }
 
 impl BashOperations<maestro_app::Local> for Script {
@@ -58,7 +58,7 @@ impl BashOperations<maestro_app::Local> for Script {
 }
 
 /// An answer supplying `script` as the command's operations.
-fn scripting(script: &Rc<Script>) -> Answer {
+pub(super) fn scripting(script: &Rc<Script>) -> Answer {
     let operations = Rc::clone(script) as Rc<dyn BashOperations<maestro_app::Local>>;
     Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
         Some(Interception {
@@ -107,15 +107,15 @@ impl Future for Notified {
 }
 
 /// One running shell command: its caller, the receiver it started, and its row.
-struct Running {
+pub(super) struct Running {
     /// The mode the command runs in.
-    world: World,
+    pub(super) world: World,
     /// The caller the mode started, as a submission does.
     caller: LocalFuture,
     /// The receiver the caller started for its chunks, held unrun.
     receiver: LocalFuture,
     /// The row the caller shows.
-    row: Rc<BashExecutionComponent>,
+    pub(super) row: Rc<BashExecutionComponent>,
 }
 
 /// Starts the mode's own shell command, holding the caller it returns.
@@ -126,7 +126,7 @@ fn calling(world: &World, command: &'static str) -> LocalFuture {
 
 impl Running {
     /// Polls the caller once and takes the receiver it started without running it.
-    async fn start(
+    pub(super) async fn start(
         world: World,
         caller: LocalFuture,
         parked: Option<oneshot::Receiver<()>>,
@@ -158,7 +158,7 @@ impl Running {
     }
 
     /// Applies the queued first chunk and leaves the receiver waiting.
-    fn first_chunk_applied(&mut self) {
+    pub(super) fn first_chunk_applied(&mut self) {
         let held = painted(&self.row);
         assert!(
             !held.contains("first"),
@@ -176,7 +176,7 @@ impl Running {
     }
 
     /// Releases the script, waits for its result, and checks the row lags the session.
-    async fn release_and_record(&mut self, release: oneshot::Sender<()>) {
+    pub(super) async fn release_and_record(&mut self, release: oneshot::Sender<()>) {
         let signal: Arc<Signal> = Arc::default();
         let waker = Waker::from(Arc::clone(&signal));
         let mut context = Context::from_waker(&waker);
@@ -197,7 +197,7 @@ impl Running {
     }
 
     /// Waits for the drain, which must end before the caller completes.
-    async fn drained(&mut self) {
+    pub(super) async fn drained(&mut self) {
         assert!(
             poll_once(&mut self.caller).is_none(),
             "caller must await drain, not complete"
@@ -219,7 +219,7 @@ impl Running {
     }
 
     /// Checks the caller completes after the drain and gives up its row claim.
-    fn completed(&mut self) {
+    pub(super) fn completed(&mut self) {
         assert!(
             poll_once(&mut self.caller).is_some_and(|outcome| outcome.is_ok()),
             "the caller completes after the drain"
