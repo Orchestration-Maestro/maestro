@@ -159,6 +159,59 @@ fn retained_component_subscriptions_and_tails_release_independently() {
     });
 }
 
+/// A dropped view releases while an admitted tail and its subscription stay live.
+#[test]
+fn retained_view_releases_between_a_pending_tail_and_its_subscription() {
+    local(async {
+        let mut pair = Pair::new().await;
+        let (entered, waiting) = oneshot::channel();
+        let entered = RefCell::new(Some(entered));
+        let ready = pair.b.events.on(
+            "tail-waiting",
+            Rc::new(move |_, _| {
+                entered.borrow_mut().take().unwrap().send(()).unwrap();
+                Ok(None)
+            }),
+        );
+        pair.b
+            .program(
+                r#"[{"op":"on","channel":"rx","id":"r","name":"r","tail":"wait","retain":true}]"#,
+            )
+            .await;
+        pair.bus.emit("rx", Value::Null).await;
+        let pending = start(&mut pair);
+        waiting.await.unwrap();
+        let view = pair
+            .a
+            .runner
+            .get_message_renderer_call::<Value>("scoped-view")
+            .unwrap()
+            .call(
+                Rc::new(
+                    serde_json::from_value(json!({"role":"custom", "customType":"scoped", "content":"", "display":true, "timestamp":0}))
+                        .unwrap(),
+                ),
+                MessageRenderOptions { expanded: false },
+                maestro_theme::LiveTheme::default(),
+            )
+            .unwrap()
+            .unwrap();
+        assert!(!pair.a.released("scoped"));
+        drop(view);
+        pair.wait_release("a:scoped").await;
+        assert!(
+            pair.a.released("scoped"),
+            "the dropped view kept its only owner"
+        );
+        assert!(!pair.b.released("r"), "the view's release settled the tail");
+        ready.unsubscribe();
+        pair.b.program(r#"[{"op":"off","id":"r"}]"#).await;
+        finish_tails(&mut pair, pending).await;
+        pair.wait_release("b:r").await;
+        assert!(pair.b.released("r"));
+    });
+}
+
 /// Starts every queued continuation on the local task set.
 fn start(pair: &mut Pair) -> Vec<tokio::task::JoinHandle<()>> {
     pair.queued()

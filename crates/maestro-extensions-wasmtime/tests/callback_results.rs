@@ -56,6 +56,11 @@ struct Prepared {
     error: Option<String>,
     /// Whether the selected value is negative zero.
     negative_zero: Option<bool>,
+    /// Phase reached after preparation, when the case records one.
+    phase: Option<String>,
+    /// Arguments the executor received, when the case records them.
+    #[serde(default, deserialize_with = "present")]
+    received: Option<Value>,
 }
 
 /// The phase reached by a prepared call.
@@ -180,6 +185,13 @@ fn assert_prepared(index: usize, outcome: &Outcome, expected: &Prepared) {
             if let Some(negative) = expected.negative_zero {
                 let zero = selected.as_f64().unwrap();
                 assert_eq!((zero, zero.is_sign_negative()), (0.0, negative));
+            }
+            if let Some(phase) = expected.phase.as_deref() {
+                assert_eq!(outcome.phase, phase, "case {index}");
+            }
+            if let Some(received) = &expected.received {
+                let executed = outcome.executed.as_ref().unwrap().to_string();
+                assert_eq!(executed, received.to_string(), "case {index}");
             }
         }
         _ => panic!("case {index} selected the other result"),

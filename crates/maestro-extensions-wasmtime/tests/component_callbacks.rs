@@ -59,6 +59,8 @@ fn registered_component_renderer_keeps_message_options_and_theme() {
             json!({"role":"custom", "customType":"component", "content":"", "display":true, "details":"", "timestamp":1}),
             json!({"role":"custom", "customType":"component", "content":"", "display":true, "details":[0, -1.5], "timestamp":1}),
             json!({"role":"custom", "customType":"component", "content":"", "display":true, "details":{"z":null, "a":{}}, "timestamp":1}),
+            json!({"role":"custom", "customType":"component", "content":"", "display":true, "details":0, "timestamp":1}),
+            json!({"role":"custom", "customType":"component", "content":"", "display":true, "details":-1.5, "timestamp":1}),
         ];
         for (index, supplied) in messages.iter().enumerate() {
             let expanded = index % 2 == 1;
