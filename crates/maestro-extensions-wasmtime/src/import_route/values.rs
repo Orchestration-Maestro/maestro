@@ -13,7 +13,9 @@ pub(crate) enum Value {
     Boolean(bool),
     /// An encoded shared record.
     Text(String),
-    /// Rendered rows.
+    /// An encoded shared record, absent when the owner has none.
+    OptionalText(Option<String>),
+    /// A list of strings: rendered rows or provider names.
     Lines(Vec<String>),
     /// The lines and cursor after a completion was applied.
     Completion(crate::guest_calls::providers::Completed),
@@ -45,7 +47,10 @@ pub(super) enum Transferred {
     /// An encoded shared record.
     #[component(name = "text")]
     Text(String),
-    /// Rendered rows.
+    /// An encoded shared record, absent when the owner has none.
+    #[component(name = "optional-text")]
+    OptionalText(Option<String>),
+    /// A list of strings: rendered rows or provider names.
     #[component(name = "lines")]
     Lines(Vec<String>),
     /// The lines and cursor after a completion was applied.
@@ -88,6 +93,7 @@ impl Value {
             Self::Key(value) => Transferred::Key(value),
             Self::Boolean(value) => Transferred::Boolean(value),
             Self::Text(value) => Transferred::Text(value),
+            Self::OptionalText(value) => Transferred::OptionalText(value),
             Self::Lines(value) => Transferred::Lines(value),
             Self::Completion(value) => Transferred::Completion(value),
             Self::Trigger(value) => Transferred::Trigger(value),
@@ -111,7 +117,7 @@ macro_rules! returns {
         }
     )*};
 }
-returns! { bool => Boolean, String => Text, Vec<String> => Lines, crate::guest_calls::providers::Completed => Completion, Option<bool> => Trigger, (crate::widget_reads::WidgetEndpoint, bool) => Editor, crate::widget_foreign::ForeignAnswered => EditorAnswer, crate::credential_reads::Endpoint => Credentials, crate::catalog_reads::Endpoint => Catalog }
+returns! { bool => Boolean, String => Text, Option<String> => OptionalText, Vec<String> => Lines, crate::guest_calls::providers::Completed => Completion, Option<bool> => Trigger, (crate::widget_reads::WidgetEndpoint, bool) => Editor, crate::widget_foreign::ForeignAnswered => EditorAnswer, crate::credential_reads::Endpoint => Credentials, crate::catalog_reads::Endpoint => Catalog }
 impl From<()> for Value {
     fn from((): ()) -> Self {
         Self::Unit

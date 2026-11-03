@@ -89,10 +89,12 @@ wire default:
 | Protocol family | Null | False, zero or empty string | Other roots |
 |---|---|---|---|
 | Chat and response | JSON text `null` | JSON text of the value | JSON text of the value |
-| Cloud conversation | null | Unchanged | Unchanged |
+| Cloud conversation | Input field omitted | Unchanged | Unchanged |
 | Message and content generation | `{}` | Unchanged | Unchanged |
 | Conversation | JSON text `{}` | JSON text `{}` | JSON text of the value |
 
+A null cloud conversation root is a null document, which the request serializer leaves
+out, so the replayed tool use carries no input field.
 Empty arrays and objects remain arrays and objects in every family. Content
 generation also uses `{}` for missing or null incoming function-call arguments;
 other supplied roots survive through both direct and cloud entries. Conversation

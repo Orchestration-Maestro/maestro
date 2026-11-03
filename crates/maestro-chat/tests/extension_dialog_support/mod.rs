@@ -415,7 +415,7 @@ fn replay(
         KEYBINDINGS.clone(),
         bindings(&query.bindings),
     ));
-    let (theme, live) = super::published::published(&colors(0));
+    let (theme, live) = super::published::published(&colors(0)).unwrap();
     let live = if test == "dialog_constructor_propagates_hint_theme_failure" {
         super::published::unpublished().theme()
     } else {
@@ -450,6 +450,7 @@ fn replay(
             timeout,
             runtime: Rc::new(spy.clone()),
             theme: live,
+            on_toggle_tools_expanded: None,
         },
         (
             query.title.clone().unwrap_or_else(|| default_title.into()),
@@ -679,6 +680,7 @@ pub fn native_dialog(
             timeout: Some(1000.0),
             runtime: Rc::new(spy.clone()),
             theme,
+            on_toggle_tools_expanded: None,
         },
         ("Title".into(), vec!["Alpha".into(), "Beta".into()], None),
     )
@@ -737,7 +739,7 @@ pub fn startup_host() -> StartupHost {
         TerminalImage::default(),
         Some(false),
     );
-    let live = LiveTheme::from_theme(published::theme(0));
+    let live = LiveTheme::from_theme(published::theme(0).unwrap());
     let actual_runtime = runtime.clone();
     let factory: ExtensionSelectorFactory = Rc::new(move |request| {
         let component = Rc::new(
@@ -751,6 +753,7 @@ pub fn startup_host() -> StartupHost {
                     timeout: None,
                     runtime: actual_runtime.clone(),
                     theme: live.clone(),
+                    on_toggle_tools_expanded: None,
                 },
             )
             .unwrap(),

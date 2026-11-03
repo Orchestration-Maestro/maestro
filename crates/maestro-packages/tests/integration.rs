@@ -13,7 +13,7 @@ mod capture_context_checks;
 mod capture_path_checks;
 mod component_entry_checks;
 #[cfg(not(target_arch = "wasm32"))]
-mod component_support;
+use maestro_packages::test_support::component_support;
 mod configured_resolution_checks;
 #[cfg(unix)]
 mod configured_resolution_support;
@@ -21,6 +21,7 @@ mod configured_source_checks;
 mod configured_update_checks;
 mod contribution_resource_checks;
 mod git_execution_checks;
+mod git_reinstall_checks;
 mod git_ssh_url_checks;
 mod git_staging_checks;
 mod manifest_case_checks;

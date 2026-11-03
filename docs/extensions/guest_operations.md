@@ -387,6 +387,8 @@ An omitted method selects GET. Request bodies retain absence, present-empty byte
 and arbitrary binary bytes. Header normalization, status text and response headers
 come from the shared native HTTP client. `ok()` means status 200 through 299;
 other statuses are responses, not fetch errors. Fetch adds no retry or timeout.
+Dropping a pending fetch future cancels that native attempt without aborting the
+caller's signal. It does not undo effects the server has already performed.
 
 Headers arrive before the body completes. A 204 response has no body; an empty 200
 response has a body that returns EOF. Getting `body()` again aliases the same
@@ -431,6 +433,34 @@ handle stop delivery and release its callback. A callback may close its own watc
 its active invocation finishes before its final captures are released. A creation
 failure returns the native error without retaining the callback or stopping a
 sibling watch.
+
+## Settings and packages while loading
+
+`SettingsManager::new(api)` and `DefaultPackageManager::new(api)` call the host's
+own settings and package owners. They work from the factory onwards, before any
+session exists, and again on every reload. The component reads no settings file
+and runs no Git or npm command itself.
+
+- `get_global_settings` and `get_project_settings` return the raw user and project
+  documents. Unknown keys and wrongly typed values stay as written, and the two
+  documents are not merged.
+- `resolve` lists the configured packages; when both scopes name one identity, the
+  project's entry wins. `resolve_extension_sources(sources, scope)` resolves sources
+  the extension chose itself, in one scope, and never writes them to settings. Each
+  typed `ResolvedPackage` descriptor holds `source`, `identity`, `scope` and
+  `installed_path`. A package without resources is listed too.
+- `install(source, scope)` acquires a source at its pin without editing settings.
+- `verify_pin(source, scope)` returns a typed `GitPinStatus` with
+  `expected_commit`, `head_commit`, `changed_paths` and `is_clean()` for a pinned
+  Git checkout and changes nothing.
+  `restore_pin(source, scope)` returns the checkout to its pinned commit and removes
+  changed and untracked files.
+
+`OperationScope` is `User` or `Project`. Offline mode, progress and the configured
+Git and npm commands belong to the package owner. A failure returns the host's
+message, for example `Integrity requires a pinned Git source` for a local source.
+Native factories make the same calls with `ExtensionAPI::host_operation` and a
+`HostOperation` request.
 
 ## Executable example
 
@@ -536,6 +566,8 @@ native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
 `tools::path_utils::basename(&api, path)` returns the final path component using
 the host's path flavor, preserving literal backslashes on POSIX hosts.
+`tools::path_utils::shorten_path(&api, path)` shows the host home as `~` for the
+home itself and the paths below it, and leaves every other path unchanged.
 
 `tools::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
 with the host platform's path rules. It reduces `.` and `..` segments and
@@ -558,10 +590,15 @@ host's installation facts, not the component's inherited environment.
 ## Read the host's local clock
 
 `utils::local_date_time_string(&api)` reads the host's current wall clock and local
-time zone. It returns the en-US pattern `M/D/YYYY, h:mm:ss AM`, including seconds,
-with unpadded month, day and hour fields on a twelve-hour clock. It does not select
-other locale patterns. The guest carries no time-zone data; host failures remain errors.
+time zone. It returns a numeric date and time, including seconds, using the
+host's selected locale. The host selects the first present `LC_ALL`,
+`LC_MESSAGES`, or `LANG` value and uses the [local date-time formatter](../text.md#local-dates-and-times).
+A missing environment, `C`, or `POSIX` selects en-US. The guest carries no
+time-zone data; host failures remain errors.
 
 `utils::local_time_string(&api, timestamp)` formats an instant, given in milliseconds
-since the Unix epoch, as the host's local time in the same twelve-hour form,
+since the Unix epoch, as the host's local time in the en-US twelve-hour form,
 `h:mm:ss AM`. An instant outside the host's calendar reads as `Invalid Date`.
+Use this helper for time-only labels, as the overlay stream does. Date-time
+punctuation depends on the locale, so splitting date-time text does not reliably
+isolate the time.

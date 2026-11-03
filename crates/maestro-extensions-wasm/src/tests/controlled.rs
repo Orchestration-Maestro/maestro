@@ -284,6 +284,20 @@ impl Controlled {
         }
     }
 
+    /// Drops the custom footer, its handle and the factory that built it, as a host that
+    /// discards them does.
+    pub fn release_footer(&self) {
+        let slot = self.observed.borrow_mut().ui.footer.custom.take();
+        if let Some(slot) = slot {
+            drop(self.widgets.borrow_mut().remove(&slot.component));
+            self.observed.borrow_mut().drop_identity(slot.component);
+        }
+        let factory = self.observed.borrow_mut().ui.footer.factory.take();
+        if let Some(factory) = factory {
+            crate::component_adapter::release(factory);
+        }
+    }
+
     /// The component the custom footer shows.
     pub fn footer(&self) -> Option<crate::Component> {
         let slot = self
@@ -708,6 +722,18 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    fn call_host_operation(
+        &self,
+        _: crate::bindings::maestro::extension::host::HostOperation,
+    ) -> ExtensionFuture<'_, serde_json::Value> {
+        let response = self
+            .observed
+            .borrow()
+            .host_operation_result
+            .clone()
+            .unwrap_or_else(|| Err("host operations require the production host".into()));
+        Box::pin(async move { response })
+    }
     type Watcher = super::native_watch_host::Watcher;
     fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
         watch.close();
@@ -723,6 +749,10 @@ impl crate::component_adapter::NativeImports for Controlled {
             if signal.is_some_and(|signal| self.aborted(signal)) {
                 return Err("Aborted".into());
             }
+            self.observe()
+                .native_http
+                .signals
+                .push(signal.map(|signal| signal.flag.shared()));
             let hold = self.observe().take_hold();
             pause(hold).await;
             if signal.is_some_and(|signal| self.aborted(signal)) {
@@ -1722,6 +1752,8 @@ impl Imports for Controlled {
     }
     fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
         Box::pin(async move {
+            let hold = self.observed.borrow_mut().bus.emission_holds.pop_front();
+            super::observed::pause(hold).await;
             self.callback_emit(&super::bus_host::Emitter { key: 0 }, &channel, &data)
         })
     }
@@ -2192,6 +2224,7 @@ impl Imports for Controlled {
         drop(old);
         if let Some(factory) = factory {
             let component = self.build(factory, true)?;
+            self.observed.borrow_mut().ui.footer.factory = Some(factory.id);
             self.observed.borrow_mut().ui.footer.custom = Some(super::ui_host::WidgetSlot {
                 key: "footer".to_owned(),
                 component,

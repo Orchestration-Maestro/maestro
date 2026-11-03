@@ -23,6 +23,8 @@ pub struct Case {
     pub name: String,
     pub input: Input,
     pub expected: Expected,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Expected>,
 }
 /// Exact output with ordered callbacks.
 #[derive(Deserialize)]

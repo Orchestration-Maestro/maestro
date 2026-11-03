@@ -18,16 +18,16 @@ fn authorization_replaces_content_without_resetting_input() {
     login_support::replay("authorization_replaces_content_without_resetting_input");
 }
 #[test]
-fn manual_input_appends_and_retains_entered_text() {
-    login_support::replay("manual_input_appends_and_retains_entered_text");
+fn manual_input_appends_and_starts_empty() {
+    login_support::replay("manual_input_appends_and_starts_empty");
 }
 #[test]
-fn prompt_input_resets_and_submits_exact_text() {
-    login_support::replay("prompt_input_resets_and_submits_exact_text");
+fn prompt_input_resets_freezes_and_submits_exact_text() {
+    login_support::replay("prompt_input_resets_freezes_and_submits_exact_text");
 }
 #[test]
-fn sequential_prompts_keep_history_and_shared_input() {
-    login_support::replay("sequential_prompts_keep_history_and_shared_input");
+fn sequential_prompts_freeze_submitted_rows_and_share_the_input() {
+    login_support::replay("sequential_prompts_freeze_submitted_rows_and_share_the_input");
 }
 #[test]
 fn information_replaces_rows_and_keeps_caller_text() {
@@ -104,7 +104,7 @@ fn application_provider_lookup_reaches_default_title() {
         .into_iter()
         .next()
         .unwrap();
-    let (_, theme) = published::published(&login_support::colors(0));
+    let (_, theme) = published::published(&login_support::colors(0)).unwrap();
     let dialog = LoginDialogComponent::new(
         Rc::new(|| {}),
         provider.id(),
@@ -139,7 +139,7 @@ fn input_futures_are_eager_owned_and_do_not_cycle() {
         maestro_tui::TerminalImage::new(|_| None, || 1),
         Some(true),
     );
-    let (_, theme) = published::published(&login_support::colors(0));
+    let (_, theme) = published::published(&login_support::colors(0)).unwrap();
     let completion = Rc::new(Cell::new(0));
     let count = completion.clone();
     let dialog = themed_panel(
@@ -174,12 +174,13 @@ fn input_futures_are_eager_owned_and_do_not_cycle() {
     assert!(weak.upgrade().is_none());
     assert!(weak_terminal.upgrade().is_none());
     assert_eq!(runtime.pending(), 0);
+    input.input_handler().unwrap().handle_input("second");
     input.input_handler().unwrap().handle_input("\r");
     assert_eq!(
         pending
             .as_mut()
             .poll(&mut Context::from_waker(Waker::noop())),
-        Poll::Ready(Ok("first".into()))
+        Poll::Ready(Ok("second".into()))
     );
     assert_eq!(completion.get(), 0);
     let weak_input = Rc::downgrade(&input);
@@ -190,7 +191,7 @@ fn input_futures_are_eager_owned_and_do_not_cycle() {
 fn blank_manual_submission_keeps_input_and_cancellation_pending() {
     let _bindings = keybindings::bindings_guard();
     for cancel in [false, true] {
-        let (_, theme) = published::published(&login_support::colors(0));
+        let (_, theme) = published::published(&login_support::colors(0)).unwrap();
         let dialog = themed_panel(theme, Rc::new(|| {}), Rc::new(|_, _| {}));
         let mut reply = dialog.show_manual_input("Paste redirect").unwrap();
         dialog.handle_input("\r");
@@ -243,7 +244,7 @@ fn login_dialog_uses_current_brand_roles() {
             )
             .unwrap(),
         );
-        let (_, live) = published::published(&theme);
+        let (_, live) = published::published(&theme).unwrap();
         let dialog = themed_panel(live.clone(), Rc::new(|| {}), Rc::new(|_, _| {}));
         dialog
             .show_auth("https://auth.example.test", Some("Instructions"))
@@ -322,7 +323,7 @@ fn assert_brand_rows(
         (maestro_theme::ThemeColor::Accent, url),
         (maestro_theme::ThemeColor::Dim, "Ctrl+click to open"),
     ] {
-        let link = format!("\x1b]8;;{url}\x07{text}\x1b]8;;\x07");
+        let link = maestro_tui::hyperlink(text, url);
         assert!(
             rows.iter()
                 .any(|row| row.contains(&theme.fg(&role, &link).unwrap()))
@@ -349,3 +350,99 @@ fn assert_brand_rows(
 
 /// Caller notification retained by a styled panel.
 type Completion = Rc<dyn Fn(bool, Option<&str>)>;
+
+/// Rows of the dialog at width 120, without trailing blanks.
+fn rows(dialog: &maestro_chat::LoginDialogComponent) -> Vec<String> {
+    use maestro_tui::Component;
+    dialog
+        .render(120)
+        .into_iter()
+        .map(|row| row.trim_end().to_owned())
+        .collect()
+}
+
+/// Rows whose text, apart from escapes, holds `> value`.
+fn echoes(rows: &[String], value: &str) -> usize {
+    rows.iter()
+        .filter(|row| row.contains(&format!("> {value}")))
+        .count()
+}
+
+/// The text a settled input future produced.
+fn settled(
+    input: maestro_chat::LoginInputFuture,
+) -> Result<String, maestro_chat::LoginDialogError> {
+    use std::task::{Context, Poll, Waker};
+    let mut input = input;
+    match input.as_mut().poll(&mut Context::from_waker(Waker::noop())) {
+        Poll::Ready(result) => result,
+        Poll::Pending => panic!("the input did not settle"),
+    }
+}
+
+#[test]
+fn submitted_prompt_rows_stay_frozen_while_a_later_prompt_is_active() {
+    use maestro_tui::tui::InputHandler as _;
+    let _guard = keybindings::bindings_guard();
+    let (dialog, _) = login_support::controlled(
+        maestro_chat::LoginDialogPlatform::Other,
+        Some(std::rc::Rc::new(|_| {})),
+    );
+    let first = dialog
+        .show_prompt("First prompt:", Some("first-value"))
+        .unwrap();
+    dialog.handle_input("first-value");
+    dialog.handle_input("\r");
+    assert_eq!(settled(first).as_deref(), Ok("first-value"));
+    let second = dialog.show_prompt("Second prompt:", None).unwrap();
+    dialog.handle_input("second-secret-demo");
+    let rows = rows(&dialog);
+    let text = rows.join("\n");
+    assert!(text.contains("First prompt:") && text.contains("Second prompt:"));
+    assert_eq!(echoes(&rows, "first-value"), 1);
+    assert_eq!(echoes(&rows, "second-secret-demo"), 1);
+    dialog.handle_input("\r");
+    assert_eq!(settled(second).as_deref(), Ok("second-secret-demo"));
+}
+
+#[test]
+fn submitted_manual_input_stays_frozen_and_the_next_prompt_starts_empty() {
+    use maestro_tui::tui::InputHandler as _;
+    let _guard = keybindings::bindings_guard();
+    let (dialog, _) = login_support::controlled(
+        maestro_chat::LoginDialogPlatform::Other,
+        Some(std::rc::Rc::new(|_| {})),
+    );
+    let manual = dialog.show_manual_input("Paste callback URL:").unwrap();
+    dialog.handle_input("callback-value");
+    dialog.handle_input("\r");
+    assert_eq!(settled(manual).as_deref(), Ok("callback-value"));
+    let prompt = dialog.show_prompt("Second prompt:", None).unwrap();
+    let rows = rows(&dialog);
+    assert_eq!(echoes(&rows, "callback-value"), 1);
+    dialog.handle_input("second-secret-demo");
+    let rows = self::rows(&dialog);
+    assert_eq!(echoes(&rows, "callback-value"), 1);
+    assert_eq!(echoes(&rows, "second-secret-demo"), 1);
+    dialog.handle_input("\r");
+    assert_eq!(settled(prompt).as_deref(), Ok("second-secret-demo"));
+}
+
+#[test]
+fn manual_input_started_after_a_prompt_starts_empty() {
+    use maestro_tui::tui::InputHandler as _;
+    let _guard = keybindings::bindings_guard();
+    let (dialog, _) = login_support::controlled(
+        maestro_chat::LoginDialogPlatform::Other,
+        Some(std::rc::Rc::new(|_| {})),
+    );
+    let prompt = dialog.show_prompt("First prompt:", None).unwrap();
+    dialog.handle_input("typed-before-submit");
+    dialog.handle_input("\r");
+    assert_eq!(settled(prompt).as_deref(), Ok("typed-before-submit"));
+    let manual = dialog.show_manual_input("Paste callback URL:").unwrap();
+    dialog.handle_input("\r");
+    let rows = rows(&dialog);
+    assert_eq!(echoes(&rows, "typed-before-submit"), 1);
+    drop(manual);
+}

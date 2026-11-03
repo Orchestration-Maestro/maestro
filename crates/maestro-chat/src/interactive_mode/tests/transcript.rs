@@ -1596,6 +1596,46 @@ fn transcript_recorded_assistant_keeps_the_existing_paint_owner() {
     });
 }
 
+#[test]
+fn transcript_length_stop_shows_the_incomplete_response_error() {
+    let test = "transcript_length_stop_shows_the_incomplete_response_error";
+    isolated(test, async |directory| {
+        let world = recorded(directory, Setup::default());
+        let truncated_call = json!([{"type": "text", "text": "PARTIAL"}, call("1", "read")]);
+        for content in [json!([{"type": "text", "text": "PARTIAL"}]), truncated_call] {
+            let record = Rc::new(assistant(&content, "length", None));
+            let AgentMessage::Assistant(live) = message((*record).clone()) else {
+                panic!("an assistant record");
+            };
+            let rows = [
+                crate::AssistantMessageComponent::from_record(
+                    record,
+                    crate::AssistantMessageOptions::default(),
+                    world.themes.theme(),
+                    world.mode.get_markdown_theme_with_settings(),
+                    world.mode.tool_environment.terminal_image.clone(),
+                ),
+                crate::AssistantMessageComponent::new(
+                    Some(live),
+                    crate::AssistantMessageOptions::default(),
+                    world.themes.theme(),
+                    world.mode.get_markdown_theme_with_settings(),
+                    world.mode.tool_environment.terminal_image.clone(),
+                ),
+            ];
+            for row in &rows {
+                let rendered = row.render(200).join("\n");
+                assert!(
+                    rendered.contains(
+                        "Error: Model stopped because it reached the maximum output token limit. The response may be incomplete."
+                    ),
+                    "{content}: {rendered}"
+                );
+            }
+        }
+    });
+}
+
 /// Renderer calls of `count` replayed call and result pairs, before and after expansion,
 /// with the transcript's row count. The calls are the only work this counts: a collection
 /// walk that is quadratic in the rows would not show in them.

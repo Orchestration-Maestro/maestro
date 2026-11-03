@@ -45,6 +45,8 @@ mod tests {
         in_lock: Hook,
         /// Run when a replacement is about to be stored.
         before_write: Hook,
+        /// Run once after the next synchronous read that succeeded.
+        after_read: Mutex<Option<Box<dyn FnOnce() + Send>>>,
         /// Asynchronous operations started.
         async_calls: AtomicUsize,
         /// Replacement texts stored.
@@ -104,7 +106,12 @@ mod tests {
             }
             probe
                 .inner
-                .with_lock(&mut |current| probe.checked(update(current)?))
+                .with_lock(&mut |current| probe.checked(update(current)?))?;
+            let action = probe.after_read.lock().unwrap().take();
+            if let Some(action) = action {
+                action();
+            }
+            Ok(())
         }
 
         fn with_lock_async<'a>(
@@ -144,6 +151,17 @@ mod tests {
             })
             .unwrap();
         text
+    }
+
+    /// Have another writer replace the stored text with `document` right after the storage's next
+    /// synchronous read, so the storage decides on the text it read before.
+    fn replace_after_next_read(probe: &Arc<Probe>, document: Value) {
+        let target = Arc::downgrade(probe);
+        *probe.after_read.lock().unwrap() = Some(Box::new(move || {
+            if let Some(probe) = target.upgrade() {
+                replace_text(&probe, &document);
+            }
+        }));
     }
 
     /// Stored OAuth record with access token `access`.
@@ -233,7 +251,7 @@ mod tests {
                 probe.sync_fails.store(true, Ordering::SeqCst);
                 storage.reload();
                 probe.sync_fails.store(false, Ordering::SeqCst);
-                replace_text(&probe, &document);
+                replace_after_next_read(&probe, document.clone());
                 *probe.in_lock.lock().unwrap() = Some(on_storage(&storage, replace_fallback));
                 let key = request(&storage, "r2").await.unwrap();
                 assert_eq!(key.as_deref(), Some(expected));
@@ -254,9 +272,9 @@ mod tests {
             let provider = ControlledProvider::new("r2-extract").register();
             let _cleanup = Unregister("r2-extract".into());
             let (probe, storage) = setup(&json!({"r2-extract": record("old", 1000.0)}));
-            replace_text(
+            replace_after_next_read(
                 &probe,
-                &json!({"r2-extract": record("extract-fails", FUTURE)}),
+                json!({"r2-extract": record("extract-fails", FUTURE)}),
             );
             let outcome = request(&storage, "r2-extract").await;
             assert_eq!(outcome.unwrap_err().to_string(), "extract failed");
@@ -500,7 +518,6 @@ mod tests {
         std::fs::write(&path, serde_json::to_string_pretty(document).unwrap()).unwrap();
         let storage = AuthStorage::from_storage(FileAuthStorageBackend::new(&path));
         let sidecar = format!("{path}.lock");
-        std::fs::remove_file(&sidecar).unwrap();
         std::fs::create_dir(&sidecar).unwrap();
         (sidecar, storage)
     }
@@ -544,7 +561,7 @@ mod tests {
     }
 
     #[test]
-    fn refresh_publishes_before_write_is_observed() {
+    fn reread_during_refresh_write_sees_stored_records() {
         block_on(async {
             ControlledProvider::new("r8").register();
             let _cleanup = Unregister("r8".into());
@@ -562,9 +579,12 @@ mod tests {
             let observed = observed.lock().unwrap();
             assert_eq!(observed.len(), 1);
             assert!(
-                matches!(&observed[0], Some(AuthCredential::OAuth(new)) if new.access == "new")
+                matches!(&observed[0], Some(AuthCredential::OAuth(old)) if old.access == "old")
             );
             probe.before_write.lock().unwrap().take();
+            assert!(
+                matches!(storage.get("r8"), Some(AuthCredential::OAuth(new)) if new.access == "new")
+            );
         });
     }
 
@@ -730,7 +750,7 @@ mod tests {
             probe.write_fails.store(true, Ordering::SeqCst);
             storage.login("r11", callbacks.clone()).await.unwrap();
             assert!(
-                matches!(storage.get("r11"), Some(AuthCredential::OAuth(again)) if again.access == "again")
+                matches!(storage.get("r11"), Some(AuthCredential::OAuth(kept)) if kept.access == "login")
             );
             assert_eq!(storage.drain_errors()[0].to_string(), "write failed");
 
@@ -741,7 +761,7 @@ mod tests {
             probe.sync_fails.store(false, Ordering::SeqCst);
             storage.login("r11", callbacks).await.unwrap();
             assert!(
-                matches!(storage.get("r11"), Some(AuthCredential::OAuth(kept)) if kept.access == "guarded")
+                matches!(storage.get("r11"), Some(AuthCredential::OAuth(kept)) if kept.access == "login")
             );
             assert_eq!(probe.writes.lock().unwrap().len(), 1);
         });
@@ -843,7 +863,7 @@ mod tests {
         let actual = match result {
             Ok(value) => json!({"branch":"ok", "value":value, "calls":calls}),
             Err(error) => {
-                json!({"branch":"error", "error":crate::fallback_support::error_value(&error), "calls":calls})
+                json!({"branch":"error", "error":crate::fallback_support::error_value(&error).unwrap(), "calls":calls})
             }
         };
         assert!(actual == case.expected, "recorded refresh outcome");
@@ -857,6 +877,7 @@ mod tests {
         block_on(async {
             for case in
                 crate::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
+                    .unwrap()
             {
                 refresh_fallback_case(case).await;
             }

@@ -103,7 +103,7 @@ fn border_clamps_width_and_recolors_each_render() {
         BorderClampsWidthAndRecolorsEachRenderExpected,
     >("border_clamps_width_and_recolors_each_render")
     {
-        let (_state, live) = published::published(&colors(31, 32, 33, 34));
+        let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
         let calls = Rc::new(Cell::new(0));
         let count = calls.clone();
         let custom = input.custom.then(|| {
@@ -155,7 +155,7 @@ fn border_uses_live_theme_but_custom_color_needs_no_theme() {
                 DynamicBorder::new(state.theme(), Some(Rc::new(|text| format!("[{text}]"))));
             assert_eq!(Some(border.render(2)), expected.result);
         } else {
-            let (state, live) = published::published(&colors(31, 32, 33, 34));
+            let (state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
             let border = DynamicBorder::new(live, None);
             assert_eq!(Some(border.render(3)), expected.before);
             state.set_theme_instance(colors(35, 36, 37, 38)).unwrap();
@@ -168,7 +168,7 @@ fn border_uses_live_theme_but_custom_color_needs_no_theme() {
 fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
     use maestro_app::ExtensionWidgets;
     use maestro_tui::{Markdown, MarkdownOptions};
-    let (state, live) = published::published(&colors(31, 32, 33, 34));
+    let (state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let terminal = TerminalImage::new(|_| None, || 1);
     let host =
@@ -204,7 +204,7 @@ fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
 #[test]
 fn extension_widget_host_builds_application_loaders_and_list_styles() {
     use maestro_app::ExtensionWidgets;
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
         live.clone(),
@@ -263,7 +263,7 @@ fn extension_widget_host_builds_application_loaders_and_list_styles() {
 #[test]
 fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles() {
     use maestro_app::ExtensionWidgets;
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
         live.clone(),
@@ -348,7 +348,7 @@ fn assert_application_keybindings(host: &dyn maestro_app::ExtensionWidgets) {
 #[test]
 fn extension_widget_host_builds_the_application_custom_editor() {
     use maestro_app::ExtensionWidgets;
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
         live,
@@ -679,7 +679,7 @@ fn bordered_loader_layout_preserves_padding_and_message() {
     {
         let runtime = ManualRuntime::new();
         let tui = writer(&runtime);
-        let (_state, live) = published::published(&colors(31, 32, 33, 34));
+        let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
         let options = input.cancellable.map_or_else(
             maestro_chat::BorderedLoaderOptions::default,
             |cancellable| maestro_chat::BorderedLoaderOptions { cancellable },
@@ -738,7 +738,7 @@ fn bordered_loader_keeps_captured_theme_and_hint_but_matches_live_keys() {
     maestro_tui::set_keybindings(manager.clone());
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (state, live) = published::published(&colors(31, 32, 33, 34));
+    let (state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let loader = maestro_chat::BorderedLoader::new(
         &tui,
         colors(32, 33, 34, 35),
@@ -814,7 +814,7 @@ fn bordered_loader_dispose_stops_animation_without_forcing_abort() {
     {
         let runtime = ManualRuntime::new();
         let tui = writer(&runtime);
-        let (_state, live) = published::published(&colors(31, 32, 33, 34));
+        let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
         let loader = maestro_chat::BorderedLoader::new(
             &tui,
             colors(31, 32, 33, 34),
@@ -932,7 +932,7 @@ fn application_hint_exports_use_owner_semantics() {
     >("application_hint_exports_use_owner_semantics")
     {
         maestro_tui::set_keybindings(bindings(&[("tui.select.cancel", input.keys)]));
-        let (_state, live) = published::published(&colors(31, 32, 33, 34));
+        let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
         assert_eq!(maestro_app::key_text("tui.select.cancel"), expected.text);
         assert_eq!(
             maestro_app::key_hint("tui.select.cancel", "cancel", &live).unwrap(),
@@ -973,7 +973,7 @@ fn loader_container_mutations_keep_shared_child_identity() {
     .unwrap();
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let loader = maestro_chat::BorderedLoader::new(
         &tui,
         colors(31, 32, 33, 34),
@@ -1091,7 +1091,7 @@ fn custom_editor_routes_actions_in_source_order() {
     {
         let runtime = ManualRuntime::new();
         let tui = writer(&runtime);
-        let (_state, live) = published::published(&colors(31, 32, 33, 34));
+        let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
         let manager = app_bindings();
         maestro_tui::set_keybindings(manager.clone());
         let editor = editor(&tui, live, manager.clone());
@@ -1144,7 +1144,7 @@ fn custom_editor_preserves_order_and_replaceable_map_aliases() {
     .unwrap();
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let manager = app_bindings();
     manager.set_user_bindings(vec![
         (
@@ -1215,7 +1215,7 @@ fn custom_editor_callback_replacement_and_reentry_take_effect() {
     .unwrap();
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let manager = app_bindings();
     let editor = Rc::new(editor(&tui, live, manager.clone()));
     let events = Rc::new(RefCell::new(Vec::new()));
@@ -1266,7 +1266,7 @@ fn custom_editor_uses_supplied_manager_after_global_replacement() {
     .unwrap();
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let manager = app_bindings();
     let editor = editor(&tui, live, manager.clone());
     let events = Rc::new(RefCell::new(Vec::new()));
@@ -1366,7 +1366,7 @@ fn custom_editor_autocomplete_owns_first_interrupt() {
     .unwrap();
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let editor = editor(&tui, live, app_bindings());
     let view: &dyn maestro_tui::EditorComponent<Signal = maestro_tui::Cancellation> = &editor;
     assert_eq!(
@@ -1436,7 +1436,7 @@ fn custom_editor_inherits_editor_and_focus_capabilities() {
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
     let theme = colors(31, 32, 33, 34);
-    let (_state, live) = published::published(&theme);
+    let (_state, live) = published::published(&theme).unwrap();
     let editor = editor(&tui, live, app_bindings());
     let view: &dyn maestro_tui::EditorComponent<Signal = maestro_tui::Cancellation> = &editor;
     let (changes, submits) = inherited_callbacks(view);
@@ -1479,7 +1479,7 @@ fn custom_editor_handlers_release_replaced_values_outside_borrows() {
     let _guard = input_support::globals();
     let runtime = ManualRuntime::new();
     let tui = writer(&runtime);
-    let (_state, live) = published::published(&colors(31, 32, 33, 34));
+    let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let editor = Rc::new(editor(&tui, live, app_bindings()));
     let drops = Rc::new(Cell::new(0));
     for kind in 0..4 {

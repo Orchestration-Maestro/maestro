@@ -75,8 +75,22 @@ fn directory(path: &Path) -> io::Result<Dir> {
     // FILE_FLAG_BACKUP_SEMANTICS lets Windows open a directory.
     #[cfg(windows)]
     std::os::windows::fs::OpenOptionsExt::custom_flags(&mut options, 0x0200_0000);
+    let file = options.open(path);
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    let file = file.or_else(|error| {
+        /// Linux `O_PATH` keeps a directory handle without requiring read access.
+        #[cfg(target_os = "linux")]
+        const SEARCH_ONLY: i32 = 0x0020_0000;
+        /// Darwin `O_SEARCH` opens a directory with search permission alone.
+        #[cfg(target_os = "macos")]
+        const SEARCH_ONLY: i32 = 0x4010_0000;
+        if error.kind() != io::ErrorKind::PermissionDenied {
+            return Err(error);
+        }
+        std::os::unix::fs::OpenOptionsExt::custom_flags(&mut options, SEARCH_ONLY).open(path)
+    });
     Ok(Dir::new(
-        options.open(path)?,
+        file?,
         FsPerms::ReadWrite,
         OpenMode::READ | OpenMode::WRITE,
         false,
@@ -160,9 +174,8 @@ enum Place {
 /// Finds the native directory that holds `path` below the root, and the name to use in it.
 ///
 /// A following lookup first follows links in the final name, as the system does.
-/// A Unix directory the user may search but not list cannot be opened, so a path
-/// below it stays with the root, where the standard implementation resolves each
-/// component and an absolute link is refused.
+/// Search-only parent handles retain native traversal without directory listing.
+/// A Unix host that cannot open the parent leaves traversal with the root.
 fn parent(path: String, follow: bool) -> io::Result<Place> {
     let native = PathBuf::from(native_path(&format!("/{path}")));
     let native = if follow {

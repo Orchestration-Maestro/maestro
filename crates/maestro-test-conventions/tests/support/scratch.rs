@@ -1,6 +1,4 @@
-#[allow(dead_code, reason = "Scratch uses only the shared declaration writer.")]
-#[path = "../../../maestro-tooling/tests/fixtures/toolchain_support.rs"]
-mod toolchain_support;
+use maestro_test_process::toolchain as toolchain_support;
 
 /// A fresh temporary directory, removed when dropped.
 pub struct Scratch {

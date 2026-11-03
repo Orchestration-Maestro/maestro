@@ -602,12 +602,16 @@ fn hotkeys_submission_uses_effective_keys_without_prompt() {
                     .collect::<Vec<_>>()
                     .join("\n");
                 assert!(panel.contains("Keyboard Shortcuts"));
-                let label = if key == "alt+x" { "Alt+X" } else { "Alt+Y" };
+                let label = super::platform_keys::on_this_platform(if key == "alt+x" {
+                    "Alt+X"
+                } else {
+                    "Alt+Y"
+                });
                 let cancel = panel
                     .lines()
                     .find(|row| row.contains("Cancel autocomplete / abort streaming"))
                     .unwrap();
-                assert!(cancel.contains(label));
+                assert!(cancel.contains(&label));
             }
             for text in ["/hotkey", "/HOTKEYS", "/hotkeys extra", "/hotkeys\u{85}"] {
                 let before = world.mode.chat_container.children().borrow().len();

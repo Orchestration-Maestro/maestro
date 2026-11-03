@@ -7,7 +7,7 @@ use std::iter::Peekable;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::arguments::replay::nullish_default;
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::projection::normalize_tool_call_id;
@@ -202,11 +202,6 @@ fn result_content(blocks: &[UserBlock]) -> ResultContent {
     ResultContent::Blocks(converted)
 }
 
-/// Report whether trimming leaves any text.
-fn has_text(text: &str) -> bool {
-    !text.trim_matches(whitespace).is_empty()
-}
-
 /// Project the history for the model, convert it into wire messages and place `cache` on the
 /// last block of the final message when that message is the user's.
 pub(super) fn convert(
@@ -214,6 +209,7 @@ pub(super) fn convert(
     context: &Context,
     cache: Option<CacheControl>,
     naming: Naming,
+    allow_empty_signature: bool,
 ) -> Vec<WireMessage> {
     let normalize = |id: &str, _: &Model, _: &AssistantMessage| normalize_tool_call_id(id);
     let history = transform_messages(&context.messages, model, Some(&normalize));
@@ -222,7 +218,9 @@ pub(super) fn convert(
     while let Some(message) = remaining.next() {
         wire.extend(match message {
             Message::User(user) => user_message(&user.content),
-            Message::Assistant(assistant) => assistant_message(assistant, naming),
+            Message::Assistant(assistant) => {
+                assistant_message(assistant, naming, allow_empty_signature)
+            }
             Message::ToolResult(first) => Some(tool_results(first, &mut remaining)),
         });
     }
@@ -235,13 +233,13 @@ pub(super) fn convert(
 /// Convert a user turn; a turn without any text or image produces no message.
 fn user_message(content: &UserContent) -> Option<WireMessage> {
     let content = match content {
-        UserContent::Text(text) if has_text(text) => Content::Text(text.clone()),
+        UserContent::Text(text) if !is_blank(text) => Content::Text(text.clone()),
         UserContent::Text(_) => return None,
         UserContent::Blocks(blocks) => {
             let kept: Vec<Block> = blocks
                 .iter()
                 .filter(|block| match block {
-                    UserBlock::Text(text) => has_text(&text.text),
+                    UserBlock::Text(text) => !is_blank(&text.text),
                     UserBlock::Image(_) => true,
                 })
                 .map(user_block)
@@ -259,11 +257,15 @@ fn user_message(content: &UserContent) -> Option<WireMessage> {
 }
 
 /// Convert an assistant turn; a turn without any block produces no message.
-fn assistant_message(assistant: &AssistantMessage, naming: Naming) -> Option<WireMessage> {
+fn assistant_message(
+    assistant: &AssistantMessage,
+    naming: Naming,
+    allow_empty_signature: bool,
+) -> Option<WireMessage> {
     let blocks: Vec<Block> = assistant
         .content
         .iter()
-        .filter_map(|block| assistant_block(block, naming))
+        .filter_map(|block| assistant_block(block, naming, allow_empty_signature))
         .collect();
     (!blocks.is_empty()).then_some(WireMessage {
         role: Role::Assistant,
@@ -272,26 +274,35 @@ fn assistant_message(assistant: &AssistantMessage, naming: Naming) -> Option<Wir
 }
 
 /// Convert one block of an assistant turn. Blank text and blank unredacted reasoning are
-/// dropped; unredacted reasoning without a nonblank signature becomes plain text; redacted
-/// reasoning is kept whatever its text, with its opaque payload.
-fn assistant_block(block: &AssistantContent, naming: Naming) -> Option<Block> {
+/// dropped; unredacted reasoning without a nonblank signature becomes plain text, or is kept
+/// with an empty signature when the model accepts one; redacted reasoning is kept whatever its
+/// text, with its opaque payload.
+fn assistant_block(
+    block: &AssistantContent,
+    naming: Naming,
+    allow_empty_signature: bool,
+) -> Option<Block> {
     match block {
-        AssistantContent::Text(text) => has_text(&text.text).then(|| Block::text(&text.text)),
+        AssistantContent::Text(text) => (!is_blank(&text.text)).then(|| Block::text(&text.text)),
         AssistantContent::Thinking(thinking) if thinking.redacted == Some(true) => {
             Some(Block::RedactedThinking {
                 data: thinking.thinking_signature.clone(),
             })
         }
-        AssistantContent::Thinking(thinking) if !has_text(&thinking.thinking) => None,
+        AssistantContent::Thinking(thinking) if is_blank(&thinking.thinking) => None,
         AssistantContent::Thinking(thinking) => Some(
             match thinking
                 .thinking_signature
                 .as_deref()
-                .filter(|s| has_text(s))
+                .filter(|s| !is_blank(s))
             {
                 Some(signature) => Block::Thinking {
                     thinking: thinking.thinking.clone(),
                     signature: signature.to_owned(),
+                },
+                None if allow_empty_signature => Block::Thinking {
+                    thinking: thinking.thinking.clone(),
+                    signature: String::new(),
                 },
                 None => Block::text(&thinking.thinking),
             },

@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 pub struct ApiKeyCredential {
     /// Configured value resolved when a request key is selected.
     pub key: String,
+    /// Stored provider account variables, resolved independently of the request key.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env: Option<IndexMap<String, String>>,
 }
 
 /// OAuth tokens stored under the `oauth` discriminator.

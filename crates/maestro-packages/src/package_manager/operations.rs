@@ -127,33 +127,6 @@ impl PackageOperations for NativePackageOperations {
     }
 }
 
-/// The user's home directory: a nonempty `HOME`, else the platform's home.
-///
-/// # Errors
-/// Returns `NotFound` when neither is available.
-pub(super) fn home_dir() -> io::Result<String> {
-    home(
-        std::env::var_os("HOME").map(|text| text.to_string_lossy().into_owned()),
-        || {
-            std::env::home_dir()
-                .map(|path| path.to_string_lossy().into_owned())
-                .ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::NotFound, "home directory unavailable")
-                })
-        },
-    )
-}
-
-/// Selects a nonempty authored home before invoking the platform fallback.
-pub(super) fn home(
-    explicit: Option<String>,
-    fallback: impl FnOnce() -> io::Result<String>,
-) -> io::Result<String> {
-    if let Some(home) = explicit.filter(|text| !text.is_empty()) {
-        return Ok(home);
-    }
-    fallback()
-}
 /// Recovers an empty Linux environment, retaining first-equals and last-duplicate semantics.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn recover_environment(

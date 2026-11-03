@@ -1,9 +1,6 @@
 //! Controlled component callbacks replayed against independently recorded output.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "../../../maestro-test-terminal/src/manual_runtime.rs"]
-#[allow(dead_code)]
-mod manual_runtime;
 use maestro_export::{
     ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
 };
@@ -14,6 +11,7 @@ use maestro_theme::{
 };
 use maestro_tools::types::local::ToolDefinition;
 use maestro_tools::{ToolRenderContext, ToolRenderEnvironment};
+use maestro_tui::test_support::manual_runtime;
 use maestro_tui::{
     TerminalImage,
     tui::{Component, ComponentHandle},

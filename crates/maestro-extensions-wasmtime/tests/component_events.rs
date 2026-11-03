@@ -203,6 +203,14 @@ fn without_stacks(mut output: Value) -> Value {
 }
 
 #[test]
+fn component_hooks_read_what_earlier_handlers_returned() {
+    local(async {
+        let harness = Harness::load().await;
+        input::reading(&harness).await;
+    });
+}
+
+#[test]
 fn component_hooks_replay_recorded_domain_outcomes() {
     let cases: Vec<Case> = serde_json::from_str(include_str!("fixtures/hook_corpus.json")).unwrap();
     assert_eq!(cases.len(), 104);

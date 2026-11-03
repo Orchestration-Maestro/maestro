@@ -15,6 +15,10 @@ Only synchronous helper writers have a five-second limit. The Wayland probe and
 background writer have no deadline; the writer returns after acknowledged
 startup, without waiting for exit.
 
+On Unix the background writer runs in its own session, outside the application's
+process group. Suspending the application therefore does not stop a clipboard helper
+that keeps owning the selection after the copy.
+
 Remote sessions identified by nonempty `SSH_CONNECTION`, `SSH_CLIENT` or
 `MOSH_CONNECTION` also receive an OSC 52 terminal sequence. Local copying uses
 that sequence only when native and helper routes fail. The padded base64 payload

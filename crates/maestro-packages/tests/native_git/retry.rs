@@ -149,11 +149,11 @@ async fn execute(
     let result = native
         .run_command(&call.command, &call.args, call.cwd.as_deref())
         .await?;
-    if *fail.borrow() == "after-checkout" && operation == "checkout" {
+    if *fail.borrow() == "after-reset" && operation == "reset" {
         fail.borrow_mut().clear();
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            "checkout completion rejected",
+            "reset completion rejected",
         ));
     }
     Ok(result)

@@ -1,5 +1,6 @@
 //! Recorded display cases and their strict corpus validation.
 #![cfg(test)]
+use crate::edit_render_support::for_this_platform;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
@@ -18,6 +19,8 @@ pub struct Case {
     pub input: Value,
     /// Independently recorded expectation.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 
 /// The committed search corpus of one tool family.
@@ -53,6 +56,10 @@ pub fn search_cases(source: &str, test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            case
+        })
         .collect();
     assert!(!selected.is_empty(), "missing group {test}");
     selected
@@ -232,6 +239,10 @@ pub fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            case
+        })
         .collect();
     assert!(!selected.is_empty(), "empty test group {test}");
     selected

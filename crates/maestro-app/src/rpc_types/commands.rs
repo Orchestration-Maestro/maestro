@@ -2,6 +2,7 @@
 //! to the family naming its type.
 use super::workspace;
 use maestro_agent::QueueMode;
+use maestro_json::object::names;
 use maestro_models::{ImageContent, ModelThinkingLevel};
 use maestro_session::messages::UserMessageDelivery;
 use serde::{Deserialize, Deserializer, Serialize, de};
@@ -238,11 +239,11 @@ impl RpcCommandBody {
             id: value.get("id").and_then(Value::as_str).map(str::to_owned),
             error,
         };
-        if names::<RpcSessionCommand>(kind) {
+        if names::<RpcSessionCommand>("type", kind) {
             RpcSessionCommand::deserialize(value)
                 .map(Self::Session)
                 .map_err(invalid)
-        } else if names::<workspace::RpcCommand>(kind) {
+        } else if names::<workspace::RpcCommand>("type", kind) {
             workspace::RpcCommand::deserialize(value)
                 .map(|command| Self::Workspace(Box::new(command)))
                 .map_err(invalid)
@@ -255,41 +256,5 @@ impl RpcCommandBody {
 impl<'de> Deserialize<'de> for RpcCommandBody {
     fn deserialize<D: Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
         Self::route(&Value::deserialize(decoder)?).map_err(de::Error::custom)
-    }
-}
-
-/// Whether the type-tagged family `T` names `kind`, asked of `T`'s own decoder.
-pub(super) fn names<T: de::DeserializeOwned>(kind: &str) -> bool {
-    let tag = de::value::MapDeserializer::<_, NameProbe>::new(std::iter::once(("type", kind)));
-    !matches!(T::deserialize(tag), Err(NameProbe::UnknownVariant))
-}
-
-/// The outcome of decoding a lone type tag: unknown, or any other failure.
-#[derive(Debug)]
-enum NameProbe {
-    /// The decoder reported the tag as an unknown variant.
-    UnknownVariant,
-    /// Any other failure, such as a missing member of a named variant.
-    Other,
-}
-
-impl std::fmt::Display for NameProbe {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(match self {
-            Self::UnknownVariant => "unknown variant",
-            Self::Other => "other failure",
-        })
-    }
-}
-
-impl std::error::Error for NameProbe {}
-
-impl de::Error for NameProbe {
-    fn custom<T: std::fmt::Display>(_message: T) -> Self {
-        Self::Other
-    }
-
-    fn unknown_variant(_variant: &str, _expected: &'static [&'static str]) -> Self {
-        Self::UnknownVariant
     }
 }

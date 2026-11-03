@@ -15,6 +15,7 @@ use crate::providers::http::{
     send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
     ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
@@ -290,7 +291,7 @@ fn simple<E: Producer>(
             .map(Cow::Borrowed),
     )
     .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
-    let common = build_base_options_for(&model, options.as_ref(), Some(&key));
+    let common = build_base_options_for(&model, &context, options.as_ref(), Some(&key));
     let reasoning_effort = options
         .as_ref()
         .and_then(|o| o.reasoning)
@@ -322,6 +323,8 @@ struct Payload<'a> {
     /// Supplied session key, independent of cache retention.
     #[serde(skip_serializing_if = "Option::is_none")]
     prompt_cache_key: Option<&'a str>,
+    /// Asks the service not to keep the response.
+    store: bool,
     /// Nonzero, non-NaN output limit.
     #[serde(skip_serializing_if = "Option::is_none")]
     max_output_tokens: Option<f64>,
@@ -364,7 +367,8 @@ fn build_params<E: ProviderExecution>(
             None,
         )?,
         stream: true,
-        prompt_cache_key: options.common.session_id.as_deref(),
+        prompt_cache_key: options.common.session_id.as_deref().map(prompt_cache_key),
+        store: false,
         max_output_tokens: options
             .common
             .max_tokens

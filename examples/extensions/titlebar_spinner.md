@@ -19,6 +19,7 @@ the host's event-bus reporter.
 ## Controlled runs
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- titlebar_spinner_
 ```

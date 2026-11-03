@@ -1,18 +1,13 @@
 //! Public helper launch semantics.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::child_programs::{self, async_command};
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
+use maestro_test_process::child::harness;
 use tokio::process::Command;
 
 #[test]
 fn sync_input_roundtrips_bytes_and_closes_the_pipe() {
-    let script = r"
-import os, sys
-null = os.fstat(0).st_rdev == os.stat(os.devnull).st_rdev
-os.write(1, (b'null:' if null else b'pipe:') + sys.stdin.buffer.read())
-os.write(2, b'diag\x00\xff')
-sys.exit(int(sys.argv[1]))
-";
     for input in [None, Some(&b""[..]), Some(&b"\0\xff\r\n\xe2\x82\xac"[..])] {
         let mut expected = if input.is_some() {
             b"pipe:".to_vec()
@@ -28,8 +23,10 @@ sys.exit(int(sys.argv[1]))
             (OutputMode::Discard, OutputMode::Capture, 0),
             (OutputMode::Discard, OutputMode::Capture, 7),
         ] {
-            let mut command = Command::new("python3");
-            command.args(["-c", script, &code.to_string()]);
+            let mut command = async_command(
+                child_programs::echo_input,
+                &[("CHILD_EXIT", &code.to_string())],
+            );
             let output = spawn_sync(
                 &mut command,
                 SpawnSyncOptions::Capture {
@@ -44,9 +41,9 @@ sys.exit(int(sys.argv[1]))
             assert_eq!(
                 output.stdout,
                 if stdout == OutputMode::Capture {
-                    &expected[..]
+                    harness(&expected)
                 } else {
-                    b""
+                    Vec::new()
                 }
             );
             assert_eq!(
@@ -64,8 +61,7 @@ sys.exit(int(sys.argv[1]))
 
 #[test]
 fn sync_input_and_output_progress_concurrently() {
-    let mut command = Command::new("python3");
-    command.args(["-c", "import os,sys; os.write(1,b'y'*262144); data=sys.stdin.buffer.read(); os.write(1,data[:2]); os.write(2,str(len(data)).encode())"]);
+    let mut command = async_command(child_programs::concurrent_io, &[]);
     let input = vec![b'x'; 262_144];
     let output = spawn_sync(
         &mut command,
@@ -80,21 +76,16 @@ fn sync_input_and_output_progress_concurrently() {
     .unwrap();
     let mut expected = vec![b'y'; 262_144];
     expected.extend_from_slice(b"xx");
-    assert_eq!(output.stdout, expected);
+    assert_eq!(output.stdout, harness(&expected));
     assert_eq!(output.stderr, b"262144");
     assert!(output.status.success());
 }
 
 /// A child control socket, also used as a completion witness.
-fn controlled(script: &str) -> (Command, std::net::TcpListener) {
+fn controlled(program: impl Fn()) -> (Command, std::net::TcpListener) {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let mut command = Command::new("python3");
-    command.args([
-        "-c",
-        script,
-        &listener.local_addr().unwrap().port().to_string(),
-    ]);
-    (command, listener)
+    let port = listener.local_addr().unwrap().port().to_string();
+    (async_command(program, &[("CHILD_PORT", &port)]), listener)
 }
 
 /// Receive a ready child's pid before releasing it.
@@ -117,30 +108,10 @@ fn reaped(pid: rustix::process::Pid) {
     );
 }
 
-/// A ready child waits for release, consumes stdin to EOF, and reports its bytes.
-const CONSUMER: &str = r"
-import os, socket, sys
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-s.sendall(str(os.getpid()).encode() + b'\n')
-assert s.recv(1) == b'!'
-data = sys.stdin.buffer.read()
-s.sendall(data)
-s.close()
-";
-
 #[test]
 fn sync_input_error_waits_for_child_completion() {
     use std::io::{Read, Write};
-    let script = r"
-import os, socket, sys
-os.close(0)
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-s.sendall(str(os.getpid()).encode() + b'\n')
-assert s.recv(1) == b'!'
-s.sendall(b'effect')
-s.close()
-";
-    let (mut command, listener) = controlled(script);
+    let (mut command, listener) = controlled(child_programs::closed_input_effect);
     let worker = std::thread::spawn(move || {
         let input = vec![b'x'; 4_194_304];
         spawn_sync(
@@ -169,7 +140,7 @@ s.close()
 #[test]
 fn detached_launch_returns_before_input_consumption_and_reaps() {
     use std::io::{Read, Write};
-    let (command, listener) = controlled(CONSUMER);
+    let (command, listener) = controlled(child_programs::socket_consumer);
     let input = vec![b'x'; 262_144];
     let worker = maestro_process::spawn(command, Some(input.clone())).unwrap();
     let (mut socket, pid) = ready(&listener);
@@ -182,15 +153,25 @@ fn detached_launch_returns_before_input_consumption_and_reaps() {
 }
 
 #[test]
+fn detached_launch_runs_in_its_own_session_outside_the_callers_process_group() {
+    use std::io::{Read, Write};
+    let (command, listener) = controlled(child_programs::process_groups);
+    let worker = maestro_process::spawn(command, None).unwrap();
+    let (mut socket, pid) = ready(&listener);
+    socket.write_all(b"!").unwrap();
+    let mut groups = String::new();
+    socket.read_to_string(&mut groups).unwrap();
+    worker.join().unwrap();
+    let (own, parent) = groups.split_once(' ').unwrap();
+    let (own, parent): (i32, i32) = (own.parse().unwrap(), parent.parse().unwrap());
+    assert_eq!(own, pid.as_raw_nonzero().get());
+    assert_ne!(own, parent);
+    reaped(pid);
+}
+
+#[test]
 fn detached_input_closure_does_not_prevent_reaping() {
-    let script = r"
-import os, socket, sys
-os.close(0)
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-s.sendall(str(os.getpid()).encode() + b'\n')
-s.close()
-";
-    let (command, listener) = controlled(script);
+    let (command, listener) = controlled(child_programs::closed_input_report);
     let worker = maestro_process::spawn(command, Some(vec![b'x'; 4_194_304])).unwrap();
     let (_, pid) = ready(&listener);
     worker.join().unwrap();
@@ -211,7 +192,7 @@ fn detached_spawn_errors_return_without_a_handle() {
         assert_eq!(error.kind(), kind);
         assert_eq!(error.raw_os_error(), native.raw_os_error());
     }
-    let mut command = Command::new("python3");
+    let mut command = Command::new(std::env::current_exe().unwrap());
     command.current_dir(missing);
     assert_eq!(
         maestro_process::spawn(command, None).unwrap_err().kind(),
@@ -222,7 +203,7 @@ fn detached_spawn_errors_return_without_a_handle() {
 #[test]
 fn detached_worker_survives_a_dropped_handle() {
     use std::io::{Read, Write};
-    let (command, listener) = controlled(CONSUMER);
+    let (command, listener) = controlled(child_programs::socket_consumer);
     let input = b"dropped\0\xff".to_vec();
     let worker = maestro_process::spawn(command, Some(input.clone())).unwrap();
     let (mut socket, _) = ready(&listener);
@@ -281,27 +262,12 @@ fn inherited_child() {
     use std::os::unix::process::ExitStatusExt;
     let code = std::env::var("MAESTRO_EXIT").unwrap();
     let directory = std::env::temp_dir().canonicalize().unwrap();
-    let mut command = Command::new("python3");
+    let mut command = async_command(
+        child_programs::inherited_launch_target,
+        &[("CHILD_EXIT", &code)],
+    );
     command
-        .args([
-            "-c",
-            r"
-import os, signal, sys
-assert sys.stdin.buffer.read() == b'inherited-input'
-assert sys.argv[2:] == ['literal $HOME;|', '', 'repeat', 'repeat']
-assert os.environ['MAESTRO_OPERAND'] == 'chosen'
-assert os.getcwd() == os.path.realpath(os.environ['MAESTRO_DIRECTORY'])
-os.write(1, b'inherited-out\x00\xff')
-os.write(2, b'inherited-err')
-if sys.argv[1] == 'signal': os.kill(os.getpid(), signal.SIGTERM)
-sys.exit(int(sys.argv[1]))
-",
-            &code,
-            "literal $HOME;|",
-            "",
-            "repeat",
-            "repeat",
-        ])
+        .args(["literal $HOME;|", "", "repeat", "repeat"])
         .current_dir(&directory)
         .env("MAESTRO_DIRECTORY", &directory)
         .env("MAESTRO_OPERAND", "chosen");
@@ -325,25 +291,7 @@ sys.exit(int(sys.argv[1]))
 #[test]
 fn sync_discarded_stdout_does_not_wait_for_a_descendant() {
     use std::io::{Read, Write};
-    let script = r"
-import os, socket, sys
-assert sys.stdin.buffer.read() == b'copied'
-pid = os.getpid()
-gone, alive = os.pipe()
-if os.fork():
-    os.close(gone)
-    sys.exit(7)
-os.close(alive); os.read(gone, 1); os.close(gone)
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-s.sendall(str(pid).encode() + b'\n')
-assert s.recv(1) == b'?'
-null = os.fstat(1).st_rdev == os.stat(os.devnull).st_rdev
-s.sendall(b'N' if null else b'P')
-assert s.recv(1) == b'!'
-os.write(1, b'descendant output')
-s.close(); os._exit(0)
-";
-    let (mut command, listener) = controlled(script);
+    let (mut command, listener) = controlled(child_programs::discarded_output_parent);
     let worker = std::thread::spawn(move || {
         spawn_sync(
             &mut command,

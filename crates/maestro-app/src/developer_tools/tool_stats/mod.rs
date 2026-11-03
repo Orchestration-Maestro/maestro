@@ -5,6 +5,8 @@ mod template;
 use super::jsonl::kept_lines;
 use super::{resolve_path, session_base};
 use indexmap::IndexMap;
+use maestro_models::{tokens_for_chars, utf16_units};
+use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -70,7 +72,13 @@ pub fn main(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> io::Result<ExitCode> {
-    main_with_opener(args, now, &platform_opener, stdout, stderr)
+    main_with_opener(
+        args,
+        now,
+        &|path| crate::utils::platform_opener(path, std::env::consts::OS),
+        stdout,
+        stderr,
+    )
 }
 
 /// Write the report and hand its path to `opener`.
@@ -346,10 +354,11 @@ fn compact(value: &Value) -> String {
     maestro_json::compact_json(value).unwrap_or_default()
 }
 
-/// The report's token estimate of one text: a quarter of its UTF-16 units, rounded up.
+/// The report's token estimate of one text, counted as the models crate counts a conversation.
 fn estimate_tokens(text: &str) -> u64 {
-    let units = text.encode_utf16().count() as u64;
-    units.div_ceil(4)
+    tokens_for_chars(utf16_units(text))
+        .to_u64()
+        .unwrap_or(u64::MAX)
 }
 
 /// The best-effort command key of one bash command.
@@ -429,19 +438,4 @@ fn bucket_labels() -> Vec<String> {
             None => format!("{low}+"),
         })
         .collect()
-}
-
-/// Open the written report with the platform's own viewer.
-fn platform_opener(path: &str) {
-    let (program, arguments) = match std::env::consts::OS {
-        "macos" => ("open", vec![path.to_owned()]),
-        "windows" => (
-            "cmd",
-            vec!["/c".to_owned(), "start".to_owned(), path.to_owned()],
-        ),
-        _ => ("xdg-open", vec![path.to_owned()]),
-    };
-    let mut command = maestro_process::command(program);
-    command.args(arguments);
-    drop(crate::spawn(command, None));
 }

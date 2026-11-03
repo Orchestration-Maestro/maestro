@@ -1,6 +1,6 @@
 //! Input transforms: text and image chaining, explicit intent, handled input and failures.
 use super::Harness;
-use super::cases::{answer, edit, encoded, fail, labels, outcome, trace, typed};
+use super::cases::{answer, edit, encoded, fail, labels, observe, outcome, trace, typed};
 use maestro_extensions::{InputSource, Presence};
 use maestro_models::ImageContent;
 use serde_json::{Value, json};
@@ -37,7 +37,7 @@ pub(super) async fn input(
             let mut images = Presence::Present(Vec::new());
             let result = run
                 .runner
-                .emit_input("original", &mut images, InputSource::Extension)
+                .emit_input("original", &mut images, InputSource::Extension, None)
                 .await
                 .unwrap();
             (
@@ -54,7 +54,7 @@ pub(super) async fn input(
             let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
             let result = run
                 .runner
-                .emit_input("original", &mut images, InputSource::Rpc)
+                .emit_input("original", &mut images, InputSource::Rpc, None)
                 .await
                 .unwrap();
             let observed =
@@ -68,13 +68,42 @@ pub(super) async fn input(
             let mut images = Presence::Missing;
             let result = run
                 .runner
-                .emit_input("nonempty", &mut images, InputSource::Interactive)
+                .emit_input("nonempty", &mut images, InputSource::Interactive, None)
                 .await
                 .unwrap();
             (encoded(&result), recorded)
         }
         _ => chained(harness, index, change, recorded).await,
     }
+}
+
+/// Each handler reads the text the previous one returned, the caller's images and the source.
+pub(super) async fn reading(harness: &Harness) {
+    let handler = |suffix: &str| vec![json!([observe("input"), { "suffix": suffix }])];
+    let run = harness
+        .prepare("input", &[handler("[1]"), handler("[2]")])
+        .await;
+    for source in [
+        InputSource::Interactive,
+        InputSource::Rpc,
+        InputSource::Extension,
+    ] {
+        let mut images: Presence<Vec<ImageContent>> = typed(json!([image("orig")]));
+        let result = run
+            .runner
+            .emit_input("X", &mut images, source, None)
+            .await
+            .unwrap();
+        assert_eq!(
+            encoded(&result),
+            transform("X[1][2]", Some(json!([image("orig")])))
+        );
+        assert_eq!(encoded(&images), json!([image("orig")]));
+        let seen =
+            |text: &str| json!({ "text": text, "images": [image("orig")], "source": source });
+        assert_eq!(labels(harness), [seen("X"), seen("X[1]")]);
+    }
+    assert_eq!(run.errors(), json!([]));
 }
 
 /// The first handler's ending for one recorded edit.
@@ -107,7 +136,7 @@ async fn chained(
     let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
     let result = run
         .runner
-        .emit_input("original", &mut images, InputSource::Interactive)
+        .emit_input("original", &mut images, InputSource::Interactive, None)
         .await
         .unwrap();
     let observed = json!({ "result": encoded(&result), "trace": labels(harness), "originalImages": encoded(&images) });
@@ -146,7 +175,7 @@ fn component_input_chains_text_preserves_images_and_forwards_sources() {
             let mut images: Presence<Vec<ImageContent>> = typed(json!([image("old")]));
             let result = run
                 .runner
-                .emit_input("X", &mut images, source)
+                .emit_input("X", &mut images, source, None)
                 .await
                 .unwrap();
             assert_eq!(

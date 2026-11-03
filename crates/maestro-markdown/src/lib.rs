@@ -20,3 +20,7 @@ pub use types::*;
 
 #[cfg(test)]
 mod tests;
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

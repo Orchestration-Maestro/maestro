@@ -280,13 +280,15 @@ A successful list operation proves catalog publication, not a successful request
 From a Maestro checkout, run the existing offline component checks:
 
 ```sh
+~/.local/bin/capped just prepare-tests
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(provider_catalog::)'
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(oauth::)'
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(model_streams::)'
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(authored_streams::)'
 ```
 
-Nextest runs the repository's component setup script before these tests; direct
+Nextest runs the repository's component setup before these tests, which
+`just prepare-tests` makes ready; direct
 `cargo test` does not supply those fixture paths. The checks compile the real
 guest and exercise the native host. They do not
 validate your server implementation. Before distributing a provider, adapt the

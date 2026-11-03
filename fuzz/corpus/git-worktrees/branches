@@ -1,0 +1,7 @@
+worktree /repo/main
+HEAD abc
+branch refs/heads/main
+
+worktree /repo/two words
+detached
+prunable stale
