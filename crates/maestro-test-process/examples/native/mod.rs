@@ -18,6 +18,8 @@ mod observe;
 mod rpc;
 #[cfg(unix)]
 mod search;
+mod tooling_command;
+mod tooling_wrapper;
 
 /// A fully parsed fixture request, before any observable effect.
 enum Request {
@@ -47,6 +49,10 @@ enum Request {
     /// Produce controlled search bytes without interpreting native operands.
     #[cfg(unix)]
     Search(search::Record, Vec<OsString>),
+    /// Stand in for a repository command a recipe resolves by name.
+    ToolingCommand(tooling_command::Record, Vec<OsString>),
+    /// Stand in for a compiler wrapper a fixture build runs.
+    ToolingWrapper(tooling_wrapper::Record, Vec<OsString>),
 }
 
 impl Request {
@@ -103,6 +109,14 @@ impl Request {
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
+            Some("tooling-command") => Ok(Self::ToolingCommand(
+                tooling_command::Record::parse(&text)?,
+                operands,
+            )),
+            Some("tooling-wrapper") => Ok(Self::ToolingWrapper(
+                tooling_wrapper::Record::parse(&text)?,
+                operands,
+            )),
             _ => Err(io::Error::other("unknown native fixture record")),
         }
     }
@@ -126,6 +140,8 @@ pub(super) fn run() -> io::Result<()> {
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
+        Request::ToolingCommand(record, operands) => tooling_command::run(&record, &operands),
+        Request::ToolingWrapper(record, operands) => tooling_wrapper::run(&record, &operands),
     }
 }
 
