@@ -488,7 +488,7 @@ fn clipboard_write_failure_is_silent() {
 
 /// Reads this process's soft file-size limit, after setting it to `soft` when supplied.
 #[cfg(target_os = "linux")]
-fn file_size_limit(soft: Option<&str>) -> String {
+pub(super) fn file_size_limit(soft: Option<&str>) -> String {
     let mut command = std::process::Command::new("prlimit");
     command.arg(format!("--pid={}", std::process::id()));
     if let Some(soft) = soft {
