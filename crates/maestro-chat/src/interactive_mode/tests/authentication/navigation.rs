@@ -364,16 +364,31 @@ fn api_key_prompt_uses_ecmascript_whitespace_boundaries() {
     );
 }
 
+/// Asserts the store's backing file holds the saved key beside the untouched one.
+fn assert_backing_keys(directory: &Path) {
+    let file = std::fs::read_to_string(directory.join("store0/auth.json")).unwrap();
+    let saved: serde_json::Value = serde_json::from_str(&file).unwrap();
+    assert_eq!(
+        saved,
+        serde_json::json!({
+            "custom-key": { "type": "api_key", "key": "secret" },
+            "other": { "type": "api_key", "key": "kept" },
+        }),
+        "the backing file holds both keys"
+    );
+}
+
 #[test]
 fn api_key_save_restores_editor_before_catalog_completion() {
     isolated(
         "api_key_save_restores_editor_before_catalog_completion",
         async |directory| {
-            let world = started_with(directory, None).await;
+            let world = started_with(directory, Some(document_store(directory, 0, &[]))).await;
             keyed(&world, "custom-key", Some("Custom"), None);
             storage(&world).set(
                 "other",
                 AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+                    env: None,
                     key: "kept".to_owned(),
                 }),
             );
@@ -381,6 +396,7 @@ fn api_key_save_restores_editor_before_catalog_completion() {
             answer(&world, "secret");
             assert_eq!(stored_key(&world, "custom-key").as_deref(), Some("secret"));
             assert_eq!(stored_key(&world, "other").as_deref(), Some("kept"));
+            assert_backing_keys(directory);
             assert!(editor_restored(&world));
             assert!(notes(
                 &world,
@@ -438,9 +454,9 @@ fn api_key_store_failure_remains_a_store_diagnostic() {
             sign_in_to(&world, AuthType::ApiKey, "custom-key");
             answer(&world, "secret");
             assert_eq!(
-                stored_key(&world, "custom-key").as_deref(),
-                Some("secret"),
-                "memory accepts it"
+                stored_key(&world, "custom-key"),
+                None,
+                "the next read discards the key whose write was refused"
             );
             assert_eq!(
                 std::fs::read_to_string(&file).unwrap(),
@@ -479,6 +495,74 @@ fn authentication_lists_use_bounded_linear_traversals() {
                     2,
                     "one row per provider at {scale} models each"
                 );
+            }
+        },
+    );
+}
+
+#[test]
+fn cloudflare_login_collects_account_and_gateway() {
+    isolated(
+        "cloudflare_login_collects_account_and_gateway",
+        async |directory| {
+            for provider in ["cloudflare-workers-ai", "cloudflare-ai-gateway"] {
+                let world = started_with(directory, None).await;
+                sign_in_to(&world, AuthType::ApiKey, provider);
+                answer(&world, "fixture-key");
+                assert!(panel_rows(&world).contains("Enter Cloudflare account ID:"));
+                answer(&world, " account ");
+                if provider == "cloudflare-ai-gateway" {
+                    assert!(panel_rows(&world).contains("Enter Cloudflare AI Gateway ID:"));
+                    answer(&world, " gateway ");
+                }
+                let credential = storage(&world).get(provider).unwrap();
+                let credential = serde_json::to_value(credential).unwrap();
+                assert_eq!(credential["key"], "fixture-key");
+                assert_eq!(credential["env"]["CLOUDFLARE_ACCOUNT_ID"], "account");
+                assert_eq!(
+                    credential["env"]["CLOUDFLARE_GATEWAY_ID"],
+                    if provider == "cloudflare-ai-gateway" {
+                        serde_json::json!("gateway")
+                    } else {
+                        serde_json::Value::Null
+                    }
+                );
+                assert!(editor_restored(&world));
+            }
+        },
+    );
+}
+
+#[test]
+fn cloudflare_unfinished_scope_keeps_previous_credential() {
+    isolated(
+        "cloudflare_unfinished_scope_keeps_previous_credential",
+        async |directory| {
+            for (gateway, input) in [
+                (false, None),
+                (true, None),
+                (false, Some("  ")),
+                (true, Some("  ")),
+            ] {
+                let world = started_with(directory, None).await;
+                let previous: AuthCredential = serde_json::from_value(serde_json::json!({
+                "type":"api_key","key":"previous-key","env":{"CLOUDFLARE_ACCOUNT_ID":"old-account","CLOUDFLARE_GATEWAY_ID":"old-gateway"},
+            })).unwrap();
+                storage(&world).set("cloudflare-ai-gateway", previous.clone());
+                sign_in_to(&world, AuthType::ApiKey, "cloudflare-ai-gateway");
+                answer(&world, "replacement-key");
+                assert!(panel_rows(&world).contains("Enter Cloudflare account ID:"));
+                if gateway {
+                    answer(&world, "new-account");
+                }
+                if let Some(input) = input {
+                    answer(&world, input);
+                } else {
+                    world.terminal.send_input("\x1b");
+                }
+                settle(&world);
+                assert!(editor_restored(&world));
+                assert_eq!(storage(&world).get("cloudflare-ai-gateway"), Some(previous));
             }
         },
     );

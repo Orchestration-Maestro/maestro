@@ -306,8 +306,7 @@
         "origin": [
           {
             "sni": "localhost",
-            "protocol": "HTTP/1.1",
-            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+            "protocol": "h2"
           }
         ],
         "proxy": [],
@@ -316,23 +315,14 @@
       "returned": {
         "counts": {
           "payload": 1,
-          "response": 1
+          "response": 0
         },
         "events": [
-          "start",
-          "text_start",
-          "text_delta",
-          "text_end",
-          "done"
+          "error"
         ],
         "result": {
-          "content": [
-            {
-              "type": "text",
-              "text": "controlled answer"
-            }
-          ],
-          "stopReason": "stop"
+          "content": [],
+          "stopReason": "error"
         }
       }
     },
@@ -349,8 +339,7 @@
         "origin": [
           {
             "sni": "localhost",
-            "protocol": "HTTP/1.1",
-            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+            "protocol": "h2"
           }
         ],
         "proxy": [],
@@ -359,23 +348,14 @@
       "returned": {
         "counts": {
           "payload": 1,
-          "response": 1
+          "response": 0
         },
         "events": [
-          "start",
-          "text_start",
-          "text_delta",
-          "text_end",
-          "done"
+          "error"
         ],
         "result": {
-          "content": [
-            {
-              "type": "text",
-              "text": "controlled answer"
-            }
-          ],
-          "stopReason": "stop"
+          "content": [],
+          "stopReason": "error"
         }
       }
     }

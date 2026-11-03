@@ -256,12 +256,6 @@
         "value": {
           "messages": [
             {
-              "role": "branchSummary",
-              "summary": "",
-              "fromId": "abandoned",
-              "timestamp": 1710000000000
-            },
-            {
               "role": "compactionSummary",
               "summary": "",
               "tokensBefore": 12,
@@ -3069,7 +3063,7 @@
       "calls": []
     },
     {
-      "id": "user-image-zero",
+      "id": "user-image-weight",
       "test": "branch_budget_uses_shared_utf16_estimate",
       "operation": "prepare",
       "args": {
@@ -3114,7 +3108,7 @@
             "written": [],
             "edited": []
           },
-          "totalTokens": 0
+          "totalTokens": 1200
         }
       },
       "calls": []
@@ -3322,7 +3316,16 @@
         ]
       },
       "expected": {
-        "kind": "error"
+        "kind": "value",
+        "value": {
+          "messages": [],
+          "fileOps": {
+            "read": [],
+            "written": [],
+            "edited": []
+          },
+          "totalTokens": 0
+        }
       },
       "calls": []
     },
@@ -3343,7 +3346,16 @@
         ]
       },
       "expected": {
-        "kind": "error"
+        "kind": "value",
+        "value": {
+          "messages": [],
+          "fileOps": {
+            "read": [],
+            "written": [],
+            "edited": []
+          },
+          "totalTokens": 0
+        }
       },
       "calls": []
     },

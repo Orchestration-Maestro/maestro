@@ -83,6 +83,23 @@ fn replacement_handles_relative_and_extensionless_paths() {
 
 #[cfg(unix)]
 #[test]
+fn replacement_refuses_a_read_only_target_and_leaves_it_whole() {
+    let dir = Directory::new();
+    let target = dir.path().join("target");
+    fs::write(&target, b"old").unwrap();
+    let Some(_restored) = maestro_test_directory::deny(&target, 0o400).unwrap() else {
+        return;
+    };
+
+    let error = replace(&target, b"new", Replace::default()).unwrap_err();
+
+    assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(fs::read(&target).unwrap(), b"old");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
 fn replacement_preserves_long_and_dangling_chains() {
     for (count, existing) in [
         (1, true),
@@ -235,4 +252,120 @@ fn replacement_accepts_a_full_length_target_leaf() {
     replace(&target, b"created", Replace::default()).unwrap();
     assert_eq!(fs::read(target).unwrap(), b"created");
     assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn rewrite_preserves_hard_links_and_access_mode() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let path = root.path().join("session");
+    let alias = root.path().join("alias");
+    fs::write(&path, b"before").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
+    fs::hard_link(&path, &alias).unwrap();
+    let inode = fs::metadata(&path).unwrap().ino();
+    replace(&path, b"after", Replace::default()).unwrap();
+    assert_eq!(fs::read(&alias).unwrap(), b"after");
+    assert_eq!(fs::metadata(&path).unwrap().ino(), inode);
+    assert_eq!(
+        fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o640
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn rewrite_refuses_an_existing_read_only_target() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let path = root.path().join("session");
+    fs::write(&path, b"before").unwrap();
+    let Some(_restore) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+        return;
+    };
+    assert_eq!(
+        replace(&path, b"after", Replace::default())
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::PermissionDenied
+    );
+    assert_eq!(fs::read(&path).unwrap(), b"before");
+}
+
+#[test]
+fn requested_publication_accepts_full_length_native_leaves() {
+    #[cfg(windows)]
+    let unicode = "𝄞".repeat(127) + "x";
+    #[cfg(not(windows))]
+    let unicode = "é".repeat(127) + "x";
+    for leaf in ["x".repeat(255), unicode] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join(leaf);
+        fs::write(&target, b"native control").unwrap();
+        for bytes in [b"rewritten".as_slice(), b"\0\xffcreated"] {
+            replace(
+                &target,
+                bytes,
+                Replace {
+                    through_symlinks: true,
+                    creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+                },
+            )
+            .unwrap();
+            assert_eq!(fs::read(&target).unwrap(), bytes);
+            assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
+            fs::remove_file(&target).unwrap();
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn requested_mode_follows_existing_and_dangling_final_links() {
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    for existing in [false, true] {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let target = scratch.path().join("target");
+        let link = scratch.path().join("link");
+        if existing {
+            fs::write(&target, b"previous").unwrap();
+            fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+        }
+        symlink("target", &link).unwrap();
+        {
+            replace(
+                &link,
+                b"followed",
+                Replace {
+                    through_symlinks: true,
+                    creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+                },
+            )
+            .unwrap();
+            assert_eq!(fs::read(&target).unwrap(), b"followed");
+            assert_eq!(fs::read_link(&link).unwrap(), PathBuf::from("target"));
+            assert_eq!(
+                fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+                if existing { 0o640 } else { 0o600 }
+            );
+        }
+        replace(
+            &link,
+            b"entry",
+            Replace {
+                through_symlinks: false,
+                creation_mode: Some(maestro_lock::CreationMode::AtCreation(0o600)),
+            },
+        )
+        .unwrap();
+        assert!(
+            !fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(fs::read(&link).unwrap(), b"entry");
+        assert_eq!(fs::read(target).unwrap(), b"followed");
+        assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 2);
+    }
 }

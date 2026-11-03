@@ -48,21 +48,35 @@ assert_eq!(text.generated_text.as_deref(), Some("你好"));
 ## Key identifiers
 
 A key identifier names one key and the modifiers held with it: `ctrl+c`, `shift+tab`,
-`alt+enter`, `escape`, `f5`. The modifiers are `shift`, `ctrl`, `alt` and `super`, joined
-by `+` before the key in any order and in any letter case. The keys are:
+`alt+enter`, `escape`, `f5`. The modifiers are `shift`, `ctrl`, `alt`, `super` and `hyper`,
+joined by `+` in any position and in any letter case. `control`, `option` and
+`meta` are aliases of `ctrl` and `alt`, and `cmd` and `command` are aliases of `super`.
+Whitespace around a word is ignored. The keys are:
 
-- `escape` (also `esc`), `enter` (also `return`), `tab`, `space`, `backspace`;
+- `escape` (also `esc`), `enter` (also `return`), `tab`, `space`, `backspace` (also `bs`);
 - `delete`, `insert`, `clear`, `home`, `end`, `pageUp`, `pageDown`;
-- `up`, `down`, `left`, `right`, and `f1` to `f12`;
-- the letters `a` to `z` and the digits `0` to `9`;
-- these symbols: ``` ` - = [ ] \ ; ' , . / ! @ # $ % ^ & * ( ) _ + | ~ { } : < > ? ```.
+- `up`, `down`, `left`, `right`, and `f1` to `f12`; `f0` and `f13` to `f255` parse in both
+  frontends, while no terminal report matches them in chat;
+- the letters `a` to `z`, the digits `0` to `9` and any other single character;
+- these symbols: ``` ` - = [ ] \ ; ' , . / ! @ # $ % ^ & * ( ) _ + | ~ { } : < > ? ```,
+  also spelled `minus`, `comma`, `period`, `slash`, `backslash`, `quote`,
+  `double_quote` (or `double-quote`), `semicolon`, `colon`, `percent`, `ampersand`,
+  `backtick` and `plus`.
 
 The identifier `+` and any identifier ending in `++` name the plus key, so `+` and
 `ctrl++` name plus without and with ctrl. An identifier ending in a single `+` after a
-word, such as `ctrl+`, has no key and never matches. Words before the key that are not
-modifiers are ignored. Letters are lowercased as Unicode defines it, so a capital that
-lowercases to an ASCII letter, such as the Kelvin sign U+212A for `k`, names that letter.
-Any other text names no key and never matches.
+word, such as `ctrl+`, has no key and never matches. A word that is neither a modifier name
+nor the one key, as in `ctlr+k` or `ctrl+a+b`, makes the identifier name nothing: it never
+matches, and it never binds the plain key. `hyper+k` matches only a report that holds the
+hyper modifier. A key of one character is that character; an ASCII capital names its
+lowercase letter and is flagged as a capital. Chat reads it as that letter, so `K`
+matches a plain `k` report, while the workspace adds shift to a capital. A capital of
+another script stays as typed in the workspace, and chat matches the letter it lowercases
+to, such as the Kelvin sign U+212A for `k`. Any other text names no key and never matches.
+
+`maestro_tui::keys::Identifier::parse` is this grammar. The workspace key combinations
+(`maestro_daemon::key_combo::parse_key_combo`) project its result onto the protocol's key
+codes and modifier bits, so both frontends accept and reject the same spellings.
 
 `KeyId` is a `String`; `Key` spells the supported identifiers as constants
 (`Key::ESCAPE`, `Key::PAGE_UP`, `Key::SLASH`) and builds modified ones in the order

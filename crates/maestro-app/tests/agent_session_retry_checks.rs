@@ -76,6 +76,32 @@ fn provider_network_error_recovers() {
     });
 }
 
+/// A prompt whose first answer fails with `failure` is retried once and then recovers.
+fn recovers_after(failure: &'static str) {
+    on_task_set(|_| async {
+        let h = retrying(
+            vec![Scripted::failure(failure), Scripted::text("Recovered")],
+            json!({"enabled": true, "maxRetries": 3, "baseDelayMs": 1}),
+        )
+        .await;
+        let events = delivered_events(&h.session);
+        start_prompt(&h, "hi").await.unwrap().unwrap();
+        assert_eq!(retry_order(&events.borrow()), ["start:1", "end:true"]);
+        assert_eq!(h.requests.0.borrow().len(), 2);
+        assert_eq!(get_assistant_texts(&h), ["Recovered"]);
+    });
+}
+
+#[test]
+fn anthropic_stream_ended_before_message_stop_recovers() {
+    recovers_after("Anthropic stream ended before message_stop");
+}
+
+#[test]
+fn upstream_request_buffer_limit_recovers() {
+    recovers_after("Error: exceeded request buffer limit while retrying upstream");
+}
+
 #[test]
 fn recovered_text_and_tool_turn_settle_before_follow_up() {
     on_task_set(|_| async {

@@ -18,11 +18,27 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Temporary browser-export manifest preparation and lock checks.
+mod browser_export_setup;
+/// The locked packages and the dependency graph between them.
+mod cargo_lock;
+/// Offline generation of locale date-time tables.
+mod date_time_data;
+/// The source files a dependency file names.
+mod dep_info;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
 /// Derived extension documentation table.
 mod example_index;
+/// Path dependencies between workspace members.
+mod member_graph;
+/// Setup commands that nextest runs before the tests that need them.
+mod nextest_setup;
+/// Per-test admission for reserved callback ports.
+mod nextest_wrapper;
+/// Reusable test-setup staging and validation.
+mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
@@ -74,19 +90,20 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
-        Some("example-index") => example_index::run(args, checkout),
+        Some("example-index") => example_index::run(args, cargo, checkout),
+        Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
+        Some("browser-export-setup") => browser_export_setup::run(args, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
-                match std::fs::remove_dir_all(path) {
-                    Ok(()) => {}
-                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                    Err(error) => return Err(error),
-                }
+                test_setup::remove_directory(&path)?;
             }
             Ok(ExitCode::SUCCESS)
         }
+        Some("nextest-setup") => nextest_setup::run(args),
+        Some("nextest-wrapper") => nextest_wrapper::run(args),
+        Some("prepare-test-setup") => test_setup::run(args, cargo, checkout),
         Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {
@@ -162,11 +179,10 @@ fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> 
         .into_std_path_buf())
 }
 
-/// Wire formatting, the shared check recipe and the delivered browser smoke
-/// command into the hook.
+/// Wire crate-scoped formatting, conventions and the delivered browser smoke command into the hook.
 fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut format = Command::new(cargo);
-    format.current_dir(checkout).args(["fmt", "--all"]);
+    format.current_dir(checkout).arg("fmt");
     let mut conventions = Command::new(cargo);
     conventions
         .current_dir(checkout)

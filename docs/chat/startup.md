@@ -63,7 +63,9 @@ the mode still marks the notice handled.
 ## Update cards
 
 `show_new_version_notification` appends a warning-bordered card with the supplied
-version, the `maestro update` command and a link to the release history.
+version, the `maestro update` command and a changelog row. Where the terminal
+supports links, the row is a link labelled `open changelog`; elsewhere it prints
+the changelog address. The card reads link support once, when it is created.
 `show_package_update_notification` appends the same framing around the supplied
 package names, preserving their order and duplicates. Both methods accept empty
 values and request a frame. Borders follow later theme changes; the card text

@@ -429,7 +429,7 @@ pub fn stabilize_agent_detection(
 }
 
 #[cfg(test)]
-mod tests;
+pub(in crate::terminal) mod tests;
 
 /// Supplied detection facts for one observed process generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -485,6 +485,7 @@ pub struct ManagedAgentLaunch {
 }
 
 /// Supplied session identity, freshness and lifecycle-start provenance.
+#[derive(Debug)]
 pub struct SessionStartReport {
     /// Integration provenance admitted into the canonical source domain.
     pub source: String,

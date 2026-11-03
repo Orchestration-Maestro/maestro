@@ -118,9 +118,10 @@ impl ReplacedSessionContextPort for Port {
 }
 impl Drop for Port {
     fn drop(&mut self) {
-        self.log
-            .append_entry("constructor-drop", Some(serde_json::json!("owner")))
-            .unwrap();
+        // A failed write leaves its entry missing, which the native test reports.
+        let _ = self
+            .log
+            .append_entry("constructor-drop", Some(serde_json::json!("owner")));
     }
 }
 /// Construct the facade from explicit ports rather than the adapter's internal constructor.

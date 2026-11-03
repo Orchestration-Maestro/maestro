@@ -288,3 +288,25 @@ fn failed_replacement_keeps_the_torn_down_session_without_rollback() {
         runtime.dispose().await.unwrap();
     });
 }
+
+#[test]
+fn new_session_after_an_ephemeral_session_stays_ephemeral() {
+    on_task_set(|_| async {
+        let (_h, runtime, _) = runtime_with(
+            "ephemeral-new",
+            RuntimeOptions {
+                persisted: false,
+                ..RuntimeOptions::default()
+            },
+        )
+        .await;
+        runtime
+            .new_session(maestro_extensions::types::NewSessionCommandOptions::default())
+            .await
+            .unwrap();
+        let session = runtime.session();
+        assert!(!session.session_manager().borrow().is_persisted());
+        assert_eq!(session.session_file(), None);
+        runtime.dispose().await.unwrap();
+    });
+}

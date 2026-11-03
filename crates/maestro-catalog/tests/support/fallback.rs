@@ -90,7 +90,7 @@ pub fn error_value(error: &CatalogError) -> Value {
     let CatalogError::OAuth(error) = error else {
         panic!("expected original account failure")
     };
-    crate::credential_fallback::error_value(error)
+    crate::credential_fallback::error_value(error).unwrap()
 }
 /// Whole result plus the callback transcript.
 #[cfg(not(target_arch = "wasm32"))]

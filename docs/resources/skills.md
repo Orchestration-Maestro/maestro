@@ -67,12 +67,12 @@ whose entries are open paths while the working directory cannot be read
 ends with the skills gathered before the failure, and `load_skills` goes on with
 its other roots. A
 user skills root that needs the unreadable directory makes the classification of
-an existing explicit path that path's warning. `~`, `~/suffix` and `~suffix`
-expand against supplied `home`, including repeated slashes after the tilde, and an
+an existing explicit path that path's warning. `~` and `~/suffix`
+expand against supplied `home` as [settings](../settings.md#home-directory-in-paths)
+describes, and `~suffix` stays a path below `cwd`. An
 expansion that is not absolute resolves against `cwd`. A bare `~` with an empty
-`home` leaves the expansion empty, which names the working directory; a suffixed
-form keeps the text after the tilde, so an empty `home` makes `~/` name the
-working directory and `~child` name `child` below it, and a relative `home`
+`home` leaves the expansion empty, which names the working directory; an empty
+`home` makes `~/` name the working directory too, and a relative `home`
 resolves below `cwd`. Joined
 user configuration and scanned child paths concatenate their parts before lexical
 normalization; later rooted parts do not replace the earlier root. Project
@@ -110,9 +110,9 @@ See [frontmatter](frontmatter.md) for the shared escape-decoding rule.
 
 Description validation precedes name validation. Missing or blank descriptions
 omit the skill after collecting name warnings. Other validation warnings retain
-it: overlong descriptions, parent-name mismatch, overlong names, invalid name
-characters, edge hyphens and consecutive hyphens. Lengths count complete Unicode
-characters. Missing, null or empty names use the containing directory basename,
+it: overlong descriptions, overlong names, invalid name characters, edge hyphens
+and consecutive hyphens. A name that differs from its directory is accepted
+without a warning. Lengths count complete Unicode characters. Missing, null or empty names use the containing directory basename,
 including the literal names `.` and `..` when they end the authored parent
 directory. The base directory retains that authored spelling.
 Non-null nonstring names/descriptions produce one path-bearing typed failure.

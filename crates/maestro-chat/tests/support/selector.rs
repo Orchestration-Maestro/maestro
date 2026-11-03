@@ -1,4 +1,5 @@
 //! Shared strict selector queries and complete output records.
+use crate::platform_keys::for_this_platform;
 use maestro_app::ThinkingLevel;
 use maestro_tui::Component;
 use serde::{Deserialize, de::DeserializeOwned};
@@ -13,6 +14,8 @@ pub struct Case {
     input: Value,
     /// Output decoded by the witness.
     expected: Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<Value>,
 }
 /// Load strictly decoded corpus rows.
 pub fn load(source: &str) -> Vec<Case> {
@@ -44,7 +47,8 @@ pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|row| {
             (
                 serde_json::from_value(row.input).unwrap(),
-                serde_json::from_value(row.expected).unwrap(),
+                serde_json::from_value(for_this_platform(row.expected, row.expected_macos))
+                    .unwrap(),
             )
         })
         .collect();

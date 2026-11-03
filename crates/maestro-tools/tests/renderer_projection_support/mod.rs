@@ -84,7 +84,8 @@ pub fn render(input: &Input, env: &Env) -> Vec<String> {
     let args = input.args.as_ref().unwrap_or(&Value::Null);
     let mut row = context::<ToolRendererState>(
         args,
-        &Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[],"showImages":false})),
+        &Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[],"showImages":false}))
+            .unwrap(),
         env,
         None,
     );
@@ -183,4 +184,5 @@ pub fn environment() -> Env {
         Rc::new(crate::edit_render_support::theme(&colors, &json!({}))),
         Rc::new(crate::display_support::NoLanguages),
     )
+    .unwrap()
 }

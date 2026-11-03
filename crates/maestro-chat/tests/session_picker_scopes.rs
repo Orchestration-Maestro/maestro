@@ -132,9 +132,9 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
     {
         session_picker::session_picker_scopes::default_manager();
     } else {
-        let dir = keybinding_child::Scratch::new();
+        let dir = maestro_test_directory::Scratch::new().expect("scratch directory is new");
         std::fs::write(
-            dir.join("keybindings.json"),
+            dir.path().join("keybindings.json"),
             "{\"app.session.toggleNamedFilter\":\"ctrl+x\"}",
         )
         .unwrap();
@@ -142,9 +142,10 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
             maestro_test_process::TestProcess::current(NAME)
                 .unwrap()
                 .case("yes"),
-            dir.0.path(),
-            &[("MAESTRO_CODING_AGENT_DIR", dir.0.path().to_str().unwrap())],
+            dir.path(),
+            &[("MAESTRO_CODING_AGENT_DIR", dir.path().to_str().unwrap())],
             &[],
-        );
+        )
+        .expect("child starts");
     }
 }

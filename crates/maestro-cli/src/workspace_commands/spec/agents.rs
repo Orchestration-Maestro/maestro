@@ -2,6 +2,7 @@
 
 use super::{flag, option, path, required, snapshot};
 use clap::{Arg, ArgAction, ArgGroup, Command};
+use maestro_app::daemon::{Agent, agent_label};
 
 /// Describe agent inspection, input and lifecycle operations.
 pub(super) fn command() -> Command {
@@ -44,7 +45,7 @@ fn prompt() -> Command {
 fn start() -> Command {
     Command::new("start").about("Start a supported agent in an existing shell pane")
         .args([required("name"), option("kind", "KIND").required(true)
-            .value_parser(maestro_app::daemon::Agent::ALL.map(maestro_app::daemon::agent_label)),
+            .value_parser(Agent::ALL.map(agent_label)),
             option("pane", "ID").required(true), option("timeout", "MS"),
             Arg::new("agent_args").value_name("AGENT_ARG").num_args(0..).last(true)])
         .after_help("The pane must be at its interactive shell prompt. Success means the expected agent is detected and ready. Readiness timeout: 30000ms by default, 300000ms maximum.\n\nNext: maestro agent prompt <TARGET> <TEXT> --wait")

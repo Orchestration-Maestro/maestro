@@ -1,9 +1,9 @@
 //! Correlated responses: session results in their declared shapes, failures, and workspace
 //! responses, all written through the shared envelope.
-use super::commands::names;
 use super::{RpcSessionState, RpcSlashCommand, workspace};
 use crate::agent_session::{ForkMessage, ModelCycleResult, SessionStats};
 use maestro_extensions::NativeAgentMessage;
+use maestro_json::object::names;
 use maestro_models::{Model, ModelThinkingLevel};
 use maestro_session::{CompactionResult, Presence};
 use maestro_tools::BashResult;
@@ -227,7 +227,7 @@ impl<'de> Deserialize<'de> for RpcResponse {
         if envelope
             .command
             .as_deref()
-            .is_some_and(names::<workspace::RpcCommand>)
+            .is_some_and(|command| names::<workspace::RpcCommand>("type", command))
         {
             let response = workspace::RpcResponse::deserialize(value).map_err(de::Error::custom)?;
             return Ok(Self::Workspace(Box::new(response)));

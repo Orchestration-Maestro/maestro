@@ -1,73 +1,80 @@
-//! A controlled child that stands in for Maestro in RPC mode: an installed executable that
-//! runs the Python program a test passes in its `PEER_SCRIPT` variable.
+//! A prepared native child serving finite application RPC scenarios.
+
 use crate::child::Scratch;
-use crate::native::install_executable;
 use maestro_app::{RpcClient, RpcClientOptions};
+pub use maestro_test_process::rpc_peer::Scenario;
 use serde_json::Value;
-use std::{path::Path, rc::Rc};
+use std::{
+    io::Write,
+    net::{TcpListener, TcpStream},
+    path::Path,
+    rc::Rc,
+};
 use tokio::sync::mpsc;
 
-/// The executable: helpers for the test's program, then the program.
-const STUB: &str = r"#!/usr/bin/env python3
-import json, os, signal, sys, time
-def emit(value):
-    sys.stdout.write(json.dumps(value) + '\n'); sys.stdout.flush()
-def commands():
-    for raw in sys.stdin.buffer:
-        yield raw.decode()
-MISSING = object()
-def respond(command, data=MISSING, error=None):
-    reply = {'type': 'response', 'id': command['id'], 'command': command['type']}
-    if error is None:
-        reply['success'] = True
-        if data is not MISSING: reply['data'] = data
-    else:
-        reply['success'] = False; reply['error'] = error
-    emit(reply)
-exec(os.environ['PEER_SCRIPT'])
-";
-
-/// Answers every command, after reporting its raw line; `PEER_ANSWERS` maps command types
-/// to the data they answer with.
-pub const SERVE: &str = r"
-answers = json.loads(os.environ.get('PEER_ANSWERS', '{}'))
-emit({'type': 'peer_ready'})
-for line in commands():
-    command = json.loads(line)
-    emit({'type': 'wire_capture', 'raw': line})
-    respond(command, answers.get(command['type'], MISSING))
-";
-
-/// The installed executable and the directory that holds it.
+/// The installed executable, release socket and their disposable directory.
 pub struct Peer {
     /// The directory, removed with the peer.
     pub scratch: Scratch,
     /// The executable's path.
     pub entry: String,
+    /// Out-of-band release for raw fragments, ticks or a pipe-holding descendant.
+    control: TcpListener,
 }
 
 impl Peer {
-    /// Installs the executable in a fresh directory.
+    /// Install the prepared executable in a fresh directory, without discovering build outputs.
     pub fn new() -> Self {
         let scratch = Scratch::new();
-        let source = scratch.join("peer.py");
-        std::fs::write(&source, STUB).unwrap();
         let entry = scratch.join("peer");
-        install_executable(Path::new(&source), Path::new(&entry));
-        Self { scratch, entry }
+        maestro_test_process::rpc_peer::install(Path::new(&entry), Scenario::Serve).unwrap();
+        Self {
+            scratch,
+            entry,
+            control: TcpListener::bind("127.0.0.1:0").unwrap(),
+        }
     }
 
-    /// Options that launch the executable running `script`.
-    pub fn options(&self, script: &str) -> RpcClientOptions {
+    /// Options that launch one compiled scenario on the actual client transport.
+    pub fn options(&self, scenario: Scenario) -> RpcClientOptions {
+        if scenario == Scenario::Descendant {
+            maestro_test_process::rpc_peer::install(
+                Path::new(&self.scratch.join("holder")),
+                Scenario::PipeHolder,
+            )
+            .unwrap();
+        }
+        std::fs::write(
+            format!("{}.fixture", self.entry),
+            format!("rpc-peer\n{}\n", scenario.name()),
+        )
+        .unwrap();
         let mut options = RpcClientOptions {
             cli_path: Some(self.entry.clone()),
             ..RpcClientOptions::default()
         };
+        options.env.insert(
+            "PEER_PORT".into(),
+            self.control.local_addr().unwrap().port().to_string(),
+        );
         options
             .env
-            .insert("PEER_SCRIPT".to_owned(), script.to_owned());
+            .insert("PEER_HOLDER".into(), self.scratch.join("holder"));
         options
     }
+
+    /// Accept a native peer's release connection, without a timed receive or polling.
+    ///
+    /// This blocks the calling thread; a peer that exits before connecting leaves the test
+    /// waiting for the test runner's hang limit.
+    pub fn control(&self) -> TcpStream {
+        self.control.accept().unwrap().0
+    }
+}
+
+/// Release exactly one native operation through its existing observation socket.
+pub fn release(control: &mut TcpStream) {
+    control.write_all(b"r").unwrap();
 }
 
 /// Every event the client delivers from now on, in order.
@@ -91,8 +98,7 @@ pub async fn next_of(events: &mut mpsc::UnboundedReceiver<Value>, kind: &str) ->
     }
 }
 
-/// Keeps a paused clock from advancing on its own, as a running blocking task does, until
-/// the returned sender is used.
+/// Keep a paused clock from advancing on its own until the returned sender is used.
 pub fn hold_clock() -> (std::sync::mpsc::Sender<()>, tokio::task::JoinHandle<()>) {
     let (release, released) = std::sync::mpsc::channel::<()>();
     let hold = tokio::task::spawn_blocking(move || {

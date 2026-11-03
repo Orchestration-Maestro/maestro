@@ -722,6 +722,18 @@ impl Controlled {
 }
 
 impl crate::component_adapter::NativeImports for Controlled {
+    fn call_host_operation(
+        &self,
+        _: crate::bindings::maestro::extension::host::HostOperation,
+    ) -> ExtensionFuture<'_, serde_json::Value> {
+        let response = self
+            .observed
+            .borrow()
+            .host_operation_result
+            .clone()
+            .unwrap_or_else(|| Err("host operations require the production host".into()));
+        Box::pin(async move { response })
+    }
     type Watcher = super::native_watch_host::Watcher;
     fn watcher_close(&self, watch: &Self::Watcher) -> ExtensionResult<()> {
         watch.close();
@@ -737,6 +749,10 @@ impl crate::component_adapter::NativeImports for Controlled {
             if signal.is_some_and(|signal| self.aborted(signal)) {
                 return Err("Aborted".into());
             }
+            self.observe()
+                .native_http
+                .signals
+                .push(signal.map(|signal| signal.flag.shared()));
             let hold = self.observe().take_hold();
             pause(hold).await;
             if signal.is_some_and(|signal| self.aborted(signal)) {

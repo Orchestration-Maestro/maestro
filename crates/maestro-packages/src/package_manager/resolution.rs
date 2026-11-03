@@ -1,5 +1,8 @@
 //! Explicit source resolution with resource provenance.
-use maestro_resources::{PathMetadata, paths::CONFIG_DIR_NAME};
+use maestro_resources::{
+    PathMetadata,
+    paths::{CONFIG_DIR_NAME, package_home_directory},
+};
 /// One discovered resource with its original path and provenance.
 pub struct ResolvedResource {
     /// The authored resource path.
@@ -10,17 +13,7 @@ pub struct ResolvedResource {
     pub metadata: PathMetadata,
 }
 /// One selected package, even when none of its resources are enabled.
-#[derive(Debug, PartialEq, Eq)]
-pub struct ResolvedPackage {
-    /// Original source spelling, including its pin.
-    pub source: String,
-    /// Kind-prefixed identity independent of the pin.
-    pub identity: String,
-    /// Scope used to resolve the contents.
-    pub scope: SourceScope,
-    /// Existing package contents.
-    pub installed_path: String,
-}
+pub type ResolvedPackage = maestro_package::ResolvedPackage<SourceScope>;
 /// Resources separated by their discovery kind.
 #[derive(Default)]
 pub struct ResolvedPaths {
@@ -106,7 +99,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 SourceScope::Project => join(&[&self.options.cwd, CONFIG_DIR_NAME]).into(),
                 SourceScope::Temporary => self.options.cwd.as_str().into(),
             };
-            let path = super::paths::resolve_local(path, &base, super::operations::home_dir)?;
+            let path = super::paths::resolve_local(path, &base, package_home_directory)?;
             if Path::new(&path).exists() {
                 result.package(source, scope, &path, &base)?;
             }
@@ -193,7 +186,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         result: &mut Accumulator,
     ) -> io::Result<()> {
         for kind in ResourceType::ALL {
-            let entries = manifest.entries(kind.name())?;
+            let entries = manifest.entries(kind.name()).unwrap_or_default();
             let files = super::manifest::collect_manifest_entries(&entries, path, kind)?;
             let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {

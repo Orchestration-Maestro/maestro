@@ -1,4 +1,5 @@
 //! Presentation of application-owned workspace settings operations.
+use maestro_app::daemon::DEFAULTS_TEXT;
 use maestro_app::presentation_data::keybindings::{
     KeybindingsReset, reset_multiplexer_keybindings,
 };
@@ -70,7 +71,7 @@ pub fn run_defaults(
         writeln!(stderr, "usage: maestro settings defaults")?;
         return Ok(2);
     }
-    stdout.write_all(maestro_app::daemon::settings::DEFAULTS_TEXT.as_bytes())?;
+    stdout.write_all(DEFAULTS_TEXT.as_bytes())?;
     Ok(0)
 }
 

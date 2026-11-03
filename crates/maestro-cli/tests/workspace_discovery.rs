@@ -2,6 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 #![cfg(test)]
 
+use maestro_app::daemon::{Agent, DEFAULTS_TEXT, agent_label};
 use maestro_cli::workspace_commands::spec::command;
 
 #[test]
@@ -224,10 +225,7 @@ fn command_metadata_reuses_agent_and_integration_vocabularies() {
         .unwrap()
         .map(|value| value.get_name().to_owned())
         .collect();
-    assert_eq!(
-        values,
-        maestro_app::daemon::Agent::ALL.map(maestro_app::daemon::agent_label)
-    );
+    assert_eq!(values, Agent::ALL.map(agent_label));
     let install = root
         .find_subcommand("integration")
         .unwrap()
@@ -441,7 +439,7 @@ fn settings_defaults_prints_the_owned_jsonc_without_loading_settings() {
     );
     assert!(stderr.is_empty());
     let text = String::from_utf8(stdout).unwrap();
-    assert_eq!(text, maestro_app::daemon::settings::DEFAULTS_TEXT);
+    assert_eq!(text, DEFAULTS_TEXT);
     assert!(text.contains("// Workspace preferences belong in the global settings.json"));
     assert!(text.contains("\"scrollbackLimitBytes\": 10000000"));
     assert!(

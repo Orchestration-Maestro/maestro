@@ -7,9 +7,10 @@ use maestro_models::{
 };
 use std::sync::{Arc, RwLock};
 
-/// Plain user entries, history conversion and queued responses shared with other crates.
-mod controlled_loop;
+#[doc(inline)]
 pub use controlled_loop::{responses, typed_user, user};
+/// Plain user entries, history conversion and queued responses shared with other crates.
+use maestro_agent::test_support::controlled_loop;
 
 /// Supply retained history and instructions.
 #[must_use]
