@@ -356,6 +356,22 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn link_cycle_fails_initialization_and_creates_no_file() {
+        let dir = TempDir::without_forks("cycle");
+        let first = dir.path("first.json");
+        let second = dir.path("second.json");
+        std::os::unix::fs::symlink("second.json", &first).unwrap();
+        std::os::unix::fs::symlink("first.json", &second).unwrap();
+        let backend = FileAuthStorageBackend::new(&first);
+        let result = backend.with_lock(&mut |_| panic!("initialization precedes the callback"));
+        assert!(result.is_err());
+        for link in [&first, &second] {
+            assert!(std::fs::read_link(link).is_ok(), "{link} is still a link");
+        }
+    }
+
     #[test]
     fn callback_read_and_write_failures_release_the_lock() {
         let dir = TempDir::without_forks("release");
