@@ -655,7 +655,7 @@ fn refusing() -> ExtensionFactory<Local> {
 }
 
 /// Asserts the operation's artifact survived a refused removal and leaves it removable for the
-/// next case; a privileged host, which refuses every removal, reports the premise instead.
+/// next case; a privileged host, which refuses no removal, reports the premise instead.
 fn assert_kept_artifact(test: &str) {
     if !removal_is_refused() {
         eprintln!("{test} needs a host whose artifact removal is refused");
@@ -773,7 +773,7 @@ fn share_creates_secret_gist_and_restores_editor() {
 
 #[test]
 fn share_cancel_terminates_child_and_suppresses_late_outcome() {
-    use std::io::{BufRead, BufReader, Read as _};
+    use std::io::Read as _;
     const TEST: &str = "share_cancel_terminates_child_and_suppresses_late_outcome";
     drop(run(TEST, "child", Some(0o700), async |directory| {
         // The controlled program announces its gist step on a socket this test owns.
@@ -791,11 +791,7 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
         let operation = start(&world);
         // Readiness comes from the running child, not from a pause in this test.
         let (mut control, _) = listener.accept().unwrap();
-        let mut ready = String::new();
-        BufReader::new(control.try_clone().unwrap())
-            .read_line(&mut ready)
-            .unwrap();
-        assert_eq!(ready, "ready\n");
+        assert_eq!(greeting(&mut control), "ready\n");
         world.terminal.send_input("\x1b");
         // The cancellation is handled at once: the editor and its artifact are restored
         // before the operation settles.
@@ -899,8 +895,10 @@ fn share_and_copy_commands_clear_editor_after_completion() {
             );
             assert!(recalled(&world.mode.editor).is_empty(), "{}", case.text);
             assert_eq!(world.runtime.futures(), 1, "{}", case.text);
-            // A buffer typed while the command's work runs is kept until that work
-            // settles, and the work then clears it; clearing as the work starts is seen here.
+            // A buffer typed while the command's work runs is kept until that work settles, and
+            // the work then clears it. Seeding every routed case shows that none of them clears
+            // the buffer as its work starts; no copy route can be held long enough to observe
+            // the hold itself, so the held share below states that hold deterministically.
             world.mode.editor.set_text("seeded");
             let mut operation = world
                 .runtime
@@ -1059,15 +1057,14 @@ fn share_spawn_failure_restores_editor_and_cleans_artifact() {
 fn share_cleanup_failure_does_not_replace_result() {
     const TEST: &str = "share_cleanup_failure_does_not_replace_result";
     drop(run(TEST, "child", Some(0o700), async |directory| {
-        cleaned_after_success(directory).await;
-        cleaned_after_child_failure(directory).await;
-        cleaned_after_cancel(directory).await;
+        cleaned_after_success(directory, TEST).await;
+        cleaned_after_child_failure(directory, TEST).await;
+        cleaned_after_cancel(directory, TEST).await;
     }));
 }
 
 /// Asserts a successful gist keeps its result and the artifact whose removal is refused.
-async fn cleaned_after_success(directory: &Path) {
-    const TEST: &str = "share_cleanup_failure_does_not_replace_result";
+async fn cleaned_after_success(directory: &Path, test: &str) {
     configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
         {"chmod": "0500"},
         stdout("https://gist.github.com/alice/kept\n")
@@ -1083,11 +1080,11 @@ async fn cleaned_after_success(directory: &Path) {
     assert!(!last_row_holds(&world, "Failed to"));
     assert_loader_stopped(&world);
     assert_eq!(world.mode.editor_container.children().borrow().len(), 1);
-    assert_kept_artifact(TEST);
+    assert_kept_artifact(test);
 }
 
 /// Asserts a failed gist keeps its own result and the refused artifact with it.
-async fn cleaned_after_child_failure(directory: &Path) {
+async fn cleaned_after_child_failure(directory: &Path, test: &str) {
     configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
         {"chmod": "0500"}
     ], "exit": 1}}));
@@ -1096,11 +1093,11 @@ async fn cleaned_after_child_failure(directory: &Path) {
     drive(&failed).await.unwrap();
     assert_last_row_holds(&failed, "Error: Failed to create gist: ", "a failed child");
     assert_loader_stopped(&failed);
-    assert_kept_artifact("share_cleanup_failure_does_not_replace_result");
+    assert_kept_artifact(test);
 }
 
 /// Asserts a cancellation keeps its own report and the refused artifact too.
-async fn cleaned_after_cancel(directory: &Path) {
+async fn cleaned_after_cancel(directory: &Path, test: &str) {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
     configure(
@@ -1121,7 +1118,7 @@ async fn cleaned_after_cancel(directory: &Path) {
     assert!(operation.await.is_ok());
     assert!(!last_row_holds(&cancelled, "Failed to"));
     assert_loader_stopped(&cancelled);
-    assert_kept_artifact("share_cleanup_failure_does_not_replace_result");
+    assert_kept_artifact(test);
 }
 
 /// The gist settings that announce `name` on the control port and hold until released.
