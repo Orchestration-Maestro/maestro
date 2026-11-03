@@ -427,6 +427,16 @@ pub fn seed_target(target: &Path) {
         units.iter().all(|unit| !unit.starts_with("maestro-")),
         "the seed holds workspace member units: {units:?}"
     );
+    let outputs = fs::read_dir(target.join("debug/deps"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .collect::<Vec<_>>();
+    assert!(
+        outputs
+            .iter()
+            .all(|output| !output.starts_with("development-")),
+        "the seed holds a workspace binary: {outputs:?}"
+    );
     assert!(!target.join("debug/incremental").exists());
 }
 

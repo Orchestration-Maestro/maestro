@@ -46,17 +46,17 @@ enum Failure {
 /// Install the fixture Cargo, which records its calls and fails as asked, and configure the setup
 /// command as nextest does, with isolated Cargo and export paths.
 fn setup(root: &Path, failure: Failure) -> Command {
-    installed(
-        root,
-        "cargo",
-        &format!(
-            "tooling-sources\n{{\"calls\":{:?},\"builds\":{:?},\"vendor_fails\":{},\"build_fails\":{}}}\n",
-            root.join("calls"),
-            root.join("builds"),
-            matches!(failure, Failure::Vendor),
-            matches!(failure, Failure::Build),
-        ),
-    );
+    let fails = match failure {
+        Failure::None => None,
+        Failure::Vendor => Some("vendor"),
+        Failure::Build => Some("build"),
+    };
+    let record = serde_json::json!({
+        "calls": root.join("calls"),
+        "builds": root.join("builds"),
+        "fails": fails,
+    });
+    installed(root, "cargo", &format!("tooling-sources\n{record}\n"));
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command
         .args(["nextest-setup", "fixture-sources"])

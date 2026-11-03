@@ -26,7 +26,17 @@ const UNITS: [(&str, &str); 4] = [
     ("example-1111111111111111", "tool-1111111111111111"),
 ];
 
-/// Where the stand-in records its calls and whether each operation fails, parsed before any effect.
+/// The operation the stand-in fails after recording itself.
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Operation {
+    /// `cargo vendor` fails.
+    Vendor,
+    /// `cargo build` fails.
+    Build,
+}
+
+/// Where the stand-in records its calls and which operation fails, parsed before any effect.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Record {
@@ -34,10 +44,8 @@ pub(super) struct Record {
     calls: PathBuf,
     /// File that receives the arguments of every build call.
     builds: PathBuf,
-    /// Whether a vendor call fails after recording itself.
-    vendor_fails: bool,
-    /// Whether a build call fails after recording itself.
-    build_fails: bool,
+    /// The operation that fails, if any.
+    fails: Option<Operation>,
 }
 
 impl Record {
@@ -53,10 +61,10 @@ impl Record {
 /// Record the call, then build or vendor as its first operand asks.
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
     let building = args.first().is_some_and(|operation| operation == "build");
-    let (log, fails, message) = if building {
-        (&record.builds, record.build_fails, "build exploded\n")
+    let (log, operation, message) = if building {
+        (&record.builds, Operation::Build, "build exploded\n")
     } else {
-        (&record.calls, record.vendor_fails, "vendor exploded\n")
+        (&record.calls, Operation::Vendor, "vendor exploded\n")
     };
     let line = args
         .iter()
@@ -70,7 +78,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             .open(log)?,
         "{line}"
     )?;
-    if fails {
+    if record.fails == Some(operation) {
         write_stderr(message.as_bytes())?;
         leave(1);
     }
