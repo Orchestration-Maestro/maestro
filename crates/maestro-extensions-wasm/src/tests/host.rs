@@ -2131,7 +2131,21 @@ impl Harness {
             .run_concurrent(async |accessor| {
                 function.call_concurrent(accessor, (borrow(rep),)).await
             })
-            .await?
+            .await??;
+        // An identity the component handed over stays owned by the host after the guest
+        // dropped its closure.
+        let state = self.store.data_mut();
+        if let Some(handed) = state
+            .observed
+            .handed_over
+            .iter()
+            .position(|key| *key == rep)
+        {
+            state.observed.handed_over.remove(handed);
+            let identity = state.table.delete(Resource::<Identity>::new_own(rep))?;
+            state.observed.drop_identity(identity.0);
+        }
+        Ok(())
     }
 
     /// Releases every registration in the order the host received it, reporting each name with
