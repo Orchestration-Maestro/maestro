@@ -200,7 +200,7 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Compile the delivered browser import example and capture its diagnostics.
+/// Compile the delivered browser import witness and capture its diagnostics.
 fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     if !checkout
         .join("crates/maestro-models/tests/support/browser_import_check.rs")
