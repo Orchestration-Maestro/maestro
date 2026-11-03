@@ -75,7 +75,8 @@ setup = "workspace-sources"
 
 # Installs the bundle's browser graph the browser author tests share, or builds it when the run has
 # no bundle, once before the first of them.
-# The cold-start test prepares dependency sources only; its compilation directories start empty.
+# The cold-start test prepares dependency sources and the compiled registry units its target
+# starts from; Maestro's own crates compile from empty.
 # The `browser-author` test group below selects the same tests with the same filter; change
 # the two together.
 [scripts.setup.browser-author]
@@ -131,9 +132,9 @@ test-group = "browser-author"
 # Retain real cold-build/lock/format assertions while #3589 fixes repeated
 # build work. These phase observations are not replacement CI maxima.
 
-# The cold-start test compiles the native tools and the WebAssembly fixture from an empty target
-# with parallel compiler jobs. It takes every core so that sharing them with other tests does not
-# stretch it past the hang limit.
+# The cold-start test compiles Maestro's native tools and the WebAssembly fixture, with parallel
+# compiler jobs, in a target that holds only compiled registry units. It takes every core so that
+# sharing them with other tests does not stretch it past the hang limit.
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
 threads-required = "num-cpus"
