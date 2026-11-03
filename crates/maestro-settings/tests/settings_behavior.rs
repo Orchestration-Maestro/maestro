@@ -1399,6 +1399,7 @@ mod tests {
             &[("anthropicExtraUsage", Kind::Flag)],
         ),
         ("sessionDir", Kind::Text, &[]),
+        ("httpIdleTimeoutMs", Kind::Count, &[]),
     ];
 
     /// The JSON kind of a probe value.
