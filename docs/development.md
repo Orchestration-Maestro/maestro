@@ -1225,18 +1225,25 @@ An unknown or malformed record fails before connecting or writing the optional
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
 
-Two further families stand in for a program the product itself launches. An
-`editor` record reports the file the controlled editor was asked to edit, skips
-the editor's own `--custom` option and ends with status 7. The process tests
-install it under the name the product resolves from `PATH`, so the shell
-evaluation under test stays real. An `echo` record prints the single line that
-follows it, which lets executable selection tests run a native program that
-prints the name their fixture authored. Neither family writes harness text.
-The editor writes the edited file's path to the file named by
-`MAESTRO_EDITOR_RESULT` and fails if that variable is unset. For example, with a
-`vi.fixture` record containing only `editor` and
-`MAESTRO_EDITOR_RESULT=/scratch/editor-result`, running `vi --custom notes.txt`
-writes `notes.txt` followed by a newline to `/scratch/editor-result` and exits 7.
+The portable `editor` family reads one JSON object after the family line. To
+report the edited path, set `result` to the name of the environment variable
+holding the output path. It skips its own `--custom` option and writes the next
+operand followed by a newline. A missing variable fails before file effects.
+For example, with `MAESTRO_EDITOR_RESULT=/scratch/editor-result`, this
+`vi.fixture` record makes `vi --custom notes.txt` write `notes.txt` followed by a
+newline to `/scratch/editor-result` and exit 7:
+
+```text
+editor
+{"result":"MAESTRO_EDITOR_RESULT","code":7}
+```
+
+The process tests install the alias under the name the product resolves from
+`PATH`, so shell evaluation stays real. The same record can select the file
+effects described under [Viewer, editor and trash aliases](#viewer-editor-and-trash-aliases).
+The `echo` family prints the single line following its family line, so executable
+selection tests can run a native program that prints their authored name.
+Neither family writes harness text.
 
 #### Command stand-ins
 
@@ -1650,6 +1657,42 @@ The application clipboard tests keep their own assertions. The text route checks
 forwarded operand, both captured streams and status 7; the detached route checks the
 bytes its listener receives; the image route checks a capture at 50 MiB and one byte
 past it.
+
+#### Viewer, editor and trash aliases
+
+Install the same artifact as `open`, `xdg-open`, `explorer.exe`, an editor name
+or `trash` when a test observes a desktop viewer launch, an edit or a session
+deletion. Write the family on the first line of `<alias>.fixture`, followed by a
+JSON object that the fixture parses before any effect; unknown fields and
+malformed values fail at once. The chat tests install these aliases through one
+helper in `tests/support/native_alias.rs`.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let editor = directory.path().join("ed");
+    std::fs::write(
+        editor.with_file_name("ed.fixture"),
+        format!("editor\n{}", serde_json::json!({
+            "argv": directory.path().join("argv"),
+            "before": directory.path().join("before"),
+            "content": b"edited\n",
+        })),
+    )?;
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor)?;
+    Ok(())
+}
+```
+
+The families use these fields:
+
+| Family | Fields and behavior |
+| --- | --- |
+| `browser_launch` | `port` names the parent's loopback listener. The viewer writes its own launched name and its literal operands as one JSON array, waits for the parent's `!` byte, answers `done` and exits 1. A viewer that never connects leaves the parent waiting, so install the alias before the product launch. |
+| `editor` | `argv` receives the launched name and every operand, each ending at a NUL. `result` names the environment variable holding the output path for the edited filename. `before` receives the file's original bytes, `content` the new bytes, and `copy` a mode-preserving copy. `remove` deletes the file, `directory` replaces it with a directory, `read_only_parent` makes its directory read-only on Unix. `descriptors` records the three standard descriptors' device, inode, mode and device number on Linux. `code` selects the status; `signal: "SIGTERM"` ends by the native signal on Unix instead. Unsupported platform effects fail before any file effects. |
+| `trash` | `log` receives each literal operand on its own line, `remove` deletes the first operand, `stderr` supplies the captured diagnostic bytes and `code` the status. Install no alias at all to observe a missing program. |
 
 #### Credential processes
 

@@ -179,7 +179,11 @@ fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
     maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor).unwrap();
     let mut record = editor.into_os_string();
     record.push(".fixture");
-    std::fs::write(record, "editor\n").unwrap();
+    std::fs::write(
+        record,
+        "editor\n{\"result\":\"MAESTRO_EDITOR_RESULT\",\"code\":7}",
+    )
+    .unwrap();
     for editor in [None, Some(""), Some("vi --custom")] {
         let path = dir.join("scroll back ' a,b");
         std::fs::OpenOptions::new()
