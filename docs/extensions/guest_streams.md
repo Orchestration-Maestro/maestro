@@ -92,6 +92,14 @@ without requiring catalog membership. Absent options stay absent; supplied empty
 options stay supplied. Raw open fields and simple reasoning/budgets remain distinct,
 even when their names resemble common timeout or retry settings.
 
+`stream_simple_via(api, model, context, options)` runs a chosen registered simple
+protocol while the model keeps its own API identity. A provider that forwards its
+request to a bundled protocol names that protocol here, and callers, hooks and
+final messages still see the model's API. The model passes through without the
+`options.base_url` endpoint resolution that `stream_simple` applies, because the
+chosen protocol supplies its own transport. An unknown identifier fails with
+`No API provider registered for api: {api}`.
+
 `complete` and `complete_simple` start invocation when called, before their returned
 futures are polled. They observe the native final result without draining events.
 Stream `result()` observations share one decoded final-message owner, including

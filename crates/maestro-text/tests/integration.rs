@@ -13,3 +13,5 @@ mod utf8_streaming;
 mod date_time_formatting;
 
 mod date_time_selection;
+
+mod shell_quote;
