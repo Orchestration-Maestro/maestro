@@ -174,9 +174,10 @@ builds the owner's declared platform handle, so identity comparisons hold on
 both targets.
 
 Compilation does not replace the browser assertions below.
-The theme examples `brand_themes` and `browser_author_inputs` run their author
-work on native targets; their browser entrypoints do nothing. Native usage
-messages and generated filenames are unchanged.
+The theme generators `brand_themes` and `browser_author_inputs` are repository
+scripts under `crates/maestro-theme/scripts`; they run their author work on native
+targets, and their browser entrypoints do nothing. Native usage messages and
+generated filenames are unchanged.
 
 ## Browser integration qualification
 
@@ -484,7 +485,7 @@ fonts, glyphs and mark paths. `maestro-brand` parses and projects those values;
 Changing a pack does not rename the command, environment variables or settings
 directory, and does not install that pack into a running application.
 
-Use the existing [brand theme example](theme.md#brand-pack) to try a pack without
+Use the existing [brand theme generator](theme.md#brand-pack) to try a pack without
 changing shipped files. Run this from the checkout root:
 
 ```sh
@@ -1508,6 +1509,13 @@ behavior; an unknown family, scenario or field fails before any effect.
 | --- | --- |
 | `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
 | `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-sources` `sources` | Records `cargo vendor` calls in the record's `calls` file and `cargo build` calls in `builds`; writes `vendor exploded` or `build exploded` and ends with status 1 when `fails` names that operation. Otherwise a build leaves the seed units in `CARGO_TARGET_DIR/debug`, and a vendor creates the last operand as a directory and prints the vendored-source configuration. The fixture-sources setup installs it as `cargo`. |
+| `tooling-sources` `operands` | Prints each operand on its own line, writes the record's `stderr` text, and ends with the record's `code`. Tests use it to prove an adapter passes literal operands, diagnostics and the status through unchanged. |
+| `tooling-sources` `trunk-hook` | Copies `assets/app.css` to `hook.css`, writes the first operand and the `TRUNK_*` and `MAESTRO_HOOK_INHERITED` variables, one per line, to `hook-environment`, and ends with the status in `MAESTRO_HOOK_STATUS`. Installed as an authored build hook. |
+| `tooling-sources` `call-log` | Appends `call` and the operands to the record's `path`, followed by every variable whose name starts with one of the record's `prefixes`, sorted. Ends with status 1 when the first operand is the record's `refuse`. |
+| `tooling-sources` `artifacts` | Appends the operands to the file `CARGO_CALLS` names, then reports one compiled artifact per name in the record, at `/built/<name>.wasm`. |
+| `tooling-sources` `consumer-cargo` | Appends the operands to `cargo-log`, beside the directory holding the alias. Ends with status 17 when `MAESTRO_FAIL_PHASE` names the first operand, succeeds without work for `hakari`, `test` and `nextest`, and runs the record's `cargo` for everything else. |
+| `tooling-sources` `announce` | Prints `cargo` and the operands. When the record names `rebuilt`, it also replaces that path with a copy of itself that prints `example`. |
 | `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
 | `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
 

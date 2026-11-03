@@ -20,6 +20,18 @@ pub fn write_input(root: &Path, name: &str, bytes: &str) {
     fs::write(path, bytes).unwrap();
 }
 
+/// Install the tooling-sources scenario the record selects as `name` in `directory`.
+#[cfg(unix)]
+pub fn scenario(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
+    installed(directory, name, &format!("tooling-sources\n{record}\n"))
+}
+
+/// Install a program that prints `text` and ends as `name` in `directory`.
+#[cfg(unix)]
+pub fn printer(directory: &Path, name: &str, text: &str) -> PathBuf {
+    installed(directory, name, &format!("echo\n{text}\n"))
+}
+
 /// Copies an executable through a child process on Unix to avoid writable descriptors across forks.
 pub fn install_executable(source: &Path, target: &Path) {
     #[cfg(unix)]

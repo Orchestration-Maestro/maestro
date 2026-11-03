@@ -1,6 +1,6 @@
 //! The engine compiles the same code on every host and loads modules that
 //! throw WebAssembly exceptions.
-use super::component_engine;
+use super::{component_engine, process_engine};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use wasmtime::{Config, Engine, Module};
 
@@ -58,4 +58,12 @@ fn engine_keeps_wasmtime_defaults_off_x86_64() {
         identity(&component_engine(None).unwrap()),
         identity(&default_engine())
     );
+}
+
+/// The accessor returns the same engine on every call.
+#[test]
+fn process_engine_reuses_one_engine() {
+    let first = process_engine().unwrap();
+    let second = process_engine().unwrap();
+    assert!(Engine::same(&first, &second));
 }
