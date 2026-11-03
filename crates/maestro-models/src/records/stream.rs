@@ -8,11 +8,13 @@ use super::types::{
     ProviderSpawner, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
 };
 
+/// Report the protocol identifier that has no registration.
+fn missing_api(api: &str) -> DiagnosticErrorInfo {
+    DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
+}
 /// Resolve the registered provider or report the missing API.
 fn resolve(api: &str) -> Result<ApiProvider, DiagnosticErrorInfo> {
-    get_api_provider(api).ok_or_else(|| {
-        DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
-    })
+    get_api_provider(api).ok_or_else(|| missing_api(api))
 }
 /// Immediately invoke the registered raw adapter with the supplied request endpoint.
 ///
@@ -136,9 +138,7 @@ pub fn stream_simple_via_for<E: ProviderExecution>(
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     get_api_stream_simple(api)
-        .ok_or_else(|| {
-            DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
-        })?
+        .ok_or_else(|| missing_api(api))?
         .call(model, context, E::submission(options, E::provided(submit)))
 }
 /// Start raw invocation now and return an independent result observation, thread-safe on native targets.

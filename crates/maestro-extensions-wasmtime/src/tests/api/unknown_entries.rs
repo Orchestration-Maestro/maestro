@@ -14,6 +14,9 @@ use std::sync::{Arc, Mutex, RwLock};
 /// The protocol of the recording provider, kept apart from the registered providers.
 const API: &str = "component-unknown-entries";
 
+/// The protocol a guest selects for one request, distinct from the model's own API.
+const CHOSEN: &str = "component-selected-backend";
+
 /// Consuming adapter recording the conversation the provider actually received.
 #[derive(Default)]
 struct Recording(Mutex<Vec<Value>>);
@@ -28,7 +31,7 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
         self.0
             .lock()
             .unwrap()
-            .push(json!({"context": call.context}));
+            .push(json!({"api": call.model.api, "context": call.context}));
         let stream = AssistantMessageEventStream::new();
         stream.push(AssistantMessageEvent::Done {
             reason: DoneReason::Stop,
@@ -41,13 +44,12 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
     }
 }
 
-/// The guest's request text: a model on the recording protocol, a conversation holding an
-/// unknown role and an unknown block, and absent options.
-fn request_data() -> String {
-    let model = json!({
+/// A model record on the supplied protocol identity.
+fn model_data(api: &str) -> Value {
+    json!({
         "id": "skip-model",
         "name": "Skip",
-        "api": API,
+        "api": api,
         "provider": "custom",
         "baseUrl": "https://example.invalid",
         "reasoning": false,
@@ -55,7 +57,13 @@ fn request_data() -> String {
         "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
         "contextWindow": 1000,
         "maxTokens": 10
-    });
+    })
+}
+
+/// The guest's request text: a model on the recording protocol, a conversation holding an
+/// unknown role and an unknown block, and absent options.
+fn request_data() -> String {
+    let model = model_data(API);
     let context = json!({"messages": [
         {"role": "other", "content": "hidden", "timestamp": 1},
         {
@@ -81,10 +89,16 @@ fn no_controls() -> Controls {
 }
 
 /// Start one request from a worker thread and drain the local owner.
-async fn run_request(pump: Pump, admission: Admission, endpoint: crate::api_reads::Endpoint) {
+async fn run_request(
+    pump: Pump,
+    admission: Admission,
+    endpoint: crate::api_reads::Endpoint,
+    simple: bool,
+    data: String,
+) {
     let worker = std::thread::spawn(move || {
         endpoint
-            .model_stream(false, request_data(), no_controls())
+            .model_stream(simple, data, no_controls())
             .map(|_| ())
     });
     drop(admission);
@@ -111,7 +125,7 @@ fn model_stream_import_leaves_out_unknown_entries() {
         let (_owner, api) = api(session);
         let (pump, admission) = Pump::new(crate::tests::support::widgets());
         let endpoint = pump.registry().api(api).unwrap();
-        run_request(pump, admission, endpoint).await;
+        run_request(pump, admission, endpoint, false, request_data()).await;
     });
     let observed = recording.0.lock().unwrap();
     assert_eq!(observed.len(), 1);
@@ -124,4 +138,33 @@ fn model_stream_import_leaves_out_unknown_entries() {
     );
     drop(observed);
     unregister_api_providers(API);
+}
+
+#[test]
+fn model_stream_import_runs_the_chosen_simple_protocol() {
+    let recording = Arc::new(Recording::default());
+    register_api_provider(
+        ApiProvider {
+            api: CHOSEN.into(),
+            stream: recording.clone(),
+            stream_simple: recording.clone(),
+        },
+        Some(CHOSEN.into()),
+    );
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let session = create_extension_runtime::<Local>();
+        let (_owner, api) = api(session);
+        let (pump, admission) = Pump::new(crate::tests::support::widgets());
+        let endpoint = pump.registry().api(api).unwrap();
+        let data = json!([model_data("public-api"), {"messages": []}, null, CHOSEN]).to_string();
+        run_request(pump, admission, endpoint, true, data).await;
+    });
+    let observed = recording.0.lock().unwrap();
+    assert_eq!(observed.len(), 1);
+    assert_eq!(observed[0]["api"], "public-api");
+    drop(observed);
+    unregister_api_providers(CHOSEN);
 }
