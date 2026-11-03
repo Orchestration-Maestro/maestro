@@ -227,3 +227,5 @@ fn compiled_user_bash_operations_reach_the_interactive_shell_cursor() {
     assert_eq!(records[0]["exitCode"], 7.0);
     assert_eq!(records[0]["cancelled"], false);
 }
+
+mod sdk;

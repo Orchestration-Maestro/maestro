@@ -134,12 +134,15 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
-Compile each changed crate separately when checking helper availability:
+Lint each changed browser crate separately, including all test and example targets:
 
 ```sh
-~/.local/bin/capped cargo check --locked --tests \
-  --target wasm32-unknown-unknown -p maestro-tools
+~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+  --all-targets -p maestro-models -- -D warnings
 ```
+
+`clippy --all-targets -D warnings` also rejects unused native-only helpers that
+`check --tests` leaves as warnings.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
@@ -1113,14 +1116,16 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
-On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at a script,
-`rustc-wrapper.sh`, in the fixture root. The script unsets `CARGO_HOME` and runs
-the original wrapper. `sccache` hashes every `CARGO_*` variable into the key of
-each rustc call, so a wrapper that saw the private home would give the registry
-crates of each fixture a key that no other fixture shares. Cargo itself keeps the
-private home and its lock. `fixture_command_hides_cargo_home_from_the_compiler_wrapper`
-runs a fixture build behind a recording wrapper and checks that it never sees
-`CARGO_HOME`.
+On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at the prepared
+fixture's `hide-home` wrapper, installed as `rustc-wrapper` in the fixture root.
+The wrapper unsets `CARGO_HOME` and runs the original wrapper, which it reads from
+`MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache` hashes every `CARGO_*` variable into the
+key of each rustc call, so a wrapper that saw the private home would give the
+registry crates of each fixture a key that no other fixture shares. Cargo itself
+keeps the private home and its lock.
+`fixture_command_hides_cargo_home_from_the_compiler_wrapper` runs a fixture build
+behind the `recording` wrapper, which logs the `CARGO_HOME` its compiler saw, and
+checks that it never sees one.
 
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
@@ -1184,10 +1189,10 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests and `maestro-app`, including its RPC client and
-clipboard tests. Local setup builds the example
-with the locked host `dev` profile and reads Cargo's emitted executable path. It
-records source inputs, content digest and host in
+attachment-completion tests, `maestro-app` (including its RPC client and clipboard
+tests) and the command-line startup tests. Local setup builds the example with the
+locked host `dev` profile and reads Cargo's emitted executable path. It records
+source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1261,12 +1266,59 @@ Keep each alias in a test's disposable directory and pass its absolute path as t
 configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it.
 
+A command that only prints installation output uses the `output` scenario. The
+command-line startup tests install it as `controlled-npm` and write its two install
+lines, so the protocol modes keep an empty standard output while the chatter reaches
+standard error. A cleared child needs `MAESTRO_NATIVE_FIXTURE` passed on, because
+`env_clear` drops the preparation variable.
+
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
 and stages native copies of both preparation examples. It also reports the two
 finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
+
+#### Repository recipe stand-ins
+
+A recipe workspace answers its own commands without an interpreter. Install the
+prepared artifact under each name the recipe resolves from `PATH`, then run the
+recipe:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let bin = directory.path().join("bin");
+    std::fs::create_dir_all(&bin)?;
+    for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
+        let alias = bin.join(name);
+        maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+        let mut record = alias.clone().into_os_string();
+        record.push(".fixture");
+        std::fs::write(record, "tooling-command\n{\"scenario\":\"stand-in\"}")?;
+    }
+    Ok(())
+}
+```
+
+The record's first line selects the family and its `scenario` selects one finite
+behavior; an unknown family, scenario or field fails before any effect.
+
+| Scenario | Behavior |
+| --- | --- |
+| `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
+| `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home. |
+| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` to observe the same boundary. |
+
+A runner that starts `just build` in a recipe workspace therefore never needs
+Cargo, `mise` or `watchexec` of its own: each call reaches the installed alias,
+and only the operations that need the real program forward to one. Installing
+needs the artifact nextest's `native-fixture` setup exports, so run
+`just prepare-tests` first; without it, a fixture command that needs the wrapper
+fails instead of building a fallback.
 
 The author example reads a `tooling-author` line followed by one JSON scenario.
 For example:
@@ -1294,6 +1346,26 @@ explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
 records. Other tooling fixture families and Unix `shell_setup` keep their existing
 contracts.
+
+#### Retained native boundaries
+
+These paths keep a real interpreter or native program because that program is the
+product operation under test. A controlled stand-in would remove the behaviour the
+test observes.
+
+| Path | Retained operation | Reason |
+| --- | --- | --- |
+| `crates/maestro-credentials/src/credentials/tests.rs:179`, `:219` | `/bin/sh` and `/system/bin/sh` compared as launch descriptions. | The configured and default shell is the product behaviour, and these values never start a process. |
+| `crates/maestro-credentials/src/credentials/tests.rs:205-215` | One real `!if read line; ...` resolution through that shell. | The resolver's configured shell is the operation under test. |
+| `crates/maestro-credentials/src/credentials/tests.rs:240-266` | Windows `cmd.exe` and `bash.exe` launch descriptions. | The launch shape is the product behaviour under test, and these values are compared, never run. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:136-149` | The Windows Git Bash, `bash.exe -c`, that runs configured helpers. | The helper launch needs the native shell the selector finds. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:153-163` | `!printf` payloads, one piped through `tr`, resolved by that shell. | Every payload is authored shell text, and the assertions are on the resolver's result. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
+| `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
+| `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
+| `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
+| `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
 
 #### Application RPC peers
 

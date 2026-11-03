@@ -10,26 +10,7 @@ use recipe_support::Workspace;
 #[test]
 fn browser_setup_errors_reach_stderr_and_transcript() {
     if let Ok(stage) = std::env::var("MAESTRO_SETUP_FAILURE") {
-        if stage == "recipe" {
-            let _workspace = Workspace::new();
-        } else {
-            let browser = Browser::new();
-            fs::write(
-                browser.fixture("Cargo.toml"),
-                "invalid_manifest_marker = [\n",
-            )
-            .unwrap();
-            if stage == "lockfile" {
-                browser.generate_lockfile();
-            } else {
-                let status = recipe_support::setup_status(
-                    toolchain_support::command(env!("CARGO_BIN_EXE_development"))
-                        .args(["nextest-setup", "fixture-sources", "workspace"])
-                        .current_dir(browser.workspace.path()),
-                );
-                assert!(!status.success());
-            }
-        }
+        fail_setup(&stage);
         panic!("setup must fail");
     }
     let mut failures = Vec::new();
@@ -69,6 +50,45 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// Make the named setup fail, leaving its diagnostics in the transcript and on stderr.
+fn fail_setup(stage: &str) {
+    if stage == "recipe" {
+        let workspace = Workspace::new();
+        recipe_package(&workspace);
+        let mut command = workspace.toolchain_command(env!("CARGO"));
+        command.arg("build");
+        assert!(!recipe_support::setup_status(&mut command).success());
+        return;
+    }
+    let browser = Browser::new();
+    fs::write(
+        browser.fixture("Cargo.toml"),
+        "invalid_manifest_marker = [\n",
+    )
+    .unwrap();
+    if stage == "lockfile" {
+        browser.generate_lockfile();
+        return;
+    }
+    let status = recipe_support::setup_status(
+        toolchain_support::command(env!("CARGO_BIN_EXE_development"))
+            .args(["nextest-setup", "fixture-sources", "workspace"])
+            .current_dir(browser.workspace.path()),
+    );
+    assert!(!status.success());
+}
+
+/// A dependency-free package in the recipe workspace, so its build compiles something.
+fn recipe_package(workspace: &Workspace) {
+    fs::create_dir_all(workspace.path().join("src")).unwrap();
+    fs::write(workspace.path().join("src/lib.rs"), "").unwrap();
+    fs::write(
+        workspace.path().join("Cargo.toml"),
+        "[package]\nname = 'setup-failure'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
+    )
+    .unwrap();
 }
 
 /// Lockfile regeneration resolves the fixture's crates from the run's prepared sources.
