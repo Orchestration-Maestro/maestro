@@ -269,6 +269,7 @@ fn terminate() -> io::Result<()> {
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
         Record::Output(streams) => streams.run(operands),
+        #[cfg(unix)]
         Record::Labelled {} => labelled(operands),
         Record::Report { fields } => report(fields, operands),
         #[cfg(unix)]
