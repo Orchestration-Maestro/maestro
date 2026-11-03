@@ -90,7 +90,7 @@ impl ModelRegistry {
             .unwrap_or_else(PoisonError::into_inner)
             .registered_providers
             .get(provider)
-            .map(|(_, c)| SharedHandle::clone(c));
+            .map(|entry| SharedHandle::clone(&entry.1));
         let registered = retained.map(|config| {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
             (config.name.clone(), config.callbacks.oauth.clone())

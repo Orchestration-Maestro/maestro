@@ -946,9 +946,16 @@ fn check_callback_release(
             .message,
         "Mismatched api: other expected openai-completions"
     );
-    maestro_models::unregister_api_providers("provider:p");
-    assert!(maestro_models::get_api_provider("openai-completions").is_none());
-    registry.unregister_provider("p").unwrap();
+    {
+        let retired = maestro_models::SharedHandle::clone(&handler.stream);
+        registry.unregister_provider("p").unwrap();
+        assert!(!maestro_models::SharedHandle::ptr_eq(
+            &retired,
+            &maestro_models::get_api_provider("openai-completions")
+                .unwrap()
+                .stream
+        ));
+    }
     assert!(weak.upgrade().is_some());
     let result = handler
         .stream

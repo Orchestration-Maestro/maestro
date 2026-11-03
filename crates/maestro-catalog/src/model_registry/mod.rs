@@ -18,7 +18,11 @@ use maestro_models::{
 use request_auth::ProviderRequestConfig;
 pub use request_auth::ResolvedRequestAuth;
 use std::collections::HashMap;
+use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, PoisonError, RwLock};
+
+/// Process-unique identity handed to each registry instance.
+static NEXT_REGISTRY: AtomicU64 = AtomicU64::new(0);
 
 /// Native file effects may be shared across threads.
 #[cfg(not(target_arch = "wasm32"))]
@@ -60,8 +64,12 @@ pub type ConfigValues = SharedHandle<dyn ConfigValueOperations + Send + Sync>;
 pub type ConfigValues = SharedHandle<dyn ConfigValueOperations>;
 /// Shared mutable descriptor list published by the registry.
 type ModelList = Arc<RwLock<Vec<Arc<RwLock<Model>>>>>;
+/// Source identity each retained registration installs under.
+type RetainedConfig = (u64, SharedHandle<RwLock<ProviderConfigInput>>, bool);
 /// Local catalog with a retained load diagnostic.
 pub struct ModelRegistry {
+    /// Process-unique identity keying this registry's own registrations.
+    owner: u64,
     /// Accepted credential owner, shared natively and local in the browser.
     auth_storage: SharedHandle<AuthStorage>,
     /// Ordered model-file paths; empty entries disable file access for that entry.
@@ -84,9 +92,13 @@ struct CatalogState {
     /// Provider sources retained by entry identity.
     provider_configs: HashMap<String, Arc<ProviderRequestConfig>>,
     /// Live registration order with monotone visit identities.
-    registered_providers: IndexMap<String, (u64, SharedHandle<RwLock<ProviderConfigInput>>)>,
+    registered_providers: IndexMap<String, RetainedConfig>,
     /// Next registration identity.
     next_provider: u64,
+    /// Whether a reload window is open and only renewed registrations survive refresh.
+    reload_window: bool,
+    /// Protocol and account installs whose retained registration never landed or was retired.
+    orphan_installs: Vec<String>,
     /// Model request sources indexed by exact identity.
     model_headers: HashMap<(String, String), IndexMap<String, String>>,
     /// Per-model overrides of the model files, by provider and exact identity, for models a
@@ -158,6 +170,7 @@ impl ModelRegistry {
         config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
         let registry = Self {
+            owner: NEXT_REGISTRY.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             auth_storage,
             paths,
             base_paths: RwLock::default(),
@@ -169,6 +182,8 @@ impl ModelRegistry {
                 provider_configs: HashMap::new(),
                 registered_providers: IndexMap::new(),
                 next_provider: 0,
+                reload_window: false,
+                orphan_installs: Vec::new(),
                 model_headers: HashMap::new(),
                 model_overrides: HashMap::new(),
             }),
@@ -177,17 +192,23 @@ impl ModelRegistry {
         Ok(registry)
     }
     /// Replaces the base files below the construction-time files and restores dynamic providers.
-    /// An empty base that was already empty leaves the existing catalog untouched.
+    /// An empty base that was already empty leaves the existing catalog untouched unless a
+    /// reload window is open, which always refreshes before it retires unrenewed entries.
     ///
     /// # Errors
     /// Returns a stored account transformation failure during refresh.
     pub fn set_base_model_files(&self, paths: Vec<String>) -> Result<(), CatalogError> {
         let reload = {
+            let open = self
+                .state
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .reload_window;
             let mut base = self
                 .base_paths
                 .write()
                 .unwrap_or_else(PoisonError::into_inner);
-            let reload = !base.is_empty() || !paths.is_empty();
+            let reload = !base.is_empty() || !paths.is_empty() || open;
             *base = paths;
             reload
         };
@@ -227,11 +248,24 @@ impl ModelRegistry {
     pub fn auth_storage(&self) -> &SharedHandle<AuthStorage> {
         &self.auth_storage
     }
-    /// Reset shared protocol/account registrations, load the file and replay retained providers.
+    /// Restore the bundled protocols and this registry's own registrations, load the file and
+    /// replay retained providers. An open reload window additionally retires retained entries
+    /// that no route renewed during it.
     ///
     /// # Errors
     /// Returns the first transformation failure, retaining effects already applied.
     pub fn refresh(&self) -> Result<(), CatalogError> {
+        let pruned = self.prune_reloaded();
+        let own = {
+            let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+            let mut own = state
+                .registered_providers
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>();
+            own.append(&mut state.orphan_installs);
+            own
+        };
         {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
             state.load_error = None;
@@ -239,8 +273,11 @@ impl ModelRegistry {
             state.model_headers.clear();
             state.model_overrides.clear();
         }
-        maestro_models::reset_api_providers();
-        maestro_models::reset_oauth_providers();
+        for name in pruned.iter().chain(own.iter()) {
+            maestro_models::unregister_api_providers(&self.provider_source(name));
+            maestro_models::unregister_oauth_provider(name);
+        }
+        maestro_models::register_built_in_api_providers();
         self.load_models()?;
         let mut cursor = 0;
         loop {
@@ -349,11 +386,41 @@ impl ModelRegistry {
         let index = state
             .registered_providers
             .as_slice()
-            .partition_point(|_, (ordinal, _)| *ordinal < cursor);
+            .partition_point(|_, (ordinal, ..)| *ordinal < cursor);
         state
             .registered_providers
             .get_index(index)
-            .map(|(name, (ordinal, config))| (name.clone(), *ordinal, SharedHandle::clone(config)))
+            .map(|(name, (ordinal, config, _))| {
+                (name.clone(), *ordinal, SharedHandle::clone(config))
+            })
+    }
+    /// Open the reload window: a retained provider keeps its own registrations only by
+    /// registering again before the next refresh, which then retires the rest.
+    pub fn begin_reload(&self) {
+        let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+        state.reload_window = true;
+        for entry in state.registered_providers.values_mut() {
+            entry.2 = false;
+        }
+    }
+    /// Source identity of this registry's own retained registration of `provider`.
+    fn provider_source(&self, provider: &str) -> String {
+        format!("provider:{}:{provider}", self.owner)
+    }
+    /// Retire retained registrations that no route renewed during an open reload window.
+    fn prune_reloaded(&self) -> Vec<String> {
+        let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+        let open = state.reload_window;
+        state.reload_window = false;
+        let mut pruned = Vec::new();
+        if open {
+            pruned = state
+                .registered_providers
+                .extract_if(.., |_, entry| !entry.2)
+                .map(|(name, _)| name)
+                .collect();
+        }
+        pruned
     }
     /// Retain the source entry identity for a later consuming phase.
     fn request_config(&self, provider: &str) -> Option<Arc<ProviderRequestConfig>> {

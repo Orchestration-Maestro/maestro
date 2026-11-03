@@ -93,9 +93,9 @@ fn display_name_precedence_keeps_present_empty_names() {
 }
 
 #[test]
-fn construction_preserves_global_registries_but_refresh_resets_other_instances() {
+fn refresh_keeps_another_instances_registrations_and_retires_only_unrenewed_own_ones() {
     if dynamic::isolated(
-        "construction_preserves_global_registries_but_refresh_resets_other_instances",
+        "refresh_keeps_another_instances_registrations_and_retires_only_unrenewed_own_ones",
     ) {
         return;
     }
@@ -114,13 +114,18 @@ fn construction_preserves_global_registries_but_refresh_resets_other_instances()
     assert!(maestro_models::get_oauth_provider("p").is_some());
     assert_eq!(second.get_provider_display_name("p"), "Dynamic OAuth");
     second.refresh().unwrap();
-    assert!(maestro_models::get_api_provider("instance-api").is_none());
-    assert!(maestro_models::get_oauth_provider("p").is_none());
+    assert!(maestro_models::get_api_provider("instance-api").is_some());
+    assert!(maestro_models::get_oauth_provider("p").is_some());
     assert_eq!(first.get_provider_display_name("p"), "P");
-    assert_eq!(second.get_provider_display_name("p"), "p");
+    assert_eq!(second.get_provider_display_name("p"), "Dynamic OAuth");
     first.refresh().unwrap();
     assert_eq!(dynamic::failure(&first, "p", "m"), "first");
     assert!(maestro_models::get_oauth_provider("p").is_some());
+    first.begin_reload();
+    first.refresh().unwrap();
+    assert!(maestro_models::get_api_provider("instance-api").is_none());
+    assert!(maestro_models::get_oauth_provider("p").is_none());
+    assert_eq!(first.get_provider_display_name("p"), "p");
 }
 
 #[test]

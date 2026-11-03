@@ -28,7 +28,7 @@ impl ModelRegistry {
         provider: &str,
         config: &SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Option<OAuthProviderHandle> {
-        install_operations(provider, config);
+        install_operations(self, provider, config);
         {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
@@ -88,6 +88,8 @@ impl ModelRegistry {
         let removed = retired.is_some();
         drop(retired);
         if removed {
+            maestro_models::unregister_api_providers(&self.provider_source(provider_name));
+            maestro_models::unregister_oauth_provider(provider_name);
             self.refresh()?;
         }
         Ok(())
@@ -100,14 +102,15 @@ impl ModelRegistry {
     ) {
         let existing = {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
-            if let Some((_, existing)) = state.registered_providers.get(provider) {
-                SharedHandle::clone(existing)
+            if let Some(existing) = state.registered_providers.get_mut(provider) {
+                existing.2 = true;
+                SharedHandle::clone(&existing.1)
             } else {
                 let ordinal = state.next_provider;
                 state.next_provider += 1;
                 state
                     .registered_providers
-                    .insert(provider.into(), (ordinal, config));
+                    .insert(provider.into(), (ordinal, config, true));
                 return;
             }
         };
@@ -139,7 +142,17 @@ impl ModelRegistry {
     }
 }
 /// Install retained account/callback handles without guards over registry retirement.
-fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfigInput>>) {
+fn install_operations(
+    registry: &ModelRegistry,
+    provider: &str,
+    config: &SharedHandle<RwLock<ProviderConfigInput>>,
+) {
+    let mut state = registry
+        .state
+        .write()
+        .unwrap_or_else(PoisonError::into_inner);
+    state.orphan_installs.push(provider.to_owned());
+    drop(state);
     let oauth = config
         .read()
         .unwrap_or_else(PoisonError::into_inner)
@@ -169,7 +182,7 @@ fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfi
                 stream: owner.clone(),
                 stream_simple: owner,
             },
-            Some(format!("provider:{provider}")),
+            Some(registry.provider_source(provider)),
         );
     }
 }

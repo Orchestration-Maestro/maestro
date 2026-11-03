@@ -22,8 +22,9 @@ overlays keep the loading rules below, including one-level routing overlays.
 
 `set_base_model_files` replaces the ordered base files below the construction-time
 files and refreshes the registry, replaying dynamic providers. An empty base that
-was already empty leaves the current catalog untouched. Session construction and
-reload use this operation for base-package contributions.
+was already empty leaves the current catalog untouched, unless a reload window is
+open: that refresh always runs, so it can retire registrations no route renewed.
+Session construction and reload use this operation for base-package contributions.
 
 [Configure custom models](models/custom.md) walks through editing `models.json`,
 local endpoints, field defaults and compatibility settings.
@@ -84,13 +85,30 @@ the preceding file diagnostic before reloading. `get_error` returns an owned
 `Option<String>`: an earlier observation survives clearing or replacement.
 
 Construction loads without resetting shared account or protocol registrations.
-`refresh` clears request sources and the preceding file diagnostic, resets shared
-registrations, loads the underlying catalog, then replays this registry's retained
+`refresh` clears request sources and the preceding file diagnostic, removes this
+registry's own protocol and account registrations, restores the bundled protocols
+in place, loads the underlying catalog, then replays this registry's retained
 providers in live insertion order. Replacement keeps its slot; removal skips a
 pending provider; removal followed by insertion moves it to the end. Callback
 additions are visited during that replay. A transformation failure stops replay
 with earlier effects still visible. See [OAuth transformations](models/oauth.md)
 for the delegated account behavior.
+
+Registrations are owned. Every dynamic registration this registry installs carries
+an ownership identity derived from a process-unique registry instance and the
+registration name, and removal goes through that identity. A refresh or removal
+therefore replaces only this registry's own entries plus the bundled protocols;
+registrations another registry instance or an extension holds in the same process
+stay registered, whoever reloads. Failed registrations keep this rule too: a
+registration whose transformation fails leaves its own installed protocols and
+account entries with the registry, and the next refresh removes them again.
+
+A reload opens this registry's reload window and closes it at the following
+refresh. During the window, newly retained registrations are marked renewed; the
+closing refresh additionally removes every retained registration no route renewed
+and its installed pieces. That is how a dropped extension loses its provider: the
+extension stopped registering, so nothing renews its registration, and no later
+refresh without a window restores it.
 
 ## Callback re-entry
 
@@ -138,7 +156,8 @@ request sources instead replace as a whole when an incoming key is nonempty,
 headers are present, or the auth-header flag is true.
 
 OAuth registration forces the installed ID to the registration name. Raw and
-simple protocol calls forward to the supplied callback under `provider:<name>`;
+simple protocol calls forward to the supplied callback under this registry's own
+ownership identity beside the registration name;
 see [invocation records](records.md) for option carriers. The retained callable
 supports both execution families. Forwarding preserves the original raw/simple
 carrier and the caller's producer admission, without invoking its hooks. Incoming OAuth model
@@ -153,7 +172,8 @@ A transform failure leaves installed handlers, request sources and the replaceme
 list visible, but the failed call does not upsert the incoming configuration.
 Prior edits through an already-retained configuration alias remain visible.
 
-`unregister_provider` does nothing for unknown names. A known name is removed
+`unregister_provider` does nothing for unknown names. Its removal touches only
+entries this registry installed. A known name is removed
 before refresh restores the underlying catalog and replays surviving providers;
 a replay failure does not undo removal. Retained old descriptors and callback
 handles remain independent of later publication or registration changes.

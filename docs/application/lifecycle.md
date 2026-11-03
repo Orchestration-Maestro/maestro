@@ -63,6 +63,14 @@ Reload emits `session_start` and extends extension resources only when a UI cont
 command actions, shutdown handler or error handler is bound. An abort handler alone
 does not count.
 
+Reload also opens the model catalog's reload window. Each catalog owns its
+registrations and shares none with other sessions in the process. Extensions
+re-register their providers while the window is open; with the following refresh
+the catalog retires every registration its own routes did not renew. A provider
+whose extension no longer loads is therefore unregistered by the reload, and no
+later refresh restores it. The reload replaces only the bundled protocols and
+what this catalog owns, so another session's registrations stay registered.
+
 ## Names
 
 `AgentSession::set_session_name` stores the trimmed name before publishing
