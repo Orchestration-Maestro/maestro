@@ -12,6 +12,7 @@ use crate::AuthType;
 use maestro_app::{AuthCredential, OAuthCredentials, OAuthError};
 use maestro_theme::ThemeColor;
 use maestro_tui::Component;
+use std::ffi::OsStr;
 use std::{path::Path, sync::Arc};
 
 /// Registers the catalog provider `id` with two models, named `name` when given and keyed
@@ -136,7 +137,7 @@ fn login_provider_rows_keep_method_identity_and_name_order() {
     isolated_case(
         "login_provider_rows_keep_method_identity_and_name_order",
         "child",
-        &[("LC_ALL", "en_US.UTF-8")],
+        &[(OsStr::new("LC_ALL"), OsStr::new("en_US.UTF-8"))],
         async |directory| {
             let world = started_with(directory, None).await;
             named_catalog(&world);

@@ -8,6 +8,7 @@ use maestro_app::{
 use maestro_tui::{Component, Container, EditorComponent, Spacer, Text};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
+use std::ffi::OsStr;
 use std::{collections::BTreeMap, io, panic::AssertUnwindSafe, path::Path, rc::Rc};
 
 /// Every recorded command case.
@@ -396,7 +397,7 @@ fn session_info_keeps_counts_cache_cost_and_file_branches() {
     isolated_case(
         test,
         "child",
-        &[("LC_ALL", "en_US.UTF-8")],
+        &[(OsStr::new("LC_ALL"), OsStr::new("en_US.UTF-8"))],
         async |directory| {
             let world = started(directory).await;
             let theme = world.themes.theme().get().unwrap();
@@ -451,7 +452,7 @@ fn session_info_uses_selected_locale_and_fixed_cost() {
         isolated_case(
             "session_info_uses_selected_locale_and_fixed_cost",
             selected,
-            &[("LC_ALL", selected)],
+            &[(OsStr::new("LC_ALL"), OsStr::new(selected))],
             async |directory| (locale_texts(directory, selected)).await,
         );
     }

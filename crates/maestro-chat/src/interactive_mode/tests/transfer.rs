@@ -11,6 +11,7 @@ use maestro_app::{
     ExtensionFactory, Local, NativeExportOperations, ReadonlySessionManager, SessionManager,
     ToolRenderEnvironment,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tui::Component;
 use serde::Deserialize;
@@ -1119,42 +1120,48 @@ fn import_failed_factory() -> maestro_app::CreateAgentSessionRuntimeFactory {
 #[test]
 fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
     const TEST: &str = "transfer_import_runtime_failure_reaches_the_existing_fatal_owner";
-    let output = super::isolated_output(TEST, "fatal", &[], ":", async |directory| {
-        let path = import_file(directory, "fatal.jsonl", directory);
-        let watcher = Rc::new(RecordingWatcher::default());
-        let world = Setup {
-            create: Some(import_failed_factory()),
-            session_history: Some(directory.join("destination")),
-            directories: Some(with_custom_theme(directory)),
-            watcher: Some(Rc::clone(&watcher) as Rc<dyn FooterOperations>),
-            configure: Box::new(|settings| settings.set_theme("custom".to_owned())),
-            ..Setup::default()
-        }
-        .build(directory);
-        world.mode.init().await.unwrap();
-        world.runtime.settle().unwrap();
-        let theme = watcher
-            .paths()
-            .iter()
-            .position(|path| path.ends_with("custom"));
-        assert!(
-            !watcher.closed(theme.unwrap()),
-            "the custom theme is watched"
-        );
-        world.terminal.set_tap(move |bytes| {
-            if bytes.contains("\x1b[?25h") {
-                eprint!(
-                    "\nPROBE theme watch closed={}\n",
-                    watcher.closed(theme.unwrap())
-                );
+    let output = super::isolated_output(
+        TEST,
+        "fatal",
+        &[],
+        IsolatedSetup::new(),
+        async |directory| {
+            let path = import_file(directory, "fatal.jsonl", directory);
+            let watcher = Rc::new(RecordingWatcher::default());
+            let world = Setup {
+                create: Some(import_failed_factory()),
+                session_history: Some(directory.join("destination")),
+                directories: Some(with_custom_theme(directory)),
+                watcher: Some(Rc::clone(&watcher) as Rc<dyn FooterOperations>),
+                configure: Box::new(|settings| settings.set_theme("custom".to_owned())),
+                ..Setup::default()
             }
-            eprint!("{bytes}");
-        });
-        submit(&world.mode, &format!("/import {}", path.display()));
-        import_settle(&world);
-        import_answer(&world, "\r");
-        panic!("fatal import must exit the child");
-    });
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let theme = watcher
+                .paths()
+                .iter()
+                .position(|path| path.ends_with("custom"));
+            assert!(
+                !watcher.closed(theme.unwrap()),
+                "the custom theme is watched"
+            );
+            world.terminal.set_tap(move |bytes| {
+                if bytes.contains("\x1b[?25h") {
+                    eprint!(
+                        "\nPROBE theme watch closed={}\n",
+                        watcher.closed(theme.unwrap())
+                    );
+                }
+                eprint!("{bytes}");
+            });
+            submit(&world.mode, &format!("/import {}", path.display()));
+            import_settle(&world);
+            import_answer(&world, "\r");
+            panic!("fatal import must exit the child");
+        },
+    );
     if let Some(output) = output {
         assert_eq!(output.status.code(), Some(1), "{output:?}");
         let painted = String::from_utf8(output.stderr).unwrap();
@@ -1332,9 +1339,10 @@ fn transfer_import_notice_failures_keep_the_source_catch_boundary() {
         }
     });
     for branch in ["first-status", "first-veto", "first-replay"] {
-        let output = super::isolated_output(TEST, branch, &[], ":", async |directory| {
-            import_fatal_notice(directory, branch).await;
-        });
+        let output =
+            super::isolated_output(TEST, branch, &[], IsolatedSetup::new(), async |directory| {
+                import_fatal_notice(directory, branch).await;
+            });
         if let Some(output) = output {
             assert_eq!(output.status.code(), Some(1), "{branch}: {output:?}");
             let painted = String::from_utf8(output.stderr).unwrap();

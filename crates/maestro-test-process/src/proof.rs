@@ -100,8 +100,14 @@ pub struct CheckedChild {
 impl CheckedChild {
     /// Read only the prologue from the child's standard output and prove it.
     ///
+    /// Callers use this when they launch the selected test through their own command.
     /// On failure the direct child is closed and reaped.
-    pub(crate) fn start(test: &str, mut child: Child) -> Result<Self, TestProcessError> {
+    ///
+    /// # Errors
+    ///
+    /// Fails when standard output is not piped, cannot be read, or does not begin with the
+    /// one-test prologue.
+    pub fn start(test: &str, mut child: Child) -> Result<Self, TestProcessError> {
         let stdin = child.stdin.take();
         let stderr = child.stderr.take();
         let mut seen = Vec::new();
@@ -198,5 +204,41 @@ impl CheckedChild {
                 .splice(0..0, HARNESS_START[replayed..].iter().copied());
         }
         Ok(output)
+    }
+}
+
+#[cfg(test)]
+#[cfg(unix)]
+mod tests {
+    use std::process::{Command, Stdio};
+
+    use rustix::process::{Pid, test_kill_process};
+
+    use super::CheckedChild;
+
+    /// Whether a process with `pid` still exists.
+    fn alive(pid: u32) -> bool {
+        let Ok(raw) = i32::try_from(pid) else {
+            return false;
+        };
+        Pid::from_raw(raw).is_some_and(|pid| test_kill_process(pid).is_ok())
+    }
+
+    #[test]
+    fn a_child_that_does_not_start_the_test_is_closed_and_reaped() {
+        // A listing run prints test names where the one-test prologue belongs.
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .arg("--list")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped());
+        let child = command.spawn().unwrap();
+        let pid = child.id();
+        let error = CheckedChild::start("proof::tests::listed", child).unwrap_err();
+        assert!(
+            error.to_string().contains("did not start exactly"),
+            "{error}"
+        );
+        assert!(!alive(pid), "child {pid} was not reaped");
     }
 }

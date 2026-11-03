@@ -1351,8 +1351,7 @@ sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
-records. Other tooling fixture families and Unix `shell_setup` keep their existing
-contracts.
+records. Other tooling fixture families keep their existing contracts.
 
 #### Retained native boundaries
 
@@ -1715,10 +1714,15 @@ zero, sends standard output there and checks the prefix through that same open
 file. Nonempty files or nonzero cursors are rejected before launch, including
 append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
-descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
-executable replaces the shell, in the interpreter the caller names by absolute
-path: neither this process's `PATH` nor the child's selects it, and a relative
-path is refused before anything runs.
+descriptor or setup setting. `setup` (Unix) carries an `IsolatedSetup` request.
+The child applies its effects in a fixed order: umask, new session, nonterminating
+file-size handling, then process-count limit. The builder writes that request into
+the child's environment and the child applies it through
+`IsolatedSetup::apply_requested` before its body, holding the returned guard. The
+runner keeps its own modes, limits, session and environment, and a refused effect
+stops the child before anything is observed. The umask contains only octal permission
+bits (`000` through `777`); the child checks its conversion to the platform's native
+mode type before applying it.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
@@ -1726,9 +1730,11 @@ selected test starts; callers still check its exit status and scenario output.
 `env_clear()` preserves the inherited coverage profile destination, and later
 caller edits can override or remove it. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
-reaping. Settings helpers select supplied complete nested identities with `named`
-and apply shell setup through `shell_setup`, keeping reports separate from exit
-status checks.
+reaping. Call `CheckedChild::start` when the test uses its own command to launch
+the selected child; it proves the same prologue and reaps a failed start. Settings
+helpers select supplied complete nested identities with `named` and request a
+process-count limit through `setup`, keeping reports separate from exit status
+checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
