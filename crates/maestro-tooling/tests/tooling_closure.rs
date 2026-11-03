@@ -1,8 +1,8 @@
 //! The workspace crates a tooling fixture must copy, read from Cargo metadata.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::path::Path;
-use std::{env, fs};
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 
@@ -29,7 +29,8 @@ fn workspace_metadata(root: &Path) -> Metadata {
 /// The local crates `package` needs beside itself in `metadata`.
 ///
 /// The copied root manifest makes every copied crate a workspace member, so cargo reads every
-/// reached crate's own dependencies: development and build ones, every target's included.
+/// reached crate's own dependencies: development and build ones, every target's included. The
+/// package itself stays out, so a crate that reaches it again cannot copy it over itself.
 fn local_dependencies(metadata: &Metadata, package: &str) -> Vec<String> {
     let packages: BTreeMap<&str, &Package> = metadata
         .packages
@@ -39,15 +40,16 @@ fn local_dependencies(metadata: &Metadata, package: &str) -> Vec<String> {
     let mut found = BTreeSet::new();
     let mut pending = vec![package];
     while let Some(name) = pending.pop() {
-        let Some(owner) = packages.get(name) else {
-            continue;
-        };
+        let owner = packages
+            .get(name)
+            .unwrap_or_else(|| panic!("{name} is not a member of the metadata workspace"));
         for dependency in &owner.dependencies {
             let path = dependency.path.as_deref();
             let Some(directory) = path.and_then(|path| path.file_name()) else {
                 continue;
             };
-            if directory != STAND_IN && found.insert(directory.to_owned()) {
+            let copied = directory != STAND_IN && directory != package;
+            if copied && found.insert(directory.to_owned()) {
                 pending.push(directory);
             }
         }
@@ -86,7 +88,8 @@ fn write_crate(root: &Path, name: &str, dependencies: &str) {
 }
 
 /// Direct, inherited, target-specific and transitive local dependencies are found along with a
-/// dependency's own development dependency; the stand-in and registry crates are not.
+/// dependency's own development dependency; the stand-in, the package itself and registry crates
+/// are not.
 #[test]
 fn closure_follows_metadata_the_way_cargo_reads_it() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -100,7 +103,7 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
     .unwrap();
     write_crate(
         root,
-        "owner",
+        "maestro-tooling",
         "[dependencies]\ndirect = { path = '../direct' }\nregistry = '=1.0.0'\n\
          maestro-dependencies.workspace = true\n\
          [target.'cfg(unix)'.dev-dependencies]\ninherited.workspace = true\n\
@@ -110,7 +113,8 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
         root,
         "direct",
         "[dependencies]\ntransitive = { path = '../transitive' }\n\
-         [dev-dependencies]\nunread = { path = '../unread' }\n",
+         [dev-dependencies]\nunread = { path = '../unread' }\n\
+         maestro-tooling = { path = '../maestro-tooling' }\n",
     );
     for name in [
         "inherited",
@@ -121,6 +125,7 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
     ] {
         write_crate(root, name, "");
     }
+    // The fixture command keeps the scratch workspace on a private cargo home.
     let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
         .unwrap()
         .args([
@@ -138,7 +143,10 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_eq!(
-        local_dependencies(&serde_json::from_slice(&output.stdout).unwrap(), "owner"),
+        local_dependencies(
+            &serde_json::from_slice(&output.stdout).unwrap(),
+            "maestro-tooling"
+        ),
         ["built", "direct", "inherited", "transitive", "unread"]
     );
 }
