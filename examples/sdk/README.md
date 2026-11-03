@@ -7,7 +7,6 @@ the [Rust client](../../docs/client.md) provides typed subprocess operations.
 | File | Purpose |
 |---|---|
 | `rpc.py` | Inspect session state or print one prompted run with an LF-only JSONL reader. |
-| `test_rpc.py` | Check the Python example against disposable subprocess peers without provider calls. |
 
 ## Inspect a session
 
@@ -26,13 +25,17 @@ retries or compaction recovery, or wait for slash commands handled without a run
 
 ## Check the example
 
+The example's checks are Rust tests beside the terminal client, and their peers
+are native Rust fixtures, so only `rpc.py` itself runs under Python 3:
+
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s examples/sdk -p test_rpc.py
+just prepare-tests
+cargo nextest run --locked -p maestro-chat -E 'binary(rpc_extension_ui)'
 ```
 
-The tests cover LF framing with Unicode separators, startup dialogs, response
-correlation, run completion, refusals, EOF and child exit status. They need
-neither Maestro nor credentials.
+The checks cover LF framing with Unicode separators, startup dialogs, response
+correlation, run completion in either order, refusals, end of input and child
+exit status. They need neither Maestro nor credentials.
 
 For the interactive Rust flow, see the application-owned
 [`rpc_client_demo`](../../crates/maestro-app/examples/rpc_client_demo/main.rs).

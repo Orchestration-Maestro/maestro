@@ -1189,7 +1189,8 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests, `maestro-app` and the command-line startup tests.
+attachment-completion tests, `maestro-app`, the command-line startup tests and
+the terminal client example's tests.
 Local setup builds the example with the locked host `dev` profile and reads Cargo's
 emitted executable path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1398,6 +1399,31 @@ interrupt peer reads commands on one thread and records TERM through a native
 signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
+
+The terminal client example and the client example's checks use the same family on
+every native platform. `DialogTour` answers a prompt, four correlated dialogs and
+six notices before ending with status seven; `LocalDialogTour` answers the local
+demonstration prompt; `Notifications` reports each notice severity. The remaining
+scenarios keep authored text literal:
+
+| Scenario | Behavior |
+| --- | --- |
+| `SelectionReplies` | Emits a padded and an empty selection and requires each value in its own correlated reply. |
+| `DialogText` | Reports dialog chrome that contains terminal controls and requires the answer to repeat them. |
+| `MultilineCommand` | Requires a confirmation of a message that holds its own blank line. |
+| `LiteralText` | Refuses the prompt, then streams text, a tool name and a control sequence as data before ending normally. |
+| `TerminationMarker` | Reads the first termination signal and writes `SIGTERM` to the file `PEER_MARKER` names. |
+| `PromptExit` | Reports readiness, requires the first prompt and ends with status seven. |
+| `UnicodeState` | Answers a cancelled startup dialog, then sends state with U+2028 and U+2029 inside a CRLF-terminated record. |
+| `PromptAcceptance` | Answers state, emits `agent_end` and only then accepts the prompt. |
+| `EndAfterAcceptance` | Accepts the prompt and streams a delta before `agent_end`. |
+| `AcceptedEof` | Accepts the prompt and closes the stream before any terminal event. |
+| `ExitAfterReply` | Answers the first request, reads input to its end and exits with status three. |
+| `RefusedState` | Refuses the startup request without a terminal event. |
+| `EarlyEof` | Closes the stream before answering. |
+
+The client example's checks launch the shipped `examples/sdk/rpc.py` against an
+installed alias of this family, so only the example itself runs under Python 3.
 
 #### Footer Git aliases
 
