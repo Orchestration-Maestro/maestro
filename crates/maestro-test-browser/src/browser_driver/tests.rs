@@ -45,11 +45,7 @@ async fn raw_status(origin: &str, path: &str, status: u16) {
 
 /// Run asynchronous unit observations on one controlled current-thread runtime.
 pub(super) fn block_on<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
+    crate::test_support::runtime().unwrap().block_on(future)
 }
 
 /// A real listener returns CORS/CSP/MIME bytes and closes its endpoint on completion.
@@ -116,7 +112,20 @@ fn chromium_version_rejects_missing_or_different_versions() {
     ] {
         assert!(inputs::chromium_version(version).is_err(), "{version}");
     }
-    assert!(package::tools(Path::new("relative"), Path::new(".")).is_err());
+}
+
+/// Invalid executable paths fail before any binding CLI or browser is launched.
+#[test]
+fn chromium_path_requires_an_absolute_existing_file() {
+    let root = Scratch::new().unwrap();
+    for executable in [
+        Path::new("relative").to_owned(),
+        Path::new("Cargo.toml").to_owned(),
+        root.path().join("absent-chromium"),
+    ] {
+        let error = package::tools(&executable, Path::new(".")).unwrap_err();
+        assert!(error.to_string().contains("CHROMIUM_PATH"), "{error}");
+    }
 }
 
 /// Validate the actual inventory before any export may execute.

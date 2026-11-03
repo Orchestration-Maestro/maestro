@@ -303,7 +303,10 @@ async fn host_digest(root: &Path) -> io::Result<String> {
 }
 
 /// Preserve the original failure while still reporting an independent cleanup failure.
-fn cleanup<T>(result: io::Result<T>, closed: io::Result<()>) -> io::Result<T> {
+///
+/// # Errors
+/// Returns the original failure, or the cleanup failure when the operation succeeded.
+pub fn cleanup<T>(result: io::Result<T>, closed: io::Result<()>) -> io::Result<T> {
     match result {
         Ok(value) => closed.map(|()| value),
         Err(error) => {

@@ -1,18 +1,17 @@
 //! Shared pinned-browser runtime and native fixture ownership.
 
 use chromiumoxide::cdp::browser_protocol::{browser::BrowserContextId, target::SessionId};
-use maestro_test_browser::browser_driver::{Browser, Page, Server};
+use maestro_test_browser::{
+    browser_driver::{Browser, Page, Server, cleanup},
+    test_support,
+};
 use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{fs, future::Future, io, path::Path};
 
 /// Run one browser test without enabling test-specific runtime features.
 pub(super) fn run<T>(future: impl Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
+    test_support::runtime().unwrap().block_on(future)
 }
 
 /// Own a fresh packaged endpoint and browser for the entire supplied assertion.
@@ -46,20 +45,21 @@ pub(super) async fn fixture<T>(
         include_str!("../../../maestro-web/tests/sandbox_loading_support/native.js"),
     )
     .unwrap();
+    let profile = Scratch::new().unwrap();
     let server = Server::start(root.path()).await.unwrap();
-    let browser = Browser::launch(Path::new(&executable), &root.path().join("profile"), args).await;
+    let browser = Browser::launch(Path::new(&executable), profile.path(), args).await;
     let result = match browser {
         Ok(mut browser) => {
             let result = action(&mut browser, &server.origin).await;
             let closed = browser.close().await;
-            combine(result, closed)
+            cleanup(result, closed)
         }
         Err(error) => {
-            let error = combine::<()>(Err(error), server.close().await).unwrap_err();
+            let error = cleanup::<()>(Err(error), server.close().await).unwrap_err();
             panic!("browser fixture startup: {error}");
         }
     };
-    combine(result, server.close().await)
+    cleanup(result, server.close().await)
 }
 
 /// Create an independent page through the same browser connection.
@@ -88,19 +88,6 @@ pub(super) async fn foreign_page(page: &mut Page<'_>) -> io::Result<(BrowserCont
         .await?;
     let session = SessionId::from(attached["sessionId"].as_str().unwrap().to_owned());
     Ok((context, session))
-}
-
-/// Keep the assertion's failure when a crashed browser also rejects graceful close.
-fn combine<T>(result: io::Result<T>, closed: io::Result<()>) -> io::Result<T> {
-    match result {
-        Ok(value) => closed.map(|()| value),
-        Err(error) => {
-            if let Err(closed) = closed {
-                eprintln!("cleanup after failure: {closed}");
-            }
-            Err(error)
-        }
-    }
 }
 
 /// Mount the exact pointer-reporting document with nested, SVG and decoy variations.
