@@ -197,51 +197,42 @@ fn captured_commands_preserve_stream_choice_and_failure_wrapper() {
 #[test]
 fn native_capture_matches_controlled_stream_results() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
+    let scratch = crate::scratch::Scratch::new().unwrap();
     let operations = NativePackageOperations::new(
         std::rc::Rc::new(|| false),
         &std::rc::Rc::new(tokio::task::LocalSet::new()),
     );
-    let child = operations
-        .run_command_sync(
-            "sh",
-            &["-c".into(), "printf ' root \\n'; printf ignored >&2".into()],
+    let stand_in = |name: &str, stdout: &[u8], stderr: &[u8], code: u8| {
+        crate::native_support::command(
+            scratch.path(),
+            name,
+            &crate::native_support::output(stdout, stderr, code),
         )
-        .unwrap();
+        .to_string_lossy()
+        .into_owned()
+    };
+    let trim = stand_in("trim", b" root \n", b"ignored", 0);
+    let output = operations.run_command_sync(&trim, &[]).unwrap();
     assert_eq!(
-        (child.status, child.stdout, child.stderr),
+        (output.status, output.stdout, output.stderr),
         (Some(0), " root \n".into(), "ignored".into())
     );
-    let child = operations
-        .run_command_sync(
-            "sh",
-            &[
-                "-c".into(),
-                "printf '\\377a'; printf err >&2; exit 3".into(),
-            ],
-        )
-        .unwrap();
+    let invalid = stand_in("invalid", b"\xffa", b"err", 3);
+    let output = operations.run_command_sync(&invalid, &[]).unwrap();
     assert_eq!(
-        (child.status, child.stdout, child.stderr),
-        (Some(3), "�a".into(), "err".into())
+        (output.status, output.stdout, output.stderr),
+        (Some(3), "\u{fffd}a".into(), "err".into())
     );
-    let child = operations
-        .run_command_sync("sh", &["-c".into(), "printf ' fallback \n' >&2".into()])
-        .unwrap();
+    let fallback = stand_in("fallback", b"", b" fallback \n", 0);
+    let output = operations.run_command_sync(&fallback, &[]).unwrap();
     assert_eq!(
-        (child.status, child.stdout, child.stderr),
+        (output.status, output.stdout, output.stderr),
         (Some(0), String::new(), " fallback \n".into())
     );
-    let child = operations
-        .run_command_sync(
-            "sh",
-            &[
-                "-c".into(),
-                "printf 'out\n'; printf 'err\n' >&2; exit 3".into(),
-            ],
-        )
-        .unwrap();
+    let both = stand_in("both", b"out\n", b"err\n", 3);
+    let output = operations.run_command_sync(&both, &[]).unwrap();
     assert_eq!(
-        (child.status, child.stdout, child.stderr),
+        (output.status, output.stdout, output.stderr),
         (Some(3), "out\n".into(), "err\n".into())
     );
 }

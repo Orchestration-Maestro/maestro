@@ -51,6 +51,10 @@ prepublish: clean build check
 pre-commit:
     cargo run --quiet --locked -p maestro-tooling --bin development -- pre-commit
 
+# Run the conventions checker's own suite with its prepared native fixture.
+test-conventions: prepare-tests
+    @cargo nextest run -p maestro-test-conventions --locked
+
 # Remove models compilation outputs only.
 models-clean:
     cargo clean -p maestro-models

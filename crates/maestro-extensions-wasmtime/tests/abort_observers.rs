@@ -68,13 +68,11 @@ pub(super) fn signal_release(signal: &Cancellation) -> tokio::sync::oneshot::Rec
     release
 }
 
-/// How many of the observed signals some owner still retains.
-pub(super) fn retained(releases: &mut [tokio::sync::oneshot::Receiver<()>]) -> usize {
-    releases
-        .iter_mut()
-        .map(tokio::sync::oneshot::Receiver::try_recv)
-        .filter(Result::is_err)
-        .count()
+/// Completes once every observed signal has lost its last owner, wherever that owner drops it.
+pub(super) async fn all_released(releases: Vec<tokio::sync::oneshot::Receiver<()>>) {
+    for release in releases {
+        release.await.unwrap();
+    }
 }
 
 /// Requires the signal to stay shareable across threads.
@@ -203,12 +201,7 @@ fn removed_abort_observers_release_their_signals() {
             );
         }
         bind(&runner, &Cancellation::new());
-        signal_command(&runner, "barrier").await;
-        assert_eq!(
-            retained(&mut releases),
-            0,
-            "removed observers kept their signals"
-        );
+        all_released(releases).await;
     });
 }
 

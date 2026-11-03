@@ -7,25 +7,21 @@ use maestro_packages::{
 };
 use maestro_settings::SettingsListEntry;
 use std::{path::Path, rc::Rc};
-/// Constructs an executable through a child process instead of executing a writable file.
+/// Installs the prepared fixture as the dependency command of a checkout.
 fn executable(root: &Path) -> String {
-    let source = root.join("source");
-    let target = root.join("package-command");
-    std::fs::write(
-        &source,
-        "#!/bin/sh\nprintf 'installed\\n' >> dependency-log\n",
+    crate::native_support::command(
+        root,
+        "package-command",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": [],
+            "stderr": [],
+            "code": 0,
+            "append": {"path": "dependency-log", "cwd": false, "bytes": b"installed\n"}
+        }),
     )
-    .unwrap();
-    assert!(
-        std::process::Command::new("install")
-            .args(["-m", "0700"])
-            .arg(source)
-            .arg(&target)
-            .status()
-            .unwrap()
-            .success()
-    );
-    target.to_string_lossy().into_owned()
+    .to_string_lossy()
+    .into_owned()
 }
 /// Creates a local bare remote with a distinguishable resource.
 fn repository(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {

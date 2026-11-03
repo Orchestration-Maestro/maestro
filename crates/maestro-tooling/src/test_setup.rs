@@ -330,8 +330,8 @@ fn preparation_command(checkout: &Path, example: &Path, target: &Path) -> Comman
 }
 
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// the user cache, and write the component paths to `environment`. Nothing is installed or
-/// written unless every check passes.
+/// the cache under `cache_home`, and write the component paths to `environment`. Nothing is
+/// installed or written unless every check passes.
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
@@ -340,12 +340,20 @@ pub(crate) fn install_bundle(
     output: &Path,
     directory: &Path,
     environment: &Path,
+    cache_home: &Path,
 ) -> io::Result<()> {
-    export(checkout, output, directory, environment)
+    export(checkout, output, directory, environment, cache_home)
 }
 
-/// Validate and install the bundle in the cache directory the installed example reports.
-fn export(checkout: &Path, output: &Path, directory: &Path, environment: &Path) -> io::Result<()> {
+/// Validate and install the bundle in the cache directory the installed example reports for
+/// `cache_home`.
+fn export(
+    checkout: &Path,
+    output: &Path,
+    directory: &Path,
+    environment: &Path,
+    cache_home: &Path,
+) -> io::Result<()> {
     let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
@@ -378,8 +386,11 @@ fn export(checkout: &Path, output: &Path, directory: &Path, environment: &Path) 
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
     if let Some(code) = &manifest.compiled {
-        let cache_directory =
-            compiled_code::directory(Command::new(&installed).current_dir(checkout))?;
+        let cache_directory = compiled_code::directory(
+            Command::new(&installed)
+                .current_dir(checkout)
+                .env("XDG_CACHE_HOME", cache_home),
+        )?;
         code.install(&compiled, &cache_directory, &installed)?;
     }
     std::fs::write(environment, lines.concat())

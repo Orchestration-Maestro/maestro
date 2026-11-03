@@ -11,7 +11,7 @@ use maestro_packages::{
     NativePackageOperations, PackageFuture, PackageManagerOptions, PackageOperations,
     PackageUpdateType,
 };
-use maestro_settings::{Settings, SettingsManager};
+use maestro_settings::{Settings, SettingsListEntry, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use worker_support::{Gates, driver, gated_npm_checks};
@@ -26,6 +26,7 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
     let (runtime, local) = driver(&effects);
     let scratch = scratch::Scratch::new().unwrap();
     let cwd = scratch.path().to_string_lossy().into_owned();
+    let calls = scratch.path().join("calls");
     native_support::write(
         format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
         "{\"version\":\"1\"}",
@@ -37,11 +38,9 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
         maestro_settings::PackageSource::Source("npm:example".into()),
         maestro_settings::PackageSource::Source("npm:pinned@1".into()),
     ]);
-    native_settings.borrow_mut().set_npm_command(Some(
-        ["/bin/sh", "-c", "test \"$0\" = view && test \"$1\" = example && test \"$2\" = version && test \"$3\" = --json && printf '\"2\"'"]
-            .map(|s| maestro_settings::SettingsListEntry::String(s.into()))
-            .to_vec(),
-    ));
+    native_settings
+        .borrow_mut()
+        .set_npm_command(Some(view_stand_in(scratch.path(), &calls)));
     let native = native_manager(&cwd, native_settings.clone(), &local);
     let result = runtime.block_on(local.run_until(async {
         let controlled = controlled.check_for_available_updates().await.unwrap();
@@ -66,6 +65,7 @@ fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
         effects.calls.borrow().last().unwrap().1,
         ["view", "example", "version", "--json"]
     );
+    assert_view_operands(&calls);
     replacement_manifest(
         &format!("{cwd}/.maestro/npm/node_modules/example/package.json"),
         &local,
@@ -82,6 +82,33 @@ fn check(
 ) -> std::io::Result<Vec<maestro_packages::PackageUpdate>> {
     support::drive(effects, manager.check_for_available_updates())
 }
+/// The stand-in recorded one `view` invocation with the product's exact operands.
+fn assert_view_operands(calls: &std::path::Path) {
+    assert_eq!(
+        std::fs::read_to_string(calls)
+            .unwrap()
+            .split('\0')
+            .collect::<Vec<_>>(),
+        ["call", "view", "example", "version", "--json", ""]
+    );
+}
+
+/// The installed stand-in that answers `view` with `"2"` and logs every operand it receives.
+fn view_stand_in(directory: &std::path::Path, calls: &std::path::Path) -> Vec<SettingsListEntry> {
+    let alias = native_support::command(
+        directory,
+        "npm",
+        &json!({
+            "scenario": "npm",
+            "view": "\"2\"",
+            "log": {"path": calls.to_str().unwrap(), "mark": "call"}
+        }),
+    );
+    vec![SettingsListEntry::String(
+        alias.to_string_lossy().into_owned(),
+    )]
+}
+
 /// Queues completed captured responses.
 fn responses(effects: &support::Effects, values: &[&str]) {
     effects
