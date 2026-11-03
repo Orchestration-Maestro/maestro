@@ -54,6 +54,7 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
 fn builtin_local_shell_retains_exit_timeout_and_abort_outcomes() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
+        .start_paused(true)
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
@@ -82,8 +83,42 @@ fn builtin_local_shell_retains_exit_timeout_and_abort_outcomes() {
 /// Invokes the registered author's direct shell command and decodes its complete observation.
 async fn execute(runner: &ExtensionRunner<Local>, request: Value) -> Value {
     let command = runner.get_command("local-shell").unwrap().command;
-    let result = (command.handler)(request.to_string(), runner.create_command_context()).await;
+    let mut execution = std::pin::pin!((command.handler)(
+        request.to_string(),
+        runner.create_command_context()
+    ));
+    // Waking itself keeps the runtime from idling, so the paused clock moves only when advanced.
+    let result = std::future::poll_fn(|context| {
+        let polled = execution.as_mut().poll(context);
+        if polled.is_pending() {
+            context.waker().wake_by_ref();
+        }
+        polled
+    })
+    .await;
     serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
+}
+
+/// Runs on the paused clock, which advances in 100 ms steps only once the command has created
+/// `gate`, so timers never race the command's own start-up.
+async fn execute_elapsing(
+    runner: &ExtensionRunner<Local>,
+    request: Value,
+    gate: &std::path::Path,
+) -> Value {
+    let watched = gate.to_owned();
+    let clock = tokio::task::spawn_local(async move {
+        while !watched.exists() {
+            tokio::task::yield_now().await;
+        }
+        loop {
+            tokio::time::advance(std::time::Duration::from_millis(100)).await;
+        }
+    });
+    let observed = execute(runner, request).await;
+    clock.abort();
+    std::fs::remove_file(gate).unwrap();
+    observed
 }
 
 /// Missing status, optional seconds and cancellation retain the native driver's outcomes.
@@ -94,9 +129,10 @@ async fn local_cancellation(runner: &ExtensionRunner<Local>, cwd: &std::path::Pa
     )
     .await;
     assert_eq!(killed, json!({"bytes":b"killed","result":{"Ok":null}}));
-    let request = json!({"cwd":cwd,"command":"printf ready; exec /bin/sleep 60","timeout":1.5});
+    let gate = cwd.join("timeout-ready");
+    let request = json!({"cwd":cwd,"command":format!("printf ready; : > '{}'; exec /bin/sleep 60", gate.display()),"timeout":1.5});
     assert_eq!(
-        execute(runner, request.clone()).await,
+        execute_elapsing(runner, request.clone(), &gate).await,
         json!({"bytes":b"ready","result":{"Err":"timeout:1.5"}})
     );
     for timeout in [None, Some(1.5)] {
@@ -193,8 +229,11 @@ async fn local_streams_and_environment(runner: &ExtensionRunner<Local>, cwd: &st
 async fn local_artifacts(runner: &ExtensionRunner<Local>, cwd: &std::path::Path) {
     for abort in [false, true] {
         let signal = bind_signal(runner);
-        let observed = execute(runner, json!({"mode":"tool","cwd":cwd,"signal":abort,"abort":abort,"timeout":1.5,
-            "command":"head -c 60000 /dev/zero | tr '\\0' x; printf '\\nready'; exec /bin/sleep 60"})).await;
+        let gate = cwd.join("artifact-ready");
+        // The aborted run needs the clock only for the tool's update throttle, so it sets no timeout.
+        let request = json!({"mode":"tool","cwd":cwd,"signal":abort,"abort":abort,"timeout":(!abort).then_some(1.5),
+            "command":format!("head -c 60000 /dev/zero | tr '\\0' x; printf '\\nready'; : > '{}'; exec /bin/sleep 60", gate.display())});
+        let observed = execute_elapsing(runner, request, &gate).await;
         let error = observed["tool"]["Err"].as_str().unwrap();
         let status = if abort {
             "Command aborted"
