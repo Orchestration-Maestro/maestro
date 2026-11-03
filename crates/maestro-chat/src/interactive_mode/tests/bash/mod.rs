@@ -6,7 +6,7 @@ use super::typed::{recalled, submit};
 use super::{
     Setup, ShellOperations, World, active, admitted, driving, echoing_shell, gate, held_at,
     holding, install, isolated, printing, scripted, settle_shell, start_shell, start_shells,
-    started, transcript_positions,
+    started, take_admitted, transcript_positions,
 };
 use crate::BashExecutionComponent;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
@@ -165,17 +165,19 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
         async |directory| {
             let script = printing(directory, "shell", "ran\n");
             let world = shelling(directory, &script).await;
-            let ((), errors) = (driving(&world, async {
+            let (_, errors) = (driving(&world, async {
                 let mut rows = 0;
+                let mut failures = Vec::new();
                 for case in CASES {
                     assert!(active(&world).is_none(), "{:?}", case.text);
                     let delivered = delivered(&world, case.text);
                     assert_eq!(delivered, case.delivered, "{:?}", case.text);
                     assert_eq!(recalled(&world.mode.editor)[0], case.history);
                     rows += usize::from(case.shell);
-                    settled_submission(&world, case.shell).await;
+                    failures.extend(settled_submission(&world, case.shell).await);
                 }
                 assert_eq!(world.mode.chat_container.children().borrow().len(), rows);
+                failures
             }))
             .await;
             assert!(errors.is_empty(), "{errors:?}");
@@ -183,14 +185,17 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
     );
 }
 
-/// Awaits the command the submission admitted, when the text selected one.
-async fn settled_submission(world: &World, shell: bool) {
+/// Awaits the command the submission admitted, when the text selected one, and returns the
+/// failures it reported, as the other witness paths collect theirs.
+async fn settled_submission(world: &World, shell: bool) -> Vec<Box<dyn Error>> {
     if !shell {
-        return;
+        return Vec::new();
     }
-    for command in world.runtime.take_futures() {
-        command.await.expect("the shell command completes");
-    }
+    take_admitted(&world.runtime)
+        .await
+        .err()
+        .into_iter()
+        .collect()
 }
 
 /// The busy command's exact warning.
@@ -1150,8 +1155,8 @@ fn start_command(
 
 /// The shell row paints each streamed chunk as it arrives, in order, and keeps its loader
 /// until the command's delivery ends. The lifecycle witness beside it, which acknowledges the
-/// same phases through the mode's own caller, covers the sample script; this one keeps the
-/// submission's path and checks the transcript it leaves, while
+/// same phases through the mode's own caller, covers that caller's delivery path; this one
+/// keeps the submission's path and checks the transcript it leaves, while
 /// `native_shell_output_paints_chunks_once` still drives a real child.
 #[test]
 fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
@@ -1170,11 +1175,7 @@ fn shell_paints_streamed_chunks_in_order_before_its_row_completes() {
             let (world, _seen) =
                 intercepting_world(directory, &shell, lifecycle::scripting(&script)).await;
             submit(&world.mode, "!drain");
-            let caller = world
-                .runtime
-                .take_futures()
-                .pop()
-                .expect("the submission admits one command");
+            let caller = take_admitted(&world.runtime);
             let mut running = lifecycle::Running::start(world, caller, Some(parked_reached)).await;
             running.first_chunk_applied();
             let held = painted(&running.row);

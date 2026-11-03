@@ -1363,18 +1363,21 @@ pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
 }
 
-/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
-///
-/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
-/// caller runs it: such work, like a running shell command's output, can end only after the
-/// caller's later steps.
-pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+/// Takes the work `runtime` holds and returns what the last input handed over; work handed
+/// over earlier is spawned beside the caller, so a [`driving`] task runs it: such work, like
+/// a running shell command's output, can end only after the caller's later steps.
+fn take_admitted(runtime: &ManualRuntime) -> maestro_tui::tui::LocalFuture {
     let mut work = runtime.take_futures();
     let command = work.pop().expect("the input handed over its work");
     for earlier in work {
         maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
     }
-    command.await.err().into_iter().collect()
+    command
+}
+
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    take_admitted(runtime).await.err().into_iter().collect()
 }
 
 /// A submitted shell command running beside the caller, whose own completion ends a wait.
@@ -1384,11 +1387,7 @@ pub(super) type StartedShell = tokio::task::JoinHandle<Vec<Box<dyn Error>>>;
 /// waits for that command's own end.
 pub(super) fn start_shell(world: &World, text: &str) -> StartedShell {
     submit(&world.mode, text);
-    let mut work = world.runtime.take_futures();
-    let command = work.pop().expect("the submission admits its work");
-    for earlier in work {
-        maestro_tui::tui::TuiRuntime::spawn_local(&world.runtime, earlier);
-    }
+    let command = take_admitted(&world.runtime);
     tokio::task::spawn_local(async move { command.await.err().into_iter().collect() })
 }
 
@@ -1464,7 +1463,9 @@ pub(super) fn printing(directory: &Path, name: &str, text: &str) -> String {
     scripted(directory, name, &serde_json::json!([{"print": text}]))
 }
 
-/// Listens at `path`, so a shell step holding there waits until the listener is dropped.
+/// Listens at `path`, so a shell step holding there waits until its gate closes: dropping the
+/// returned listener resets a connection still queued, and dropping the connection a caller
+/// took through [`held_at`] ends the same wait at the command's read.
 pub(super) fn gate(path: &Path) -> std::os::unix::net::UnixListener {
     // A gate of an earlier case in the same directory leaves its socket file behind.
     drop(std::fs::remove_file(path));
