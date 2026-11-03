@@ -1127,10 +1127,9 @@ hashes every `CARGO_*` variable into the key of each rustc call, so a wrapper th
 saw the private home or the per-run target directory would give the registry crates
 of each fixture a key that no other fixture shares. Cargo itself keeps both
 variables and passes the compiler its output directory explicitly.
-`fixture_command_hides_cargo_home_from_the_compiler_wrapper` and
-`fixture_command_hides_the_target_directory_from_the_compiler_wrapper` run a
+`fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper` runs a
 fixture build behind the `recording` wrapper, which logs the `CARGO_HOME` and the
-`CARGO_TARGET_DIR` its compiler saw, and check that it never sees either.
+`CARGO_TARGET_DIR` its compiler saw, and checks that it never sees either.
 `fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper` does the same for a
 wrapper inherited as `CARGO_BUILD_RUSTC_WRAPPER`.
 
