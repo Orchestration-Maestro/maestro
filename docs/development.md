@@ -134,12 +134,15 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
-Compile each changed crate separately when checking helper availability:
+Lint each changed browser crate separately, including all test and example targets:
 
 ```sh
-~/.local/bin/capped cargo check --locked --tests \
-  --target wasm32-unknown-unknown -p maestro-tools
+~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+  --all-targets -p maestro-models -- -D warnings
 ```
+
+`clippy --all-targets -D warnings` also rejects unused native-only helpers that
+`check --tests` leaves as warnings.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and

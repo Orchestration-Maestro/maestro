@@ -5,9 +5,9 @@
 use crate::{chat::TestResult, messages};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
-    Context, SimpleStreamOptions, StreamOptions, ThinkingLevel, adjust_max_tokens_for_thinking,
-    build_base_options, stream_simple_anthropic,
+    Context, SimpleStreamOptions, StreamOptions, build_base_options, stream_simple_anthropic,
 };
+use maestro_models::{ThinkingLevel, adjust_max_tokens_for_thinking};
 #[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 
