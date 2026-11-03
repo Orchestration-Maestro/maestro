@@ -126,10 +126,10 @@ extension issues.
 Input is matched against the selected keys by their lowercased spelling, in selection
 order. The first match consumes the input and starts its callback, and every other input,
 including the same key with another modifier, reaches the editor unchanged. The handler
-is called as the input is handled; the future it returns is scheduled on the terminal
-runtime without awaiting its completion, so the work that future does never holds
-typing. Its failure appears as `Error: Shortcut handler error: <message>` through the
-transcript's error notice.
+is called as the input is handled; the future it returns runs on the input thread's local
+runtime without being awaited, so input handling never waits for it to finish. That
+future's own work still occupies the input thread while it is polled. Its failure appears
+as `Error: Shortcut handler error: <message>` through the transcript's error notice.
 
 Each callback receives a context built when the key is pressed, from the runner the
 session has now. It reads the current session's working directory, model, idle state,

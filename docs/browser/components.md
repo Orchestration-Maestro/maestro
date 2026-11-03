@@ -335,12 +335,11 @@ omits that row. Names, protocol spellings and URLs remain literal native text.
 
 Call `DomContent::update` after changing operands. Existing buttons keep their
 nodes and focus while their actions remain present. A selection inside a button
-survives only while that button's text is unchanged, since localizing the text
-replaces its text nodes. Activation reads
-the most recently published callback and provider handle, including later edits
-to that provider. It releases component borrows before calling the action, so the
-action may update its containing card. Removing an action releases its binding;
-disconnected roots perform no action, and reconnecting restores delivery without
-a second registration. Dropping `DomRoot` releases every retained binding even
-when the page still holds its nodes. Localization failures leave the last
-successfully published content in place.
+survives only while that button's text is unchanged, since changing that text
+replaces its text nodes. Activation reads the most recently published callback and
+provider handle, including later edits to that provider. It releases component
+borrows before calling the action, so the action may update its containing card.
+Removing an action releases its binding; disconnected roots perform no action, and
+reconnecting restores delivery without a second registration. Dropping `DomRoot`
+releases every retained binding even when the page still holds its nodes.
+Localization failures leave the last successfully published content in place.
