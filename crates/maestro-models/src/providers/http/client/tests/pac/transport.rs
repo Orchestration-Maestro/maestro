@@ -115,8 +115,9 @@ fn refusing_peer(
 ) -> (loopback::Routed, std::sync::mpsc::Receiver<Vec<u8>>) {
     let (sent, received) = std::sync::mpsc::channel();
     let server = loopback::start_routed(Arc::new(move |mut socket| {
-        let address = socks::negotiate_reply(&mut socket, false, &[5, 5, 0, 1, 0, 0, 0, 0, 0, 0])?;
+        // Recorded before the refusal is written, so the client cannot reach the next candidate first.
         trace.send(label).unwrap();
+        let address = socks::negotiate_reply(&mut socket, false, &[5, 5, 0, 1, 0, 0, 0, 0, 0, 0])?;
         sent.send(address.host).unwrap();
         assert!(socks::failed_frames(&mut socket, &[])?.is_empty());
         Ok(())
