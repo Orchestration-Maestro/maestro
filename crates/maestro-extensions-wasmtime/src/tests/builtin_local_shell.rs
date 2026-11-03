@@ -99,12 +99,13 @@ async fn execute_timed(runner: &ExtensionRunner<Local>, mut request: Value, outp
         address.port()
     )
     .into();
+    let command = runner.get_command("local-shell").unwrap().command;
     let ready = tokio::task::spawn_blocking(move || listener.accept().map(drop));
-    let observed = execute(runner, request).await;
-    // A command stopped before it signalled never connects, so connecting here releases the wait.
+    let result = (command.handler)(request.to_string(), runner.create_command_context()).await;
+    // Release the wait before decoding can panic, even if the command never signalled.
     drop(std::net::TcpStream::connect(address));
     ready.await.unwrap().unwrap();
-    observed
+    serde_json::from_str(&result.unwrap_err().to_string()).unwrap()
 }
 
 /// Missing status, optional seconds and cancellation retain the native driver's outcomes.
