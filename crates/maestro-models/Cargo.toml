@@ -99,3 +99,15 @@ crate-type = ["cdylib"]
 name = "cloud_content_browser_witness"
 path = "tests/support/cloud_content_browser.rs"
 crate-type = ["cdylib"]
+
+[[example]]
+name = "browser_import_check"
+path = "tests/support/browser_import_check.rs"
+
+[[example]]
+name = "generate_catalog_data"
+path = "scripts/generate_catalog_data.rs"
+
+[[example]]
+name = "generate_circle_fixture"
+path = "scripts/generate_circle_fixture.rs"

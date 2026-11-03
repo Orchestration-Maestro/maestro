@@ -303,7 +303,7 @@ for actual variables, explicit-key precedence and endpoint environment policy.
 Browser targets have no process environment discovery. Supply an explicit key
 or an application-controlled proxy/injected client, considering browser origin
 and credential exposure policy. The extended
-[browser import example](../../crates/maestro-models/examples/browser_import_check.rs)
+[browser import example](../../crates/maestro-models/tests/support/browser_import_check.rs)
 compiles typed model, context, tool, options and a retained local client with an
 explicit key. It does not start a request, native callback listener, cloud
 credential flow or native socket. `maestro_browser_environment_has_no_key`
