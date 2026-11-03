@@ -265,10 +265,15 @@ fn reply(id: i64) -> String {
 
 /// Build the page's inspection call `id`.
 fn binding_called(id: i64) -> Value {
+    binding_called_from("session", 1, id)
+}
+
+/// Build inspection call `id` as renderer `session` emits it from execution context `context`.
+fn binding_called_from(session: &str, context: i64, id: i64) -> Value {
     let payload = json!({"id":id,"name":"inspectSandbox","args":["probe:\"雪]","state"]});
     json!({
-        "method":"Runtime.bindingCalled","sessionId":"session",
-        "params":{"name":"__maestroDriver","executionContextId":1,"payload":payload.to_string()}
+        "method":"Runtime.bindingCalled","sessionId":session,
+        "params":{"name":"__maestroDriver","executionContextId":context,"payload":payload.to_string()}
     })
 }
 
@@ -488,22 +493,43 @@ async fn caller_session(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
     received
 }
 
+/// What interrupts an iframe's setup while the root evaluation is held.
+#[derive(Clone, Copy)]
+enum Interruption {
+    /// The frame is removed, and the root page's host call arrives before the frame's command ends.
+    RemovedWithRootCall,
+    /// The frame calls the host itself, then is removed.
+    RemovedWithOwnCall,
+    /// The root page throws an unexpected exception.
+    RootException,
+}
+
+/// Run one interrupted setup behind a held root evaluation.
+///
+/// Returns the awaited command's outcome and every reply the driver evaluated in the root world.
+async fn interrupted(interruption: Interruption) -> (io::Result<Value>, Vec<String>) {
+    let (mut dispatcher, peer) =
+        connect_peer(move |socket| interrupted_setup(socket, interruption)).await;
+    let mut lines = Vec::new();
+    let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+    let mut page = Page::open(&mut dispatcher, "removed", &mut lines, &expected)
+        .await
+        .unwrap();
+    page.initialize().await.unwrap();
+    let outcome = page.evaluate(HOLD).await;
+    page.close().await.unwrap();
+    (outcome, peer.await.unwrap())
+}
+
 /// An iframe removed while its setup commands are in flight settles its own host call and leaves
 /// the awaited command alone.
 #[test]
 fn iframe_removed_during_setup_settles_its_host_call() {
     block_on(async {
-        let (mut dispatcher, peer) = connect_peer(removed_during_setup).await;
-        let mut lines = Vec::new();
-        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
-        let mut page = Page::open(&mut dispatcher, "removed", &mut lines, &expected)
-            .await
-            .unwrap();
-        page.initialize().await.unwrap();
-        page.evaluate(HOLD).await.unwrap();
-        page.close().await.unwrap();
+        let (outcome, replies) = interrupted(Interruption::RemovedWithRootCall).await;
+        outcome.unwrap();
         assert_eq!(
-            peer.await.unwrap(),
+            replies,
             [format!(
                 "__maestroReply(1,null,{})",
                 json!("mounted frame not found probe:\"雪]")
@@ -512,16 +538,34 @@ fn iframe_removed_during_setup_settles_its_host_call() {
     });
 }
 
-/// Attach an iframe during the held evaluation, remove it as its first setup command arrives and
-/// call the host before answering that command, which Chromium never does.
+/// A host call queued by the frame whose setup failed has no caller left, so it is ignored.
+#[test]
+fn host_call_queued_by_a_removed_frame_is_ignored() {
+    block_on(async {
+        let (outcome, replies) = interrupted(Interruption::RemovedWithOwnCall).await;
+        outcome.unwrap();
+        assert_eq!(replies, Vec::<String>::new());
+    });
+}
+
+/// A page-level failure raised while an iframe is being set up still fails the awaited command.
+#[test]
+fn page_exception_during_iframe_setup_fails_the_command() {
+    block_on(async {
+        let (outcome, _) = interrupted(Interruption::RootException).await;
+        let error = outcome.unwrap_err().to_string();
+        assert!(error.contains("Error: page failed"), "{error}");
+    });
+}
+
+/// Attach an iframe during the held evaluation, then interrupt its setup as `interruption` says.
 ///
 /// Returns every reply the driver evaluated in the root world.
-async fn removed_during_setup(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
+async fn interrupted_setup(
+    mut socket: WebSocketStream<TcpStream>,
+    interruption: Interruption,
+) -> Vec<String> {
     let [attached, _] = iframe_events(false);
-    let detached = json!({
-        "method":"Target.detachedFromTarget","sessionId":"session",
-        "params":{"sessionId":"child-session"}
-    });
     let (mut held, mut replies) = (None, Vec::new());
     while let Some(call) = receive(&mut socket).await {
         let method = call["method"].as_str().unwrap();
@@ -531,14 +575,14 @@ async fn removed_during_setup(mut socket: WebSocketStream<TcpStream>) -> Vec<Str
             send(&mut socket, attached.clone()).await;
             continue;
         }
-        if method == "Page.enable" && call["sessionId"] == "child-session" {
-            send(&mut socket, detached.clone()).await;
-            send(&mut socket, binding_called(1)).await;
+        if call["sessionId"] == "child-session"
+            && interrupt(&mut socket, interruption, method, held.as_ref()).await
+        {
             continue;
         }
         let result = match method {
             "Runtime.enable" => {
-                send(&mut socket, context_created("session", 1, "root")).await;
+                send(&mut socket, enabled_context(&call)).await;
                 json!({})
             }
             "Runtime.evaluate" if expression.starts_with("__maestroReply(") => {
@@ -550,17 +594,70 @@ async fn removed_during_setup(mut socket: WebSocketStream<TcpStream>) -> Vec<Str
         };
         send(&mut socket, json!({"id":call["id"],"result":result})).await;
         if let Some(held) = held.take_if(|_| !replies.is_empty()) {
-            send(
-                &mut socket,
-                json!({"id":held,"result":{"result":{"value":null}}}),
-            )
-            .await;
+            send(&mut socket, held_result(&held)).await;
         }
         if method == "Target.disposeBrowserContext" {
             break;
         }
     }
     replies
+}
+
+/// The held evaluation's answer.
+fn held_result(id: &Value) -> Value {
+    json!({"id":id,"result":{"result":{"value":null}}})
+}
+
+/// Interrupt the frame's setup at the command `interruption` names; true when that command is
+/// left unanswered, as Chromium leaves a command of a removed renderer. Each interruption also
+/// answers the held root evaluation, so a driver that ignores the interruption returns at once.
+async fn interrupt(
+    socket: &mut WebSocketStream<TcpStream>,
+    interruption: Interruption,
+    method: &str,
+    held: Option<&Value>,
+) -> bool {
+    let detached = json!({
+        "method":"Target.detachedFromTarget","sessionId":"session",
+        "params":{"sessionId":"child-session"}
+    });
+    match (interruption, method) {
+        (Interruption::RemovedWithRootCall, "Page.enable") => {
+            send(socket, detached).await;
+            send(socket, binding_called(1)).await;
+            true
+        }
+        (Interruption::RemovedWithOwnCall, "Target.setAutoAttach") => {
+            send(socket, binding_called_from("child-session", 2, 1)).await;
+            send(socket, detached).await;
+            send(
+                socket,
+                held_result(held.expect("the root evaluation is held")),
+            )
+            .await;
+            true
+        }
+        (Interruption::RootException, "Page.enable") => {
+            send(socket, page_exception()).await;
+            send(
+                socket,
+                held_result(held.expect("the root evaluation is held")),
+            )
+            .await;
+            false
+        }
+        _ => false,
+    }
+}
+
+/// An exception the root page throws, which is not the designated policy error.
+fn page_exception() -> Value {
+    json!({
+        "method":"Runtime.exceptionThrown","sessionId":"session",
+        "params":{"timestamp":0,"exceptionDetails":{"exceptionId":1,"text":"Uncaught",
+            "lineNumber":0,"columnNumber":0,
+            "exception":{"type":"object","description":"Error: page failed"}}}
+    })
 }
 
 /// A host call whose caller renderer is gone has no reply to deliver, so closing the page succeeds.
@@ -602,20 +699,20 @@ async fn caller_removed_while_closing(mut socket: WebSocketStream<TcpStream>) {
             send(&mut socket, json!({"id":close,"result":{}})).await;
             continue;
         }
-        let response = if expression.starts_with("__maestroReply(") {
-            json!({"id":call["id"],"error":{"code":-32001,"message":"Session with given id not found."}})
-        } else if method == "Runtime.enable" {
-            send(&mut socket, context_created("session", 1, "root")).await;
-            json!({"id":call["id"],"result":{}})
-        } else {
-            let result = if method == "Runtime.evaluate" {
-                json!({"result":{"value":null}})
-            } else {
-                shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}"))
-            };
-            json!({"id":call["id"],"result":result})
+        if expression.starts_with("__maestroReply(") {
+            let refused = json!({"code":-32001,"message":"Session with given id not found."});
+            send(&mut socket, json!({"id":call["id"],"error":refused})).await;
+            continue;
+        }
+        let result = match method {
+            "Runtime.enable" => {
+                send(&mut socket, context_created("session", 1, "root")).await;
+                json!({})
+            }
+            "Runtime.evaluate" => json!({"result":{"value":null}}),
+            _ => shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}")),
         };
-        send(&mut socket, response).await;
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
         if method == "Target.disposeBrowserContext" {
             break;
         }

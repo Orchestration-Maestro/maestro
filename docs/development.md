@@ -259,16 +259,17 @@ automatically attached iframe, including frames whose scripts are already
 running when they attach. A host call that arrives while an iframe is still
 being set up waits, and runs in arrival order once that setup completes,
 ahead of any call that arrives while the queue drains. A session the caller
-attaches itself stays with the caller. An iframe that fails its own setup is
-retired and reported where a call uses it; a host call whose caller is already gone
-gets no reply and fails nothing else. Browser events route by session; export,
-binding and input operations wait for their own completion signals without
-command deadlines.
+attaches itself stays with the caller. An iframe removed during its own setup
+is reported where a call uses it, and a host call whose caller is already gone
+gets no reply and fails nothing else; page errors, crashes and console panics
+raised during that setup still fail the command. Browser events route by
+session; export, binding and input operations wait for their own completion
+signals without command deadlines.
 
-The driver launches Chromium with `--no-startup-window`, so the only pages in the
-browser are the ones the driver opens. Each switch a test supplies must be written
-`--key` or `--key=value`; anything else is refused before launch, and repeated
-`--disable-features` switches merge into one list.
+The driver launches Chromium with `--no-startup-window`, so the only pages in
+the browser are the ones the driver opens. Each switch a test supplies must be
+written `--key` or `--key=value`; anything else is refused before launch, and
+repeated `--disable-features` switches merge into one list.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
 page crashes and unexpected browser disconnection fail the command. An

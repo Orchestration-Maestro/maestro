@@ -17,7 +17,7 @@ impl Page<'_> {
         }
         let payload: Value =
             serde_json::from_str(string(&event.params, "payload")?).map_err(io::Error::other)?;
-        let context = self
+        let Some(context) = self
             .contexts
             .values()
             .find(|context| {
@@ -25,11 +25,11 @@ impl Page<'_> {
                     && Some(context.session.as_ref()) == event.session_id.as_deref()
             })
             .cloned()
-            .ok_or_else(|| io::Error::other("binding context removed"))?;
-        let result = self.invoke(&context, &payload).await;
-        if !self.context_exists(&context.session, context.id) {
+        else {
+            // A call from a removed renderer has no caller left to answer.
             return Ok(());
-        }
+        };
+        let result = self.invoke(&context, &payload).await;
         let (value, error) = match &result {
             Ok(value) => (value.clone(), Value::Null),
             Err(error) => (Value::Null, json!(error.to_string())),
@@ -39,10 +39,11 @@ impl Page<'_> {
             .evaluate_in(&context, &expression, true)
             .await
             .map(|_| ());
+        // A caller removed while its call ran cannot receive the reply, whatever the outcome.
         if !self.context_exists(&context.session, context.id) {
             return Ok(());
         }
-        // Rejected callbacks settle the awaiting export; a caller removed meanwhile cannot receive a reply.
+        // Rejected callbacks settle the awaiting export.
         match (result, replied) {
             (Ok(_), replied) => replied,
             (Err(_), Ok(())) => Ok(()),

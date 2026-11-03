@@ -417,9 +417,11 @@ impl<'a> Page<'a> {
         self.deferral.initializing.insert(session.clone());
         let ready = self.attach_session(&session, params).await;
         self.deferral.initializing.remove(&session);
-        if ready.is_err() {
-            // A frame that failed its own setup is reported where it is used, not by the awaited command.
-            self.detached(session.as_ref())?;
+        // Only a frame already retired fails its own setup quietly; any other error is the page's.
+        if let Err(error) = ready
+            && self.sessions.contains(&session)
+        {
+            return Err(error);
         }
         while self.deferral.initializing.is_empty()
             && let Some(event) = self.deferral.calls.pop_front()

@@ -26,7 +26,7 @@ fn browser_readiness_requires_an_advertised_endpoint() {
 
 /// Caller switches become the library's key and value, so Chromium sees one `--` and merged lists.
 #[test]
-fn launch_switches_reach_chromium() {
+fn launch_switches_split_into_key_and_value() {
     assert_eq!(
         switch("--disable-features=IsolateSandboxedIframes").unwrap(),
         ("disable-features", Some("IsolateSandboxedIframes"))
