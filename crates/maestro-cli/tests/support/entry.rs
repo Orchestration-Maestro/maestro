@@ -46,7 +46,8 @@ pub fn cases<F: Future<Output = ()>>(
             command = command.env(key, value);
         }
         // The key sits in a file before the child starts, so no write can meet an exited child.
-        let key = root.path().join("key");
+        // The file shares the child's agent directory; no case reads it.
+        let key = root.path().join("stdin-key");
         std::fs::write(&key, b"k").unwrap();
         let output = command
             .stdin(std::fs::File::open(key).unwrap())
