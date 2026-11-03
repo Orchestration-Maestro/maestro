@@ -77,9 +77,13 @@ fn npm_bootstrap_files(
     let fixture = Fixture::new(&serde_json::json!({}));
     let root = match scope {
         SourceScope::Project => fixture.project(".maestro/npm"),
-        _ => native_support::under(std::env::temp_dir(), "maestro-extensions/npm/f35b2129")
-            .to_string_lossy()
-            .into_owned(),
+        // The production root derivation names this spelling under the platform directory.
+        _ => native_support::under(
+            maestro_test_directory::temporary_root(),
+            "maestro-extensions/npm/f35b2129",
+        )
+        .to_string_lossy()
+        .into_owned(),
     };
     if existing_root {
         std::fs::create_dir_all(&root).unwrap();

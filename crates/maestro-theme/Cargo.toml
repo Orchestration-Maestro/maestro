@@ -38,6 +38,14 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time
 name = "integration"
 path = "tests/integration.rs"
 
+[[example]]
+name = "brand_themes"
+path = "scripts/brand_themes.rs"
+
+[[example]]
+name = "browser_author_inputs"
+path = "scripts/browser_author_inputs.rs"
+
 [lints]
 workspace = true
 

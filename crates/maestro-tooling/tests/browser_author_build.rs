@@ -1153,15 +1153,13 @@ fn preview_failures(browser: &Browser) {
 
 #[test]
 fn browser_author_metadata_adapter_keeps_literals_and_status() {
-    use std::{ffi::OsString, os::unix::fs::PermissionsExt};
+    use std::ffi::OsString;
     let workspace = Workspace::new();
-    let script = workspace.path().join("cargo-probe");
-    fs::write(
-        &script,
-        "#!/bin/sh\nprintf '%s\\n' \"$@\"\nprintf 'native diagnostic' >&2\nexit 17\n",
-    )
-    .unwrap();
-    fs::set_permissions(&script, fs::Permissions::from_mode(0o700)).unwrap();
+    let script = recipe_support::scenario(
+        &workspace.path(),
+        "cargo-probe",
+        &serde_json::json!({"scenario": "operands", "stderr": "native diagnostic", "code": 17}),
+    );
     for args in [
         vec![
             "metadata",
@@ -1402,9 +1400,11 @@ fn browser_author_native_hook_preserves_overrides_environment_and_failure() {
     let browser = Browser::cached();
     browser_support::bootstrap_source(&browser);
     fs::create_dir(browser.fixture("scripts")).unwrap();
-    let script = browser.path("hook-source");
-    fs::write(&script, "#!/bin/sh\nset -eu\ncp assets/app.css hook.css\nprintf '%s\\n' \"$1\" \"$TRUNK_PROFILE\" \"$TRUNK_HTML_FILE\" \"$TRUNK_SOURCE_DIR\" \"$TRUNK_DIST_DIR\" \"$TRUNK_PUBLIC_URL\" \"$TRUNK_STAGING_DIR\" \"$MAESTRO_HOOK_INHERITED\" > hook-environment\nexit \"$MAESTRO_HOOK_STATUS\"\n").unwrap();
-    recipe_support::install_executable(&script, &browser.fixture("scripts/hook.sh"));
+    recipe_support::scenario(
+        &browser.fixture("scripts"),
+        "hook.sh",
+        &serde_json::json!({"scenario": "trunk-hook"}),
+    );
     let authored = browser.fixture("Trunk.json");
     let mut config: serde_json::Value =
         serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();

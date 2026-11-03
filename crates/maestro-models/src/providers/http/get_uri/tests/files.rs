@@ -6,8 +6,9 @@ use crate::providers::http::{Route, configured_fetch};
 #[test]
 fn pac_file_sources_validate_urls_and_keep_io_failures() {
     crate::tests::runtime::run(async {
-        let path = std::env::temp_dir().join(format!("maestro-pac-urls-{}", std::process::id()));
-        std::fs::create_dir(&path).unwrap();
+        let scratch =
+            maestro_test_directory::Scratch::new().expect("test directory should be created");
+        let path = scratch.path();
         let file = path.join("space 雪.pac");
         std::fs::write(&file, b"script").unwrap();
         let fetch = configured_fetch(Route::default());
@@ -23,7 +24,7 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
             get_uri::load(&local, None, &fetch).await.unwrap().bytes,
             b"script"
         );
-        let directory = url::Url::from_directory_path(&path).unwrap();
+        let directory = url::Url::from_directory_path(path).unwrap();
         assert!(
             !get_uri::load(&directory, None, &fetch)
                 .await
@@ -49,7 +50,6 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
         #[cfg(unix)]
         permission_failure(&file, &uri, &fetch).await;
         std::fs::remove_file(file).unwrap();
-        std::fs::remove_dir(path).unwrap();
     });
 }
 

@@ -1,27 +1,32 @@
 # Development skills
 
-`packages/maestro-skills/` is a content-only package of development skills and
-shared reference documents. It uses conventional package discovery and the
-existing [skill loader](../resources/skills.md). For creating your own skill or
-choosing discovery paths, see [create and use skills](../skills.md).
+Maestro's skill pack lives in the catalog repository, maestro-manifests, at
+`manifests/capabilities/practice/maestro-skills/`. It is a content-only package
+of development skills and shared reference documents. It uses conventional
+package discovery and the existing [skill loader](../resources/skills.md). For
+creating your own skill or choosing discovery paths, see
+[create and use skills](../skills.md).
 It adds no runtime component; loading
 does not execute the included Bash wizard-authoring template.
 The `maestro-ask` router is the skill list and explains when to use each skill.
 
 ## Load from a local checkout
 
-Add the absolute package path to `packages` in your user or project settings:
+Add the absolute pack path to `packages` in your user or project settings:
 
 ```json
 {
   "packages": [
-    "/path/to/maestro/packages/maestro-skills"
+    "/path/to/maestro-manifests/manifests/capabilities/practice/maestro-skills"
   ]
 }
 ```
 
 The application resolves the package and loads its enabled skills when it starts
 or reloads resources. The content-only pack does not require a build.
+[Manifest mode](../specs/manifest-mode.md) can also select the pack: a
+manifest lists the same path as a package source, and the manifest's skill
+filters control its skills.
 [Default base-package installation](https://github.com/Orchestration-Maestro/maestro/issues/1578)
 is not delivered; local-path loading does not depend on it.
 
@@ -33,7 +38,7 @@ Use an object-form package entry to exclude a delivered skill:
 {
   "packages": [
     {
-      "source": "/path/to/maestro/packages/maestro-skills",
+      "source": "/path/to/maestro-manifests/manifests/capabilities/practice/maestro-skills",
       "skills": [
         "!skills/maestro-teach"
       ]
