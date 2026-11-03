@@ -3,7 +3,6 @@
 #[cfg(unix)]
 #[path = "test_themes/color.rs"]
 mod color;
-#[path = "support/process_terminal.rs"]
 mod process_terminal;
 
 /// Native file observation and image display.

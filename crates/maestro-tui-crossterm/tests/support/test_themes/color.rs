@@ -6,10 +6,10 @@ use std::{io, rc::Rc};
 /// Foreground styling shared by demonstration components.
 pub(super) type Color = Rc<dyn Fn(&str) -> String>;
 /// Captures an owned dark-mode foreground prefix for the requested brand role.
-/// Brand admission is owned by the [brand library](../../../../docs/brand.md).
+/// Brand admission is owned by the [brand library](../../../../../docs/brand.md).
 pub(super) fn color(role: &str) -> io::Result<Color> {
     let invalid_data = |error| io::Error::new(io::ErrorKind::InvalidData, error);
-    let pack = PackData::parse(include_str!("../../../../assets/brand/brand.json"))
+    let pack = PackData::parse(include_str!("../../../../../assets/brand/brand.json"))
         .map_err(invalid_data)?;
     let presentation = pack.presentation(BrandMode::Dark).map_err(invalid_data)?;
     let swatch = role_color(&presentation.colors, role).map_err(invalid_data)?;
