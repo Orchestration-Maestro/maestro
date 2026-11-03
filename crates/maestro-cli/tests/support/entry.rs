@@ -45,9 +45,14 @@ pub fn cases<F: Future<Output = ()>>(
         for (key, value) in *variables {
             command = command.env(key, value);
         }
-        let mut child = command.stdin(std::process::Stdio::piped()).spawn().unwrap();
-        child.stdin.take().unwrap().write_all(b"k").unwrap();
-        let output = child.wait_with_output().unwrap();
+        // The key sits in a file before the child starts, so no write can meet an exited child.
+        // The file shares the child's agent directory; no case reads it.
+        let key = root.path().join("stdin-key");
+        std::fs::write(&key, b"k").unwrap();
+        let output = command
+            .stdin(std::fs::File::open(key).unwrap())
+            .output()
+            .unwrap();
         assert!(
             output.status.success(),
             "{case}: {}\n{}",

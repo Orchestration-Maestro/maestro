@@ -863,7 +863,13 @@ copy of the example has, and writes the component paths to
 `NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
-or compile pass. Archived runs
+or compile pass. On Linux that cache belongs to the run alone: the setup queries and fills
+`component-cache` beside the profile directory and exports it as `XDG_CACHE_HOME`, so the
+tests read the code the setup warmed. The engine prunes its user cache by age and size
+from every process that uses it; with a private cache, other builds on the same host
+cannot evict the warmed code while a long run is still going. macOS and Windows ignore
+`XDG_CACHE_HOME`, so their runs warm and read the engine's own cache directory and share
+it with other builds. Archived runs
 require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. Archive strictness
@@ -973,9 +979,10 @@ The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component in one Cargo invocation, so Cargo
 compiles them in parallel, warms their Wasmtime compilation cache
-in the default user cache on up to four threads and exports each path to the tests'
-processes. Component contents, compiler settings and CPU features still determine
-cache compatibility.
+in the engine's cache (on Linux the run's own `component-cache` beside the
+profile directory) on up to four threads and exports each path to the tests' processes.
+Component contents, compiler settings and CPU features still determine cache
+compatibility.
 The shared component builder resolves these source-marked paths before invoking
 Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
@@ -1363,8 +1370,9 @@ preparation effects.
 `prepare_author_component --cache-directory` reports one absolute JSON path and
 creates no environment file, component, cache entry or observation log. The fixture
 uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
-fails the query and stops setup before cache installation. The built alias has a
-sibling record. When a test exercises product copying or relocation,
+fails the query. The component setup always supplies an absolute `XDG_CACHE_HOME`, so
+the fallback is reachable only when the fixture runs outside that setup. The built alias
+has a sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
