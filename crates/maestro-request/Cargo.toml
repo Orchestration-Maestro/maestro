@@ -18,6 +18,12 @@ maestro-dependencies.workspace = true
 [lints]
 workspace = true
 
+[features]
+test-support = []
+
+[dev-dependencies]
+maestro-request = { path = ".", features = ["test-support"] }
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"

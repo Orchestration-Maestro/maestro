@@ -153,11 +153,7 @@ pub fn model(overrides: Option<Value>) -> TestResult<Model> {
     Ok(serde_json::from_value(value)?)
 }
 
-/// An all-zero usage record.
-pub fn zero_usage() -> Value {
-    json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
-        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}})
-}
+pub use maestro_request::test_support::zero_usage;
 
 /// Fill the members a fixture message leaves out, then decode the context.
 pub fn context(compact: Value) -> TestResult<Context> {

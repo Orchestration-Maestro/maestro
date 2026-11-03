@@ -5,8 +5,8 @@ use crate::support;
 use maestro_models::FetchError;
 use serde_json::{Value, json};
 use support::proxy::{
-    Reply, USAGE, ZERO, canonical_events, canonical_lines, canonical_message, done, exchange, join,
-    line, message, run_chunks, run_lines,
+    Reply, USAGE, canonical_events, canonical_lines, canonical_message, done, exchange, join, line,
+    message, run_chunks, run_lines, zero,
 };
 
 /// The diagnostic that settles a body ending without a terminal event.
@@ -14,7 +14,7 @@ const PREMATURE: &str = "Proxy stream ended before a terminal event";
 
 /// A content-less failure message with the given text.
 fn failure(text: &str) -> Value {
-    message(&json!([]), "error", Some(text), ZERO)
+    message(&json!([]), "error", Some(text), &zero())
 }
 /// Assert a run ended in one error event whose native diagnostic is not an authored one.
 fn assert_native_error(run: &support::proxy::Run, prefix: usize) {
@@ -112,7 +112,7 @@ async fn proxy_eof_without_terminal_settles_as_error_case() {
     let mut expected = canonical_message();
     expected["stopReason"] = json!("error");
     expected["errorMessage"] = json!(PREMATURE);
-    expected["usage"] = serde_json::from_str(ZERO).unwrap();
+    expected["usage"] = serde_json::from_str(&zero()).unwrap();
     assert_eq!(partial.message(), expected);
 }
 
@@ -309,7 +309,7 @@ async fn proxy_transport_failure_retains_partial_case() {
     let mut expected = canonical_message();
     expected["stopReason"] = json!("error");
     expected["errorMessage"] = json!("body failed");
-    expected["usage"] = serde_json::from_str(ZERO).unwrap();
+    expected["usage"] = serde_json::from_str(&zero()).unwrap();
     assert_eq!(run.message(), expected);
 }
 
@@ -797,7 +797,7 @@ fn cancellable() -> (
 }
 /// The failure events of an aborted exchange.
 fn aborted_message(content: &Value) -> Value {
-    message(content, "aborted", Some("Request aborted by user"), ZERO)
+    message(content, "aborted", Some("Request aborted by user"), &zero())
 }
 
 /// An abort that becomes visible together with the end of the body beats the premature-end text.
@@ -848,7 +848,7 @@ async fn proxy_initial_partial_is_shared_case() {
     };
     assert_eq!(
         support::proxy::snapshot(&partial),
-        message(&json!([]), "stop", None, ZERO)
+        message(&json!([]), "stop", None, &zero())
     );
     let stamp = partial.read().unwrap().timestamp;
     assert!(before <= stamp && stamp <= maestro_models::timestamp_now());
