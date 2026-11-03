@@ -8,6 +8,7 @@ mod author;
 mod cargo;
 #[cfg(unix)]
 mod chat;
+mod child;
 mod clipboard;
 #[cfg(unix)]
 mod command;
@@ -38,6 +39,9 @@ enum Request {
     Chat(chat::Record, Vec<OsString>),
     /// Stand in for the programs a guest component executes.
     Component(component::Record, Vec<OsString>),
+    /// Act as the native child a byte-level operation launched.
+    #[cfg(unix)]
+    Child(child::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
     /// Produce controlled clipboard bytes for the application's native operations.
@@ -110,6 +114,7 @@ impl Request {
             Some("component-exec") => {
                 Ok(Self::Component(component::Record::parse(&text)?, operands))
             }
+            Some("child") => Ok(Self::Child(child::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
             Some("git") => Ok(Self::Git(git::Record::parse(&text)?, operands)),
@@ -150,6 +155,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Chat(record, operands) => chat::run(&record, &operands),
         Request::Component(record, operands) => component::run(&record, &operands),
+        Request::Child(record, operands) => child::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
         Request::Git(record, operands) => git::run(&record, &operands),

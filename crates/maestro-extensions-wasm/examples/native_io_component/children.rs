@@ -331,7 +331,7 @@ pub(super) fn register(api: &ExtensionAPI, io: Rc<dyn NativeIo>) -> ExtensionRes
     )
 }
 
-/// A user-installed callback signals its own pending child after this handler returns.
+/// Binds the pending child to the original run, including cancellation during spawn.
 async fn observe_abort(
     io: Rc<dyn NativeIo>,
     slot: &Slot,
@@ -341,10 +341,13 @@ async fn observe_abort(
     let Some((command, args)) = armed else {
         return Ok(());
     };
-    let child = io.spawn(command, args, SpawnOptions::default()).await?;
     let signal = context.signal()?.ok_or("missing active-run signal")?;
+    let child = io.spawn(command, args, SpawnOptions::default()).await?;
     let observed = Rc::clone(&child);
     let subscription = signal.subscribe(Rc::new(move |_| observed.kill(None).map(|_| ())))?;
+    if signal.aborted() {
+        child.kill(None)?;
+    }
     *slot.child.borrow_mut() = Some(child);
     *slot.abort.borrow_mut() = Some(subscription);
     Ok(())
