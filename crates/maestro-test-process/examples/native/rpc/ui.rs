@@ -32,7 +32,7 @@ pub(in crate::native) enum Kind {
 }
 
 /// Read the next command and refuse it unless it carries every authored field.
-fn expect(commands: &mut Commands, fields: &Value) -> io::Result<Value> {
+fn expect_fields(commands: &mut Commands, fields: &Value) -> io::Result<Value> {
     let command = commands.required()?;
     let fields = fields
         .as_object()
@@ -49,7 +49,7 @@ fn expect(commands: &mut Commands, fields: &Value) -> io::Result<Value> {
 fn dialog_tour() -> io::Result<()> {
     let mut commands = Commands::new();
     let expected = json!({"type": "prompt", "id": "req_1", "message": "hello"});
-    let prompt = expect(&mut commands, &expected)?;
+    let prompt = expect_fields(&mut commands, &expected)?;
     refuse(&prompt, "controlled refusal")?;
     emit(&json!({"type": "agent_start"}))?;
     emit(
@@ -58,24 +58,24 @@ fn dialog_tour() -> io::Result<()> {
     emit(
         &json!({"type": "extension_ui_request", "id": "s", "method": "select", "title": "Dangerous command?", "options": ["Allow", "Block"]}),
     )?;
-    expect(&mut commands, &json!({"id": "s", "value": "Allow"}))?;
+    expect_fields(&mut commands, &json!({"id": "s", "value": "Allow"}))?;
     emit(
         &json!({"type": "extension_ui_request", "id": "c", "method": "confirm", "title": "Clear session?", "message": "All messages will be lost."}),
     )?;
-    expect(&mut commands, &json!({"id": "c", "confirmed": true}))?;
+    expect_fields(&mut commands, &json!({"id": "c", "confirmed": true}))?;
     emit(
         &json!({"type": "extension_ui_request", "id": "i", "method": "input", "title": "Enter a value", "placeholder": "type something..."}),
     )?;
-    expect(&mut commands, &json!({"id": "i", "value": "answer"}))?;
+    expect_fields(&mut commands, &json!({"id": "i", "value": "answer"}))?;
     emit(
         &json!({"type": "extension_ui_request", "id": "e", "method": "editor", "title": "Edit some text", "prefill": "Line 1\nLine 2\nLine 3"}),
     )?;
-    expect(
+    expect_fields(
         &mut commands,
         &json!({"id": "e", "value": "Line 1\nLine 2\nLine 3"}),
     )?;
     notices()?;
-    expect(&mut commands, &json!({"type": "abort", "id": "req_2"}))?;
+    expect_fields(&mut commands, &json!({"type": "abort", "id": "req_2"}))?;
     emit(&json!({"type": "response", "id": "req_2", "command": "abort", "success": true}))?;
     emit(&json!({"type": "agent_end", "messages": []}))?;
     write_stderr(b"controlled peer exited\n")?;
@@ -101,15 +101,14 @@ fn notices() -> io::Result<()> {
 fn local_dialog_tour() -> io::Result<()> {
     let mut commands = Commands::new();
     let expected = json!({"type": "prompt", "id": "req_1", "message": "after local"});
-    let prompt = expect(&mut commands, &expected)?;
-    respond(&prompt, None)?;
-    Ok(())
+    let prompt = expect_fields(&mut commands, &expected)?;
+    respond(&prompt, None)
 }
 
 /// Reply to one prompt, then report each notice severity without an answer.
 fn notifications() -> io::Result<()> {
     let mut commands = Commands::new();
-    let prompt = expect(&mut commands, &json!({"type": "prompt"}))?;
+    let prompt = expect_fields(&mut commands, &json!({"type": "prompt"}))?;
     respond(&prompt, None)?;
     for (id, kind, message) in [
         ("a", None, "default notice"),
@@ -132,11 +131,11 @@ fn selection_replies() -> io::Result<()> {
     emit(
         &json!({"type": "extension_ui_request", "id": "padded", "method": "select", "title": "Padded choice", "options": [" Allow "]}),
     )?;
-    expect(&mut commands, &json!({"id": "padded", "value": " Allow "}))?;
+    expect_fields(&mut commands, &json!({"id": "padded", "value": " Allow "}))?;
     emit(
         &json!({"type": "extension_ui_request", "id": "empty", "method": "select", "title": "Empty choice", "options": [""]}),
     )?;
-    let reply = expect(&mut commands, &json!({"id": "empty", "value": ""}))?;
+    let reply = expect_fields(&mut commands, &json!({"id": "empty", "value": ""}))?;
     if reply.get("cancelled").is_some() {
         return Err(io::Error::other("empty selection was cancelled"));
     }
@@ -150,7 +149,7 @@ fn dialog_text() -> io::Result<()> {
     emit(
         &json!({"type": "extension_ui_request", "id": "approval", "method": "select", "title": format!("Approve sudo echo {controls}?"), "options": [format!("Allow {controls}")]}),
     )?;
-    expect(
+    expect_fields(
         &mut commands,
         &json!({"id": "approval", "value": format!("Allow {controls}")}),
     )?;
@@ -163,7 +162,7 @@ fn multiline_command() -> io::Result<()> {
     emit(
         &json!({"type": "extension_ui_request", "id": "approval", "method": "confirm", "title": "Dangerous command", "message": "sudo echo first\n\necho second"}),
     )?;
-    expect(&mut commands, &json!({"id": "approval", "confirmed": true}))?;
+    expect_fields(&mut commands, &json!({"id": "approval", "confirmed": true}))?;
     Ok(())
 }
 
@@ -171,7 +170,7 @@ fn multiline_command() -> io::Result<()> {
 fn literal_text() -> io::Result<()> {
     let controls = "\u{1b}]52;c;?\u{7}";
     let mut commands = Commands::new();
-    let prompt = expect(&mut commands, &json!({"type": "prompt"}))?;
+    let prompt = expect_fields(&mut commands, &json!({"type": "prompt"}))?;
     refuse(&prompt, &format!("error {controls} text"))?;
     emit(&json!({"type": "agent_start"}))?;
     for delta in [
@@ -211,7 +210,7 @@ fn prompt_exit() -> io::Result<()> {
     emit(
         &json!({"type": "extension_ui_request", "id": "ready", "method": "notify", "message": "Native peer ready"}),
     )?;
-    expect(
+    expect_fields(
         &mut commands,
         &json!({"type": "prompt", "message": "hello"}),
     )?;

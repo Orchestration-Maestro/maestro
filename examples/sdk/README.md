@@ -33,7 +33,8 @@ just prepare-tests
 cargo nextest run --locked -p maestro-chat -E 'binary(rpc_extension_ui)'
 ```
 
-The checks cover LF framing with Unicode separators, startup dialogs, response
+This command runs all 16 terminal client example tests, including the SDK checks.
+The SDK checks cover LF framing with Unicode separators, startup dialogs, response
 correlation, run completion in either order, refusals, end of input and child
 exit status. They need neither Maestro nor credentials.
 

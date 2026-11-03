@@ -354,12 +354,17 @@ mod tests {
     }
 
     /// Installs the prepared native peer that answers one example interaction.
-    fn peer(root: &Scratch, scenario: Scenario) -> std::process::Command {
+    fn install(root: &Scratch, scenario: Scenario) -> std::path::PathBuf {
         let entry = root
             .path()
             .join(format!("peer{}", std::env::consts::EXE_SUFFIX));
         rpc_peer::install(&entry, scenario).unwrap();
-        std::process::Command::new(entry)
+        entry
+    }
+
+    /// Builds a command for one installed native peer.
+    fn peer(root: &Scratch, scenario: Scenario) -> std::process::Command {
+        std::process::Command::new(install(root, scenario))
     }
 
     /// The repository root, which holds the shipped client example.
@@ -370,10 +375,7 @@ mod tests {
     /// Runs the client example against an installed native peer and collects its output.
     fn run_example(scenario: Scenario, prompt: Option<&str>) -> std::process::Output {
         let root = Scratch::new().unwrap();
-        let entry = root
-            .path()
-            .join(format!("peer{}", std::env::consts::EXE_SUFFIX));
-        rpc_peer::install(&entry, scenario).unwrap();
+        let entry = install(&root, scenario);
         let mut command = std::process::Command::new("python3");
         command
             .arg(checkout().join("examples/sdk/rpc.py"))
@@ -403,7 +405,6 @@ mod tests {
     }
 
     /// A child's exit status reaches the caller beside the retained terminal lifecycle.
-    #[cfg(any(unix, windows))]
     #[test]
     fn rpc_child_keeps_exit_status_and_terminal_lifecycle() {
         run_async(async {

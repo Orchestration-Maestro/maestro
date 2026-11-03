@@ -1412,13 +1412,13 @@ scenarios keep authored text literal:
 | `DialogText` | Reports dialog chrome that contains terminal controls and requires the answer to repeat them. |
 | `MultilineCommand` | Requires a confirmation of a message that holds its own blank line. |
 | `LiteralText` | Refuses the prompt, then streams text, a tool name and a control sequence as data before ending normally. |
-| `TerminationMarker` | Reads the first termination signal and writes `SIGTERM` to the file `PEER_MARKER` names. |
+| `TerminationMarker` (Unix only) | Reads the first termination signal and writes `SIGTERM` to the file `PEER_MARKER` names. |
 | `PromptExit` | Reports readiness, requires the first prompt and ends with status seven. |
 | `UnicodeState` | Answers a cancelled startup dialog, then sends state with U+2028 and U+2029 inside a CRLF-terminated record. |
 | `PromptAcceptance` | Answers state, emits `agent_end` and only then accepts the prompt. |
 | `EndAfterAcceptance` | Accepts the prompt and streams a delta before `agent_end`. |
 | `AcceptedEof` | Accepts the prompt and closes the stream before any terminal event. |
-| `ExitAfterReply` | Answers the first request, requires the client to close its input without another command and exits with status three. |
+| `ExitAfterReply` | Answers the first request and exits with status three after input closes. |
 | `RefusedState` | Refuses the startup request without a terminal event. |
 | `EarlyEof` | Closes the stream before answering. |
 
