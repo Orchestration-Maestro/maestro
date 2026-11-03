@@ -720,8 +720,9 @@ mod tests {
     fn run_without_threads() {
         let _setup = maestro_test_process::IsolatedSetup::apply_requested()
             .expect("the child applies its requested limit");
+        let limit = rustix::process::getrlimit(rustix::process::Resource::Nproc).current;
         if std::thread::Builder::new().spawn(|| ()).is_ok() {
-            return support::report(&json!("limit not enforced"));
+            return support::report(&json!({"limit": limit, "started": true}));
         }
         let mut manager = SettingsManager::in_memory(settings(json!({})));
         manager.set_theme("kept".into());
@@ -730,7 +731,12 @@ mod tests {
             .iter()
             .map(|error| format!("{:?}", error.scope))
             .collect();
-        support::report(&json!({"scopes": scopes, "theme": manager.get_theme()}));
+        support::report(&json!({
+            "limit": limit,
+            "started": false,
+            "scopes": scopes,
+            "theme": manager.get_theme(),
+        }));
     }
 
     #[test]
@@ -779,13 +785,20 @@ mod tests {
             let output = limited.output().unwrap();
             assert!(output.status.success());
             let report = support::child_report(&output);
-            if report != json!("limit not enforced") {
-                assert_eq!(
-                    report,
-                    json!({"scopes": ["Global"], "theme": "kept"}),
-                    "a worker start failure is a scoped error"
-                );
+            assert_eq!(
+                report["limit"],
+                json!(1),
+                "the child runs under the requested limit"
+            );
+            if report["started"] == json!(true) {
+                // An unprivileged child cannot start a worker under this limit.
+                return;
             }
+            assert_eq!(
+                report,
+                json!({"limit": 1, "started": false, "scopes": ["Global"], "theme": "kept"}),
+                "a worker start failure is a scoped error"
+            );
         }
     }
 }

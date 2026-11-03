@@ -117,7 +117,7 @@ impl IsolatedSetup {
     /// # Errors
     ///
     /// Returns the effect the operating system refused.
-    pub fn apply(self) -> Result<SetupGuard, SetupError> {
+    fn apply(self) -> Result<SetupGuard, SetupError> {
         if let Some(mask) = self.umask {
             rustix::process::umask(Mode::from_bits_retain(mask));
         }
@@ -333,21 +333,36 @@ impl std::error::Error for SetupError {
 mod tests {
     use super::{IsolatedSetup, SetupError};
 
+    /// The request `mask`, `processes` and the effect bits of `flags` name.
+    fn request(mask: Option<u32>, processes: Option<u64>, flags: u8) -> IsolatedSetup {
+        let mut setup = IsolatedSetup::new();
+        if let Some(mask) = mask {
+            setup = setup.umask(mask);
+        }
+        if let Some(processes) = processes {
+            setup = setup.process_limit(processes);
+        }
+        if flags & 1 == 1 {
+            setup = setup.file_size_continues();
+        }
+        if flags & 2 == 2 {
+            setup = setup.new_session();
+        }
+        setup
+    }
+
     #[test]
     fn a_request_text_names_every_effect_it_carries() {
-        let setup = IsolatedSetup::new()
-            .umask(0o022)
-            .process_limit(1)
-            .file_size_continues()
-            .new_session();
-        assert_eq!(
-            setup.encode(),
-            "umask=022,processes=1,file-size-continues,new-session"
-        );
-        assert_eq!(
-            IsolatedSetup::parse("umask=022,processes=1,file-size-continues,new-session").unwrap(),
-            setup
-        );
+        let masks = [None, Some(0o000), Some(0o022), Some(0o777)];
+        let processes = [None, Some(1), Some(4096)];
+        let requests = masks
+            .into_iter()
+            .flat_map(|mask| processes.map(move |processes| (mask, processes)))
+            .flat_map(|(mask, processes)| (0..4).map(move |flags| request(mask, processes, flags)));
+        for setup in requests {
+            let text = setup.encode();
+            assert_eq!(IsolatedSetup::parse(&text).unwrap(), setup, "`{text}`");
+        }
     }
 
     #[test]

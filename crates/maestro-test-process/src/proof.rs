@@ -203,19 +203,25 @@ impl CheckedChild {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use std::process::{Command, Stdio};
 
+    #[cfg(unix)]
+    use rustix::process::{Pid, test_kill_process};
+
+    #[cfg(unix)]
     use super::CheckedChild;
 
     /// Whether a process with `pid` still exists.
+    #[cfg(unix)]
     fn alive(pid: u32) -> bool {
-        Command::new("kill")
-            .args(["-0", &pid.to_string()])
-            .stderr(Stdio::null())
-            .status()
-            .is_ok_and(|status| status.success())
+        let Ok(raw) = i32::try_from(pid) else {
+            return false;
+        };
+        Pid::from_raw(raw).is_some_and(|pid| test_kill_process(pid).is_ok())
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_child_that_does_not_start_the_test_is_closed_and_reaped() {
         // A listing run prints test names where the one-test prologue belongs.
