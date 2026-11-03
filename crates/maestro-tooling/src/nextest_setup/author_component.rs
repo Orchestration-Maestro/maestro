@@ -4,10 +4,11 @@
 //! from a prepared bundle installs the bundle's example there; any other run uses the test
 //! build's own example, or builds one.
 //!
-//! The example warms compiled code in a cache that only this run uses, and the run's tests
-//! inherit that cache. Wasmtime prunes its user cache by age and size from every process that
-//! uses it, so on a host that runs several builds the shared cache can evict the code this
-//! setup warmed before the tests that read it have run.
+//! On Linux the example warms compiled code in a cache that only this run uses, and the run's
+//! tests inherit that cache through `XDG_CACHE_HOME`. Wasmtime prunes its user cache by age
+//! and size from every process that uses it, so on a host that runs several builds the shared
+//! cache can evict the code this setup warmed before the tests that read it have run. macOS
+//! and Windows ignore the variable, so there the example warms the engine's own cache.
 
 use std::env::consts::EXE_EXTENSION;
 use std::ffi::OsString;
@@ -36,7 +37,8 @@ const SOURCE_DIRECTORIES: [&str; 2] = [
     "crates/maestro-tooling/src/example_files",
 ];
 
-/// The directory beside the profile directory that holds this run's cache home.
+/// The directory beside the profile directory that holds this run's cache home. It is
+/// separate from the preparation cache home, which each preparation deletes.
 const CACHE_HOME: &str = "component-cache";
 
 /// Prepare the components with a staged or built example and run it, then export the cache
