@@ -150,10 +150,9 @@ async fn assert_page_geometry(
 fn assert_painted_page(sheet: &Element, case: &Package) {
     let page = sheet.get_bounding_client_rect();
     assert!(page.height() > 0.0, "{} paints its page", case.name);
-    let Some(text) = sheet.query_selector("p").unwrap() else {
-        return;
-    };
-    let painted = text.get_bounding_client_rect();
+    let text = sheet.query_selector("p").unwrap();
+    assert!(text.is_some(), "{} paints its paragraph", case.name);
+    let painted = text.unwrap().get_bounding_client_rect();
     assert!(
         painted.width() > 0.0 && painted.height() > 0.0,
         "{} paints its text",
@@ -174,17 +173,13 @@ async fn assert_contained_content(node: &Element, sheet: &Element, (case, width)
     assert_table_scrolling(node, (page_width, case, width));
 }
 
-/// Paragraphs and spans wrap their text instead of overflowing their page.
+/// Paragraphs and spans stay inside their painted page instead of overflowing it.
+/// Inline spans report zero widths, so the observation is the paragraph's bounding box.
 fn assert_wrapped_text(node: &Element, (page_width, case): (f64, &Package)) {
     for selector in ["p", "span"] {
         let painted = node.query_selector_all(selector).unwrap();
         for index in 0..painted.length() {
             let element: HtmlElement = painted.item(index).unwrap().unchecked_into();
-            assert!(
-                element.scroll_width() <= element.client_width(),
-                "{}: {selector} wraps inside its page",
-                case.name
-            );
             assert!(
                 element.get_bounding_client_rect().width() <= page_width + 1.0,
                 "{}: {selector} stays inside its page",
@@ -206,9 +201,10 @@ async fn assert_ready_images(node: &Element, (page_width, case): (f64, &Package)
             .unwrap()
             .unchecked_into();
         let decoded = js_sys::Promise::from(decode.call0(&image).unwrap());
+        let decoded = wasm_bindgen_futures::JsFuture::from(decoded).await;
         assert!(
-            wasm_bindgen_futures::JsFuture::from(decoded).await.is_ok(),
-            "{}: the image decodes",
+            decoded.is_ok(),
+            "{}: the image decodes ({decoded:?})",
             case.name
         );
         let complete = js_sys::Reflect::get(&image, &"complete".into()).unwrap();

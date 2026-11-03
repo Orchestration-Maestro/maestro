@@ -518,6 +518,8 @@ fn json_listing(text: &str) -> (&str, &str) {
     ("json", text)
 }
 
+/// One rendered tool row: the arguments, result, streaming flag, caption and
+/// listings it must show.
 #[cfg(target_arch = "wasm32")]
 struct Shown<'a> {
     /// Call arguments.

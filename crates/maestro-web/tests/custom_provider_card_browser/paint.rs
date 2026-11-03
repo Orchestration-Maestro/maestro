@@ -1,8 +1,7 @@
 //! Native rendering and keyboard observations of the complete visible-state inventory.
 use super::{buttons, provider};
 use crate::contributions_support::{
-    call, computed, container, document, driver, host, page_module, rgb, select, shadow_paints,
-    text, view,
+    call, computed, container, driver, host, page_module, rgb, select, shadow_paints, text, view,
 };
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
@@ -274,6 +273,7 @@ fn focus_ring(view: &DomView, parent: &Element, control: &HtmlElement) {
         "focus turns the control border accent"
     );
     let ring = mixed_color(
+        view,
         parent,
         "color-mix(in srgb, var(--maestro-color-accent) 50%, transparent)",
     );
@@ -283,8 +283,8 @@ fn focus_ring(view: &DomView, parent: &Element, control: &HtmlElement) {
     );
 }
 /// The colour the page resolves one declaration to, read from a connected probe element.
-fn mixed_color(parent: &Element, declaration: &str) -> String {
-    let probe = document().create_element("div").unwrap();
+fn mixed_color(view: &DomView, parent: &Element, declaration: &str) -> String {
+    let probe = view.document.create_element("div").unwrap();
     probe
         .unchecked_ref::<HtmlElement>()
         .style()
