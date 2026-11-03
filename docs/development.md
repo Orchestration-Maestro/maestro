@@ -2152,8 +2152,8 @@ or replace queued landing runs. This is separate from required merge checks.
 Push runs never read a coverage baseline: the lookup runs only for merge
 groups. The suite caller still grants `actions: read`, because the
 shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller and the reporter caller pin the
-released shared CI commit that the organization rulesets require. Each pin
+fail to start. The suite caller, the reporter caller and the guards caller pin
+the released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 
@@ -2175,7 +2175,7 @@ the existing release App's repository-scoped token, minted from
 pull requests write access, plus workflows write access so it can revert CI
 changes. The App must be installed here and the organization
 secret available here. This token lets the revert trigger checks; test jobs do
-not receive it. The reporting workflow alone is declared in
+not receive it. The reporting workflow is declared in
 `privileged_trigger_workflows` for the existing trigger audit.
 
 Unknown PR attribution, missing permissions or a revert conflict fails the
@@ -2186,6 +2186,25 @@ Chromium job, such as a cancelled run. Inspect that run and the failure issue;
 resolve a conflict in a reviewed PR. Do not bypass required checks or push to
 main to recover. The workflow-run listener becomes active after it lands on
 the default branch.
+
+## CI speed guards
+
+`CI speed guards` hands each finished run to the shared guards: the completed
+merge-group run of `Rust CI` and the completed default-branch push of
+`Full suite after landing`, with that run's id. Both are judged because only a
+default-branch push saves the compile snapshots every other run restores. The
+guards hold time per unit of work against a ratchet, the compile-cache hit rate,
+the test selection share, shard balance, tests over 30 seconds and the pinned
+required checks; each one fails a check or files one issue per cause, and a
+breach that persists adds to that issue rather than filing another.
+
+On pull requests the same caller passes no run id, so only the shared test-time
+exception check runs. It fails when a nextest override allows more than the hang
+limit and the comment above it names no open issue. The caller reads Actions runs
+and contents, and writes issues with the automatic job token. It is declared in
+`privileged_trigger_workflows` beside the reporter, so the trigger audit exempts
+only these two files. Like the reporter, it becomes active after it lands on the
+default branch.
 
 ## Fuzzing
 
