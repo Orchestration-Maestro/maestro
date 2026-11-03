@@ -8,6 +8,7 @@ mod author;
 mod cargo;
 #[cfg(unix)]
 mod chat;
+#[cfg(unix)]
 mod child;
 mod clipboard;
 #[cfg(unix)]
@@ -114,6 +115,7 @@ impl Request {
             Some("component-exec") => {
                 Ok(Self::Component(component::Record::parse(&text)?, operands))
             }
+            #[cfg(unix)]
             Some("child") => Ok(Self::Child(child::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
@@ -155,6 +157,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Chat(record, operands) => chat::run(&record, &operands),
         Request::Component(record, operands) => component::run(&record, &operands),
+        #[cfg(unix)]
         Request::Child(record, operands) => child::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
