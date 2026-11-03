@@ -14,19 +14,6 @@ fn foreground_process(
     }
 }
 
-fn temp_detection_path(name: &str) -> std::path::PathBuf {
-    let unique = format!(
-        "maestro-detection-{}-{}-{}",
-        name,
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("system time should be after unix epoch")
-            .as_nanos()
-    );
-    std::env::temp_dir().join(unique)
-}
-
 #[test]
 fn borrowed_process_recognizes_wrapped_agent_without_a_job_copy() {
     let process = foreground_process(42, "node", &["node", "/path/to/bin/codex"]);
@@ -453,10 +440,9 @@ fn command_line_helper_name_does_not_match_a_substring() {
 
 #[test]
 fn symlinked_executable_resolves_agent_identity() {
-    let dir = temp_detection_path("cursor-agent-symlink");
-    std::fs::create_dir_all(&dir).expect("test directory should be created");
-    let target = dir.join("cursor-agent");
-    let link = dir.join("agent");
+    let dir = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let target = dir.path().join("cursor-agent");
+    let link = dir.path().join("agent");
     std::fs::File::create_new(&target).expect("target should be created");
     std::os::unix::fs::symlink(&target, &link).expect("symlink should be created");
 
@@ -474,8 +460,6 @@ fn symlinked_executable_resolves_agent_identity() {
         identify_agent_in_job(&job),
         Some((Agent::Cursor, "cursor".to_string()))
     );
-
-    std::fs::remove_dir_all(&dir).ok();
 }
 
 #[test]

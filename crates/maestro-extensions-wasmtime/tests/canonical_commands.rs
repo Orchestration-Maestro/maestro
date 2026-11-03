@@ -18,7 +18,8 @@ pub(super) async fn observe(runner: &ExtensionRunner<Local>) {
     use maestro_session::session_manager::ReadonlySessionManager;
     let trace: Trace = Rc::default();
     let (_, history) = super::session::runner_session("/canonical-setup");
-    let file = std::env::temp_dir().join(format!(
+    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let file = scratch.path().join(format!(
         "maestro-canonical-{}.jsonl",
         history.borrow().get_session_id()
     ));
