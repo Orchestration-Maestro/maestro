@@ -131,11 +131,13 @@ impl Browser {
         command
     }
 
-    /// Run a cold recipe with private Cargo state excluded from compiler-cache keys.
+    /// Run a cold recipe with private Cargo state excluded from compiler-cache keys. Its compile
+    /// jobs are not capped: the test reserves every core for the cold compile.
     pub fn cold_command(&self, recipe: &str) -> Command {
         let mut command = self.workspace.toolchain_command("just");
         command.arg(recipe);
         self.configure(&mut command);
+        command.env_remove("CARGO_BUILD_JOBS");
         command
     }
 
