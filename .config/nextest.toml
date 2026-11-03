@@ -1,9 +1,10 @@
-experimental = ["setup-scripts"]
+experimental = ["setup-scripts", "wrapper-scripts"]
 
 # Every setup entry runs the development tool. The tooling setups serve only `maestro-tooling`
 # tests, whose build always produces the tool in the target directory. The author-component
-# setup also serves other packages, so it runs the tool from `target/test-setup`: a shard finds
-# it in the downloaded bundle, and `just prepare-tests` installs it there first.
+# and cargo-checks setups also serve other packages, so they run the tool from
+# `target/test-setup`: a shard finds it in the downloaded bundle, and
+# `just prepare-tests` installs it there first.
 
 [profile.default]
 slow-timeout = { period = "30s", terminate-after = 4 }
@@ -12,14 +13,21 @@ slow-timeout = { period = "30s", terminate-after = 4 }
 command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(/_example::/)))"
+filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(host_operations::) | test(/_example::/)))"
 setup = "author-component"
+
+[scripts.setup.cargo-checks]
+command = "target/test-setup/development nextest-setup cargo-checks"
+
+[[profile.default.scripts]]
+filter = "(package(maestro-models) & test(/^browser_build::/)) | (package(maestro-extensions-wasmtime) & test(/^extension_guide::/))"
+setup = "cargo-checks"
 
 [scripts.setup.native-fixture]
 command = "target/test-setup/development nextest-setup native-fixture"
 
 [[profile.default.scripts]]
-filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-chat) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | (package(maestro-app) & test(/rpc_client/))"
+filter = "package(maestro-test-process) | package(maestro-tooling) | package(maestro-tools) | package(maestro-chat) | package(maestro-process) | package(maestro-models) | (package(maestro-tui) & test(native_attachment_completion::)) | package(maestro-app) | (package(maestro-cli) & test(startup_stdout::))"
 setup = "native-fixture"
 
 [scripts.setup.fixture-sources]
@@ -54,6 +62,15 @@ max-threads = 1
 [[profile.default.overrides]]
 filter = "test(file_trigger_)"
 test-group = "file-trigger"
+
+# The wrapper and the `oauth-callback` group below select the same tests; change
+# the two filters together.
+[scripts.wrapper.fixed-port]
+command = { command-line = "target/test-setup/development nextest-wrapper fixed-port", relative-to = "workspace-root" }
+
+[[profile.default.scripts]]
+filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
+run-wrapper = "fixed-port"
 
 [test-groups.oauth-callback]
 max-threads = 1

@@ -45,13 +45,14 @@ pub fn home(root: &std::path::Path) -> std::path::PathBuf {
 
 /// Keep a fixture compiler's Cargo state inside its supplied workspace.
 ///
-/// On Unix, an inherited `RUSTC_WRAPPER` runs through a script in `root` that drops
-/// `CARGO_HOME` first. The compiler cache hashes every `CARGO_*` variable, so a private home
+/// On Unix, an inherited `RUSTC_WRAPPER` runs through the prepared wrapper alias in `root` that
+/// drops `CARGO_HOME` first. The compiler cache hashes every `CARGO_*` variable, so a private home
 /// the wrapper could see would give each fixture's registry crates a key of their own.
 ///
 /// # Errors
 /// Returns an error when creating the private home, copying its source configuration or
-/// writing the wrapper script fails.
+/// installing the wrapper alias fails. Installing needs the prepared `native_fixture` artifact
+/// that nextest's `native-fixture` setup exports.
 pub fn fixture_command(
     program: impl AsRef<OsStr>,
     root: &std::path::Path,
@@ -83,24 +84,22 @@ pub fn fixture_command(
     Ok(command)
 }
 
-/// The variable through which the wrapper script receives the wrapper it replaced.
+/// The variable through which the wrapper receives the wrapper it replaced.
 #[cfg(unix)]
 const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
 
-/// The script in `root` that unsets `CARGO_HOME` and runs the replaced compiler wrapper.
+/// The wrapper alias in `root` that unsets `CARGO_HOME` and runs the replaced compiler wrapper.
 #[cfg(unix)]
 fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
-    use std::os::unix::fs::PermissionsExt;
-
-    let script = root.join("rustc-wrapper.sh");
-    if !script.exists() {
-        std::fs::write(
-            &script,
-            format!("#!/bin/sh\nunset CARGO_HOME\nexec \"${ORIGINAL_RUSTC_WRAPPER}\" \"$@\"\n"),
+    let wrapper = root.join("rustc-wrapper");
+    if !wrapper.exists() {
+        crate::executable::install_recorded(
+            &wrapper,
+            "tooling-wrapper",
+            r#"{"scenario":"hide-home"}"#,
         )?;
-        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))?;
     }
-    Ok(script)
+    Ok(wrapper)
 }
 
 /// The resolved toolchain that compiled this test, independent of runtime overrides.

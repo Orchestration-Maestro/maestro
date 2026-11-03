@@ -181,6 +181,7 @@ impl Imports for Generated {
         credentials_get(resource: &Self::Credentials, provider: &str) -> Option<String> => get(provider) via route::optional_text;
         credentials_list(resource: &Self::Credentials) -> Vec<String> => list() via route::lines;
         credentials_get_all(resource: &Self::Credentials) -> String => get_all() via route::text;
+        credentials_has(resource: &Self::Credentials, provider: &str) -> bool => has(provider) via route::boolean;
         registry_is_using_oauth(resource: &Self::Registry, model: &str) -> bool => is_using_oauth(model) via route::boolean;
     } }
     forward_resources! { routed value functions {
@@ -317,7 +318,6 @@ impl Imports for Generated {
         registry_auth_storage(resource: &Self::Registry) -> ExtensionResult<Self::Credentials> => auth_storage();
         credentials_set_runtime_api_key(resource: &Self::Credentials, provider: &str, key: &str) -> ExtensionResult<()> => set_runtime_api_key(provider, key);
         credentials_remove_runtime_api_key(resource: &Self::Credentials, provider: &str) -> ExtensionResult<()> => remove_runtime_api_key(provider);
-        credentials_has(resource: &Self::Credentials, provider: &str) -> ExtensionResult<bool> => has(provider);
         credentials_drain_errors(resource: &Self::Credentials) -> ExtensionResult<String> => drain_errors();
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);

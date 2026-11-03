@@ -24,22 +24,16 @@ pub(super) struct State {
     pub(super) runtime_overrides: HashMap<String, String>,
     /// Lookup consulted after stored and environment keys.
     pub(super) fallback_resolver: Option<Arc<dyn FallbackResolver>>,
-    /// Whether the last load failed; writes are skipped until a reload, a locked refresh reread
-    /// or a read that adopts a changed document succeeds.
+    /// Whether the last load failed; only a successful reload or locked refresh reread clears it.
     pub(super) load_error: bool,
-    /// Stored text the accepted records last matched. A read keeps the accepted records while
-    /// the stored text is unchanged, so a change whose write failed stays visible; `None`
-    /// until a document has been accepted.
-    pub(super) stored: Option<String>,
     /// Failures in recording order.
     pub(super) errors: Vec<AuthStorageError>,
 }
 
 impl State {
-    /// Accept a stored document and the text it was read from; the load no longer counts as failed.
-    pub(super) fn accept(&mut self, data: Map<String, Value>, text: String) {
+    /// Accept stored records and clear the recorded load failure.
+    pub(super) fn accept(&mut self, data: Map<String, Value>) {
         self.data = data;
-        self.stored = Some(text);
         self.load_error = false;
     }
 }
@@ -99,21 +93,17 @@ impl AuthStorage {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Reread the stored document, then lock the accepted state, so a read sees what another
-    /// process wrote since the last load. A document that cannot be read or parsed leaves the
-    /// accepted records as they are and records nothing.
+    /// Adopt any readable stored document without clearing a recorded load failure.
+    ///
+    /// Waits for exclusion on the backend's schedule. An acquisition, read or parse failure
+    /// keeps the accepted records and records nothing.
     pub(super) fn latest(&self) -> MutexGuard<'_, State> {
-        let mut seen = String::new();
-        let read = self.storage.with_lock(&mut |current| {
-            current.unwrap_or_default().clone_into(&mut seen);
-            Ok(None)
-        });
+        let read = self.storage.read_waiting();
         let mut state = self.state();
-        if read.is_ok()
-            && state.stored.as_deref() != Some(seen.as_str())
-            && let Ok(data) = parse_storage_data(Some(&seen))
+        if let Ok(seen) = read
+            && let Ok(data) = parse_storage_data(seen.as_deref())
         {
-            state.accept(data, seen);
+            state.data = data;
         }
         state
     }
@@ -141,15 +131,13 @@ impl AuthStorage {
     /// Reload accepted data; a failure keeps it and blocks writes until a later success.
     pub fn reload(&self) {
         let mut loaded = Map::new();
-        let mut seen = String::new();
         let outcome = self.storage.with_lock(&mut |current| {
             loaded = parse_storage_data(current)?;
-            current.unwrap_or_default().clone_into(&mut seen);
             Ok(None)
         });
         let mut state = self.state();
         match outcome {
-            Ok(()) => state.accept(loaded, seen),
+            Ok(()) => state.accept(loaded),
             Err(error) => {
                 state.load_error = true;
                 state.errors.push(error);
@@ -167,12 +155,12 @@ impl AuthStorage {
                 None => merged.shift_remove(provider),
             };
             let text = format!("{:#}", Value::Object(merged.clone()));
-            written = Some((merged, text.clone()));
+            written = Some(merged);
             Ok(Some(text))
         });
         let mut state = self.state();
         match (outcome, written) {
-            (Ok(()), Some((merged, text))) => state.accept(merged, text),
+            (Ok(()), Some(merged)) => state.accept(merged),
             (Err(error), _) => state.errors.push(error),
             (Ok(()), None) => {}
         }
@@ -186,7 +174,7 @@ impl AuthStorage {
         self.latest().data.get(provider).and_then(decode)
     }
 
-    /// Store a credential; accepted memory changes even when persistence fails.
+    /// Store a credential; a failed write stays in accepted memory until the next successful read.
     pub fn set(&self, provider: &str, credential: AuthCredential) {
         let record = stored_record(credential);
         let load_error = {
@@ -199,7 +187,7 @@ impl AuthStorage {
         }
     }
 
-    /// Remove a stored credential; accepted memory changes even when persistence fails.
+    /// Remove a credential; a failed write stays in accepted memory until the next successful read.
     pub fn remove(&self, provider: &str) {
         let load_error = {
             let mut state = self.state();
@@ -217,10 +205,10 @@ impl AuthStorage {
         self.latest().data.keys().cloned().collect()
     }
 
-    /// Whether any record is stored for `provider` in the accepted records.
+    /// Whether any record is stored for `provider`, after rereading the stored document.
     #[must_use]
     pub fn has(&self, provider: &str) -> bool {
-        self.state().data.contains_key(provider)
+        self.latest().data.contains_key(provider)
     }
 
     /// Typed copies of every complete known stored credential, in accepted order, after

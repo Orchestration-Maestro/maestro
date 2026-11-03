@@ -11,7 +11,7 @@ use std::process::ExitCode;
 use maestro_path::normalize_native;
 
 use super::argument;
-use crate::test_setup::{MANIFEST, native_fixture};
+use crate::test_setup::{MANIFEST, cargo_checks, native_fixture};
 
 /// The bundle directory a run reads when it names none.
 const BUNDLE: &str = "target/test-setup";
@@ -43,6 +43,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
             fixture_sources::run(&checkout, scope)
         }
         Some("native-fixture") => native(&checkout),
+        Some("cargo-checks") => checks(&checkout),
         Some("browser-author") => browser_graph::run(&checkout),
         Some("normalize-component-cache") => normalize::run(
             &checkout.join(argument(args, 1, "directory")?),
@@ -66,6 +67,25 @@ fn native(checkout: &Path) -> io::Result<ExitCode> {
     let mut entry = OsString::from(format!("{}=", native_fixture::VARIABLE));
     entry.push(path);
     export(&entry)?;
+    Ok(ExitCode::SUCCESS)
+}
+
+/// Export both real build checks after strict bundle validation or local preparation.
+fn checks(checkout: &Path) -> io::Result<ExitCode> {
+    let paths = match prepared_bundle(checkout) {
+        Some(bundle) => cargo_checks::prepared(checkout, &bundle)?,
+        None => cargo_checks::prepare(
+            Path::new(&cargo()),
+            checkout,
+            &checkout.join(BUNDLE),
+            &checkout.join("target/cargo-checks"),
+        )?,
+    };
+    for (variable, path) in paths {
+        let mut entry = OsString::from(format!("{variable}="));
+        entry.push(path);
+        export(&entry)?;
+    }
     Ok(ExitCode::SUCCESS)
 }
 

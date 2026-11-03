@@ -781,6 +781,10 @@ The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config
 and its submodules derives from the repository configuration module under the same
 license. Changes include one include walk in place of three, wildcard matching with path
 rules in bounded time, and supplied user files and home directory.
+The worktree names, checkout paths and Git operations in
+`crates/maestro-daemon/src/git/worktree.rs` derive from the worktree module under the
+same license. Changes include literal command operands, native path bytes,
+shared home expansion and repository discovery, and link-aware leftover cleanup.
 The status snapshots, fingerprints and cache keys in
 `crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
 `crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and
@@ -790,12 +794,14 @@ search that skips an unreadable line, supplied user files and home directory, an
 that publishes its result when its task panics.
 
 The pane geometry with chrome, layout snapshots, pane topology handlers, pane
-mutation handlers (split, resize, swap, zoom, move and close) and pane input, rename,
-read and agent report handlers in `app/layout.rs`, `app/api/panes.rs`,
-`app/api/panes/` and `app/api/reads.rs`, and the zoom, close and move-recovery state
+mutation handlers (split, resize, swap, zoom, move and close), pane input, rename,
+read and agent report handlers, and the layout export, apply and split ratio handlers
+in `app/layout.rs`, `app/api/panes.rs`, `app/api/panes/`, `app/api/reads.rs` and
+`app/api/layouts/`, and the zoom, close and move-recovery state
 operations and report events in `app/actions/` and `events.rs`, derive from the
-application API and interface modules, with one view-area owner instead of a view field
-and one read service instead of a copy for each reader.
+application API and interface modules, with one view-area owner instead of a view field,
+one read service instead of a copy for each reader and one launch record for every new
+root process.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from

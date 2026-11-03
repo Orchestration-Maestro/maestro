@@ -958,7 +958,7 @@ fn logout_persistence_failure_remains_a_store_diagnostic() {
             assert_eq!(
                 accepted(&world),
                 expected.accepted,
-                "memory loses the credential"
+                "the next read restores the credential whose removal was not persisted"
             );
             let backing = std::fs::read_to_string(root.join("auth.json")).unwrap();
             let document: Map<String, Value> = serde_json::from_str(&backing).unwrap();

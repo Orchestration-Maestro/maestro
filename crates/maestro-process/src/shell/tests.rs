@@ -173,14 +173,17 @@ fn detached_custom_commands_keep_the_login_flag() {
 fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
     let dir = std::env::temp_dir().join(format!("maestro-editor-{}", std::process::id()));
     std::fs::create_dir(&dir).unwrap();
-    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/editor.sh");
-    let status = std::process::Command::new("/usr/bin/install")
-        .args(["-m", "0700"])
-        .arg(fixture)
-        .arg(dir.join("vi"))
-        .status()
-        .unwrap();
-    assert!(status.success());
+    let artifact =
+        std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
+    let editor = dir.join("vi");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor).unwrap();
+    let mut record = editor.into_os_string();
+    record.push(".fixture");
+    std::fs::write(
+        record,
+        "editor\n{\"result\":\"MAESTRO_EDITOR_RESULT\",\"code\":7}",
+    )
+    .unwrap();
     for editor in [None, Some(""), Some("vi --custom")] {
         let path = dir.join("scroll back ' a,b");
         std::fs::OpenOptions::new()

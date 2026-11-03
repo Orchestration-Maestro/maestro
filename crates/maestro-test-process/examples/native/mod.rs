@@ -8,14 +8,20 @@ mod author;
 #[cfg(unix)]
 mod browser_launch;
 mod cargo;
-mod credentials;
 #[cfg(unix)]
+mod command;
+mod credentials;
+mod echo;
 mod editor;
+#[cfg(unix)]
+mod git;
 mod observe;
 #[cfg(unix)]
 mod rpc;
 #[cfg(unix)]
 mod search;
+mod tooling_command;
+mod tooling_wrapper;
 #[cfg(unix)]
 mod trash;
 
@@ -25,8 +31,18 @@ enum Request {
     Install(PathBuf),
     /// Report the native launch and exchange raw streams.
     Observe(observe::Record, Vec<OsString>),
+    /// Stand in for a controlled native program.
+    #[cfg(unix)]
+    Command(command::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Answer native Git queries for footer observations.
+    #[cfg(unix)]
+    Git(git::Record),
+    /// Report the file a controlled editor was asked to edit.
+    Editor(editor::Record, Vec<OsString>),
+    /// Print one authored line and end.
+    Echo(echo::Record),
     /// Run a copied preparation example against its checkout-local declaration.
     Author(author::Record, Vec<OsString>),
     /// Announce a desktop viewer launch and wait for its release.
@@ -34,15 +50,16 @@ enum Request {
     BrowserLaunch(browser_launch::Record, Vec<OsString>),
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
-    /// Edit a caller-owned file through the recorded effects.
-    #[cfg(unix)]
-    Editor(editor::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     #[cfg(unix)]
     Rpc(rpc::Record),
     /// Produce controlled search bytes without interpreting native operands.
     #[cfg(unix)]
     Search(search::Record, Vec<OsString>),
+    /// Stand in for a repository command a recipe resolves by name.
+    ToolingCommand(tooling_command::Record, Vec<OsString>),
+    /// Stand in for a compiler wrapper a fixture build runs.
+    ToolingWrapper(tooling_wrapper::Record, Vec<OsString>),
     /// Move or remove caller-owned files on the trash program's behalf.
     #[cfg(unix)]
     Trash(trash::Record, Vec<OsString>),
@@ -86,23 +103,35 @@ impl Request {
         let text = std::fs::read_to_string(path)?;
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("git") => Ok(Self::Git(git::Record::parse(&text)?)),
+            Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
+            Some("echo") => Ok(Self::Echo(echo::Record::parse(&text)?)),
             Some("tooling-author") => Ok(Self::Author(author::Record::parse(&text)?, operands)),
-            Some("credentials") => Ok(Self::Credentials(
-                credentials::Record::parse(&text)?,
-                operands,
-            )),
             #[cfg(unix)]
             Some("browser_launch") => Ok(Self::BrowserLaunch(
                 browser_launch::Record::parse(&text)?,
                 operands,
             )),
-            #[cfg(unix)]
-            Some("editor") => Ok(Self::Editor(editor::Record::parse(&text)?, operands)),
+            Some("credentials") => Ok(Self::Credentials(
+                credentials::Record::parse(&text)?,
+                operands,
+            )),
             #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
+            Some("tooling-command") => Ok(Self::ToolingCommand(
+                tooling_command::Record::parse(&text)?,
+                operands,
+            )),
+            Some("tooling-wrapper") => Ok(Self::ToolingWrapper(
+                tooling_wrapper::Record::parse(&text)?,
+                operands,
+            )),
             #[cfg(unix)]
             Some("trash") => Ok(Self::Trash(trash::Record::parse(&text)?, operands)),
             _ => Err(io::Error::other("unknown native fixture record")),
@@ -115,17 +144,23 @@ pub(super) fn run() -> io::Result<()> {
     match Request::read(std::env::args_os().skip(1).collect())? {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Command(record, operands) => command::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Git(record) => git::run(&record),
+        Request::Editor(record, operands) => editor::run(&record, &operands),
+        Request::Echo(record) => echo::run(&record, &[]),
         Request::Author(record, operands) => author::run(&record, &operands),
-        Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]
         Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
-        #[cfg(unix)]
-        Request::Editor(record, operands) => editor::run(&record, &operands),
+        Request::Credentials(record, operands) => credentials::run(&record, &operands),
         #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
+        Request::ToolingCommand(record, operands) => tooling_command::run(&record, &operands),
+        Request::ToolingWrapper(record, operands) => tooling_wrapper::run(&record, &operands),
         #[cfg(unix)]
         Request::Trash(record, operands) => trash::run(&record, &operands),
     }

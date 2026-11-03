@@ -665,6 +665,33 @@ their pane like the reads do, and hand the work to the owners that already exist
 - **Rename.** The label lives on the terminal state. A changed label is published with
   `emit_pane_updated`.
 
+### Layouts
+
+The layout commands in `app/api/layouts.rs` read and change one tab's split tree through
+the same owners as the pane commands. These handlers are available only on Linux,
+where the daemon application and native PTY runtime are built.
+
+- **Export.** `App::layout_description` turns the tree into the portable description. A
+  leaf takes its label and launch command from the terminal state and its directory from
+  `crate::tab::cwd_for_pane`, the same lookup a pane record uses.
+- **Ratio.** `TileLayout::set_ratio_at` finds the split and keeps the ratio in range; the
+  handler only checks that the ratio is finite and publishes the tab with
+  `emit_layout_updated_event`.
+- **Launch.** `RootLaunch` in `app/creation.rs` is what a new root process runs: its
+  directory, extra environment and, for a layout leaf with a `command`, a literal argv.
+  `spawn_root` starts either through `PaneRuntime`, records the argv on the terminal state,
+  and serves new workspaces, tabs, splits and layout leaves alike.
+- **Apply.** `handle_layout_apply` checks the limits in `layouts/tree.rs` before it creates
+  anything, adds the new tab with the first leaf, then splits leaf by leaf in layout order
+  through `spawn_split`, as `pane.split` does. A failure removes the new tab with
+  `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
+  and plugin records and stops their processes. The replaced tab is retired only after the
+  new tab stands. Stopping its processes applies the events that arrive meanwhile, which can
+  close or move workspaces, so the apply looks its workspace up again by identity and fails
+  with `layout_apply_failed` when the new tab is gone. `emit_tab_created_events` publishes every pane of the
+  new tab, which for a tab with one pane is its root; a new workspace publishes its first
+  tab through it too.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and
@@ -840,6 +867,61 @@ edit, a newly created include, a retargeted symbolic link or a file that could n
 read, so a cache built on the read is rebuilt on the next refresh. The bare-layout and
 reftable checks of repository discovery use the same line syntax: the last assignment in
 a plain section wins and quoted values lose their quotes.
+
+### Worktree operations
+
+Use `maestro_daemon::git::worktree` from a blocking worker. For example, list the
+checkouts of a repository without opening a workspace:
+
+```rust
+use maestro_daemon::git::worktree;
+use std::path::Path;
+
+let entries = worktree::list(Path::new("/projects/repository"))?;
+for entry in entries {
+    println!("{}", entry.path.display());
+}
+Ok::<(), worktree::WorktreeError>(())
+```
+
+These library operations add, remove and list checkouts. They do not expose socket
+commands or change workspace membership. Every Git operation runs through
+`maestro-process`; failures return a `WorktreeError` carrying Git's diagnostic.
+Removal refusals are classified when read; process and cleanup failures retain
+their native cause through `Error::source`. Git runs with `LC_ALL=C` so
+removal refusals can be classified regardless of the daemon's locale.
+
+`generated_branch_slug` turns a seed into `worktree/<adjective>-<noun>-<hex>`.
+`branch_to_path_slug` makes a folder name from lowercase ASCII letters and digits
+joined by single dashes, or `worktree` when none remains. `worktrees_root` resolves
+`daemon.worktreesDirectory`, whose default is `~/.maestro/worktrees`. It uses the
+shared native tilde expansion with a supplied home, normally `paths::home_directory`.
+An exact `~` or a leading `~/` expands; Windows also accepts `~\`. Unsupported
+spellings and paths without an available home stay literal. Relative results lie
+below the current directory. `default_checkout_path` appends the repository name
+and branch folder to that root.
+
+`add` checks out an existing local branch or creates one from the base revision.
+The branch, path and base are operands, never options. `remove` keeps the branch
+when it removes the checkout. Without force, Git refuses modified or untracked
+files; `WorktreeError::is_dirty_checkout` recognizes that refusal and
+`checkout_has_dirty_files` lets a caller check first.
+
+When forced removal gets "not a working tree" from Git, recovery deletes the
+directory only if Git no longer lists it and its `.git` link names an admin folder
+of the same repository. Native link bytes are retained, including when the
+repository is reached through a symbolic link. The link is followed as the file
+system follows it: a symbolic link before `..` decides which folder the segment
+leaves, and `..` after a missing segment names no folder. Other directories stay
+untouched and the operation returns Git's diagnostic.
+
+`list` returns each checkout's path, branch and bare, detached and prunable flags.
+The newline-framed listing retains native Unix path bytes that text cannot hold.
+
+For example, a branch named `feature/Review Notes` gets the folder
+`feature-review-notes`. With the default root and repository name `project`, the
+checkout lies under the selected home at
+`.maestro/worktrees/project/feature-review-notes`.
 
 ### Repository status
 

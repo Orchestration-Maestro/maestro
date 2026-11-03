@@ -1,12 +1,12 @@
 //! Platform viewer executables belong to the application opener.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 
 use proc_macro2::{TokenStream, TokenTree};
 use syn::{parse::Parser, spanned::Spanned, visit::Visit};
 
-use crate::source::{Member, test_scope, test_spans};
+use crate::source::{Member, imports::flatten, test_scope, test_spans};
 
 /// Application source that owns native viewer selection.
 const OWNER: &str = "src/utils/platform_opener.rs";
@@ -32,6 +32,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 tokens,
                 &BTreeSet::new(),
                 &test_spans(source.syntax.as_ref()),
+                &BTreeMap::new(),
                 &mut literals,
             );
             let shell_start = ["cmd", "/c", "start"]
@@ -65,6 +66,7 @@ fn strings(
     tokens: TokenStream,
     inherited: &BTreeSet<String>,
     testing: &[Range<(usize, usize)>],
+    inherited_imports: &BTreeMap<String, BTreeSet<String>>,
     found: &mut Vec<(String, usize)>,
 ) {
     let tokens: Vec<_> = tokens
@@ -76,6 +78,7 @@ fn strings(
                 .any(|span| span.contains(&(start.line, start.column)))
         })
         .collect();
+    let imports = scoped_imports(&tokens, inherited_imports);
     let mut bindings = inherited.clone();
     let mut command = false;
     let mut local = None;
@@ -85,7 +88,7 @@ fn strings(
             continue;
         }
         if let Some((count, body, captured)) = closure_body(&tokens[index..], &bindings) {
-            strings(body, &captured, testing, found);
+            strings(body, &captured, testing, &imports, found);
             skip = index + count;
             command = false;
             continue;
@@ -113,15 +116,101 @@ fn strings(
                 }
                 command = false;
             }
+            TokenTree::Group(group) if cli_name(&tokens[..index], group.stream(), &imports) => {
+                command = false;
+            }
             TokenTree::Group(group) => {
                 if command && let Some(line) = open_operand(group.stream(), &bindings) {
                     found.push(("open".into(), line));
                 }
-                strings(group.stream(), &bindings, testing, found);
+                strings(group.stream(), &bindings, testing, &imports, found);
                 command = false;
             }
         }
     }
+}
+
+/// Resolve explicit imports in this token group without changing the enclosing scope.
+fn scoped_imports(
+    tokens: &[TokenTree],
+    inherited: &BTreeMap<String, BTreeSet<String>>,
+) -> BTreeMap<String, BTreeSet<String>> {
+    let mut imports = BTreeMap::<String, BTreeSet<String>>::new();
+    for (index, token) in tokens.iter().enumerate() {
+        if !matches!(token, TokenTree::Ident(name) if name == "use") {
+            continue;
+        }
+        let Some(end) = tokens[index..]
+            .iter()
+            .position(|token| matches!(token, TokenTree::Punct(punct) if punct.as_char() == ';'))
+        else {
+            continue;
+        };
+        let item = tokens[index..=index + end].iter().cloned().collect();
+        let Ok(item) = syn::parse2::<syn::ItemUse>(item) else {
+            continue;
+        };
+        for import in flatten(&item.tree) {
+            if let Some(binding) = import.binding {
+                let path = import
+                    .path
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>();
+                let path = path.join("::");
+                imports
+                    .entry(binding.to_string())
+                    .or_default()
+                    .insert(path.trim_end_matches("::self").into());
+            }
+        }
+    }
+    let mut scoped = inherited.clone();
+    scoped.extend(imports);
+    scoped
+}
+
+/// Recognize one plain name supplied to a known command-line parser constructor.
+fn cli_name(
+    before: &[TokenTree],
+    operands: TokenStream,
+    imports: &BTreeMap<String, BTreeSet<String>>,
+) -> bool {
+    let mut operands = operands.into_iter();
+    if !matches!(
+        operands.next(),
+        Some(TokenTree::Literal(_) | TokenTree::Ident(_))
+    ) || !operands.next().is_none_or(|token| {
+        matches!(token, TokenTree::Punct(punct) if punct.as_char() == ',')
+            && operands.next().is_none()
+    }) {
+        return false;
+    }
+    let start = before
+        .iter()
+        .rposition(|token| {
+            !matches!(token, TokenTree::Ident(_))
+                && !matches!(token, TokenTree::Punct(punct) if punct.as_char() == ':')
+        })
+        .map_or(0, |index| index + 1);
+    let Ok(path) = syn::parse2::<syn::Path>(before[start..].iter().cloned().collect()) else {
+        return false;
+    };
+    let parts: Vec<_> = path
+        .segments
+        .iter()
+        .map(|part| part.ident.to_string())
+        .collect();
+    let name = parts.join("::");
+    let (first, rest) = name.split_once("::").unwrap_or((&name, ""));
+    imports.get(first).map_or_else(
+        || name == "clap::Command::new",
+        |prefixes| {
+            prefixes
+                .iter()
+                .all(|prefix| format!("{prefix}::{rest}") == "clap::Command::new")
+        },
+    )
 }
 
 /// Scan a closure body with only its unshadowed captures, leaving outer bindings intact.

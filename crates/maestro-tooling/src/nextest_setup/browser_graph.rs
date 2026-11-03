@@ -127,7 +127,7 @@ pub(crate) fn install(staged: &Path, target: &Path) -> io::Result<()> {
 
 /// A command for `program` in the checkout, without the runner's instrumentation and with the
 /// compiler wrapper that preceded coverage restored.
-fn command(program: impl AsRef<OsStr>, checkout: &Path, target: &Path) -> Command {
+pub(crate) fn command(program: impl AsRef<OsStr>, checkout: &Path, target: &Path) -> Command {
     let mut command = Command::new(program);
     command.current_dir(checkout);
     if nonempty("__CARGO_LLVM_COV_RUSTC_WRAPPER").is_some() {

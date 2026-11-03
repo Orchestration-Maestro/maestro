@@ -103,7 +103,7 @@ fn add_reads<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
             Ok((crate::import_route::push(store.data_mut(), route)?,))
         },
     )?;
-    add_operand(
+    add_routed_operand(
         host,
         "[method]auth-storage.has",
         Request::Has,

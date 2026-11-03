@@ -13,6 +13,12 @@ use maestro_extensions_wasm::{
 use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/renderer_listeners.rs"]
+mod renderer_listeners;
+#[cfg(target_arch = "wasm32")]
+use renderer_listeners::register_listeners;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/api.rs"]
 mod api;
 #[cfg(target_arch = "wasm32")]
@@ -169,6 +175,9 @@ mod model_protocol_routes;
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if std::env::var_os("MAESTRO_HOST_OPERATIONS_REQUEST").is_some() {
+            return host_operations::observe(&api).await;
+        }
         check_start(&api)?;
         load_time::publish(&api)?;
         providers::factory(&api)?;
@@ -222,45 +231,6 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             },
         )?;
         api.on("session_start", Rc::new(session_start))
-    })
-}
-
-/// Registers real same-instance listeners, including recursive synchronous emission.
-#[cfg(target_arch = "wasm32")]
-fn register_listeners(api: &ExtensionAPI) -> Result<(), String> {
-    for label in ["g1", "g2"] {
-        let events = api.events();
-        api.events().on(
-            "renderer-created",
-            Rc::new(move |data, emitter| {
-                let name = data[0].as_str().ok_or("missing name")?;
-                emitter.emit("trace", serde_json::json!(format!("{label}:{name}")))?;
-                if label == "g1" && name == "listener-error" {
-                    return Err("guest listener failure".into());
-                }
-                if name == "listener-tail" {
-                    return Ok(Some(listener_tail(events.clone(), label)));
-                }
-                if label == "g1" && name == "reentry" {
-                    emitter.emit("renderer-created", serde_json::json!(["inner", false]))?;
-                }
-                Ok(None)
-            }),
-        )?;
-    }
-    Ok(())
-}
-
-/// Creates a separately owned continuation for one listener prefix.
-#[cfg(target_arch = "wasm32")]
-fn listener_tail(
-    events: maestro_extensions_wasm::EventBus,
-    label: &'static str,
-) -> ExtensionFuture<'static, ()> {
-    Box::pin(async move {
-        events
-            .emit("trace", serde_json::json!(format!("{label}:tail")))
-            .await
     })
 }
 
@@ -544,3 +514,7 @@ fn check_start(api: &ExtensionAPI) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/host_operations.rs"]
+mod host_operations;
