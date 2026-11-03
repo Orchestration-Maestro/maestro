@@ -618,22 +618,28 @@ cargo clippy -p maestro-models --all-targets --locked -- -D warnings
 
 The provider tests trust fixed certificates under
 `crates/maestro-models/tests/fixtures/`. They are committed data, and no script or
-certificate library issues them. Every certificate starts on 2019-06-01 and expires
-on 2126-10-18, so none of them lapses during a test run. They start before 2019-07-01
-because Apple's TLS policy refuses a server certificate issued on or after that date
-that is valid for more than 825 days.
+certificate library issues them. Each one expires on 2126-10-18, so none of them
+lapses during a test run. The three server-side certificates start on 2019-06-01,
+before 2019-07-01, because Apple's TLS policy refuses a server certificate issued on
+or after that date that is valid for more than 825 days. The client pair starts on
+2026-10-17.
 
 | Files | Subject | Made as |
 | --- | --- | --- |
 | `socks-tls/cert.pem`, `cert.der`, `key.der` | `CN=destination.invalid`, names `destination.invalid` and `localhost` | Self-signed server certificate over the committed key. It is its own trust anchor. |
-| `cloud-authentication/server-ca.pem` | `CN=Controlled Maestro ADC server authority` | Self-signed authority, `CA:TRUE`, key usage `keyCertSign` and `cRLSign`. |
+| `cloud-authentication/server-ca.pem` | `CN=Controlled Maestro ADC server authority` | Self-signed authority, `CA:TRUE`, key usage `keyCertSign` and `cRLSign`. Its key is not kept. |
 | `cloud-authentication/server.pem`, `server-key.der` | `CN=localhost`, names `localhost` and `127.0.0.1` | Server certificate over the committed key, signed by the server authority. |
 | `cloud-authentication/ca.pem`, `client.pem`, `client-key.der` | `CN=Controlled Maestro ADC CA`, `CN=Controlled ADC Client` | Left as issued: the recorded chain hashes depend on them. |
 
 The server certificates carry `serverAuth` and `digitalSignature, keyEncipherment`
-with `CA:FALSE`, signed with SHA-256 and a random serial. To replace one, issue a new
-certificate over the same committed key with the subject and names above, commit the
-PEM and DER forms together, and keep the dates.
+with `CA:FALSE`, signed with SHA-256 and a random serial.
+
+To replace the SOCKS certificate, issue a new self-signed certificate over the same
+committed key with the subject and names above, then commit the PEM and DER forms
+together. To replace the cloud server certificate, make a new authority key and
+re-issue `server-ca.pem` and `server.pem` together, because the authority key behind
+the committed `server-ca.pem` is not kept. Keep the 2019-06-01 start and the 2126
+expiry on all three server-side certificates.
 
 ### Code scanning
 
