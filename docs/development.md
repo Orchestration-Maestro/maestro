@@ -860,7 +860,11 @@ tool in its archive. Nextest runs the staged tool's
 compiled-code file, installs the staged example beside the extracted executables and
 installs the compiled code in the engine-reported cache under the modification time that
 copy of the example has, and writes the component paths to
-`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
+`NEXTEST_ENV`. That cache is the run's own: the setup queries and fills the cache under
+`component-cache` beside the profile directory and exports it as `XDG_CACHE_HOME`, so the
+tests read the code the setup warmed. The engine prunes its user cache by age and size from
+every process that uses it, so a host that runs several builds would otherwise evict
+the warmed code from a shared cache while a long run was still going. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
 or compile pass. Archived runs
@@ -973,8 +977,8 @@ The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component in one Cargo invocation, so Cargo
 compiles them in parallel, warms their Wasmtime compilation cache
-in the default user cache on up to four threads and exports each path to the tests'
-processes. Component contents, compiler settings and CPU features still determine
+in the run's own cache (`component-cache` beside the profile directory) on up to four
+threads and exports each path to the tests' processes. Component contents, compiler settings and CPU features still determine
 cache compatibility.
 The shared component builder resolves these source-marked paths before invoking
 Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
@@ -1355,7 +1359,7 @@ preparation effects.
 `prepare_author_component --cache-directory` reports one absolute JSON path and
 creates no environment file, component, cache entry or observation log. The fixture
 uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
-fails the query and stops setup before cache installation. The built alias has a
+fails the query. The built alias has a
 sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
