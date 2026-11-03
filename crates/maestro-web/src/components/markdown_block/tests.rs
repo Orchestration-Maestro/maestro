@@ -174,11 +174,8 @@ fn clipped_escaped_angle_keeps_its_closing_angle_text() {
     );
     assert!(html.contains("class=\"maestro-math-block\""), "{html}");
     assert!(html.ends_with("<p>&gt;</p>\n"), "{html}");
-    assert!(
-        prepare("<https://example.test/$$x$$>", false)
-            .html
-            .ends_with("<blockquote>\n</blockquote>\n")
-    );
+    let raw = prepare("<https://example.test/$$x$$>", false).html;
+    assert!(raw.ends_with("<blockquote>\n</blockquote>\n"), "{raw}");
 }
 
 #[test]

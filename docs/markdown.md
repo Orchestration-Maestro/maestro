@@ -140,11 +140,11 @@ index for later inline interpretation; writers keep presentation policy.
 
 When a browser caller shows authored HTML as text, one pass over the whole
 document records the angle spans it displays literally: a tag from its `<`
-through its closing `>`, a complete closing tag, or a lone less-than before
-whitespace. Code spans and fences are left out, because the caller keeps code out
-of its escaping step: an inline span holds one line of characters and a fence
-closes at the next three backticks, so a stray backtick never reaches a later
-block. The block grammar then reads both delimiters as text, so a caller block
+through its closing `>` or a complete closing tag. Code spans and fences are
+left out, because the caller keeps code out of its escaping step: an inline span
+holds one line of characters and a fence closes at the next three backticks, so
+a stray backtick leaves the blocks after it to the ordinary literal-angle
+policy. The block grammar then reads both delimiters as text, so a caller block
 hint inside a span cannot turn its closing angle into a quote marker; the
 remainder stays a paragraph. A marker outside every span keeps its usual
 meaning, and the unescaped browser, terminal, export and documentation grammars

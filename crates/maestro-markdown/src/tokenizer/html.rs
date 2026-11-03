@@ -377,10 +377,7 @@ pub(crate) fn escaped_spans(source: &str) -> Vec<Range<usize>> {
                 spans.push(start..start + width);
                 cursor = start + width;
             }
-            Some(Literal::Bare) => {
-                spans.push(start..start + 1);
-            }
-            None => {}
+            _ => {}
         }
     }
     spans
@@ -390,8 +387,8 @@ pub(crate) fn escaped_spans(source: &str) -> Vec<Range<usize>> {
 ///
 /// Its own code shape decides each one: a fence is three backticks closed by the next
 /// three, and an inline span is one backtick holding at least one character that is
-/// neither a backtick nor a line break. Neither shape reaches across a line, so a stray
-/// backtick leaves the blocks after it to the ordinary literal-angle policy.
+/// neither a backtick nor a line break. An inline span never crosses a line break, so a
+/// stray single backtick leaves the blocks after it to the ordinary literal-angle policy.
 fn code_regions(source: &str) -> Vec<Range<usize>> {
     let mut regions = Vec::new();
     let mut cursor = 0;
