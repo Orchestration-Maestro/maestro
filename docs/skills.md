@@ -129,9 +129,10 @@ translate instructions written for another environment.
 
 ### Packages and selection
 
-The shipped [development skills](packages/maestro-skills.md) are one collection,
-not the skill format itself. Follow that page to load a local checkout. To author
-a package, use [package discovery](packages.md#conventional-resource-discovery): package content goes
+The [development skills](packages/maestro-skills.md) live in the catalog
+repository, maestro-manifests, as one collection, not the skill format itself.
+Follow that page to load a checkout of it. To author a package, use
+[package discovery](packages.md#conventional-resource-discovery): package content goes
 in `skills/`, or a `maestro.skills` list selects its paths. For example:
 
 ```json
