@@ -35,9 +35,7 @@ impl Browser {
     /// Prepare isolated inputs without locking the shared Trunk build output.
     /// Every build command must supply its own Cargo target directory.
     pub fn cold() -> Self {
-        let browser = Self::prepare(None);
-        browser.workspace.use_plain_dev_profile();
-        browser
+        Self::prepare(None)
     }
 
     /// Copy authored inputs while retaining any shared-output lock.
@@ -397,6 +395,39 @@ pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
     ));
     fs::copy(sources, home.join("config.toml")).unwrap();
     (home, target)
+}
+
+/// Fill the cold target with the registry units the workspace-sources setup compiled, so only
+/// Maestro's own crates compile from empty state.
+pub fn seed_target(target: &Path) {
+    let seed = super::recipe_support::prepared_workspace_sources().with_file_name("seed");
+    assert!(
+        seed.is_dir(),
+        "the workspace-sources setup must prepare {}",
+        seed.display()
+    );
+    record(format!("phase: copy registry seed {}", seed.display()));
+    let mut source = seed.into_os_string();
+    source.push("/.");
+    assert!(
+        Command::new("cp")
+            .arg("-a")
+            .arg(source)
+            .arg(target)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let units = fs::read_dir(target.join("debug/.fingerprint"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .collect::<Vec<_>>();
+    assert!(!units.is_empty(), "the seed holds no compiled units");
+    assert!(
+        units.iter().all(|unit| !unit.starts_with("maestro-")),
+        "the seed holds workspace member units: {units:?}"
+    );
+    assert!(!target.join("debug/incremental").exists());
 }
 
 /// Wait for the native rejected pipeline, which may leave its watcher running.

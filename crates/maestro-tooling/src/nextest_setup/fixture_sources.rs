@@ -2,11 +2,12 @@
 //!
 //! Most fixtures use the small registry closure because Cargo reads every vendored package.
 //! The cold browser build resolves the whole workspace instead. Both sets retain stable source
-//! paths while their dependency inputs stay unchanged; compiled output is not shared here.
+//! paths while their dependency inputs stay unchanged. The complete set also carries the compiled
+//! registry units of the cold browser bootstrap, so that build compiles only Maestro's crates.
 
 use std::ffi::OsString;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use sha2::{Digest, Sha256};
@@ -14,6 +15,9 @@ use sha2::{Digest, Sha256};
 use super::{cargo, export};
 use crate::copy_assets::copy_tree;
 use crate::test_setup::hex;
+
+/// Compile and prune the registry units of the cold browser bootstrap.
+mod seed;
 
 /// The directory of the tooling fixtures, from the checkout root.
 const FIXTURES: &str = "crates/maestro-tooling/tests/fixtures";
@@ -46,6 +50,9 @@ pub(super) fn run(checkout: &Path, scope: Scope) -> io::Result<ExitCode> {
         std::fs::create_dir_all(&directory)?;
         vendor(checkout, &directory, scope)?;
     }
+    if matches!(scope, Scope::Workspace) {
+        seed::ensure(checkout, &directory, &config)?;
+    }
     let mut entry = OsString::from(format!("{variable}="));
     entry.push(&config);
     export(&entry)?;
@@ -65,13 +72,7 @@ fn key(checkout: &Path, scope: Scope) -> io::Result<String> {
         Scope::Fixtures => inputs.push(fixtures.join("registry_sources/Cargo.toml")),
         Scope::Workspace => {
             inputs.push(checkout.join("Cargo.toml"));
-            // Workspace membership is crates/*; fixture manifests below members are separate.
-            for entry in std::fs::read_dir(checkout.join("crates"))? {
-                let manifest = entry?.path().join("Cargo.toml");
-                if manifest.is_file() {
-                    inputs.push(manifest);
-                }
-            }
+            inputs.extend(member_manifests(checkout)?);
         }
     }
     inputs.sort();
@@ -82,6 +83,19 @@ fn key(checkout: &Path, scope: Scope) -> io::Result<String> {
         hash.update(Sha256::digest(std::fs::read(input)?));
     }
     Ok(hex(&hash.finalize()))
+}
+
+/// The manifests of the workspace members. Membership is `crates/*`; fixture manifests below
+/// members are separate.
+fn member_manifests(checkout: &Path) -> io::Result<Vec<PathBuf>> {
+    let mut manifests = Vec::new();
+    for entry in std::fs::read_dir(checkout.join("crates"))? {
+        let manifest = entry?.path().join("Cargo.toml");
+        if manifest.is_file() {
+            manifests.push(manifest);
+        }
+    }
+    Ok(manifests)
 }
 
 /// Stage one source set and publish its configuration only after Cargo succeeds.

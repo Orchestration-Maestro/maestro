@@ -1089,10 +1089,13 @@ test that built into a differently spelled directory recompiled every dependency
 built for one checkout path serves another, so each test's copy of the checkout reuses it.
 
 `browser_author_bootstraps_from_empty_build_state` builds from an empty state on
-purpose, so the setup is not run for it. Its checkout drops the per-package
-optimization levels of the root manifest, which only pay off for tests that run the
-optimized crates repeatedly, and the test reserves every core with `threads-required`,
-so other tests do not stretch its compiler jobs past the hang limit. A recipe that fails during setup prints a
+purpose, so the setup is not run for it. Only Maestro's own crates compile in it: the
+workspace-sources setup below provides the registry units. The test reserves every core
+with `threads-required`, so other tests do not stretch its compiler jobs past the hang
+limit. The test checks one cold build and its outputs. Rebuilds after a change to an
+included file, a source error and its repair belong to
+`browser_author_included_files_rebuild_without_source_changes` and
+`browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup prints a
 warning and does not stop the run; the tests run the same recipes and report the
 failure. Plain Cargo tests, and nextest runs without the setup, use the test build's own
 target directory.
@@ -1134,8 +1137,20 @@ reuse it because workspace sources are read from the checkout. Outside nextest,
 the first cold-source caller runs the same setup. The browser shared-home isolation
 test prepares both source sets in its parent and forwards their configuration paths to
 the child before making the shared Cargo home unusable. The cold test copies only
-the source configuration into its initially empty Cargo home. Its Cargo target
-directory also starts empty, so the recipes still prove compilation from clean state.
+the source configuration into its initially empty Cargo home.
+
+The same setup also builds the cold bootstrap's native targets once per key, with the
+commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
+units of registry crates and deletes the units and outputs of workspace members, the
+examples and `debug/incremental`, then publishes the result as `seed` beside the
+configuration. A failed build leaves no seed and the next run continues it. The cold test
+copies the seed into its empty Cargo target directory and checks that it holds compiled
+units but none of a workspace member's. The recipes then compile Maestro's crates and
+the WebAssembly fixture from nothing, and every registry crate is already built. The
+test keeps the root manifest's per-package optimization levels, since the seed holds the
+optimized parsers. A shard that runs the cold test builds the seed in the setup, once
+while the key stays the same; the test never pays for it.
+
 The cold recipe uses `fixture_command` to keep its private home out of the
 compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
 by the build host applies, and with none Cargo compiles with every core the test reserves.

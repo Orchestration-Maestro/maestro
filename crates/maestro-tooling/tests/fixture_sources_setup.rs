@@ -11,8 +11,23 @@ use maestro_test_directory::Scratch;
 use crate::recipe_support::write_input;
 
 /// The fixture Cargo: it records its arguments, fails when asked and otherwise creates the
-/// vendor directory, its last argument, and prints the source configuration `vendor` prints.
+/// vendor directory, its last argument, and prints the source configuration `vendor` prints. A
+/// build records its arguments apart and leaves the units a registry crate, a registry crate
+/// named like a member plus a suffix, and the member `example` produce.
 const CARGO: &str = "#!/bin/sh\n\
+    if [ \"$1\" = build ]; then\n\
+    echo \"$*\" >> \"$BUILDS\"\n\
+    if [ -n \"${BUILD_FAILS-}\" ]; then echo 'build exploded' >&2; exit 1; fi\n\
+    profile=\"$CARGO_TARGET_DIR/debug\"\n\
+    mkdir -p \"$profile/deps\" \"$profile/examples\" \"$profile/incremental/example-1\"\n\
+    for unit in serde-0123456789abcdef example-extras-0123456789abcdef example-fedcba9876543210; do\n\
+    mkdir -p \"$profile/.fingerprint/$unit\" \"$profile/build/$unit\"\n\
+    done\n\
+    for file in libserde-0123456789abcdef.rlib libexample_extras-0123456789abcdef.rlib \\\n\
+    libexample-fedcba9876543210.rlib example-fedcba9876543210.d; do : > \"$profile/deps/$file\"; done\n\
+    : > \"$profile/development\"; : > \"$profile/examples/browser_author_inputs\"\n\
+    exit 0\n\
+    fi\n\
     echo \"$*\" >> \"$CALLS\"\n\
     if [ -n \"${VENDOR_FAILS-}\" ]; then echo 'vendor exploded' >&2; exit 1; fi\n\
     for last; do :; done\n\
@@ -51,6 +66,8 @@ fn setup(root: &Path, fails: bool) -> Command {
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
         .env("CALLS", root.join("calls"))
+        .env("BUILDS", root.join("builds"))
+        .env_remove("BUILD_FAILS")
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env_remove("VENDOR_FAILS");
     if fails {
@@ -272,4 +289,100 @@ fn workspace_sources_reuse_after_rust_only_edits() {
             .count(),
         1
     );
+}
+
+/// A workspace checkout with the member `example`, which the fixture Cargo builds units for.
+fn workspace(root: &Path) {
+    checkout(root);
+    write_input(
+        root,
+        "Cargo.toml",
+        "[workspace]\nmembers = [\"crates/*\"]\n",
+    );
+    write_input(
+        root,
+        "crates/example/Cargo.toml",
+        "[package]\nname = \"example\"\n",
+    );
+}
+
+/// The names in `directory`, sorted.
+fn names(directory: &Path) -> Vec<String> {
+    let mut names = fs::read_dir(directory)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .collect::<Vec<_>>();
+    names.sort();
+    names
+}
+
+/// The seed keeps what registry crates built and drops member units, outputs and incremental
+/// state, so a cold build compiles only the workspace's own crates.
+#[test]
+fn workspace_sources_seed_keeps_only_registry_units() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    workspace(root);
+    let config = printed(&setup(root, false).arg("workspace").output().unwrap());
+    let seed = config.with_file_name("seed");
+
+    assert_eq!(
+        names(&seed.join("debug")),
+        [".fingerprint", "build", "deps"]
+    );
+    let registry = ["example-extras-0123456789abcdef", "serde-0123456789abcdef"];
+    assert_eq!(names(&seed.join("debug/.fingerprint")), registry);
+    assert_eq!(names(&seed.join("debug/build")), registry);
+    assert_eq!(
+        names(&seed.join("debug/deps")),
+        [
+            "libexample_extras-0123456789abcdef.rlib",
+            "libserde-0123456789abcdef.rlib"
+        ]
+    );
+    assert!(!config.with_file_name("seed-target").exists());
+    let builds = fs::read_to_string(root.join("builds")).unwrap();
+    let builds = builds.lines().collect::<Vec<_>>();
+    assert_eq!(builds.len(), 2);
+    assert!(
+        builds[0].starts_with("build --locked -p maestro-theme --example browser_author_inputs")
+    );
+    assert!(builds[1].starts_with("build --locked -p maestro-tooling --bins"));
+    assert!(
+        builds
+            .iter()
+            .all(|build| build.ends_with(&format!("--config {}", config.display())))
+    );
+}
+
+/// A prepared seed is reused, and a failed build leaves none: the next run builds it again
+/// without vendoring.
+#[test]
+fn workspace_sources_seed_is_built_once_and_retried_after_a_failure() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    workspace(root);
+    let failed = setup(root, false)
+        .arg("workspace")
+        .env("BUILD_FAILS", "1")
+        .output()
+        .unwrap();
+    assert!(!failed.status.success());
+    assert!(String::from_utf8_lossy(&failed.stderr).contains("build exploded"));
+    let sources = fs::read_dir(root.join("target/workspace-sources"))
+        .unwrap()
+        .next()
+        .unwrap()
+        .unwrap()
+        .path();
+    assert!(!sources.join("seed").exists());
+
+    let config = printed(&setup(root, true).arg("workspace").output().unwrap());
+    assert_eq!(config.parent().unwrap(), sources);
+    assert!(sources.join("seed/debug/deps").is_dir());
+    let count = |file: &str| fs::read_to_string(root.join(file)).unwrap().lines().count();
+    assert_eq!((count("calls"), count("builds")), (1, 3));
+
+    printed(&setup(root, true).arg("workspace").output().unwrap());
+    assert_eq!((count("calls"), count("builds")), (1, 3));
 }
