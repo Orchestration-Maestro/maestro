@@ -1276,8 +1276,9 @@ the data and translated calendar code.
 
 ## Development skill content
 
-Copyright and permission notices for adapted skill text are in the
-[package notice](packages/maestro-skills/THIRD-PARTY-NOTICES.md).
+Copyright and permission notices for adapted skill text are in the pack's
+[package notice](https://github.com/Orchestration-Maestro/maestro-manifests/blob/main/manifests/capabilities/practice/maestro-skills/THIRD-PARTY-NOTICES.md),
+in the catalog repository maestro-manifests. Every copy of the pack carries that file.
 
 ## Markdown grammar
 

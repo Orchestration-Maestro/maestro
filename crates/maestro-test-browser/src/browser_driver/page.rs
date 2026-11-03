@@ -518,16 +518,13 @@ impl<'a> Page<'a> {
                         .iter()
                         .any(|frame| frame["url"] == self.expected_error.source)
                 });
+        let expected = format!(
+            "{}: {}",
+            self.expected_error.name, self.expected_error.message
+        );
         if self.name == self.expected_error.export
             && exception["className"] == self.expected_error.name
-            && description.lines().next()
-                == Some(
-                    format!(
-                        "{}: {}",
-                        self.expected_error.name, self.expected_error.message
-                    )
-                    .as_str(),
-                )
+            && description.lines().next() == Some(expected.as_str())
             && source
         {
             self.policy_errors += 1;

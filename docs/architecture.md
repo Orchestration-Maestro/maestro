@@ -113,7 +113,9 @@ tests that build a real model catalog, the native-only `maestro-detection` to
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
 tests that drive a real session through the scripted provider, the native-only
 `maestro-cli` to `maestro-listeners` development edge for the controlled print
-adapter, and the native development edges from the twenty-three declared callers to the
+adapter, the native-only `maestro` to `maestro-lock` development edge that
+serializes the executable's file-trigger test on the shared host fixture, and the
+native development edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
