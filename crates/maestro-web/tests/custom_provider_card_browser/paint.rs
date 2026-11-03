@@ -1,7 +1,8 @@
 //! Native rendering and keyboard observations of the complete visible-state inventory.
 use super::{buttons, provider};
 use crate::contributions_support::{
-    call, computed, container, driver, host, page_module, rgb, select, shadow_paints, text, view,
+    call, computed, container, document, driver, host, page_module, rgb, select, shadow_paints,
+    text, view,
 };
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
@@ -244,12 +245,7 @@ async fn keyboard_card(view: &Rc<DomView>, page: &JsValue) {
         controls[0].clone().into()
     );
     call(page, "finish", &js_sys::Array::of1(&controls[0])).await;
-    let accent = rgb(view.pack.presentation(view.mode).unwrap().colors["accent"]);
-    assert!(shadow_paints(&computed(&controls[0], "box-shadow")));
-    assert!(
-        computed(&controls[0], "box-shadow").contains(&accent),
-        "focus paints an accent ring around the control"
-    );
+    focus_ring(view, &parent, &controls[0]);
     driver("driverPress", "Enter").await;
     assert_eq!(count.get(), 1);
     for expected in [&controls[1], &controls[2], &after] {
@@ -267,6 +263,38 @@ async fn keyboard_card(view: &Rc<DomView>, page: &JsValue) {
     reverse_tabs(view, [&controls[1], &controls[0], &before]).await;
     hover_button(view, page, &controls[1]).await;
     parent.remove();
+}
+/// Focus turns the control border accent and paints the shipped accent blend around it.
+fn focus_ring(view: &DomView, parent: &Element, control: &HtmlElement) {
+    let accent = rgb(view.pack.presentation(view.mode).unwrap().colors["accent"]);
+    assert!(shadow_paints(&computed(control, "box-shadow")));
+    assert_eq!(
+        computed(control, "border-top-color"),
+        accent,
+        "focus turns the control border accent"
+    );
+    let ring = mixed_color(
+        parent,
+        "color-mix(in srgb, var(--maestro-color-accent) 50%, transparent)",
+    );
+    assert!(
+        computed(control, "box-shadow").contains(&ring),
+        "focus paints the shipped accent blend around the control"
+    );
+}
+/// The colour the page resolves one declaration to, read from a connected probe element.
+fn mixed_color(parent: &Element, declaration: &str) -> String {
+    let probe = document().create_element("div").unwrap();
+    probe
+        .unchecked_ref::<HtmlElement>()
+        .style()
+        .set_property("background-color", declaration)
+        .unwrap();
+    parent.append_child(&probe).unwrap();
+    let color = computed(&probe, "background-color");
+    probe.remove();
+    assert_ne!(color, "rgba(0, 0, 0, 0)", "the page resolves the blend");
+    color
 }
 /// The shared native button paints its hover surface.
 async fn hover_button(view: &DomView, page: &JsValue, button: &HtmlElement) {

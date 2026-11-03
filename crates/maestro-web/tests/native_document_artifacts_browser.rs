@@ -194,7 +194,7 @@ fn assert_wrapped_text(node: &Element, (page_width, case): (f64, &Package)) {
     }
 }
 
-/// Every inline image has a ready resource and paints at a nonzero size inside its page.
+/// Every inline image's own resource is decoded and paints at a nonzero size inside its page.
 async fn assert_ready_images(node: &Element, (page_width, case): (f64, &Package)) {
     if case.images == 0 {
         return;
@@ -202,9 +202,19 @@ async fn assert_ready_images(node: &Element, (page_width, case): (f64, &Package)
     let images = node.query_selector_all("img").unwrap();
     for index in 0..images.length() {
         let image: Element = images.item(index).unwrap().unchecked_into();
-        let source = image.get_attribute("src").unwrap_or_default();
+        let decode: js_sys::Function = js_sys::Reflect::get(&image, &"decode".into())
+            .unwrap()
+            .unchecked_into();
+        let decoded = js_sys::Promise::from(decode.call0(&image).unwrap());
         assert!(
-            !fetch_bytes(&source).await.is_empty(),
+            wasm_bindgen_futures::JsFuture::from(decoded).await.is_ok(),
+            "{}: the image decodes",
+            case.name
+        );
+        let complete = js_sys::Reflect::get(&image, &"complete".into()).unwrap();
+        let width = js_sys::Reflect::get(&image, &"naturalWidth".into()).unwrap();
+        assert!(
+            complete.as_bool() == Some(true) && width.as_f64().unwrap_or(0.0) > 0.0,
             "{}: the image resource is ready",
             case.name
         );

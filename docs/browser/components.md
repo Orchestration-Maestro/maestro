@@ -339,8 +339,8 @@ nodes and focus while their actions remain present. The selection survives an
 update only while the text is unchanged, because localization replaces the text
 nodes inside those buttons. Activation reads the most recently published callback
 and provider handle, including later edits to that provider. It releases component
-borrows before calling the action, so the action may update its containing card. Removing an action releases its binding;
-disconnected roots perform no action, and reconnecting restores delivery without
-a second registration. Dropping `DomRoot` releases every retained binding even
-when the page still holds its nodes. Localization failures leave the last
-successfully published content in place.
+borrows before calling the action, so the action may update its containing card.
+Removing an action releases its binding; disconnected roots perform no action, and
+reconnecting restores delivery without a second registration. Dropping `DomRoot`
+releases every retained binding even when the page still holds its nodes.
+Localization failures leave the last successfully published content in place.
