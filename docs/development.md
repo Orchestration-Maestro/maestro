@@ -1101,7 +1101,9 @@ the child before making the shared Cargo home unusable. The cold test copies onl
 the source configuration into its initially empty Cargo home. Its Cargo target
 directory also starts empty, so the recipes still prove compilation from clean state.
 The cold recipe uses `fixture_command` to keep its private home out of the
-compiler wrapper's cache keys.
+compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
+by the build host applies, and with none Cargo compiles with every core the test reserves.
+The other recipe tests keep three jobs.
 
 Cargo builds that share one target directory with other builds, the test build's or the
 one the browser author setup prepares, keep the shared home.
@@ -1116,16 +1118,20 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
-On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at the prepared
-fixture's `hide-home` wrapper, installed as `rustc-wrapper` in the fixture root.
-The wrapper unsets `CARGO_HOME` and runs the original wrapper, which it reads from
-`MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache` hashes every `CARGO_*` variable into the
-key of each rustc call, so a wrapper that saw the private home would give the
-registry crates of each fixture a key that no other fixture shares. Cargo itself
-keeps the private home and its lock.
-`fixture_command_hides_cargo_home_from_the_compiler_wrapper` runs a fixture build
-behind the `recording` wrapper, which logs the `CARGO_HOME` its compiler saw, and
-checks that it never sees one.
+On Unix, when `RUSTC_WRAPPER` or, failing that, `CARGO_BUILD_RUSTC_WRAPPER` is set,
+`fixture_command` points `RUSTC_WRAPPER` at the prepared fixture's `hide-home`
+wrapper, installed as `rustc-wrapper` in the fixture root. Shared CI sets the second
+variable. The wrapper unsets `CARGO_HOME` and `CARGO_TARGET_DIR` and runs the
+original wrapper, which it reads from `MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache`
+hashes every `CARGO_*` variable into the key of each rustc call, so a wrapper that
+saw the private home or the per-run target directory would give the registry crates
+of each fixture a key that no other fixture shares. Cargo itself keeps both
+variables and passes the compiler its output directory explicitly.
+`fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper` runs a
+fixture build behind the `recording` wrapper, which logs the `CARGO_HOME` and the
+`CARGO_TARGET_DIR` its compiler saw, and checks that it never sees either.
+`fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper` does the same for a
+wrapper inherited as `CARGO_BUILD_RUSTC_WRAPPER`.
 
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
@@ -1190,10 +1196,10 @@ Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-chat`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
-tests), the command-line startup tests and the daemon's notification and repository
-discovery cases. Local setup builds the example with the locked host `dev` profile
-and reads Cargo's emitted executable path. It records source inputs, content digest
-and host in
+tests), the command-line startup tests, the daemon's notification and repository
+discovery cases and the terminal client example's tests. Local setup builds the
+example with the locked host `dev` profile and reads Cargo's emitted executable
+path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1318,8 +1324,8 @@ behavior; an unknown family, scenario or field fails before any effect.
 | --- | --- |
 | `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
 | `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
-| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home. |
-| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` to observe the same boundary. |
+| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
+| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
 
 A runner that starts `just build` in a recipe workspace therefore never needs
 Cargo, `mise` or `watchexec` of its own: each call reaches the installed alias,
@@ -1407,6 +1413,35 @@ interrupt peer reads commands on one thread and records TERM through a native
 signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
+
+The terminal client example and the client example's checks use the same family on
+every native platform. `DialogTour` answers a prompt, four correlated dialogs and
+six notices before ending with status seven; `LocalDialogTour` answers the local
+demonstration prompt; `Notifications` reports each notice severity. The remaining
+scenarios keep authored text literal:
+
+| Scenario | Behavior |
+| --- | --- |
+| `SelectionReplies` | Emits a padded and an empty selection and requires each value in its own correlated reply. |
+| `DialogText` | Reports dialog chrome that contains terminal controls and requires the answer to repeat them. |
+| `MultilineCommand` | Requires a confirmation of a message that holds its own blank line. |
+| `LiteralText` | Refuses the prompt, then streams text, a tool name and a control sequence as data before ending normally. |
+| `TerminationMarker` (Unix only) | Reads the first termination signal and writes `SIGTERM` to the file `PEER_MARKER` names. |
+| `PromptExit` | Reports readiness, requires the first prompt and ends with status seven. |
+| `UnicodeState` | Answers a cancelled startup dialog, then sends state with U+2028 and U+2029 inside a CRLF-terminated record. |
+| `PromptAcceptance` | Answers state, emits `agent_end` and only then accepts the prompt. |
+| `EndAfterAcceptance` | Accepts the prompt and streams a delta before `agent_end`. |
+| `AcceptedEof` | Accepts the prompt and closes the stream before any terminal event. |
+| `ExitAfterReply` | Answers the first request and exits with status three after input closes. |
+| `RefusedState` | Refuses the startup request without a terminal event. |
+| `EarlyEof` | Closes the stream before answering. |
+
+`UnicodeState`, `PromptAcceptance`, `EndAfterAcceptance` and `ExitAfterReply`
+require the client to close its input without another command after its last
+reply, so a stray command fails the check.
+
+The client example's checks launch the shipped `examples/sdk/rpc.py` against an
+installed alias of this family, so only the example itself runs under Python 3.
 
 #### Footer Git aliases
 

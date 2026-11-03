@@ -17,7 +17,6 @@ mod editor;
 mod git;
 mod notification;
 mod observe;
-#[cfg(unix)]
 mod rpc;
 #[cfg(unix)]
 mod search;
@@ -55,7 +54,6 @@ enum Request {
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
-    #[cfg(unix)]
     Rpc(rpc::Record),
     /// Produce controlled search bytes without interpreting native operands.
     #[cfg(unix)]
@@ -128,7 +126,6 @@ impl Request {
                 credentials::Record::parse(&text)?,
                 operands,
             )),
-            #[cfg(unix)]
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
@@ -164,7 +161,6 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
-        #[cfg(unix)]
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
