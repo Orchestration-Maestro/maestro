@@ -11,7 +11,8 @@ use maestro_app::configuration::config::{
 };
 use maestro_app::configuration::version_check::VersionCheckOptions;
 use maestro_process::SpawnSyncError;
-use std::{fs, io, process::Output};
+use serde_json::{Value, json};
+use std::{fs, io, path::Path, process::Output};
 
 /// A read-only adapter that keeps the default inherited-I/O runner.
 struct ReadOnly;
@@ -27,52 +28,74 @@ impl SelfUpdateOperations for ReadOnly {
     }
 }
 
-/// One `/bin/sh -c` command with the selected steps.
-fn shell_command(
-    display: &str,
-    script: &str,
-    steps: Option<Vec<SelfUpdateCommandStep>>,
-) -> SelfUpdateCommand {
+/// One selected command whose stand-in reports `record`.
+fn command(directory: &Path, name: &str, display: &str, record: &Value) -> SelfUpdateCommand {
     SelfUpdateCommand {
-        command: "/bin/sh".into(),
-        args: vec!["-c".into(), script.into()],
+        command: crate::native::command(directory, name, record)
+            .to_str()
+            .expect("the stand-in path is text")
+            .into(),
+        args: Vec::new(),
         display: display.into(),
-        steps,
+        steps: None,
     }
 }
 
-/// One step appending `operand` as a line to `log`.
-fn append_step(log: &str, operand: &str) -> SelfUpdateCommandStep {
+/// One selected step whose stand-in reports `record`.
+fn step(directory: &Path, name: &str, record: &Value) -> SelfUpdateCommandStep {
+    let step = command(directory, name, "%s", record);
     SelfUpdateCommandStep {
-        command: "/bin/sh".into(),
-        args: vec!["-c".into(), format!("printf '%s\\n' {operand} >> '{log}'")],
-        display: format!("%s {operand}"),
+        command: step.command,
+        args: step.args,
+        display: step.display,
     }
+}
+
+/// A stand-in appending `bytes`, after the working directory when `cwd` is set.
+fn appending(log: &Path, cwd: bool, bytes: &[u8]) -> Value {
+    json!({
+        "scenario": "output",
+        "stdout": [],
+        "stderr": [],
+        "code": 0,
+        "append": {"path": log, "cwd": cwd, "bytes": bytes}
+    })
 }
 
 #[test]
 fn self_update_runs_inherited_steps_without_deadline() {
     let scratch = crate::child::Scratch::new();
-    let log = scratch.join("steps.log");
-    let selected = shell_command(
-        "single",
-        &format!("printf '%s\\n' 'no steps' >> '{log}'"),
-        Some(vec![
-            append_step(&log, "\"$(pwd)\""),
-            append_step(&log, "\"a b\""),
+    let root = scratch.join("");
+    let directory = Path::new(&root);
+    let log = Path::new(&scratch.join("steps.log")).to_path_buf();
+    let selected = SelfUpdateCommand {
+        steps: Some(vec![
+            step(directory, "first-step", &appending(&log, true, &[])),
+            step(directory, "second-step", &appending(&log, false, b"a b\n")),
         ]),
-    );
+        ..command(
+            directory,
+            "selected",
+            "single",
+            &appending(&log, false, b"no steps\n"),
+        )
+    };
     run_io(run_self_update(&selected, &ReadOnly)).expect("the steps run in order");
     let recorded = fs::read_to_string(&log).expect("the steps wrote their log");
-    let directory = std::env::current_dir().expect("the working directory is known");
+    let cwd = std::env::current_dir().expect("the working directory is known");
     assert_eq!(
         recorded.lines().collect::<Vec<_>>(),
-        [
-            directory.to_str().expect("the working directory is text"),
-            "a b"
-        ]
+        [cwd.to_str().expect("the working directory is text"), "a b"]
     );
-    let empty = shell_command("single", "exit 9", Some(Vec::new()));
+    let empty = SelfUpdateCommand {
+        steps: Some(Vec::new()),
+        ..command(
+            directory,
+            "empty",
+            "single",
+            &json!({"scenario": "output", "stdout": [], "stderr": [], "code": 9}),
+        )
+    };
     run_io(run_self_update(&empty, &ReadOnly)).expect("no steps do no work");
     assert_eq!(
         fs::read_to_string(&log).expect("the log is readable"),
@@ -90,6 +113,8 @@ fn failure(command: &SelfUpdateCommand) -> String {
 #[test]
 fn self_update_step_errors_keep_status_and_signal() {
     let scratch = crate::child::Scratch::new();
+    let root = scratch.join("");
+    let directory = Path::new(&root);
     let log = scratch.join("steps.log");
     let absent = SelfUpdateCommand {
         command: scratch.join("absent-program"),
@@ -103,33 +128,68 @@ fn self_update_step_errors_keep_status_and_signal() {
             .kind(),
         io::ErrorKind::NotFound
     );
-    assert_eq!(
-        failure(&shell_command("coded", "exit 23", None)),
-        "coded exited with code 23"
+    let coded = command(
+        directory,
+        "coded",
+        "coded",
+        &json!({"scenario": "output", "stdout": [], "stderr": [], "code": 23}),
+    );
+    assert_eq!(failure(&coded), "coded exited with code 23");
+    let signalled = command(
+        directory,
+        "signalled",
+        "signalled",
+        &json!({
+            "scenario": "output",
+            "stdout": [],
+            "stderr": [],
+            "code": 0,
+            "signal": "SIGTERM"
+        }),
     );
     assert_eq!(
-        failure(&shell_command("signalled", "kill -TERM $$", None)),
+        failure(&signalled),
         "signalled terminated by signal SIGTERM"
     );
     #[cfg(target_os = "linux")]
     assert_eq!(
-        failure(&shell_command("realtime", "kill -34 $$", None)),
+        failure(&command(
+            directory,
+            "realtime",
+            "realtime",
+            &json!({
+                "scenario": "output",
+                "stdout": [],
+                "stderr": [],
+                "code": 0,
+                "signal": "SIGRTMAX"
+            }),
+        )),
         "realtime exited with code unknown"
     );
-    let failing = shell_command(
-        "failing",
-        "exit 3",
-        Some(vec![
-            SelfUpdateCommandStep {
-                command: "/bin/sh".into(),
-                args: vec!["-c".into(), "exit 3".into()],
-                display: "%s".into(),
-            },
-            append_step(&log, "'later'"),
-        ]),
-    );
+    let failing = failing_steps(directory, Path::new(&log));
     assert_eq!(failure(&failing), "%s exited with code 3");
-    assert!(!std::path::Path::new(&log).exists());
+    assert!(!Path::new(&log).exists());
+}
+
+/// A selected command whose first step fails and whose second must not run.
+fn failing_steps(directory: &Path, log: &Path) -> SelfUpdateCommand {
+    SelfUpdateCommand {
+        steps: Some(vec![
+            step(
+                directory,
+                "failing-step",
+                &json!({"scenario": "output", "stdout": [], "stderr": [], "code": 3}),
+            ),
+            step(directory, "later-step", &appending(log, false, b"later\n")),
+        ]),
+        ..command(
+            directory,
+            "failing",
+            "%s",
+            &json!({"scenario": "output", "stdout": [], "stderr": [], "code": 3}),
+        )
+    }
 }
 
 /// The plan of one controlled release, with the requests it made.

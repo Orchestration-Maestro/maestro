@@ -820,10 +820,13 @@ release builds are unchanged.
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
 The `test_prepare` command in `.github/ci.toml` is the development tool's
-`prepare-test-setup prepare`. Shared CI runs it only when a selected package is
-named by `test_prepare_packages` there, the packages that nextest's
-`author-component`, `browser-author`, `cargo-checks` and `native-fixture` setups
-serve. Shared CI caches the bundle under the contents of the files that
+`prepare-test-setup prepare`. Shared CI runs it only when a selected package
+matches a setup filter in `.config/nextest.toml` for one of the setups named by
+`test_prepare_setups` in `.github/ci.toml`. The consumer packages live only in
+those nextest filters. To give another package a prepared fixture, add it to the
+matching filter; no CI package list needs updating. A change to the nextest
+configuration runs the full test suite in CI.
+Shared CI caches the bundle under the contents of the files that
 `test_prepare_inputs` matches and restores it instead of preparing again. Those
 patterns cover the `maestro-extensions-wasm`, `maestro-tooling`, `maestro-web` and
 `maestro-models` builds, the independent guide project and every workspace crate
@@ -981,9 +984,17 @@ the advertised redirect URI remains unchanged. Public protocol, account and
 provider checks run in checked child processes with only the child's callback
 host set to a single space, exercising manual fallback without a listener.
 Callback tests that still bind a fixed port belong in an `oauth_callback` module,
-which joins a single-thread nextest group. Browser author-build tests also
-join a single-thread group because Trunk shares binding/optimizer intermediates;
-their file lock keeps plain Cargo tests safe. Other tests remain parallel.
+which joins a single-thread nextest group. To serialize those tests across runs
+on one machine, set `MAESTRO_FIXED_PORT_LOCK` to the same absolute, writable file
+path in each run. The `fixed-port` nextest wrapper creates the file if needed,
+waits for an exclusive file lock and holds it only while each selected test runs.
+Without the variable, the wrapper runs the test directly. Keep the wrapper's filter and
+the `oauth-callback` group's filter together in `.config/nextest.toml`. Plain
+`cargo test` does not use the wrapper; serialize fixed-port tests separately.
+
+Browser author-build tests also join a single-thread group because Trunk shares
+binding/optimizer intermediates; their file lock keeps plain Cargo tests safe.
+Other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the
@@ -1173,9 +1184,8 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests and the application's RPC client and footer tests.
-Local setup builds the example with the locked host `dev` profile and reads
-Cargo's emitted executable path. It
+attachment-completion tests and `maestro-app`. Local setup builds the example
+with the locked host `dev` profile and reads Cargo's emitted executable path. It
 records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
@@ -1212,6 +1222,43 @@ The editor writes the edited file's path to the file named by
 `vi.fixture` record containing only `editor` and
 `MAESTRO_EDITOR_RESULT=/scratch/editor-result`, running `vi --custom notes.txt`
 writes `notes.txt` followed by a newline to `/scratch/editor-result` and exits 7.
+
+#### Command stand-ins
+
+On Unix, the `command` family replaces an interpreted stand-in for a program the
+product launches by name. Install the artifact under the name the product uses,
+then write `command` on the first line of `<alias>.fixture` followed by a JSON
+object whose `scenario` selects one finite behaviour. The fixture parses the whole
+record before any effect and rejects an unknown scenario or field, including in the
+`labelled` and `package` scenarios that declare no fields of their own.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
+| `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
+| `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+
+A controlled package command for the package manager settings records its
+acquisitions without a package manager:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("controlled-npm");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+    let mut record = alias.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, "command\n{\"scenario\":\"package\"}")?;
+    Ok(())
+}
+```
+
+Keep each alias in a test's disposable directory and pass its absolute path as the
+configured command. The stand-in inherits the child's environment, so the two
+`MAESTRO_*` variables above belong to the process that launches it.
 
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
