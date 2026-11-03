@@ -34,9 +34,9 @@ unstaged.
 Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
 no crates. They never widen a mixed change's selection. With no staged crate, the
 hook skips formatting and Clippy. The full conventions suite runs only for staged
-paths under `crates/maestro-test-conventions/`, guarding the checker itself. It runs as
-`just test-conventions`, which prepares the native fixture its probes install and then
-runs the suite with nextest.
+paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
+runs it as `just test-conventions`, which prepares the native fixture the probes
+install and then runs the suite with nextest.
 Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
 the browser entry is present, guarding targets outside native Clippy.
 
@@ -1193,8 +1193,9 @@ currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
 tests), the command-line startup tests, the conventions checker's architecture
-tests and the daemon's notification, layout-apply and repository discovery cases. Local setup builds the example with the locked host `dev` profile
-and reads Cargo's emitted executable path. It records source inputs, content digest
+tests and the daemon's notification, layout-apply and repository discovery cases.
+Local setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest
 and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
@@ -1386,7 +1387,7 @@ test observes.
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
 | `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
 | `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
-| `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | A native program, not an interpreter: the leaf only has to outlive the test body. |
+| `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
 | `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |

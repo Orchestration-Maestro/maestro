@@ -288,8 +288,6 @@ fn malformed_command_records_have_no_partial_effects() {
         json!({"scenario": "unknown"}),
         json!({"scenario": "package", "unknown": true}),
         json!({"scenario": "labelled", "unknown": true}),
-        json!({"scenario": "metadata", "declared": "declared.json"}),
-        json!({"scenario": "metadata", "declared": "d", "resolved": "r", "unknown": true}),
     ];
     for (field, value) in [
         ("code", json!(256)),
@@ -376,6 +374,39 @@ fn metadata_stand_in_serves_declared_and_resolved_documents_per_run() {
         std::fs::read(&log).unwrap(),
         b"cargo\0metadata\0--no-deps\0--offline\0cargo\0metadata\0--no-deps\0cargo\0metadata\0--filter-platform\0x\0"
     );
+}
+
+/// A metadata record that omits a document or names an unknown field is rejected before it serves or logs.
+#[cfg(unix)]
+#[test]
+fn malformed_metadata_records_serve_and_log_nothing() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let declared = root.path().join("declared.json");
+    std::fs::write(&declared, "served").unwrap();
+    let log = root.path().join("order");
+    let argv_log = json!({"path": log, "mark": "cargo"});
+    for record in [
+        json!({"scenario": "metadata", "declared": declared, "argv_log": argv_log}),
+        json!({
+            "scenario": "metadata",
+            "declared": declared,
+            "resolved": declared,
+            "argv_log": argv_log,
+            "unknown": true
+        }),
+    ] {
+        let cargo = command_alias(root.path(), "cargo", &record);
+        // `--no-deps` selects the declared document, which exists, so only a
+        // rejected record keeps the stream and the log empty.
+        let run = Command::new(cargo)
+            .args(["metadata", "--no-deps"])
+            .output()
+            .unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty(), "served {record}");
+        assert!(!log.exists(), "logged {record}");
+    }
 }
 
 /// Install the command-family alias `name` selected by `record`.
