@@ -359,13 +359,13 @@ fn metadata_credentials_stay_direct_with_proxy() -> TestResult {
 }
 
 #[test]
-fn credential_https_endpoints_select_https_proxy() -> TestResult {
-    profile_routes::check("credential_https_endpoints_select_https_proxy")
+fn credential_endpoints_follow_the_conversation_proxy() -> TestResult {
+    profile_routes::check("credential_endpoints_follow_the_conversation_proxy")
 }
 
 #[test]
-fn credential_routes_are_selected_per_destination() -> TestResult {
-    profile_routes::check("credential_routes_are_selected_per_destination")
+fn credential_routes_follow_the_conversation_proxy() -> TestResult {
+    profile_routes::check("credential_routes_follow_the_conversation_proxy")
 }
 
 #[test]

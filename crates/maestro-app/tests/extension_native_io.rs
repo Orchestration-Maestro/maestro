@@ -1,5 +1,47 @@
-//! Native save completion yields to unrelated local work.
+//! Native saves retain file identity and yield to unrelated local work.
 use std::{cell::Cell, rc::Rc, task::Context};
+
+#[cfg(unix)]
+#[test]
+fn native_save_preserves_existing_identity_and_hard_links() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = scratch.path().join("saved");
+    let alias = scratch.path().join("alias");
+    std::fs::write(&path, b"previous").unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o640)).unwrap();
+    std::fs::hard_link(&path, &alias).unwrap();
+    let before = std::fs::metadata(&path).unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let io = maestro_app::extension_native_io::extension_native_io(&local);
+
+    crate::support::run(async {
+        assert_eq!(
+            io.save_file(path.display().to_string(), vec![0, 255], 0o600)
+                .await
+                .unwrap(),
+            None
+        );
+    });
+
+    let after = std::fs::metadata(&path).unwrap();
+    assert_eq!(std::fs::read(&alias).unwrap(), [0, 255]);
+    assert_eq!(std::fs::read(&path).unwrap(), [0, 255]);
+    assert_eq!(
+        (
+            after.ino(),
+            after.uid(),
+            after.gid(),
+            after.permissions().mode()
+        ),
+        (
+            before.ino(),
+            before.uid(),
+            before.gid(),
+            before.permissions().mode()
+        )
+    );
+}
 
 #[test]
 fn native_save_waits_for_blocking_pool_without_blocking_local_work() {

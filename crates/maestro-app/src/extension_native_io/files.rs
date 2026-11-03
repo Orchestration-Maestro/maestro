@@ -10,7 +10,7 @@ pub(super) fn save_file(path: &str, bytes: &[u8], mode: u32) -> io::Result<Optio
         bytes,
         maestro_lock::Replace {
             through_symlinks: true,
-            creation_mode: Some(mode),
+            creation_mode: Some(maestro_lock::CreationMode::AtCreation(mode)),
         },
     )
     .map(|committed| committed.dir_sync.map(|error| error.to_string()))

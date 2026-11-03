@@ -42,8 +42,8 @@ fn maestro_editor_cycles_through_history_entries_on_repeated_up_arrow() {
 }
 
 #[test]
-fn maestro_editor_returns_to_empty_editor_on_down_arrow_after_browsing_history() {
-    support::run("maestro_editor_returns_to_empty_editor_on_down_arrow_after_browsing_history");
+fn maestro_editor_restores_the_draft_on_down_arrow_after_browsing_history() {
+    support::run("maestro_editor_restores_the_draft_on_down_arrow_after_browsing_history");
 }
 
 #[test]
@@ -87,19 +87,19 @@ fn maestro_editor_limits_history_to_100_entries() {
 }
 
 #[test]
-fn maestro_editor_allows_cursor_movement_within_multi_line_history_entry_with_down() {
-    support::run("maestro_editor_allows_cursor_movement_within_multi_line_history_entry_with_down");
+fn maestro_editor_places_cursor_at_start_after_browsing_history_upward() {
+    support::run("maestro_editor_places_cursor_at_start_after_browsing_history_upward");
 }
 
 #[test]
-fn maestro_editor_allows_cursor_movement_within_multi_line_history_entry_with_up() {
-    support::run("maestro_editor_allows_cursor_movement_within_multi_line_history_entry_with_up");
+fn maestro_editor_places_cursor_at_end_after_browsing_history_downward() {
+    support::run("maestro_editor_places_cursor_at_end_after_browsing_history_downward");
 }
 
 #[test]
-fn maestro_editor_navigates_from_multi_line_entry_back_to_newer_via_down_after_cursor_movement() {
+fn maestro_editor_allows_opposite_direction_cursor_movement_within_multi_line_history_entry() {
     support::run(
-        "maestro_editor_navigates_from_multi_line_entry_back_to_newer_via_down_after_cursor_movement",
+        "maestro_editor_allows_opposite_direction_cursor_movement_within_multi_line_history_entry",
     );
 }
 
@@ -146,7 +146,7 @@ fn history_callbacks_observe_committed_selection() {
     editor.handle_input("\x1b[A");
     assert_eq!(
         *events.borrow(),
-        [("first", "new".into(), 3), ("second", "old".into(), 3)]
+        [("first", "new".into(), 0), ("second", "old".into(), 0)]
     );
     assert_eq!(editor.get_text(), "old");
     editor.set_on_change(None);

@@ -33,7 +33,7 @@ pub(super) fn replay(name: &str) {
     assert_eq!(cases.len(), 1);
     for case in cases {
         let host = manual_runtime::ManualRuntime::new();
-        let (_, theme) = published::published(&palette::palette("dark"));
+        let (_, theme) = published::published(&palette::palette("dark").unwrap()).unwrap();
         let panel = TreeSelectorComponent::new(
             &tree::tree(&case.input.nodes, &case.input.roots),
             TreeSelectorCallbacks {

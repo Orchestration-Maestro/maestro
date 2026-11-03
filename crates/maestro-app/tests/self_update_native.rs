@@ -50,13 +50,12 @@ fn native_update_probes_capture_only_helper_output() {
         .unwrap()
         .unwrap();
     assert_eq!(selected.command, configured[0]);
-    assert_eq!(
-        selected.args,
-        [configured[1].as_str(), "install", "-g", "new-agent"]
-    );
+    let alias = configured[1].as_str();
+    let expect = |verb, package| [alias, verb, "-g", "--ignore-scripts", package];
+    assert_eq!(selected.args, expect("install", "new-agent"));
     assert_eq!(
         selected.steps.unwrap()[0].args,
-        [configured[1].as_str(), "uninstall", "-g", "agent"]
+        [alias, "uninstall", "-g", "agent"]
     );
     let failed = vec![configured[0].clone(), "fail".into()];
     let error = get_self_update_command(&context, "agent", Some(&failed), None).unwrap_err();
@@ -81,26 +80,17 @@ fn native_update_probes_capture_only_helper_output() {
 
 #[cfg(unix)]
 fn install_helper(scratch: &Scratch) -> std::path::PathBuf {
-    use std::{fs::OpenOptions, io::Write};
-    let source = scratch.path().join("query-source");
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&source)
-        .unwrap();
-    file.write_all(b"#!/bin/sh\nroot=$1\nshift\n[ \"$*\" = 'root -g' ] || exit 91\nif [ \"$root\" = fail ]; then printf ' query denied\\n' >&2; exit 7; fi\nprintf ' \\357\\273\\277%s\\n' \"$root\"\n").unwrap();
-    drop(file);
-    let target = scratch.path().join("query-helper");
-    assert!(
-        std::process::Command::new("install")
-            .args(["-m", "0700"])
-            .arg(&source)
-            .arg(&target)
-            .status()
-            .unwrap()
-            .success()
-    );
-    target
+    crate::native::command(
+        scratch.path(),
+        "query-helper",
+        &serde_json::json!({
+            "scenario": "query",
+            "prefix": b" \xef\xbb\xbf",
+            "denied": "fail",
+            "error": b" query denied\n",
+            "code": 7
+        }),
+    )
 }
 
 #[cfg(unix)]

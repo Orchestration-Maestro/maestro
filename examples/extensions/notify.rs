@@ -1,4 +1,5 @@
 //! Sends an opt-in desktop notification when the agent is ready for input.
+// maestro-component: MAESTRO_NOTIFY_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

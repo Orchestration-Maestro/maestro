@@ -668,7 +668,7 @@
       ],
       [
         "file",
-        "home/h2.ts",
+        "work/~h2.ts",
         "command:h2"
       ],
       [
@@ -688,7 +688,7 @@
       ],
       [
         "file",
-        "home/ h5.ts",
+        "work/~ h5.ts",
         "command:h5"
       ]
     ],
@@ -734,13 +734,13 @@
             },
             {
               "path": "~h2.ts",
-              "resolvedPath": "$ROOT/home/h2.ts",
+              "resolvedPath": "$ROOT/work/~h2.ts",
               "sourceInfo": {
                 "path": "~h2.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home"
+                "baseDir": "$ROOT/work"
               },
               "commands": [
                 "h2"
@@ -810,13 +810,13 @@
             },
             {
               "path": "~\u3000h5.ts",
-              "resolvedPath": "$ROOT/home/ h5.ts",
+              "resolvedPath": "$ROOT/work/~ h5.ts",
               "sourceInfo": {
                 "path": "~\u3000h5.ts",
                 "source": "local",
                 "scope": "temporary",
                 "origin": "top-level",
-                "baseDir": "$ROOT/home"
+                "baseDir": "$ROOT/work"
               },
               "commands": [
                 "h5"

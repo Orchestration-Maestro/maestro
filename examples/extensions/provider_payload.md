@@ -30,6 +30,7 @@ provider and may incur charges. The controlled test uses only a loopback provide
 cleared credentials and disposable files:
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- provider_payload_
 ```

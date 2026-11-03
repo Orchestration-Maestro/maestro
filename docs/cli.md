@@ -159,7 +159,11 @@ before every project, and selects the operation the arguments name: an unsaved,
 forked, opened, resumed, continued or new session. An explicit fork copies the
 matched session into the current project without asking, wherever it was found;
 a session argument of another project is returned for confirmation instead of
-being opened in place. A missing session keeps the argument its message quotes.
+being opened in place. A refused `--session` file, whether selected by path or a
+local identifier match, prints `Error: <reason>` to standard error in red (plain
+text when colour is off) and exits with status 1. For a nonempty file without a
+valid session, the reason is `Session file is not a valid maestro session: <path>`.
+A missing session keeps the argument its message quotes.
 
 `options` selects the model from the authored pattern before the scoped
 default, the effort from the explicit level before the model shorthand and the

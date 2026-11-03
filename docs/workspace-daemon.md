@@ -176,11 +176,14 @@ workspace/tab/pane names, public numbers, selection, working directories, split
 axes and resume provenance. Screen history is stored separately and can be
 removed by saving without history.
 
-Saving writes pretty JSON without a trailing newline through the shared
-[atomic replacement](locking.md#atomic-replacement) operation, following symbolic
-links. Topology commits before history is saved or removed; failure on the second
-file does not undo the first. Snapshot saves ignore postcommit directory-sync
-advisories.
+Saving follows symbolic links and creates missing parent directories. It writes
+pretty JSON without a trailing newline to `<name>.json.tmp`, syncs the temporary
+file, renames it over the target, then syncs the parent directory. A failure before
+the rename removes the temporary file and leaves the previous snapshot unchanged.
+A crash before rename leaves the previous snapshot readable. Existing permission
+bits are retained; ownership and ACLs are not. Hard links keep the old bytes. Topology commits before history is saved or removed; failure on the
+second file does not undo the first. Parent-directory sync errors are returned
+after the new snapshot has committed.
 
 Missing files load silently as absent. Read, parse and unsupported-version failures
 produce warnings and return no snapshot. Only version 1 is accepted; there is no
@@ -336,11 +339,18 @@ recovery follows its retained soft-wrap rows, but rejects an incomplete prompt w
 prefix has been discarded.
 
 `maestro_daemon::pane::launch_env::PaneLaunchEnv` applies terminal defaults
-(`TERM=xterm-256color`, `COLORTERM=truecolor`), removes an inherited agent thread
-id, and applies user environment pairs. User pairs can override terminal defaults.
-The daemon marker, supplied socket/binary paths and managed workspace/tab/pane
-identity then override user pairs. Callers may retain inherited identity or remove
-only the pane id. Existing replacement environments remain replacements.
+(`TERM=xterm-256color`, `COLORTERM=truecolor`) and names the terminal the child runs
+in: `TERM_PROGRAM=maestro` and `TERM_PROGRAM_VERSION` set to the product version,
+whatever the parent holds. It sets `fish_handle_reflow=0` unless the parent already
+holds that exact name; a differently cased name does not count. It removes an
+inherited agent thread id and the markers of the outer terminal or multiplexer
+(`ITERM_SESSION_ID`, `LC_TERMINAL`, `LC_TERMINAL_VERSION`, `WEZTERM_PANE`,
+`KITTY_WINDOW_ID`, `WT_SESSION`, `TMUX`, `TMUX_PANE`, `STY`, `ZELLIJ`,
+`ZELLIJ_SESSION_NAME`, `ZELLIJ_PANE_ID`), then applies user environment pairs.
+User pairs can override these defaults. The daemon marker, supplied socket/binary
+paths and managed workspace/tab/pane identity then override user pairs. Callers may
+retain inherited identity or remove only the pane id. Existing replacement
+environments remain replacements, and both environment modes give the same result.
 
 The native PTY adapter is currently available on Linux; shell policy branches for
 Windows and macOS are exercised with supplied target and environment observations.
@@ -463,9 +473,14 @@ client or background worker.
 
 The catalog resolves safe relative document paths against its own URL directory.
 Each agent updates independently: newer versions publish through the shared
-atomic replacement owner, identical equal-version bytes are left alone, and
-downgrades or changed bytes at the same version are rejected. `status.toml`
-records outcomes under the supplied catalog folder. `auto_update` reloads the
+atomic publication owner, identical equal-version bytes are left alone, and
+downgrades or changed bytes at the same version are rejected. Documents and
+`status.toml` write to `.<file name>.<process id>.<nanoseconds>.tmp` beside the
+target, sync the file, rename it over the target and sync the parent directory.
+Precommit failures remove the temporary file and leave the previous bytes intact.
+A parent-sync failure after rename logs a warning and still succeeds. Unlocked
+readers see a complete old or new document. `status.toml` records outcomes under
+the supplied catalog folder. `auto_update` reloads the
 supplied cache after a commit, before invoking the result callback. Daemon path
 composition, scheduling, offline admission and the catalog-check setting remain
 with the daemon caller.
@@ -536,6 +551,147 @@ original diagnostic. `platform::current_process_is_detached_server_daemon`
 reports whether the process leads its own session, which is how a detached
 daemon runs.
 
+## Server mode
+
+`maestro_rpc::daemon::run_server` takes the daemon's `App`, its `SettingsManager`, its
+`DaemonPaths` and a shutdown future. It installs the file log for the `daemon` role,
+filtered by a valid `MAESTRO_LOG` directive, and binds the API socket at
+`DaemonPaths::api_socket_path`.
+The socket is readable and writable by its owner only. A stale socket is replaced; a
+live one fails the start as address-in-use, and a file that is not a socket is kept.
+After binding, a daemon without workspaces opens one in the directory
+`MAESTRO_STARTUP_CWD` names, focused; a daemon that already has workspaces ignores it.
+Panes never inherit the variable. The server then logs `maestro server started` and
+writes three lines to standard error:
+
+```text
+maestro server running; you can use any maestro CLI command in another terminal.
+api socket: <path>
+logs: <daemon log path>
+```
+
+A start against a running daemon writes `error: maestro server is already running`
+and the socket path instead. No startup record goes on the socket, and no status
+file is written. The daemon loop then runs beside the socket until the shutdown
+future resolves or a client sends `server.stop`. Afterwards the server removes its
+socket, unless another file has replaced it. Ping reports live handoff as
+unavailable, and the detached capability is the process's own session check.
+
+`App::run` takes the request queue the socket feeds and the settings owner a
+configuration reload reads through. `App::handle_api_request` applies every queued
+internal event before it answers, and marks render work for a command that changes
+what a view shows. It sets the quit flag for `server.stop`, answers the server,
+notification, workspace, tab and pane topology commands, and answers every other command
+with `not_implemented`. Creating a workspace from the view goes through the same
+`workspace.create` handler.
+The [socket server](daemon-protocol.md#socket-server) section describes the
+connection rules.
+
+## Panes and layouts
+
+The pane commands and the `layout_updated` event read one projection of a tab,
+`maestro_daemon::app::layout`, available to attached clients. It combines the tab's
+split tree, the view area and the pane chrome.
+
+- **View area.** `DaemonState::view_area` is the region panes are laid out in. With no
+  client attached it is the headless surface, `daemon.headlessCols` by
+  `daemon.headlessRows` (120 by 40 by default). Everything that needs the area asks
+  this one function.
+- **Chrome.** `PaneChrome::from_config` reads `paneBorders`, `paneGaps` and
+  `paneOuterBorders` from the accepted preferences. `apply_pane_chrome` turns tile cells
+  into the cells a client draws. With borders and no gaps, neighbours share one
+  divider. With borders and gaps, each pane keeps all four borders. With gaps and no
+  borders, a pane gives up one cell next to each neighbour, unless that would leave it
+  with none. Without `paneOuterBorders`, edges on the outside of the pane area are
+  dropped. A tab with one pane has no chrome. `pane_inner_rect` removes one cell for
+  each drawn border, and each chrome cell carries its inner rectangle.
+- **Snapshot.** `App::pane_layout_snapshot` lists a tab's panes with their public ids,
+  focus and chrome cells, and its dividers. A divider id is `split_<index>_<path>`:
+  the index counts dividers from the root, and the path is `root` or a string of
+  `0` (first child) and `1` (second child). A workspace or tab that does not exist
+  has no snapshot.
+- **Neighbours.** `App::directional_pane_target` picks the neighbour from the tile
+  cells before chrome, so a gap never changes which pane is next. Ties go to the
+  pane that comes first in the tree.
+- **Events.** `layout_updated` carries a snapshot. A created workspace or tab publishes
+  it after its created records, and `layout_update_target_after_pane_removal` names the
+  tab that still has panes after a removal.
+
+`maestro-workspace` keeps the split math and the border flag sets. The view area and the
+preferences stay in the daemon.
+
+### Pane mutations
+
+Split, resize, swap, zoom, move and close change one tab's tree and nothing else. Each
+handler lives in `app/api/panes/`, resolves its pane through the same target rules as
+the reads, and then calls the topology owners in `maestro-workspace`, so the split math,
+the leaf swap and the pane transfer have one implementation.
+
+- **Focus history.** A split with focus, a swap and a move record the pane that had focus
+  before them (`DaemonState::record_pane_focus_change`), so last-pane navigation returns
+  to it. A zoom focuses through `focus_pane_in_workspace`.
+- **Zoom.** `DaemonState::apply_pane_zoom` is the one place a tab's zoom changes;
+  `toggle_zoom` calls it.
+- **Close.** `DaemonState::close_pane_in_workspace` closes a pane, its records and its
+  terminal, and closes the workspace when the pane was its last. The focused-pane close
+  uses it too.
+- **Move.** The pane's terminal never restarts. The source is captured first
+  (`PaneMoveRecovery`): the workspace's label, its tab's label, worktree provenance and
+  identity directory. If the destination refuses the pane,
+  `DaemonState::recover_failed_pane_move` adds it back as a tab of the surviving
+  workspace, or rebuilds the removed workspace with its old identity at its old place.
+  `remove_emptied_workspace` keeps the active and selected workspaces on the workspaces
+  they were on.
+
+### Pane input, reads and reports
+
+The handlers in `app/api/panes/` for input, rename, read and the agent reports resolve
+their pane like the reads do, and hand the work to the owners that already exist.
+
+- **Keys.** A request key goes through `key_combo::parse_key_combo` after the legacy
+  `C-c`, `c-c` and `+` spellings are mapped, then through the pane's terminal encoder, so
+  the live keyboard modes decide the bytes. All keys are encoded before the first write.
+  Text is framed by `PaneRuntime::paste_payload`, the same framing a paste uses.
+- **Reads.** `app/api/reads.rs` is the one conversion from a source, format and line
+  count to screen text. Viewport and detection reads clip with
+  `TerminalReadSnapshot::limited`; recent reads use the runtime's own row budget. Any
+  command that reads a resolved pane calls `App::read_pane`.
+- **Reports.** A report becomes an `AppEvent` (`HookStateReported`, `AgentSessionReported`,
+  `HookMetadataReported`, `HookAuthorityCleared` or `HookAgentReleased`) and goes through
+  `handle_internal_event`, so the terminal state owner, the status events and the runtime
+  detection controls see it as they see any other observation. Metadata tokens are
+  admitted and patched on the terminal state, and a changed token set publishes the
+  pane with `emit_pane_updated`.
+- **Rename.** The label lives on the terminal state. A changed label is published with
+  `emit_pane_updated`.
+
+### Layouts
+
+The layout commands in `app/api/layouts.rs` read and change one tab's split tree through
+the same owners as the pane commands. These handlers are available only on Linux,
+where the daemon application and native PTY runtime are built.
+
+- **Export.** `App::layout_description` turns the tree into the portable description. A
+  leaf takes its label and launch command from the terminal state and its directory from
+  `crate::tab::cwd_for_pane`, the same lookup a pane record uses.
+- **Ratio.** `TileLayout::set_ratio_at` finds the split and keeps the ratio in range; the
+  handler only checks that the ratio is finite and publishes the tab with
+  `emit_layout_updated_event`.
+- **Launch.** `RootLaunch` in `app/creation.rs` is what a new root process runs: its
+  directory, extra environment and, for a layout leaf with a `command`, a literal argv.
+  `spawn_root` starts either through `PaneRuntime`, records the argv on the terminal state,
+  and serves new workspaces, tabs, splits and layout leaves alike.
+- **Apply.** `handle_layout_apply` checks the limits in `layouts/tree.rs` before it creates
+  anything, adds the new tab with the first leaf, then splits leaf by leaf in layout order
+  through `spawn_split`, as `pane.split` does. A failure removes the new tab with
+  `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
+  and plugin records and stops their processes. The replaced tab is retired only after the
+  new tab stands. Stopping its processes applies the events that arrive meanwhile, which can
+  close or move workspaces, so the apply looks its workspace up again by identity and fails
+  with `layout_apply_failed` when the new tab is gone. `emit_tab_created_events` publishes every pane of the
+  new tab, which for a tab with one pane is its root; a new workspace publishes its first
+  tab through it too.
+
 ## Environment names
 
 `maestro_daemon::environment::NAMES` lists the names injected into panes and
@@ -565,6 +721,19 @@ values to `SelectionEnvironment`; selection never mutates the process environmen
 | `MAESTRO_ACTION_LINK_HANDLER_ID` | Action runtime |
 | `MAESTRO_DAEMON` | Daemon selection |
 | `MAESTRO_CLIENT_SOCKET_PATH` | Daemon selection |
+
+The daemon finds the workspace home through `maestro_daemon::paths::home_directory`.
+On Unix it uses `HOME` as set, including an empty value. When `HOME` is unset,
+Home and Follow policies without a followed directory use the process working directory,
+or `/` when that cannot be read. Path policies keep `~` and `~/x` literal, and workspace
+labels and window titles do not shorten the account directory to `~`.
+
+On Windows the lookup tries `USERPROFILE`, then `HOMEDRIVE` plus `HOMEPATH`, then `HOME`.
+Empty values and `~` are unusable. The drive and path must both be usable, and the path
+must start with `\` or `/`; otherwise only `HOME` remains to try. Home and Follow policies,
+workspace labels and Path expansion share this lookup without an account fallback.
+Path expansion accepts `~`, `~/x` and, on Windows, `~\x`. When no home is usable,
+Path policies keep the path literal; Home and Follow keep their working-directory fallback.
 
 Optional context fields are injected only when present. The manifest identifier
 and the identifier of an action declared by that manifest are distinct values.
@@ -670,7 +839,14 @@ supplies, then the repository file in the shared metadata directory, then the ch
 `config.worktree` when the repository file turns on `extensions.worktreeConfig`. The
 extension is read from the repository file alone, as Git does, and its last value wins.
 `ConfigEnvironment::from_variables` builds the user list from `XDG_CONFIG_HOME` and the
-home directory; the reader itself reads no environment variable.
+home directory; the reader itself reads no environment variable. The daemon supplies
+`HOME` as set on every platform, including an empty value, without consulting the account
+directory or the Windows workspace-home variables. With `HOME` unset, it supplies no home
+and reads only the user file under `XDG_CONFIG_HOME`, when that variable is set. Otherwise,
+the default user files are `$HOME/.config/git/config` and `$HOME/.gitconfig`.
+A nonempty `XDG_CONFIG_HOME` replaces the first file's directory; an empty value is ignored.
+An empty `HOME` keeps the leading separator, selecting `/.config/git/config` and
+`/.gitconfig` rather than files relative to the daemon's current directory.
 
 Includes apply where they appear. A file already being read is not entered again inside
 itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gitdir`,
@@ -691,6 +867,61 @@ edit, a newly created include, a retargeted symbolic link or a file that could n
 read, so a cache built on the read is rebuilt on the next refresh. The bare-layout and
 reftable checks of repository discovery use the same line syntax: the last assignment in
 a plain section wins and quoted values lose their quotes.
+
+### Worktree operations
+
+Use `maestro_daemon::git::worktree` from a blocking worker. For example, list the
+checkouts of a repository without opening a workspace:
+
+```rust
+use maestro_daemon::git::worktree;
+use std::path::Path;
+
+let entries = worktree::list(Path::new("/projects/repository"))?;
+for entry in entries {
+    println!("{}", entry.path.display());
+}
+Ok::<(), worktree::WorktreeError>(())
+```
+
+These library operations add, remove and list checkouts. They do not expose socket
+commands or change workspace membership. Every Git operation runs through
+`maestro-process`; failures return a `WorktreeError` carrying Git's diagnostic.
+Removal refusals are classified when read; process and cleanup failures retain
+their native cause through `Error::source`. Git runs with `LC_ALL=C` so
+removal refusals can be classified regardless of the daemon's locale.
+
+`generated_branch_slug` turns a seed into `worktree/<adjective>-<noun>-<hex>`.
+`branch_to_path_slug` makes a folder name from lowercase ASCII letters and digits
+joined by single dashes, or `worktree` when none remains. `worktrees_root` resolves
+`daemon.worktreesDirectory`, whose default is `~/.maestro/worktrees`. It uses the
+shared native tilde expansion with a supplied home, normally `paths::home_directory`.
+An exact `~` or a leading `~/` expands; Windows also accepts `~\`. Unsupported
+spellings and paths without an available home stay literal. Relative results lie
+below the current directory. `default_checkout_path` appends the repository name
+and branch folder to that root.
+
+`add` checks out an existing local branch or creates one from the base revision.
+The branch, path and base are operands, never options. `remove` keeps the branch
+when it removes the checkout. Without force, Git refuses modified or untracked
+files; `WorktreeError::is_dirty_checkout` recognizes that refusal and
+`checkout_has_dirty_files` lets a caller check first.
+
+When forced removal gets "not a working tree" from Git, recovery deletes the
+directory only if Git no longer lists it and its `.git` link names an admin folder
+of the same repository. Native link bytes are retained, including when the
+repository is reached through a symbolic link. The link is followed as the file
+system follows it: a symbolic link before `..` decides which folder the segment
+leaves, and `..` after a missing segment names no folder. Other directories stay
+untouched and the operation returns Git's diagnostic.
+
+`list` returns each checkout's path, branch and bare, detached and prunable flags.
+The newline-framed listing retains native Unix path bytes that text cannot hold.
+
+For example, a branch named `feature/Review Notes` gets the folder
+`feature-review-notes`. With the default root and repository name `project`, the
+checkout lies under the selected home at
+`.maestro/worktrees/project/feature-review-notes`.
 
 ### Repository status
 

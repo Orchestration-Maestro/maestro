@@ -60,7 +60,9 @@ fn truncation_notice(truncation: &TruncationResult, start_display: f64, total: u
 
 /// Select the requested lines of `bytes` and describe what remains.
 ///
-/// `path` is the authored path, inserted verbatim, without shell quoting, in oversized-line guidance.
+/// Lines are separated by LF, and a terminating newline ends the last line instead of starting an
+/// empty one. `path` is the authored path, inserted verbatim, without shell quoting, in
+/// oversized-line guidance.
 pub(super) fn read_text(
     bytes: &[u8],
     path: &str,
@@ -69,29 +71,30 @@ pub(super) fn read_text(
 ) -> Result<(String, Option<ReadToolDetails>), DiagnosticErrorInfo> {
     let text = String::from_utf8_lossy(bytes);
     let lines: Vec<&str> = text.split('\n').collect();
-    let total = float(lines.len());
+    let line_count = lines.len() - usize::from(text.ends_with('\n'));
+    let total = float(line_count);
     let start = offset
         .filter(|&o| o != 0.0)
         .map_or(0.0, |o| (o - 1.0).max(0.0));
     if start >= total {
         return Err(failure(&format!(
-            "Offset {} is beyond end of file ({} lines total)",
-            num(offset.unwrap_or_default()),
-            lines.len()
+            "Offset {} is beyond end of file ({line_count} lines total)",
+            num(offset.unwrap_or_default())
         )));
     }
-    let (selected, user_limited) = match limit {
-        Some(limit) => {
-            let end = (start + limit).min(total);
-            (slice(&lines, start, end), Some(end - start))
-        }
-        None => (slice(&lines, start, total), None),
+    let end = limit.map_or(total, |limit| (start + limit).min(total));
+    // A selection reaching the end keeps the final newline the split left as its last entry.
+    let shown_end = if end >= total {
+        float(lines.len())
+    } else {
+        end
     };
+    let selected = slice(&lines, start, shown_end);
     let truncation = truncate_head(&selected, TruncationOptions::default());
     let notice = if truncation.first_line_exceeds_limit {
         Some(oversized_line_guidance(&lines, start, path))
     } else if truncation.truncated {
-        Some(truncation_notice(&truncation, start + 1.0, lines.len()))
+        Some(truncation_notice(&truncation, start + 1.0, line_count))
     } else {
         None
     };
@@ -101,14 +104,15 @@ pub(super) fn read_text(
         };
         return Ok((text, Some(details)));
     }
-    let text = match user_limited {
-        Some(limited) if start + limited < total => format!(
+    let text = if limit.is_some() && end < total {
+        format!(
             "{}\n\n[{} more lines in file. Use offset={} to continue.]",
             truncation.content,
-            num(total - (start + limited)),
-            num(start + limited + 1.0)
-        ),
-        _ => truncation.content,
+            num(total - end),
+            num(end + 1.0)
+        )
+    } else {
+        truncation.content
     };
     Ok((text, None))
 }

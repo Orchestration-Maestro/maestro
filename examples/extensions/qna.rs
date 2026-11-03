@@ -113,6 +113,7 @@ async fn extract(
     let ResolvedRequestAuth::Ok {
         api_key: Some(api_key),
         headers,
+        base_url,
     } = auth
     else {
         return Ok(None);
@@ -139,6 +140,7 @@ async fn extract(
         Some(ProviderStreamOptions {
             common: StreamOptions {
                 api_key: Some(api_key),
+                base_url,
                 headers,
                 signal: Some(loader.signal()?),
                 ..Default::default()

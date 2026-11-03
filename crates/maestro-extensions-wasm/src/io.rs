@@ -10,13 +10,16 @@ use std::{rc::Rc, time::Duration};
 
 /// Owned access to native operations, independent of a callback's lifetime.
 pub trait NativeIo {
-    /// Atomically publishes bytes, preserving existing permissions.
+    /// Saves bytes in place, preserving native identity and existing permissions.
     ///
-    /// New files use `mode`; success carries an optional durability warning.
+    /// Unix creation applies `mode` filtered by umask before writing bytes.
+    /// Success carries an optional durability or recovery-cleanup warning.
     /// Final symbolic links are followed, including dangling targets.
+    /// Unlocked readers may observe partial bytes during a save.
     ///
     /// # Errors
-    /// Returns the native failure before publication.
+    /// Returns native save failures. An interrupted write is completed from its
+    /// recovery record by the next coordinated writer.
     fn save_file(&self, path: &str, bytes: &[u8], mode: u32) -> Result<Option<String>, String>;
     /// Reads native Unix permission bits, including file type bits.
     ///

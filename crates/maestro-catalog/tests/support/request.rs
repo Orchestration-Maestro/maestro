@@ -61,6 +61,7 @@ pub fn success(result: ResolvedRequestAuth, key: Option<&str>, headers: &[(&str,
     let ResolvedRequestAuth::Ok {
         api_key,
         headers: actual,
+        ..
     } = result
     else {
         panic!("expected request success")

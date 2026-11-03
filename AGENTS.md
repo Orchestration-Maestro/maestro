@@ -10,6 +10,7 @@ Deliver crate by crate; write each crate's tickets when that crate is reached.
 
 ## Checks
 
+Install MinGW-w64 as described in [development setup](docs/development.md#setup-and-build).
 Install mise and rustup, enable mise on `PATH`, then run:
 
 ```sh
@@ -32,18 +33,18 @@ Run `cargo hakari generate` after changing dependencies, their features or
 [development](docs/development.md#feature-unification)).
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
-The commit hook formats the code, re-stages the staged files and names the
-selection, then runs the shared check recipe for the staged crates and every
-workspace crate that depends on them. A staged workspace-wide input runs the full
-workspace check instead: a manifest, the lockfile, `.cargo/`, the toolchain, the
-justfile, Clippy or mise settings, the hook configuration, the workspace
-inventory, CI files, root documentation or assets, or the conventions crate. The
-hook runs the full conventions suite when a staged path is under
-`crates/maestro-test-conventions/`, and the browser smoke check only when the
-selection compiles the browser entry. Unformatted code is fixed, never rejected.
-It also rejects merge-conflict markers, invalid TOML or YAML, and a secret in the
-staged change. Commit messages need a conventional header and every line must be
-at most 80 columns. `just check` and shared CI stay the full workspace checks.
+The commit hook formats only the crates holding staged paths, re-stages captured
+files that remain on disk and names the selection, then runs Clippy on those
+crates with `--all-targets --locked -- -D warnings`. Member manifests select their
+crate; root inputs select no crates and never widen a mixed change's selection.
+With no staged crate, the hook skips formatting and Clippy. The full conventions
+suite runs only for staged paths under `crates/maestro-test-conventions/`.
+Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
+the browser entry is present. Unformatted code is fixed, never rejected.
+The hook also rejects merge-conflict markers, invalid TOML or YAML, and a secret
+in the staged change. The commit-msg hook enforces the message rule in
+[Git discipline](#test-and-git-discipline). `just check` and shared CI keep the full
+workspace checks, including dependents.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
@@ -105,6 +106,10 @@ Every change has a clear conventional commit message (the squash commit)
 describing user-visible behavior. Pull requests never edit `CHANGELOG.md`.
 The changelog is generated from conventional commits at release time.
 
+Before committing, run the humanizer on every document a change adds or edits.
+Use Maestro's voice from the [identity guide](docs/identity.md) and
+[brand guide](docs/brand.md).
+
 Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
@@ -137,13 +142,14 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Shared path helpers take supplied directory observations
-  and add no global environment, filesystem service, directory cache, scheduler
-  or workspace dependency. Final-link traversal uses a supplied observation callback;
-  the utility owns relative-target joining and the forty-link bound, while callers
-  retain native link I/O and error interpretation.
+  and add no filesystem service, directory cache, scheduler or workspace dependency.
+  `native_homedir` alone reads the native home environment and account entry.
+  Final-link traversal uses a supplied observation callback; the utility owns
+  relative-target joining and the forty-link bound, while callers retain native
+  link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
-  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
+  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
@@ -161,15 +167,16 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   never supplies a required edge. The crate is exempt from member `serde_json`
   inheritance (lint inheritance and the workspace precision entry still apply).
   Never hand-edit its generated manifest section.
-- `maestro-watch` and `maestro-lock` are declared core leaves below layer 0.
-  Watch has no workspace dependencies; lock may use the optional path utility
-  without changing its leaf status. Only theme/application
-  may depend on watch; only settings/credentials/workspace/detection/session/application may depend on lock.
-  Application uses maestro-lock: atomic file publication, on native targets only. Follow the
+- `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
+  `maestro-lock` depends only on `maestro-path` for final-link resolution and uses
+  the existing external `sha2 =0.11.0` to shorten lock and record names for long
+  file names. Only theme/application may depend on watch; only
+  settings/credentials/workspace/detection/session/application may depend on lock.
+  Application uses maestro-lock for recoverable in-place file publication, on native targets only. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
-  notifications; lock owns bounded and waiting acquisition of caller-opened files and byte-oriented
-  atomic replacement. Workspace owns snapshot serialization and link-following policy.
+  notifications; lock owns waiting, bounded and single-attempt acquisition plus
+  recoverable in-place byte publication. Workspace owns snapshot serialization and link-following policy.
   Feature policies remain with their owners, including asynchronous credential
   acquisition. Add no common background runtime, scheduler or listener framework;
   existing theme paths may re-export moved types, not duplicate implementations.
@@ -223,7 +230,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `oauth::OAuthCredentials` and `auth_storage::{ApiKeyCredential, AuthCredential,
   AuthStorageData, AuthSource, AuthStatus}`, re-exported by models and credentials,
   and the provider registration records `provider_config::{ProviderConfig<C>,
-  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, message-only diagnostic
+  ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
   (models, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
@@ -253,7 +260,7 @@ Pure retained session-tree ordering, geometry, content extraction/search and raw
 re-exported through `maestro-app`; frontend filter, fold and selection state stay
 with their frontend.
 
-The guest authoring crate may depend on the request, entry, tool and JSON
+The guest authoring crate may depend on the request, entry, tool, JSON and text
 owners and never imports native session, tool or catalog runtimes. The terminal
 adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
 created, and so is `maestro-json`; the other declared leaf owners stay policy rows until their
@@ -286,15 +293,17 @@ through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
+the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
+development edge for the product's one engine configuration,
 and the native, non-optional dev-dependencies
 of the twenty-six declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
-the required toolkit/text set. The scenario harness's recording terminal and
-manual runtime are the one shared test-effect owner, declared as a native
-development dependency by `maestro-cli` only.
+the required toolkit/text set. The scenario harness reexports the recording terminal and manual runtime from
+`maestro-tui::test_support`. The harness itself remains a native development
+dependency of `maestro-cli` only.
 
 The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
 creation and cleanup. It has no internal edge except the native unifier, and no
@@ -474,17 +483,19 @@ aside, restoring it on exit. Name regression cases after behavior without leadin
 issue numbers.
 
 Analyze remote PR metadata before checking it out. Commit only when authorized.
-Use a feature branch, signed `git commit -S`, protected PRs and the merge queue;
-never directly push to the default branch or bypass hooks/protection.
+Use a feature branch, protected PRs and the merge queue; never directly push to
+the default branch or bypass hooks/protection. Sign every commit from a message
+file (`git commit -S -F <file>`), with a conventional header, a subject of at most
+71 characters and lines of at most 80 columns.
 
 Stage only your own session files with `git add <specific-file-paths>`.
 Inspect `git status` and the staged diff before committing. Never use
 `git add .`, `git add -A`, `git reset --hard`, `git checkout .`, `git clean -fd`,
-blanket `git stash`, or `git commit --no-verify`. Rebase on current main;
-retain its behavior and assertions. Resolve conflicts only in owned files;
-abort and ask if an unrelated file conflicts. Force-push only with explicit
-standing approval and a fetched-hash lease. Ask for confirmation before an
-instruction overrides these safeguards.
+blanket `git stash`, or `git commit --no-verify`. Take current main into your
+branch with a signed merge commit (`git merge -S origin/main`); never rebase or
+force-push. Keep main's behavior and assertions, resolve conflicts only in files
+you own, and stop and ask if an unrelated file conflicts. Ask for confirmation
+before an instruction overrides these safeguards.
 
 ## Provider contribution checklist
 
@@ -611,3 +622,19 @@ as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
 crate dependency: both extension adapters already reach the request owner through
 their declared edges.
+
+`maestro-package` is the dependency-free portable core owner of package interchange
+records below layer 0. Only packages and guest authoring may depend on it, plus
+the native feature-unifier exception. Native package effects stay in `maestro-packages`.
+
+Typed test helpers may use their type owner's non-default `test-support` feature.
+Enable it through development dependencies, including a feature-only self
+reference for the owner's own integration tests. Dedicated `maestro-test-*`
+libraries may enable it normally to retain public helper reexports. A product's
+own `test-support` feature may forward one hop to a normal dependency's matching
+feature; default/runtime activation and cross-product forwarding chains are
+forbidden. The Cargo-metadata conventions preserve cross-crate cycle checks.
+
+Chat may use credentials as a portable, non-optional development dependency only
+with `features = ["test-support"]` for shared selector diagnostics. The graph
+checker retains cycle checks for this edge.

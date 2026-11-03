@@ -1,10 +1,12 @@
 //! The export command's path argument and the installed submission that runs it.
 use super::super::transfer::get_path_command_argument;
 use super::bindings::{Retiring, installed, renaming_replacements};
+use super::extension_ui::{RecordingWatcher, with_custom_theme};
 use super::transcript::{registering, text, tool};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
+use maestro_app::presentation_data::footer_data_provider::FooterOperations;
 use maestro_app::{
     ExtensionFactory, Local, NativeExportOperations, ReadonlySessionManager, SessionManager,
     ToolRenderEnvironment,
@@ -192,13 +194,28 @@ pub(super) fn assert_last_row(world: &World, role: &ThemeColor, message: &str, l
     let painted = format!(" {}{message}\u{1b}[39m", theme.get_fg_ansi(role).unwrap());
     let padding = WIDTH.saturating_sub(1 + maestro_tui::visible_width(message));
     let expected = format!("{painted}{}", " ".repeat(padding));
-    assert_eq!(rows(world).last().cloned(), Some(expected), "{label}");
+    assert_eq!(notice_row(world, label), expected, "{label}");
 }
 
-/// Asserts the transcript's last row carries `needle`.
+/// Asserts the transcript's last notice row carries `needle`.
 pub(super) fn assert_last_row_holds(world: &World, needle: &str, label: &str) {
-    let row = rows(world).last().cloned().unwrap_or_default();
+    let row = notice_row(world, label);
     assert!(row.contains(needle), "{label}: {row}");
+}
+
+/// The transcript's last notice row; an error notice's own blank row must follow it.
+fn notice_row(world: &World, label: &str) -> String {
+    let mut rendered = rows(world);
+    let row = rendered.pop().unwrap_or_default();
+    if !row.is_empty() {
+        return row;
+    }
+    let notice = rendered.pop().unwrap_or_default();
+    assert!(
+        notice.contains("Error: "),
+        "{label}: only an error notice ends with a blank row"
+    );
+    notice
 }
 
 /// The session file's base name without its `.jsonl` suffix.
@@ -798,7 +815,7 @@ fn transfer_import_missing_argument_shows_usage_without_confirmation() {
                     "Error: Usage: /import <path.jsonl>",
                     text,
                 );
-                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(world.mode.working_loader().is_some());
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
                 assert!(
                     !world
@@ -833,7 +850,7 @@ fn transfer_import_decline_preserves_progress_and_the_current_session() {
                 );
                 import_answer(&world, key);
                 assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", key);
-                assert!(world.mode.working.loading_animation.borrow().is_some());
+                assert!(world.mode.working_loader().is_some());
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
                 assert_eq!(poll(&mut waiter), None);
                 assert!(recalled(&world.mode.editor).is_empty());
@@ -891,7 +908,7 @@ fn transfer_import_success_stops_progress_then_rebuilds_the_replacement() {
                     name,
                 );
                 assert!(rows(&world).join("\n").contains("IMPORTED_HISTORY"));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert!(world.mode.status_container.render(WIDTH).is_empty());
                 assert_eq!(poll(&mut waiter), None);
                 assert_eq!(recalled(&world.mode.editor), ["IMPORTED_HISTORY"]);
@@ -918,7 +935,7 @@ fn transfer_import_veto_is_distinct_from_confirmation_cancellation() {
                 import_answer(&world, "\r");
                 assert_eq!(calls.get(), 1);
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert!(world.mode.status_container.render(WIDTH).is_empty());
                 assert_last_row(&world, &ThemeColor::Dim, "Import cancelled", "veto");
                 assert!(!rows(&world).join("\n").contains("IMPORTED_HISTORY"));
@@ -950,7 +967,7 @@ fn transfer_import_missing_file_is_recoverable() {
                     name,
                 );
                 assert!(Rc::ptr_eq(&old, &world.host.session()));
-                assert!(world.mode.working.loading_animation.borrow().is_none());
+                assert!(world.mode.working_loader().is_none());
                 assert_eq!(poll(&mut waiter), None);
                 submit(&world.mode, "later input");
                 assert_eq!(poll(&mut waiter).as_deref(), Some("later input"));
@@ -1104,15 +1121,35 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
     const TEST: &str = "transfer_import_runtime_failure_reaches_the_existing_fatal_owner";
     let output = super::isolated_output(TEST, "fatal", &[], ":", async |directory| {
         let path = import_file(directory, "fatal.jsonl", directory);
+        let watcher = Rc::new(RecordingWatcher::default());
         let world = Setup {
             create: Some(import_failed_factory()),
             session_history: Some(directory.join("destination")),
+            directories: Some(with_custom_theme(directory)),
+            watcher: Some(Rc::clone(&watcher) as Rc<dyn FooterOperations>),
+            configure: Box::new(|settings| settings.set_theme("custom".to_owned())),
             ..Setup::default()
         }
         .build(directory);
         world.mode.init().await.unwrap();
         world.runtime.settle().unwrap();
-        world.terminal.set_tap(|bytes| eprint!("{bytes}"));
+        let theme = watcher
+            .paths()
+            .iter()
+            .position(|path| path.ends_with("custom"));
+        assert!(
+            !watcher.closed(theme.unwrap()),
+            "the custom theme is watched"
+        );
+        world.terminal.set_tap(move |bytes| {
+            if bytes.contains("\x1b[?25h") {
+                eprint!(
+                    "\nPROBE theme watch closed={}\n",
+                    watcher.closed(theme.unwrap())
+                );
+            }
+            eprint!("{bytes}");
+        });
         submit(&world.mode, &format!("/import {}", path.display()));
         import_settle(&world);
         import_answer(&world, "\r");
@@ -1129,6 +1166,10 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
         assert!(
             painted.contains("\x1b[?25h"),
             "terminal stopped: {painted:?}"
+        );
+        assert!(
+            text.contains("PROBE theme watch closed=true") && !text.contains("closed=false"),
+            "the theme watch closes before the terminal stops: {text}"
         );
     }
 }
@@ -1339,8 +1380,58 @@ fn transfer_import_retains_mode_only_until_completion() {
                 drop((terminal, runtime, themes, host, loader));
             }
             import_held_factory_lifetime(directory).await;
+            import_retry_failure_release(directory).await;
         },
     );
+}
+
+/// Starts a retryable import with a replacement factory that rejects the new session.
+async fn import_retry_world(directory: &Path, name: &str) -> (World, std::path::PathBuf) {
+    let offered = directory.join(name);
+    std::fs::create_dir_all(&offered).unwrap();
+    let path = import_file(directory, &format!("{name}.jsonl"), &directory.join("gone"));
+    let world = Setup {
+        cwd: Some(offered.to_str().unwrap().to_owned()),
+        create: Some(import_failed_factory()),
+        session_history: Some(directory.join("destination")),
+        ..Setup::default()
+    }
+    .build(directory);
+    world.mode.init().await.unwrap();
+    world.runtime.settle().unwrap();
+    (world, path)
+}
+
+/// Releases the in-flight mode once a retry's replacement failure has propagated.
+async fn import_retry_failure_release(directory: &Path) {
+    let (
+        World {
+            mode,
+            terminal,
+            runtime,
+            themes,
+            host,
+            loader,
+        },
+        path,
+    ) = import_retry_world(directory, "released").await;
+    let weak = Rc::downgrade(&mode);
+    let editor = Rc::clone(&mode.editor);
+    editor.on_submit().unwrap()(&format!("/import {}", path.display()));
+    assert!(runtime.drain_futures().is_empty());
+    terminal.send_input("\r");
+    assert!(runtime.drain_futures().is_empty());
+    drop(mode);
+    assert!(weak.upgrade().is_some(), "the cwd prompt owns the mode");
+    terminal.send_input("\r");
+    let errors = runtime.drain_futures();
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_import_retry_error(errors[0].as_ref(), "factory");
+    assert!(
+        weak.upgrade().is_none(),
+        "the propagated failure releases the mode"
+    );
+    drop((terminal, runtime, themes, host, loader));
 }
 
 /// Keeps import dispatch ahead of both busy-session queue owners.
@@ -1373,17 +1464,7 @@ async fn import_busy_submission(directory: &Path) {
 /// Exercises one real retry producer through the installed submit callback.
 async fn import_retry_failure(directory: &Path, failure: &str) {
     let offered = directory.join("offered");
-    std::fs::create_dir_all(&offered).unwrap();
-    let path = import_file(directory, "retry-failure.jsonl", &directory.join("gone"));
-    let world = Setup {
-        cwd: Some(offered.to_str().unwrap().to_owned()),
-        create: Some(import_failed_factory()),
-        session_history: Some(directory.join("destination")),
-        ..Setup::default()
-    }
-    .build(directory);
-    world.mode.init().await.unwrap();
-    world.runtime.settle().unwrap();
+    let (world, path) = import_retry_world(directory, "offered").await;
     let mut waiter = waiting(&world.mode);
     submit(&world.mode, &format!("/import {}", path.display()));
     import_settle(&world);
@@ -1484,7 +1565,7 @@ async fn import_observed_world(directory: &Path) -> World {
     let captured = Rc::clone(&observed);
     let create: maestro_app::CreateAgentSessionRuntimeFactory = Rc::new(move |options| {
         let mode = captured.borrow().upgrade().unwrap();
-        assert!(mode.working.loading_animation.borrow().is_none());
+        assert!(mode.working_loader().is_none());
         assert!(mode.status_container.render(WIDTH).is_empty());
         super::create(mode.runtime_host.services(), false)(options)
     });

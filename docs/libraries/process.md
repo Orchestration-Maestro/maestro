@@ -54,3 +54,39 @@ closure; no package version changes.
 For job control on Unix, the process crate also enables Tokio `signal` to observe the
 continue signal, and sends the stop signal to its process group through rustix's
 `process` feature. Both reuse the locked dependency closure.
+
+The process tests run their controlled children as Rust. On Unix the test-process owner
+(`maestro-test-process`) depends on the existing `rustix =1.1.5` with `std` and `stdio`,
+so a child replaces one of its standard descriptors with the null device without unsafe
+code; the process tests share that one operation. The process tests also use
+`nix =0.31.3` (MIT), defaults off with `signal`, the version and feature the process
+wrapper already compiles, as a development dependency: a child blocks signals with its
+safe `sigprocmask` before it replaces itself with the test executable. The `maestro`
+composition tests inherit the same workspace pin and `signal` feature. Their checked
+children block termination before replacing themselves with the test executable, then
+wait with `sigwait` after reporting readiness. No package version changes.
+
+The test-process owner's single harness-free native fixture inherits the existing
+workspace `serde` and `serde_json` pins, including `float_roundtrip`, for its
+controlled Cargo and search records. Unix fixture development dependencies inherit
+the workspace `signal-hook =0.3.18` and `rustix =1.1.5` pins, both with defaults off;
+the fixture enables rustix's `process` feature.
+The signal handler queues TERM notifications in a retained socket pair before
+search readiness; a blocking read consumes that byte even when TERM arrives
+before the wait. Rustix sends native termination to the current process for
+signal-exit cases. The fixture-source manifest includes the same closure so
+private Cargo homes retain offline builds. Its installer uses standard-library
+process and file operations; repository tooling reuses its existing SHA-256 input and content
+fingerprints to stage that host artifact. No new locked package or workspace feature
+is enabled, and the offline fixture-source manifest already declares and imports `serde_json`.
+Typed native isolated setup remains planned; the existing shell-setup API is not
+removed by the raw-fixture preparation.
+
+The native fixture's Unix development dependencies inherit the existing
+`signal-hook =0.3.18` pin with default features disabled, plus rustix's existing
+`process` feature. A retained `UnixStream` queues TERM notifications before the
+peer reports readiness; the idle peer uses a signal-hook flag to observe TERM
+before input closes. Rustix delivers the native kill signal used by startup
+checks. Typed peer inputs reuse the workspace `serde` pin. The offline fixture
+source manifest includes signal-hook's locked closure. The locked library closure
+is unchanged.

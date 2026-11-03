@@ -80,6 +80,14 @@ resolving conflicts, then regenerate the table.
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
+| `custom_message_provider.md` | Custom message provider |
+| `custom_message_provider/main.rs` | Opt-in registration of a custom message-stream provider. |
+| `custom_message_provider/oauth.rs` | Subscription sign-in through the host's HTTP and interaction interfaces. |
+| `custom_message_provider/request.rs` | Conversation conversion and HTTP parameters for the custom message protocol. |
+| `custom_message_provider/response.rs` | Ordered provider events reduced into one shared assistant message. |
+| `custom_message_provider/sse.rs` | Byte-framed server-sent events, decoded only after each complete line. |
+| `custom_message_provider/stream.rs` | A custom message-stream implementation using the host's transport and event buffer. |
+| `custom_message_provider/transport.rs` | The extension client's transient-failure retries over host-owned HTTP attempts. |
 | `dirty_repo_guard.md` | Dirty repo guard |
 | `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |
@@ -98,6 +106,8 @@ resolving conflicts, then regenerate the table.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `inline_bash.md` | Inline bash expansion |
+| `inline_bash.rs` | An opt-in input hook that expands `!{command}` with shell output before submission. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `interactive_shell.md` | Interactive shell |
@@ -174,6 +184,7 @@ resolving conflicts, then regenerate the table.
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
+| `support/trim.rs` | Example-local trimming through the host's shared whitespace classification. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `tic_tac_toe.md` | Tic-tac-toe |

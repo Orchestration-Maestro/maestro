@@ -199,6 +199,8 @@ pub struct ExtensionBindings {
     pub ui_context: Option<ExtensionUIContextBinding>,
     /// The session operations behind command contexts.
     pub command_context_actions: Option<ExtensionCommandContextActions>,
+    /// Handles an extension's request to abort; absent, the session aborts its own run.
+    pub abort_handler: Option<Rc<dyn Fn()>>,
     /// Requests a graceful shutdown.
     pub shutdown_handler: Option<ShutdownHandler>,
     /// Hears extension failures.

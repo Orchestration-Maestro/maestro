@@ -82,7 +82,7 @@ fn crate_list_requires_core_or_dedicated_layers() {
     workspace.list(&[("maestro-app", "unknown")]);
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("invalid layer for maestro-app: expected core or dedicated".into())
+        Err("invalid layer for maestro-app: expected core, dedicated or package".into())
     );
     workspace.list(&[("maestro-app", "core")]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -206,6 +206,7 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-json", "core"),
         ("maestro-entry", "core"),
         ("maestro-tool", "core"),
+        ("maestro-package", "core"),
         ("maestro-brand", "core"),
         ("maestro-models", "core"),
         ("maestro-resources", "core"),
@@ -756,6 +757,9 @@ const DECLARATIONS: &[(&str, &str)] = &[
 /// Crates the specification excludes from the foundation utility.
 fn utility_excluded() -> Vec<&'static str> {
     specification_names("The guest authoring crate", "are excluded from this")
+        .into_iter()
+        .filter(|name| *name != "maestro-lock")
+        .collect()
 }
 
 /// Direct dependencies a crate must declare.
@@ -953,6 +957,7 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-json", "core"),
         ("maestro-entry", "core"),
         ("maestro-tool", "core"),
+        ("maestro-package", "core"),
         ("maestro-brand", "core"),
     ]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -2076,8 +2081,10 @@ fn complete_permitted_graph_is_acyclic() {
     for (kind, extra) in DECLARATIONS {
         for &(from, targets) in support::policy::POLICY {
             let mut declarations = format!("[{kind}]\n");
-            let utility =
-                (from != "maestro-path" && !excluded.contains(&from)).then_some("maestro-path");
+            let utility = (from != "maestro-path"
+                && !excluded.contains(&from)
+                && !targets.contains(&"maestro-path"))
+            .then_some("maestro-path");
             for (index, target) in targets
                 .iter()
                 .copied()
@@ -3054,7 +3061,7 @@ impl PatternCalls {
             return;
         };
         match segment.ident.to_string().as_str() {
-            "expand_tilde_text" => self.expands = true,
+            "expand_tilde_joined" => self.expands = true,
             "is_absolute" => self.checks_absolute = true,
             "resolve" => self.resolves = true,
             _ => {}
@@ -3182,7 +3189,7 @@ fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
 fn pattern_owners_in(sources: &[(String, String)]) -> Vec<PatternOwner> {
     let mut owners: Vec<PatternOwner> = sources
         .iter()
-        .filter(|(_, source)| source.contains("expand_tilde_text"))
+        .filter(|(_, source)| source.contains("expand_tilde_joined"))
         .flat_map(|(path, source)| pattern_owners(path, source))
         .collect();
     owners.sort();
@@ -3282,7 +3289,7 @@ fn assert_tracked_delegation(sources: &[(String, String)]) {
 const OWNER_BODY: &str = "\
 fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3303,7 +3310,7 @@ const SKILL_BODY: &str = "\
 fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
     if path.starts_with('~') {
-        return expand_tilde_text(path, || Ok(options.home.to_owned()));
+        return expand_tilde_joined(path, || Ok(options.home.to_owned()));
     }
     if is_absolute(path) {
         return Ok(path.to_owned());
@@ -3316,7 +3323,7 @@ fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<St
 const PROMPT_BODY: &str = "\
 fn resolve_prompt_path(path: &str, options: Options<'_>) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(options.home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(options.home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3372,7 +3379,7 @@ fn normalize_skill_path(path: &str, options: &Options<'_>) -> std::io::Result<St
 /// A sibling policy that expands in one function and always resolves in another.
 const RESOURCE_BODY: &str = "\
 fn expand_resource_path(path: &str, home: Home) -> std::io::Result<String> {
-    expand_tilde_text(path.trim_matches(whitespace), home)
+    expand_tilde_joined(path.trim_matches(whitespace), home)
 }
 fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<String> {
     let expanded = expand_resource_path(path, home)?;
@@ -3384,7 +3391,7 @@ fn resolve_resource_path(cwd: &str, path: &str, home: Home) -> std::io::Result<S
 const OWNER_AND_COPY: &str = "\
 fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3393,7 +3400,7 @@ fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> std::io::Result<S
 }
 fn resolve_explicit_path_copy(path: &str, cwd: &str, home: &str) -> std::io::Result<String> {
     let path = path.trim_matches(whitespace);
-    let normalized = expand_tilde_text(path, || Ok(home.to_owned()))?;
+    let normalized = expand_tilde_joined(path, || Ok(home.to_owned()))?;
     if is_absolute(&normalized) {
         Ok(normalized)
     } else {
@@ -3572,8 +3579,146 @@ fn guest_schema_validation_edge_is_native_development_only() {
     );
 }
 
+/// The guest's component tests share the product engine through one native development edge,
+/// never a product edge.
+#[test]
+fn guest_engine_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    let declaration = "engine = { package = \"maestro-extensions-wasmtime\", path = \"../maestro-extensions-wasmtime\" }";
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-extensions-wasm",
+            &format!("[{NATIVE_DEV}]\n{declaration}")
+        ),
+        Ok(())
+    );
+    for table in [
+        "dependencies",
+        "build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        assert!(
+            caller_declares(
+                &workspace,
+                "maestro-extensions-wasm",
+                &format!("[{table}]\n{declaration}")
+            )
+            .is_err(),
+            "{table}"
+        );
+    }
+}
+
 /// Native link traversal can be shared without adding an effect owner or a dependency cycle.
 #[test]
 fn final_link_consumers_may_use_the_path_utility() {
     native_consumers_may_declare_the_utility(&["maestro-lock", "maestro-extensions-wasmtime"]);
+}
+
+#[test]
+fn product_dependencies_cannot_enable_test_support() {
+    for kind in ["dependencies", "build-dependencies"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-tools", "maestro-tui"]);
+        workspace.member(
+            "maestro-tui",
+            "maestro-tui",
+            "[features]\ntest-support = []",
+        );
+        workspace.member(
+            "maestro-tools",
+            "maestro-tools",
+            &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\", features = [\"test-support\"] }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into())
+        );
+    }
+}
+
+#[test]
+fn test_support_self_activation_keeps_default_tests_available() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui", "maestro-test-terminal"]);
+    workspace.member(
+        "maestro-tui",
+        "maestro-tui",
+        "[features]\ntest-support = []\n[dev-dependencies]\nmaestro-tui = { path = \".\", features = [\"test-support\"] }",
+    );
+    workspace.member(
+        "maestro-test-terminal",
+        "maestro-test-terminal",
+        "[dependencies]\nmaestro-tui = { path = \"../maestro-tui\", features = [\"test-support\"] }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn test_support_forwarding_stays_opt_in_and_one_hop() {
+    for feature in ["default", "runtime", "test-support"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-tools", "maestro-tui"]);
+        workspace.member(
+            "maestro-tui",
+            "maestro-tui",
+            "[features]\ntest-support = []",
+        );
+        workspace.member(
+            "maestro-tools",
+            "maestro-tools",
+            &format!("[dependencies]\nkit = {{ package = \"maestro-tui\", path = \"../maestro-tui\" }}\n[features]\n{feature} = [\"kit/test-support\"]"),
+        );
+        let expected = if feature == "test-support" {
+            Ok(())
+        } else {
+            Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into())
+        };
+        assert_eq!(check_workspace(workspace.root.path()), expected);
+    }
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-agent", "maestro-models"]);
+    workspace.member(
+        "maestro-models",
+        "maestro-models",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-agent", "maestro-agent", "[dependencies]\nmaestro-models = { path = \"../maestro-models\" }\n[features]\ntest-support = [\"maestro-models/test-support\"]");
+    workspace.member("maestro-tools", "maestro-tools", "[dependencies]\nmaestro-agent = { path = \"../maestro-agent\" }\n[features]\ntest-support = [\"maestro-agent/test-support\"]");
+    assert_eq!(check_workspace(workspace.root.path()), Err("maestro-tools: test-support may only be enabled by development dependencies or dedicated test libraries".into()));
+}
+
+#[test]
+fn development_features_activate_an_existing_type_owner_edge() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tools", "maestro-tui"]);
+    workspace.member(
+        "maestro-tui",
+        "maestro-tui",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-tools", "maestro-tools", "[dependencies]\nkit = { package = \"maestro-tui\", path = \"../maestro-tui\" }\n[dev-dependencies]\nkit = { package = \"maestro-tui\", path = \"../maestro-tui\", features = [\"test-support\"] }");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn chat_credentials_helpers_require_opt_in_development_activation() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-credentials"]);
+    workspace.member(
+        "maestro-credentials",
+        "maestro-credentials",
+        "[features]\ntest-support = []",
+    );
+    workspace.member("maestro-chat", "maestro-chat", "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n[dev-dependencies]\nmaestro-credentials = { path = \"../maestro-credentials\", features = [\"test-support\"] }");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    workspace.member(
+        "maestro-chat",
+        "maestro-chat",
+        "[dependencies]\nmaestro-app = { path = \"../maestro-app\" }\n[dev-dependencies]\nmaestro-credentials = { path = \"../maestro-credentials\" }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Err("maestro-chat: credential test helpers require non-optional test-support development activation".into()));
 }

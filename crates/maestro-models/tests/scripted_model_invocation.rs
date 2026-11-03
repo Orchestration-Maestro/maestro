@@ -1723,6 +1723,7 @@ mod tests {
         registration.unregister();
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// What one scripted tool-call stream published.
     struct Observed {
         /// Whether the call started.
@@ -1733,6 +1734,7 @@ mod tests {
         ended: Option<maestro_models::ToolCall>,
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Consume one scripted stream and record its tool-call events.
     async fn observe_tool(stream: maestro_models::AssistantMessageEventStream) -> Observed {
         let mut observed = Observed {

@@ -4,7 +4,6 @@ use super::super::share::ShareArtifact;
 use super::transfer::{assert_last_row_holds, bundle, layout_dir, rows, themed};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{World, cases as recorded_cases, started};
-use crate::components::session_selector::list::tests::session_picker::native_child as child;
 use maestro_app::configuration::config::{
     APP_NAME, ENV_AGENT_DIR, SERVICE_ORIGIN, get_share_viewer_url,
 };
@@ -195,8 +194,8 @@ fn run(
         }
         return None;
     }
-    let scratch = child::Scratch::new();
-    let root = scratch.0.path().to_path_buf();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let root = scratch.path().to_path_buf();
     let package = root.join("package");
     let programs = root.join("programs");
     let state = root.join("state");
@@ -371,7 +370,7 @@ fn start(world: &World) -> maestro_tui::tui::LocalFuture {
 
 /// The last transcript row of `world`, rendered wide.
 fn last_row(world: &World) -> String {
-    rows(world).last().cloned().unwrap_or_default()
+    notice_rows(world).last().cloned().unwrap_or_default()
 }
 
 /// Whether the transcript's last row holds `needle`.
@@ -379,12 +378,16 @@ fn last_row_holds(world: &World, needle: &str) -> bool {
     last_row(world).contains(needle)
 }
 
-/// The transcript rows of the latest notice, one per displayed line.
+/// The transcript rows of the latest notice, one per displayed line, without the blank row
+/// that follows an error notice.
 ///
 /// The padding is dropped without counting the text's characters, because a row is
 /// measured in display cells and a recorded notice may hold a scalar of no width.
 fn notice_rows(world: &World) -> Vec<String> {
-    let rendered = rows(world);
+    let mut rendered = rows(world);
+    if rendered.last().is_some_and(String::is_empty) {
+        rendered.pop();
+    }
     let start = rendered
         .iter()
         .rposition(|row| row.trim().is_empty())
@@ -416,6 +419,9 @@ fn assert_notice(world: &World, color: &ThemeColor, text: &str) {
         .collect();
     let observed = notice_rows(world).join("\n");
     assert_eq!(observed, format!("{}\u{1b}[39m", opened.join("\n")));
+    if *color == ThemeColor::Error {
+        assert_eq!(rows(world).last().map(String::as_str), Some(""));
+    }
 }
 
 /// The complete text of one recorded notice, with the presenter's own prefix.

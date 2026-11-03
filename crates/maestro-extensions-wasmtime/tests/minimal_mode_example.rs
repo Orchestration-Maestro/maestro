@@ -155,12 +155,12 @@ fn minimal_mode_preserves_cancellation_and_native_read_limits() {
         let runner = loaded(root.path()).await;
         let result = execute(&runner, "read", json!({"path":"long.txt"})).await;
         assert_eq!(result["details"]["truncation"]["outputLines"], 2000);
-        assert_eq!(result["details"]["truncation"]["totalLines"], 2101);
+        assert_eq!(result["details"]["truncation"]["totalLines"], 2100);
         assert!(
             result["content"][0]["text"]
                 .as_str()
                 .unwrap()
-                .ends_with("[Showing lines 1-2000 of 2101. Use offset=2001 to continue.]")
+                .ends_with("[Showing lines 1-2000 of 2100. Use offset=2001 to continue.]")
         );
         let registered = runner
             .get_all_registered_tools()

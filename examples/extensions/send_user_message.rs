@@ -4,6 +4,7 @@
 //! `/ask` sends an ordinary message, which starts a turn. `/steer` sends while the agent is
 //! working and interrupts that work. `/followup` queues a message that waits for the current
 //! work to finish. `/askwith` sends two text blocks instead of one string.
+// maestro-component: MAESTRO_SEND_USER_MESSAGE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

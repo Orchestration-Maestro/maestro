@@ -753,6 +753,13 @@ configuration reset command under the same license. It validates the JSON
 object, preserves non-multiplexer actions and uses the shared atomic publisher
 instead of rewriting the source file in place.
 
+Command metadata and completion normalization in
+`crates/maestro-cli/src/workspace_commands/spec/` and
+`crates/maestro-cli/src/completion.rs`, and the shipped workspace skill in
+`docs/skills/workspace/SKILL.md`, derive from the command-line and skill modules
+under the same license. Command grammar uses Maestro's chat inputs and unified
+daemon noun; completion output is buffered before writing to the caller.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
@@ -781,6 +788,10 @@ The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config
 and its submodules derives from the repository configuration module under the same
 license. Changes include one include walk in place of three, wildcard matching with path
 rules in bounded time, and supplied user files and home directory.
+The worktree names, checkout paths and Git operations in
+`crates/maestro-daemon/src/git/worktree.rs` derive from the worktree module under the
+same license. Changes include literal command operands, native path bytes,
+shared home expansion and repository discovery, and link-aware leftover cleanup.
 The status snapshots, fingerprints and cache keys in
 `crates/maestro-daemon/src/git/status.rs` and the refresh scheduling in
 `crates/maestro-daemon/src/app/git_refresh.rs` derive from the repository status and
@@ -788,6 +799,16 @@ refresh modules under the same license. Changes include a tracking-configuration
 while its files are unchanged in place of cached repository context, a packed-reference
 search that skips an unreadable line, supplied user files and home directory, and a refresh
 that publishes its result when its task panics.
+
+The pane geometry with chrome, layout snapshots, pane topology handlers, pane
+mutation handlers (split, resize, swap, zoom, move and close), pane input, rename,
+read and agent report handlers, and the layout export, apply and split ratio handlers
+in `app/layout.rs`, `app/api/panes.rs`, `app/api/panes/`, `app/api/reads.rs` and
+`app/api/layouts/`, and the zoom, close and move-recovery state
+operations and report events in `app/actions/` and `events.rs`, derive from the
+application API and interface modules, with one view-area owner instead of a view field,
+one read service instead of a copy for each reader and one launch record for every new
+root process.
 
 The resume records and argument plans, retained pane state, presentation metadata,
 terminal title normalization and host theme in `crates/maestro-daemon/` derive from
@@ -1236,6 +1257,23 @@ authorization of the copyright holder.
 SPDX-License-Identifier: Unicode-3.0
 ```
 
+## Local date-time data
+
+The locale recipes and recorded inputs in `crates/maestro-text/data/date-time/`
+derive from Unicode CLDR JSON 48.2.0. The Persian calendar conversion in
+`crates/maestro-text/src/date_time_calendar.rs` derives from Unicode ICU.
+Their copyright notices are:
+
+```text
+Copyright © 2004-2026 Unicode, Inc.
+© 2016 and later: Unicode, Inc. and others;
+Copyright (C) 2003–2013, International Business Machines Corporation and others.
+All Rights Reserved.
+```
+
+The [Unicode-3.0 licence](crates/maestro-text/data/date-time/LICENSE) applies to
+the data and translated calendar code.
+
 ## Development skill content
 
 Copyright and permission notices for adapted skill text are in the
@@ -1337,3 +1375,9 @@ lockfree-object-pool 0.1.6 retains its
 [Boost Software License 1.0 notice](docs/licenses/author-tools/lockfree-object-pool.txt).
 Versions and licence choices are recorded in the
 [repository-tooling library guide](docs/libraries/repository-tooling.md#external-browser-author-tools).
+
+## Command discovery libraries
+
+Command metadata and shell completions use clap 4.6.7 and clap_complete 4.6.5,
+licensed under MIT OR Apache-2.0. Their clap_builder, clap_lex and anstyle
+runtime dependencies use MIT OR Apache-2.0 as well.

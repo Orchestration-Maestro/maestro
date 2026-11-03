@@ -153,3 +153,81 @@ fn assert_retention_payload(api: &str, body: &serde_json::Value, expected: &str)
         );
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Send one controlled request with `session` and return its recorded body.
+fn request_body(api: &str, base_url: &str, session: &str) -> TestResult<serde_json::Value> {
+    use crate::bundled;
+    use maestro_models::{ProviderStreamOptions, StreamOptions, stream};
+    maestro_models::reset_api_providers();
+    let model = bundled::descriptor(api, base_url)?;
+    let (fetch, requests) = bundled::fetch(bundled::text_body(api, "ok"));
+    let options = ProviderStreamOptions {
+        common: StreamOptions {
+            api_key: Some(bundled::api_key(api)),
+            session_id: Some(session.to_owned()),
+            fetch: Some(fetch),
+            ..StreamOptions::default()
+        },
+        ..ProviderStreamOptions::default()
+    };
+    let result = crate::runtime::run::<crate::TestResult<_>>(async {
+        Ok(stream(model, bundled::conversation()?, Some(options))?
+            .result()
+            .await)
+    })?;
+    let failure = bundled::error_of(&result);
+    assert!(failure.is_none(), "{api}: request failed: {failure:?}");
+    let requests = bundled::recorded(&requests);
+    assert_eq!(requests.len(), 1, "{api}");
+    Ok(requests[0].body.clone())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A session-derived cache key keeps its first 64 Unicode scalars in every OpenAI-style protocol.
+#[test]
+fn maestro_prompt_cache_keys_stop_at_64_characters() -> TestResult {
+    let _registry = crate::bundled::registry();
+    let sixty_three = "a".repeat(63);
+    let sessions = [
+        ("x".repeat(100), "x".repeat(64)),
+        ("y".repeat(64), "y".repeat(64)),
+        ("z".repeat(10), "z".repeat(10)),
+        (format!("{sixty_three}éé"), format!("{sixty_three}é")),
+    ];
+    for (api, base_url) in [
+        ("openai-completions", "https://api.openai.com/v1"),
+        ("openai-responses", "https://api.openai.com/v1"),
+        ("openai-codex-responses", "https://controlled.invalid"),
+        (AZURE, AZURE_BASE_URL),
+    ] {
+        for (session, expected) in &sessions {
+            let body = request_body(api, base_url, session)?;
+            assert_eq!(
+                body["prompt_cache_key"],
+                serde_json::json!(expected),
+                "{api} with a {}-character session",
+                session.chars().count()
+            );
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Azure Responses asks the service not to keep the response.
+#[test]
+fn maestro_azure_responses_payload_disables_storage() -> TestResult {
+    let _registry = crate::bundled::registry();
+    let body = request_body(AZURE, AZURE_BASE_URL, "session")?;
+    assert_eq!(body["store"], serde_json::json!(false));
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The Azure Responses protocol identifier.
+const AZURE: &str = "azure-openai-responses";
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The endpoint the Azure fixtures send to.
+const AZURE_BASE_URL: &str = "https://controlled.openai.azure.com/openai/v1";

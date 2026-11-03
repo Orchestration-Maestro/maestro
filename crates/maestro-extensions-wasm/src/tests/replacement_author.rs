@@ -41,7 +41,7 @@ async fn dispatch(
     args: String,
     ctx: ExtensionCommandContext,
 ) -> ExtensionResult<()> {
-    let input: Value = serde_json::from_str(&args).unwrap();
+    let input: Value = serde_json::from_str(&args).map_err(|e| e.to_string())?;
     if let Some(control) = input.get("control") {
         log.append_entry("replacement-control", Some(control.clone()))?;
     }
@@ -57,7 +57,7 @@ async fn dispatch(
         return Ok(());
     }
     if input["clone"] == true {
-        let alias = kept.borrow().original.as_ref().unwrap().clone();
+        let alias = kept.borrow().original.clone().ok_or("no original alias")?;
         let old = kept.borrow_mut().survivor.replace(alias);
         drop(old);
         return Ok(());
@@ -72,10 +72,10 @@ async fn dispatch(
     }
     let entered = Rc::new((std::cell::Cell::new(false), RefCell::new(None)));
     let callback = continuation(&log, &input, Rc::clone(&kept), Rc::clone(&entered));
-    let group = input["group"].as_str().unwrap();
+    let group = input["group"].as_str().ok_or("group is not a string")?;
     let operation = Box::pin(command(&ctx, group, &input["input"], callback));
     if let Some(phase) = input["dropPhase"].as_str() {
-        drop_operation(operation, phase, entered, &ctx).await;
+        drop_operation(operation, phase, entered, &ctx).await?;
         log.append_entry("replacement-dropped", Some(json!(phase)))?;
         return Ok(());
     }
@@ -89,7 +89,7 @@ fn continuation(
     kept: Rc<RefCell<Kept>>,
     entered: Rc<(std::cell::Cell<bool>, RefCell<Option<std::task::Waker>>)>,
 ) -> Option<WithSession> {
-    let group = input["group"].as_str().unwrap();
+    let group = input["group"].as_str()?;
     let options = if group == "newSession" {
         &input["input"]["args"][0]
     } else {
@@ -134,7 +134,9 @@ fn continuation(
 }
 /// Whether this invocation requests a send rather than a command operation.
 fn group_is_send(input: &Value) -> bool {
-    input["group"].as_str().unwrap().starts_with("send")
+    input["group"]
+        .as_str()
+        .is_some_and(|group| group.starts_with("send"))
 }
 /// Construct the independent optional navigation fields.
 fn tree(value: &Value) -> NavigateTreeOptions {
@@ -159,14 +161,15 @@ async fn command(
     let options = supplied(&input["args"][1]);
     let outcome = match group {
         "fork" => {
+            let position = options
+                .and_then(|v| v.get("position"))
+                .map(|p| serde_json::from_value(p.clone()))
+                .transpose()
+                .map_err(|e| e.to_string())?;
             ctx.fork(
                 id,
-                options.map(|v| ForkOptions {
-                    data: ForkData {
-                        position: v
-                            .get("position")
-                            .map(|p| serde_json::from_value(p.clone()).unwrap()),
-                    },
+                options.map(|_| ForkOptions {
+                    data: ForkData { position },
                     with_session: callback,
                 }),
             )
@@ -205,16 +208,42 @@ async fn command(
     Ok(json!({"cancelled":outcome.cancelled}))
 }
 /// Decode only the test's authored delivery choices.
-fn custom_options(input: &Value) -> Option<SendMessageOptions> {
-    supplied(input).map(|v| SendMessageOptions {
-        trigger_turn: v["triggerTurn"].as_bool(),
-        deliver_as: v.get("deliverAs").map(|v| match v.as_str().unwrap() {
-            "steer" => maestro_extensions_wasm::MessageDelivery::Steer,
-            "followUp" => maestro_extensions_wasm::MessageDelivery::FollowUp,
-            "nextTurn" => maestro_extensions_wasm::MessageDelivery::NextTurn,
-            _ => panic!("invalid delivery"),
-        }),
-    })
+fn custom_options(input: &Value) -> ExtensionResult<Option<SendMessageOptions>> {
+    supplied(input)
+        .map(|v| {
+            Ok(SendMessageOptions {
+                trigger_turn: v["triggerTurn"].as_bool(),
+                deliver_as: v
+                    .get("deliverAs")
+                    .map(|v| match v.as_str() {
+                        Some("steer") => Ok(maestro_extensions_wasm::MessageDelivery::Steer),
+                        Some("followUp") => Ok(maestro_extensions_wasm::MessageDelivery::FollowUp),
+                        Some("nextTurn") => Ok(maestro_extensions_wasm::MessageDelivery::NextTurn),
+                        _ => Err("invalid delivery"),
+                    })
+                    .transpose()?,
+            })
+        })
+        .transpose()
+}
+/// Decode only the test's authored user delivery choices.
+fn user_options(input: &Value) -> ExtensionResult<Option<SendUserMessageOptions>> {
+    supplied(input)
+        .map(|v| {
+            Ok(SendUserMessageOptions {
+                deliver_as: v
+                    .get("deliverAs")
+                    .map(|v| match v.as_str() {
+                        Some("steer") => Ok(maestro_extensions_wasm::UserMessageDelivery::Steer),
+                        Some("followUp") => {
+                            Ok(maestro_extensions_wasm::UserMessageDelivery::FollowUp)
+                        }
+                        _ => Err("invalid user delivery"),
+                    })
+                    .transpose()?,
+            })
+        })
+        .transpose()
 }
 /// Send through the retained capability and read the state that same capability exposes.
 async fn send_or_read(
@@ -223,7 +252,8 @@ async fn send_or_read(
     ctx: &ReplacedSessionContext,
 ) -> ExtensionResult<()> {
     let source = &input["input"];
-    let outcome = match input["group"].as_str().unwrap() {
+    let group = input["group"].as_str().ok_or("group is not a string")?;
+    let outcome = match group {
         "sendMessage" => {
             let mut payload = source["payload"].clone();
             if let Some(details) = payload.get_mut("details")
@@ -235,28 +265,21 @@ async fn send_or_read(
                     .unwrap_or_else(|| json!(details.to_string()));
             }
             ctx.send_message(
-                serde_json::from_value(payload).unwrap(),
-                custom_options(&source["options"]),
+                serde_json::from_value(payload).map_err(|e| e.to_string())?,
+                custom_options(&source["options"])?,
             )
             .await
         }
         "sendUserMessage" => {
-            let options = supplied(&source["options"]).map(|v| SendUserMessageOptions {
-                deliver_as: v.get("deliverAs").map(|v| match v.as_str().unwrap() {
-                    "steer" => maestro_extensions_wasm::UserMessageDelivery::Steer,
-                    "followUp" => maestro_extensions_wasm::UserMessageDelivery::FollowUp,
-                    _ => panic!("invalid user delivery"),
-                }),
-            });
             ctx.send_user_message(
-                serde_json::from_value(source["payload"].clone()).unwrap(),
-                options,
+                serde_json::from_value(source["payload"].clone()).map_err(|e| e.to_string())?,
+                user_options(&source["options"])?,
             )
             .await
         }
         "read" => Ok(()),
         "fork" | "navigateTree" | "switchSession" | "reload" => {
-            let outcome = command(ctx, input["group"].as_str().unwrap(), source, None).await;
+            let outcome = command(ctx, group, source, None).await;
             log.append_entry("replacement-result", Some(result(outcome)))?;
             return Ok(());
         }
@@ -304,13 +327,13 @@ fn ordinary_callbacks(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_tool(maestro_extensions_wasm::ToolDefinition {
         render_call: None,
         render_result: None,
-        metadata: serde_json::from_value(json!({"name":"replacement-ordinary","label":"Ordinary","description":"Reads its supplied context","parameters":"{}"})).unwrap(),
+        metadata: serde_json::from_value(json!({"name":"replacement-ordinary","label":"Ordinary","description":"Reads its supplied context","parameters":"{}"})).map_err(|e| e.to_string())?,
         prepare_arguments: None,
         execute: Rc::new(move |_, _, _, _, ctx: maestro_extensions_wasm::ExtensionContext| {
             let log = log.clone();
             Box::pin(async move {
                 log.append_entry("ordinary-tool", Some(json!({"cwd":ctx.cwd()?,"name":ctx.session_manager()?.get_session_name()?})))?;
-                Ok(serde_json::from_value(json!({"content":[{"type":"text","text":"ordinary answer"}],"details":"null"})).unwrap())
+                serde_json::from_value(json!({"content":[{"type":"text","text":"ordinary answer"}],"details":"null"})).map_err(|e| e.to_string())
             })
         }),
     })
@@ -337,16 +360,15 @@ struct Capture {
 }
 impl Drop for Capture {
     fn drop(&mut self) {
-        self.api
-            .append_entry("replacement-drop", Some(json!(self.phase)))
-            .unwrap();
+        // A failed write leaves its entry missing, which the native test reports.
+        let _ = self
+            .api
+            .append_entry("replacement-drop", Some(json!(self.phase)));
         if self.reenter {
-            self.api
-                .on(
-                    "replacement-reentrant",
-                    Rc::new(|_, _| Box::pin(async { Ok(None) })),
-                )
-                .unwrap();
+            let _ = self.api.on(
+                "replacement-reentrant",
+                Rc::new(|_, _| Box::pin(async { Ok(None) })),
+            );
         }
     }
 }
@@ -356,7 +378,7 @@ async fn drop_operation<F: std::future::Future>(
     phase: &str,
     entered: Rc<(std::cell::Cell<bool>, RefCell<Option<std::task::Waker>>)>,
     ctx: &ExtensionCommandContext,
-) {
+) -> ExtensionResult<()> {
     if phase == "callback" {
         std::future::poll_fn(|cx| {
             let wake = cx.waker().clone();
@@ -377,12 +399,12 @@ async fn drop_operation<F: std::future::Future>(
             assert!(operation.as_mut().poll(cx).is_pending());
             notification.as_mut().poll(cx)
         })
-        .await
-        .unwrap();
+        .await?;
     }
     drop(operation);
     let wake = entered.1.borrow_mut().take();
     drop(wake);
+    Ok(())
 }
 
 #[path = "replacement_constructor.rs"]
@@ -394,11 +416,11 @@ async fn retained_call(
     input: &Value,
     kept: &RefCell<Kept>,
 ) -> ExtensionResult<()> {
-    let held = kept.borrow().select(input["target"] == "B").clone();
+    let held = kept.borrow().select(input["target"] == "B")?;
     if input["constructor"] != true {
         return send_or_read(log, input, &held).await;
     }
-    let sibling = kept.borrow().select(input["target"] != "B").clone();
+    let sibling = kept.borrow().select(input["target"] != "B")?;
     let original = constructor::construct(log.clone(), held, sibling);
     let survivor = original.clone();
     drop(original);
@@ -407,13 +429,14 @@ async fn retained_call(
 }
 impl Kept {
     /// Select an independently retained resource without invoking host code.
-    fn select(&self, other: bool) -> &ReplacedSessionContext {
+    fn select(&self, other: bool) -> ExtensionResult<ReplacedSessionContext> {
         if other {
             self.other.as_ref()
         } else {
             self.original.as_ref().or(self.survivor.as_ref())
         }
-        .unwrap()
+        .cloned()
+        .ok_or_else(|| "no retained target".to_owned())
     }
 }
 

@@ -11,6 +11,10 @@ use maestro_app::presentation_data::footer_data_provider::{
 use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
+#[cfg(unix)]
+use maestro_process::child_process::process_exists;
+#[cfg(unix)]
+use maestro_test_process::git_command;
 use serde::Deserialize;
 use std::{
     cell::{Cell, RefCell},
@@ -969,15 +973,11 @@ fn footer_native_async_lookup_runs_selected_command() {
 #[cfg(unix)]
 fn native_command_probe(root: &native::Scratch) {
     std::fs::create_dir(root.join("bin")).unwrap();
-    std::fs::write(
-        root.join("git.sh"),
-        "#!/bin/sh\nprintf '%s\\n' \"$*\"\npwd -P\nexit \"${FOOTER_ASYNC_EXIT:-0}\"\n",
-    )
-    .unwrap();
-    native::install_executable(
-        std::path::Path::new(&root.join("git.sh")),
+    git_command::install(
         std::path::Path::new(&root.join("bin/git")),
-    );
+        git_command::Scenario::Reported,
+    )
+    .expect("alias installs");
     let output = native::probe(
         maestro_test_process::TestProcess::current(
             "footer_native_async_lookup_runs_selected_command",
@@ -990,7 +990,8 @@ fn native_command_probe(root: &native::Scratch) {
             ("PATH", &root.join("bin")),
         ],
         &[],
-    );
+    )
+    .expect("child starts");
     assert_eq!(
         output,
         [
@@ -1011,10 +1012,11 @@ fn native_command_probe(root: &native::Scratch) {
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
             ("PATH", &root.join("bin")),
-            ("FOOTER_ASYNC_EXIT", "1"),
+            ("GIT_EXIT", "1"),
         ],
         &[],
-    );
+    )
+    .expect("child starts");
     assert_eq!(
         failed,
         ["absent"],
@@ -1201,34 +1203,17 @@ fn footer_async_lookup_keeps_output_until_pipe_eof() {
     }
     let root = native::Scratch::new();
     std::fs::create_dir(root.join("bin")).unwrap();
-    let python = std::process::Command::new("sh")
-        .args(["-c", "command -v python3"])
-        .output()
-        .unwrap();
-    let python = String::from_utf8(python.stdout).unwrap();
-    let script = format!(
-        "#!{}\n{}",
-        python.trim(),
-        r"
-import os, socket
-os.write(1, b' prefix')
-pid = os.getpid()
-gone, alive = os.pipe()
-if os.fork(): os._exit(0)
-os.close(alive); os.read(gone, 1); os.close(gone)
-s = socket.create_connection(('127.0.0.1', int(open('holder-port').read())))
-s.sendall(str(pid).encode() + b'\n')
-assert s.recv(1) == b'!'
-os.write(1, b' tail\n')
-s.close()
-os._exit(0)
-"
-    );
-    std::fs::write(root.join("git.py"), script).unwrap();
-    native::install_executable(
-        std::path::Path::new(&root.join("git.py")),
+    git_command::install(
         std::path::Path::new(&root.join("bin/git")),
-    );
+        git_command::Scenario::Exiting,
+    )
+    .expect("alias installs");
+    let holder = root.join("bin/git-holder");
+    git_command::install(
+        std::path::Path::new(&holder),
+        git_command::Scenario::Retaining,
+    )
+    .expect("descendant installs");
     assert!(
         native::probe(
             maestro_test_process::TestProcess::current(
@@ -1237,9 +1222,14 @@ os._exit(0)
             .unwrap()
             .case("*"),
             root.0.path(),
-            &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
+            &[
+                ("PATH", &root.join("bin")),
+                ("MAESTRO_FOOTER_HOLDER", "1"),
+                ("GIT_HOLDER", &holder),
+            ],
             &[]
         )
+        .expect("child starts")
         .is_empty()
     );
 }
@@ -1269,6 +1259,10 @@ fn footer_pipe_child() {
         BufReader::new(&holder).read_line(&mut pid).unwrap();
         let pid = rustix::process::Pid::from_raw(pid.trim().parse().unwrap()).unwrap();
         footer_reaping_barrier(pid).await;
+        assert!(
+            !process_exists(u32::try_from(pid.as_raw_pid()).unwrap()),
+            "the announced direct child must be reaped"
+        );
         tokio::time::advance(Duration::from_secs(1)).await;
         tokio::task::yield_now().await;
         assert!(

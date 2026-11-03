@@ -1,5 +1,5 @@
 //! Instrumented parent of a standalone WebAssembly build.
-mod toolchain_support;
+use maestro_test_process::toolchain as toolchain_support;
 
 use std::env;
 

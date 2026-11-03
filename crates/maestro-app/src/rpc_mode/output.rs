@@ -148,12 +148,23 @@ pub fn stdout_output() -> RpcOutput {
     RpcOutput::synchronous(Rc::new(|line: &RpcLine| write_raw_stdout(line.as_str())))
 }
 
-/// One admitted line and the notification that settles once its write was attempted.
+/// Receives a line's write result once the write was attempted.
+pub(super) type Receipt = Box<dyn FnOnce(&io::Result<()>)>;
+
+/// What settles once one line's write was attempted.
+pub(super) struct Attempt {
+    /// Settles for the operation whose response the line carries, whatever the result.
+    pub(super) complete: oneshot::Sender<()>,
+    /// Receives the attempt's result.
+    pub(super) receipt: Receipt,
+}
+
+/// One admitted line and what settles once its write was attempted.
 struct Frame {
     /// The framed line.
     line: RpcLine,
     /// Settles once the whole line was written and flushed, or failed to be.
-    attempted: Option<oneshot::Sender<()>>,
+    attempted: Option<Attempt>,
 }
 
 /// A connection's running output.
@@ -193,15 +204,11 @@ impl Writer {
 
     /// Writes `line` now, or admits it for the writer task; `attempted` settles once the write
     /// was attempted, and disconnects if the line is dropped first.
-    pub(super) fn write(
-        &self,
-        line: RpcLine,
-        attempted: Option<oneshot::Sender<()>>,
-    ) -> io::Result<()> {
+    pub(super) fn write(&self, line: RpcLine, attempted: Option<Attempt>) -> io::Result<()> {
         match &self.0 {
             Running::Synchronous(write) => {
                 let written = write(&line);
-                settle(attempted);
+                settle(attempted, &written);
                 written
             }
             Running::Queued { frames, .. } => frames
@@ -245,16 +252,17 @@ async fn drain(
     while let Some(frame) = admitted.recv().await {
         let line = frame.line.as_str().as_bytes();
         let written = write_line(&mut *writer, line, stall_timeout).await;
-        settle(frame.attempted);
+        settle(frame.attempted, &written);
         written?;
     }
     Ok(())
 }
 
-/// Reports that a line's write was attempted.
-fn settle(attempted: Option<oneshot::Sender<()>>) {
+/// Reports that a line's write was attempted, and its result.
+fn settle(attempted: Option<Attempt>, written: &io::Result<()>) {
     if let Some(attempted) = attempted {
-        let _ = attempted.send(());
+        let _ = attempted.complete.send(());
+        (attempted.receipt)(written);
     }
 }
 

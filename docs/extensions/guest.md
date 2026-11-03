@@ -344,7 +344,7 @@ differs from a result whose properties are all omitted.
 | `session_shutdown` | `SessionShutdownEvent` | `reason` (`quit`, `reload`, `new`, `resume`, `fork`), `targetSessionFile?` |
 | `before_provider_request` | `BeforeProviderRequestEvent` | `payload` |
 | `after_provider_response` | `AfterProviderResponseEvent` | `status`, `headers` |
-| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`) |
+| `input` | `InputEvent` | `text`, `images?`, `source` (`interactive`, `rpc`, `extension`), `streamingBehavior?` (`steer`, `followUp`) |
 
 Before-compaction `preparation` holds `firstKeptEntryId`, `messagesToSummarize`,
 `turnPrefixMessages`, `isSplitTurn`, `tokensBefore`, `previousSummary?`, `fileOps` and
@@ -438,8 +438,8 @@ an acquisition or retained query is allowed remains the host's decision.
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
 `ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
-present empty strings; `Error` carries a structured denial, distinct from an
+`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
 `ModelRegistry` also forwards `refresh`, `get_error`, `has_configured_auth`,
@@ -452,9 +452,13 @@ before the call; `AuthStatus` and `AuthSource` are the
 `ModelRegistry::auth_storage()` returns the catalog's live credential owner, not
 copied credentials. Its `AuthStorage` handle can outlive the creating callback.
 Reads, runtime key overrides, stored credential changes, reload, logout and error
-draining reach that same owner. `get_api_key` uses its original credential-command
+draining reach that same owner. `get`, `list`, `get_all`, `has`, `has_auth`,
+`get_auth_status` and `get_api_key` first reread the stored document through the
+owner's backend, so they see what another process wrote. An authored backend runs
+inside the read as it does inside `reload`. `get_api_key` uses its original credential-command
 effects; `GetApiKeyOptions::include_fallback` defaults to true. Persistence failures
-remain in `drain_errors` rather than rolling back accepted state.
+remain in `drain_errors`. A failed write leaves its change in accepted memory only
+until the next successful read replaces it with the stored records.
 
 A stale registration facade does not invalidate credentials acquired earlier.
 Malformed host input and nonfinite authored numbers fail before provider or
@@ -516,9 +520,10 @@ persistence to the retained native credential owner. It returns an owned future,
 so dropping the initiating facade does not end the operation. Successful login
 accepts the complete OAuth record and persists it through the original backend;
 other provider records stay unchanged. Unknown providers and interaction failures
-return their original messages. As with `AuthStorage::set`, persistence failures
-leave accepted state available and are reported by `drain_errors`, not as a failed
-login.
+return their original messages. As with `AuthStorage::set`, a persistence failure
+leaves the change in accepted memory only until the next successful read replaces
+it with the stored records. `drain_errors` reports the failure; `login` still
+succeeds.
 
 `model` and the catalog queries reuse the [shared model records](../records.md).
 `ContextUsage` carries optional token and percentage estimates and the supplied
@@ -569,6 +574,11 @@ presence, synchronous notifications, awaited input and live cancellation. The gu
 may keep the callback record or an input future after login ends; its last alias
 releases the original native captures. Pending input leaves the host available,
 and synchronous native notifications may reenter the same guest implementation.
+
+An authored login that uses a proof key calls `generate_pkce(&api)`. The host draws
+32 secure random bytes and returns a `Pkce` record: the verifier is their unpadded
+URL-safe Base64 and the challenge is that text's SHA-256 digest in the same encoding.
+Entropy failure returns the host's error. The guest links no hashing or encoding crate.
 
 Absent fields are omitted; empty strings, lists and maps and
 `false` are sent as written, header, model and input order is kept, and signed zero
@@ -1167,3 +1177,9 @@ baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
 and `wit_stream` byte-stream construction. Both generations use the same host
 context; neither introduces an extension-specific permission list. See
 [component operating environment](host_io.md) for access and platform limits.
+
+### Portable provider primitives
+
+`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
+framing; callers keep their UTF-8, BOM and event-dispatch policies.

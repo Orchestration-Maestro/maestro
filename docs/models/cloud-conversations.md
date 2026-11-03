@@ -16,11 +16,21 @@ API; request processing and payload hooks still receive the original descriptor.
 
 ## Conversation input
 
+Message roles and content kinds are closed typed records. Decoding leaves out a
+model-request message whose role names no known role, and a user or assistant block whose
+type names no known kind, so a conversation that holds one still continues. User blocks are
+`text` and `image`; assistant blocks are `text`, `thinking` and `toolCall`. Tool-result blocks
+must be known. A user turn left without blocks holds `<empty>`, and an assistant turn
+left without content is not sent. Anything else malformed still fails to decode.
+
 History first passes through the [shared projection](../conversation-projection.md). User content keeps
-its text and block order. Blank assistant text and thinking are skipped; retained text is not
-trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
+its text and block order. Blank user and tool-result text is dropped, and a turn or result left
+without content holds the placeholder `<empty>`. Blank assistant text and thinking are skipped;
+retained text is not trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
 reasoning text without a signature. Consecutive tool results become one user turn, preserving
-result order and error or success status.
+result order and error or success status. Unknown entries are left out before this projection,
+so tool results separated only by an unknown message still become one turn, and images
+separated only by unknown blocks become one placeholder for a model without image input.
 
 Images remaining after [shared projection](../conversation-projection.md) accept `image/jpeg`,
 `image/jpg`, `image/png`, `image/gif` and `image/webp`. The payload hook sees decoded byte arrays;
@@ -35,9 +45,12 @@ converted turn only when it is a user turn. Long retention adds `ttl: "1h"`.
 `AWS_BEDROCK_FORCE_CACHE=1` enables cache points only when neither the identifier nor the name,
 including their separator-normalized forms, contains `claude`.
 
-Thinking settings apply only to reasoning Claude models. Opus 4.6/4.7 and Sonnet 4.6 candidates
-use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort before
-consulting the descriptor map. Other Claude candidates use fixed budgets from
+A Claude request without an explicit `max_tokens` sends the model's advertised cap as
+`inferenceConfig.maxTokens`; other Bedrock models send none unless asked.
+
+Thinking settings apply only to reasoning Claude models. Opus 4.6 to 4.8, Sonnet 4.6 and Sonnet 5
+candidates use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort
+before consulting the descriptor map. Other Claude candidates use fixed budgets from
 [`ThinkingBudgets`](../model-options.md), with interleaved thinking enabled unless explicitly
 false. Display defaults to summarized; a government region selected from the option or
 region environment variables, or a government model identifier, omits the display. The
@@ -47,6 +60,12 @@ endpoint and profile region do not determine that display decision.
 `SimpleStreamOptions`, resolves [base options and token budgets](../model-options.md), adjusts
 fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
 Adaptive Claude and other models do not receive that adjustment.
+
+The catalog generator also marks Messages models whose case-sensitive IDs contain
+`opus-4-6`, `opus-4.6`, `opus-4-7`, `opus-4.7`, `opus-4-8`, `opus-4.8`, `sonnet-4-6`,
+`sonnet-4.6`, `sonnet-5` or `sonnet.5` with `forceAdaptiveThinking: true`, retaining their
+other compatibility settings. The [Messages adapter](messages.md#thinking) sends adaptive
+thinking and mapped effort for these models without a thinking budget or interleaved-thinking beta.
 
 Text, thinking and tool-call updates reduce into the shared assistant message. Generic
 `stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled
@@ -136,7 +155,7 @@ with placeholder credentials and ignores both bearer sources, which is for proxi
 authenticate; any other value of that variable has no effect. No `api_key` is read.
 
 Login refresh, role assumption, web identity, SSO credentials and named-session OIDC refresh use
-conversation routing, including a supplied sender and [destination-specific proxy selection](#proxy-routing).
+conversation routing, including a supplied sender and [the conversation's proxy](#proxy-routing).
 Container and instance metadata stay direct, including named role sources, and do not use the
 supplied sender. Default connectors retain connection pools by SDK timeout settings and apply the SDK's
 connection and response-header deadlines, not a body-read deadline;
@@ -144,15 +163,17 @@ a supplied sender retains its own timeout policy.
 
 ## Proxy routing
 
-Proxying is on when any of `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` or their lowercase spellings
-is nonempty. Then the proxy of each destination is the first nonempty of
+The proxy is chosen once for each request, from the model's base URL: the first nonempty of
 `npm_config_<scheme>_proxy`, `<scheme>_proxy`, `npm_config_proxy` and `all_proxy`, each read as
-its lowercase spelling and then its uppercase one. A proxy written without a scheme takes the
-destination's scheme. The first nonempty of `npm_config_no_proxy` and `no_proxy`, read the same
-way, excludes destinations from proxying: `*` excludes all, `host` that host only, `.suffix` and
-`*suffix` hosts ending so, and a `:port` limits an entry; entries are separated by commas or
-JavaScript whitespace. With proxying off, no proxy is used whatever other variables say. A proxy
-or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection speak HTTP/1 only. HTTP and HTTPS proxies
+its lowercase spelling and then its uppercase one, where the scheme is the base URL's. A proxy
+written without a scheme takes the base URL's scheme. The first nonempty of
+`npm_config_no_proxy` and `no_proxy`, read the same way, excludes base URLs from proxying: `*`
+excludes all, `host` that host only, `.suffix` and `*suffix` hosts ending so, and a `:port`
+limits an entry; entries are separated by commas or JavaScript whitespace. A base URL that does
+not parse, or has no host, chooses no proxy; one the exclusion list leaves out reads no proxy
+variable. The chosen proxy then carries every request the conversation's client sends, whatever
+its destination. A chosen proxy or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection
+speak HTTP/1 only; without either, the default client is used. HTTP and HTTPS proxies
 are supported, as are `socks`, `socks4`, `socks4a`, `socks5` and `socks5h`. `socks4` and
 `socks5` resolve destination names locally; the other SOCKS schemes send names to the proxy.
 SOCKS4 sends IPv6 destinations as names; SOCKS5 retains their address family.
@@ -168,14 +189,13 @@ after local destination lookup and before destination TLS. Each SOCKS request ow
 connection through response-body consumption; cancellation or a header deadline closes
 pending connection work. Request preparation and response conversion use the
 [shared HTTP transport](chat-completions.md#transport).
-A selected proxy that is not a URL or has an unsupported scheme ends the stream with an error
-before the destination is contacted; a destination the exclusion list leaves out never reads
-its proxy. The default sender returns redirects without following them.
+A chosen proxy that is not a URL or has an unsupported scheme ends the stream with an error
+before any connection is made. The default sender returns redirects without following them.
 
 ### Proxy scripts
 
-A selected `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
-proxy script instead of opening a direct destination connection. Both opaque
+A chosen `pac+data:`, `pac+file:`, `pac+ftp:`, `pac+http:` or `pac+https:` URL loads a
+proxy script for the conversation instead of opening direct destination connections. Both opaque
 `pac+data:,script` and hierarchical `pac+data://,script` spellings are accepted.
 The script receives the complete destination URL and its canonical host, including
 a nondefault port in the URL, before choosing ordered DIRECT, HTTP, HTTPS or SOCKS
@@ -184,11 +204,13 @@ Fallback happens only before application bytes are sent. A connected proxy's
 CONNECT refusal is returned with its status, headers and body, without replay.
 
 Scripts have the standard host, DNS, network, local-address, time, weekday and
-calendar helpers. Local-address discovery first probes `8.8.8.8:53`, closes that
-socket, and falls back to native interfaces on failure. It selects the first
-non-loopback IPv4 on the first eligible interface, preserving interface and
-per-interface address order. An authored `alert` emits its exact message through
-tracing rather than printing.
+calendar helpers. `myIpAddress()` discovers the local IPv4 through a UDP route
+lookup for `8.8.8.8:53`. It sends no packet and needs no answering endpoint or
+time limit. The socket closes before returning the address. On any socket error,
+it falls back to native interfaces, selecting the first non-loopback IPv4 on the
+first eligible interface and preserving interface and per-interface address
+order. An authored `alert` emits its exact message through tracing rather than
+printing.
 
 Each bridge retains separate script globals for each destination protocol and
 source URL, independently of its connection timeout settings. Compilation resolves

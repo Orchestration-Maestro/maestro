@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-tui = { path = "../maestro-tui" }
+maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 
 [dev-dependencies]
 serde = { version = "=1.0.229", features = ["derive"] }

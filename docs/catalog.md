@@ -56,6 +56,9 @@ model; custom-model fields take precedence. Omitted custom metadata uses the ID
 as name, text input, no reasoning, zero prices, a 128000 context window and a
 16384 output limit.
 
+The `modelOverrides` of a provider also apply to the models an extension registers for it,
+and their `headers` are merged over the registered model's own.
+
 Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
 explicit thinking nulls remain null. Compatibility overlays merge a router or
@@ -193,6 +196,11 @@ and model-header sources at their later consuming phases.
 ## Authentication metadata
 
 `has_configured_auth` checks credential presence then configured key presence.
+Cloudflare API-key sources also require an account ID and, for AI Gateway, a
+gateway ID; missing or empty stored IDs fall back independently to the environment.
+Stored OAuth credentials with a registered OAuth handler remain available on
+presence alone, without account lookup, key extraction or refresh. Account
+configuration is still checked at request time.
 `get_available` returns a separate list of shared descriptors, preserving selected
 slot order and duplicates. `get_provider_auth_status` prefers credential metadata,
 otherwise describes a nonempty configured command, environment variable or literal key.

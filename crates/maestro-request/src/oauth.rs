@@ -2,6 +2,15 @@
 use crate::types::JsonObject;
 use serde::{Deserialize, Serialize};
 
+/// Proof key and its SHA-256 challenge.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Pkce {
+    /// Unpadded URL-safe Base64 of 32 secure random bytes.
+    pub verifier: String,
+    /// Unpadded URL-safe Base64 of the verifier text's SHA-256 digest.
+    pub challenge: String,
+}
+
 /// Token data with provider-specific extension fields.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OAuthCredentials {

@@ -134,12 +134,13 @@ It adds no runtime dependency. The BSD-3-Clause attribution is retained in
 
 ## Search program acquisition
 
-Native `maestro-tools` uses `zip =9.0.3` (MIT), default features disabled,
+Native `maestro-tools` uses `zip =9.0.5` (MIT), default features disabled,
 with `deflate-flate2`, and `owo-colors =4.2.1` (MIT, no optional features).
 Tar extraction stays the system `tar` command. HTTP uses the existing models
 transport rather than a second client. The shared
 [archive closure](document-formats.md) retains the spreadsheet parser's deflate
-features; the direct tool edge adds no codecs.
+features; the direct tool edge adds no codecs. ZIP installation uses
+`ZipArchive` for extraction, with no handoff to a streaming ZIP reader.
 
 Default ZIP extraction strips SUID, SGID and sticky bits, rejects symlink targets
 that escape the extraction destination (including through an intermediate

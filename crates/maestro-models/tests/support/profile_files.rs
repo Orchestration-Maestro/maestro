@@ -4,7 +4,6 @@
 use std::fmt::Write as _;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use crate::TestResult;
 use crate::profile_credentials::{Input, LoginCache, Toggle};
@@ -19,24 +18,6 @@ const LOGIN_SESSION: &str = "arn:aws:iam::123456789012:user/controlled";
 const LOGIN_CACHE: &str = "aa01d9c4877a85c7815b4f59b8b2fe0920e856d4abfbb70f5354a6f6932d7327.json";
 /// Body of a throwaway P-256 key; the armor lines are added when a cache is written.
 const LOGIN_KEY_BODY: &str = "MHcCAQEEIJKAC0XipkXMOTC/Hd1cno0PhBaJz1utsrH8KYnENayuoAoGCCqGSM49\nAwEHoUQDQgAEspyh2xH6X8yuVvVwXgMHhyBgXjQ+zzb9EV3rELvy4ok1j6rpc4I7\ntaOcUSE9wGl1wkddcgKdEg0RQeiTK/hatQ==\n";
-
-/// The credential process: counts each run, then answers as its first argument says.
-const PROCESS: &str = r#"#!/bin/sh
-echo run >> "$(dirname "$0")/process-count"
-runs=$(wc -l < "$(dirname "$0")/process-count")
-case "$1" in
-fail) exit 7 ;;
-once) if [ "$runs" -eq 1 ]; then exit 7; fi ;;
-invalid_json) printf broken; exit 0 ;;
-esac
-version=1
-if [ "$1" = wrong_version ]; then version=2; fi
-secret='"SecretAccessKey":"controlled-secret",'
-if [ "$1" = missing_key ]; then secret=''; fi
-expiry=''
-if [ "$1" = expired ]; then expiry=',"Expiration":"2000-01-01T00:00:00Z"'; fi
-printf '{"Version":%s,"AccessKeyId":"process-key",%s"SessionToken":"process-token"%s}' "$version" "$secret" "$expiry"
-"#;
 
 /// A row's directory, removed when dropped.
 pub struct Workdir(maestro_test_directory::Scratch);
@@ -53,16 +34,10 @@ impl Drop for Workdir {
     }
 }
 
-/// Run `install` so the script is executable without this process ever holding it open.
-fn install_script(directory: &Path) -> TestResult {
-    let source = directory.join("process-source");
-    std::fs::write(&source, PROCESS)?;
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(&source)
-        .arg(directory.join("process"))
-        .status()?;
-    assert!(status.success(), "install failed");
+/// Install the prepared credential process, which counts its runs beside itself.
+fn install_process(directory: &Path) -> TestResult {
+    use maestro_test_process::credentials::{Scenario, install};
+    install(&directory.join("process"), Scenario::AwsProcess)?;
     Ok(())
 }
 
@@ -85,7 +60,7 @@ impl Workdir {
     fn write(&self, input: &Input) -> TestResult {
         std::fs::write(self.file("token"), "controlled-web-token")?;
         std::fs::write(self.file("process-count"), "")?;
-        install_script(self.0.path())?;
+        install_process(self.0.path())?;
         if crate::profile_credentials::input_has_cache(input) {
             self.write_sso_cache(input)?;
         }

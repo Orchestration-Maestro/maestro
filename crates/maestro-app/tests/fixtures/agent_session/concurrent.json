@@ -36,16 +36,20 @@
       "streaming": false,
       "signal_aborted": true,
       "users": [
-        "First message"
+        "First message",
+        "Steering message"
       ],
       "assistants": [
-        ""
+        "",
+        "Steered"
       ],
       "roles": [
         "user",
+        "assistant",
+        "user",
         "assistant"
       ],
-      "calls": 1
+      "calls": 2
     }
   },
   "follow_up": {
@@ -61,16 +65,20 @@
       "streaming": false,
       "signal_aborted": true,
       "users": [
-        "First message"
+        "First message",
+        "Follow-up message"
       ],
       "assistants": [
-        ""
+        "",
+        "Steered"
       ],
       "roles": [
         "user",
+        "assistant",
+        "user",
         "assistant"
       ],
-      "calls": 1
+      "calls": 2
     }
   },
   "extension": {

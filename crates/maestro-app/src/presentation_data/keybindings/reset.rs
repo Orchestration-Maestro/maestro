@@ -25,7 +25,8 @@ pub struct KeybindingsReset {
 ///
 /// # Errors
 /// Returns a read, JSON object validation, backup or precommit publication error.
-/// Every error leaves the original document unchanged.
+/// An error before publication leaves the original unchanged; a publication
+/// interrupted after it starts is completed by the next writer from its recovery copy.
 pub fn reset_multiplexer_keybindings(
     agent_dir: &str,
     timestamp: u64,

@@ -1,0 +1,169 @@
+//! Offline validation of nextest's slow-test flag and hang limit.
+
+use std::{collections::BTreeMap, path::Path};
+
+use serde::Deserialize;
+use toml::{Spanned, Value};
+
+/// Seconds between slow-test flags, and the only period a limit may use.
+const SLOW_FLAG_SECONDS: u64 = 30;
+
+/// Slow-flag periods a test runs before nextest terminates it.
+const HANG_PERIODS: u64 = 4;
+
+/// Seconds a test may run before nextest terminates it.
+const HANG_LIMIT_SECONDS: u64 = SLOW_FLAG_SECONDS * HANG_PERIODS;
+
+/// Runner profiles, ignoring unrelated nextest settings.
+#[derive(Deserialize)]
+struct Config {
+    /// Named runner profiles.
+    profile: BTreeMap<String, Profile>,
+}
+
+/// Time limits at profile scope and in selected overrides.
+#[derive(Deserialize)]
+struct Profile {
+    /// Profile-wide limit, inherited when absent outside the default profile.
+    #[serde(rename = "slow-timeout")]
+    slow_timeout: Option<Spanned<Value>>,
+    /// Selected per-test limits.
+    #[serde(default)]
+    overrides: Vec<Override>,
+}
+
+/// One test selector's optional time limit.
+#[derive(Deserialize)]
+struct Override {
+    /// Exception for a test that needs more than the hang limit.
+    #[serde(rename = "slow-timeout")]
+    slow_timeout: Option<Spanned<Value>>,
+}
+
+/// Check configuration when present; synthetic workspaces need no runner config.
+pub(crate) fn check(root: &Path) -> Result<(), String> {
+    let path = root.join(".config/nextest.toml");
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("{}: {error}", path.display())),
+    };
+    validate(&text).map_err(|error| format!("{}: {error}", path.display()))
+}
+
+/// Validate the default flag and hang limit before any per-test exceptions.
+fn validate(text: &str) -> Result<(), String> {
+    let config: Config = toml::from_str(text).map_err(|error| error.to_string())?;
+    let default = config
+        .profile
+        .get("default")
+        .and_then(|p| p.slow_timeout.as_ref())
+        .and_then(|timeout| limit(timeout.get_ref()).ok());
+    if default != Some((SLOW_FLAG_SECONDS, HANG_PERIODS)) {
+        return Err(format!(
+            "default profile must set slow-timeout = {{ period = '{SLOW_FLAG_SECONDS}s', terminate-after = {HANG_PERIODS} }}: a {SLOW_FLAG_SECONDS}-second slow flag and a {HANG_LIMIT_SECONDS}-second hang limit"
+        ));
+    }
+    for (name, profile) in config.profile {
+        if let Some(timeout) = profile.slow_timeout {
+            let (period, count) = limit(timeout.get_ref())?;
+            if period != SLOW_FLAG_SECONDS || count > HANG_PERIODS {
+                return Err(format!(
+                    "profile {name} must keep the {SLOW_FLAG_SECONDS}-second slow flag and the {HANG_LIMIT_SECONDS}-second hang limit; use a per-test exception for a longer run"
+                ));
+            }
+        }
+        for timeout in profile
+            .overrides
+            .into_iter()
+            .filter_map(|entry| entry.slow_timeout)
+        {
+            exception(text, &timeout)?;
+        }
+    }
+    Ok(())
+}
+
+/// Require a per-test limit to keep the flag, exceed the hang limit and name its removal.
+fn exception(text: &str, timeout: &Spanned<Value>) -> Result<(), String> {
+    let (period, count) = limit(timeout.get_ref())?;
+    let line = text[..timeout.span().start].lines().count();
+    if period != SLOW_FLAG_SECONDS {
+        return Err(format!(
+            "line {line}: slow-timeout exception must keep the {SLOW_FLAG_SECONDS}-second slow flag (period = '{SLOW_FLAG_SECONDS}s')"
+        ));
+    }
+    if count <= HANG_PERIODS {
+        return Err(format!(
+            "line {line}: slow-timeout exception is covered by the {HANG_LIMIT_SECONDS}-second hang limit; delete it"
+        ));
+    }
+    let Some(measured) = documented(text, timeout.span().start) else {
+        return Err(format!(
+            "line {line}: slow-timeout exception needs a measured cause and issue (#NNNN) in a comment immediately above slow-timeout, with Measured over {HANG_LIMIT_SECONDS} seconds"
+        ));
+    };
+    if !covers(count, measured) || covers(count - 1, measured) {
+        return Err(format!(
+            "line {line}: slow-timeout exception must stop after the fewest whole periods that cover Measured"
+        ));
+    }
+    Ok(())
+}
+
+/// Whether `periods` slow-flag periods last at least `seconds`.
+fn covers(periods: u64, seconds: f64) -> bool {
+    u32::try_from(SLOW_FLAG_SECONDS * periods).is_ok_and(|total| f64::from(total) >= seconds)
+}
+
+/// Read a finite terminating limit as whole-second period and termination count.
+fn limit(timeout: &Value) -> Result<(u64, u64), String> {
+    let invalid = || {
+        "slow-timeout requires { period = 'Ns', terminate-after = N } with positive whole seconds and a positive termination count".to_owned()
+    };
+    let period = timeout
+        .get("period")
+        .and_then(Value::as_str)
+        .and_then(|period| period.strip_suffix('s'))
+        .and_then(|period| period.parse::<u64>().ok())
+        .filter(|period| *period > 0)
+        .ok_or_else(invalid)?;
+    let count = timeout
+        .get("terminate-after")
+        .and_then(Value::as_integer)
+        .and_then(|count| u64::try_from(count).ok())
+        .filter(|count| *count > 0)
+        .ok_or_else(invalid)?;
+    period.checked_mul(count).ok_or_else(invalid)?;
+    Ok((period, count))
+}
+
+/// Read the measured seconds, over the hang limit, from adjacent comments that also name a nonempty cause and a positive issue.
+fn documented(text: &str, start: usize) -> Option<f64> {
+    let before_line = text[..start].rfind('\n').map_or("", |end| &text[..end]);
+    let comment = before_line
+        .lines()
+        .rev()
+        .map(str::trim)
+        .take_while(|line| line.starts_with('#'))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let measured = comment
+        .split("Measured: ")
+        .nth(1)
+        .and_then(|value| value.split(';').next())
+        .and_then(|value| value.strip_suffix('s'))
+        .and_then(|value| value.parse::<f64>().ok())
+        .filter(|value| value.is_finite() && !covers(HANG_PERIODS, *value));
+    let cause = comment
+        .split("cause: ")
+        .nth(1)
+        .and_then(|value| value.split(';').next())
+        .is_some_and(|value| !value.trim().is_empty());
+    let issue = comment.split_whitespace().any(|word| {
+        word.strip_prefix('#')
+            .and_then(|number| number.parse::<u64>().ok())
+            .is_some_and(|number| number > 0)
+    });
+    measured.filter(|_| cause && issue)
+}

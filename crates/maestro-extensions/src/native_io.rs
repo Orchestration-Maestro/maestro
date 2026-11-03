@@ -108,13 +108,16 @@ pub trait Response {
 }
 /// Application-supplied native effects available to component resources.
 pub trait NativeIo {
-    /// Atomically publishes bytes, preserving existing permissions.
+    /// Saves bytes in place, preserving native identity and existing permissions.
     ///
-    /// New files use `mode`; success carries an optional durability warning.
+    /// Unix creation applies `mode` filtered by umask before writing bytes.
+    /// Success carries an optional durability or recovery-cleanup warning.
     /// Final symbolic links are followed, including dangling targets.
+    /// Unlocked readers may observe partial bytes during a save.
     ///
     /// # Errors
-    /// Returns the native failure before publication.
+    /// Returns native save failures. An interrupted write is completed from its
+    /// recovery record by the next coordinated writer.
     fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>>;
     /// Reads native Unix permission bits, including file type bits.
     ///

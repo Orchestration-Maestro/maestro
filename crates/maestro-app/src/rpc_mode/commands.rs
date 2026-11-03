@@ -2,6 +2,7 @@
 //! shape.
 use super::RpcRecord;
 use super::connection::{Connection, SessionConnection, write_to};
+use super::output::Attempt;
 use crate::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptOptions};
 use crate::rpc_types::{
     RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
@@ -9,13 +10,14 @@ use crate::rpc_types::{
     RpcSessionState, RpcThinkingLevel, workspace, workspace_schema,
 };
 use crate::utils::lock::read;
+use maestro_daemon::{api::request_changes_ui, logging};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};
 use maestro_models::ImageContent;
 use maestro_session::Presence;
 use maestro_session::messages::UserMessageDelivery;
 use maestro_session::session_manager::ReadonlySessionManager;
-use std::{cell::Cell, rc::Rc, sync::Arc};
+use std::{cell::Cell, io, rc::Rc, sync::Arc};
 
 /// How a handled record is answered.
 pub(super) enum Reply {
@@ -121,7 +123,7 @@ impl SessionConnection {
             Command::ExportHtml { output_path } => self.export_html(output_path.as_deref())?,
             Command::SwitchSession { session_path } => self.switch_session(&session_path).await?,
             Command::Fork { entry_id } => self.fork(&entry_id).await?,
-            other => read_or_apply(&session, &other),
+            other => read_or_apply(&session, &other)?,
         };
         Ok(Answer::Data(data))
     }
@@ -292,21 +294,42 @@ impl Connection {
                 command: Some(command),
             }));
         };
+        let request_id = id.clone().unwrap_or_default();
+        let changes_ui = request_changes_ui(&workspace_command);
+        logging::api_request_started(&request_id, &command, changes_ui);
         let connection = Rc::downgrade(self);
         let events = Rc::new(move |event: workspace_schema::EventData| {
             write_to(&connection, RpcRecord::WorkspaceEvent(&event))
         });
-        let (attempted, write_complete) = tokio::sync::oneshot::channel();
+        let (complete, write_complete) = tokio::sync::oneshot::channel();
         let result = workspace
             .execute(workspace_command, events, write_complete)
             .await;
+        let outcome = response_outcome(&result);
+        let method = command.clone();
+        let receipt = Box::new(move |written: &io::Result<()>| match written {
+            Ok(()) => logging::api_request_completed(&request_id, &method, outcome, changes_ui),
+            Err(error) => logging::api_request_failed(&request_id, &method, &error.to_string()),
+        });
         let response = RpcResponse::Workspace(Box::new(workspace::RpcResponse {
             id,
             command,
             result,
         }));
+        let attempted = Attempt { complete, receipt };
         drop(self.send(RpcRecord::Response(&response), Some(attempted)));
         Reply::Handled(None)
+    }
+}
+
+/// How a request's log classifies its result: by its success and failure code alone.
+fn response_outcome(
+    result: &Result<workspace_schema::ResponseResult, workspace_schema::ErrorBody>,
+) -> &'static str {
+    match result {
+        Ok(_) => "ok",
+        Err(error) if error.code == "timeout" => "timeout",
+        Err(_) => "error",
     }
 }
 
@@ -320,40 +343,39 @@ fn set_session_name(session: &AgentSession, name: &str) -> Result<Answer, Failur
     Ok(Answer::Data(RpcData::Empty))
 }
 
-/// Applies a setting or reads the session for a command that cannot fail; a command
-/// answered elsewhere applies nothing.
-fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> RpcData {
+/// Applies a setting or reads the session; commands answered elsewhere apply nothing.
+fn read_or_apply(session: &AgentSession, command: &RpcSessionCommand) -> Result<RpcData, Failure> {
     use RpcSessionCommand as Command;
     match *command {
-        Command::SetSteeringMode { mode } => session.set_steering_mode(mode),
-        Command::SetFollowUpMode { mode } => session.set_follow_up_mode(mode),
-        Command::SetAutoCompaction { enabled } => session.set_auto_compaction_enabled(enabled),
-        Command::SetAutoRetry { enabled } => session.set_auto_retry_enabled(enabled),
+        Command::SetSteeringMode { mode } => session.set_steering_mode(mode)?,
+        Command::SetFollowUpMode { mode } => session.set_follow_up_mode(mode)?,
+        Command::SetAutoCompaction { enabled } => session.set_auto_compaction_enabled(enabled)?,
+        Command::SetAutoRetry { enabled } => session.set_auto_retry_enabled(enabled)?,
         Command::AbortRetry => session.abort_retry(),
         Command::AbortBash => session.abort_bash(),
         Command::GetForkMessages => {
-            return RpcData::ForkMessages(RpcForkMessages {
+            return Ok(RpcData::ForkMessages(RpcForkMessages {
                 messages: session.get_user_messages_for_forking(),
-            });
+            }));
         }
         Command::GetLastAssistantText => {
-            return RpcData::LastAssistantText(RpcLastAssistantText {
+            return Ok(RpcData::LastAssistantText(RpcLastAssistantText {
                 text: session
                     .get_last_assistant_text()
                     .map_or(Presence::Missing, Presence::Present),
-            });
+            }));
         }
         Command::GetMessages => {
-            return RpcData::Messages(RpcMessages {
+            return Ok(RpcData::Messages(RpcMessages {
                 messages: session.messages(),
-            });
+            }));
         }
         Command::GetCommands => {
-            return RpcData::Commands(RpcCommandList {
+            return Ok(RpcData::Commands(RpcCommandList {
                 commands: session.get_commands(),
-            });
+            }));
         }
         _ => {}
     }
-    RpcData::Empty
+    Ok(RpcData::Empty)
 }
