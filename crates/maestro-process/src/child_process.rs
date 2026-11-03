@@ -362,8 +362,8 @@ async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
 /// and gives empty bytes for each abandoned stream; completed streams keep retained bytes.
 /// [`OutputMode::Discard`] also drops stderr bytes retained by an earlier wait.
 /// A `post_exit_grace` ends the wait that long after the exit with retained
-/// bytes; without one the wait ends at the exit and both end-of-file
-/// events. The future is dropped when this function returns.
+/// bytes, after reading what the pipes already hold; without one the wait ends at
+/// the exit and both end-of-file events. The future is dropped when this function returns.
 ///
 /// With `on_data`, newly consumed chunks go synchronously to the sink instead of
 /// retained output, including stderr regardless of [`OutputMode`]. Earlier

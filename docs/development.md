@@ -34,7 +34,9 @@ unstaged.
 Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
 no crates. They never widen a mixed change's selection. With no staged crate, the
 hook skips formatting and Clippy. The full conventions suite runs only for staged
-paths under `crates/maestro-test-conventions/`, guarding the checker itself.
+paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
+runs it as `just test-conventions`, which prepares the native fixture the probes
+install and then runs the suite with nextest.
 Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
 the browser entry is present, guarding targets outside native Clippy.
 
@@ -612,6 +614,33 @@ program uses only the common peer. Check both programs for unused support:
 cargo clippy -p maestro-models --all-targets --locked -- -D warnings
 ```
 
+### TLS fixture certificates
+
+The provider tests trust fixed certificates under
+`crates/maestro-models/tests/fixtures/`. They are committed data, and no script or
+certificate library issues them. Each one expires on 2126-10-18, so none of them
+lapses during a test run. The three server-side certificates start on 2019-06-01,
+before 2019-07-01, because Apple's TLS policy refuses a server certificate issued on
+or after that date that is valid for more than 825 days. The client pair starts on
+2026-10-17.
+
+| Files | Subject | Made as |
+| --- | --- | --- |
+| `socks-tls/cert.pem`, `cert.der`, `key.der` | `CN=destination.invalid`, names `destination.invalid` and `localhost` | Self-signed server certificate over the committed key. It is its own trust anchor. |
+| `cloud-authentication/server-ca.pem` | `CN=Controlled Maestro ADC server authority` | Self-signed authority, `CA:TRUE`, key usage `keyCertSign` and `cRLSign`. Its key is not kept. |
+| `cloud-authentication/server.pem`, `server-key.der` | `CN=localhost`, names `localhost` and `127.0.0.1` | Server certificate over the committed key, signed by the server authority. |
+| `cloud-authentication/ca.pem`, `client.pem`, `client-key.der` | `CN=Controlled Maestro ADC CA`, `CN=Controlled ADC Client` | Left as issued: the recorded chain hashes depend on them. |
+
+The server certificates carry `serverAuth` and `digitalSignature, keyEncipherment`
+with `CA:FALSE`, signed with SHA-256 and a random serial.
+
+To replace the SOCKS certificate, issue a new self-signed certificate over the same
+committed key with the subject and names above, then commit the PEM and DER forms
+together. To replace the cloud server certificate, make a new authority key and
+re-issue `server-ca.pem` and `server.pem` together, because the authority key behind
+the committed `server-ca.pem` is not kept. Keep the 2019-06-01 start and the 2126
+expiry on all three server-side certificates.
+
 ### Code scanning
 
 Open the repository's **Security > Code scanning** page to inspect CodeQL alerts.
@@ -863,7 +892,13 @@ copy of the example has, and writes the component paths to
 `NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
-or compile pass. Archived runs
+or compile pass. On Linux that cache belongs to the run alone: the setup queries and fills
+`component-cache` beside the profile directory and exports it as `XDG_CACHE_HOME`, so the
+tests read the code the setup warmed. The engine prunes its user cache by age and size
+from every process that uses it; with a private cache, other builds on the same host
+cannot evict the warmed code while a long run is still going. macOS and Windows ignore
+`XDG_CACHE_HOME`, so their runs warm and read the engine's own cache directory and share
+it with other builds. Archived runs
 require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. Archive strictness
@@ -973,9 +1008,10 @@ The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component in one Cargo invocation, so Cargo
 compiles them in parallel, warms their Wasmtime compilation cache
-in the default user cache on up to four threads and exports each path to the tests'
-processes. Component contents, compiler settings and CPU features still determine
-cache compatibility.
+in the engine's cache (on Linux the run's own `component-cache` beside the
+profile directory) on up to four threads and exports each path to the tests' processes.
+Component contents, compiler settings and CPU features still determine cache
+compatibility.
 The shared component builder resolves these source-marked paths before invoking
 Cargo. The component build removes `RUSTC_WRAPPER`, where the coverage tool puts its
 instrumenting wrapper, and keeps `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI
@@ -1252,36 +1288,61 @@ product launches by name. Install the artifact under the name the product uses,
 then write `command` on the first line of `<alias>.fixture` followed by a JSON
 object whose `scenario` selects one finite behaviour. The fixture parses the whole
 record before any effect and rejects an unknown scenario or field, including in the
-`labelled` and `package` scenarios that declare no fields of their own.
+`labelled`, `stdio` and `package` scenarios that declare no fields of their own.
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, `"SIGKILL"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `split` writes each standard output byte on its own, so a reader must reassemble split UTF-8. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
+| `report` | `fields` lists what to print, joined by one bar in that order: `{"variable": "NAME"}` for a variable that reads empty when unset, `"working-directory"`, `{"operand": N}` for one operand by position, and `"input"` for the number of bytes standard input held. |
+| `stdio` | Prints every operand in angle brackets, `out-<invoked name>`, one line of input as `stdin:<line>` and the working directory on standard output, and `err-<invoked name>` on standard error. |
+| `npm` | Answers package queries: `view` prints the optional `view` field, `root` prints the optional `root` field, and `install` requires `install.argument` as its second operand before writing `install.path` with `install.contents`. Optional `log` records each invocation like `argv_log`. An unrecorded query or any other command exits 1. |
+| `hold` | Writes `"ready"` to optional `ready`, reads one byte from the `permit` FIFO, then writes `stdout`, `stderr` and optional `append`. Optional `late` names a FIFO read before the permit, for a writer that opened it first. Optional `terminate` appends and exits 0 when SIGTERM arrives, so only a termination signal ends the process after the gate. It drains standard input first, which ends when the process that started it exits. |
+| `holder` | Starts the program named by `descendant` with a shared input pipe, writes `stdout` and `stderr`, and exits at once. The descendant receives end-of-input when the holder ends, so it runs after it, and it keeps the inherited streams open until it finishes. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `hold-hangup` | Requires one socket path. Registers the hangup, prints `ready` on a line of its own, and when the hangup arrives writes `h` to the socket and runs on until terminated. |
+| `await-release` | Requires one socket path. Writes `w` to it, then ends once it receives one byte. |
+| `report-environment` | Prints `seen:<ROLE>\|<MAESTRO_PANE_ID>\|<working directory>` on a line of its own, then runs on until terminated. |
+| `metadata` | Requires `metadata` first and fails anything else before any effect. Reads and prints the file named by `declared` when an operand is `--no-deps`, and the file named by `resolved` otherwise. The files are read on each run, so a test rewrites them between runs. Optional `argv_log` (`path`, `mark`) appends the invocation as `output` does. |
+| `forward` | Appends `marker`, then replaces itself with `program`, which receives the untouched operands. |
 | `prefixed` | Requires `--prefix` and a prefix operand first. For `root`, writes the prefix followed by `suffix` and a newline. Every other invocation appends its operands to `log`, one per line. |
 
-A controlled package command for the package manager settings records its
-acquisitions without a package manager:
+Use `install_command(alias, record)` to copy the artifact and write its sibling
+`.fixture` record, then configure the alias as the command the product launches:
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
     let directory = maestro_test_directory::Scratch::new()?;
-    let alias = directory.path().join("controlled-npm");
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
-    let mut record = alias.clone().into_os_string();
-    record.push(".fixture");
-    std::fs::write(record, "command\n{\"scenario\":\"package\"}")?;
+    let alias = directory.path().join("npm");
+    maestro_test_process::install_command(
+        &alias,
+        "{\"scenario\":\"npm\",\"view\":\"\\\"2\\\"\",\"root\":\"/package/root\"}",
+    )?;
+    let _settings = serde_json::json!({"npmCommand": [alias.to_string_lossy()]});
     Ok(())
 }
 ```
 
 Keep each alias in a test's disposable directory and pass its absolute path as the
 configured command. The stand-in inherits the child's environment, so the two
-`MAESTRO_*` variables above belong to the process that launches it.
+`MAESTRO_*` variables above belong to the process that launches it. A `hold`
+record may omit `ready` when no caller reads that marker. A `holder` names its
+descendant by an installed alias, whose own record gives that descendant its work.
+
+The conventions checker's architecture tests answer its Cargo metadata and compiler
+queries the same way. `Workspace::metadata_command` installs a `metadata` Cargo whose
+`declared` and `resolved` files sit in the fixture workspace, and `Workspace::command`
+installs an `output` compiler that prints a host line, fails, or prints text without
+one. Both probes run in a child, and a failing alias stands in for a compiler wrapper
+that must never run. A test that holds a writer open does so on the alias's `.fixture`
+record, because a writer on the executable itself makes the launch fail with
+`Text file busy`.
+
+The daemon's layout-apply tests launch these as pane commands. The test owns a Unix
+socket and a thread that answers `w` and `h` records: a `hold-hangup` leaf keeps its
+pane alive through the hangup, and an `await-release` leaf ends only after that
+hangup was reported, so the ordering needs no file polling.
 
 A command that only prints installation output uses the `output` scenario. The
 command-line startup tests install it as `controlled-npm` and write its two install
@@ -1356,8 +1417,9 @@ preparation effects.
 `prepare_author_component --cache-directory` reports one absolute JSON path and
 creates no environment file, component, cache entry or observation log. The fixture
 uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
-fails the query and stops setup before cache installation. The built alias has a
-sibling record. When a test exercises product copying or relocation,
+fails the query. The component setup always supplies an absolute `XDG_CACHE_HOME`, so
+the fallback is reachable only when the fixture runs outside that setup. The built alias
+has a sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
@@ -1379,6 +1441,9 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
+| `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
+| `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
 | `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |

@@ -344,59 +344,67 @@ fn archived_author_setup_aligns_executable_times() {
 }
 
 /// The bundle carries the code the setup example compiled, and a shard installs it for the
-/// modification time its executables share, in the directory the example reports.
+/// modification time its executables share, in the cache the run alone uses.
 #[test]
 fn archived_author_setup_installs_the_prepared_compiled_code() {
-    for home in [None, Some("home")] {
-        let scratch = Scratch::new().unwrap();
-        let root = scratch.path();
-        fixture(root);
-        prepare(root);
-        let staged = root.join("target/test-setup/cache");
-        assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
-        assert!(!staged.join("key.stats").exists());
-        let mut command = export_command(root, &root.join("target/test-setup"), true);
-        let value = home.map(|home| root.join(home));
-        if let Some(value) = &value {
-            command.env_remove("XDG_CACHE_HOME").env("HOME", value);
-        }
-        let output = command.output().unwrap();
-        assert_success(&output);
-        let cache = value.map_or_else(|| root.join("cache-home"), |home| home.join(".cache"));
-        let milliseconds =
-            fs::metadata(root.join("target/debug/examples/prepare_author_component"))
-                .unwrap()
-                .modified()
-                .unwrap()
-                .duration_since(at(0))
-                .unwrap()
-                .as_millis();
-        let installed = cache.join(format!("wasmtime/modules/wasmtime-fixture-{milliseconds}"));
-        assert_eq!(
-            fs::read_to_string(installed.join("key")).unwrap(),
-            "compiled"
-        );
-        assert!(!installed.join("key.stats").exists());
-    }
-}
-
-/// A relative `HOME` without an absolute XDG cache stops setup before cache installation.
-#[test]
-fn relative_home_stops_author_setup_before_installation() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
     prepare(root);
-    let mut command = export_command(root, &root.join("target/test-setup"), true);
-    command.env_remove("XDG_CACHE_HOME").env("HOME", "home");
+    let staged = root.join("target/test-setup/cache");
+    assert_eq!(fs::read_to_string(staged.join("key")).unwrap(), "compiled");
+    assert!(!staged.join("key.stats").exists());
+    assert_success(&export(root, &root.join("target/test-setup"), true));
+    let milliseconds = fs::metadata(root.join("target/debug/examples/prepare_author_component"))
+        .unwrap()
+        .modified()
+        .unwrap()
+        .duration_since(at(0))
+        .unwrap()
+        .as_millis();
+    let installed = root.join(format!(
+        "target/component-cache/wasmtime/modules/wasmtime-fixture-{milliseconds}"
+    ));
+    assert_eq!(
+        fs::read_to_string(installed.join("key")).unwrap(),
+        "compiled"
+    );
+    assert!(!installed.join("key.stats").exists());
+}
 
-    let output = command.output().unwrap();
-
-    assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("cache directory query failed"));
-    assert!(!root.join("nextest-env").exists());
-    assert!(!root.join("home").exists());
-    assert!(!root.join("cache-home").exists());
+/// The run's compiled code lives in a cache that only the run uses, which the tests inherit, so
+/// another process pruning the shared user cache cannot evict what the setup warmed.
+#[test]
+fn author_setup_warms_a_cache_only_the_run_uses() {
+    for archived in [true, false] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        fixture(root);
+        let prepared = root.join("target/test-setup");
+        let output = if archived {
+            prepare(root);
+            export(root, &prepared, true)
+        } else {
+            let mut command = shard_command(setup_command(), root, &prepared, false);
+            command.env_remove("TEST_PREPARE_OUTPUT");
+            command.output().unwrap()
+        };
+        assert_success(&output);
+        let private = root.join("target/component-cache");
+        let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
+        assert!(
+            environment
+                .lines()
+                .any(|line| line == format!("XDG_CACHE_HOME={}", private.display())),
+            "archived {archived}: {environment}"
+        );
+        assert!(
+            !root.join("cache-home").exists(),
+            "archived {archived}: the shared user cache was written"
+        );
+        let namespaces = fs::read_dir(private.join("wasmtime/modules")).unwrap();
+        assert_eq!(namespaces.count(), 1, "archived {archived}");
+    }
 }
 
 /// An archived shard that is given no output directory reads the bundle at `target/test-setup`.

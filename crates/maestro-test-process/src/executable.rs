@@ -49,6 +49,19 @@ pub fn install_executable(artifact: &Path, destination: &Path) -> io::Result<()>
     }
 }
 
+/// Install the prepared artifact as `entry` with the `command` family's `record`.
+///
+/// The record is one JSON object naming a scenario and its fields; the installed program reads
+/// it from the sibling `.fixture` path instead of harness arguments.
+///
+/// # Errors
+///
+/// Returns a missing preparation variable, a failed installation or a failed record write. The
+/// caller creates the entry's parent directory.
+pub fn install_command(entry: &Path, record: &str) -> io::Result<()> {
+    install_recorded(entry, "command", record)
+}
+
 /// Install the prepared artifact as `entry` and write its fixture family and scenario record.
 ///
 /// The record is the two lines `family` and `scenario` beside the alias, which the installed

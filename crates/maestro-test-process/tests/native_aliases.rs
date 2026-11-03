@@ -288,10 +288,11 @@ fn malformed_command_records_have_no_partial_effects() {
         json!({"scenario": "unknown"}),
         json!({"scenario": "package", "unknown": true}),
         json!({"scenario": "labelled", "unknown": true}),
+        json!({"scenario": "stdio", "unknown": true}),
     ];
     for (field, value) in [
         ("code", json!(256)),
-        ("signal", json!("SIGKILL")),
+        ("signal", json!("SIGUSR1")),
         ("stdout", json!([256])),
     ] {
         let mut record = output.clone();
@@ -318,6 +319,446 @@ fn malformed_command_records_have_no_partial_effects() {
         assert!(run.stdout.is_empty());
         assert!(!sentinel.exists(), "partial effects for {record}");
     }
+}
+
+/// The metadata stand-in reads its documents when it runs and answers only the metadata operation.
+#[cfg(unix)]
+#[test]
+fn metadata_stand_in_serves_declared_and_resolved_documents_per_run() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let declared = root.path().join("declared.json");
+    let resolved = root.path().join("resolved.json");
+    let log = root.path().join("order");
+    let record = json!({
+        "scenario": "metadata",
+        "declared": declared,
+        "resolved": resolved,
+        "argv_log": {"path": log, "mark": "cargo"}
+    });
+    let cargo = command_alias(root.path(), "cargo", &record);
+    let run = |operands: &[&str]| Command::new(&cargo).args(operands).output().unwrap();
+    for (document, operands, expected) in [
+        (
+            "first",
+            &["metadata", "--no-deps", "--offline"][..],
+            &b"first"[..],
+        ),
+        ("second", &["metadata", "--no-deps"][..], b"second"),
+        (
+            "third",
+            &["metadata", "--filter-platform", "x"][..],
+            b"third",
+        ),
+    ] {
+        let target = if operands.contains(&"--no-deps") {
+            &declared
+        } else {
+            &resolved
+        };
+        std::fs::write(target, document).unwrap();
+        let output = run(operands);
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected);
+    }
+    // Another operation is refused without output, and only served runs are logged.
+    let refused = run(&["build"]);
+    assert!(!refused.status.success());
+    assert!(refused.stdout.is_empty());
+    assert_eq!(
+        std::fs::read(&log).unwrap(),
+        b"cargo\0metadata\0--no-deps\0--offline\0cargo\0metadata\0--no-deps\0cargo\0metadata\0--filter-platform\0x\0"
+    );
+}
+
+/// A metadata record that omits a document or names an unknown field is rejected before it serves or logs.
+#[cfg(unix)]
+#[test]
+fn malformed_metadata_records_serve_and_log_nothing() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let declared = root.path().join("declared.json");
+    std::fs::write(&declared, "served").unwrap();
+    let log = root.path().join("order");
+    let argv_log = json!({"path": log, "mark": "cargo"});
+    for record in [
+        json!({"scenario": "metadata", "declared": declared, "argv_log": argv_log}),
+        json!({
+            "scenario": "metadata",
+            "declared": declared,
+            "resolved": declared,
+            "argv_log": argv_log,
+            "unknown": true
+        }),
+    ] {
+        let cargo = command_alias(root.path(), "cargo", &record);
+        // `--no-deps` selects the declared document, which exists, so only a
+        // rejected record keeps the stream and the log empty.
+        let run = Command::new(cargo)
+            .args(["metadata", "--no-deps"])
+            .output()
+            .unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty(), "served {record}");
+        assert!(!log.exists(), "logged {record}");
+    }
+}
+
+/// The held leaf reports readiness, takes the hangup without ending, and tells the socket.
+#[cfg(unix)]
+#[test]
+fn hold_hangup_reports_ready_then_signals_the_socket_and_runs_on() {
+    use std::os::unix::net::UnixListener;
+    use std::os::unix::process::ExitStatusExt;
+    let root = Scratch::new().unwrap();
+    let socket = root.path().join("hangup");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let holder = command_alias(
+        root.path(),
+        "holder",
+        &serde_json::json!({"scenario": "hold-hangup"}),
+    );
+    let mut child = Command::new(holder)
+        .arg(&socket)
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut line = String::new();
+    output.read_line(&mut line).unwrap();
+    output.read_line(&mut line).unwrap();
+    assert_eq!(line, "\nready\n");
+    let pid = rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap();
+    rustix::process::kill_process(pid, rustix::process::Signal::HUP).unwrap();
+    let mut told = [0];
+    listener.accept().unwrap().0.read_exact(&mut told).unwrap();
+    assert_eq!(told, *b"h");
+    // The hangup did not end it: only the termination does.
+    assert!(child.try_wait().unwrap().is_none());
+    child.kill().unwrap();
+    assert_eq!(child.wait().unwrap().signal(), Some(9));
+}
+
+/// The waiting leaf announces itself and ends only once the socket releases it.
+#[cfg(unix)]
+#[test]
+fn await_release_ends_only_after_the_socket_sends_a_byte() {
+    use std::os::unix::net::UnixListener;
+    let root = Scratch::new().unwrap();
+    let socket = root.path().join("release");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let waiter = command_alias(
+        root.path(),
+        "waiter",
+        &serde_json::json!({"scenario": "await-release"}),
+    );
+    let mut child = Command::new(waiter).arg(&socket).spawn().unwrap();
+    let (mut stream, _) = listener.accept().unwrap();
+    let mut announced = [0];
+    stream.read_exact(&mut announced).unwrap();
+    assert_eq!(announced, *b"w");
+    assert!(child.try_wait().unwrap().is_none());
+    stream.write_all(b"x").unwrap();
+    assert!(child.wait().unwrap().success());
+}
+
+/// The environment report names the role, pane and directory the product launched it with.
+#[cfg(unix)]
+#[test]
+fn report_environment_names_role_pane_and_directory_then_runs_on() {
+    let root = Scratch::new().unwrap();
+    let reporter = command_alias(
+        root.path(),
+        "reporter",
+        &serde_json::json!({"scenario": "report-environment"}),
+    );
+    let mut child = Command::new(reporter)
+        .current_dir(root.path())
+        .env("ROLE", "tests")
+        .env_remove("MAESTRO_PANE_ID")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut text = String::new();
+    output.read_line(&mut text).unwrap();
+    output.read_line(&mut text).unwrap();
+    assert_eq!(
+        text,
+        format!("\nseen:<tests>|<>|<{}>\n", root.path().display())
+    );
+    assert!(child.try_wait().unwrap().is_none());
+    child.kill().unwrap();
+    child.wait().unwrap();
+}
+
+/// Coordination scenarios refuse a missing or extra socket path before any effect.
+#[cfg(unix)]
+#[test]
+fn coordination_scenarios_require_exactly_one_socket_operand() {
+    let root = Scratch::new().unwrap();
+    for (name, scenario) in [("holder", "hold-hangup"), ("waiter", "await-release")] {
+        let path = command_alias(
+            root.path(),
+            name,
+            &serde_json::json!({"scenario": scenario}),
+        );
+        for operands in [vec![], vec!["a", "b"]] {
+            let output = Command::new(&path).args(operands).output().unwrap();
+            assert!(!output.status.success(), "{name}");
+            assert!(output.stdout.is_empty(), "{name}");
+        }
+    }
+}
+
+/// Install one alias with a `command` family record.
+#[cfg(unix)]
+fn command_alias(root: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
+    let path = root.join(name);
+    maestro_test_process::install_command(&path, &record.to_string()).unwrap();
+    path
+}
+
+/// A report prints the recorded values in order, and counts the input it was given.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_reports_values_directory_operands_and_input() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let alias = command_alias(
+        root.path(),
+        "report",
+        &json!({
+            "scenario": "report",
+            "fields": [
+                {"variable": "MTP_VALUE"},
+                "working-directory",
+                {"operand": 0},
+                "input",
+            ]
+        }),
+    );
+    let output = Command::new(&alias)
+        .arg("literal argument")
+        .env("MTP_VALUE", "chosen")
+        .current_dir(root.path())
+        .output()
+        .unwrap();
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!(
+            "chosen|{}|literal argument|0",
+            root.path().to_str().unwrap()
+        )
+    );
+    assert!(output.status.success());
+}
+
+/// The stdio scenario stands in for a script that reports operands, name, input and directory.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_prints_argv_name_line_and_directory() {
+    let root = Scratch::new().unwrap();
+    let alias = command_alias(
+        root.path(),
+        "named",
+        &serde_json::json!({"scenario": "stdio"}),
+    );
+    let mut child = Command::new(&alias)
+        .args(["x  y", "z"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"line1\nline2\n")
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!(
+            "<x  y><z>out-named\nstdin:line1\n{}\n",
+            std::env::current_dir().unwrap().display()
+        )
+    );
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "err-named\n".to_owned()
+    );
+}
+
+/// The npm scenario answers the package queries from its own record.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_answers_package_queries() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let manifest = root.path().join("manifest");
+    let calls = root.path().join("calls");
+    let alias = command_alias(
+        root.path(),
+        "npm",
+        &json!({
+            "scenario": "npm",
+            "view": "\"2\"",
+            "root": "/package/root",
+            "install": {
+                "argument": "example@latest",
+                "path": manifest,
+                "contents": "{\"version\":\"2\"}"
+            },
+            "log": {"path": calls, "mark": "call"}
+        }),
+    );
+    let run = |args: &[&str]| {
+        String::from_utf8(Command::new(&alias).args(args).output().unwrap().stdout).unwrap()
+    };
+    assert_eq!(
+        run(&["view", "example", "version", "--json"]),
+        "\"2\"".to_owned()
+    );
+    assert_eq!(run(&["root", "-g"]), "/package/root".to_owned());
+    assert_eq!(run(&["install", "example@latest", "--prefix", "x"]), "");
+    assert_eq!(
+        std::fs::read_to_string(&manifest).unwrap(),
+        "{\"version\":\"2\"}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&calls)
+            .unwrap()
+            .split('\0')
+            .collect::<Vec<_>>(),
+        [
+            "call",
+            "view",
+            "example",
+            "version",
+            "--json",
+            "call",
+            "root",
+            "-g",
+            "call",
+            "install",
+            "example@latest",
+            "--prefix",
+            "x",
+            ""
+        ]
+    );
+}
+
+/// Package queries fail when the record does not supply their answer.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_rejects_unrecorded_package_queries() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    for (name, record, admitted, denied) in [
+        (
+            "root-only",
+            json!({"scenario": "npm", "root": "/package/root"}),
+            "root",
+            "view",
+        ),
+        (
+            "view-only",
+            json!({"scenario": "npm", "view": ""}),
+            "view",
+            "root",
+        ),
+    ] {
+        let alias = command_alias(root.path(), name, &record);
+        assert!(
+            Command::new(&alias)
+                .arg(admitted)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let output = Command::new(&alias).arg(denied).output().unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+    }
+}
+
+/// A forward records its marker and then becomes the recorded program.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_forwards_to_a_real_program() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let marker = root.path().join("marker");
+    let target = command_alias(
+        root.path(),
+        "forwarded",
+        &json!({"scenario": "output", "stdout": b"forwarded\n", "stderr": [], "code": 0}),
+    );
+    let alias = command_alias(
+        root.path(),
+        "forward",
+        &json!({
+            "scenario": "forward",
+            "marker": {"path": marker, "cwd": false, "bytes": b"called"},
+            "program": target
+        }),
+    );
+    let output = Command::new(&alias).arg("ignored").output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stdout, b"forwarded\n");
+    assert_eq!(std::fs::read_to_string(marker).unwrap(), "called");
+}
+
+/// A holder ends at once while its descendant keeps the shared streams until released.
+#[cfg(unix)]
+#[test]
+fn command_stand_in_holds_streams_until_a_descendant_is_released() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let ready = root.path().join("ready");
+    let permit = root.path().join("permit");
+    assert!(
+        Command::new("mkfifo")
+            .args([&ready, &permit])
+            .status()
+            .unwrap()
+            .success()
+    );
+    let descendant = command_alias(
+        root.path(),
+        "hold",
+        &json!({
+            "scenario": "hold",
+            "ready": ready,
+            "permit": permit,
+            "stdout": b"tail",
+            "stderr": []
+        }),
+    );
+    let holder = command_alias(
+        root.path(),
+        "holder",
+        &json!({"scenario": "holder", "stdout": b"early", "stderr": [], "descendant": descendant}),
+    );
+    let mut child = Command::new(&holder)
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    assert!(child.wait().unwrap().success());
+    // The readiness marker arrives only after the parent ended, so reading it proves the order.
+    assert_eq!(std::fs::read_to_string(&ready).unwrap(), "ready");
+    std::fs::write(&permit, b"go\n").unwrap();
+    let mut held = String::new();
+    child
+        .stdout
+        .take()
+        .unwrap()
+        .read_to_string(&mut held)
+        .unwrap();
+    assert_eq!(held, "earlytail");
 }
 
 /// Malformed native-child records fail before any stream, socket or descendant effect.

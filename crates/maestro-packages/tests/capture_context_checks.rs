@@ -41,16 +41,11 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
         )
         .unwrap();
         #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let path = tools.join("wrapper");
-            std::fs::write(
-                &path,
-                format!("#!/bin/sh\nprintf '%s\\n' '{text}'\nexit {status}\n"),
-            )
-            .unwrap();
-            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
-        }
+        crate::native_support::command(
+            &tools,
+            "wrapper",
+            &crate::native_support::output(format!("{text}\n").as_bytes(), b"", status),
+        );
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
