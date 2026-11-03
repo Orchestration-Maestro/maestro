@@ -2,7 +2,7 @@
 use maestro_extensions_wasm::{
     AbortSignal, BashExecOptions, BashExecResult, BashOnData, BashOperations, BashResult,
     ExtensionAPI, ExtensionCommandContext, ExtensionEvent, ExtensionEventResult, ExtensionResult,
-    Presence, UserBashEventResult,
+    HookResult, Presence, UserBashEventResult,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -88,7 +88,7 @@ fn answer(
     kept: &Rc<RefCell<Kept>>,
     event: &mut ExtensionEvent,
     ops: BashOperations,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let config = kept.borrow().config.clone();
     if let ExtensionEvent::UserBash(event) = event {
         event.command = "edited\0雪".into();
@@ -169,7 +169,7 @@ async fn execute(
 fn control(
     kept: &Rc<RefCell<Kept>>,
     event: &mut ExtensionEvent,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let ExtensionEvent::Input(event) = event else {
         return Err("expected control input".into());
     };

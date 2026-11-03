@@ -19,6 +19,7 @@ use super::observed::Observed;
 use crate::component_adapter::{Capabilities, Exports};
 use crate::{
     Background, BackgroundTask, Extension, ExtensionAPI, ExtensionEventResult, ExtensionFuture,
+    HookFuture,
 };
 
 /// The task the witness keeps while its job runs.
@@ -29,7 +30,7 @@ fn start_job(
     api: ExtensionAPI,
     background: Background,
     slot: Slot,
-) -> ExtensionFuture<'static, Option<ExtensionEventResult>> {
+) -> HookFuture<'static, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let events = api.events();
         let work = Box::pin(async move {

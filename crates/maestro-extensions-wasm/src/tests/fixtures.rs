@@ -16,7 +16,7 @@ macro_rules! define_fixtures {
                 event: outcome.event,
                 decision: match outcome.decision {
                     guest::Decision::Returned(result) => Decision::Returned(result),
-                    guest::Decision::Failed(message) => Decision::Failed(message),
+                    guest::Decision::Failed(diagnostic) => Decision::Failed(diagnostic.message),
                 },
             }
         }

@@ -10,7 +10,7 @@ use std::{rc::Rc, time::Duration};
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    Subscription, tools::path_utils,
+    HookFuture, Subscription, tools::path_utils,
 };
 
 /// Frames in display order, one every 80 milliseconds.
@@ -55,7 +55,7 @@ fn handle(
     subscription: Subscription,
     event: &'static str,
     context: ExtensionContext,
-) -> ExtensionFuture<'static, Option<ExtensionEventResult>> {
+) -> HookFuture<'static, Option<ExtensionEventResult>> {
     Box::pin(async move {
         current.stop();
         if event == "session_shutdown" {
@@ -66,7 +66,7 @@ fn handle(
             current.start(animate(api.clone(), context));
             if let Err(error) = api.events().emit(CHANNEL, serde_json::Value::Null).await {
                 current.stop();
-                return Err(error);
+                return Err(error.into());
             }
         }
         Ok(None)

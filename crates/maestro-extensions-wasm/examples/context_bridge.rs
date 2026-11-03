@@ -424,22 +424,20 @@ fn compact(context: &maestro_extensions_wasm::ExtensionCommandContext) -> Result
 fn session_start(
     event: &mut ExtensionEvent,
     context: maestro_extensions_wasm::ExtensionContext,
-) -> ExtensionFuture<'_, Option<maestro_extensions_wasm::ExtensionEventResult>> {
+) -> maestro_extensions_wasm::HookFuture<'_, Option<maestro_extensions_wasm::ExtensionEventResult>>
+{
     Box::pin(async move {
         let ExtensionEvent::Session(SessionEvent::Start(start)) = event else {
             return Err("session-start callback received another event".into());
         };
         if let Some(result) = context_matrix::start(&context, &start.previous_session_file) {
-            return Err(serde_json::to_string(&result).map_err(|error| error.to_string())?);
+            let detail = serde_json::to_string(&result).map_err(|error| error.to_string())?;
+            return Err(detail.into());
         }
         if context.get_system_prompt()? == "canonical imports" {
-            return Err(reads::observe(&context)?.to_string());
+            return Err(reads::observe(&context)?.to_string().into());
         }
-        Err(format!(
-            "hook:{}|{}",
-            context.cwd()?,
-            context.get_system_prompt()?
-        ))
+        Err(format!("hook:{}|{}", context.cwd()?, context.get_system_prompt()?).into())
     })
 }
 

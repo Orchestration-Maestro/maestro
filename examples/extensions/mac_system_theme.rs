@@ -7,7 +7,7 @@
 )]
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    ThemeSelection,
+    HookResult, ThemeSelection,
 };
 use std::{rc::Rc, time::Duration};
 
@@ -55,14 +55,14 @@ async fn start(
     api: ExtensionAPI,
     tail: Tail,
     ctx: ExtensionContext,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     tail.stop();
     let theme = appearance(&api).await;
     ctx.ui()?.set_theme(ThemeSelection::Name(theme.into()))?;
     tail.start(Box::pin(synchronize(api.clone(), ctx, theme)));
     if let Err(error) = api.events().emit(CHANNEL, serde_json::Value::Null).await {
         tail.stop();
-        return Err(error);
+        return Err(error.into());
     }
     Ok(None)
 }
@@ -86,7 +86,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             Rc::new(move |_, _| {
                 tail.stop();
                 let result = subscription.unsubscribe();
-                Box::pin(async move { result.map(|()| None) })
+                Box::pin(async move { result.map(|()| None).map_err(Into::into) })
             }),
         )
     })

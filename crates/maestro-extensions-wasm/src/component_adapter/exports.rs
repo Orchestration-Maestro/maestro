@@ -12,7 +12,8 @@ use super::{contexts, signals};
 use crate::bindings::exports::maestro::extension::guest::{Decision, Encoded};
 use crate::loader::Extension;
 use crate::types::{
-    CommandHandler, EventData, ExtensionAPI, ExtensionHandler, ExtensionResult, WithSession,
+    CommandHandler, EventData, ExtensionAPI, ExtensionHandler, ExtensionResult, HookResult,
+    WithSession,
 };
 use crate::{ArgumentCompletions, AutocompleteItem, ShortcutHandler};
 
@@ -49,14 +50,14 @@ fn encode<T: Serialize>(value: Option<T>) -> Encoded {
 /// independently so that neither failure hides the other.
 pub(crate) fn outcome<E: Serialize, R: Serialize>(
     event: Option<E>,
-    decision: ExtensionResult<Option<R>>,
+    decision: HookResult<Option<R>>,
 ) -> EventOutcome {
     EventOutcome {
         event: encode(event),
         operations: None,
         decision: match decision {
             Ok(result) => Decision::Returned(encode(result)),
-            Err(message) => Decision::Failed(message),
+            Err(diagnostic) => Decision::Failed(crate::schema_error::to_wire(diagnostic)),
         },
     }
 }
@@ -131,7 +132,7 @@ impl<I: Imports> Exports<I> {
         let mut event = data.attach(signal)?;
         let mut decision = match callbacks::find::<ExtensionHandler>(handler) {
             Ok(handler) => handler(&mut event, contexts::context(&self.imports, ctx)).await,
-            Err(message) => Err(message),
+            Err(message) => Err(message.into()),
         };
         let edited = EventData::from(event);
         let edited = (discriminant(&edited) == kind).then_some(edited);
