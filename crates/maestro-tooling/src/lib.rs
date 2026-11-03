@@ -18,6 +18,8 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Browser export qualification with the supplied Chromium.
+pub mod browser_driver;
 /// Temporary browser-export manifest preparation and lock checks.
 mod browser_export_setup;
 /// The locked packages and the dependency graph between them.

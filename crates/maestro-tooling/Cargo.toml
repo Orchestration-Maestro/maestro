@@ -9,6 +9,15 @@ publish = false
 
 [dependencies]
 cargo_metadata = "=0.23.1"
+chromiumoxide.workspace = true
+futures-util.workspace = true
+tokio = { workspace = true, features = ["rt", "sync", "net", "io-util", "macros", "process", "fs"] }
+hyper = { workspace = true, features = ["server", "http1"] }
+hyper-util = { workspace = true, features = ["tokio"] }
+http-body-util.workspace = true
+reqwest = { workspace = true, features = ["default"] }
+base64 = { workspace = true, features = ["std"] }
+percent-encoding.workspace = true
 maestro-path = { path = "../maestro-path" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true

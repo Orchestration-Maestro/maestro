@@ -188,16 +188,18 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
 Run the retained sandbox assertions with supplied browser tools:
 
 ```sh
-export PLAYWRIGHT_MODULE=/absolute/path/to/playwright
 export CHROMIUM_PATH=/absolute/path/to/chrome
 # Put wasm-bindgen CLI 0.2.129 on PATH.
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just browser-test
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
 ```
 
-The command installs no browser tools. It requires Node >=20, Playwright 1.64.1,
-Chromium 156.0.8078.4 (supplier revision 1248), and wasm-bindgen CLI 0.2.129,
-matching the locked Rust binding. The shared workflow owns tool acquisition.
-Observed versions, checkout SHA and Cargo's emitted artifact paths are printed.
+The command installs no browser tools. It requires Chromium 156.0.8078.4
+(supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
+binding. The browser executable must be an absolute path. The shared workflow owns
+tool acquisition. Rust repository tooling drives Chromium through its one CDP
+connection using chromiumoxide 0.9.1, with default features disabled and no browser
+downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
+printed.
 
 The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
@@ -244,12 +246,11 @@ fixture document for a fresh trusted click whose composed path contains its
 `native click did not reach mounted target <id>` before waiting for the pointer
 message. An isolated frame receives its input through its own browser session:
 the driver scrolls `#target` into that document's view immediately, then sends
-move, press and release there. A frame that shares its parent's renderer keeps
-the locator click, because the pinned browser gives it no separate session. This
-keeps the containing page's coordinates out of an isolated frame's input path,
-which is where a native click used to land; it is not a hit-test-ready barrier,
-and the compositor cause of the original stall remains unknown. The check does
-not bound a native click that never completes.
+move, press and release there. A frame that shares its parent's renderer uses
+that renderer's native content quad. The driver releases lookup handles after
+success and failure, and retains attached renderer sessions only for the page's
+lifetime. Browser events route by session; export, binding and input operations
+wait for their own completion signals without command deadlines.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
 page crashes and unexpected browser disconnection fail the command. One deliberate
@@ -260,21 +261,26 @@ errors fail. Error accounting stays attached until the page closes. Browser,
 server and temporary preparation are closed or removed on both outcomes; a
 cleanup failure does not skip the other resource or replace an assertion failure.
 
-Run the driver regressions with the same supplied environment. The packaging
-regression invokes Cargo, so they use the same launcher:
+The command first runs the Rust driver regressions from the tooling crate's one
+integration target. These tests carry the reason `runs in the pinned Chromium job`;
+ordinary native runs leave them ignored and run the browser-independent input,
+resource and pixel checks. The command selects only the `browser` module, keeping
+controlled-child tests out. Run only the browser regressions with the same supplied
+executable:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
-  node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
+~/.local/bin/capped just prepare-tests
+~/.local/bin/capped cargo nextest run --locked -p maestro-tooling \
+  --run-ignored only -E 'test(/^browser::/)'
 ```
 
-The tool report page is a second witness in the same job: `analysis_page.cjs`
+The tool report page is a second witness in the same job. The Rust driver
 serves the committed report fixture and answers the page's two pinned library
-URLs from cached copies whose SHA-256 digests it checks (a missing copy is
-fetched with retries, and a mismatch fails). Any other request outside the
-script's own loopback origin is aborted and fails the run, checked after
+URLs from cached copies whose SHA-256 digests it checks. A missing copy is fetched
+with the existing three-attempt budget; a mismatch fails. Any other request outside
+the driver's loopback origin is aborted and fails the run, checked after
 navigation and again after the last observation, so the bytes the page executes
-are the bytes the cache was verified with. The script then observes what the
+are the bytes the cache was verified with. The driver then observes what the
 page paints: a row click must change the selected summary and the canvas bitmap,
 a recorded `</script>` payload must stay inert text, and bar fills, chart label
 text, heading glyphs, summary text and row borders must show the brand roles.
@@ -288,7 +294,7 @@ still depend on the canvas renderer. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
-`browser_test_crates = ["maestro-app", "maestro-web"]`.
+`browser_test_crates = ["maestro-app", "maestro-web", "maestro-tooling"]`.
 The job runs when the existing package selection includes a requested package,
 when a nonempty request changes, or for merge groups and main pushes; advisory-only
 runs skip it. Native package selection and the coverage floor stay unchanged.

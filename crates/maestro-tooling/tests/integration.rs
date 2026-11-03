@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod author_setup;
+mod browser;
 mod browser_author_build;
 mod browser_export_setup;
 mod browser_preparation;
@@ -12,6 +13,7 @@ mod date_time_data;
 mod fixture_sources_setup;
 mod native_setup;
 mod nextest_priorities;
+mod nextest_selection;
 mod prepared_setup_packages;
 mod setup_docs;
 mod shared_ci_callers;

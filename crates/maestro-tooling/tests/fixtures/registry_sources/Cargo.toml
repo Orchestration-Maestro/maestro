@@ -10,10 +10,19 @@ publish = false
 # version when the setup script vendors them. The lock holds two sha2 versions, so its requirement
 # names the series tooling uses.
 [dependencies]
+base64 = { version = "*", default-features = false, features = ["std"] }
 cargo_metadata = "*"
+chromiumoxide = { version = "*", default-features = false }
+futures-util = { version = "*", default-features = false, features = ["std", "sink"] }
+http-body-util = { version = "*", default-features = false }
+hyper = { version = "*", default-features = false, features = ["server", "http1"] }
+hyper-util = { version = "*", default-features = false, features = ["tokio"] }
+percent-encoding = "*"
+reqwest = "*"
 rustix = { version = "*", default-features = false, features = ["std", "stdio", "process"] }
 signal-hook = { version = "*", default-features = false }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 sha2 = "0.11"
+tokio = { version = "*", default-features = false, features = ["rt", "sync", "net", "io-util", "macros", "process", "fs"] }
 toml = "*"
