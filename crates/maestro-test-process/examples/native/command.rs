@@ -8,6 +8,7 @@ use std::os::unix::process::CommandExt;
 use maestro_test_process::child::{leave, read_input, variable, write_stderr, write_stdout};
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
+use signal_hook::consts::{SIGHUP, SIGTERM};
 
 /// Native termination instead of a numeric status.
 #[derive(Deserialize)]
@@ -302,8 +303,7 @@ fn remain() -> ! {
 /// socket with `h` and run on.
 fn hold_hangup(operands: &[OsString]) -> io::Result<()> {
     let path = socket_path(operands)?;
-    let (writer, mut reader) = UnixStream::pair()?;
-    signal_hook::low_level::pipe::register(signal_hook::consts::SIGHUP, writer)?;
+    let mut reader = trap(SIGHUP)?;
     write_stdout(b"\nready\n")?;
     reader.read_exact(&mut [0])?;
     UnixStream::connect(path)?.write_all(b"h")?;
@@ -320,13 +320,12 @@ fn await_release(operands: &[OsString]) -> io::Result<()> {
 
 /// Print `seen:<ROLE>|<MAESTRO_PANE_ID>|<working directory>` on its own line, then run on.
 fn report_environment() -> io::Result<()> {
-    let directory = std::env::current_dir()?;
     write_stdout(
         format!(
             "\nseen:<{}>|<{}>|<{}>\n",
             variable("ROLE").unwrap_or_default(),
             variable("MAESTRO_PANE_ID").unwrap_or_default(),
-            directory.display()
+            std::env::current_dir()?.display()
         )
         .as_bytes(),
     )?;
@@ -461,7 +460,7 @@ fn forward(marker: &Append, program: &str, operands: &[OsString]) -> io::Result<
 impl Hold {
     /// Drain the shared input, announce readiness, wait for the release and report.
     fn run(&self) -> io::Result<()> {
-        let termination = self.terminate.as_ref().map(|_| termination()).transpose()?;
+        let termination = self.terminate.as_ref().map(|_| trap(SIGTERM)).transpose()?;
         drop(read_input()?);
         if let Some(ready) = &self.ready {
             std::fs::write(ready, b"ready")?;
@@ -484,11 +483,10 @@ impl Hold {
     }
 }
 
-/// A read end that becomes readable when this process's SIGTERM handler writes one byte.
-fn termination() -> io::Result<UnixStream> {
+/// A read end that becomes readable when this process's handler for `signal` writes one byte.
+fn trap(signal: i32) -> io::Result<UnixStream> {
     let (reader, writer) = UnixStream::pair()?;
-    signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)
-        .map_err(io::Error::other)?;
+    signal_hook::low_level::pipe::register(signal, writer).map_err(io::Error::other)?;
     Ok(reader)
 }
 
