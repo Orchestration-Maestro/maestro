@@ -15,16 +15,8 @@ use tokio_tungstenite::{WebSocketStream, tungstenite::Message};
 fn sandbox_inspection_disposes_lookup_handles() {
     block_on(async {
         for outcome in ["success", "missing", "close"] {
-            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let address = listener.local_addr().unwrap();
-            let server = tokio::spawn(async move {
-                let (stream, _) = listener.accept().await.unwrap();
-                let socket = tokio_tungstenite::accept_async(stream).await.unwrap();
-                scripted(socket, outcome).await
-            });
-            let mut dispatcher = Dispatcher::connect(&format!("ws://{address}"))
-                .await
-                .unwrap();
+            let (mut dispatcher, server) =
+                connect_peer(move |socket| scripted(socket, outcome)).await;
             let mut lines = Vec::new();
             let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
             let mut page = Page::open(&mut dispatcher, "lookup", &mut lines, &expected)
@@ -115,16 +107,7 @@ fn sandbox_inspection_tracks_running_and_paused_iframe_renderers() {
 
 /// Inspect through real attachment and context events, without pre-registering the child world.
 async fn inspect_attached_iframe(waiting: bool) {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let address = listener.local_addr().unwrap();
-    let peer = tokio::spawn(async move {
-        let (stream, _) = listener.accept().await.unwrap();
-        let socket = tokio_tungstenite::accept_async(stream).await.unwrap();
-        attached_iframe(socket, waiting).await;
-    });
-    let mut dispatcher = Dispatcher::connect(&format!("ws://{address}"))
-        .await
-        .unwrap();
+    let (mut dispatcher, peer) = connect_peer(move |socket| attached_iframe(socket, waiting)).await;
     let mut lines = Vec::new();
     let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
     let mut page = Page::open(&mut dispatcher, "attached", &mut lines, &expected)
