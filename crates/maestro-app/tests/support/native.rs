@@ -1,4 +1,5 @@
 //! Controlled native command helpers.
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::child;
@@ -26,7 +27,19 @@ pub fn git(dir: &str, args: &[&str]) -> String {
 }
 
 #[cfg(unix)]
-pub use maestro_test_process::native::install_executable;
+/// Install the prepared native fixture as `name` below `directory`, selected by `record`.
+pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .map(PathBuf::from)
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    std::fs::create_dir_all(directory).expect("the alias directory is creatable");
+    let path = directory.join(name);
+    maestro_test_process::install_executable(&artifact, &path).expect("install starts");
+    let mut record_path = path.as_os_str().to_owned();
+    record_path.push(".fixture");
+    std::fs::write(record_path, format!("command\n{record}")).expect("the record is writable");
+    path
+}
 
 #[cfg(unix)]
 /// Whether this process is refused access that a mode takes away; a privileged run is not.

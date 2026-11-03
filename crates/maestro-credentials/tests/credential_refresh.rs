@@ -561,7 +561,7 @@ mod tests {
     }
 
     #[test]
-    fn refresh_publishes_before_write_is_observed() {
+    fn reread_during_refresh_write_sees_stored_records() {
         block_on(async {
             ControlledProvider::new("r8").register();
             let _cleanup = Unregister("r8".into());
@@ -579,9 +579,12 @@ mod tests {
             let observed = observed.lock().unwrap();
             assert_eq!(observed.len(), 1);
             assert!(
-                matches!(&observed[0], Some(AuthCredential::OAuth(new)) if new.access == "new")
+                matches!(&observed[0], Some(AuthCredential::OAuth(old)) if old.access == "old")
             );
             probe.before_write.lock().unwrap().take();
+            assert!(
+                matches!(storage.get("r8"), Some(AuthCredential::OAuth(new)) if new.access == "new")
+            );
         });
     }
 
@@ -747,7 +750,7 @@ mod tests {
             probe.write_fails.store(true, Ordering::SeqCst);
             storage.login("r11", callbacks.clone()).await.unwrap();
             assert!(
-                matches!(storage.get("r11"), Some(AuthCredential::OAuth(again)) if again.access == "again")
+                matches!(storage.get("r11"), Some(AuthCredential::OAuth(kept)) if kept.access == "login")
             );
             assert_eq!(storage.drain_errors()[0].to_string(), "write failed");
 
@@ -758,7 +761,7 @@ mod tests {
             probe.sync_fails.store(false, Ordering::SeqCst);
             storage.login("r11", callbacks).await.unwrap();
             assert!(
-                matches!(storage.get("r11"), Some(AuthCredential::OAuth(kept)) if kept.access == "guarded")
+                matches!(storage.get("r11"), Some(AuthCredential::OAuth(kept)) if kept.access == "login")
             );
             assert_eq!(probe.writes.lock().unwrap().len(), 1);
         });

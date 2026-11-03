@@ -21,9 +21,11 @@ mod cache;
 pub mod child;
 #[cfg(windows)]
 mod console;
+pub mod credentials;
 mod environment;
 mod error;
 mod executable;
+pub mod git_command;
 mod proof;
 pub mod rpc_peer;
 mod selection;

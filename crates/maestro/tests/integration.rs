@@ -4,6 +4,7 @@
 mod component_stdout;
 mod custom_message_provider_example;
 mod entry_routes;
+mod host_operations;
 mod model_streams;
 mod native_io;
 mod provider_payload_example;

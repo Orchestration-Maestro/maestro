@@ -10,6 +10,7 @@ Deliver crate by crate; write each crate's tickets when that crate is reached.
 
 ## Checks
 
+Install MinGW-w64 as described in [development setup](docs/development.md#setup-and-build).
 Install mise and rustup, enable mise on `PATH`, then run:
 
 ```sh
@@ -620,6 +621,10 @@ as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
 crate dependency: both extension adapters already reach the request owner through
 their declared edges.
+
+`maestro-package` is the dependency-free portable core owner of package interchange
+records below layer 0. Only packages and guest authoring may depend on it, plus
+the native feature-unifier exception. Native package effects stay in `maestro-packages`.
 
 Typed test helpers may use their type owner's non-default `test-support` feature.
 Enable it through development dependencies, including a feature-only self

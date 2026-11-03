@@ -693,4 +693,4 @@ pub fn spawn(command: Command, input: Option<Vec<u8>>) -> io::Result<std::thread
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

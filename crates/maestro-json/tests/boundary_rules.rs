@@ -382,3 +382,107 @@ fn pointer_tokens_keep_escape_order() {
     assert_eq!(maestro_json::escape_pointer_token("plain"), "plain");
     assert_eq!(maestro_json::escape_pointer_token(""), "");
 }
+
+/// A tagged family the probe asks about, standing in for the wire records that use one.
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+enum Tagged {
+    /// A named member the probe must keep.
+    Text {
+        /// A member the family requires.
+        text: String,
+    },
+    /// A second named member.
+    ToolCall {
+        /// A member the family requires.
+        id: String,
+    },
+}
+
+/// A family tagged by another member, for the member parameter.
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(tag = "role", rename_all = "camelCase")]
+enum Roled {
+    /// A named member.
+    User {
+        /// A member the family requires.
+        content: String,
+    },
+}
+
+#[test]
+fn names_asks_the_family_decoder_about_one_tag_value() {
+    use maestro_json::object::names;
+
+    assert!(names::<Tagged>("type", "text"));
+    assert!(names::<Tagged>("type", "toolCall"));
+    assert!(!names::<Tagged>("type", "image"));
+    assert!(!names::<Tagged>("type", ""));
+    assert!(names::<Roled>("role", "user"));
+    assert!(!names::<Roled>("role", "other"));
+    // The wrong member leaves the family unable to read a tag, so the entry stays and its own
+    // decoder decides.
+    assert!(names::<Roled>("type", "other"));
+    assert_eq!(
+        serde_json::from_value::<Tagged>(json!({"type": "text", "text": "kept"})).unwrap(),
+        Tagged::Text {
+            text: "kept".into()
+        }
+    );
+    assert_eq!(
+        serde_json::from_value::<Roled>(json!({"role": "user", "content": "kept"})).unwrap(),
+        Roled::User {
+            content: "kept".into()
+        }
+    );
+}
+
+/// A list of tagged entries, read as a caller reads one.
+#[derive(Debug, PartialEq, Deserialize)]
+struct Entries {
+    /// The entries, without the ones their family does not name.
+    #[serde(deserialize_with = "named_entries")]
+    items: Vec<Tagged>,
+}
+
+/// Read the entries, leaving out the types the family `Tagged` does not name.
+fn named_entries<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<Tagged>, D::Error> {
+    object::list_naming(deserializer, "type")
+}
+
+#[test]
+fn list_naming_leaves_out_unnamed_tags_and_keeps_every_other_failure() {
+    let read = |text: &str| serde_json::from_str::<Entries>(text);
+    let kept = Entries {
+        items: vec![Tagged::Text {
+            text: "kept".into(),
+        }],
+    };
+
+    assert_eq!(
+        read(r#"{"items":[{"type":"image","url":"gone"},{"type":"text","text":"kept"}]}"#).unwrap(),
+        kept
+    );
+    // Repeated known fields still reach the family's decoder.
+    assert!(read(r#"{"items":[{"type":"text","text":"one","text":"two"}]}"#).is_err());
+    // A repeated tag is refused as well, rather than skipped on its last value.
+    assert!(read(r#"{"items":[{"type":"image","type":"image"}]}"#).is_err());
+    // Ignored members keep their ordinary decoder semantics, including repeated keys.
+    assert_eq!(
+        read(r#"{"items":[{"type":"text","text":"kept","meta":{"a":1,"a":2}},{"type":"image","meta":{"a":1,"a":2}}]}"#).unwrap(),
+        kept
+    );
+    assert!(read(r#"{"items":[{"type":"text"}]}"#).is_err());
+    assert!(read(r#"{"items":[{"text":"no tag"}]}"#).is_err());
+    assert!(read(r#"{"items":[{"type":5,"text":"not a tag"}]}"#).is_err());
+    // A JSON object still carries the list through the same reader.
+    assert_eq!(
+        serde_json::from_value::<Entries>(
+            json!({"items": [{"type": "image"}, {"type": "text", "text": "kept"}]})
+        )
+        .unwrap(),
+        kept
+    );
+}

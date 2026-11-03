@@ -349,6 +349,96 @@ pub fn raw_stream_writer() {
     leave(0)
 }
 
+/// The bytes the hex field `name` holds, empty when the variable is unset.
+fn hex_field(name: &str) -> Vec<u8> {
+    let text = std::env::var(name).unwrap_or_default();
+    (0..text.len() / 2)
+        .map(|at| u8::from_str_radix(&text[at * 2..at * 2 + 2], 16).unwrap())
+        .collect()
+}
+
+/// Writes the bytes `CHILD_OUT` and `CHILD_ERR` name in hex to the two output streams, then
+/// ends through the status `CHILD_EXIT` names or the signal `CHILD_SIGNAL` numbers.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn output_writer() {
+    write_stderr(&hex_field("CHILD_ERR")).unwrap();
+    write_stdout(&hex_field("CHILD_OUT")).unwrap();
+    if let Ok(number) = variable("CHILD_SIGNAL") {
+        signal_hook::low_level::raise(number.parse().unwrap()).unwrap();
+        wait_for_signal()
+    }
+    leave(variable("CHILD_EXIT").map_or(0, |code| code.parse().unwrap()))
+}
+
+/// Prints the coding-agent marker, the unrelated `KEPT` entry, its trailing operand and its
+/// working directory, separated by `|`.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn environment_probe() {
+    let arguments: Vec<String> = std::env::args().collect();
+    let fields = [
+        variable("MAESTRO_CODING_AGENT").unwrap_or_default(),
+        variable("KEPT").unwrap_or_default(),
+        arguments.last().unwrap().clone(),
+        std::env::current_dir().unwrap().display().to_string(),
+    ];
+    write_stdout(fields.join("|").as_bytes()).unwrap();
+    leave(0)
+}
+
+/// Prints the coding-agent marker and the `ONLY` entry, separated by `|`.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn marker_probe() {
+    let fields = [
+        variable("MAESTRO_CODING_AGENT").unwrap_or_default(),
+        variable("ONLY").unwrap_or_default(),
+    ];
+    write_stdout(fields.join("|").as_bytes()).unwrap();
+    leave(0)
+}
+
+/// Prints the coding-agent marker alone.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn marker_value() {
+    write_stdout(
+        variable("MAESTRO_CODING_AGENT")
+            .unwrap_or_default()
+            .as_bytes(),
+    )
+    .unwrap();
+    leave(0)
+}
+
+/// Prints `data` when its input holds bytes and `eof` when the input already ended.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn input_state() {
+    let input = read_input().unwrap();
+    write_stdout(if input.is_empty() { b"eof" } else { b"data" }).unwrap();
+    leave(0)
+}
+
+/// Writes to standard output until it is killed.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn endless_writer() {
+    loop {
+        write_stdout(&[b'y'; 4096]).unwrap();
+    }
+}
+
+/// Writes `READY`, then waits for its input to end.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+pub fn ready_then_drain() {
+    write_stdout(b"READY").unwrap();
+    read_input().unwrap();
+    leave(0)
+}
+
 /// Writes the combined bytes `CHILD_OUT` and `CHILD_ERR` name and ends; with
 /// `CHILD_STOPPED` set it then waits for the signal that stops it instead.
 #[test]

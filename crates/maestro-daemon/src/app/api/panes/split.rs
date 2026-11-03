@@ -4,7 +4,10 @@ use super::super::{
     env::normalize_launch_env,
     responses::{api_error, pane_unresolved},
 };
-use crate::app::{App, creation::spawn_root};
+use crate::app::{
+    App,
+    creation::{RootLaunch, spawn_root},
+};
 use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, PaneRightClickTarget, PaneSplitParams, ResponseResult},
@@ -36,8 +39,13 @@ impl<C: FnMut() -> u128> App<C> {
             ratio: params.ratio,
             focus_new_pane: params.focus,
         };
+        let root = RootLaunch {
+            cwd,
+            extra_env,
+            argv: None,
+        };
         let pane = self
-            .spawn_split(workspace, request, cwd, extra_env)
+            .spawn_split(workspace, request, root)
             .ok_or_else(pane_unresolved)?
             .map_err(|error| api_error("pane_split_failed", error.to_string()))?;
         let located = self.locate(workspace, pane).ok_or_else(pane_unresolved)?;
@@ -78,14 +86,13 @@ impl<C: FnMut() -> u128> App<C> {
         .ok_or_else(pane_unresolved)
     }
 
-    /// Splits `request.target` in a workspace and starts a process in the new pane; `None`
-    /// when the target is gone.
-    fn spawn_split(
+    /// Splits `request.target` in a workspace and starts a process in the new pane as `root`
+    /// says; `None` when the target is gone.
+    pub(in crate::app::api) fn spawn_split(
         &mut self,
         workspace: usize,
         request: SplitRequest,
-        cwd: PathBuf,
-        extra_env: Vec<(String, String)>,
+        root: RootLaunch,
     ) -> Option<io::Result<PaneId>> {
         let size = self.state.estimate_pane_size();
         let launch = &self.launch;
@@ -97,8 +104,7 @@ impl<C: FnMut() -> u128> App<C> {
                     spawn_root(
                         launch.runtime_config(config, pane, size),
                         config,
-                        cwd,
-                        extra_env,
+                        root,
                         spawn,
                     )
                 })?;

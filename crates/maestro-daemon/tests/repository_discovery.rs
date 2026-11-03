@@ -366,7 +366,7 @@ fn repository_reftable_queries_use_native_process_owner() {
         .expect("nextest native-fixture setup supplies the artifact");
     std::fs::write(
         bin.join("git.fixture"),
-        format!("git-probe\n{}", serde_json::json!({ "cwd": &root })),
+        format!("git\nProbe\n{}", serde_json::json!({ "cwd": &root })),
     )
     .unwrap();
     maestro_test_process::install_executable(Path::new(&artifact), &bin.join("git")).unwrap();

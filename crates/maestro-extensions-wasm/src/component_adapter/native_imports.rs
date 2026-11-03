@@ -29,6 +29,11 @@ pub trait NativeImports {
 
     /// Independently retained native HTTP response.
     type Response: 'static;
+    /// Invokes a factory-time operation through the canonical host.
+    fn call_host_operation(
+        &self,
+        operation: crate::bindings::maestro::extension::host::HostOperation,
+    ) -> ExtensionFuture<'_, serde_json::Value>;
     /// Consumes the original unused body as a native-parsed JSON value.
     fn response_json<'a>(
         &'a self,

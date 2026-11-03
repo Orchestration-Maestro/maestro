@@ -1,12 +1,15 @@
 //! Native aliases receive backend operands without harness parsing or output.
 
 use std::ffi::OsString;
+#[cfg(unix)]
+use std::io::{BufRead, BufReader};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use maestro_test_directory::Scratch;
+use maestro_test_process::credentials::{self, Scenario};
 use maestro_test_process::install_executable;
 
 /// The explicit artifact supplied by repository preparation, never a target-directory search.
@@ -236,6 +239,56 @@ fn malformed_search_records_have_no_partial_effects() {
     }
 }
 
+/// Malformed command records fail before operand logs or appends are written.
+#[cfg(unix)]
+#[test]
+fn malformed_command_records_have_no_partial_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let sentinel = root.path().join("effect");
+    let output = json!({
+        "scenario": "output",
+        "stdout": [],
+        "stderr": [],
+        "code": 0,
+        "append": {"path": sentinel, "cwd": false, "bytes": []}
+    });
+    let mut invalid = vec![
+        json!({"scenario": "unknown"}),
+        json!({"scenario": "package", "unknown": true}),
+        json!({"scenario": "labelled", "unknown": true}),
+    ];
+    for (field, value) in [
+        ("code", json!(256)),
+        ("signal", json!("SIGKILL")),
+        ("stdout", json!([256])),
+    ] {
+        let mut record = output.clone();
+        record[field] = value;
+        invalid.push(record);
+    }
+    let mut unknown = output;
+    unknown["unknown"] = json!(true);
+    invalid.push(unknown);
+    for record in invalid {
+        let path = root.path().join("record");
+        std::fs::write(&path, format!("command\n{record}")).unwrap();
+        // The operands and both variables admit an unmodified run, so only a
+        // rejected record keeps the append, the package log and both streams empty.
+        let run = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(path)
+            .args(["--quiet", "root"])
+            .env("MAESTRO_COMMAND_LOG", &sentinel)
+            .env("MAESTRO_NPM_ROOT", root.path())
+            .output()
+            .unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty());
+        assert!(!sentinel.exists(), "partial effects for {record}");
+    }
+}
+
 /// Concurrent installations leave launchable copies with independently mutable ages.
 #[test]
 fn parallel_installs_launch_independent_copies_while_siblings_are_live() {
@@ -441,4 +494,216 @@ fn rpc_idle_peer_observes_term_and_eof_independently() {
         assert!(child.wait_with_output().unwrap().status.success());
         assert_eq!(marker.exists(), terminate);
     }
+}
+
+/// A Git stand-in reports the operands, directory and status the product supplied.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_reports_operands_directory_and_status() {
+    let root = Scratch::new().unwrap();
+    let directory = root.path().join("repo");
+    std::fs::create_dir(&directory).unwrap();
+    let alias = root.path().join("git");
+    maestro_test_process::git_command::install(
+        &alias,
+        maestro_test_process::git_command::Scenario::Reported,
+    )
+    .unwrap();
+    let output = Command::new(&alias)
+        .args([
+            "--no-optional-locks",
+            "symbolic-ref",
+            "--quiet",
+            "--short",
+            "HEAD",
+        ])
+        .current_dir(&directory)
+        .env("GIT_EXIT", "1")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    let reported = String::from_utf8(output.stdout).unwrap();
+    let mut lines = reported.lines();
+    assert_eq!(
+        lines.next(),
+        Some("--no-optional-locks symbolic-ref --quiet --short HEAD")
+    );
+    assert_eq!(
+        Path::new(lines.next().unwrap()).canonicalize().unwrap(),
+        directory.canonicalize().unwrap()
+    );
+    assert_eq!(lines.next(), None);
+}
+
+/// The retaining descendant announces the direct child's identifier, not its own.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_reports_the_direct_child_identifier() {
+    let root = Scratch::new().unwrap();
+    let alias = root.path().join("git");
+    let holder = root.path().join("git-holder");
+    maestro_test_process::git_command::install(
+        &alias,
+        maestro_test_process::git_command::Scenario::Exiting,
+    )
+    .unwrap();
+    maestro_test_process::git_command::install(
+        &holder,
+        maestro_test_process::git_command::Scenario::Retaining,
+    )
+    .unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    std::fs::write(
+        root.path().join("holder-port"),
+        listener.local_addr().unwrap().port().to_string(),
+    )
+    .unwrap();
+    let mut child = Command::new(&alias)
+        .current_dir(root.path())
+        .env("GIT_HOLDER", &holder)
+        .stdout(Stdio::null())
+        .spawn()
+        .unwrap();
+    let direct = child.id().to_string();
+    let mut control = listener.accept().unwrap().0;
+    let mut announced = String::new();
+    BufReader::new(&control).read_line(&mut announced).unwrap();
+    control.write_all(b"!").unwrap();
+    assert!(child.wait().unwrap().success());
+    assert_eq!(announced.trim(), direct);
+}
+
+/// Git stand-in records fail before the alias writes output or reads its inputs.
+#[cfg(unix)]
+#[test]
+fn git_stand_in_refuses_incomplete_records_before_output() {
+    let root = Scratch::new().unwrap();
+    let record = root.path().join("record");
+    for text in ["git\n", "git\nObserved\n", "git\nRetaining\nextra\n"] {
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .env_remove("GIT_LOG")
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(output.stdout.is_empty(), "wrote output for {text:?}");
+    }
+}
+
+/// An installed alias of the credential scenarios, with its record already written.
+fn credential_alias(root: &Path, name: &str, scenario: Scenario) -> PathBuf {
+    let path = root.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    credentials::install(&path, scenario).unwrap();
+    path
+}
+
+/// The runs an installed credential process counted beside itself.
+fn counted_runs(root: &Path) -> usize {
+    std::fs::read_to_string(root.join("process-count"))
+        .unwrap_or_default()
+        .lines()
+        .count()
+}
+
+/// A complete credential document names the controlled key, secret and token.
+fn assert_credential_document(variant: &str, stdout: &[u8]) {
+    let document: serde_json::Value = serde_json::from_slice(stdout).unwrap();
+    assert_eq!(document["Version"], 1, "{variant}: version");
+    assert_eq!(document["AccessKeyId"], "process-key", "{variant}: key");
+    assert_eq!(
+        document["SessionToken"], "process-token",
+        "{variant}: token"
+    );
+    assert_eq!(
+        document["SecretAccessKey"], "controlled-secret",
+        "{variant}: secret"
+    );
+    assert!(document.get("Expiration").is_none(), "{variant}: expiry");
+}
+
+/// Each unusable document carries exactly one defect the reader must refuse.
+fn assert_unusable_documents(process: &Path) {
+    let answer = |variant: &str| Command::new(process).arg(variant).output().unwrap();
+    assert_eq!(answer("invalid_json").stdout, b"broken", "unusable text");
+    let wrong: serde_json::Value = serde_json::from_slice(&answer("wrong_version").stdout).unwrap();
+    assert_eq!(wrong["Version"], 2, "refused version");
+    let missing: serde_json::Value = serde_json::from_slice(&answer("missing_key").stdout).unwrap();
+    assert!(missing.get("SecretAccessKey").is_none(), "missing secret");
+    let expired: serde_json::Value = serde_json::from_slice(&answer("expired").stdout).unwrap();
+    assert_eq!(
+        expired["Expiration"], "2000-01-01T00:00:00Z",
+        "expired document"
+    );
+}
+
+/// An AWS credential process answers every variant and counts each run.
+#[test]
+fn credential_process_answers_variants_and_counts_runs() {
+    let root = Scratch::new().unwrap();
+    let process = credential_alias(root.path(), "process", Scenario::AwsProcess);
+    for (variant, status) in [("once", 7), ("once", 0), ("ok", 0), ("fail", 7)] {
+        let output = Command::new(&process).arg(variant).output().unwrap();
+        assert_eq!(output.status.code(), Some(status), "{variant}: status");
+        assert!(output.stderr.is_empty(), "{variant}: diagnostics");
+        if status == 0 {
+            assert_credential_document(variant, &output.stdout);
+        } else {
+            assert!(output.stdout.is_empty(), "{variant}: failing output");
+        }
+    }
+    assert_unusable_documents(&process);
+    assert_eq!(counted_runs(root.path()), 8, "counted runs");
+}
+
+/// A Google executable source answers one success document and takes no operand.
+#[test]
+fn google_executable_source_answers_one_success_document() {
+    let root = Scratch::new().unwrap();
+    let source = credential_alias(root.path(), "source", Scenario::GoogleExecutable);
+    let output = Command::new(&source).output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let document: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(document["version"], 1);
+    assert_eq!(document["success"], true);
+    assert_eq!(document["id_token"], "subject-exec");
+    assert_eq!(document["expiration_time"], 4_102_444_800_u64);
+    assert!(!root.path().join("process-count").exists(), "counted a run");
+    assert!(
+        !Command::new(&source)
+            .arg("extra")
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+}
+
+/// Records and variants outside the compiled set fail before any output or count.
+#[test]
+fn credential_records_and_variants_fail_before_output() {
+    let root = Scratch::new().unwrap();
+    for text in [
+        "credentials\nunknown\n",
+        "credentials\n",
+        "credentials\nAwsProcess\nextra\n",
+    ] {
+        let record = root.path().join("record");
+        std::fs::write(&record, text).unwrap();
+        let output = Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(output.stdout.is_empty(), "answered for {text:?}");
+    }
+    let process = credential_alias(root.path(), "process", Scenario::AwsProcess);
+    for operands in [vec!["unknown"], vec!["ok", "ok"]] {
+        let output = Command::new(&process).args(&operands).output().unwrap();
+        assert!(!output.status.success(), "accepted {operands:?}");
+        assert!(output.stdout.is_empty(), "answered for {operands:?}");
+    }
+    assert_eq!(counted_runs(root.path()), 0, "counted a rejected run");
 }
