@@ -56,14 +56,15 @@ names and protocol errors cannot issue terminal control commands.
 
 ### Controlled checks
 
-These use recorded terminal input, pipe peers and an isolated loopback provider,
-not live services or real credentials. Python 3 is needed by the Unix termination
-peer; the component case also needs the target installed above.
+These use recorded terminal input, prepared native peers and an isolated loopback
+provider, not live services or real credentials. The client's checks run the
+shipped `rpc.py` example under Python 3; the component case also needs the target
+installed above.
 
 ```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro-chat --example rpc_extension_ui
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
   -p maestro --test integration -- rpc_demo_companion_
 ```
