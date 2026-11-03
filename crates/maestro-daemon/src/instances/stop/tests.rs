@@ -318,12 +318,21 @@ fn a_silent_reachable_daemon_exhausts_the_stop_budget() {
     let selection = named(&root, "silent");
     let path = PathBuf::from(&selection.api_socket_path);
     let api = Endpoint::bind(&path, Some(Answer::Hold), None);
+    // A peer that never answers ends the exchange at its deadline; a read that ignored the
+    // deadline would never return.
+    let (ours, silent_peer) = UnixStream::pair().unwrap();
+    assert_eq!(
+        send_stop_request(LocalStream::UdSocket(ours.into()), Instant::now() + SHORT),
+        Ok(None)
+    );
+    drop(silent_peer);
     // The exchange waits on the silent endpoint under its own budget, in a thread of its own.
     let exchange = {
         let selection = selection.clone();
         std::thread::spawn(move || request_stop(&selection, Instant::now() + EXCHANGE))
     };
-    // The endpoint has read the request; only the wait is short.
+    // The endpoint has read the request; only the wait is short. A request that never arrives
+    // leaves this wait to the runner's hang limit.
     api.wait_holding();
     assert_eq!(
         await_shutdown(&selection, Instant::now() + SHORT, SHORT),
