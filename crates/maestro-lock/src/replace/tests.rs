@@ -363,10 +363,10 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
 fn launch_umask_cases(test: &str) -> Option<maestro_test_process::SetupGuard> {
     use maestro_test_process::{IsolatedSetup, TestProcess};
     if std::env::var_os("MAESTRO_REPLACE_UMASK").is_none() {
-        for mask in ["000", "077"] {
+        for (mask, bits) in [("000", 0o000), ("077", 0o077)] {
             let output = TestProcess::current(test)
                 .unwrap()
-                .setup(IsolatedSetup::new().umask(mask_of(mask)))
+                .setup(IsolatedSetup::new().umask(bits))
                 .env("MAESTRO_REPLACE_UMASK", mask)
                 .single_threaded()
                 .output()
@@ -381,12 +381,6 @@ fn launch_umask_cases(test: &str) -> Option<maestro_test_process::SetupGuard> {
         return None;
     }
     Some(IsolatedSetup::apply_requested().expect("the child applies its requested umask"))
-}
-
-/// The permission bits `mask` spells in octal.
-#[cfg(unix)]
-fn mask_of(mask: &str) -> u32 {
-    u32::from_str_radix(mask, 8).unwrap()
 }
 
 #[cfg(windows)]

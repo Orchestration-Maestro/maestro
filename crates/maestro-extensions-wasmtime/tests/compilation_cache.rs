@@ -5,12 +5,12 @@ use super::components::{TracedBus, loader, local};
 use maestro_extensions::load_extensions;
 use maestro_extensions_wasmtime::component_engine;
 use maestro_test_directory::Scratch;
-use maestro_test_process::{HARNESS_START, TestProcess, selection};
+use maestro_test_process::{CheckedChild, TestProcess, selection};
 use std::{
     cell::RefCell,
     collections::HashSet,
     path::Path,
-    process::{Command, Output, Stdio},
+    process::{Command, Stdio},
 };
 use wasmtime::{Cache, component::Component};
 
@@ -205,7 +205,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             .nocapture()
             .current_dir(scratch.path())
             .env("COPY", binary)
-            .env("TEST_NAME", name)
+            .env("TEST_NAME", &name)
             .env("SETUP", &setup)
             .env("PROFILE", &profile)
             .env("NEXTEST_ENV", &environment)
@@ -223,22 +223,22 @@ fn share_compiled_bytes(test: &str, archived: bool) {
         // before the example runs; any other run lets the setup find and run the example.
         match (case, archived) {
             ("consume", _) => {
-                let output = reported(&mut copied(&configured, binary));
-                assert!(
-                    output.stdout.starts_with(HARNESS_START),
-                    "the copied executable did not start the test"
-                );
+                reported(&mut copied(&configured, binary), Some(&name));
             }
             ("prime", true) => {
                 reported(
                     started(&configured, &setup)
                         .args(["nextest-setup", "normalize-component-cache"])
                         .arg(&profile),
+                    None,
                 );
-                reported(&mut started(&configured, &example));
+                reported(&mut started(&configured, &example), Some(&name));
             }
             _ => {
-                reported(started(&configured, &setup).args(["nextest-setup", "author-component"]));
+                reported(
+                    started(&configured, &setup).args(["nextest-setup", "author-component"]),
+                    Some(&name),
+                );
             }
         }
     }
@@ -267,16 +267,23 @@ fn copied(configured: &Command, binary: &Path) -> Command {
     command
 }
 
-/// Runs `command` to completion, prints its standard output and requires it to succeed.
-fn reported(command: &mut Command) -> Output {
-    let output = command.stdout(Stdio::piped()).output().unwrap();
+/// Runs `command` to completion, proving the start of `test` when supplied, and reports success.
+fn reported(command: &mut Command, test: Option<&str>) {
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let output = if let Some(test) = test {
+        CheckedChild::start(test, command.spawn().unwrap())
+            .unwrap()
+            .wait_with_output()
+            .unwrap()
+    } else {
+        command.output().unwrap()
+    };
     println!("{}", String::from_utf8_lossy(&output.stdout));
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    output
 }
 
 #[test]

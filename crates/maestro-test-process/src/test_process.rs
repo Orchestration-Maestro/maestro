@@ -274,6 +274,19 @@ impl TestProcess {
     /// This process keeps its own file creation mode, limit, session and environment: the
     /// builder only carries the request. An isolated child applies it through
     /// [`IsolatedSetup::apply_requested`] and holds the returned guard.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(unix)] {
+    /// use maestro_test_process::{IsolatedSetup, TestProcess};
+    ///
+    /// let child = TestProcess::named("permissions::created_file")?
+    ///     .setup(IsolatedSetup::new().umask(0o022));
+    /// assert_eq!(child.name(), "permissions::created_file");
+    /// # }
+    /// # Ok::<(), maestro_test_process::TestProcessError>(())
+    /// ```
     #[cfg(unix)]
     #[must_use]
     pub fn setup(mut self, setup: IsolatedSetup) -> Self {
