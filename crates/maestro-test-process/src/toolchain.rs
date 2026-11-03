@@ -101,7 +101,7 @@ fn replaced_wrapper(command: &Command) -> Option<std::ffi::OsString> {
 #[cfg(unix)]
 const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
 
-/// The wrapper alias in `root` that unsets `CARGO_HOME` and runs the replaced compiler wrapper.
+/// The wrapper alias in `root` that unsets `CARGO_HOME` and `CARGO_TARGET_DIR` before forwarding.
 #[cfg(unix)]
 fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
     let wrapper = root.join("rustc-wrapper");

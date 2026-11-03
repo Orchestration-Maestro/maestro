@@ -210,12 +210,11 @@ fn build_behind_recorder(test: &str, wrapper_variable: &str) -> (Scratch, Scratc
     (root, tools)
 }
 
-/// The compiler wrapper behind a fixture command never sees the private Cargo home, so the
-/// compiler cache keys of the fixture's dependencies do not depend on the fixture that builds them.
+/// The compiler wrapper never sees the fixture's private Cargo paths; Cargo still uses them.
 #[cfg(unix)]
 #[test]
-fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
-    const NAME: &str = "fixture_command_hides_cargo_home_from_the_compiler_wrapper";
+fn fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper() {
+    const NAME: &str = "fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper";
     if let Some(root) = std::env::var_os(WRAPPER_ROOT) {
         build_fixture(Path::new(&root));
         return;
@@ -231,20 +230,6 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
         root.path().join("cargo-home/.package-cache").is_file(),
         "Cargo keeps its private home"
     );
-}
-
-/// The compiler wrapper behind a fixture command never sees the output directory, which differs
-/// per run and which the compiler cache would otherwise hash into every rustc key. Cargo still
-/// builds into it.
-#[cfg(unix)]
-#[test]
-fn fixture_command_hides_the_target_directory_from_the_compiler_wrapper() {
-    const NAME: &str = "fixture_command_hides_the_target_directory_from_the_compiler_wrapper";
-    if let Some(root) = std::env::var_os(WRAPPER_ROOT) {
-        build_fixture(Path::new(&root));
-        return;
-    }
-    let (root, tools) = build_behind_recorder(NAME, "RUSTC_WRAPPER");
     let log = fs::read_to_string(tools.path().join("recorder.target.log")).unwrap();
     assert!(!log.is_empty(), "the compiler wrapper must run");
     assert!(

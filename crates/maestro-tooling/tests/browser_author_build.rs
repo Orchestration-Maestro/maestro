@@ -1808,7 +1808,7 @@ fn browser_cold_checkout_builds_dependencies_at_the_plain_dev_profile() {
 /// variable to the caller, so a job cap set by the build host reaches it and no cap at all means
 /// every core.
 #[test]
-fn browser_cold_recipes_inherit_the_callers_compile_job_cap() {
+fn browser_cold_recipes_inherit_the_job_cap_and_warm_recipes_keep_three() {
     let browser = Browser::cold();
     let jobs = |command: &std::process::Command| {
         command
