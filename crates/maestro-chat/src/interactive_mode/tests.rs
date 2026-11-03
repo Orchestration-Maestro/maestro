@@ -1377,6 +1377,26 @@ pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
     command.await.err().into_iter().collect()
 }
 
+/// A submitted shell command running beside the caller, whose own completion ends a wait.
+pub(super) type StartedShell = tokio::task::JoinHandle<Vec<Box<dyn Error>>>;
+
+/// Submits `text` and runs the shell work it admitted beside the caller, so a later step
+/// waits for that command's own end.
+pub(super) fn start_shell(world: &World, text: &str) -> StartedShell {
+    submit(&world.mode, text);
+    let mut work = world.runtime.take_futures();
+    let command = work.pop().expect("the submission admits its work");
+    for earlier in work {
+        maestro_tui::tui::TuiRuntime::spawn_local(&world.runtime, earlier);
+    }
+    tokio::task::spawn_local(async move { command.await.err().into_iter().collect() })
+}
+
+/// Waits for a started shell command to settle and returns the failures it reported.
+pub(super) async fn settle_shell(command: StartedShell) -> Vec<Box<dyn Error>> {
+    command.await.expect("the shell command finishes")
+}
+
 /// Waits until `path` exists, yielding so the work that creates it runs.
 pub(super) async fn until_exists(path: &Path) {
     for _ in 0..10_000 {
