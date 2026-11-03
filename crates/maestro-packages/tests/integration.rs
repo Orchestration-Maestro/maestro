@@ -19,6 +19,7 @@ mod configured_resolution_checks;
 mod configured_resolution_support;
 mod configured_source_checks;
 mod configured_update_checks;
+mod content_package_resolution;
 mod contribution_resource_checks;
 mod git_execution_checks;
 mod git_reinstall_checks;
@@ -51,7 +52,6 @@ mod resource_resolution_checks;
 mod runtime;
 mod sandbox;
 mod scratch;
-mod skill_pack_checks;
 mod startup_environment;
 mod support;
 #[cfg(unix)]
