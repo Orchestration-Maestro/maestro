@@ -421,6 +421,10 @@ async fn session_search(services: &Rc<AgentSessionServices<Local>>) -> [String; 
     search_failures(&session_from(services).await).await
 }
 
+/// An explicitly empty `PATH`, so no search program installed on the host answers either
+/// tool's lookup and the expected failures stay the same on every host.
+const NO_SEARCH_PROGRAMS: [(&str, &str); 1] = [("PATH", "")];
+
 /// A session whose search selection is offline admits no program: both tools fail before
 /// running one, and no staging entry or program appears in the binary directory.
 fn assert_search_offline(services: &AgentSessionServices<Local>, failures: &[String; 2]) {
@@ -437,10 +441,9 @@ fn assert_search_offline(services: &AgentSessionServices<Local>, failures: &[Str
 
 #[test]
 fn session_startup_selection_reaches_find_and_grep() {
-    // An unset PATH searches system defaults, which may contain search programs.
     with_environment(
         "session_startup_selection_reaches_find_and_grep",
-        &[("PATH", "")],
+        &NO_SEARCH_PROGRAMS,
         |base| {
             let (root, marker) = package_tree(base, "session");
             on_task_set(|local| async move {
@@ -456,7 +459,7 @@ fn session_startup_selection_reaches_find_and_grep() {
     );
     with_environment(
         "session_startup_selection_reaches_find_and_grep",
-        &[("PATH", "")],
+        &NO_SEARCH_PROGRAMS,
         |base| {
             let (root, marker) = package_tree(base, "session-online");
             on_task_set(|local| async move {
@@ -491,10 +494,9 @@ fn assert_no_search_program(services: &AgentSessionServices<Local>) {
 /// separate service keeps its own.
 #[test]
 fn startup_selection_survives_service_replacement() {
-    // An unset PATH searches system defaults, which may contain search programs.
     with_environment(
         "startup_selection_survives_service_replacement",
-        &[("PATH", "")],
+        &NO_SEARCH_PROGRAMS,
         |base| {
             let (root, marker) = package_tree(base, "replace");
             on_task_set(|local| async move {

@@ -113,7 +113,9 @@ fn native_manager(
 ) -> super::DefaultPackageManager<super::NativePackageOperations> {
     super::DefaultPackageManager::new(
         super::PackageManagerOptions {
-            cwd: std::env::temp_dir().to_string_lossy().into_owned(),
+            cwd: maestro_test_directory::temporary_root()
+                .to_string_lossy()
+                .into_owned(),
             agent_dir: "/unused".into(),
             settings_manager: std::rc::Rc::new(std::cell::RefCell::new(
                 maestro_settings::SettingsManager::in_memory(settings),
@@ -188,15 +190,8 @@ fn answering(
 #[test]
 #[cfg(unix)]
 fn remote_head_rejects_unmatched_head_with_authored_message() {
-    let path = std::env::temp_dir().join(format!(
-        "maestro-empty-remote-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    std::fs::create_dir(&path).unwrap();
+    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let path = scratch.path();
     for args in [
         vec!["init"],
         vec!["init", "--bare", "remote"],
@@ -210,7 +205,7 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
         assert!(
             std::process::Command::new("git")
                 .args(args)
-                .current_dir(&path)
+                .current_dir(path)
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
                 .status()
@@ -220,7 +215,6 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
     }
     let manager = native_manager(maestro_settings::Settings::default());
     let result = runtime::run(manager.remote_git_head(path.to_str().unwrap()));
-    std::fs::remove_dir_all(path).unwrap();
     assert_eq!(
         result.unwrap_err().to_string(),
         "Failed to determine remote HEAD"

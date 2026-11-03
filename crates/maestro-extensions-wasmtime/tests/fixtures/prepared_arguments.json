@@ -355,6 +355,11 @@
         "arguments": {
           "kept": "new",
           "deleted": "old"
+        },
+        "phase": "execution",
+        "received": {
+          "kept": "new",
+          "deleted": "old"
         }
       }
     },
@@ -371,6 +376,12 @@
           "kept": "old",
           "deleted": "old",
           "added": "new"
+        },
+        "phase": "execution",
+        "received": {
+          "kept": "old",
+          "deleted": "old",
+          "added": "new"
         }
       }
     },
@@ -384,6 +395,10 @@
       },
       "expected": {
         "arguments": {
+          "kept": "old"
+        },
+        "phase": "execution",
+        "received": {
           "kept": "old"
         }
       }
@@ -428,7 +443,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": null
         },
         "executed": true
@@ -474,7 +489,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": ""
         },
         "executed": true
@@ -520,7 +535,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": 0
         },
         "executed": true
@@ -566,7 +581,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": false
         },
         "executed": true
@@ -593,7 +608,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "z": 1,
           "a": null
         },
@@ -610,7 +625,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "z": 1,
           "a": null
         },
@@ -627,7 +642,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": {
             "z": 1,
             "a": null
@@ -691,7 +706,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": [
             null,
             false,
@@ -745,7 +760,7 @@
       },
       "expected": {
         "phase": "execution",
-        "arguments": {
+        "received": {
           "prepared": "\ufeff\u0085\u96ea"
         },
         "executed": true

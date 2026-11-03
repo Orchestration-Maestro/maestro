@@ -158,10 +158,10 @@ fn local_graphics_media_remain_available() {
 /// Upload one raw pixel from a regular file through the same APC route.
 fn file_upload(terminal: &mut Terminal, action: &str) {
     use base64::Engine;
-    let path = std::env::temp_dir().join(format!(
-        "maestro-graphics-placement-{}-{action}.rgba",
-        std::process::id()
-    ));
+    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let path = scratch
+        .path()
+        .join(format!("maestro-graphics-placement-{action}.rgba"));
     std::fs::write(&path, [255, 0, 0, 255]).unwrap();
     let encoded =
         base64::engine::general_purpose::STANDARD.encode(path.as_os_str().as_encoded_bytes());
@@ -169,7 +169,6 @@ fn file_upload(terminal: &mut Terminal, action: &str) {
         format!("\x1b_Ga={action},f=32,t=f,i=9,p=4,s=1,v=1,c=10,r=5,q=2;{encoded}\x1b\\")
             .as_bytes(),
     );
-    std::fs::remove_file(path).unwrap();
 }
 
 #[test]

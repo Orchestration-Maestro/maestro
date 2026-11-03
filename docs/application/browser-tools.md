@@ -123,7 +123,7 @@ See [sandbox messaging](../browser/sandbox.md) for transport ownership.
 
 ## Measuring prompt tokens
 
-The native developer example measures the read-write artifact, read-only artifact
+The native developer program measures the read-write artifact, read-only artifact
 and attachment runtime descriptions, followed by the JavaScript REPL and artifact
 tool descriptions with empty runtime-provider lists:
 
@@ -137,7 +137,7 @@ before making requests. **This opt-in command contacts a provider-authenticated
 live service and may incur provider charges.** Tests use controlled responses
 and a local HTTP server, never this live endpoint.
 
-The example sends each complete description sequentially to
+The program sends each complete description sequentially to
 `https://api.anthropic.com/v1/messages/count_tokens` using model
 `claude-3-5-sonnet-20241022`. It reports the returned numbers, not a local token
 estimate, using the process locale for grouping and decimal presentation.

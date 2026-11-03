@@ -3,7 +3,8 @@
 Four developer reports read the journals Maestro already writes under the home
 session root. Two print totals for one project, one writes transcript files with
 an optional analysis run, and one writes an interactive tool report. They are
-checkout-run example programs: they read recorded journals and write nothing
+checkout-run developer programs (sources in `crates/maestro-app/scripts/`): they
+read recorded journals and write nothing
 except their own output. No background collection or telemetry is involved, and
 the programs make no network request of their own. Two things reach the network
 beyond them: the child runs `--analyze` starts use the configured model provider,
