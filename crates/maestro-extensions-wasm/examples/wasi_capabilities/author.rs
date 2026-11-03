@@ -8,6 +8,7 @@ use maestro_extensions_wasm::{
     CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
     ExtensionFuture,
     child_process::{SpawnOptions, Stdio},
+    streams::read_to_end,
     tools::path_utils::guest_path,
 };
 use serde_json::{Value, json};
@@ -204,10 +205,7 @@ async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Resu
         )
         .await?;
     let stdout = child.stdout().ok_or("missing native output")?;
-    let mut output = Vec::new();
-    while let Some(bytes) = stdout.read().await? {
-        output.extend(bytes);
-    }
+    let output = read_to_end(stdout).await?;
     let status = child.wait().await?;
     if !output.starts_with(&prologue) || status.code != Some(0) {
         return Err("native acknowledgement failed".into());
