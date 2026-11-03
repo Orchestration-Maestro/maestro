@@ -12,7 +12,7 @@ use maestro_test_process::child::{
     write_stderr, write_stdout,
 };
 use std::io::{Read, Write};
-use std::net::TcpStream;
+use std::net::{TcpListener, TcpStream};
 use std::process::{Command, Stdio};
 
 /// The command that runs `program` with `variables` added to its environment.
@@ -96,14 +96,24 @@ fn wait_for_signal() -> ! {
 
 /// A descendant that outlives this process and holds its output descriptors: the program
 /// starts with a pipe on standard input that closes when this process ends.
+///
+/// Returns once the descendant has started, so its start-up output reaches the output
+/// descriptors this process still shares with the parent that reads them.
 pub fn spawn_descendant(program: impl Fn(), variables: &[(&str, &str)]) -> std::process::Child {
+    let started = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let started_port = started.local_addr().unwrap().port().to_string();
     let mut command = command(program, variables);
-    command.stdin(Stdio::piped());
-    command.spawn().unwrap()
+    command
+        .env("CHILD_STARTED_PORT", started_port)
+        .stdin(Stdio::piped());
+    let child = command.spawn().unwrap();
+    started.accept().unwrap();
+    child
 }
 
-/// Waits for the process that started this descendant to end.
+/// Reports the start of this descendant, then waits for the process that started it to end.
 fn await_parent_exit() {
+    drop(connect(port("CHILD_STARTED_PORT").unwrap()).unwrap());
     read_input().unwrap();
 }
 

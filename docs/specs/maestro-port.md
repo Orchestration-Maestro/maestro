@@ -566,7 +566,7 @@ Move the existing matchers only after this contract lands, through
 external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
 may depend on lock. Application uses maestro-lock's recoverable in-place
-`replace` for component saves, preserving native identity.
+`replace` for component saves on native targets only, preserving native identity.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -596,10 +596,13 @@ headers use 0 for native defaults, 1 for AfterSync and 2 for AtCreation. Unix
 read-only AtCreation replay durably stages the observed mode as AfterSync before
 adding owner-write, then restores and syncs that mode before removing the record.
 Ordinary creation never widens permissions; Windows retains its read-only mapping.
-Feature owners keep serialization and symbolic-link policy. Neither leaf
-introduces a common background runtime, scheduler, retry policy or listener
-framework. Feature-specific timing, process, subscription and teardown semantics
-and current public capabilities are retained.
+Native extension file saves are owned by `maestro-app::extension_native_io::files`;
+the application uses the lock owner for publication. The guest and runtime adapter
+forward calls without their own writer or dependency on lock. Feature owners keep
+serialization, symbolic-link policy and asynchronous credential acquisition.
+Neither leaf introduces a common background runtime, scheduler, retry policy or
+listener framework. Feature-specific timing, process, subscription and teardown
+semantics and current public capabilities are retained.
 
 `maestro-listing` is a core leaf below layer 0 with no workspace dependencies,
 including the path utility. Its one job is listing directory entries: it returns

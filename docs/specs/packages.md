@@ -458,3 +458,16 @@ Results match the reference. These mechanisms are replaced, each listed once:
   allowed dependencies (delivery 59).
 - **Completion and explicit later scope.** Replace "added MCP/supervisor capabilities remain later owner phases"
   with "Maestro's packages follow [Maestro packages](packages.md)."
+
+### Native host files
+
+Extension byte saves, permission reads/changes and directory creation with a
+requested mode use the existing native-I/O capability. The application owns
+native paths, link and permission policy in `extension_native_io::files` and
+uses `maestro-lock` for recoverable in-place publication. Saves preserve native
+identity, hard links and existing permissions. Unix creation applies requested
+bits at open, filtered by umask. Unlocked readers may see partial bytes; the next
+coordinated writer completes an interrupted write from its recovery record.
+Guest libraries and packages carry no replacement writer. Save success carries
+an optional durability or recovery-cleanup warning, separate from native errors.
+Windows has no promised POSIX permission bits or ACL configuration. See [host I/O](../extensions/host_io.md).
