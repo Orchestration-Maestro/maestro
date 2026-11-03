@@ -7,6 +7,15 @@ mod file_trigger_path;
 
 #[test]
 fn file_trigger_component_starts_a_turn_from_a_real_file_change() {
+    // The component's authored watch target is the fixed host path, so two runs on
+    // one host take turns on the waiting file lock beside it.
+    let _serialized = maestro_lock::acquire_write(
+        std::path::Path::new("/tmp")
+            .join("agent-trigger.txt")
+            .as_path(),
+        true,
+    )
+    .expect("the host holds one file-trigger test at a time");
     let mut trigger = file_trigger_path::Trigger::new_in(std::path::Path::new("/tmp"));
     let root = Root::new();
     let provider = Provider::new();
