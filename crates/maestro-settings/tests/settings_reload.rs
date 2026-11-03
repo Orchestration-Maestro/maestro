@@ -718,6 +718,8 @@ mod tests {
     /// Child side: a manager that cannot start its write thread.
     #[cfg(unix)]
     fn run_without_threads() {
+        let _setup = maestro_test_process::IsolatedSetup::apply_requested()
+            .expect("the child applies its requested limit");
         if std::thread::Builder::new().spawn(|| ()).is_ok() {
             return support::report(&json!("limit not enforced"));
         }
@@ -769,11 +771,11 @@ mod tests {
 
         #[cfg(unix)]
         {
-            let limited = support::shell_child_command(
+            let limited = support::child_command(
                 "settings_reload::tests::flush_observes_without_cancelling_dropped_waiter",
                 "limit",
-                "ulimit -u 1 2>/dev/null",
-            );
+            )
+            .setup(maestro_test_process::IsolatedSetup::new().process_limit(1));
             let output = limited.output().unwrap();
             assert!(output.status.success());
             let report = support::child_report(&output);

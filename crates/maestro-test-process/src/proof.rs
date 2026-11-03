@@ -200,3 +200,37 @@ impl CheckedChild {
         Ok(output)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::process::{Command, Stdio};
+
+    use super::CheckedChild;
+
+    /// Whether a process with `pid` still exists.
+    fn alive(pid: u32) -> bool {
+        Command::new("kill")
+            .args(["-0", &pid.to_string()])
+            .stderr(Stdio::null())
+            .status()
+            .is_ok_and(|status| status.success())
+    }
+
+    #[test]
+    fn a_child_that_does_not_start_the_test_is_closed_and_reaped() {
+        // A listing run prints test names where the one-test prologue belongs.
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .arg("--list")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped());
+        let child = command.spawn().unwrap();
+        let pid = child.id();
+        let error = CheckedChild::start("proof::tests::listed", child).unwrap_err();
+        assert!(
+            error.to_string().contains("did not start exactly"),
+            "{error}"
+        );
+        assert!(!alive(pid), "child {pid} was not reaped");
+    }
+}

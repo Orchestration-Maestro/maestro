@@ -5,8 +5,13 @@ use super::components::{TracedBus, loader, local};
 use maestro_extensions::load_extensions;
 use maestro_extensions_wasmtime::component_engine;
 use maestro_test_directory::Scratch;
-use maestro_test_process::{TestProcess, selection};
-use std::{cell::RefCell, collections::HashSet, path::Path};
+use maestro_test_process::{HARNESS_START, TestProcess, selection};
+use std::{
+    cell::RefCell,
+    collections::HashSet,
+    path::Path,
+    process::{Command, Output, Stdio},
+};
 use wasmtime::{Cache, component::Component};
 
 /// Runs this test in a separate process with an isolated user cache and configuration.
@@ -184,6 +189,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
     std::fs::write(&environment, "").unwrap();
     let setup = setup_tool();
     let profile = scratch.path().join("target/debug");
+    let example = profile.join("examples/prepare_author_component");
     for (binary, case) in binaries.iter().zip(["prime", "consume"]) {
         let process = TestProcess::current(test)
             .unwrap()
@@ -194,16 +200,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             process
         };
         let name = process.name().to_owned();
-        // An archived run holds no Cargo build, so the setup only gives the executables one time
-        // before the example runs; any other run lets the setup find and run the example.
-        let shell = match (case, archived) {
-            ("consume", _) => "shift; exec \"$COPY\" \"$@\"",
-            ("prime", true) => {
-                "shift; \"$SETUP\" nextest-setup normalize-component-cache \"$PROFILE\" && exec \"$PROFILE/examples/prepare_author_component\""
-            }
-            _ => "shift; exec \"$SETUP\" nextest-setup author-component",
-        };
-        let output = process
+        let configured = process
             .case(case)
             .nocapture()
             .current_dir(scratch.path())
@@ -220,16 +217,66 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             .env("XDG_CACHE_HOME", scratch.path().join("cache"))
             .env("XDG_CONFIG_HOME", scratch.path().join("config"))
             .env_remove("TEST_PREPARE_OUTPUT")
-            .shell_setup("/bin/sh", shell)
-            .output()
+            .command()
             .unwrap();
-        println!("{}", String::from_utf8_lossy(&output.stdout));
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+        // An archived run holds no Cargo build, so the setup only gives the executables one time
+        // before the example runs; any other run lets the setup find and run the example.
+        match (case, archived) {
+            ("consume", _) => {
+                let output = reported(&mut copied(&configured, binary));
+                assert!(
+                    output.stdout.starts_with(HARNESS_START),
+                    "the copied executable did not start the test"
+                );
+            }
+            ("prime", true) => {
+                reported(
+                    started(&configured, &setup)
+                        .args(["nextest-setup", "normalize-component-cache"])
+                        .arg(&profile),
+                );
+                reported(&mut started(&configured, &example));
+            }
+            _ => {
+                reported(started(&configured, &setup).args(["nextest-setup", "author-component"]));
+            }
+        }
     }
+}
+
+/// `binary` run in `configured`'s environment and directory, without its harness arguments.
+fn started(configured: &Command, binary: &Path) -> Command {
+    let mut command = Command::new(binary);
+    for (key, value) in configured.get_envs() {
+        match value {
+            Some(value) => command.env(key, value),
+            None => command.env_remove(key),
+        };
+    }
+    if let Some(directory) = configured.get_current_dir() {
+        command.current_dir(directory);
+    }
+    command
+}
+
+/// `binary` run as the selected test: the copied executable must be the process that
+/// consumes the cache.
+fn copied(configured: &Command, binary: &Path) -> Command {
+    let mut command = started(configured, binary);
+    command.args(configured.get_args());
+    command
+}
+
+/// Runs `command` to completion, prints its standard output and requires it to succeed.
+fn reported(command: &mut Command) -> Output {
+    let output = command.stdout(Stdio::piped()).output().unwrap();
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    output
 }
 
 #[test]

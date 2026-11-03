@@ -286,9 +286,9 @@ fn replacement_preserves_existing_permissions_before_publication() {
 #[test]
 fn creation_mode_is_private_before_publication() {
     use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases("creation_mode_is_private_before_publication") {
+    let Some(_setup) = launch_umask_cases("creation_mode_is_private_before_publication") else {
         return;
-    }
+    };
     let dir = maestro_test_directory::Scratch::new().unwrap();
     let target = dir.path().join("private");
     let control = dir.path().join("control");
@@ -357,30 +357,36 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
     }
 }
 
-/// Runs permission observations in checked children with caller-selected umasks.
+/// Runs permission observations in checked children with the caller-selected umasks, and
+/// returns the child's retained setup; `None` once the parent's children passed.
 #[cfg(unix)]
-fn launch_umask_cases(test: &str) -> bool {
-    use maestro_test_process::TestProcess;
-    if let Ok(mask) = std::env::var("MAESTRO_REPLACE_UMASK") {
-        let mask = rustix::fs::RawMode::from_str_radix(&mask, 8).unwrap();
-        rustix::process::umask(rustix::fs::Mode::from_bits_retain(mask));
-        return false;
+fn launch_umask_cases(test: &str) -> Option<maestro_test_process::SetupGuard> {
+    use maestro_test_process::{IsolatedSetup, TestProcess};
+    if std::env::var_os("MAESTRO_REPLACE_UMASK").is_none() {
+        for mask in ["000", "077"] {
+            let output = TestProcess::current(test)
+                .unwrap()
+                .setup(IsolatedSetup::new().umask(mask_of(mask)))
+                .env("MAESTRO_REPLACE_UMASK", mask)
+                .single_threaded()
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return None;
     }
-    for mask in ["000", "077"] {
-        let output = TestProcess::current(test)
-            .unwrap()
-            .env("MAESTRO_REPLACE_UMASK", mask)
-            .single_threaded()
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{}\n{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
-    true
+    Some(IsolatedSetup::apply_requested().expect("the child applies its requested umask"))
+}
+
+/// The permission bits `mask` spells in octal.
+#[cfg(unix)]
+fn mask_of(mask: &str) -> u32 {
+    u32::from_str_radix(mask, 8).unwrap()
 }
 
 #[cfg(windows)]
@@ -538,9 +544,10 @@ fn new_read_only_target_finishes_with_the_requested_mode() {
 #[cfg(unix)]
 #[test]
 fn new_target_and_replay_keep_umask_default_permissions() {
-    if launch_umask_cases("new_target_and_replay_keep_umask_default_permissions") {
+    let Some(_setup) = launch_umask_cases("new_target_and_replay_keep_umask_default_permissions")
+    else {
         return;
-    }
+    };
     new_target_mode(None, false);
     new_target_mode(None, true);
 }
@@ -847,9 +854,9 @@ fn atomic_linked_temporary_failure_keeps_previous_bytes() {
 #[test]
 fn atomic_temporary_is_private_at_creation() {
     use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases("atomic_temporary_is_private_at_creation") {
+    let Some(_setup) = launch_umask_cases("atomic_temporary_is_private_at_creation") else {
         return;
-    }
+    };
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
@@ -1189,9 +1196,9 @@ fn append_syncs_recovery_absence_once_before_writing() {
 #[test]
 fn requested_creation_mode_is_private_before_bytes() {
     use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-    if launch_umask_cases("requested_creation_mode_is_private_before_bytes") {
+    let Some(_setup) = launch_umask_cases("requested_creation_mode_is_private_before_bytes") else {
         return;
-    }
+    };
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     for mode in [0o600, 0o640, 0o400] {
         for bytes in [b"".as_slice(), b"\0\xffprivate"] {
@@ -1282,9 +1289,9 @@ fn requested_rewrite_retains_existing_mode_before_bytes() {
 #[test]
 fn default_creation_retains_umask_permissions() {
     use std::os::unix::fs::PermissionsExt;
-    if launch_umask_cases("default_creation_retains_umask_permissions") {
+    let Some(_setup) = launch_umask_cases("default_creation_retains_umask_permissions") else {
         return;
-    }
+    };
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let control = scratch.path().join("control");
@@ -1704,9 +1711,11 @@ fn interrupted_widened_replay_restores_recorded_mode() {
 #[test]
 fn existing_recovery_records_retain_default_and_exact_modes() {
     #[cfg(unix)]
-    if launch_umask_cases("existing_recovery_records_retain_default_and_exact_modes") {
+    let Some(_setup) =
+        launch_umask_cases("existing_recovery_records_retain_default_and_exact_modes")
+    else {
         return;
-    }
+    };
     for tag in [0, 1] {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let target = scratch.path().join("session");

@@ -469,8 +469,9 @@ aliases through that same artifact without writable executable handles in the te
 runner. `maestro-tooling` builds, fingerprints and stages the host artifact in the
 existing test bundle and nextest setup exports its explicit path, including after
 archive relocation. This adds no domain dependency or guest/browser native edge.
-Typed isolated native setup is planned; existing shell setup remains documented
-until every caller moves. See [child-process tests](development.md#child-process-tests).
+Each isolated child applies its typed native setup at its entry, so the test runner
+keeps its own modes, limits, session and environment. See
+[child-process tests](development.md#child-process-tests).
 
 The conventions checker rejects Rust string tokens whose decoded value is
 `--exact` outside `maestro-test-process`, reporting the source path and first
