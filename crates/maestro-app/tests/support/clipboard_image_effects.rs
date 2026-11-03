@@ -221,12 +221,13 @@ fn real_capture(count: usize, mut options: SpawnSyncOptions<'_>) -> Result<Outpu
     if let SpawnSyncOptions::Capture { timeout, .. } = &mut options {
         *timeout = None;
     }
-    let mut command = Command::new("python3");
-    command.args([
-        "-c",
-        "import os,sys; os.write(1,b'\x07'*int(sys.argv[1]))",
-        &count.to_string(),
-    ]);
+    let root = crate::native::Scratch::new();
+    let fill = crate::native::clipboard_alias(
+        &root,
+        "wl-paste",
+        &format!(r#"{{"scenario":"fill","byte":7,"count":{count}}}"#),
+    );
+    let mut command = Command::new(fill);
     maestro_process::spawn_sync(&mut command, options)
 }
 /// Windows compilation retains policy cases without a Python dependency.

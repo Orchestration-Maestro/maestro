@@ -1189,10 +1189,10 @@ is [Rust test children](specs/test-processes.md).
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests, `maestro-app`, `maestro-packages` and the command-line
-startup tests. Local setup builds the example with the locked host `dev` profile
-and reads Cargo's emitted executable path. It records source inputs, content digest
-and host in
+attachment-completion tests, `maestro-app` (including its RPC client and clipboard
+tests), `maestro-packages` and the command-line startup tests. Local setup builds
+the example with the locked host `dev` profile and reads Cargo's emitted executable
+path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1521,6 +1521,53 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Clipboard bytes
+
+Install the same artifact as a clipboard writer when an application test needs real
+standard input, standard output, status or a loopback transfer:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-app -E 'test(/^clipboard_(copy|images)::/)'
+```
+
+The artifact copies itself into the alias, so no system installer has to answer on
+the path.
+
+Write `clipboard` on the first line of `<alias>.fixture`, followed by a JSON object
+with a `scenario` field. The fixture parses the whole record before it reads a
+stream or opens a socket, and rejects unknown fields, unknown scenarios and values
+outside their type.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `echo` | Copies standard input to standard output, writes the single operand to standard error, then exits with `code`. |
+| `send` | Connects to `port` on the loopback address, sends standard input, closes the connection and exits. A detached writer delivers bytes after its caller returned. |
+| `fill` | Writes `count` copies of `byte` to standard output, so a bounded capture reaches its exact limit. |
+
+For example, a capture that must fail one byte past its limit records a filler and
+runs the alias the way the product would:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("wl-paste");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+    std::fs::write(
+        directory.path().join("wl-paste.fixture"),
+        "clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":52428801}",
+    )?;
+    Ok(())
+}
+```
+
+The application clipboard tests keep their own assertions. The text route checks the
+forwarded operand, both captured streams and status 7; the detached route checks the
+bytes its listener receives; the image route checks a capture at 50 MiB and one byte
+past it.
 
 #### Credential processes
 

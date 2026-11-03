@@ -201,6 +201,37 @@ fn invalid_native_requests_leave_the_effect_sentinel_absent() {
     assert!(!sentinel.exists());
 }
 
+/// Malformed clipboard records fail before any byte reaches a stream.
+#[test]
+fn malformed_clipboard_records_fail_before_output() {
+    let root = Scratch::new().unwrap();
+    let record = root.path().join("record");
+    let observe = |text: &str| {
+        std::fs::write(&record, text).unwrap();
+        Command::new(artifact())
+            .arg("--maestro-observe")
+            .arg(&record)
+            .output()
+            .unwrap()
+    };
+    let filled = observe("clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":3}");
+    assert!(filled.status.success());
+    assert_eq!(filled.stdout, [7, 7, 7]);
+    for text in [
+        "clipboard\n",
+        "clipboard\n{\"scenario\":\"unknown\"}",
+        "clipboard\n{\"scenario\":\"echo\",\"code\":256}",
+        "clipboard\n{\"scenario\":\"echo\",\"code\":0,\"unknown\":true}",
+        "clipboard\n{\"scenario\":\"echo\",\"code\":0}",
+        "clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":-1}",
+        "clipboard\nnot json",
+    ] {
+        let output = observe(text);
+        assert!(!output.status.success(), "accepted {text:?}");
+        assert!(output.stdout.is_empty(), "wrote bytes for {text:?}");
+    }
+}
+
 /// Malformed search records fail before operand logs or injection sentinels are written.
 #[cfg(unix)]
 #[test]

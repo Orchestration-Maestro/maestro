@@ -272,3 +272,6 @@ fn take_unknown(result: &mut Args, name: &str, value: Option<&str>) -> bool {
         .insert(name.to_owned(), FlagValue::String(next.to_owned()));
     true
 }
+
+#[cfg(test)]
+mod tests;
