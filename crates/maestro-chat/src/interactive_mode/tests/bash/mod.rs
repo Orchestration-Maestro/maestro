@@ -4,9 +4,9 @@ mod lifecycle;
 use super::super::bash::component_address;
 use super::typed::{recalled, submit};
 use super::{
-    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, gate, holding,
-    install, isolated, printing, scripted, settle_shell, start_shell, start_shells, started,
-    transcript_positions, until_complete, until_exists,
+    Setup, ShellOperations, World, active, admitted, driving, echoing_shell, gate, held_at,
+    holding, install, isolated, printing, scripted, settle_shell, start_shell, start_shells,
+    started, transcript_positions,
 };
 use crate::BashExecutionComponent;
 use maestro_app::{ReadonlySessionManager, SettingsManager};
@@ -173,7 +173,7 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
                     assert_eq!(delivered, case.delivered, "{:?}", case.text);
                     assert_eq!(recalled(&world.mode.editor)[0], case.history);
                     rows += usize::from(case.shell);
-                    until_complete(&world, rows).await;
+                    settled_submission(&world, case.shell).await;
                 }
                 assert_eq!(world.mode.chat_container.children().borrow().len(), rows);
             }))
@@ -181,6 +181,16 @@ fn command_submission_keeps_exact_prefix_and_whitespace_rules() {
             assert!(errors.is_empty(), "{errors:?}");
         },
     );
+}
+
+/// Awaits the command the submission admitted, when the text selected one.
+async fn settled_submission(world: &World, shell: bool) {
+    if !shell {
+        return;
+    }
+    for command in world.runtime.take_futures() {
+        command.await.expect("the shell command completes");
+    }
 }
 
 /// The busy command's exact warning.
@@ -204,9 +214,9 @@ fn busy_shell_restores_selected_input_without_history() {
                 ]),
             );
             let world = shelling(directory, &script).await;
-            let ((), errors) = (driving(&world, async {
-                submit(&world.mode, "!first");
-                until_exists(&started).await;
+            let (mut errors, driven) = (driving(&world, async {
+                let command = start_shell(&world, "!first");
+                let running = held_at(held).await;
                 assert!(world.host.session().is_bash_running());
                 for text in ["!second", "!!second"] {
                     submit(&world.mode, text);
@@ -214,11 +224,18 @@ fn busy_shell_restores_selected_input_without_history() {
                     assert!(!recalled(&world.mode.editor).contains(&text.to_owned()));
                 }
                 assert_eq!(warnings(&world), 2);
-                drop(held);
+                drop(running);
+                let errors = settle_shell(command).await;
+                assert!(
+                    active(&world).is_none(),
+                    "the completed row gives up its claim"
+                );
                 // The shell row, and a spacer and a text row for each warning.
-                until_complete(&world, 5).await;
+                assert_eq!(world.mode.chat_container.children().borrow().len(), 5);
+                errors
             }))
             .await;
+            errors.extend(driven);
             assert!(errors.is_empty(), "{errors:?}");
             assert!(started.exists());
         },
@@ -947,10 +964,10 @@ fn shell_completion_from_replaced_session_is_retired() {
 async fn command_outlives_its_session(world: &World, directory: &Path) -> Vec<Box<dyn Error>> {
     let old_gate = gate(&directory.join("old-release"));
     let old = start_shell(world, "!old");
-    until_exists(&directory.join("old-started")).await;
+    let running = held_at(old_gate).await;
     let old_session = world.host.session();
     let replacement = start_replacement(world);
-    drop(old_gate);
+    drop(running);
     replacement.await.unwrap();
     assert!(!Rc::ptr_eq(&old_session, &world.host.session()));
     let errors = settle_shell(old).await;
@@ -975,13 +992,13 @@ async fn disposed_command_is_retired(world: &World, directory: &Path) -> Vec<Box
         world,
         &format!("!'{}' second", gated_program(directory).display()),
     );
-    until_exists(&directory.join("second-started")).await;
+    let running = held_at(second_gate).await;
     let second_session = world.host.session();
     submit(&world.mode, "/new");
     assert!(admitted(&world.runtime).await.is_empty());
     let rows = transcript(world).join("\n");
     assert!(rows.contains("New session started"), "{rows}");
-    drop(second_gate);
+    drop(running);
     let mut errors = settle_shell(second).await;
     assert!(active(world).is_none());
     assert!(
@@ -1067,15 +1084,9 @@ fn native_shell_output_paints_chunks_once() {
         async |directory| {
             let script = printing(directory, "shell", "chunk\n");
             let world = shelling(directory, &script).await;
-            let errors = async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!true");
-                    until_complete(&world, 1).await;
-                })
-                .await;
-                errors
-            }
-            .await;
+            let (mut errors, driven) =
+                driving(&world, settle_shell(start_shell(&world, "!true"))).await;
+            errors.extend(driven);
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world);
             assert_eq!(
@@ -1102,17 +1113,17 @@ fn overlapping_shell_rows_release_only_their_own_claim() {
             let errors = async {
                 let ((), errors) = driving(&world, async {
                     let older = start_command(&world, "older");
-                    until_exists(&directory.join("older-started")).await;
+                    let older_running = held_at(older_gate).await;
                     let newer = start_command(&world, "newer");
-                    until_exists(&directory.join("newer-started")).await;
+                    let newer_running = held_at(newer_gate).await;
                     let newer_row = active(&world).expect("the newer row produces output");
-                    drop(older_gate);
+                    drop(older_running);
                     older.await.unwrap().unwrap();
                     assert!(
                         active(&world).is_some_and(|row| Rc::ptr_eq(&row, &newer_row)),
                         "the older row's release leaves the newer row's claim"
                     );
-                    drop(newer_gate);
+                    drop(newer_running);
                     newer.await.unwrap().unwrap();
                     assert!(active(&world).is_none(), "the last row gives up its claim");
                 })
@@ -1199,23 +1210,23 @@ fn cancelled_shell_settles_its_row_and_records_the_cancellation() {
         "cancelled_shell_settles_its_row_and_records_the_cancellation",
         async |directory| {
             let started = directory.join("cancel-started");
+            let held = gate(&started);
             let script = scripted(
                 directory,
                 "shell",
-                &serde_json::json!([{"mark": {"path": started}}, "block"]),
+                &serde_json::json!([{"hold": {"path": started}}]),
             );
             let world = shelling(directory, &script).await;
-            let errors = async {
-                let ((), errors) = driving(&world, async {
-                    submit(&world.mode, "!cancel");
-                    until_exists(&started).await;
-                    world.host.session().abort_bash();
-                    until_complete(&world, 1).await;
-                })
-                .await;
+            let (mut errors, driven) = (driving(&world, async {
+                let command = start_shell(&world, "!cancel");
+                let running = held_at(held).await;
+                world.host.session().abort_bash();
+                let errors = settle_shell(command).await;
+                drop(running);
                 errors
-            }
+            }))
             .await;
+            errors.extend(driven);
             assert!(errors.is_empty(), "{errors:?}");
             let rows = transcript(&world).join("\n");
             assert!(rows.contains("(cancelled)"), "{rows}");

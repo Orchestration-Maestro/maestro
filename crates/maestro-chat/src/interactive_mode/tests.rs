@@ -1408,21 +1408,6 @@ pub(super) async fn until_exists(path: &Path) {
     panic!("{} appeared", path.display());
 }
 
-/// Waits until no shell row is producing output and the transcript holds `rows` children.
-pub(super) async fn until_complete(world: &World, rows: usize) {
-    for _ in 0..10_000 {
-        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!(
-        "the shell command completed: active={} rows={}",
-        active(world).is_some(),
-        world.mode.chat_container.children().borrow().len()
-    );
-}
-
 /// The shell row that is still producing output, when one is attached.
 pub(super) fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
     world.mode.active_shell.borrow().clone()
@@ -1484,6 +1469,21 @@ pub(super) fn gate(path: &Path) -> std::os::unix::net::UnixListener {
     // A gate of an earlier case in the same directory leaves its socket file behind.
     drop(std::fs::remove_file(path));
     std::os::unix::net::UnixListener::bind(path).unwrap()
+}
+
+/// Waits for a shell command to reach the gate `listener`, which it reports by connecting, and
+/// returns the connection that holds it; dropping the connection releases the command. The
+/// accept runs on a blocking thread, because this crate's Tokio features carry no asynchronous
+/// socket listener.
+pub(super) async fn held_at(
+    listener: std::os::unix::net::UnixListener,
+) -> std::os::unix::net::UnixStream {
+    let accepted = tokio::task::spawn_blocking(move || listener.accept());
+    let (stream, _) = accepted
+        .await
+        .expect("the accepting thread finishes")
+        .expect("the command reaches its gate");
+    stream
 }
 
 /// A response the controlled provider left open.
