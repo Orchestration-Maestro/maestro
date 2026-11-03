@@ -34,9 +34,9 @@ pub fn component_engine(cache: Option<Cache>) -> wasmtime::Result<Engine> {
 ///
 /// # Errors
 /// Returns Wasmtime's failure to configure the engine.
-pub fn process_engine() -> Result<Engine> {
+pub(crate) fn process_engine() -> Result<Engine> {
     let configured = PROCESS_ENGINE.get_or_init(|| {
-        component_engine(Cache::from_file(None).ok()).map_err(|error| error.to_string())
+        component_engine(Cache::from_file(None).ok()).map_err(|error| format!("{error:#}"))
     });
     configured.clone().map_err(Error::msg)
 }

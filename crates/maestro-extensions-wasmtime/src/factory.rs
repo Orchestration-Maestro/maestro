@@ -1,9 +1,9 @@
 //! Artifact initialization uses the existing native factory and its original facade.
 use crate::{
+    engine::process_engine,
     guest_calls::{Call, Callbacks},
     lifecycle::{self, replies::Replies},
     local_resources::Pump,
-    process_engine,
 };
 use maestro_extensions::{ExtensionFactory, ExtensionWidgets, Local};
 use std::{rc::Rc, sync::Arc};
