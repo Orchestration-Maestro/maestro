@@ -2,3 +2,4 @@
 #![cfg(test)]
 
 mod browser;
+mod tool_versions;
