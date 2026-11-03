@@ -27,7 +27,7 @@ pub(super) struct Context {
 struct Deferral {
     /// Attached renderers still awaiting their setup answers.
     initializing: HashSet<SessionId>,
-    /// Host calls received during that setup, in arrival order.
+    /// Host calls received during that setup or while earlier ones are released, in arrival order.
     calls: VecDeque<CdpJsonEventMessage>,
 }
 
@@ -386,7 +386,9 @@ impl<'a> Page<'a> {
             )?,
             "Runtime.exceptionThrown" => self.exception(&event.params)?,
             "Runtime.consoleAPICalled" => self.console(&event.params)?,
-            "Runtime.bindingCalled" if !self.deferral.initializing.is_empty() => {
+            "Runtime.bindingCalled"
+                if !self.deferral.initializing.is_empty() || !self.deferral.calls.is_empty() =>
+            {
                 self.deferral.calls.push_back(event);
             }
             "Runtime.bindingCalled" => self.binding(&event).await?,

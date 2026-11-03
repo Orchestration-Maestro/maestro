@@ -226,20 +226,67 @@ async fn attached_iframe(mut socket: WebSocketStream<TcpStream>, waiting: bool) 
 #[test]
 fn host_calls_wait_for_attached_iframe_initialization() {
     block_on(async {
-        let (mut dispatcher, peer) = connect_peer(gated_iframe).await;
-        let mut lines = Vec::new();
-        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
-        let mut page = Page::open(&mut dispatcher, "gated", &mut lines, &expected)
-            .await
-            .unwrap();
-        page.initialize().await.unwrap();
-        page.evaluate(HOLD).await.unwrap();
-        page.close().await.unwrap();
         assert_eq!(
-            peer.await.unwrap(),
-            [r#"__maestroReply(1,{"value":"right"},null)"#]
+            gated(Gate {
+                early: &[1],
+                late: None
+            })
+            .await,
+            [reply(1)]
         );
     });
+}
+
+/// A host call that arrives while queued calls are being released waits behind them.
+#[test]
+fn deferred_host_calls_keep_arrival_order_while_released() {
+    block_on(async {
+        assert_eq!(
+            gated(Gate {
+                early: &[1, 2],
+                late: Some(3)
+            })
+            .await,
+            [reply(1), reply(2), reply(3)]
+        );
+    });
+}
+
+/// The host calls the scripted peer sends around an iframe's setup.
+#[derive(Clone, Copy)]
+struct Gate {
+    /// Calls sent while the iframe's setup is open.
+    early: &'static [i64],
+    /// Call sent while the first queued call is being released.
+    late: Option<i64>,
+}
+
+/// Run one gated scenario and return every reply evaluated in the root world.
+async fn gated(gate: Gate) -> Vec<String> {
+    let (mut dispatcher, peer) = connect_peer(move |socket| gated_iframe(socket, gate)).await;
+    let mut lines = Vec::new();
+    let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+    let mut page = Page::open(&mut dispatcher, "gated", &mut lines, &expected)
+        .await
+        .unwrap();
+    page.initialize().await.unwrap();
+    page.evaluate(HOLD).await.unwrap();
+    page.close().await.unwrap();
+    peer.await.unwrap()
+}
+
+/// The root-world evaluation that answers sandbox inspection call `id`.
+fn reply(id: i64) -> String {
+    format!(r#"__maestroReply({id},{{"value":"right"}},null)"#)
+}
+
+/// Build the page's inspection call `id`.
+fn binding_called(id: i64) -> Value {
+    let payload = json!({"id":id,"name":"inspectSandbox","args":["probe:\"雪]","state"]});
+    json!({
+        "method":"Runtime.bindingCalled","sessionId":"session",
+        "params":{"name":"__maestroDriver","executionContextId":1,"payload":payload.to_string()}
+    })
 }
 
 /// The evaluation the scripted peer holds open while the iframe attaches.
@@ -316,19 +363,14 @@ fn context_created(session: &str, id: i64, frame: &str) -> Value {
 /// Attach an iframe while the root evaluation is open and call the host before its setup ends.
 ///
 /// Returns every reply the driver evaluated in the root world.
-async fn gated_iframe(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
+async fn gated_iframe(mut socket: WebSocketStream<TcpStream>, gate: Gate) -> Vec<String> {
     let attached = json!({
         "method":"Target.attachedToTarget","sessionId":"session",
         "params":{"sessionId":"child-session","waitingForDebugger":false,
             "targetInfo":{"targetId":"child","type":"iframe","browserContextId":"context",
                 "title":"","url":"about:srcdoc","attached":true,"canAccessOpener":false}}
     });
-    let payload = json!({"id":1,"name":"inspectSandbox","args":["probe:\"雪]","state"]});
-    let binding_called = json!({
-        "method":"Runtime.bindingCalled","sessionId":"session",
-        "params":{"name":"__maestroDriver","executionContextId":1,"payload":payload.to_string()}
-    });
-    let (mut held, mut called, mut replies) = (None, false, Vec::new());
+    let (mut held, mut pending, mut replies) = (None, gate, Vec::new());
     while let Some(call) = receive(&mut socket).await {
         let method = call["method"].as_str().unwrap();
         let expression = call["params"]["expression"].as_str().unwrap_or_default();
@@ -337,16 +379,17 @@ async fn gated_iframe(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
             send(&mut socket, attached.clone()).await;
             continue;
         }
-        if method == "Page.enable" && call["sessionId"] == "child-session" && !called {
-            called = true;
-            send(&mut socket, binding_called.clone()).await;
+        for id in due_calls(&call, &mut pending) {
+            send(&mut socket, binding_called(id)).await;
         }
         if method == "Runtime.enable" {
             send(&mut socket, enabled_context(&call)).await;
         }
         let result = gated_reply(&call, &mut replies);
         send(&mut socket, json!({"id":call["id"],"result":result})).await;
-        if expression.starts_with("__maestroReply(") {
+        if expression.starts_with("__maestroReply(")
+            && replies.len() == gate.early.len() + usize::from(gate.late.is_some())
+        {
             let held = held.take().expect("the root evaluation is held");
             send(
                 &mut socket,
@@ -359,6 +402,19 @@ async fn gated_iframe(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
         }
     }
     replies
+}
+
+/// Take the host calls that `call` triggers: the early ones when the iframe starts its setup, the
+/// late one when the first queued call is released.
+fn due_calls(call: &Value, pending: &mut Gate) -> Vec<i64> {
+    let method = call["method"].as_str();
+    if method == Some("Page.enable") && call["sessionId"] == "child-session" {
+        return std::mem::take(&mut pending.early).to_vec();
+    }
+    if method == Some("Runtime.evaluate") && call["params"]["contextId"] == 1 {
+        return pending.late.take().into_iter().collect();
+    }
+    Vec::new()
 }
 
 /// Announce the default world of the renderer that just enabled its runtime.

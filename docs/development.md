@@ -257,7 +257,8 @@ success and failure, and retains attached renderer sessions only for the page's
 lifetime. The driver tracks the default execution context of every
 automatically attached iframe, including frames whose scripts are already
 running when they attach. A host call that arrives while an iframe is still
-being set up waits, and runs in arrival order once that setup completes. A
+being set up waits, and runs in arrival order once that setup completes,
+ahead of any call that arrives while the queue drains. A
 session the caller attaches itself stays with the caller. Browser events route
 by session; export, binding and input operations wait for their own completion
 signals without command deadlines.
