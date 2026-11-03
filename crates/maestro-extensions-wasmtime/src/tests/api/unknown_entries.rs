@@ -67,7 +67,7 @@ fn request_data() -> String {
             "timestamp": 1
         }
     ]});
-    json!([model, context, null]).to_string()
+    json!([model, context, null, null]).to_string()
 }
 
 /// Invocation without a signal, payload selector, response observer or opaque values.

@@ -89,6 +89,44 @@ mod tests {
         );
     }
 
+    #[test]
+    fn explicit_protocol_keeps_the_public_model_api() {
+        use maestro_models::*;
+        let _serial = crate::bundled::registry();
+        register_api_provider(
+            ApiProvider {
+                api: "selected-backend".into(),
+                stream: SharedHandle::new(PublicIdentityProvider),
+                stream_simple: SharedHandle::new(PublicIdentityProvider),
+            },
+            None,
+        );
+        let stream = stream_simple_via_for::<Local>(
+            "selected-backend",
+            model("public-api"),
+            context(),
+            None,
+            std::rc::Rc::new(|_| panic!("the fake backend needs no producer")),
+        )
+        .unwrap();
+        assert_eq!(ready(stream.result()).read().unwrap().api, "public-api");
+        clear_api_providers();
+    }
+
+    /// Replacement protocol that preserves its caller's model identity.
+    struct PublicIdentityProvider;
+    impl<E: maestro_models::ProviderExecution, O>
+        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for PublicIdentityProvider
+    {
+        type Return = Result<maestro_models::AssistantMessageEventStream, DiagnosticErrorInfo>;
+        fn invoke(&self, call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+            assert_eq!(call.model.api, "public-api");
+            let stream = final_stream(0.0);
+            ready(stream.result()).write().unwrap().api = call.model.api;
+            Ok(stream)
+        }
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     /// Invoke a retained default-family callback without changing its result observer.
     fn assert_retained_timestamp<K: maestro_models::StreamOptionsFamily>(
