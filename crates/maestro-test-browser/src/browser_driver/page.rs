@@ -150,13 +150,15 @@ impl<'a> Page<'a> {
             json!({"width":1280,"height":720,"deviceScaleFactor":1.25,"mobile":false}),
         )
         .await?;
-        // The desktop pointer media stays in place unless the export requests touch input.
-        self.command(
-            Some(&session),
-            "Emulation.setTouchEmulationEnabled",
-            json!({"enabled": self.name == "tile_dom_remove_does_not_open_and_uses_current_callback"}),
-        )
-        .await?;
+        // The desktop pointer stays as the launch presents it; only touch requests enable it.
+        if self.name == "tile_dom_remove_does_not_open_and_uses_current_callback" {
+            self.command(
+                Some(&session),
+                "Emulation.setTouchEmulationEnabled",
+                json!({"enabled":true}),
+            )
+            .await?;
+        }
         Ok(())
     }
 
@@ -195,6 +197,8 @@ impl<'a> Page<'a> {
     /// Returns navigation, page or disconnection failures.
     pub async fn navigate(&mut self, url: &str) -> io::Result<()> {
         let session = self.session.clone();
+        // The commit can be announced while the reply is in flight, so the baseline comes first.
+        let baseline = self.root_context().map(|context| context.id).ok();
         let response = self
             .command(Some(&session), "Page.navigate", json!({"url":url}))
             .await?;
@@ -202,21 +206,25 @@ impl<'a> Page<'a> {
             return Err(io::Error::other(format!("navigation failed: {error}")));
         }
         let frame = string(&response, "frameId")?.to_owned();
-        self.await_committed_context(&frame).await?;
+        self.await_committed_context(&frame, baseline).await?;
         self.main_frame = Some(frame);
         self.evaluate_in(&self.root_context()?, "new Promise(resolve => document.readyState === 'complete' ? resolve() : addEventListener('load', resolve, {once:true}))", true).await?;
         self.phase("page loaded");
         Ok(())
     }
 
-    /// Wait for the navigation's committed frame to announce a new default execution context so
-    /// the readiness evaluation lands in the world the committed document announces itself.
-    async fn await_committed_context(&mut self, frame: &str) -> io::Result<()> {
-        let previous = self.contexts.get(frame).map(|context| context.id);
+    /// Wait for the navigation's committed frame to announce a default execution context newer
+    /// than `baseline`, so the readiness evaluation lands in the world the committed document
+    /// announces itself.
+    async fn await_committed_context(
+        &mut self,
+        frame: &str,
+        baseline: Option<i64>,
+    ) -> io::Result<()> {
         while self
             .contexts
             .get(frame)
-            .is_none_or(|context| Some(context.id) == previous)
+            .is_none_or(|context| Some(context.id) == baseline)
         {
             if let Some(event) = self.dispatcher.next().await? {
                 self.event(event).await?;
@@ -301,12 +309,9 @@ impl<'a> Page<'a> {
             .command(None, "Target.closeTarget", json!({"targetId":self.target}))
             .await
             .map(|_| ());
+        let dispose = json!({"browserContextId":self.context});
         let disposed = self
-            .command(
-                None,
-                "Target.disposeBrowserContext",
-                json!({"browserContextId":self.context}),
-            )
+            .command(None, "Target.disposeBrowserContext", dispose)
             .await
             .map(|_| ());
         super::cleanup(closed, disposed)?;

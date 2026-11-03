@@ -38,10 +38,23 @@ impl Page<'_> {
             Err(error) => (Value::Null, json!(error.to_string())),
         };
         let expression = format!("__maestroReply({},{value},{error})", payload["id"]);
-        let replied = self
+        // Chromium refuses an evaluation whose context its renderer has already dropped, and that
+        // verdict can arrive before the removal announcement; a refused reply has no caller left.
+        let replied = match self
             .evaluate_in(&context, &expression, true)
             .await
-            .map(|_| ());
+            .map(|_| ())
+        {
+            Ok(()) => Ok(()),
+            Err(error)
+                if error
+                    .to_string()
+                    .contains("Cannot find context with specified id") =>
+            {
+                Ok(())
+            }
+            Err(error) => Err(error),
+        };
         // A caller removed while its call ran cannot receive the reply, whatever the outcome.
         if !self.context_exists(&context.session, context.id) {
             return Ok(());

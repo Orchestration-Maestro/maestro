@@ -592,50 +592,38 @@ fn press_resolves_every_key_name_the_qualification_exports_press() {
 }
 
 /// Navigation readiness runs in the announced committed world, not in a context-free root
-/// evaluation that arrives before the commit.
+/// evaluation, whichever side of the navigate reply announces that world.
 #[test]
 fn navigation_readiness_waits_for_the_committed_default_context() {
     block_on(async {
-        let (mut dispatcher, peer) = connect_peer(navigating_peer).await;
-        let mut lines = Vec::new();
-        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
-        let mut page = Page::open(&mut dispatcher, "navigate", &mut lines, &expected)
-            .await
-            .unwrap();
-        page.navigate("fixture").await.unwrap();
-        assert_eq!(page.root_context().unwrap().id, 2);
-        page.close().await.unwrap();
-        peer.await.unwrap();
+        for commit_first in [true, false] {
+            let (mut dispatcher, peer) =
+                connect_peer(move |socket| navigating_peer(socket, commit_first)).await;
+            let mut lines = Vec::new();
+            let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+            let mut page = Page::open(&mut dispatcher, "navigate", &mut lines, &expected)
+                .await
+                .unwrap();
+            page.navigate("fixture").await.unwrap();
+            assert_eq!(
+                page.root_context().unwrap().id,
+                2,
+                "commit_first={commit_first}"
+            );
+            page.close().await.unwrap();
+            peer.await.unwrap();
+        }
     });
 }
 
-/// A scripted peer that answers the navigation before the commit and rejects a context-free root
-/// evaluation until the committed document announces its own default world.
-async fn navigating_peer(mut socket: WebSocketStream<TcpStream>) -> Option<()> {
+/// A scripted peer that answers the navigation while the commit is announced on either side of
+/// that reply, and rejects a context-free root evaluation until the committed document announces
+/// its own default world.
+async fn navigating_peer(mut socket: WebSocketStream<TcpStream>, commit_first: bool) -> Option<()> {
     while let Some(call) = receive(&mut socket).await {
         let method = call["method"].as_str().unwrap();
         if method == "Page.navigate" {
-            send(
-                &mut socket,
-                json!({"id":call["id"],"result":{"frameId":"committed","loaderId":"loader"}}),
-            )
-            .await;
-            send(
-                &mut socket,
-                json!({"method":"Runtime.executionContextDestroyed","sessionId":"session",
-                    "params":{"executionContextUniqueId":"root-world"}}),
-            )
-            .await;
-            send(
-                &mut socket,
-                json!({"method":"Page.frameNavigated","sessionId":"session",
-                    "params":{"type":"Navigation","frame":{"id":"committed","loaderId":"loader1","url":"fixture",
-                        "domainAndRegistry":"","securityOrigin":"null","mimeType":"text/html",
-                        "secureContextType":"InsecureScheme","crossOriginIsolatedContextType":"NotIsolated",
-                        "gatedAPIFeatures":[]}}}),
-            )
-            .await;
-            send(&mut socket, context_created("session", 2, "committed")).await;
+            commit_navigation(&mut socket, &call, commit_first).await;
             continue;
         }
         if method == "Runtime.evaluate" && call["params"]["contextId"].is_null() {
@@ -668,27 +656,65 @@ async fn navigating_peer(mut socket: WebSocketStream<TcpStream>) -> Option<()> {
     None
 }
 
-/// Page creation announces the desktop pointer: touch emulation stays off unless the export opts
-/// in, mirroring the render environment the tests expect.
+/// Answer the navigate with its frame, announcing the committed document on the side of the reply
+/// `commit_first` chooses.
+async fn commit_navigation(
+    socket: &mut WebSocketStream<TcpStream>,
+    call: &Value,
+    commit_first: bool,
+) {
+    let reply = json!({"id":call["id"],"result":{"frameId":"committed","loaderId":"loader"}});
+    let destroyed = json!({"method":"Runtime.executionContextDestroyed","sessionId":"session",
+            "params":{"executionContextUniqueId":"root-world"}});
+    let navigated = json!({"method":"Page.frameNavigated","sessionId":"session",
+            "params":{"type":"Navigation","frame":{"id":"committed","loaderId":"loader1","url":"fixture",
+                "domainAndRegistry":"","securityOrigin":"null","mimeType":"text/html",
+                "secureContextType":"InsecureScheme","crossOriginIsolatedContextType":"NotIsolated",
+                "gatedAPIFeatures":[]}}});
+    let committed = context_created("session", 2, "committed");
+    if commit_first {
+        send(socket, destroyed).await;
+        send(socket, navigated).await;
+        send(socket, committed).await;
+        send(socket, reply).await;
+    } else {
+        send(socket, reply).await;
+        send(socket, destroyed).await;
+        send(socket, navigated).await;
+        send(socket, committed).await;
+    }
+}
+
+/// Page creation leaves the desktop pointer to the launch environment and touches emulation only
+/// for the export that asks for touch input.
 #[test]
-fn page_creation_emulates_a_desktop_pointer() {
+fn page_creation_enables_touch_emulation_only_for_its_touch_opted_export() {
     block_on(async {
-        let (mut dispatcher, peer) =
-            connect_peer(move |socket| desktop_pointer(socket, false)).await;
-        let mut lines = Vec::new();
-        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
-        let mut page = Page::open(&mut dispatcher, "desktop", &mut lines, &expected)
-            .await
-            .unwrap();
-        page.initialize().await.unwrap();
-        page.close().await.unwrap();
-        peer.await.unwrap();
+        for (name, touch) in [
+            ("desktop", false),
+            (
+                "tile_dom_remove_does_not_open_and_uses_current_callback",
+                true,
+            ),
+        ] {
+            let (mut dispatcher, peer) =
+                connect_peer(move |socket| touch_pointer(socket, touch)).await;
+            let mut lines = Vec::new();
+            let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+            let mut page = Page::open(&mut dispatcher, name, &mut lines, &expected)
+                .await
+                .unwrap();
+            page.initialize().await.unwrap();
+            page.close().await.unwrap();
+            peer.await.unwrap();
+        }
     });
 }
 
-/// Serve the setup sequence and demand the desktop-pointer announcement first.
-async fn desktop_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) -> Option<()> {
-    let mut announced = false;
+/// Serve the setup sequence and refuse a page whose emulation command count differs from its
+/// request.
+async fn touch_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) -> Option<()> {
+    let mut enabled = Some(0usize);
     while let Some(call) = receive(&mut socket).await {
         let method = call["method"].as_str().unwrap();
         if method == "Emulation.setDeviceMetricsOverride" {
@@ -698,8 +724,8 @@ async fn desktop_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) ->
         }
         if method == "Emulation.setTouchEmulationEnabled" {
             assert_eq!(call["params"]["enabled"], touch);
+            enabled = enabled.map(|count| count + 1);
             send(&mut socket, json!({"id":call["id"],"result":{}})).await;
-            announced = true;
             continue;
         }
         if method == "Runtime.enable" {
@@ -710,10 +736,87 @@ async fn desktop_pointer(mut socket: WebSocketStream<TcpStream>, touch: bool) ->
         let leave = method == "Target.disposeBrowserContext";
         send(&mut socket, json!({"id":call["id"],"result":result})).await;
         if leave {
+            assert_eq!(
+                enabled,
+                Some(u8::from(touch).into()),
+                "touch emulation commands on {touch}"
+            );
             return Some(());
         }
     }
-    assert!(announced, "the desktop pointer was never announced");
+    None
+}
+
+/// A host call whose reply evaluation Chromium refuses with a dropped-context error, before its
+/// removal announcement arrives, settles the call instead of failing the page.
+#[test]
+fn dropped_context_reply_refusal_does_not_fail_the_host_call() {
+    block_on(async {
+        let (mut dispatcher, peer) = connect_peer(dropping_context_peer).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "settle", &mut lines, &expected)
+            .await
+            .unwrap();
+        page.initialize().await.unwrap();
+        let outcome = page.evaluate(HOLD).await;
+        page.close().await.unwrap();
+        peer.await.unwrap();
+        outcome.unwrap();
+        assert!(
+            lines.iter().any(|line| line.contains("ready; frame")),
+            "{lines:?}"
+        );
+    });
+}
+
+/// Serve setup, route a host call of the root world, refuse its reply the way Chromium refuses an
+/// evaluation in a context its renderer has already dropped, then answer the held evaluation.
+async fn dropping_context_peer(mut socket: WebSocketStream<TcpStream>) -> Option<()> {
+    let mut held = None;
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        let expression = call["params"]["expression"].as_str().unwrap_or_default();
+        if method == "Runtime.enable" {
+            send(&mut socket, enabled_context(&call)).await;
+            send(&mut socket, json!({"id":call["id"],"result":{}})).await;
+            continue;
+        }
+        if method == "Runtime.evaluate" && expression == HOLD {
+            held = Some(call["id"].clone());
+            send(
+                &mut socket,
+                json!({"method":"Runtime.bindingCalled","sessionId":"session",
+                    "params":{"name":"__maestroDriver","executionContextId":1,
+                        "payload":json!({"id":1,"name":"sandboxDriverPhase","args":["ready"]}).to_string()}}),
+            )
+            .await;
+            continue;
+        }
+        if expression.starts_with("__maestroReply(") {
+            send(
+                &mut socket,
+                json!({"id":call["id"],"error":{"code":-32000,
+                    "message":"Cannot find context with specified id"}}),
+            )
+            .await;
+            let held = held
+                .take()
+                .expect("the host call runs behind a held evaluation");
+            send(
+                &mut socket,
+                json!({"id":held,"result":{"result":{"value":null}}}),
+            )
+            .await;
+            continue;
+        }
+        let result = shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}"));
+        let leave = method == "Target.disposeBrowserContext";
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if leave {
+            return Some(());
+        }
+    }
     None
 }
 
