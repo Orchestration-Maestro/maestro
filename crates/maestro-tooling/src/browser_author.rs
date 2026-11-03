@@ -203,9 +203,9 @@ fn prepare(
     Ok(Ok(prepared))
 }
 
-/// Bootstrap recipe users' native artifacts from the locked root workspace.
-fn bootstrap(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    for args in [
+/// The native builds that bootstrap the recipe users' artifacts from the locked root workspace.
+pub(crate) fn bootstrap_commands(cargo: &Path, checkout: &Path) -> [Command; 2] {
+    [
         [
             "build",
             "--locked",
@@ -216,15 +216,22 @@ fn bootstrap(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         ]
         .as_slice(),
         ["build", "--locked", "-p", "maestro-tooling", "--bins"].as_slice(),
-    ] {
-        let status = super::exit_code(
-            Command::new(cargo)
-                .current_dir(checkout)
-                .args(args)
-                .arg("--manifest-path")
-                .arg(checkout.join("Cargo.toml"))
-                .status()?,
-        );
+    ]
+    .map(|args| {
+        let mut command = Command::new(cargo);
+        command
+            .current_dir(checkout)
+            .args(args)
+            .arg("--manifest-path")
+            .arg(checkout.join("Cargo.toml"));
+        command
+    })
+}
+
+/// Bootstrap recipe users' native artifacts from the locked root workspace.
+fn bootstrap(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
+    for mut command in bootstrap_commands(cargo, checkout) {
+        let status = super::exit_code(command.status()?);
         if status != ExitCode::SUCCESS {
             return Ok(status);
         }

@@ -10,6 +10,11 @@ use std::{cell::Cell, rc::Rc, sync::Arc};
 /// All seven wrappers retain executable fields only and execute without a context read.
 #[test]
 fn builtin_wrapped_tools_omit_definition_only_metadata() {
+    if !super::builtin_author::with_search_tools(
+        "builtin_wrapped_tools_omit_definition_only_metadata",
+    ) {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -337,6 +342,11 @@ fn builtin_factory_construction_is_lazy_and_fresh() {
 /// Complete native metadata and callbacks survive the final registration consumer.
 #[test]
 fn builtin_definitions_preserve_metadata_and_render_handles() {
+    if !super::builtin_author::with_search_tools(
+        "builtin_definitions_preserve_metadata_and_render_handles",
+    ) {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -453,6 +463,11 @@ fn registered_metadata(metadata: maestro_extensions::types::ToolDefinitionMetada
 /// Every factory executes defaults, independent members and unequal read/shell controls.
 #[test]
 fn builtin_options_reach_only_the_selected_operations() {
+    if !super::builtin_author::with_search_tools(
+        "builtin_options_reach_only_the_selected_operations",
+    ) {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

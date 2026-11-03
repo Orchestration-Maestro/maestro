@@ -39,6 +39,19 @@ impl Fixture {
         })
         .await
     }
+    /// Record each shutdown event through an actual loaded extension.
+    pub(crate) async fn with_shutdown_watch(
+        local: Rc<LocalSet>,
+        settings: SettingsManager,
+        shutdowns: Rc<RefCell<Vec<Value>>>,
+    ) -> Self {
+        Self::build(local, settings, move |resources| {
+            resources
+                .extension_factories
+                .push(record_shutdowns(&shutdowns));
+        })
+        .await
+    }
     /// Construct the actual service owner, letting `configure` adjust its resource loading.
     async fn build(
         local: Rc<LocalSet>,
@@ -503,6 +516,24 @@ fn record_starts(events: &Rc<RefCell<Vec<String>>>) -> maestro_app::ExtensionFac
                 record
                     .borrow_mut()
                     .push(serde_json::to_string(event).unwrap());
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// Record each shutdown event through the real extension registration and dispatch owners.
+fn record_shutdowns(shutdowns: &Rc<RefCell<Vec<Value>>>) -> maestro_app::ExtensionFactory<Local> {
+    let record = Rc::clone(shutdowns);
+    Rc::new(move |api| {
+        let record = Rc::clone(&record);
+        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+            "session_shutdown".into(),
+            Rc::new(move |event, _| {
+                record
+                    .borrow_mut()
+                    .push(serde_json::to_value(event).unwrap());
                 Box::pin(std::future::ready(Ok(None)))
             }),
         );
