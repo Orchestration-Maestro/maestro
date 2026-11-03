@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 mod author;
 mod cargo;
+mod clipboard;
 #[cfg(unix)]
 mod command;
 mod credentials;
@@ -32,6 +33,8 @@ enum Request {
     Command(command::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
+    /// Produce controlled clipboard bytes for the application's native operations.
+    Clipboard(clipboard::Record, Vec<OsString>),
     /// Answer native Git queries for footer observations or repository discovery.
     Git(git::Record, Vec<OsString>),
     /// Record notification operands and return a chosen status.
@@ -97,6 +100,7 @@ impl Request {
             #[cfg(unix)]
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
+            Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
             Some("git") => Ok(Self::Git(git::Record::parse(&text)?, operands)),
             Some("notify-send") => Ok(Self::Notification(
                 notification::Record::parse(&text)?,
@@ -134,6 +138,7 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::Command(record, operands) => command::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
+        Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
         Request::Git(record, operands) => git::run(&record, &operands),
         Request::Notification(record, operands) => notification::run(&record, &operands),
         Request::Editor(record, operands) => editor::run(&record, &operands),
