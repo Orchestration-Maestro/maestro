@@ -43,7 +43,7 @@ pub use cache::user_cache_home;
 pub use console::on_console;
 pub use environment::{CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
-pub use executable::install_executable;
+pub use executable::{install_command, install_executable};
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use selection::test_name;
 #[cfg(unix)]

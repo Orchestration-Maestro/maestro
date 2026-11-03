@@ -1252,36 +1252,43 @@ product launches by name. Install the artifact under the name the product uses,
 then write `command` on the first line of `<alias>.fixture` followed by a JSON
 object whose `scenario` selects one finite behaviour. The fixture parses the whole
 record before any effect and rejects an unknown scenario or field, including in the
-`labelled` and `package` scenarios that declare no fields of their own.
+`labelled`, `stdio` and `package` scenarios that declare no fields of their own.
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, `"SIGKILL"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `split` writes each standard output byte on its own, so a reader must reassemble split UTF-8. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
+| `report` | `fields` lists what to print, joined by one bar in that order: `{"variable": "NAME"}` for a variable that reads empty when unset, `"working-directory"`, `{"operand": N}` for one operand by position, and `"input"` for the number of bytes standard input held. |
+| `stdio` | Prints every operand in angle brackets, `out-<invoked name>`, one line of input as `stdin:<line>` and the working directory on standard output, and `err-<invoked name>` on standard error. |
+| `npm` | Answers package queries: `view` prints the optional `view` field, `root` prints the optional `root` field, and `install` requires `install.argument` as its second operand before writing `install.path` with `install.contents`. Optional `log` records each invocation like `argv_log`. An unrecorded query or any other command exits 1. |
+| `hold` | Writes `"ready"` to optional `ready`, reads one byte from the `permit` FIFO, then writes `stdout`, `stderr` and optional `append`. Optional `late` names a FIFO read before the permit, for a writer that opened it first. Optional `terminate` appends and exits 0 when SIGTERM arrives, so only a termination signal ends the process after the gate. It drains standard input first, which ends when the process that started it exits. |
+| `holder` | Starts the program named by `descendant` with a shared input pipe, writes `stdout` and `stderr`, and exits at once. The descendant receives end-of-input when the holder ends, so it runs after it, and it keeps the inherited streams open until it finishes. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `forward` | Appends `marker`, then replaces itself with `program`, which receives the untouched operands. |
 | `prefixed` | Requires `--prefix` and a prefix operand first. For `root`, writes the prefix followed by `suffix` and a newline. Every other invocation appends its operands to `log`, one per line. |
 
-A controlled package command for the package manager settings records its
-acquisitions without a package manager:
+Use `install_command(alias, record)` to copy the artifact and write its sibling
+`.fixture` record, then configure the alias as the command the product launches:
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
     let directory = maestro_test_directory::Scratch::new()?;
-    let alias = directory.path().join("controlled-npm");
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
-    let mut record = alias.clone().into_os_string();
-    record.push(".fixture");
-    std::fs::write(record, "command\n{\"scenario\":\"package\"}")?;
+    let alias = directory.path().join("npm");
+    maestro_test_process::install_command(
+        &alias,
+        "{\"scenario\":\"npm\",\"view\":\"\\\"2\\\"\",\"root\":\"/package/root\"}",
+    )?;
+    let _settings = serde_json::json!({"npmCommand": [alias.to_string_lossy()]});
     Ok(())
 }
 ```
 
 Keep each alias in a test's disposable directory and pass its absolute path as the
 configured command. The stand-in inherits the child's environment, so the two
-`MAESTRO_*` variables above belong to the process that launches it.
+`MAESTRO_*` variables above belong to the process that launches it. A `hold`
+record may omit `ready` when no caller reads that marker. A `holder` names its
+descendant by an installed alias, whose own record gives that descendant its work.
 
 A command that only prints installation output uses the `output` scenario. The
 command-line startup tests install it as `controlled-npm` and write its two install
