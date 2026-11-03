@@ -144,11 +144,17 @@ struct Recorded {
 struct RecordedSource {
     /// The source label.
     source: String,
-    /// The scope.
+    /// The scope, project when the recorded operation reads only the source.
+    #[serde(default = "project_scope")]
     scope: SourceScope,
     /// The package root.
     #[serde(rename = "baseDir")]
     base_dir: Option<String>,
+}
+
+/// The scope of a record that names none, which is project material.
+fn project_scope() -> SourceScope {
+    SourceScope::Project
 }
 
 impl RecordedSource {
