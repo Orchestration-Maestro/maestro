@@ -42,7 +42,7 @@ struct Link {
     /// Safe authored destination, absent for refused targets.
     href: Option<String>,
 }
-/// Read all seventeen document packages.
+/// Read all eighteen document packages.
 pub(crate) fn packages() -> Vec<Package> {
     serde_json::from_str(include_str!("fixtures/native_document_artifacts.json")).unwrap()
 }
@@ -106,22 +106,27 @@ pub async fn docx_artifact_dom_styles_and_safe_targets(import_module: &js_sys::F
                     .unwrap();
             }
             body().append_child(&viewport).unwrap();
+            let mut scrolled = 0;
             for case in packages() {
-                assert_page_geometry(&view, &viewport, &case, &page, width).await;
+                scrolled += assert_page_geometry(&view, &viewport, &case, &page, width).await;
             }
+            assert!(
+                width > 240 || scrolled > 0,
+                "a wide table scrolls in the narrow page"
+            );
             viewport.remove();
         }
     }
 }
 
-/// Observe one mounted package in the supplied bounded viewport.
+/// Observe one mounted package in the supplied bounded viewport and count its scrolled tables.
 async fn assert_page_geometry(
     view: &DomView,
     viewport: &Element,
     case: &Package,
     page: &wasm_bindgen::JsValue,
     width: i32,
-) {
+) -> u32 {
     use crate::contributions_support::{call, computed};
     let root = artifact(&case.content).mount(view).unwrap();
     viewport.append_child(&root.node).unwrap();
@@ -135,7 +140,7 @@ async fn assert_page_geometry(
         case.name
     );
     assert_painted_page(&sheet, case);
-    assert_contained_content(node, &sheet, (case, width)).await;
+    let scrolled = assert_contained_content(node, &sheet, (case, width)).await;
     let text = call(page, "select", &js_sys::Array::of1(&sheet))
         .await
         .as_string()
@@ -144,6 +149,7 @@ async fn assert_page_geometry(
         assert!(!text.is_empty(), "{} selectable text", case.name);
     }
     viewport.remove_child(&root.node).unwrap();
+    scrolled
 }
 
 /// The page paints its own padding around measured body text.
@@ -168,18 +174,24 @@ fn assert_painted_page(sheet: &Element, case: &Package) {
     );
 }
 
-/// Wrapped text, ready images and wide tables stay inside their painted page.
-async fn assert_contained_content(node: &Element, sheet: &Element, (case, width): (&Package, i32)) {
+/// Wrapped text, ready images and wide tables stay inside their painted page; returns the
+/// number of tables that scrolled.
+async fn assert_contained_content(
+    node: &Element,
+    sheet: &Element,
+    (case, width): (&Package, i32),
+) -> u32 {
     let page_width = sheet.get_bounding_client_rect().width();
     assert_wrapped_text(node, (page_width, case));
     assert_ready_images(node, (page_width, case)).await;
-    assert_table_scrolling(node, (page_width, case, width));
+    assert_table_scrolling(node, (page_width, case, width))
 }
 
-/// Paragraphs and spans stay inside their painted page instead of overflowing it.
+/// Paragraphs and spans outside tables stay inside their painted page instead of overflowing
+/// it; table text sits inside its table's own horizontal scroll box.
 /// Inline spans report zero widths, so the observation is the paragraph's bounding box.
 fn assert_wrapped_text(node: &Element, (page_width, case): (f64, &Package)) {
-    for selector in ["p", "span"] {
+    for selector in ["p:not(table p)", "span:not(table span)"] {
         let painted = node.query_selector_all(selector).unwrap();
         for index in 0..painted.length() {
             let element: HtmlElement = painted.item(index).unwrap().unchecked_into();
@@ -231,10 +243,15 @@ async fn assert_ready_images(node: &Element, (page_width, case): (f64, &Package)
     }
 }
 
-/// A table stays inside its page, and scrolls horizontally where the page is narrow.
-fn assert_table_scrolling(node: &Element, (page_width, case, width): (f64, &Package, i32)) {
+/// A table stays inside its page; in the narrow page, a table whose grid is wider than its box
+/// scrolls that grid horizontally. Returns the number of tables that scrolled.
+///
+/// Authored grid column widths are preferred widths, so a grid of short cells shrinks into the
+/// narrow page; only cells that cannot wrap make a grid wider than its box.
+fn assert_table_scrolling(node: &Element, (page_width, case, width): (f64, &Package, i32)) -> u32 {
+    let mut scrolled = 0;
     if case.tables == 0 {
-        return;
+        return scrolled;
     }
     let tables = node.query_selector_all("table").unwrap();
     for index in 0..tables.length() {
@@ -244,14 +261,17 @@ fn assert_table_scrolling(node: &Element, (page_width, case, width): (f64, &Pack
             "{}: the table stays inside its page",
             case.name
         );
-        if width <= 240 {
+        if width <= 240 && table.scroll_width() > table.client_width() {
+            table.set_scroll_left(table.scroll_width());
             assert!(
-                table.scroll_width() > table.client_width(),
+                table.scroll_left() > 0,
                 "{}: the wide table scrolls horizontally",
                 case.name
             );
+            scrolled += 1;
         }
     }
+    scrolled
 }
 
 /// Decode and render failures remain independent of the original-byte header.
