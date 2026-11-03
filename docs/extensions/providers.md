@@ -226,6 +226,10 @@ option variant unchanged. Keep the supplied model, context, hooks and cancellati
 signal for that invocation; do not replace options with defaults when forwarding
 to a bundled protocol.
 
+To select that bundled protocol per request, name its identifier through
+[`stream_simple_via`](guest_streams.md#invoking-registered-models); callers and
+final messages keep the model's API identity.
+
 Use the [model callback example](../../crates/maestro-extensions-wasm/examples/context_bridge/model_registered.rs)
 for registration and dispatch, the
 [assistant event example](../../crates/maestro-extensions-wasm/examples/context_bridge/assistant_streams.rs)
