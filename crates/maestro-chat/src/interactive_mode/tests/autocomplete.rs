@@ -780,23 +780,19 @@ fn autocomplete_handles_survive_mode_release_without_retaining_mode_cycles() {
 }
 
 /// Accepts both search probes' announcements before releasing either, so each is in flight
-/// while the other runs; the thread returns the announced names in order.
-fn both_probes_announce(socket: &std::path::Path) -> std::thread::JoinHandle<Vec<String>> {
-    let listener = std::os::unix::net::UnixListener::bind(socket).unwrap();
+/// while the other runs; the thread returns once both have announced.
+fn both_probes_announce(sockets: [std::path::PathBuf; 2]) -> std::thread::JoinHandle<()> {
+    let listeners = sockets.map(|socket| std::os::unix::net::UnixListener::bind(socket).unwrap());
     std::thread::spawn(move || {
-        let mut held = Vec::new();
-        let mut names = Vec::new();
-        for _ in 0..2 {
-            let (stream, _) = listener.accept().unwrap();
-            let mut name = String::new();
-            std::io::BufRead::read_line(&mut std::io::BufReader::new(&stream), &mut name).unwrap();
-            names.push(name.trim_end().to_owned());
-            held.push(stream);
-        }
+        let held = listeners.map(|listener| {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut ready = [0; 5];
+            std::io::Read::read_exact(&mut stream, &mut ready).unwrap();
+            assert_eq!(&ready, b"ready");
+            stream
+        });
         // Closing the connections releases both probes together.
         drop(held);
-        names.sort();
-        names
     })
 }
 
@@ -852,15 +848,15 @@ fn interactive_initialization_starts_both_search_programs_before_either_finishes
         async |directory| {
             let probes = directory.join("probes");
             std::fs::create_dir(&probes).unwrap();
-            let socket = directory.join("probe-gate");
-            let announced = both_probes_announce(&socket);
-            for name in ["fd", "rg"] {
-                let scenario = json!({"scenario": "announce", "socket": socket, "name": name});
-                install(&probes, name, "chat", &scenario);
+            let sockets = ["fd", "rg"].map(|name| directory.join(format!("{name}.sock")));
+            let announced = both_probes_announce(sockets.clone());
+            for (name, socket) in ["fd", "rg"].into_iter().zip(&sockets) {
+                let scenario = json!({"scenario": "probe-wait", "socket": socket});
+                install(&probes, name, "search", &scenario);
             }
             let world = Setup::default().build(directory);
             start(&world).await;
-            assert_eq!(announced.join().unwrap(), ["fd", "rg"]);
+            announced.join().unwrap();
             assert_eq!(world.mode.fd_path.borrow().as_deref(), Some("fd"));
         },
     );

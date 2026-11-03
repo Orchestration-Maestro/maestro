@@ -4,6 +4,7 @@ use std::ffi::{OsStr, OsString};
 use std::io::{self, Write};
 
 use maestro_test_process::child::{leave, variable, write_stderr, write_stdout};
+#[cfg(unix)]
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
 
@@ -65,6 +66,7 @@ pub(super) enum Record {
         argv_log: Option<ArgvLog>,
     },
     /// Report the first operand on both streams, then echo one line of input.
+    #[cfg(unix)]
     Labelled {},
     /// Answer a package-manager root query for the first operand.
     Query {
@@ -94,8 +96,38 @@ impl Record {
         let json = text
             .strip_prefix("command\n")
             .ok_or_else(|| io::Error::other("missing command family"))?;
-        serde_json::from_str(json).map_err(io::Error::other)
+        let record: Self = serde_json::from_str(json).map_err(io::Error::other)?;
+        if !cfg!(unix)
+            && matches!(
+                record,
+                Self::Output {
+                    signal: Some(_),
+                    ..
+                }
+            )
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "termination signal requires Unix",
+            ));
+        }
+        Ok(record)
     }
+}
+
+/// End this process by the native SIGTERM.
+#[cfg(unix)]
+fn terminate() -> io::Result<()> {
+    kill_process(getpid(), Signal::TERM).map_err(Into::into)
+}
+
+/// Report that this platform cannot deliver a Unix termination signal.
+#[cfg(not(unix))]
+fn terminate() -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "termination signal requires Unix",
+    ))
 }
 
 /// Run the selected stand-in with its untouched native operands.
@@ -118,7 +150,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             write_stdout(stdout)?;
             write_stderr(stderr)?;
             match signal {
-                Some(ExitSignal::Terminate) => kill_process(getpid(), Signal::TERM)?,
+                Some(ExitSignal::Terminate) => terminate()?,
                 #[cfg(target_os = "linux")]
                 Some(ExitSignal::Realtime) => {
                     signal_hook::low_level::raise(REALTIME_SIGNAL).map_err(io::Error::other)?;
@@ -127,6 +159,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             }
             leave(i32::from(*code))
         }
+        #[cfg(unix)]
         Record::Labelled {} => labelled(operands),
         Record::Query {
             prefix,
@@ -175,6 +208,7 @@ fn append_bytes(path: &str, bytes: &[u8]) -> io::Result<()> {
 }
 
 /// Echo the first operand on both streams, then one line of standard input.
+#[cfg(unix)]
 fn labelled(operands: &[OsString]) -> io::Result<()> {
     let Some(label) = operands.first() else {
         return Err(io::Error::other("missing labelled operand"));
@@ -187,6 +221,7 @@ fn labelled(operands: &[OsString]) -> io::Result<()> {
 }
 
 /// One line of standard input, read without consuming bytes past its newline.
+#[cfg(unix)]
 fn read_line() -> io::Result<Vec<u8>> {
     let mut line = Vec::new();
     let mut byte = [0; 1];

@@ -70,12 +70,6 @@ fn hold(gate: &OsString) {
     }
 }
 
-/// Wait for a signal on a connection nobody writes to.
-fn block() -> io::Result<()> {
-    let (mut reader, _writer) = UnixStream::pair()?;
-    reader.read_exact(&mut [0])
-}
-
 /// Run each step in order, then end successfully.
 pub(super) fn run(steps: &[Step], operands: &[OsString]) -> io::Result<()> {
     for step in steps {
@@ -96,7 +90,7 @@ pub(super) fn run(steps: &[Step], operands: &[OsString]) -> io::Result<()> {
                 .create(true)
                 .open(log)?
                 .write_all(b"\n")?,
-            Step::Block => block()?,
+            Step::Block => super::signals::pause()?,
             Step::Exit(code) => leave(i32::from(*code)),
         }
     }

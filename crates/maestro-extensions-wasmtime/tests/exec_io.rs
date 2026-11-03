@@ -50,7 +50,15 @@ impl Programs {
 
     /// The path of a program that ends with `code` after writing the given stream bytes.
     fn emitting(&self, stdout: &[u8], stderr: &[u8], code: u8) -> String {
-        self.add(&json!({"scenario":"emit", "stdout":stdout, "stderr":stderr, "code":code}))
+        self.add_in(
+            "command",
+            &json!({"scenario":"output", "stdout":stdout, "stderr":stderr, "code":code}),
+        )
+    }
+
+    /// The path of a program that reports its working directory and literal operands.
+    fn reporting(&self) -> String {
+        self.add_in("child", &json!({"scenario":"arguments"}))
     }
 }
 
@@ -134,13 +142,25 @@ fn pending_request(programs: &Programs, fields: &Value, port: u16) -> Value {
     request
 }
 
-/// Accepts the child's connection and its READY announcement.
-async fn ready(listener: &tokio::net::TcpListener) -> tokio::net::TcpStream {
+/// Accepts the child's connection and its READY announcement, or `None` when a deadline ended
+/// the child between its connection and its announcement.
+async fn ready(listener: &tokio::net::TcpListener) -> Option<tokio::net::TcpStream> {
     let (mut socket, _) = listener.accept().await.unwrap();
     let mut ready = [0; 5];
-    socket.read_exact(&mut ready).await.unwrap();
+    match socket.read_exact(&mut ready).await {
+        Ok(_) => {}
+        Err(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::UnexpectedEof | std::io::ErrorKind::ConnectionReset
+            ) =>
+        {
+            return None;
+        }
+        Err(error) => panic!("the child's announcement failed: {error}"),
+    }
     assert_eq!(&ready, b"READY");
-    socket
+    Some(socket)
 }
 
 /// Runs a [`pending_request`]; once READY arrives, `on_ready` either releases the
@@ -159,7 +179,7 @@ async fn pending(
     tokio::pin!(execution);
     let _held = tokio::select! {
         result = &mut execution => return result,
-        socket = ready(&listener) => on_ready(socket),
+        socket = ready(&listener) => socket.and_then(on_ready),
     };
     execution.await
 }
@@ -186,7 +206,7 @@ async fn started(
     let task = tokio::task::spawn_local(async move {
         serde_json::from_str(&execution.await.unwrap_err().to_string()).unwrap()
     });
-    (task, ready(&listener).await)
+    (task, ready(&listener).await.unwrap())
 }
 
 /// Advances the paused clock to just before `boundary`, then checks that the execution
@@ -241,14 +261,14 @@ fn exec_literal_arguments_and_directory_through_host() {
         let runner = loaded().await;
         let programs = Programs::new();
         let literal = ["a b", "'quoted'", "\"double\"", "*", "$HOME", ";", ""];
-        let report = programs.add(&json!({"scenario":"report"}));
+        let report = programs.reporting();
         let result = execute(
             &runner,
             json!({"command":report, "args":literal, "options":{"cwd":cwd}}),
         )
         .await;
         let stdout: Value = serde_json::from_str(result["stdout"].as_str().unwrap()).unwrap();
-        assert_eq!(stdout, json!([literal, cwd, 0]));
+        assert_eq!(stdout, json!([cwd, literal]));
         assert_eq!(result["stderr"], "");
         assert_eq!(result["code"], 0);
         assert_eq!(result["killed"], false);
@@ -273,7 +293,7 @@ fn exec_absent_and_empty_directory_choose_distinct_sources() {
         .await;
         let inherited = std::env::current_dir().unwrap();
         let programs = Programs::new();
-        let request = json!({"command":programs.add(&json!({"scenario":"cwd"})), "args":[]});
+        let request = json!({"command":programs.reporting(), "args":[]});
         for (options, expected) in [
             (None, scratch.path()),
             (Some(Value::Null), scratch.path()),
@@ -289,14 +309,14 @@ fn exec_absent_and_empty_directory_choose_distinct_sources() {
             let result = execute(&runner, request).await;
             assert_eq!(
                 result,
-                json!({"stdout":expected, "stderr":"", "code":0, "killed":false})
+                json!({"stdout":json!([expected, []]).to_string(), "stderr":"", "code":0, "killed":false})
             );
         }
         let later = loaded().await;
         let context = later.create_command_context();
         assert_eq!(context.cwd().unwrap(), "/render-domain");
         let result = execute_on(&runner, context, request).await;
-        assert_eq!(result["stdout"], json!(scratch.path()));
+        assert_eq!(result["stdout"], json!([scratch.path(), []]).to_string());
     });
 }
 
@@ -321,7 +341,7 @@ fn exec_unrequested_signal_exit_is_not_killed() {
         let programs = Programs::new();
         let terminating = programs.add_in(
             "command",
-            &json!({"scenario":"output", "stdout":b"before", "stderr":b"diagnostic", "code":0, "signal":"SIGTERM"}),
+            &json!({"scenario":"output", "stdout":b"before", "stderr":b"diagnostic", "code":3, "signal":"SIGTERM"}),
         );
         let result = execute(
             &runner,
@@ -877,7 +897,7 @@ fn returned_shell_abort_survives_event_handler_return() {
             tokio::pin!(execution);
             let held = tokio::select! {
                 result = &mut execution => panic!("settled before READY: {:?}", result.map(|result| result.exit_code)),
-                socket = ready(&listener) => socket,
+                socket = ready(&listener) => socket.unwrap(),
             };
             signal.abort();
             (execution.await.unwrap_err().to_string(), held)

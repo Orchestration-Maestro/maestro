@@ -3,7 +3,9 @@
 //! The record names the scenario; the component's literal operands carry the per-call values.
 
 use std::ffi::OsString;
-use std::io::{self, Read, Write};
+#[cfg(unix)]
+use std::io::Read;
+use std::io::{self, Write};
 
 use maestro_test_process::child::{connect, leave, receive, write_stderr, write_stdout};
 use serde::Deserialize;
@@ -32,15 +34,6 @@ pub(super) struct Chunk {
 #[derive(Deserialize)]
 #[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
 pub(super) enum Record {
-    /// Write independent raw streams and end with a status.
-    Emit {
-        /// Standard output bytes.
-        stdout: Vec<u8>,
-        /// Standard error bytes.
-        stderr: Vec<u8>,
-        /// Exit status.
-        code: u8,
-    },
     /// Write the first two operands to the streams, announce `READY` on the third, a port,
     /// and wait for one release byte.
     Pending {},
@@ -52,10 +45,6 @@ pub(super) enum Record {
         /// Ordered writes, all decoded before connecting.
         chunks: Vec<Chunk>,
     },
-    /// Print the operands, the working directory and the length of standard input as JSON.
-    Report {},
-    /// Print the working directory without a newline.
-    Cwd {},
     /// Create the file the only operand names.
     Touch {},
     /// Replace this process with a test binary rerunning one test.
@@ -94,15 +83,6 @@ fn pending_operands(operands: &[OsString]) -> io::Result<(&OsString, &OsString, 
 /// Run the selected program with its untouched native operands.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
-        Record::Emit {
-            stdout,
-            stderr,
-            code,
-        } => {
-            write_stdout(stdout)?;
-            write_stderr(stderr)?;
-            leave(i32::from(*code))
-        }
         Record::Pending {} => {
             let (stdout, stderr, port) = pending_operands(operands)?;
             write_stdout(stdout.as_encoded_bytes())?;
@@ -115,8 +95,6 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         #[cfg(unix)]
         Record::Stubborn {} => stubborn(operands),
         Record::Chunks { chunks } => granted(chunks, operands),
-        Record::Report {} => report(operands),
-        Record::Cwd {} => write_stdout(std::env::current_dir()?.as_os_str().as_encoded_bytes()),
         Record::Touch {} => {
             let [path] = operands else {
                 return Err(io::Error::other("expected one path"));
@@ -173,16 +151,4 @@ fn granted(chunks: &[Chunk], operands: &[OsString]) -> io::Result<()> {
         }
     }
     leave(0)
-}
-
-/// Print `[operands, cwd, stdin length]` as one JSON line.
-fn report(operands: &[OsString]) -> io::Result<()> {
-    let mut input = Vec::new();
-    io::stdin().read_to_end(&mut input)?;
-    let operands: Vec<_> = operands
-        .iter()
-        .map(|operand| operand.to_string_lossy())
-        .collect();
-    let report = serde_json::json!([operands, std::env::current_dir()?, input.len()]);
-    write_stdout(format!("{report}\n").as_bytes())
 }

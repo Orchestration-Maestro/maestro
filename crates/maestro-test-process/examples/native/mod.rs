@@ -10,10 +10,8 @@ mod browser_launch;
 mod cargo;
 #[cfg(unix)]
 mod chat;
-#[cfg(unix)]
 mod child;
 mod clipboard;
-#[cfg(unix)]
 mod command;
 mod component;
 mod credentials;
@@ -37,7 +35,6 @@ enum Request {
     /// Report the native launch and exchange raw streams.
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for a controlled native program.
-    #[cfg(unix)]
     Command(command::Record, Vec<OsString>),
     /// Stand in for the programs the interactive mode launches.
     #[cfg(unix)]
@@ -45,7 +42,6 @@ enum Request {
     /// Stand in for the programs a guest component executes.
     Component(component::Record, Vec<OsString>),
     /// Act as the native child a byte-level operation launched.
-    #[cfg(unix)]
     Child(child::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
@@ -118,14 +114,12 @@ impl Request {
         let text = std::fs::read_to_string(path)?;
         match text.lines().next() {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
-            #[cfg(unix)]
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("chat") => Ok(Self::Chat(chat::Record::parse(&text)?, operands)),
             Some("component-exec") => {
                 Ok(Self::Component(component::Record::parse(&text)?, operands))
             }
-            #[cfg(unix)]
             Some("child") => Ok(Self::Child(child::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
@@ -169,12 +163,10 @@ pub(super) fn run() -> io::Result<()> {
     match Request::read(std::env::args_os().skip(1).collect())? {
         Request::Install(destination) => install(&destination),
         Request::Observe(record, operands) => observe::run(&record, &operands),
-        #[cfg(unix)]
         Request::Command(record, operands) => command::run(&record, &operands),
         #[cfg(unix)]
         Request::Chat(record, operands) => chat::run(&record, &operands),
         Request::Component(record, operands) => component::run(&record, &operands),
-        #[cfg(unix)]
         Request::Child(record, operands) => child::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),

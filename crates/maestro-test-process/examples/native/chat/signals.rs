@@ -1,4 +1,4 @@
-//! Programs that wait for the test's socket, a stop signal or a termination.
+//! Programs that wait for a stop signal, a termination or the test's input.
 
 use std::io::{self, Read};
 use std::os::unix::net::UnixStream;
@@ -6,14 +6,6 @@ use std::sync::mpsc;
 
 use maestro_test_process::child::{leave, write_stdout};
 use signal_hook::consts::SIGTSTP;
-
-/// Announce `name` on the test's socket and wait until the test closes the connection.
-pub(super) fn announce(socket: &str, name: &str) -> io::Result<()> {
-    let mut socket = UnixStream::connect(socket)?;
-    maestro_test_process::child::announce(&mut socket, name)?;
-    // The test closes its end to release every announced probe together.
-    socket.read(&mut [0]).map(|_| ())
-}
 
 /// Wait until a signal ends the process; no data ever arrives on the connection read.
 pub(super) fn pause() -> io::Result<()> {

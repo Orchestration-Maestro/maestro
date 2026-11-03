@@ -110,16 +110,21 @@ fn border_theme_change_refreshes_the_first_returned_frame() {
 /// The edit file every external edit in these witnesses writes, named by the host clock.
 const EDIT_FILE: &str = "maestro-editor-1767323045006.maestro.md";
 
-/// Installs `scenario` of the interactive-mode fixture family as the executable `name` in the
-/// command directory of `directory`.
-pub(super) fn install_chat(directory: &Path, name: &str, scenario: &Value) -> PathBuf {
-    install(&directory.join("bin"), name, "chat", scenario)
+/// Installs the editor family as the executable `name` in the command directory of
+/// `directory`, playing `scenario`.
+fn install_editor(directory: &Path, name: &str, scenario: &Value) -> PathBuf {
+    install(&directory.join("bin"), name, "editor", scenario)
 }
 
-/// The scenario of an editor that records what it received in `report`, writes `content` over
-/// the file and ends with `status`.
+/// The scenario of an editor that records its operands in `report/argv` and the file as it
+/// was in `report/before`, writes `content` over the file and ends with `status`.
 fn editing(report: &Path, content: &str, status: i32) -> Value {
-    json!({"scenario": "edit", "report": report, "content": content, "status": status})
+    json!({
+        "argv": report.join("argv"),
+        "before": report.join("before"),
+        "content": content.as_bytes(),
+        "code": status,
+    })
 }
 
 /// The scenario of a clipboard reader that offers `types` and prints `image`.
@@ -234,7 +239,7 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
         async |directory| {
             use std::os::unix::fs::PermissionsExt;
             let bin = directory.join("bin");
-            let editor = install_chat(directory, "editor", &editing(&bin, "", 0));
+            let editor = install_editor(directory, "editor", &editing(&bin, "", 0));
             for (input, expected) in cases::<ExternalEdit, Edited>(
                 "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
             ) {
@@ -245,7 +250,7 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
                     .set_environment("VISUAL", &format!("{} --wait", editor.display()));
                 record(
                     &editor,
-                    "chat",
+                    "editor",
                     &editing(&bin, &input.content, input.status),
                 );
                 world
@@ -264,7 +269,8 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
                 assert!(frame.contains(expected.text.lines().next().unwrap_or_default()));
                 let recorded = std::fs::read_to_string(bin.join("argv")).unwrap();
                 let file = std::env::temp_dir().join(EDIT_FILE);
-                let mut args: Vec<_> = recorded.lines().collect();
+                // The first field is the editor's own name.
+                let mut args: Vec<_> = recorded.split_terminator('\0').skip(1).collect();
                 assert_eq!(args.pop(), Some(file.to_str().unwrap()));
                 assert_eq!(args, expected.handoff.args);
                 let before = bin.join("before");
@@ -336,7 +342,12 @@ fn clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor() {
         "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
         async |directory| {
             use std::os::unix::fs::PermissionsExt;
-            let helper = install_chat(directory, "wl-paste", &pasting("", &[]));
+            let helper = install(
+                &directory.join("bin"),
+                "wl-paste",
+                "clipboard",
+                &pasting("", &[]),
+            );
             for (input, expected) in cases::<Paste, Pasted>(
                 "clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor",
             ) {
@@ -344,7 +355,7 @@ fn clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor() {
                 let world = started(directory).await;
                 record(
                     &helper,
-                    "chat",
+                    "clipboard",
                     &pasting(&format!("{}\n", input.mime_type), &expected.bytes),
                 );
                 world.mode.editor.set_text("leftright");
@@ -405,9 +416,10 @@ fn clipboard_absence_is_silent_and_does_not_edit() {
                     .swap_remove(0);
             assert_eq!(input.op, "paste-none");
             // The reader holds image bytes it must not be asked for: only the offered types decide.
-            install_chat(
-                directory,
+            install(
+                &directory.join("bin"),
                 "wl-paste",
+                "clipboard",
                 &pasting("text/plain\n", b"bytes that must stay unread"),
             );
             let world = started(directory).await;
@@ -496,7 +508,7 @@ fn temporary_files_preserve_existing_entries_and_private_bytes() {
         async |directory| {
             use std::os::unix::fs::{PermissionsExt, symlink};
             let bin = directory.join("bin");
-            let editor = install_chat(directory, "editor", &editing(&bin, "edited", 0));
+            let editor = install_editor(directory, "editor", &editing(&bin, "edited", 0));
             let world = started(directory).await;
             world
                 .runtime

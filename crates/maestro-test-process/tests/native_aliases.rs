@@ -217,6 +217,10 @@ fn malformed_clipboard_records_fail_before_output() {
     let filled = observe("clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":3}");
     assert!(filled.status.success());
     assert_eq!(filled.stdout, [7, 7, 7]);
+    let pasted =
+        observe("clipboard\n{\"scenario\":\"paste\",\"types\":\"image/png\\n\",\"image\":[1,2]}");
+    assert!(pasted.status.success());
+    assert_eq!(pasted.stdout, [1, 2]);
     for text in [
         "clipboard\n",
         "clipboard\n{\"scenario\":\"unknown\"}",
@@ -330,31 +334,6 @@ fn scenario_alias(root: &Path, name: &str, family: &str, scenario: &serde_json::
     path
 }
 
-/// Component execution reports literal operands, its directory and an empty input unchanged.
-#[test]
-fn component_exec_report_keeps_literal_operands_directory_and_input() {
-    use serde_json::json;
-    let root = Scratch::new().unwrap();
-    let cwd = root.path().join("cwd with spaces");
-    std::fs::create_dir(&cwd).unwrap();
-    let alias = scenario_alias(
-        root.path(),
-        "report",
-        "component-exec",
-        &json!({"scenario": "report"}),
-    );
-    let literal = ["a b", "'quoted'", "\"double\"", "*", "$HOME", ";", ""];
-    let run = Command::new(alias)
-        .args(literal)
-        .current_dir(&cwd)
-        .stdin(Stdio::null())
-        .output()
-        .unwrap();
-    assert!(run.status.success());
-    let report: serde_json::Value = serde_json::from_slice(&run.stdout).unwrap();
-    assert_eq!(report, json!([literal, cwd.canonicalize().unwrap(), 0]));
-}
-
 /// Each write of a granted-release scenario follows its release on the control socket.
 #[test]
 fn component_exec_chunks_write_only_after_each_release() {
@@ -433,7 +412,7 @@ fn component_exec_inputs_fail_before_effects() {
     for record in [
         json!({"scenario": "touch", "unknown": true}),
         json!({"scenario": "unknown"}),
-        json!({"scenario": "emit", "stdout": [256], "stderr": [], "code": 0}),
+        json!({"scenario": "chunks", "chunks": [{"stream": "stdout", "bytes": [256]}]}),
     ] {
         let alias = scenario_alias(root.path(), "invalid", "component-exec", &record);
         let run = Command::new(alias).arg(&sentinel).output().unwrap();
@@ -487,7 +466,7 @@ fn malformed_chat_records_have_no_partial_effects() {
         json!({"scenario": "unknown"}),
         json!({"scenario": "pause", "unknown": true}),
         json!({"scenario": "shell", "steps": [{"mark": {"path": sentinel}}, {"unknown": 1}]}),
-        json!({"scenario": "edit", "report": root.path(), "content": "x", "status": 256}),
+        json!({"scenario": "group-member", "unknown": true}),
         json!({"scenario": "gh", "state": root.path(), "gist": {"frames": [{"copy": "x"}, {"unknown": 1}]}}),
     ] {
         let alias = scenario_alias(root.path(), "invalid", "chat", &record);

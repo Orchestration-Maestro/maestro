@@ -5,7 +5,6 @@ use std::io;
 
 use serde::Deserialize;
 
-mod editor;
 mod notices;
 mod share;
 mod shell;
@@ -19,29 +18,6 @@ pub(super) enum Record {
     Shell {
         /// Ordered effects, ending the process after the last.
         steps: Vec<shell::Step>,
-    },
-    /// Stand in for the external editor.
-    Edit {
-        /// Directory that receives the `argv` and `before` observations.
-        report: String,
-        /// Text the editor writes over the edited file.
-        content: String,
-        /// Status the editor ends with.
-        status: u8,
-    },
-    /// Stand in for the Wayland clipboard reader.
-    Paste {
-        /// Text answering `--list-types`.
-        types: String,
-        /// Bytes answering every other request.
-        image: Vec<u8>,
-    },
-    /// Announce this probe on the test's socket and wait until the test closes it.
-    Announce {
-        /// Unix socket the test listens on.
-        socket: String,
-        /// Text sent first, followed by a newline.
-        name: String,
     },
     /// Answer a terminal multiplexer option query with the recorded results.
     Tmux {
@@ -77,7 +53,7 @@ pub(super) enum Record {
     },
     /// Stand in for the GitHub command line.
     Gh(share::Gh),
-    /// Report the process id, then wait until a signal ends the process.
+    /// Wait until a signal ends the process.
     Pause {},
     /// Report readiness, then report a stop signal or end when input arrives.
     GroupMember {},
@@ -97,13 +73,6 @@ impl Record {
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
         Record::Shell { steps } => shell::run(steps, operands),
-        Record::Edit {
-            report,
-            content,
-            status,
-        } => editor::edit(report, content, *status, operands),
-        Record::Paste { types, image } => editor::paste(types, image, operands),
-        Record::Announce { socket, name } => signals::announce(socket, name),
         Record::Tmux {
             extended_keys,
             extended_keys_format,
