@@ -3,48 +3,14 @@
 //! The record names the scenario; the component's literal operands carry the per-call values.
 
 use std::ffi::OsString;
-#[cfg(unix)]
-use std::io::Read;
-use std::io::{self, Write};
+use std::io;
 
-use maestro_test_process::child::{connect, leave, receive, write_stderr, write_stdout};
 use serde::Deserialize;
 
-/// An output descriptor, never an arbitrary file descriptor.
-#[derive(Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub(super) enum Stream {
-    /// Raw standard output.
-    Stdout,
-    /// Raw standard error.
-    Stderr,
-}
-
-/// One write, which the test grants before the program makes it.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Chunk {
-    /// The descriptor that receives these bytes.
-    stream: Stream,
-    /// Unmodified bytes, including a partial UTF-8 scalar.
-    bytes: Vec<u8>,
-}
-
-/// Component execution scenarios, parsed completely before any file, stream or socket effect.
+/// Component execution scenarios, parsed completely before any file effect.
 #[derive(Deserialize)]
 #[serde(tag = "scenario", rename_all = "kebab-case", deny_unknown_fields)]
 pub(super) enum Record {
-    /// Write the first two operands to the streams, announce `READY` on the third, a port,
-    /// and wait for one release byte.
-    Pending {},
-    /// As `Pending`, but answer each termination request with `T` on the socket and stay alive.
-    #[cfg(unix)]
-    Stubborn {},
-    /// Ask the test for a release on the port in the only operand before each write.
-    Chunks {
-        /// Ordered writes, all decoded before connecting.
-        chunks: Vec<Chunk>,
-    },
     /// Create the file the only operand names.
     Touch {},
     /// Replace this process with a test binary rerunning one test.
@@ -67,34 +33,9 @@ impl Record {
     }
 }
 
-/// The two stream texts and the port a pending program takes as operands.
-fn pending_operands(operands: &[OsString]) -> io::Result<(&OsString, &OsString, u16)> {
-    let [stdout, stderr, port] = operands else {
-        return Err(io::Error::other("expected two stream texts and a port"));
-    };
-    let port = port
-        .to_str()
-        .and_then(|port| port.parse().ok())
-        .filter(|port| *port != 0)
-        .ok_or_else(|| io::Error::other("the port operand is not a nonzero port"))?;
-    Ok((stdout, stderr, port))
-}
-
 /// Run the selected program with its untouched native operands.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
-        Record::Pending {} => {
-            let (stdout, stderr, port) = pending_operands(operands)?;
-            write_stdout(stdout.as_encoded_bytes())?;
-            write_stderr(stderr.as_encoded_bytes())?;
-            let mut socket = connect(port)?;
-            socket.write_all(b"READY")?;
-            receive(&mut socket)?;
-            leave(0)
-        }
-        #[cfg(unix)]
-        Record::Stubborn {} => stubborn(operands),
-        Record::Chunks { chunks } => granted(chunks, operands),
         Record::Touch {} => {
             let [path] = operands else {
                 return Err(io::Error::other("expected one path"));
@@ -109,46 +50,4 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
                 .exec())
         }
     }
-}
-
-/// Answer each termination request with `T` while staying alive until released.
-#[cfg(unix)]
-fn stubborn(operands: &[OsString]) -> io::Result<()> {
-    let (stdout, stderr, port) = pending_operands(operands)?;
-    write_stdout(stdout.as_encoded_bytes())?;
-    write_stderr(stderr.as_encoded_bytes())?;
-    let mut socket = connect(port)?;
-    let (mut notified, writer) = std::os::unix::net::UnixStream::pair()?;
-    let _registration =
-        signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
-    let mut answers = socket.try_clone()?;
-    std::thread::spawn(move || {
-        while notified.read_exact(&mut [0]).is_ok() && answers.write_all(b"T").is_ok() {}
-    });
-    socket.write_all(b"READY")?;
-    receive(&mut socket)?;
-    leave(0)
-}
-
-/// Write each chunk after the test grants its release on the port operand.
-fn granted(chunks: &[Chunk], operands: &[OsString]) -> io::Result<()> {
-    let [port] = operands else {
-        return Err(io::Error::other("expected one port"));
-    };
-    let port = port
-        .to_str()
-        .and_then(|port| port.parse().ok())
-        .ok_or_else(|| io::Error::other("the port operand is not a port"))?;
-    let mut socket = connect(port)?;
-    for chunk in chunks {
-        socket.write_all(b"R")?;
-        if receive(&mut socket)? != Some(b'x') {
-            return Err(io::Error::other("missing release"));
-        }
-        match chunk.stream {
-            Stream::Stdout => write_stdout(&chunk.bytes)?,
-            Stream::Stderr => write_stderr(&chunk.bytes)?,
-        }
-    }
-    leave(0)
 }

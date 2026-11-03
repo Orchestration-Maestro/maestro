@@ -7,7 +7,7 @@ use maestro_extensions::{
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncReadExt;
 
 /// The native programs of one test: the disposable directory that owns them and the program
 /// already installed for each scenario.
@@ -25,11 +25,6 @@ impl Programs {
             directory: Scratch::new().unwrap(),
             installed: RefCell::default(),
         }
-    }
-
-    /// The path of a program playing `scenario` of the component execution family.
-    fn add(&self, scenario: &Value) -> String {
-        self.add_in("component-exec", scenario)
     }
 
     /// The path of a program playing `scenario` of `family`, installed on first use.
@@ -127,17 +122,25 @@ async fn outcome(
         .to_string()
 }
 
-/// A request for a child that writes its first two operands to its streams, reports READY on
-/// the test's socket, named by its third operand, then waits for one release byte, with
-/// `fields` merged in and `port` as the third operand, when it has one.
+/// A request for an `exec` family child that reports READY on the test's socket at `port`
+/// and then waits for one release byte. The `scenario` (default `holder`), `stdout` and
+/// `stderr` fields choose and shape the child, which writes those bytes before READY; every
+/// other field is merged into the request.
 fn pending_request(programs: &Programs, fields: &Value, port: u16) -> Value {
-    let command = programs.add(&json!({"scenario":"pending"}));
-    let mut request = json!({"command":command, "args":["", "", ""], "options":{"cwd":""}});
-    for (key, value) in fields.as_object().unwrap() {
-        request[key] = value.clone();
+    let mut fields = fields.as_object().unwrap().clone();
+    let scenario = fields
+        .shift_remove("scenario")
+        .unwrap_or_else(|| "holder".into());
+    let mut record = json!({"scenario":scenario, "port":port});
+    for stream in ["stdout", "stderr"] {
+        if let Some(bytes) = fields.shift_remove(stream) {
+            record[stream] = bytes;
+        }
     }
-    if let Some(slot) = request["args"].get_mut(2) {
-        *slot = port.to_string().into();
+    let command = programs.add_in("exec", &record);
+    let mut request = json!({"command":command, "args":[], "options":{"cwd":""}});
+    for (key, value) in fields {
+        request[key] = value;
     }
     request
 }
@@ -146,7 +149,7 @@ fn pending_request(programs: &Programs, fields: &Value, port: u16) -> Value {
 /// the child between its connection and its announcement.
 async fn ready(listener: &tokio::net::TcpListener) -> Option<tokio::net::TcpStream> {
     let (mut socket, _) = listener.accept().await.unwrap();
-    let mut ready = [0; 5];
+    let mut ready = [0; 6];
     match socket.read_exact(&mut ready).await {
         Ok(_) => {}
         Err(error)
@@ -159,7 +162,7 @@ async fn ready(listener: &tokio::net::TcpListener) -> Option<tokio::net::TcpStre
         }
         Err(error) => panic!("the child's announcement failed: {error}"),
     }
-    assert_eq!(&ready, b"READY");
+    assert_eq!(&ready, b"READY\n");
     Some(socket)
 }
 
@@ -416,7 +419,7 @@ fn exec_caller_signal_cancels_pending_child() {
         let (observations, _seen) = super::abort_observers::observe(&events);
         let signal = Cancellation::new();
         super::abort_observers::bind(&runner, &signal);
-        let fields = json!({"args":["partial-out", "partial-err", ""], "signal":"relay"});
+        let fields = json!({"stdout":b"partial-out", "stderr":b"partial-err", "signal":"relay"});
         let programs = Programs::new();
         let result = pending(&runner, &programs, fields, |socket| {
             assert!(!signal.is_aborted());
@@ -482,7 +485,7 @@ fn exec_deadline_is_optional_and_milliseconds() {
     run(async {
         let (_owner, runner, events) = observed().await;
         let programs = Programs::new();
-        let finished = json!({"stdout":"", "stderr":"", "code":0, "killed":false});
+        let finished = json!({"stdout":"bye", "stderr":"", "code":0, "killed":false});
         let expired = json!({"stdout":"", "stderr":"", "code":KILLED, "killed":true});
         for options in [
             json!({"cwd":""}),
@@ -673,7 +676,7 @@ fn signal_aliases_and_overlaps_keep_other_calls_alive() {
         let (observations, _seen) = super::abort_observers::observe(&events);
         let released = |label| super::abort_observers::released(&owner, label);
         let relay = |label: &str| json!({"signal":"relay", "label":label});
-        let finished = json!({"stdout":"", "stderr":"", "code":0, "killed":false, "before":false, "notified":0, "after":false});
+        let finished = json!({"stdout":"bye", "stderr":"", "code":0, "killed":false, "before":false, "notified":0, "after":false});
         let shared = Cancellation::new();
         super::abort_observers::bind(&runner, &shared);
         let (older, older_socket) = started(&runner, &programs, &relay("older")).await;
@@ -715,41 +718,37 @@ fn exec_utf8_pipe_fragments_remain_valid() {
     run(async {
         let runner = loaded().await;
         let programs = Programs::new();
-        let data = "🙂".as_bytes();
-        let mut chunks = Vec::new();
-        for stream in ["stdout", "stderr"] {
-            for split in 1..4 {
-                chunks.push(json!({"stream":stream, "bytes":&data[..split]}));
-                chunks.push(json!({"stream":stream, "bytes":&data[split..]}));
-            }
-            chunks.push(json!({"stream":stream, "bytes":&data[..2]}));
+        for split in 1..4 {
+            let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+                .await
+                .unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let program = programs.add_in(
+                "exec",
+                &json!({"scenario":"utf8", "port":port, "split":split}),
+            );
+            // The child writes the head of one scalar to both streams before READY and the
+            // tail only after the release, so each stream's scalar spans two pipe writes.
+            let request = json!({"command":program, "args":[], "options":{"cwd":""}});
+            let (result, ()) = futures_util::future::join(execute(&runner, request), async {
+                release(ready(&listener).await.unwrap());
+            })
+            .await;
+            assert_eq!(
+                result,
+                json!({"stdout":"\u{10348}", "stderr":"\u{10348}", "code":0, "killed":false}),
+                "split {split}"
+            );
         }
-        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
-            .await
-            .unwrap();
-        let port = listener.local_addr().unwrap().port();
-        let writes = chunks.len();
-        let program = programs.add(&json!({"scenario":"chunks", "chunks":chunks}));
-        // The child asks before each write, so each fragment reaches its pipe on its own.
-        let grants = tokio::task::spawn_local(async move {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            for _ in 0..writes {
-                let mut request = [0];
-                socket.read_exact(&mut request).await.unwrap();
-                assert_eq!(&request, b"R");
-                socket.write_all(b"x").await.unwrap();
-            }
-        });
+        let malformed = programs.add_in("exec", &json!({"scenario":"malformed"}));
         let result = execute(
             &runner,
-            json!({"command":program, "args":[port.to_string()], "options":{"cwd":""}}),
+            json!({"command":malformed, "args":[], "options":{"cwd":""}}),
         )
         .await;
-        grants.await.unwrap();
-        let expected = format!("🙂🙂🙂{}", String::from_utf8_lossy(&"🙂".as_bytes()[..2]));
         assert_eq!(
             result,
-            json!({"stdout":expected, "stderr":expected, "code":0, "killed":false})
+            json!({"stdout":"a\u{fffd}b", "stderr":"\u{fffd}", "code":0, "killed":false})
         );
     });
 }
@@ -763,10 +762,11 @@ fn exec_term_resistance_uses_existing_escalation() {
         let signal = Cancellation::new();
         super::abort_observers::bind(&runner, &signal);
         // The child writes its partial streams, reports READY and answers each termination
-        // request with `T` on the socket instead of ending.
+        // request with `bye` on standard output and `T` on the socket instead of ending.
         let fields = json!({
-            "command":programs.add(&json!({"scenario":"stubborn"})),
-            "args":["partial-out", "partial-err", ""],
+            "scenario":"stubborn",
+            "stdout":b"partial-out",
+            "stderr":b"partial-err",
             "signal":"relay",
         });
         let (execution, mut socket) = started(&runner, &programs, &fields).await;
@@ -793,7 +793,7 @@ fn exec_term_resistance_uses_existing_escalation() {
         let result = execution.await.unwrap();
         assert_eq!(
             result,
-            json!({"stdout":"partial-out", "stderr":"partial-err", "code":KILLED, "killed":true, "before":false, "notified":1, "after":true})
+            json!({"stdout":"partial-outbye", "stderr":"partial-err", "code":KILLED, "killed":true, "before":false, "notified":1, "after":true})
         );
     });
 }
@@ -809,7 +809,7 @@ fn exec_failures_preserve_messages_and_resource_phase() {
         super::abort_observers::bind(&runner, &signal);
         super::abort_observers::signal_command(&runner, "subscribe control").await;
         let programs = Programs::new();
-        let touch = programs.add(&json!({"scenario":"touch"}));
+        let touch = programs.add_in("component-exec", &json!({"scenario":"touch"}));
         let acquire =
             json!({"command":touch, "args":[marker], "options":{"cwd":""}, "signal":"relay"});
 
@@ -853,15 +853,18 @@ fn exec_failures_preserve_messages_and_resource_phase() {
 /// Registers the component's shell, whose commands run as the final operand of a child that
 /// writes the partial streams `partial-out` and `partial-err` before it reports READY. The
 /// child's program lives as long as the returned programs.
-async fn register_shell(runner: &ExtensionRunner<Local>) -> Programs {
+async fn register_shell(runner: &ExtensionRunner<Local>, port: u16) -> Programs {
     let command = runner
         .get_command("bridge-observe")
         .unwrap()
         .command
         .handler;
     let programs = Programs::new();
-    let pending = programs.add(&json!({"scenario":"pending"}));
-    let shell = json!({"program":pending, "operands":["partial-out", "partial-err"]});
+    let holder = programs.add_in(
+        "exec",
+        &json!({"scenario":"holder", "port":port, "stdout":b"partial-out", "stderr":b"partial-err"}),
+    );
+    let shell = json!({"program":holder, "operands":[]});
     let registered = command(
         format!("exec shell:{shell}"),
         runner.create_command_context(),
@@ -875,7 +878,11 @@ async fn register_shell(runner: &ExtensionRunner<Local>) -> Programs {
 fn returned_shell_abort_survives_event_handler_return() {
     run(async {
         let (owner, runner, _events) = observed().await;
-        let _programs = register_shell(&runner).await;
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let _programs = register_shell(&runner, port).await;
         let mut event = maestro_extensions::UserBashEvent {
             command: "remote".into(),
             cwd: "/event".into(),
@@ -887,17 +894,13 @@ fn returned_shell_abort_survives_event_handler_return() {
             .unwrap()
             .unwrap();
         let operations = returned.operations.unwrap();
-        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
-            .await
-            .unwrap();
-        let port = listener.local_addr().unwrap().port();
-        let script = port.to_string();
+        let script = "remote";
         let signal = Cancellation::new();
         let mut chunks = Vec::new();
         let mut sink = |bytes: &[u8]| chunks.push(bytes.to_vec());
         let (error, mut held) = {
             let execution = operations.exec(
-                &script,
+                script,
                 "",
                 maestro_extensions::BashExecOptions {
                     on_data: &mut sink,

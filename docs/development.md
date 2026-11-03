@@ -1351,24 +1351,23 @@ use the `command` family's `output` scenario instead.
 
 #### Component execution stand-ins
 
-The `component-exec` family stands in for the programs a guest component runs through
-explicit execution. The component passes the alias path and its literal operands
-through the same request it always used; the record selects the behavior and the
-operands carry the per-call values. Every scenario except `stubborn` and `rerun`
-works on every platform. A program that only writes both streams and ends uses the
-`command` family's `output` scenario, and one that reports its working directory and
-operands uses the `child` family's `arguments` scenario.
+The `component-exec` family covers the two guest-component programs no other family
+can play: one that creates a file and one that reruns a test binary. The component
+passes the alias path and its literal operands through the same request it always
+used. `touch` works on every platform and `rerun` needs Unix. A child that holds a
+connection, answers termination or splits output across pipe writes uses the `exec`
+family, a program that only writes both streams and ends uses the `command` family's
+`output` scenario, and one that reports its working directory and operands uses the
+`child` family's `arguments` scenario.
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `pending` | Writes its first two operands to standard output and standard error, connects to the loopback port in its third operand, sends `READY` and waits for one byte or the end of the connection. |
-| `stubborn` | As `pending`, and answers each SIGTERM with `T` on the connection instead of ending. Unix only. |
-| `chunks` | Takes a loopback port as its only operand. Before each of `chunks` (`stream`, `bytes`), it sends `R` and waits for the test's `x`, so every fragment reaches its pipe on its own. |
 | `touch` | Creates the file its only operand names. |
 | `rerun` | Replaces the process with `binary` running `test --exact --nocapture`. Unix only. |
 
 The guest example registers a shell with `exec shell:{"program": path, "operands": [...]}`:
-each command then runs as the last operand of that program.
+each command then runs as the last operand of that program, which the `exec` family's
+`holder` ignores.
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
@@ -1655,8 +1654,8 @@ cases; the fixture never replaces or downloads it.
 
 #### Command payloads
 
-On Unix, install the same artifact as the program under test to observe command
-execution without an interpreter. Write `exec` on the first line of
+Install the same artifact as the program under test to observe command
+execution without an interpreter. `stubborn`, `identity` and `blocked` need Unix. Write `exec` on the first line of
 `<alias>.fixture`, followed by one JSON object with a `scenario` field. The whole
 record is parsed before any stream, socket or directory changes; unknown fields
 and unknown scenarios fail first.
@@ -1687,8 +1686,8 @@ fn main() -> std::io::Result<()> {
 | `utf8` | With `port` and `split`, writes the first `split` bytes of one four-byte scalar to both outputs, announces `READY`, waits for a byte, then writes the rest. |
 | `malformed` | Writes `a`, byte FF and `b` to standard output, and an incomplete scalar to standard error. |
 | `cwd` | Writes the directory this process inherited. |
-| `holder` | On `port`, announces `READY`, waits for one byte, then writes `bye`. |
-| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. |
+| `holder` | On `port`, writes the optional `stdout` and `stderr` bytes, announces `READY`, waits for one byte, then writes `bye`. |
+| `stubborn` | On `port`, writes the optional `stdout` and `stderr` bytes, registers TERM, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. Unix only. |
 | `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
 | `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
 | `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |

@@ -1,11 +1,13 @@
 //! The payload bodies of the controlled command family.
 
+#[cfg(unix)]
+use std::net::TcpStream;
 use std::{
     ffi::OsString,
     io::{self, Write},
-    net::TcpStream,
 };
 
+#[cfg(unix)]
 use crate::native::termination::Termination;
 use maestro_test_process::child::{
     announce, connect, read_input, receive, write_stderr, write_stdout,
@@ -75,16 +77,22 @@ pub(super) fn cwd() -> io::Result<()> {
     write_stdout(directory.as_os_str().as_encoded_bytes())
 }
 
-/// Announce readiness, then finish after the parent's release byte.
-pub(super) fn holder(port: u16) -> io::Result<()> {
+/// Write the partial streams, announce readiness, then finish after the parent's release byte.
+pub(super) fn holder(port: u16, stdout: &[u8], stderr: &[u8]) -> io::Result<()> {
+    write_stdout(stdout)?;
+    write_stderr(stderr)?;
     let mut socket = connect(port)?;
     announce(&mut socket, "READY")?;
     receive(&mut socket)?;
     write_stdout(b"bye")
 }
 
-/// Answer every TERM with `bye` and `T` until killed, released or disconnected.
-pub(super) fn stubborn(port: u16) -> io::Result<()> {
+#[cfg(unix)]
+/// Write the partial streams, then answer every TERM with `bye` and `T` until killed, released
+/// or disconnected.
+pub(super) fn stubborn(port: u16, stdout: &[u8], stderr: &[u8]) -> io::Result<()> {
+    write_stdout(stdout)?;
+    write_stderr(stderr)?;
     let notifications = Termination::new()?;
     let mut socket = connect(port)?;
     let answers = socket.try_clone()?;
@@ -96,6 +104,7 @@ pub(super) fn stubborn(port: u16) -> io::Result<()> {
     Ok(())
 }
 
+#[cfg(unix)]
 /// Report each queued termination until the parent kills this process.
 fn answer_each_termination(mut notifications: Termination, mut socket: TcpStream) {
     while notifications.wait().is_ok() {
@@ -168,6 +177,7 @@ pub(super) fn termination(port: u16) -> io::Result<()> {
     std::fs::write("survived", b"survived")
 }
 
+#[cfg(unix)]
 /// Report the session and process group this process leads or belongs to.
 pub(super) fn identity() -> io::Result<()> {
     let session = rustix::process::getsid(None).map_err(io::Error::from)?;
@@ -205,6 +215,7 @@ pub(super) fn tree_leaf(port: u16) -> io::Result<()> {
     receive(&mut socket).map(|_| ())
 }
 
+#[cfg(unix)]
 /// Finish after one termination signal, reporting it with `code` when supplied.
 /// Announce readiness on `port`, when supplied, only after registering TERM.
 pub(super) fn blocked(code: Option<i32>, port: Option<u16>) -> io::Result<()> {

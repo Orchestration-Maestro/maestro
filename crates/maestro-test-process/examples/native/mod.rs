@@ -17,7 +17,6 @@ mod component;
 mod credentials;
 mod echo;
 mod editor;
-#[cfg(unix)]
 mod exec;
 mod git;
 mod notification;
@@ -67,7 +66,6 @@ enum Request {
     /// Answer as an AWS credential process or a Google executable source.
     Credentials(credentials::Record, Vec<OsString>),
     /// Exchange controlled command payload bytes.
-    #[cfg(unix)]
     Exec(exec::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     Rpc(rpc::Record),
@@ -147,7 +145,6 @@ impl Request {
                 credentials::Record::parse(&text)?,
                 operands,
             )),
-            #[cfg(unix)]
             Some("exec") => Ok(Self::Exec(exec::Record::parse(&text)?, operands)),
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
@@ -187,7 +184,6 @@ pub(super) fn run() -> io::Result<()> {
         #[cfg(unix)]
         Request::BrowserLaunch(record, operands) => browser_launch::run(&record, &operands),
         Request::Credentials(record, operands) => credentials::run(&record, &operands),
-        #[cfg(unix)]
         Request::Exec(record, operands) => exec::run(&record, &operands),
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]

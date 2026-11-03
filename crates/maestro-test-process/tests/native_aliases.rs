@@ -334,46 +334,6 @@ fn scenario_alias(root: &Path, name: &str, family: &str, scenario: &serde_json::
     path
 }
 
-/// Each write of a granted-release scenario follows its release on the control socket.
-#[test]
-fn component_exec_chunks_write_only_after_each_release() {
-    use serde_json::json;
-    let root = Scratch::new().unwrap();
-    let chunks = [b"\xf0\x9f".as_slice(), b"\x99\x82".as_slice()];
-    let scenario = json!({"scenario": "chunks", "chunks": [
-        {"stream": "stdout", "bytes": chunks[0]},
-        {"stream": "stderr", "bytes": chunks[1]},
-    ]});
-    let alias = scenario_alias(root.path(), "chunks", "component-exec", &scenario);
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let port = listener.local_addr().unwrap().port();
-    let mut child = Command::new(alias)
-        .arg(port.to_string())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-    let (mut control, _) = listener.accept().unwrap();
-    let mut request = [0];
-    control.read_exact(&mut request).unwrap();
-    assert_eq!(&request, b"R");
-    control.write_all(b"x").unwrap();
-    // The child asks for the second release only after the first write.
-    control.read_exact(&mut request).unwrap();
-    let mut first = [0; 2];
-    child
-        .stdout
-        .as_mut()
-        .unwrap()
-        .read_exact(&mut first)
-        .unwrap();
-    assert_eq!(first.as_slice(), chunks[0]);
-    control.write_all(b"x").unwrap();
-    let output = child.wait_with_output().unwrap();
-    assert!(output.status.success());
-    assert_eq!(output.stderr, chunks[1]);
-}
-
 /// Component execution inputs that are not exact fail before any stream or file effect.
 #[test]
 fn component_exec_inputs_fail_before_effects() {
@@ -386,25 +346,11 @@ fn component_exec_inputs_fail_before_effects() {
         "component-exec",
         &json!({"scenario": "touch"}),
     );
-    let pending = scenario_alias(
-        root.path(),
-        "pending",
-        "component-exec",
-        &json!({"scenario": "pending"}),
-    );
-    for (alias, operands) in [
-        (
-            &touch,
-            vec![sentinel.as_os_str().to_owned(), "extra".into()],
-        ),
-        (&pending, vec!["out".into(), "err".into(), "0".into()]),
-        (
-            &pending,
-            vec!["out".into(), "err".into(), "not a port".into()],
-        ),
-        (&pending, vec!["out".into()]),
+    for operands in [
+        vec![],
+        vec![sentinel.as_os_str().to_owned(), "extra".into()],
     ] {
-        let run = Command::new(alias).args(&operands).output().unwrap();
+        let run = Command::new(&touch).args(&operands).output().unwrap();
         assert!(!run.status.success(), "accepted {operands:?}");
         assert!(run.stdout.is_empty());
         assert!(!sentinel.exists());
@@ -412,7 +358,6 @@ fn component_exec_inputs_fail_before_effects() {
     for record in [
         json!({"scenario": "touch", "unknown": true}),
         json!({"scenario": "unknown"}),
-        json!({"scenario": "chunks", "chunks": [{"stream": "stdout", "bytes": [256]}]}),
     ] {
         let alias = scenario_alias(root.path(), "invalid", "component-exec", &record);
         let run = Command::new(alias).arg(&sentinel).output().unwrap();
