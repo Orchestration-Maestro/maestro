@@ -3,7 +3,7 @@ use serde_json::json;
 use wasmtime::component::Resource;
 
 use super::documents::Answer;
-use super::example_support::invoke_command_on_component;
+use super::example_support::{invoke_command_on_component, released_component};
 use super::host::{Harness, borrow};
 use super::host_family::guest::Capabilities;
 use super::ui_host::receipts;
@@ -98,31 +98,19 @@ fn view(harness: &mut Harness, width: Option<u32>) -> Result<Vec<String>, String
     Ok(lines)
 }
 
-/// Restores the header through its command and releases the view it replaced.
+/// Restores the header through its command; the replaced view is queued for release.
 fn restore(harness: &mut Harness) -> Result<(), String> {
-    let component = harness
-        .observed()
-        .ui
-        .header
-        .custom
-        .as_ref()
-        .map(|slot| slot.component);
     let key = harness
         .callback("command builtin-header")
         .map_err(|e| e.to_string())?;
-    invoke_command_on_component(harness, key, "ignored arguments", false)?;
-    if let Some(component) = component {
-        super::block_on(harness.release(component)).map_err(|e| e.to_string())?;
-    }
-    Ok(())
+    invoke_command_on_component(harness, key, "ignored arguments", false)
 }
 
-/// Releases the event and command registrations.
+/// Releases every registration, the factories and replaced views included, and checks the host
+/// kept nothing lent.
 fn finish(harness: &mut Harness) -> Result<(), String> {
-    for name in ["event session_start", "command builtin-header"] {
-        let key = harness.callback(name).map_err(|e| e.to_string())?;
-        super::block_on(harness.release(key)).map_err(|e| e.to_string())?;
-    }
+    released_component(harness)?;
+    assert_eq!(harness.observed().live, 0, "no handle stays lent");
     Ok(())
 }
 
