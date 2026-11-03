@@ -272,6 +272,18 @@ fn exec_literal_arguments_and_directory_through_host() {
         assert_eq!(result["stderr"], "");
         assert_eq!(result["code"], 0);
         assert_eq!(result["killed"], false);
+        let relay = programs.add_in(
+            "child",
+            &json!({"scenario":"relay", "ready":false, "tail":b"end"}),
+        );
+        let result = execute(
+            &runner,
+            json!({"command":relay, "args":[], "options":{"cwd":cwd}}),
+        )
+        .await;
+        assert_eq!(result["stdout"], "");
+        assert_eq!(result["stderr"], "end");
+        assert_eq!(result["code"], 0);
     });
 }
 
