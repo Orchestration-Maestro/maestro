@@ -27,6 +27,8 @@ pub(super) enum Record {
     Announce {
         /// Parent-owned port.
         port: u16,
+        /// Read the release from standard input instead of the parent socket.
+        stdin: bool,
         /// Standard output written after the release.
         stdout: Vec<u8>,
         /// Standard error written after the release.
@@ -78,9 +80,10 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
         Record::Relay { ready, tail } => relay(*ready, tail),
         Record::Announce {
             port,
+            stdin,
             stdout,
             stderr,
-        } => announce(*port, stdout, stderr),
+        } => announce(*port, *stdin, stdout, stderr),
         Record::Grouped { port } => grouped(*port),
         Record::Challenge { port } => challenge(*port),
         Record::Early {
@@ -134,10 +137,14 @@ fn relay(ready: bool, tail: &[u8]) -> io::Result<()> {
 }
 
 /// Report this process, then write the final output after the parent's release byte.
-fn announce(port: u16, stdout: &[u8], stderr: &[u8]) -> io::Result<()> {
+fn announce(port: u16, stdin: bool, stdout: &[u8], stderr: &[u8]) -> io::Result<()> {
     let mut socket = connect(port)?;
     socket.write_all(&u64::from(std::process::id()).to_be_bytes())?;
-    socket.read_exact(&mut [0; 1])?;
+    if stdin {
+        io::stdin().read_exact(&mut [0; 1])?;
+    } else {
+        socket.read_exact(&mut [0; 1])?;
+    }
     write_stdout(stdout)?;
     write_stderr(stderr)?;
     leave(0)

@@ -232,7 +232,7 @@ fn native_child_keeps_descriptor_selection() {
     let producer = child(
         &root,
         "announce",
-        &json!({"scenario":"announce","port":0,"stdout":[],"stderr":[]}),
+        &json!({"scenario":"announce","port":0,"stdin":false,"stdout":[],"stderr":[]}),
     );
     for selected in selections {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
@@ -240,7 +240,7 @@ fn native_child_keeps_descriptor_selection() {
         crate::support::native::select(
             &producer,
             "child",
-            &json!({"scenario":"announce","port":port,"stdout":[],"stderr":[]}),
+            &json!({"scenario":"announce","port":port,"stdin":false,"stdout":[],"stderr":[]}),
         );
         let pid = call(
             &mut rpc,
@@ -305,7 +305,7 @@ fn native_child_completion_keeps_output_close_order() {
     let holder = child(
         &root,
         "late",
-        &json!({"scenario":"announce","port":port,
+        &json!({"scenario":"announce","port":port,"stdin":false,
             "stdout":b"late\0\xff","stderr":b"late-error"}),
     );
     let producer = child(
@@ -540,7 +540,7 @@ fn native_child_handles_outlive_the_callback() {
 struct HeldProvider {
     /// Loopback endpoint for the ordinary native model owner.
     base: String,
-    /// The exact request admitted after the guest's agent-start handler returned.
+    /// The exact request admitted while the guest's agent-start handler may still run.
     request: std::sync::mpsc::Receiver<Value>,
     /// Releases the held server transaction during teardown.
     release: std::sync::mpsc::Sender<()>,
@@ -615,7 +615,7 @@ fn native_child_abort_keeps_the_original_signal() {
     let producer = child(
         &root,
         "announce",
-        &json!({"scenario":"announce","port":listener.local_addr().unwrap().port(),"stdout":[],"stderr":[]}),
+        &json!({"scenario":"announce","port":listener.local_addr().unwrap().port(),"stdin":true,"stdout":[],"stderr":[]}),
     );
     call(
         &mut rpc,

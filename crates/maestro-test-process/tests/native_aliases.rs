@@ -296,6 +296,7 @@ fn malformed_child_records_have_no_partial_effects() {
     use serde_json::json;
     let root = Scratch::new().unwrap();
     let report = json!({"scenario": "arguments"});
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let mut invalid = vec![
         json!({"scenario": "unknown"}),
         // The command family owns raw stream output, so the child family has no such scenario.
@@ -303,6 +304,8 @@ fn malformed_child_records_have_no_partial_effects() {
         json!({"scenario": "pending", "unknown": true}),
         json!({"scenario": "relay", "ready": false, "tail": [], "unknown": true}),
         json!({"scenario": "identity", "holder": "missing", "unknown": true}),
+        json!({"scenario": "announce", "port": listener.local_addr().unwrap().port(),
+            "stdin": "false", "stdout": [], "stderr": []}),
     ];
     for (field, value) in [("scenario", json!(7)), ("scenario", json!("announce"))] {
         let mut record = report.clone();

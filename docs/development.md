@@ -1456,7 +1456,7 @@ scenario.
 | `pending` | Writes `00 ff e2` on standard output and `error` with a NUL on standard error, releases when one input byte arrives, then writes `82 ac` followed by that byte, writes `last` on standard error and relays the rest of standard input. Every write is acknowledged by the bytes the test reads, so no chunk boundary is assumed. |
 | `arguments` | Reports the working directory and the untouched operands as one JSON array. |
 | `relay` | Writes `ready` when its `ready` field is true, relays standard input to standard output until it ends, then writes the `tail` bytes on standard error. |
-| `announce` | Sends its process id, eight bytes big-endian, on the parent's `port`, waits for one release byte, writes the `stdout` and `stderr` byte arrays, then exits with status 0. |
+| `announce` | Sends its process id, eight bytes big-endian, on the parent's `port`, waits for one release byte, writes the `stdout` and `stderr` byte arrays, then exits with status 0. The required boolean `stdin` selects the release source: standard input when true, the parent socket when false. |
 | `grouped` | Sends its process id and group id on the parent's `port`, waits for the release byte, then exits with status 0. |
 | `challenge` | Sends its process id and session id, reads a 16-byte challenge, answers with its process id and that challenge, waits for the release byte, then exits with status 23. |
 | `early` | Writes the `stdout` and `stderr` byte arrays, starts `holder` with both pipes inherited, then exits with `code` while that descendant keeps them. |
@@ -1474,7 +1474,7 @@ fn main() -> std::io::Result<()> {
         std::path::Path::new(&artifact), &alias,
     )?;
     let record = serde_json::json!({"scenario": "announce", "port": 5091,
-        "stdout": [], "stderr": []});
+        "stdin": false, "stdout": [], "stderr": []});
     std::fs::write(directory.path().join("child.fixture"), format!("child\n{record}"))?;
     Ok(())
 }
@@ -1484,6 +1484,13 @@ Pass the alias absolute path as the command the native operation launches, and
 seed the record with the port the parent test listens on. The `early` and
 `identity` scenarios name a second alias in `holder`; install that one with a
 `grouped`, `announce` or `relay` record so the descendant has its own protocol.
+
+The native I/O component captures the active run's signal before spawning an
+abort-bound child. After subscribing, it also checks whether cancellation already
+happened during spawn. The abort fixture waits on standard input, so releasing
+the child handle closes that input and ends the child even if signal binding fails.
+Watch payloads belong to one registration: opening a watch discards any unconsumed
+payload from the closed registration.
 
 #### Credential processes
 
