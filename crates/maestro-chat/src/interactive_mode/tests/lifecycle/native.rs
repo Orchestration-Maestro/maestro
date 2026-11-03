@@ -169,6 +169,12 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let directory = scratch.path();
+    super::super::install(
+        directory,
+        "pause",
+        "chat",
+        &serde_json::json!({"scenario": "pause"}),
+    );
     let mut child = TestProcess::current(test)
         .unwrap()
         .env_clear()
@@ -222,8 +228,9 @@ async fn wait_disposal(
 /// Starts a tracked detached child and waits for its actual output before readiness.
 async fn tracked(world: &super::super::World, directory: &Path) {
     let (sent, mut chunks) = tokio::sync::mpsc::unbounded_channel();
+    let pause = directory.join("pause");
     let bash = world.host.session().execute_bash(
-        "echo $$; exec python3 -c 'import signal; signal.pause()'",
+        &format!("echo $$; exec '{}'", pause.display()),
         Some(Box::new(move |chunk| {
             sent.send(chunk.to_owned()).unwrap();
         })),

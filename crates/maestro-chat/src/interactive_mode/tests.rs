@@ -18,7 +18,6 @@ mod hotkeys;
 mod info;
 mod lifecycle;
 mod models;
-use maestro_test_process::native;
 mod navigation;
 mod notices;
 mod progress;
@@ -129,7 +128,7 @@ fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
 /// no developer credential reaches it. The child's temporary directory is that root's
 /// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
 /// Wayland one. The file-size signal keeps the child alive, so a write over a lowered
-/// limit fails instead of ending the child.
+/// limit fails instead of ending the child. A prepared native fixture stays available to it.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
@@ -180,11 +179,18 @@ pub(super) fn isolated_output(
         root.join("bin").display(),
         std::env::var("PATH").unwrap_or_default()
     );
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE");
     let mut all: Vec<(&OsStr, &OsStr)> = vec![
         (OsStr::new(ENV_AGENT_DIR.as_str()), root.as_os_str()),
         (OsStr::new("PATH"), OsStr::new(&path)),
         (OsStr::new("WAYLAND_DISPLAY"), OsStr::new("maestro-test")),
     ];
+    // The cleared child installs the controlled programs from the prepared artifact.
+    all.extend(
+        artifact
+            .iter()
+            .map(|artifact| (OsStr::new("MAESTRO_NATIVE_FIXTURE"), artifact.as_os_str())),
+    );
     all.extend(envs.iter().copied());
     let output = TestProcess::current(test)
         .unwrap()
@@ -1402,13 +1408,62 @@ pub(super) fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
     world.mode.active_shell.borrow().clone()
 }
 
-/// Writes an executable shell script answering every command with `body`.
-pub(super) fn scripted(directory: &Path, name: &str, body: &str) -> String {
-    use std::os::unix::fs::PermissionsExt;
+/// Installs the prepared native fixture as the executable `name` in `directory`, playing the
+/// `family` scenario `scenario`.
+pub(super) fn install(
+    directory: &Path,
+    name: &str,
+    family: &str,
+    scenario: &serde_json::Value,
+) -> std::path::PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    std::fs::create_dir_all(directory).unwrap();
     let path = directory.join(name);
-    std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-    path.to_str().unwrap().to_owned()
+    maestro_test_process::install_executable(Path::new(&artifact), &path)
+        .expect("the fixture installs");
+    record(&path, family, scenario);
+    path
+}
+
+/// Replaces the scenario the installed program `path` plays.
+pub(super) fn record(path: &Path, family: &str, scenario: &serde_json::Value) {
+    let mut sibling = path.as_os_str().to_owned();
+    sibling.push(".fixture");
+    std::fs::write(sibling, format!("{family}\n{scenario}")).unwrap();
+}
+
+/// Installs a program in `directory` that prints `stdout` and ends with `code`.
+pub(super) fn install_output(
+    directory: &Path,
+    name: &str,
+    stdout: &[u8],
+    code: u8,
+) -> std::path::PathBuf {
+    let scenario =
+        serde_json::json!({"scenario": "output", "stdout": stdout, "stderr": [], "code": code});
+    install(directory, name, "command", &scenario)
+}
+
+/// Installs an executable shell answering every command with the effects in `steps`.
+pub(super) fn scripted(directory: &Path, name: &str, steps: &serde_json::Value) -> String {
+    let scenario = serde_json::json!({"scenario": "shell", "steps": steps});
+    install(directory, name, "chat", &scenario)
+        .to_str()
+        .unwrap()
+        .to_owned()
+}
+
+/// Installs an executable shell that prints `text` for every command.
+pub(super) fn printing(directory: &Path, name: &str, text: &str) -> String {
+    scripted(directory, name, &serde_json::json!([{"print": text}]))
+}
+
+/// Listens at `path`, so a shell step holding there waits until the listener is dropped.
+pub(super) fn gate(path: &Path) -> std::os::unix::net::UnixListener {
+    // A gate of an earlier case in the same directory leaves its socket file behind.
+    drop(std::fs::remove_file(path));
+    std::os::unix::net::UnixListener::bind(path).unwrap()
 }
 
 /// A response the controlled provider left open.
@@ -1532,8 +1587,17 @@ pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
 
 /// A started mode whose shell prints an output-only marker for the command it runs.
 pub(super) async fn echoing_shell(directory: &Path) -> World {
-    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    let script = echoing_script(directory);
     bash::shelling(directory, &script).await
+}
+
+/// Installs a shell that prints `printed <command>` for every command.
+pub(super) fn echoing_script(directory: &Path) -> String {
+    scripted(
+        directory,
+        "echoing",
+        &serde_json::json!([{"print-command": {"before": "printed ", "after": "\n"}}]),
+    )
 }
 
 /// Submits `count` shell commands, each with its own text, while the response streams,

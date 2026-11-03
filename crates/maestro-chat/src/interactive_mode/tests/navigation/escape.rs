@@ -139,7 +139,7 @@ fn escape_navigation_respects_prior_interrupt_and_text_branches() {
                 Some("tree"),
                 "the empty editor pairs afterwards"
             );
-            let world = super::super::queues::held_shell(directory).await;
+            let (world, _held) = super::super::queues::held_shell(directory).await;
             append_user(&world, "only");
             let ((), errors) = super::super::driving(&world, async {
                 let command = super::super::queues::start_held(&world);

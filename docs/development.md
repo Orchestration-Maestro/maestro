@@ -1283,9 +1283,12 @@ Neither family writes harness text.
 
 #### Command stand-ins
 
-On Unix, the `command` family replaces an interpreted stand-in for a program the
-product launches by name. Install the artifact under the name the product uses,
-then write `command` on the first line of `<alias>.fixture` followed by a JSON
+The `command` family replaces an interpreted stand-in for a program the
+product launches by name. Every scenario works on every platform except `labelled`,
+`stdio`, `hold`, `forward`, `hold-hangup` and `await-release`, and the `SIGTERM`,
+`SIGKILL` and `SIGRTMAX` signals of `output`. Those scenarios, `SIGTERM` and
+`SIGKILL` need Unix; `SIGRTMAX` needs Linux. Install the artifact under the name the
+product uses, then write `command` on the first line of `<alias>.fixture` followed by a JSON
 object whose `scenario` selects one finite behaviour. The fixture parses the whole
 record before any effect and rejects an unknown scenario or field, including in the
 `labelled`, `stdio` and `package` scenarios that declare no fields of their own.
@@ -1356,6 +1359,96 @@ and stages native copies of both preparation examples. It also reports the two
 finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
+
+#### Interactive-mode stand-ins
+
+On Unix, the `chat` family stands in for the programs the interactive mode launches:
+its shell, multiplexer, package manager, Git and GitHub command line. The external
+editor is the `editor` family, the clipboard reader is the `clipboard` family's
+`paste` scenario and a search probe the interactive mode must see in flight is the
+`search` family's `probe-wait`. Install the artifact under the name the mode
+resolves from `PATH`, then write `chat` on the first line of `<alias>.fixture`
+followed by a JSON object whose `scenario` selects one finite behavior. The fixture
+parses the whole record before any effect and rejects an unknown scenario, step,
+frame or field. The interactive-mode tests install each alias in their disposable
+root and keep `MAESTRO_NATIVE_FIXTURE` in the cleared child's environment, because
+`env_clear` drops it.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `shell` | `steps` run in order for each `<shell> -c <command>`: `{"print": text}`, `{"print-command": {"before", "after"}}` (the command text between two texts), `{"mark": target}` (create an empty file), `{"hold": target}`, `{"log": path}` (append one empty line), `"block"` (wait for a signal) and `{"exit": status}`. A target is `{"path": p}` or `{"command": suffix}`, the command text followed by the suffix. |
+| `tmux` | Answers `show -gv extended-keys` and `show -gv extended-keys-format` with the `extended_keys` and `extended_keys_format` replies (`text`, optional `code`, optional `signal`, `"SIGTERM"`, to end by that signal after writing). |
+| `gated-tmux`, `gated-package`, `gated-probe` | Require the operands of the query, report the launch (`argv`, `cwd`, and `MAESTRO_NOTICE_INHERITED`) as JSON in `<directory>/<name>.ready`, wait for the line `go` in `<name>.permit`, then answer. The tmux query ignores SIGTERM. |
+| `package-version` | Appends the working directory and each operand, joined by `\|`, to `log` and prints `"2"`. |
+| `package-remote` | Appends one JSON line (`cwd`, `argv`, `prompt`) to `log` and answers `rev-parse HEAD`, `rev-parse --abbrev-ref @{upstream}` and `ls-remote origin refs/heads/main`. |
+| `gh` | `state` receives `argv.jsonl`, one JSON array per call, and the copied document. `auth status` follows `auth` (`exit`, `remove_self`, `signal`). `gist create` plays `gist.frames` against its last operand: `{"stdout": bytes}`, `{"stderr": bytes}`, `{"send": bytes}` and `"hold"` on the control connection at `gist.port`, `"release"`, `{"chmod": octal}` and `{"copy": name}`, then ends with `gist.exit`. |
+| `pause` | Waits until a signal ends the process. |
+| `group-member` | Prints `ready` once it handles the stop signal, then prints `TSTP` if the stop arrives, or ends silently when a byte of input arrives first. |
+
+A held shell waits on a gate the test owns. Bind a Unix listener at the target path
+before the command starts; the shell connects and waits. Dropping the listener
+releases it, whether the shell connected before or after. A `release` frame asks the
+test for one grant on the control connection by sending `R` and waits for any reply.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let shell = directory.path().join("shell");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &shell)?;
+    let gate = std::os::unix::net::UnixListener::bind(directory.path().join("job-release"))?;
+    let steps = r#"[{"mark": {"command": "-started"}}, {"hold": {"command": "-release"}},
+        {"print-command": {"before": "", "after": " output\n"}}]"#;
+    let mut record = shell.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, format!("chat\n{{\"scenario\":\"shell\",\"steps\":{steps}}}"))?;
+    // Configure the shell path, run `!job`, wait for `job-started`, then release it.
+    drop(gate);
+    Ok(())
+}
+```
+
+A search probe that only answers, a quiet browser opener and a hook that only refuses
+use the `command` family's `output` scenario instead.
+
+#### Component execution stand-ins
+
+The `component-exec` family covers the two guest-component programs no other family
+can play: one that creates a file and one that reruns a test binary. The component
+passes the alias path and its literal operands through the same request it always
+used. `touch` works on every platform and `rerun` needs Unix. A child that holds a
+connection, answers termination or splits output across pipe writes uses the `exec`
+family. A program that only writes both streams and ends uses the `command` family's
+`output` scenario. One that reports its working directory and operands uses the
+`child` family's `arguments` scenario.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `touch` | Creates the file its only operand names. |
+| `rerun` | Replaces the process with `binary` running `test --exact --nocapture`. Unix only. |
+
+The guest example registers a shell with `exec shell:{"program": path, "operands": [...]}`:
+each command then runs as the last operand of that program, which the `exec` family's
+`holder` ignores.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let program = directory.path().join("arguments");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &program)?;
+    let mut record = program.clone().into_os_string();
+    record.push(".fixture");
+    std::fs::write(record, "child\n{\"scenario\":\"arguments\"}")?;
+    // Execute `program` with literal operands; it prints its directory and them back as JSON.
+    Ok(())
+}
+```
+
+A timing assertion keeps its child alive until the deadline ends it, by holding the
+connection open; it never relies on how quickly the program starts.
 
 #### Repository recipe stand-ins
 
@@ -1628,9 +1721,10 @@ cases; the fixture never replaces or downloads it.
 
 #### Command payloads
 
-On Unix, install the same artifact as the program under test to observe command
-execution without an interpreter. Write `exec` on the first line of
-`<alias>.fixture`, followed by one JSON object with a `scenario` field. The whole
+Install the same artifact as the program under test to observe command
+execution without an interpreter. `stubborn`, `identity` and `blocked` need Unix.
+Write `exec` on the first line of `<alias>.fixture`, followed by one JSON object
+with a `scenario` field. The whole
 record is parsed before any stream, socket or directory changes; unknown fields
 and unknown scenarios fail first.
 
@@ -1660,8 +1754,8 @@ fn main() -> std::io::Result<()> {
 | `utf8` | With `port` and `split`, writes the first `split` bytes of one four-byte scalar to both outputs, announces `READY`, waits for a byte, then writes the rest. |
 | `malformed` | Writes `a`, byte FF and `b` to standard output, and an incomplete scalar to standard error. |
 | `cwd` | Writes the directory this process inherited. |
-| `holder` | On `port`, announces `READY`, waits for one byte, then writes `bye`. |
-| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. |
+| `holder` | On `port`, writes the optional `stdout` and `stderr` bytes, announces `READY`, waits for one byte, then writes `bye`. |
+| `stubborn` | On `port`, writes the optional `stdout` and `stderr` bytes, registers TERM, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. Unix only. |
 | `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
 | `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
 | `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |
@@ -1684,7 +1778,9 @@ preceding bytes; no file gate or busy loop paces the child.
 
 #### Native IO children
 
-On Unix, install the same artifact as the program a byte-level operation launches.
+Install the same artifact as the program a byte-level operation launches. Every
+scenario works on every platform except `grouped`, `challenge` and `identity`,
+which read process groups and sessions and need Unix.
 Write `child` on the first line of `<alias>.fixture` and a JSON object whose
 `scenario` selects one finite behavior. The fixture parses the whole record before
 any stream, socket or descendant effect, and it rejects an unknown scenario or
@@ -1755,6 +1851,7 @@ outside their type.
 | `echo` | Copies standard input to standard output, writes the single operand to standard error, then exits with `code`. |
 | `send` | Connects to `port` on the loopback address, sends standard input, closes the connection and exits. A detached writer delivers bytes after its caller returned. |
 | `fill` | Writes `count` copies of `byte` to standard output, so a bounded capture reaches its exact limit. |
+| `paste` | Writes `types` for a first operand of `--list-types` and `image` for any other request, as a Wayland clipboard reader does. |
 
 For example, a capture that must fail one byte past its limit records a filler and
 runs the alias the way the product would:
@@ -1812,7 +1909,7 @@ The families use these fields:
 | Family | Fields and behavior |
 | --- | --- |
 | `browser_launch` | `port` names the parent's loopback listener. The viewer writes its own launched name and its literal operands as one JSON array, waits for the parent's `!` byte, answers `done` and exits 1. A viewer that never connects leaves the parent waiting, so install the alias before the product launch. |
-| `editor` | `argv` receives the launched name and every operand, each ending at a NUL. `result` names the environment variable holding the output path for the edited filename. `before` receives the file's original bytes, `content` the new bytes, and `copy` a mode-preserving copy. `remove` deletes the file, `directory` replaces it with a directory, `read_only_parent` makes its directory read-only on Unix. `descriptors` records the three standard descriptors' device, inode, mode and device number on Linux. `code` selects the status; `signal: "SIGTERM"` ends by the native signal on Unix instead. Unsupported platform effects fail before any file effects. |
+| `editor` | `argv` receives the launched name and every operand, each ending at a NUL. `result` names the environment variable holding the output path for the edited filename. `before` receives a copy of the file as it was, with its permission bits, `content` the new bytes, and `copy` a mode-preserving copy. `remove` deletes the file, `directory` replaces it with a directory, `read_only_parent` makes its directory read-only on Unix. `descriptors` records the three standard descriptors' device, inode, mode and device number on Linux. `code` selects the status; `signal: "SIGTERM"` ends by the native signal on Unix instead. Unsupported platform effects fail before any file effects. |
 | `trash` | `log` receives each literal operand on its own line, `remove` deletes the first operand, `stderr` supplies the captured diagnostic bytes and `code` the status. Install no alias at all to observe a missing program. |
 
 #### Credential processes

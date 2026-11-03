@@ -36,6 +36,16 @@ struct Request {
     infinite: bool,
 }
 
+/// The native program a registered shell runs each command through, and the literal operands
+/// that precede the command text.
+#[derive(Clone, Deserialize)]
+struct Program {
+    /// Program path, run without shell interpretation.
+    program: String,
+    /// Ordered literal operands before the command.
+    operands: Vec<String>,
+}
+
 /// Which caller-defined signal the execution receives.
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -155,17 +165,18 @@ impl SubscriptionPort for AlreadyAborted {
     }
 }
 
-/// Registers a shell handler returning operations that run each command as a script
-/// through explicit execution with the supplied signal, report both streams and reject an
-/// aborted run.
-pub(super) fn shell(api: &ExtensionAPI) -> ExtensionResult<String> {
+/// Registers a shell handler returning operations that run each command as the final operand
+/// of the supplied program through explicit execution with the supplied signal, report both
+/// streams and reject an aborted run. `program` is the JSON of the program and its operands.
+pub(super) fn shell(api: &ExtensionAPI, program: &str) -> ExtensionResult<String> {
+    let program: Program = serde_json::from_str(program).map_err(|error| error.to_string())?;
     let owner = api.clone();
     api.on(
         "user_bash",
         Rc::new(move |_, _| {
             let capture = Rc::new(super::signals::Released(owner.clone(), "shell".into()));
             let operations = BashOperations {
-                exec: remote(&owner, capture),
+                exec: remote(&owner, capture, program.clone()),
             };
             Box::pin(async move {
                 Ok(Some(ExtensionEventResult::UserBash(UserBashEventResult {
@@ -179,10 +190,12 @@ pub(super) fn shell(api: &ExtensionAPI) -> ExtensionResult<String> {
 }
 
 /// One returned shell executor, keeping `capture` until the host releases it.
-fn remote(api: &ExtensionAPI, capture: Rc<super::signals::Released>) -> BashExec {
+fn remote(api: &ExtensionAPI, capture: Rc<super::signals::Released>, program: Program) -> BashExec {
     let api = api.clone();
     Rc::new(move |command, cwd, options| {
         let (api, capture) = (api.clone(), Rc::clone(&capture));
+        let (program, mut operands) = (program.program.clone(), program.operands.clone());
+        operands.push(command);
         Box::pin(async move {
             let _ = &capture;
             let signal = options.signal.clone();
@@ -191,9 +204,7 @@ fn remote(api: &ExtensionAPI, capture: Rc<super::signals::Released>) -> BashExec
                 timeout: options.timeout.map(|seconds| seconds * 1000.0),
                 signal: options.signal,
             };
-            let result = api
-                .exec("python3", &["-c".to_owned(), command], Some(exec))
-                .await?;
+            let result = api.exec(&program, &operands, Some(exec)).await?;
             (options.on_data)(result.stdout.as_bytes())?;
             (options.on_data)(result.stderr.as_bytes())?;
             if signal.is_some_and(|signal| signal.aborted()) {

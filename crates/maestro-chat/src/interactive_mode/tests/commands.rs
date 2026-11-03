@@ -5,7 +5,7 @@ use super::super::bash::component_address;
 use super::typed::{poll, recalled, waiting};
 use super::{
     ManualRuntime, Setup, World, admitted, cases, isolated, isolated_case, isolated_output,
-    painted, scripted, submit, with_held_response,
+    painted, submit, with_held_response,
 };
 use crate::InteractiveMode;
 use maestro_app::{
@@ -525,7 +525,7 @@ fn new_session_shows_later_responses_and_compaction() {
 /// session that `veto` decides, and checks that only a kept session keeps them.
 async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
     let guard = Guard::default();
-    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    let script = super::echoing_script(directory);
     let world = commanding(directory, Some(script), &guard, None).await;
     with_held_response(&world, async |_| {
         for row in rows {

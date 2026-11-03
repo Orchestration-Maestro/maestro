@@ -20,6 +20,14 @@ pub(super) enum Record {
         /// Parent's receiving port.
         port: u16,
     },
+    /// Offer `types` for `--list-types` and print `image` for any other request, as a Wayland
+    /// clipboard reader does.
+    Paste {
+        /// Text answering `--list-types`.
+        types: String,
+        /// Bytes answering every other request.
+        image: Vec<u8>,
+    },
     /// Write `count` copies of one byte, for a bounded capture's exact limit.
     Fill {
         /// The repeated byte value.
@@ -54,6 +62,16 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             let mut stream = connect(*port)?;
             stream.write_all(&read_input()?)?;
             leave(0)
+        }
+        Record::Paste { types, image } => {
+            if operands
+                .first()
+                .is_some_and(|first| first == "--list-types")
+            {
+                write_stdout(types.as_bytes())
+            } else {
+                write_stdout(image)
+            }
         }
         Record::Fill { byte, count } => write_stdout(&vec![*byte; *count]),
     }

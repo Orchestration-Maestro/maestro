@@ -1,6 +1,6 @@
 //! The shell row's lifecycle, acknowledged through the real caller's phases.
 use super::{
-    Answer, Interception, World, active, intercepting_world, painted, poll_once, recorded, scripted,
+    Answer, Interception, World, active, intercepting_world, painted, poll_once, printing, recorded,
 };
 use crate::{BashExecutionComponent, interactive_mode::tests::isolated};
 use maestro_app::{BashError, BashExecOptions, BashExecResult, BashOperations};
@@ -249,7 +249,7 @@ fn acknowledged_shell_drain_before_completion() {
                 parked: Mutex::new(Some(parked)),
                 release: Mutex::new(Some(released)),
             });
-            let shell = scripted(directory, "shell", "printf 'unused\\n'");
+            let shell = printing(directory, "shell", "unused\n");
             let (world, _seen) = intercepting_world(directory, &shell, scripting(&script)).await;
             let caller = calling(&world, "echo lifecycle");
             async {
@@ -275,7 +275,7 @@ fn acknowledged_shell_pending_teardown_releases_row() {
                 parked: Mutex::default(),
                 release: Mutex::default(),
             });
-            let shell = scripted(directory, "shell", "printf 'unused\\n'");
+            let shell = printing(directory, "shell", "unused\n");
             let (world, _seen) = intercepting_world(directory, &shell, scripting(&script)).await;
             let caller = calling(&world, "echo teardown");
             async {

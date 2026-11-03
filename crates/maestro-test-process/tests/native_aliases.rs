@@ -217,6 +217,10 @@ fn malformed_clipboard_records_fail_before_output() {
     let filled = observe("clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":3}");
     assert!(filled.status.success());
     assert_eq!(filled.stdout, [7, 7, 7]);
+    let pasted =
+        observe("clipboard\n{\"scenario\":\"paste\",\"types\":\"image/png\\n\",\"image\":[1,2]}");
+    assert!(pasted.status.success());
+    assert_eq!(pasted.stdout, [1, 2]);
     for text in [
         "clipboard\n",
         "clipboard\n{\"scenario\":\"unknown\"}",
@@ -318,6 +322,105 @@ fn malformed_command_records_have_no_partial_effects() {
         assert!(!run.status.success(), "accepted {record}");
         assert!(run.stdout.is_empty());
         assert!(!sentinel.exists(), "partial effects for {record}");
+    }
+}
+
+/// An alias of `family` playing `scenario`, installed as `name` below `root`.
+fn scenario_alias(root: &Path, name: &str, family: &str, scenario: &serde_json::Value) -> PathBuf {
+    let path = root.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    install_executable(&artifact(), &path).unwrap();
+    let mut record = path.as_os_str().to_owned();
+    record.push(".fixture");
+    std::fs::write(record, format!("{family}\n{scenario}")).unwrap();
+    path
+}
+
+/// Component execution inputs that are not exact fail before any stream or file effect.
+#[test]
+fn component_exec_inputs_fail_before_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let sentinel = root.path().join("effect");
+    let touch = scenario_alias(
+        root.path(),
+        "touch",
+        "component-exec",
+        &json!({"scenario": "touch"}),
+    );
+    for operands in [
+        vec![],
+        vec![sentinel.as_os_str().to_owned(), "extra".into()],
+    ] {
+        let run = Command::new(&touch).args(&operands).output().unwrap();
+        assert!(!run.status.success(), "accepted {operands:?}");
+        assert!(run.stdout.is_empty());
+        assert!(!sentinel.exists());
+    }
+    for record in [
+        json!({"scenario": "touch", "unknown": true}),
+        json!({"scenario": "unknown"}),
+    ] {
+        let alias = scenario_alias(root.path(), "invalid", "component-exec", &record);
+        let run = Command::new(alias).arg(&sentinel).output().unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(!sentinel.exists(), "partial effects for {record}");
+    }
+}
+
+/// A shell step list marks its start, waits on the test's gate and prints only after the gate
+/// is dropped; the marker and gate paths derive from the command text.
+#[cfg(unix)]
+#[test]
+fn chat_shell_holds_on_the_gate_until_it_is_dropped() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let steps = json!([
+        {"mark": {"command": "-started"}},
+        {"hold": {"command": "-release"}},
+        {"print-command": {"before": "", "after": " output\n"}},
+    ]);
+    let alias = scenario_alias(
+        root.path(),
+        "shell",
+        "chat",
+        &json!({"scenario": "shell", "steps": steps}),
+    );
+    let gate = std::os::unix::net::UnixListener::bind(root.path().join("job-release")).unwrap();
+    let child = Command::new(alias)
+        .args(["-c", "job"])
+        .current_dir(root.path())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // The child connects only after it created its marker.
+    let held = gate.accept().unwrap();
+    assert!(root.path().join("job-started").exists());
+    drop((held, gate));
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stdout, b"job output\n");
+}
+
+/// Malformed interactive-mode records fail before any file, socket or stream effect.
+#[cfg(unix)]
+#[test]
+fn malformed_chat_records_have_no_partial_effects() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let sentinel = root.path().join("effect");
+    for record in [
+        json!({"scenario": "unknown"}),
+        json!({"scenario": "pause", "unknown": true}),
+        json!({"scenario": "shell", "steps": [{"mark": {"path": sentinel}}, {"unknown": 1}]}),
+        json!({"scenario": "group-member", "unknown": true}),
+        json!({"scenario": "gh", "state": root.path(), "gist": {"frames": [{"copy": "x"}, {"unknown": 1}]}}),
+    ] {
+        let alias = scenario_alias(root.path(), "invalid", "chat", &record);
+        let run = Command::new(alias).arg("file").output().unwrap();
+        assert!(!run.status.success(), "accepted {record}");
+        assert!(run.stdout.is_empty());
+        assert!(!sentinel.exists(), "partial effects for {record}");
+        assert!(!root.path().join("argv").exists());
     }
 }
 

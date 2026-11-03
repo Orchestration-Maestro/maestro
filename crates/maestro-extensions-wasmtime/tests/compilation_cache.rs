@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 use super::components::{TracedBus, loader, local};
+use super::example_process::record;
 use maestro_extensions::load_extensions;
 use maestro_extensions_wasmtime::component_engine;
 use maestro_test_directory::Scratch;
@@ -120,16 +121,9 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
             .unwrap();
     }
     let example = profile.join("examples/prepare_author_component");
-    std::fs::write(
-        &example,
-        "#!/bin/sh\nexec \"$COPY\" \"$TEST_NAME\" --exact --nocapture\n",
-    )
-    .unwrap();
-    std::fs::set_permissions(
-        &example,
-        std::os::unix::fs::PermissionsExt::from_mode(0o755),
-    )
-    .unwrap();
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    maestro_test_process::install_executable(Path::new(&artifact), &example).unwrap();
     let built = if archived { 5 } else { 1 };
     std::fs::File::open(example)
         .unwrap()
@@ -211,12 +205,11 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             process
         };
         let name = process.name().to_owned();
+        rerun_in(&example, binary, &name);
         let configured = process
             .case(case)
             .nocapture()
             .current_dir(scratch.path())
-            .env("COPY", binary)
-            .env("TEST_NAME", &name)
             .env("SETUP", &setup)
             .env("PROFILE", &profile)
             .env("NEXTEST_ENV", &environment)
@@ -253,6 +246,12 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             }
         }
     }
+}
+
+/// Records that the setup example reruns `test` in the copied executable `binary`.
+fn rerun_in(example: &Path, binary: &Path, test: &str) {
+    let rerun = serde_json::json!({"scenario":"rerun", "binary":binary, "test":test});
+    record(example, "component-exec", &rerun);
 }
 
 /// `binary` run in `configured`'s environment and directory, without its harness arguments.

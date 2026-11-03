@@ -3,7 +3,7 @@
 use super::super::share::ShareArtifact;
 use super::transfer::{assert_last_row_holds, bundle, layout_dir, rows, themed};
 use super::typed::{poll, recalled, submit, waiting};
-use super::{World, cases as recorded_cases, started};
+use super::{World, cases as recorded_cases, install, record, started};
 use maestro_app::configuration::config::{
     APP_NAME, ENV_AGENT_DIR, SERVICE_ORIGIN, get_share_viewer_url,
 };
@@ -45,47 +45,20 @@ const CONTROLLED: [&str; 5] = [
 /// The programs a child must not reach outside its controlled directory.
 const HOST_PROGRAMS: [&str; 4] = ["gh", "xclip", "xsel", "wl-copy"];
 
-/// The controlled program installed as `gh` for the commands under test.
+/// The scenario of the controlled program installed as `gh` for the commands under test.
 ///
 /// It records its arguments, then answers `auth status` with the configured status and
 /// `gist create` with the configured frames, so no live GitHub CLI, network or credential
-/// is used. A frame writes raw bytes to a stream, pauses, changes a mode or copies the
-/// document the command exported.
-const GH: &str = r#"#!/usr/bin/python3
-import json, os, shutil, socket, sys, time
-state = os.environ["MAESTRO_SHARE_STATE"]
-with open(os.path.join(state, "config.json")) as source:
-    config = json.load(source)
-with open(os.path.join(state, "argv.jsonl"), "a") as log:
-    log.write(json.dumps(sys.argv[1:]) + "\n")
-    log.flush()
-if sys.argv[1:3] == ["auth", "status"]:
-    step = config.get("auth", {})
-    if step.get("remove_self"):
-        os.remove(sys.argv[0])
-    if "signal" in step:
-        os.kill(os.getpid(), step["signal"])
-    sys.exit(step.get("exit", 0))
-step = config.get("gist", {})
-control = None
-if "port" in step:
-    control = socket.create_connection(("127.0.0.1", int(step["port"])))
-for frame in step.get("frames", []):
-    kind = frame["stream"]
-    if kind in ("out", "err"):
-        os.write(1 if kind == "out" else 2, bytes.fromhex(frame["bytes"]))
-    elif kind == "send":
-        control.sendall(bytes.fromhex(frame["bytes"]))
-    elif kind == "hold":
-        assert control.recv(1) == b""
-    elif kind == "sleep":
-        time.sleep(frame["seconds"])
-    elif kind == "chmod_artifact":
-        os.chmod(os.path.dirname(sys.argv[-1]), int(frame["mode"], 8))
-    elif kind == "copy":
-        shutil.copy(sys.argv[-1], os.path.join(state, frame["as"]))
-sys.exit(step.get("exit", 0))
-"#;
+/// is used. A frame writes raw bytes to a stream, waits for a release, changes a mode or
+/// copies the document the command exported.
+fn gh(state: &Path, settings: &Value) -> Value {
+    let mut scenario = json!({"scenario": "gh", "state": state});
+    scenario
+        .as_object_mut()
+        .unwrap()
+        .extend(settings.as_object().unwrap().clone());
+    scenario
+}
 
 /// The recorded gist result of one case.
 #[derive(Deserialize)]
@@ -179,13 +152,13 @@ fn path_without(names: &[&str]) -> String {
 /// Runs `case` of `test` in a fresh child; the parent receives its standard output.
 ///
 /// The child gets a disposable agent directory, package directory, program directory
-/// holding `program` as `gh` with `mode`, state directory, temporary directory and a path
+/// holding the controlled program as `gh` with permission bits `mode`, state directory, temporary directory and a path
 /// whose only GitHub CLI and clipboard programs are the controlled ones. `body` runs in
 /// the selected child over its agent directory.
 fn run(
     test: &str,
     case: &str,
-    program: Option<(&str, &str)>,
+    program: Option<u32>,
     body: impl AsyncFnOnce(&Path),
 ) -> Option<String> {
     if maestro_test_process::selection().is_child() {
@@ -203,18 +176,10 @@ fn run(
     for directory in [&package, &programs, &state, &temp] {
         fs::create_dir(directory).unwrap();
     }
-    if let Some((source, mode)) = program {
-        fs::write(root.join("gh-source"), source).unwrap();
-        assert!(
-            std::process::Command::new("/usr/bin/install")
-                .args(["-m", mode])
-                .arg(root.join("gh-source"))
-                .arg(programs.join("gh"))
-                .status()
-                .unwrap()
-                .success(),
-            "the controlled program is installed"
-        );
+    if let Some(mode) = program {
+        let installed = install(&programs, "gh", "chat", &gh(&state, &json!({})));
+        let mode = std::os::unix::fs::PermissionsExt::from_mode(mode);
+        fs::set_permissions(installed, mode).unwrap();
     }
     let path = format!("{}:{}", programs.display(), path_without(&HOST_PROGRAMS));
     let mut command = TestProcess::current(test)
@@ -277,11 +242,8 @@ fn artifacts() -> Vec<PathBuf> {
 
 /// Writes the controlled program's configuration for its next call.
 fn configure(settings: &Value) {
-    fs::write(
-        state_root().join("config.json"),
-        serde_json::to_string(settings).unwrap(),
-    )
-    .unwrap();
+    let program = PathBuf::from(std::env::var(&*ENV_AGENT_DIR).unwrap()).join("programs/gh");
+    record(&program, "chat", &gh(&state_root(), settings));
 }
 
 /// Forgets the arguments recorded so far.
@@ -463,19 +425,9 @@ async fn exportable(directory: &Path) -> World {
     themed(directory, &package).await
 }
 
-/// The hexadecimal bytes of `text`, for a controlled frame.
-fn hex(text: &str) -> String {
-    use std::fmt::Write as _;
-    text.bytes().fold(String::new(), |mut hex, byte| {
-        let written = write!(hex, "{byte:02x}");
-        assert!(written.is_ok());
-        hex
-    })
-}
-
-/// One byte as the hexadecimal text of a controlled frame.
-fn hex_byte(byte: u8) -> String {
-    format!("{byte:02x}")
+/// A frame that writes `text` to the program's standard output.
+fn stdout(text: &str) -> Value {
+    json!({"stdout": text.as_bytes()})
 }
 
 #[test]
@@ -620,7 +572,7 @@ fn share_reports_missing_cli_before_auth_failure() {
         assert!(arguments().is_empty(), "no program ran");
     }));
     // The same program installed without execute permission is refused at startup too.
-    drop(run(TEST, "denied", Some((GH, "0600")), async |directory| {
+    drop(run(TEST, "denied", Some(0o600), async |directory| {
         let world = started(directory).await;
         submit(&world.mode, "/share");
         drive(&world).await.unwrap();
@@ -637,10 +589,10 @@ fn share_reports_missing_cli_before_auth_failure() {
 #[test]
 fn share_auth_failure_does_not_export() {
     const TEST: &str = "share_auth_failure_does_not_export";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
         for settings in [
             json!({"auth": {"exit": 1}}),
-            json!({"auth": {"signal": 15}}),
+            json!({"auth": {"signal": "SIGTERM"}}),
         ] {
             forget_arguments();
             configure(&settings);
@@ -658,7 +610,7 @@ fn share_auth_failure_does_not_export() {
         // A completed login permits the export and the gist.
         forget_arguments();
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
-            {"stream": "out", "bytes": hex("https://gist.github.com/alice/abc123\n")}
+            stdout("https://gist.github.com/alice/abc123\n")
         ]}}));
         let world = exportable(directory).await;
         submit(&world.mode, "/share");
@@ -675,10 +627,10 @@ fn share_auth_failure_does_not_export() {
 #[test]
 fn share_creates_secret_gist_and_restores_editor() {
     const TEST: &str = "share_creates_secret_gist_and_restores_editor";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
-            {"stream": "copy", "as": "artifact.html"},
-            {"stream": "out", "bytes": hex("https://gist.github.com/alice/abc123\n")}
+            {"copy": "artifact.html"},
+            stdout("https://gist.github.com/alice/abc123\n")
         ]}}));
         let world = exportable(directory).await;
         let editor = Rc::clone(&world.mode.editor);
@@ -732,14 +684,14 @@ fn share_creates_secret_gist_and_restores_editor() {
 fn share_cancel_terminates_child_and_suppresses_late_outcome() {
     use std::io::{BufRead, BufReader, Read as _};
     const TEST: &str = "share_cancel_terminates_child_and_suppresses_late_outcome";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
         // The controlled program announces its gist step on a socket this test owns.
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
         configure(
             &json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": [
-                {"stream": "send", "bytes": hex("ready\n")},
-                {"stream": "hold"}
+                {"send": b"ready\n"},
+                "hold"
             ]}}),
         );
         let world = exportable(directory).await;
@@ -778,7 +730,7 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
         assert_loader_stopped(&world);
         // A later share runs again and reports its own result.
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
-            {"stream": "out", "bytes": hex("https://gist.github.com/alice/second\n")}
+            stdout("https://gist.github.com/alice/second\n")
         ]}}));
         submit(&world.mode, "/share");
         drive(&world).await.unwrap();
@@ -827,7 +779,7 @@ fn share_and_copy_commands_clear_editor_after_completion() {
 #[test]
 fn share_export_failure_cleans_only_owned_artifact() {
     const TEST: &str = "share_export_failure_cleans_only_owned_artifact";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
         configure(&json!({"auth": {"exit": 0}}));
         let keep = temp_root().join("keep.txt");
         fs::write(&keep, "unrelated").unwrap();
@@ -868,7 +820,7 @@ fn share_export_failure_cleans_only_owned_artifact() {
 #[test]
 fn share_spawn_failure_restores_editor_and_cleans_artifact() {
     const TEST: &str = "share_spawn_failure_restores_editor_and_cleans_artifact";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
         // The authentication answer succeeds and removes the program the gist needs.
         configure(&json!({"auth": {"exit": 0, "remove_self": true}}));
         let world = exportable(directory).await;
@@ -891,10 +843,10 @@ fn share_spawn_failure_restores_editor_and_cleans_artifact() {
 #[test]
 fn share_cleanup_failure_does_not_replace_result() {
     const TEST: &str = "share_cleanup_failure_does_not_replace_result";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
         configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
-            {"stream": "chmod_artifact", "mode": "0500"},
-            {"stream": "out", "bytes": hex("https://gist.github.com/alice/kept\n")}
+            {"chmod": "0500"},
+            stdout("https://gist.github.com/alice/kept\n")
         ]}}));
         let world = exportable(directory).await;
         submit(&world.mode, "/share");
@@ -949,55 +901,82 @@ fn share_temp_artifacts_do_not_collide() {
     }));
 }
 
+/// The settings for a successful sign-in and a gist that plays `frames` and ends with `exit`,
+/// and the thread granting each release the frames ask for on the control port they name.
+fn releasing(frames: &[Value], exit: u8) -> (Value, Option<std::thread::JoinHandle<()>>) {
+    let asked = frames.iter().filter(|frame| *frame == "release").count();
+    let granting = (asked > 0).then(|| {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let thread = std::thread::spawn(move || {
+            let (mut control, _) = listener.accept().unwrap();
+            for _ in 0..asked {
+                let mut request = [0];
+                std::io::Read::read_exact(&mut control, &mut request).unwrap();
+                assert_eq!(&request, b"R");
+                std::io::Write::write_all(&mut control, b"x").unwrap();
+            }
+        });
+        (port, thread)
+    });
+    let port = granting.as_ref().map(|(port, _)| *port);
+    let settings =
+        json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": frames, "exit": exit}});
+    (settings, granting.map(|(_, thread)| thread))
+}
+
+/// Runs `/share` over the settings and returns the world once the command settles.
+async fn shared(
+    directory: &Path,
+    (settings, granting): (Value, Option<std::thread::JoinHandle<()>>),
+) -> World {
+    configure(&settings);
+    let world = exportable(directory).await;
+    submit(&world.mode, "/share");
+    drive(&world).await.unwrap();
+    if let Some(granting) = granting {
+        granting.join().unwrap();
+    }
+    world
+}
+
 #[test]
 fn share_capture_preserves_unicode_across_pipe_boundaries() {
     const TEST: &str = "share_capture_preserves_unicode_across_pipe_boundaries";
-    drop(run(TEST, "child", Some((GH, "0700")), async |directory| {
-        // Two-, three- and four-byte scalars split across native writes, an unsplit
-        // control, and genuinely invalid bytes.
+    drop(run(TEST, "child", Some(0o700), async |directory| {
+        // Two-, three- and four-byte scalars split across native writes the test releases one at
+        // a time, an unsplit control, and genuinely invalid bytes.
+        let byte = |byte: u8| json!({"stdout": [byte]});
         let cases = [
-            json!({"auth": {"exit": 0}, "gist": {"frames": [
-                {"stream": "out", "bytes": hex_byte(0xc3)},
-                {"stream": "sleep", "seconds": 0.05},
-                {"stream": "out", "bytes": hex_byte(0xa9)},
-                {"stream": "out", "bytes": hex("\n")}
-            ]}}),
-            json!({"auth": {"exit": 0}, "gist": {"frames": [
-                {"stream": "out", "bytes": hex_byte(0xe2)},
-                {"stream": "sleep", "seconds": 0.05},
-                {"stream": "out", "bytes": hex_byte(0x82)},
-                {"stream": "sleep", "seconds": 0.05},
-                {"stream": "out", "bytes": hex_byte(0xac)},
-                {"stream": "out", "bytes": hex("\n")}
-            ]}}),
-            json!({"auth": {"exit": 0}, "gist": {"frames": [
-                {"stream": "out", "bytes": hex("gists/\u{1f980}\n")}
-            ]}}),
-            json!({"auth": {"exit": 0}, "gist": {"frames": [
-                {"stream": "out", "bytes": hex_byte(0xff)},
-                {"stream": "out", "bytes": hex("\n")}
-            ]}}),
+            (
+                vec![byte(0xc3), json!("release"), byte(0xa9), stdout("\n")],
+                "Gist: é",
+            ),
+            (
+                vec![
+                    byte(0xe2),
+                    json!("release"),
+                    byte(0x82),
+                    json!("release"),
+                    byte(0xac),
+                    stdout("\n"),
+                ],
+                "Gist: €",
+            ),
+            (vec![stdout("gists/\u{1f980}\n")], "Gist: gists/🦀"),
+            (vec![byte(0xff), stdout("\n")], "Gist: \u{fffd}"),
         ];
-        for (settings, notice) in
-            cases
-                .into_iter()
-                .zip(["Gist: é", "Gist: €", "Gist: gists/🦀", "Gist: \u{fffd}"])
-        {
-            configure(&settings);
-            let world = exportable(directory).await;
-            submit(&world.mode, "/share");
-            drive(&world).await.unwrap();
+        for (frames, notice) in cases {
+            let world = shared(directory, releasing(&frames, 0)).await;
             assert_notice(&world, &ThemeColor::Dim, notice);
         }
         // A failed gist keeps a split standard-error scalar too.
-        configure(&json!({"auth": {"exit": 0}, "gist": {"exit": 1, "frames": [
-            {"stream": "err", "bytes": hex_byte(0xc3)},
-            {"stream": "sleep", "seconds": 0.05},
-            {"stream": "err", "bytes": hex_byte(0xa9)}
-        ]}}));
-        let world = exportable(directory).await;
-        submit(&world.mode, "/share");
-        drive(&world).await.unwrap();
+        let split = vec![
+            json!({"stderr": [0xc3]}),
+            json!("release"),
+            json!({"stderr": [0xa9]}),
+        ];
+        let world = shared(directory, releasing(&split, 1)).await;
         assert_notice(
             &world,
             &ThemeColor::Error,

@@ -1,12 +1,11 @@
 //! Minimal displays through the shipped component and original native tool owners.
 #![cfg(test)]
 #![cfg(unix)]
-use super::example_process::run;
+use super::example_process::{install, run};
 use maestro_extensions::{ExtensionRunner, Local};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
-    os::unix::fs::PermissionsExt as _,
     path::Path,
     rc::Rc,
     sync::{Arc, RwLock},
@@ -74,16 +73,10 @@ fn search_programs(root: &Path) {
     std::fs::create_dir(&bin).unwrap();
     let input = root.join("input.txt");
     let event = json!({"type":"match","data":{"path":{"text":input},"line_number":2,"lines":{"text":"two\n"}}});
-    for (name, script) in [
-        (
-            "fd",
-            format!("#!/bin/sh\nprintf '%s\\0' '{}'\n", input.display()),
-        ),
-        ("rg", format!("#!/bin/sh\nprintf '%s\\n' '{event}'\n")),
-    ] {
-        let path = bin.join(name);
-        std::fs::write(&path, script).unwrap();
-        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let fd = [input.to_str().unwrap().as_bytes(), b"\0"].concat();
+    for (name, stdout) in [("fd", fd), ("rg", format!("{event}\n").into_bytes())] {
+        let scenario = json!({"scenario":"output", "stdout":stdout, "stderr":[], "code":0});
+        install(&bin, name, "command", &scenario);
     }
 }
 
