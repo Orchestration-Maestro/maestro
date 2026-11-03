@@ -3,11 +3,11 @@
 ## Quick start
 
 Use the component's standard filesystem calls for ordinary native access. For
-native host code saving files, use
-[`maestro_lock::replace`](../locking.md#recoverable-byte-publication) with
-`CreationMode::AtCreation` for requested creation permissions. The component
-save/mode facade remains undelivered; the
-[host contract](../specs/extension-host.md) describes its required behavior.
+saves with requested creation permissions and native mode operations, use the
+retained [`NativeIo`](#native-file-ownership) capability. Pass native paths directly;
+only standard-library calls need `guest_path` conversion. The application delegates
+saves to [`maestro_lock::replace`](../locking.md#recoverable-byte-publication)
+with `CreationMode::AtCreation`.
 
 ## Reference
 
@@ -93,7 +93,7 @@ filtered by umask, before writing bytes. Existing modes take precedence on rewri
 `None` keeps native defaults. Saves preserve identity, hard links, owner and ACLs.
 Unlocked readers may see partial bytes mid-save; the next coordinated acquisition
 completes an interrupted write from its recovery record.
-This publisher support does not deliver component saves or mode operations.
+Component saves and modes use the native-I/O capability described below.
 Final application-mode output routing remains separate from these host capabilities.
 
 ## Link checks
@@ -204,7 +204,76 @@ including blocked output, reload, suspend/resume and separate native exec stream
 Windows and macOS runtime behavior remains unqualified and is tracked in the
 [native-platform checks](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/286).
 
+## Native file ownership
+
+The native-I/O file operations belong to the application's
+`extension_native_io::files` module. Byte saves use `maestro-lock` for recoverable
+in-place publication, preserving native identity, hard links, owner, ACLs and
+existing permissions. Unix applies a requested mode at creation, filtered by
+umask, before writing bytes. The guest forwards operands without implementing a
+save algorithm. The application selects final-link policy and reports native
+errors. Permission bits are native Unix observations, not a Windows POSIX or ACL
+guarantee.
+
+Pass authored native paths directly to these methods, including Windows paths;
+`guest_path` is only for guest standard-library calls. Save accepts empty or
+binary byte slices. Existing native permissions win over the creation mode.
+New Unix targets are never more permissive than the requested mode. Unlocked
+readers may see partial bytes during a save. A durable recovery record completes
+an interrupted write on the next coordinated acquisition. Saves follow
+final links, including relative links and dangling targets, and retain the link
+entry. The lock owner's forty-link bound and native parent-creation behavior
+apply. A directory is created recursively with native creation/umask semantics;
+existing directories are not chmodded. Mode reads include the Unix file-type
+bits, as native metadata does. Mode changes follow links.
+
+Errors retain their native diagnostic text across the component boundary.
+`Err` from save can leave a partial target with a recovery record; the next
+coordinated writer completes that write before proceeding. `Ok(Some(warning))`
+means the target was synced but directory sync or recovery cleanup reported an
+error. Do not retry that write as though it failed. Directory creation and mode
+operations return their native errors. Non-Unix mode reads/changes return
+unsupported. On Windows save uses the native lock owner's permission preservation
+and owner-write/read-only
+mapping for a missing file; requested directory modes do not configure ACLs.
+No POSIX privacy guarantee is made there.
+
+### Native file checks
+
+The authored `native-files` component command is loaded through ordinary native
+startup and dispatch, then checked with native filesystem observations on Linux:
+
+| Operation | Observation |
+| --- | --- |
+| New binary 0600 file, empty rewrite of a 0640 file | Exact bytes and requested/preserved modes |
+| 0700 directory, mode read and change to 0750 | Native metadata matches |
+| 255-byte ASCII leaf | Exact saved bytes |
+| Relative final link to existing or dangling target | Link retained; target bytes and mode match |
+| Non-directory parent or genuinely unwritable parent | Native error; original bytes/mode unchanged; no stray sibling |
+
+The real-denial case uses a directory the test process cannot write; a privileged
+host reports that this premise cannot be exercised. The application save check
+also verifies that rewriting an existing file retains its identity, owner, group,
+permissions and hard-link contents. The lock owner's secure creation tests check
+the target's permissions before writing bytes under
+permissive and restrictive Unix umasks. The extension path delegates directly to
+that owner rather than duplicating its algorithm. Windows and macOS execution
+of these new extension operations has not been separately qualified.
+
 ## Examples
+
+### Author example
+
+```rust,ignore
+let io = api.native_io();
+io.create_dir(&private_directory, 0o700)?;
+if let Some(warning) = io.save_file(&private_file, b"\0\xff", 0o600)? {
+    // The bytes are committed; report the durability warning without retrying.
+    eprintln!("{warning}");
+}
+let mode = io.file_mode(&private_file)?;
+io.set_file_mode(&private_file, mode & 0o777)?;
+```
 
 Convert native paths only at the standard-library boundary, as shown above. Native
 hosts saving private bytes follow the

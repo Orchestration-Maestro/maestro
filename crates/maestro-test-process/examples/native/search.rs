@@ -1,7 +1,7 @@
 //! Finite native search and completion producers selected by a sibling JSON record.
 
 use std::ffi::OsString;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 use std::os::unix::{net::UnixStream, process::CommandExt};
 use std::process::{Command, Stdio};
 
@@ -10,6 +10,8 @@ use maestro_test_process::child::{
 };
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
+
+use super::termination::Termination;
 
 /// The only signal a controlled search response sends itself.
 #[derive(Deserialize)]
@@ -55,6 +57,19 @@ pub(super) enum Record {
         code: u8,
         /// Native termination instead of a numeric exit.
         signal: Option<ExitSignal>,
+    },
+    /// Report the operands and directory, then supplied stream files and status.
+    Supplied {
+        /// Destination for the `{"argv": [...], "cwd": ...}` observation.
+        observation: String,
+        /// File whose bytes become standard output.
+        stdout: String,
+        /// File whose bytes become standard error.
+        stderr: String,
+        /// File whose trimmed text becomes the exit status.
+        code: String,
+        /// Marker file whose presence removes this executable before it reports.
+        marker: Option<String>,
     },
     /// Observe discovery's version probe independently of version text and status.
     Probe {
@@ -153,6 +168,63 @@ fn arguments(path: &str, operands: &[OsString]) -> io::Result<()> {
     std::fs::write(path, serde_json::to_vec(&operands)?)
 }
 
+/// Report the operands and directory, then the supplied stream files and status.
+fn supplied(
+    observation: &str,
+    [stdout, stderr, code]: [&str; 3],
+    marker: Option<&str>,
+    operands: &[OsString],
+) -> io::Result<()> {
+    let operands: Vec<_> = operands
+        .iter()
+        .map(|value| value.to_string_lossy())
+        .collect();
+    let report = serde_json::json!({"argv": operands, "cwd": std::env::current_dir()?});
+    std::fs::write(observation, serde_json::to_vec(&report)?)?;
+    if marker.is_some_and(|path| std::path::Path::new(path).exists()) {
+        std::fs::remove_file(std::env::current_exe()?)?;
+    }
+    write_stdout(&std::fs::read(stdout)?)?;
+    write_stderr(&std::fs::read(stderr)?)?;
+    let status: i32 = std::fs::read_to_string(code)?
+        .trim()
+        .parse()
+        .map_err(io::Error::other)?;
+    leave(status)
+}
+
+/// Announce readiness, then hold the connection until the consumer is done.
+fn probe_wait(path: &str) -> io::Result<()> {
+    let mut socket = UnixStream::connect(path)?;
+    socket.write_all(b"ready")?;
+    receive(&mut socket).map(|_| ())
+}
+
+/// Mark the configured shell choice, then replace this process with the real shell.
+fn chosen_shell(operands: &[OsString]) -> io::Result<()> {
+    write_stdout(b"chosen-shell\n")?;
+    Err(std::process::Command::new("/bin/bash")
+        .args(operands)
+        .exec())
+}
+
+/// Record the operands, write the two streams, then end with the status or signal.
+fn response(
+    args: &str,
+    [stdout, stderr]: [&Vec<u8>; 2],
+    code: u8,
+    signal: Option<&ExitSignal>,
+    operands: &[OsString],
+) -> io::Result<()> {
+    arguments(args, operands)?;
+    write_stdout(stdout)?;
+    write_stderr(stderr)?;
+    if let Some(ExitSignal::Terminate) = signal {
+        kill_process(getpid(), Signal::TERM)?;
+    }
+    leave(i32::from(code))
+}
+
 /// Write the selected response without harness bytes or a command parser.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
@@ -162,15 +234,19 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             stderr,
             code,
             signal,
-        } => {
-            arguments(args, operands)?;
-            write_stdout(stdout)?;
-            write_stderr(stderr)?;
-            if let Some(ExitSignal::Terminate) = signal {
-                kill_process(getpid(), Signal::TERM)?;
-            }
-            leave(i32::from(*code))
-        }
+        } => response(args, [stdout, stderr], *code, signal.as_ref(), operands),
+        Record::Supplied {
+            observation,
+            stdout,
+            stderr,
+            code,
+            marker,
+        } => supplied(
+            observation,
+            [stdout, stderr, code],
+            marker.as_deref(),
+            operands,
+        ),
         Record::Probe {
             log,
             name,
@@ -182,11 +258,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             text,
             copy_input,
         } => marker(path, text, *copy_input, operands),
-        Record::ProbeWait { socket } => {
-            let mut socket = UnixStream::connect(socket)?;
-            socket.write_all(b"ready")?;
-            receive(&mut socket).map(|_| ())
-        }
+        Record::ProbeWait { socket } => probe_wait(socket),
         Record::FindTerm { socket } => find_term(socket),
         Record::GrepTerm {
             socket,
@@ -198,12 +270,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             chunks,
             code,
         } => chunks_output(socket, chunks, *code),
-        Record::ChosenShell {} => {
-            write_stdout(b"chosen-shell\n")?;
-            Err(std::process::Command::new("/bin/bash")
-                .args(operands)
-                .exec())
-        }
+        Record::ChosenShell {} => chosen_shell(operands),
         Record::CompletionWait { stdout, port } => completion_wait(stdout, *port),
         Record::CompletionStream { stderr, stdout } => completion_stream(*stderr, stdout),
         Record::CompletionDescendant { port, holder } => completion_descendant(*port, holder),
@@ -294,39 +361,6 @@ fn marker(path: &str, text: &str, copy_input: bool, operands: &[OsString]) -> io
     Ok(())
 }
 
-/// A queued TERM notification and the registration that owns its write end.
-struct Termination {
-    /// Retained read end, receiving a byte even when TERM precedes the wait.
-    reader: UnixStream,
-    /// Handler removed before the read end closes on normal return.
-    registration: signal_hook::SigId,
-}
-
-impl Termination {
-    /// Consume the queued signal notification without polling or a deadline.
-    fn wait(&mut self) -> io::Result<()> {
-        self.reader.read_exact(&mut [0])
-    }
-}
-
-impl Drop for Termination {
-    /// Remove the handler before releasing the retained notification reader.
-    fn drop(&mut self) {
-        signal_hook::low_level::unregister(self.registration);
-    }
-}
-
-/// Register TERM before readiness so an early signal is retained by the native pipe.
-fn termination() -> io::Result<Termination> {
-    let (reader, writer) = UnixStream::pair()?;
-    let registration =
-        signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)?;
-    Ok(Termination {
-        reader,
-        registration,
-    })
-}
-
 /// Require the parent's release byte without timers or polling.
 fn released(socket: &mut UnixStream) -> io::Result<()> {
     if receive(socket)? == Some(b'x') {
@@ -338,7 +372,7 @@ fn released(socket: &mut UnixStream) -> io::Result<()> {
 
 /// Wait for TERM, acknowledge it, and retain native pipe ownership until released.
 fn find_term(path: &str) -> io::Result<()> {
-    let mut signals = termination()?;
+    let mut signals = Termination::new()?;
     let mut socket = UnixStream::connect(path)?;
     socket.write_all(b"ready")?;
     signals.wait()?;
@@ -348,7 +382,7 @@ fn find_term(path: &str) -> io::Result<()> {
 
 /// Release one event, then acknowledge termination while deliberately remaining alive.
 fn grep_term(path: &str, event: &[u8], started: bool) -> io::Result<()> {
-    let mut signals = termination()?;
+    let mut signals = Termination::new()?;
     let mut socket = UnixStream::connect(path)?;
     socket.write_all(b"R")?;
     released(&mut socket)?;

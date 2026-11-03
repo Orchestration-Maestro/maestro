@@ -75,3 +75,6 @@ pub mod handoff_runtime;
 
 /// Native repository discovery and caller-owned Git process fallbacks.
 pub mod git;
+
+/// Detection-owned supported agent identities and their command-line labels.
+pub use maestro_detection::agents::{Agent, agent_label};

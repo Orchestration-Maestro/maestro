@@ -19,6 +19,18 @@ struct ObservedIo {
     released: RefCell<Option<tokio::sync::oneshot::Receiver<()>>>,
 }
 impl NativeIo for ObservedIo {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        self.native.save_file(path, bytes, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        self.native.file_mode(path)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.native.set_file_mode(path, mode)
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.native.create_dir(path, mode)
+    }
     fn spawn(
         &self,
         command: String,
@@ -109,8 +121,8 @@ fn detached_native_child_survives_reload_and_is_reaped() {
         });
         let session = session(&root, &local, io.clone()).await;
         let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
-        let producer = "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(os.getpid().to_bytes(8,'big')+os.getsid(0).to_bytes(8,'big')); nonce=s.makefile('rb').read(16); s.sendall(os.getpid().to_bytes(8,'big')+nonce); s.recv(1); sys.exit(23)";
-        let reply = answer(&session,json!({"op":"spawn","command":"python3","args":["-c",producer,listener.local_addr().unwrap().port().to_string()],"detached":true,"stdio":["ignore","ignore","ignore"]})).await;
+        let producer = crate::support::native::install(&root.path("bin"),"challenge","child",&json!({"scenario":"challenge","port":listener.local_addr().unwrap().port()}));
+        let reply = answer(&session,json!({"op":"spawn","command":producer,"args":[],"detached":true,"stdio":["ignore","ignore","ignore"]})).await;
         let pid = reply["value"].as_u64().unwrap();
         let (mut peer, _) = listener.accept().await.unwrap();
         assert_eq!(peer.read_u64().await.unwrap(), pid);

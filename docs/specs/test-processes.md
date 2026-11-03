@@ -1,6 +1,6 @@
 # Rust test children
 
-This contract describes checked reruns, direct native fixtures and the planned conversion of interpreted test support. Acceptance checks below are requirements, not implementation receipts. Typed isolated native setup remains planned until every shell-setup caller moves together.
+This contract describes checked reruns, direct native fixtures and the typed native setup an isolated child applies before its body. Acceptance checks below are requirements, not implementation receipts.
 
 ## Problem statement
 
@@ -12,7 +12,7 @@ Confidence: **proven in source**. Evidence: #3768; `crates/maestro-test-process/
 
 Keep checked test reruns and raw native fixtures in `maestro-test-process`. Use checked reruns when the test owns the invocation and framing. Use one prepared harness-free Rust executable when product code must receive native operands or raw streams. Replace interpreted fixture setup with typed native effects at the beginning of the isolated Rust child. Repository preparation remains in `maestro-tooling`.
 
-Confidence: **proven requirement**, authorized by #3768. The native fixture, `install_executable(artifact, destination)` and artifact preparation are implemented and tested. Typed native setup remains proposed, not measured or compiled. No product startup, search, shell, RPC or cancellation behavior changes.
+Confidence: **proven requirement**, authorized by #3768. The native fixture, `install_executable(artifact, destination)`, artifact preparation and typed native setup are implemented and tested. No product startup, search, shell, RPC or cancellation behavior changes.
 
 ## User stories
 
@@ -60,9 +60,9 @@ Keep native test-use admissions exact. A guest-authoring crate may import the in
 
 ### S04: native isolated setup
 
-**Confidence: proven infrastructure requirement. Evidence: C01, C04.**
+**Confidence: proven requirement, delivered. Evidence: C01, C04.**
 
-Remove the shell-source setup field, interpreter launch branch and `shell_setup` API after migrating all callers in one green change. The consuming checked builder carries only the typed effects existing callers need: Unix umask, process-count limit, nonterminating file-size-signal handling and new-session creation. Environment edits remain the existing ordered environment operations, including byte-valued Unix `HOME`.
+The shell-source setup field, interpreter launch branch and `shell_setup` API are gone, and every caller moved in one green change. The consuming checked builder carries only the typed effects existing callers need: Unix umask, process-count limit, nonterminating file-size-signal handling and new-session creation. Environment edits remain the existing ordered environment operations, including byte-valued Unix `HOME`.
 
 Every isolated child applies its request as its first child-entry operation and retains any registration guard until it finishes. Failure prevents the operation under test. No parent-global mutation, unsafe pre-execution hook or preload/relay performs setup.
 
@@ -143,7 +143,7 @@ Extend the existing **Test process** definition in `CONTEXT.md` to include check
 
 **Confidence: unknown until qualified.**
 
-1. Typed native setup's final exported Rust spelling/signatures must compile and pass their behavior tests before consumers use them. The installer is available as `maestro_test_process::install_executable(artifact, destination)`; this question remains open only for native setup.
+1. Typed native setup is exported as `maestro_test_process::IsolatedSetup`, with `TestProcess::setup` carrying the request and `apply_requested` applying it in the child. The installer is `maestro_test_process::install_executable(artifact, destination)`.
 2. Native copying, archive path remapping, platform executable suffixes, signal handling and current-child file-size errors require actual platform evidence. A failed premise or library mismatch stops the affected delivery for a decision; it never authorizes an interpreter fallback or weaker assertion.
 3. Completion requires a sweep of then-current main and every open pull request. No static inventory or source graph is assumed complete across generated code and platform configurations.
 
@@ -156,7 +156,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C01 | #3768: Rust controlled children, one existing owner, native PATH operands, unchanged startup and loaded qualification. #3868 retains browser-driver ownership. |
 | C02 | `crates/maestro-test-process/src/proof.rs:8-35`; `src/test_process.rs:80-110,268-280,419-493`; [existing owner contract](maestro-port.md#test-process-owner). |
 | C03 | `crates/maestro-tooling/src/test_setup.rs:1-16,45-100`; `src/test_setup/plan.rs:1-73`; `src/nextest_setup.rs`; `.config/nextest.toml`. |
-| C04 | `crates/maestro-app/tests/session_account_file.rs:154-179`; `tests/support/startup.rs:248,326`; `crates/maestro-chat/src/interactive_mode/tests.rs:145-198`; `crates/maestro-lock/src/replace/tests.rs:361-369`; `crates/maestro-settings/tests/settings_reload.rs:772-775`; component `tests/compilation_cache.rs:200-223`. |
+| C04 | The owner's own setup cases in `crates/maestro-test-process/tests/checked_runs.rs`; `crates/maestro-app/tests/session_account_file.rs`; `tests/support/startup.rs`; `crates/maestro-chat/src/interactive_mode/tests.rs`; `crates/maestro-lock/src/replace/tests.rs`; `crates/maestro-settings/tests/settings_reload.rs`; component `tests/compilation_cache.rs`. |
 | C05 | `crates/maestro-app/tests/support/rpc_peer.rs:11-73`; `tests/rpc_client_lifecycle.rs:162-219`; complete lifecycle/events/transport modules and `src/rpc_client/tests.rs:42-68`. |
 | C06 | `crates/maestro-app/tests/clipboard_copy.rs:218-259`; `tests/support/clipboard_image_effects.rs:219-231`; `tests/footer_metadata.rs:195-225`; `tests/footer_watch.rs:970-1005,1196-1235`; `tests/session_bash.rs:188-208`; `tests/package_command_execution.rs:31-125`; `tests/support/native.rs:29-39`. |
 | C07 | `crates/maestro-chat/tests/login_support/native.rs:11-75`; `tests/extension_editor.rs:289-292,565-567,1137-1145`; `tests/support/session_picker/mutations.rs:1409`; `src/interactive_mode/tests.rs:1398-1404` and its actions/authentication/autocomplete/models/notices/share/lifecycle/suspend modules. |
@@ -164,7 +164,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C09 | `crates/maestro-extensions-wasm/examples/context_bridge/exec.rs:183-205`; `crates/maestro-extensions-wasmtime/tests/exec_io.rs:80-90,199-205,278-301,446-493`; hook/cache/minimal-mode consumers. |
 | C10 | `crates/maestro/tests/native_io.rs:86-591`; `tests/native_io/faults.rs:214`; `tests/native_io/reload.rs:112-113`; `tests/truncated_tool_example.rs:15-35`; `tests/entry_routes.rs:260-306`. |
 | C11 | `examples/rpc_extension_ui.rs:365` onward; `crates/maestro-chat/Cargo.toml` registers that example; `examples/sdk/test_rpc.py`, `examples/sdk/rpc.py` and the [RPC guide](../rpc.md). |
-| C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_command.rs`, `recipe_support.rs`; `tests/fixtures/toolchain_support.rs:94-101`; browser/setup/recipe consumers. |
+| C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_support.rs`; the `tooling-command` and `tooling-wrapper` families of `crates/maestro-test-process/examples/native`; browser/setup/recipe consumers. |
 | C13 | `crates/maestro-packages/tests/cache_support/native/mod.rs:11-28`; `tests/candidate_inspection_checks.rs:169-176`; `tests/capture_context_checks.rs:34-52`; `tests/git_staging_checks.rs:1042-1056`; native Git and package-manager unit consumers. |
 | C14 | `crates/maestro-models/src/providers/content/google_shared/node_auth/tests/adc.rs:423-434`; `tests/support/profile_files.rs:24-39,60` and every process-profile consumer. |
 | C15 | `crates/maestro-daemon/tests/desktop_notification.rs:20-26,72-74`; `tests/repository_discovery.rs:365-380`. |

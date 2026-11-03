@@ -8,6 +8,8 @@ use maestro_theme::Theme;
 use std::io::{self, Write};
 use std::sync::{Arc, RwLock};
 
+mod descriptions;
+
 /// The complete help document with its substitution and heading markers.
 const HELP_TEMPLATE: &str = include_str!("help.txt");
 
@@ -53,13 +55,26 @@ fn flag_section(flags: &[Arc<RwLock<ExtensionFlag>>], styles_enabled: bool) -> S
 
 /// Render the help body with its identity values and optional bold headings.
 fn render(section: &str, styles_enabled: bool) -> String {
-    let document = HELP_TEMPLATE
+    let document = crate::packages::package_manager_cli::COMMAND_SUMMARIES
+        .iter()
+        .fold(HELP_TEMPLATE.to_owned(), |text, (name, help)| {
+            text.replace(&format!("%COMMAND_{name}%"), help)
+        });
+    let document = document
         .replace("%APP_BOLD%", &Theme::bold(APP_NAME, styles_enabled))
         .replace("%APP_UPPER%", &APP_NAME.to_uppercase())
         .replace("%APP%", APP_NAME)
         .replace("%CONFIG%", CONFIG_DIR_NAME)
         .replace("%ENV_AGENT%", &pad_column(&ENV_AGENT_DIR, ENV_COLUMN))
         .replace("%ENV_SESSION%", &pad_column(&ENV_SESSION_DIR, ENV_COLUMN));
+    let document = descriptions::OPTIONS
+        .iter()
+        .fold(document, |text, (name, help)| {
+            text.replace(
+                &format!("%OPTION_{name}%"),
+                &help.replace("%APP_UPPER%", &APP_NAME.to_uppercase()),
+            )
+        });
     let mut rendered = String::with_capacity(document.len());
     for line in document.split_inclusive('\n') {
         let (line, heading) = match line.strip_prefix(HEADING) {
@@ -99,4 +114,23 @@ pub fn print_help(
     let document = render(&section, styles_enabled);
     output.write_all(document.as_bytes())?;
     output.write_all(b"\n")
+}
+
+/// Apply the chat help owner's descriptions to the consuming-parser metadata.
+pub(crate) fn describe_options(mut command: clap::Command) -> clap::Command {
+    for &(name, help) in descriptions::OPTIONS {
+        let help = help
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .replace("%APP_UPPER%", &APP_NAME.to_uppercase());
+        command = command.mut_arg(name, |arg| {
+            let help = match arg.get_help() {
+                Some(alias) => format!("{help} {alias}"),
+                None => help,
+            };
+            arg.help(help)
+        });
+    }
+    command
 }

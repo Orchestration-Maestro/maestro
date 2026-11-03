@@ -5,6 +5,7 @@ use crate::toolchain_support;
 use maestro_test_directory::Scratch;
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 /// Dependency-free fixture resolution creates only its private cache lock.
 #[test]
@@ -90,41 +91,96 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
     );
 }
 
-/// The recipe tool builds under a private Cargo home, not the shared package cache.
+/// Recipe stand-ins answer the recipe that runs them from the prepared artifact.
 #[test]
-fn recipe_tool_build_uses_a_private_cargo_home() {
-    let root = Scratch::new().unwrap();
-    assert!(recipe_support::build_tool(root.path()).is_file());
+fn recipe_stand_ins_answer_their_recipe_command() {
+    let workspace = Workspace::new();
+    let log = workspace.path().join("stand-in.log");
+    let output = Command::new(workspace.path().join("bin").join("prek"))
+        .arg("x")
+        .env("MAESTRO_LOG", &log)
+        .output()
+        .unwrap();
     assert!(
-        root.path().join("cargo-home/.package-cache").is_file(),
-        "the tool build must lock its private package cache"
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(fs::read_to_string(log).unwrap(), "prek x\n");
+}
+
+/// A recipe command with no operands succeeds when no failure is requested.
+#[test]
+fn recipe_stand_ins_accept_no_operands_without_a_requested_failure() {
+    let workspace = Workspace::new();
+    let output = Command::new(workspace.path().join("bin/prek"))
+        .env("MAESTRO_LOG", workspace.path().join("empty.log"))
+        .env_remove("MAESTRO_FAIL")
+        .env_remove("MAESTRO_FAIL_ARG")
+        .env_remove("MAESTRO_REAL_CARGO")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", output.status);
+}
+
+/// Recording a wrapper invocation preserves the environment seen by the next wrapper.
+#[cfg(unix)]
+#[test]
+fn recording_wrapper_preserves_cargo_home_for_its_child() {
+    let tools = Scratch::new().unwrap();
+    let recorder = recipe_support::wrapper(tools.path(), "recorder");
+    let observer = recipe_support::wrapper(tools.path(), "observer");
+    let compiler = recipe_support::stand_in(tools.path(), "compiler");
+    let home = tools.path().join("cargo-home");
+    let output = Command::new(recorder)
+        .arg(observer)
+        .arg(compiler)
+        .arg("check")
+        .env("CARGO_HOME", &home)
+        .env("MAESTRO_LOG", tools.path().join("compiler.log"))
+        .env_remove("MAESTRO_REAL_CARGO")
+        .env_remove("MAESTRO_FAIL")
+        .env_remove("MAESTRO_FAIL_ARG")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        fs::read_to_string(tools.path().join("observer.log")).unwrap(),
+        format!("{}\n", home.display())
     );
 }
 
-/// The compiler wrapper behind a fixture command never sees the private Cargo home, so the
-/// compiler cache keys of the fixture's dependencies do not depend on the fixture that builds them.
+/// The environment variable through which the parent test hands the fixture root to its child.
 #[cfg(unix)]
-#[test]
-fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
-    use maestro_test_process::TestProcess;
-    use std::os::unix::fs::PermissionsExt;
+const WRAPPER_ROOT: &str = "MAESTRO_FIXTURE_WRAPPER_ROOT";
 
-    const ROOT: &str = "MAESTRO_FIXTURE_WRAPPER_ROOT";
-    if let Some(root) = std::env::var_os(ROOT) {
-        let root = Path::new(&root);
-        let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
-            .unwrap()
-            .args(["build", "--offline", "--target-dir"])
-            .arg(root.join("target"))
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        return;
-    }
+/// Build an empty library in `root` through `fixture_command`, into the `CARGO_TARGET_DIR` the
+/// parent set.
+#[cfg(unix)]
+fn build_fixture(root: &Path) {
+    let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
+        .unwrap()
+        .args(["build", "--offline"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// Run `test` again as a child that builds a fixture while the recording wrapper is the only
+/// compiler wrapper the child inherits, as `wrapper_variable`. Returns the fixture root and the
+/// recorder's directory.
+#[cfg(unix)]
+fn build_behind_recorder(test: &str, wrapper_variable: &str) -> (Scratch, Scratch) {
+    use maestro_test_process::TestProcess;
+
     let root = Scratch::new().unwrap();
     fs::create_dir(root.path().join("src")).unwrap();
     fs::write(root.path().join("src/lib.rs"), "").unwrap();
@@ -134,19 +190,16 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
     )
     .unwrap();
     let tools = Scratch::new().unwrap();
-    let recorder = tools.path().join("recorder.sh");
-    fs::write(
-        &recorder,
-        "#!/bin/sh\necho \"${CARGO_HOME-unset}\" >> \"$0.log\"\nexec \"$@\"\n",
-    )
-    .unwrap();
-    fs::set_permissions(&recorder, fs::Permissions::from_mode(0o755)).unwrap();
-    let output = TestProcess::current("fixture_command_hides_cargo_home_from_the_compiler_wrapper")
+    let recorder = recipe_support::wrapper(tools.path(), "recorder");
+    let output = TestProcess::current(test)
         .unwrap()
         .nocapture()
-        .env(ROOT, root.path())
-        .env("RUSTC_WRAPPER", &recorder)
+        .env(WRAPPER_ROOT, root.path())
+        .env("CARGO_TARGET_DIR", root.path().join("target"))
+        .env_remove("RUSTC_WRAPPER")
+        .env_remove("CARGO_BUILD_RUSTC_WRAPPER")
         .env_remove("__CARGO_LLVM_COV_RUSTC_WRAPPER")
+        .env(wrapper_variable, &recorder)
         .output()
         .unwrap();
     assert!(
@@ -154,7 +207,20 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let log = fs::read_to_string(tools.path().join("recorder.sh.log")).unwrap();
+    (root, tools)
+}
+
+/// The compiler wrapper never sees the fixture's private Cargo paths; Cargo still uses them.
+#[cfg(unix)]
+#[test]
+fn fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper() {
+    const NAME: &str = "fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper";
+    if let Some(root) = std::env::var_os(WRAPPER_ROOT) {
+        build_fixture(Path::new(&root));
+        return;
+    }
+    let (root, tools) = build_behind_recorder(NAME, "RUSTC_WRAPPER");
+    let log = fs::read_to_string(tools.path().join("recorder.log")).unwrap();
     assert!(!log.is_empty(), "the compiler wrapper must run");
     assert!(
         log.lines().all(|home| home == "unset"),
@@ -164,11 +230,40 @@ fn fixture_command_hides_cargo_home_from_the_compiler_wrapper() {
         root.path().join("cargo-home/.package-cache").is_file(),
         "Cargo keeps its private home"
     );
+    let log = fs::read_to_string(tools.path().join("recorder.target.log")).unwrap();
+    assert!(!log.is_empty(), "the compiler wrapper must run");
+    assert!(
+        log.lines().all(|target| target == "unset"),
+        "the wrapper saw a target directory: {log}"
+    );
+    assert!(
+        root.path().join("target/debug").is_dir(),
+        "Cargo builds into the supplied target directory"
+    );
+}
+
+/// A wrapper inherited as `CARGO_BUILD_RUSTC_WRAPPER`, where shared CI sets it, is replaced like
+/// an inherited `RUSTC_WRAPPER`: the compiler it runs never sees the private Cargo home.
+#[cfg(unix)]
+#[test]
+fn fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper() {
+    const NAME: &str = "fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper";
+    if let Some(root) = std::env::var_os(WRAPPER_ROOT) {
+        build_fixture(Path::new(&root));
+        return;
+    }
+    let (_root, tools) = build_behind_recorder(NAME, "CARGO_BUILD_RUSTC_WRAPPER");
+    let log = fs::read_to_string(tools.path().join("recorder.log")).unwrap();
+    assert!(!log.is_empty(), "the compiler wrapper must run");
+    assert!(
+        log.lines().all(|home| home == "unset"),
+        "the wrapper saw a Cargo home: {log}"
+    );
 }
 
 /// The wrapper is replaced only when the command ends up with a non-empty one: an empty
-/// inherited wrapper and a wrapper the command removes stay unwrapped, and a wrapper the command
-/// sets is the one the script runs.
+/// inherited wrapper, even beside `CARGO_BUILD_RUSTC_WRAPPER`, and a wrapper the command removes
+/// stay unwrapped, and a wrapper the command sets is the one the wrapper runs.
 #[cfg(unix)]
 #[test]
 fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
@@ -188,7 +283,7 @@ fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
                 .map(|value| value.to_string_lossy().into_owned())
         };
         let wrapped =
-            env("RUSTC_WRAPPER").is_some_and(|wrapper| wrapper.ends_with("rustc-wrapper.sh"));
+            env("RUSTC_WRAPPER").is_some_and(|wrapper| wrapper.ends_with("rustc-wrapper"));
         println!("{wrapped} {:?}", env("MAESTRO_FIXTURE_RUSTC_WRAPPER"));
         return;
     }
@@ -197,6 +292,8 @@ fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
             .unwrap()
             .nocapture()
             .env(REPORT, "1")
+            .env_remove("RUSTC_WRAPPER")
+            .env_remove("CARGO_BUILD_RUSTC_WRAPPER")
             .env_remove(COVERAGE);
         let output = configure(base).output().unwrap();
         assert!(output.status.success());
@@ -207,8 +304,14 @@ fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
             .unwrap()
     };
     assert_eq!(
-        report(&|process| process.env("RUSTC_WRAPPER", "")),
+        report(&|process| process
+            .env("RUSTC_WRAPPER", "")
+            .env("CARGO_BUILD_RUSTC_WRAPPER", "/inherited")),
         "false None"
+    );
+    assert_eq!(
+        report(&|process| process.env("CARGO_BUILD_RUSTC_WRAPPER", "/inherited")),
+        "true Some(\"/inherited\")"
     );
     assert_eq!(
         report(&|process| process

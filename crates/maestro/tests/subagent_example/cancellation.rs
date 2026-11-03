@@ -14,6 +14,19 @@ struct Launches {
     children: RefCell<Vec<Rc<dyn ChildProcess>>>,
 }
 impl NativeIo for Launches {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        self.native.save_file(path, bytes, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        self.native.file_mode(path)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.native.set_file_mode(path, mode)
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.native.create_dir(path, mode)
+    }
+
     fn spawn(
         &self,
         command: String,

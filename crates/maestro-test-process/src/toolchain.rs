@@ -45,13 +45,16 @@ pub fn home(root: &std::path::Path) -> std::path::PathBuf {
 
 /// Keep a fixture compiler's Cargo state inside its supplied workspace.
 ///
-/// On Unix, an inherited `RUSTC_WRAPPER` runs through a script in `root` that drops
-/// `CARGO_HOME` first. The compiler cache hashes every `CARGO_*` variable, so a private home
-/// the wrapper could see would give each fixture's registry crates a key of their own.
+/// On Unix, an inherited `RUSTC_WRAPPER`, or failing that `CARGO_BUILD_RUSTC_WRAPPER`, runs through
+/// the prepared wrapper alias in `root` that drops `CARGO_HOME` and `CARGO_TARGET_DIR` first. The
+/// compiler cache hashes every `CARGO_*` variable, so a private home or output directory the
+/// wrapper could see would give each fixture's registry crates a key of their own. Cargo passes
+/// the compiler its output directory explicitly, so the variable is not needed there.
 ///
 /// # Errors
 /// Returns an error when creating the private home, copying its source configuration or
-/// writing the wrapper script fails.
+/// installing the wrapper alias fails. Installing needs the prepared `native_fixture` artifact
+/// that nextest's `native-fixture` setup exports.
 pub fn fixture_command(
     program: impl AsRef<OsStr>,
     root: &std::path::Path,
@@ -66,14 +69,7 @@ pub fn fixture_command(
     command.current_dir(root).env("CARGO_HOME", home);
     #[cfg(unix)]
     {
-        let wrapper = command
-            .get_envs()
-            .find(|(key, _)| *key == "RUSTC_WRAPPER")
-            .map_or_else(
-                || std::env::var_os("RUSTC_WRAPPER"),
-                |(_, value)| value.map(OsStr::to_os_string),
-            )
-            .filter(|wrapper| !wrapper.is_empty());
+        let wrapper = replaced_wrapper(&command);
         if let Some(wrapper) = wrapper {
             command
                 .env("RUSTC_WRAPPER", cargo_home_hiding_wrapper(root)?)
@@ -83,24 +79,40 @@ pub fn fixture_command(
     Ok(command)
 }
 
-/// The variable through which the wrapper script receives the wrapper it replaced.
+/// The compiler wrapper Cargo would run for `command`: `RUSTC_WRAPPER` when set, even to nothing,
+/// otherwise `CARGO_BUILD_RUSTC_WRAPPER`. A value the command sets wins over the process's own.
+#[cfg(unix)]
+fn replaced_wrapper(command: &Command) -> Option<std::ffi::OsString> {
+    let lookup = |name: &str| {
+        command
+            .get_envs()
+            .find(|(key, _)| *key == name)
+            .map_or_else(
+                || std::env::var_os(name),
+                |(_, value)| value.map(OsStr::to_os_string),
+            )
+    };
+    lookup("RUSTC_WRAPPER")
+        .or_else(|| lookup("CARGO_BUILD_RUSTC_WRAPPER"))
+        .filter(|wrapper| !wrapper.is_empty())
+}
+
+/// The variable through which the wrapper receives the wrapper it replaced.
 #[cfg(unix)]
 const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
 
-/// The script in `root` that unsets `CARGO_HOME` and runs the replaced compiler wrapper.
+/// The wrapper alias in `root` that unsets `CARGO_HOME` and `CARGO_TARGET_DIR` before forwarding.
 #[cfg(unix)]
 fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
-    use std::os::unix::fs::PermissionsExt;
-
-    let script = root.join("rustc-wrapper.sh");
-    if !script.exists() {
-        std::fs::write(
-            &script,
-            format!("#!/bin/sh\nunset CARGO_HOME\nexec \"${ORIGINAL_RUSTC_WRAPPER}\" \"$@\"\n"),
+    let wrapper = root.join("rustc-wrapper");
+    if !wrapper.exists() {
+        crate::executable::install_recorded(
+            &wrapper,
+            "tooling-wrapper",
+            r#"{"scenario":"hide-home"}"#,
         )?;
-        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))?;
     }
-    Ok(script)
+    Ok(wrapper)
 }
 
 /// The resolved toolchain that compiled this test, independent of runtime overrides.

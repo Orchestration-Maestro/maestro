@@ -265,6 +265,10 @@ path = "../../examples/extensions/rpc_demo.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "sdk_standard_component"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "send_user_message"
 path = "../../examples/extensions/send_user_message.rs"
 crate-type = ["cdylib"]

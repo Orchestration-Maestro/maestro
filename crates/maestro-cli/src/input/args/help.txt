@@ -4,50 +4,48 @@
   %APP% [options] [@files...] [messages...]
 
 ~Commands:
-  %APP% install <source> [-l]     Install extension source and add to settings
-  %APP% remove <source> [-l]      Remove extension source from settings
-  %APP% uninstall <source> [-l]   Alias for remove
-  %APP% update [source|self|%APP%]   Update %APP% and installed extensions
-  %APP% list                      List installed extensions from settings
-  %APP% config                    Open TUI to enable/disable package resources
+  %APP% install <source> [-l]     %COMMAND_install%
+  %APP% remove <source> [-l]      %COMMAND_remove%
+  %APP% uninstall <source> [-l]   %COMMAND_uninstall%
+  %APP% update [source|self|%APP%]   %COMMAND_update%
+  %APP% list                      %COMMAND_list%
+  %APP% config                    %COMMAND_config%
   %APP% <command> --help          Show help for install/remove/uninstall/update/list
 
 ~Options:
-  --provider <name>              Provider name (default: configured or available provider)
-  --model <pattern>              Model pattern or ID (supports "provider/id" and optional ":<thinking>")
-  --api-key <key>                API key (defaults to env vars)
-  --system-prompt <text>         System prompt (default: coding assistant prompt)
-  --append-system-prompt <text>  Append text or file contents to the system prompt (can be used multiple times)
-  --mode <mode>                  Output mode: text (default), json, or rpc
-  --print, -p                    Non-interactive mode: process prompt and exit
-  --continue, -c                 Continue previous session
-  --resume, -r                   Select a session to resume
-  --session <path|id>            Use specific session file or partial UUID
-  --fork <path|id>               Fork specific session file or partial UUID into a new session
-  --session-dir <dir>            Directory for session storage and lookup
-  --no-session                   Don't save session (ephemeral)
-  --models <patterns>            Comma-separated model patterns for Ctrl+P cycling
-                                 Supports globs (anthropic/*, *sonnet*) and fuzzy matching
-  --no-tools, -nt                Disable all tools by default (built-in and extension)
-  --no-builtin-tools, -nbt       Disable built-in tools by default but keep extension/custom tools enabled
-  --tools, -t <tools>            Comma-separated allowlist of tool names to enable
-                                 Applies to built-in, extension, and custom tools
-  --thinking <level>             Set thinking level: off, minimal, low, medium, high, xhigh
-  --extension, -e <path>         Load an extension file (can be used multiple times)
-  --no-extensions, -ne           Disable extension discovery (explicit -e paths still work)
-  --skill <path>                 Load a skill file or directory (can be used multiple times)
-  --no-skills, -ns               Disable skills discovery and loading
-  --prompt-template <path>       Load a prompt template file or directory (can be used multiple times)
-  --no-prompt-templates, -np     Disable prompt template discovery and loading
-  --theme <path>                 Load a theme file or directory (can be used multiple times)
-  --no-themes                    Disable theme discovery and loading
-  --no-context-files, -nc        Disable AGENTS.md and CLAUDE.md discovery and loading
-  --export <file>                Export session file to HTML and exit
-  --list-models [search]         List available models (with optional fuzzy search)
-  --verbose                      Force verbose startup (overrides quietStartup setting)
-  --offline                      Disable startup network operations (same as %APP_UPPER%_OFFLINE=1)
-  --help, -h                     Show this help
-  --version, -v                  Show version number
+  --provider <name>              %OPTION_provider%
+  --model <pattern>              %OPTION_model%
+  --api-key <key>                %OPTION_api-key%
+  --system-prompt <text>         %OPTION_system-prompt%
+  --append-system-prompt <text>  %OPTION_append-system-prompt%
+  --mode <mode>                  %OPTION_mode%
+  --print, -p                    %OPTION_print%
+  --continue, -c                 %OPTION_continue%
+  --resume, -r                   %OPTION_resume%
+  --session <path|id>            %OPTION_session%
+  --fork <path|id>               %OPTION_fork%
+  --session-dir <dir>            %OPTION_session-dir%
+  --no-session                   %OPTION_no-session%
+  --models <patterns>            %OPTION_models%
+  --no-tools, -nt                %OPTION_no-tools%
+  --no-builtin-tools, -nbt       %OPTION_no-builtin-tools%
+  --tools, -t <tools>            %OPTION_tools%
+  --thinking <level>             %OPTION_thinking%
+  --extension, -e <path>         %OPTION_extension%
+  --no-extensions, -ne           %OPTION_no-extensions%
+  --skill <path>                 %OPTION_skill%
+  --no-skills, -ns               %OPTION_no-skills%
+  --prompt-template <path>       %OPTION_prompt-template%
+  --no-prompt-templates, -np     %OPTION_no-prompt-templates%
+  --theme <path>                 %OPTION_theme%
+  --no-themes                    %OPTION_no-themes%
+  --no-context-files, -nc        %OPTION_no-context-files%
+  --export <file>                %OPTION_export%
+  --list-models [search]         %OPTION_list-models%
+  --verbose                      %OPTION_verbose%
+  --offline                      %OPTION_offline%
+  --help, -h                     %OPTION_help%
+  --version, -v                  %OPTION_version%
 
 Extensions can register additional flags (e.g., --plan from plan-mode extension).%EXTENSION%
 

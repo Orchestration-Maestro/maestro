@@ -302,6 +302,21 @@ closures and impl bodies.
 
 ## Quality checks
 
+Native platform viewers belong to the application's `utils::platform_opener`.
+The conventions check reports executable literals outside that owner, including
+nested macros, closures, methods and source fragments. It also tracks local
+`open` bindings into command constructors and rejects the shell `cmd /c start`
+combination. Parsed test-only items are excluded.
+
+A single name passed to `clap::Command::new`, directly or through an explicit
+import, defines a command-line item rather than launching a viewer. The check
+accepts those names without exempting process calls in the same file. Imports
+follow their containing token group, and competing imports keep the process
+check active. Globs, re-export chains, constructed names and type inference are
+not resolved; reviewers check them. For example,
+`use clap::Command; Command::new("open")` is accepted, but
+`std::process::Command::new("open")` beside it is rejected.
+
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
 compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for
 maps whose remaining order is never observed. Ordinary maps are unaffected.
@@ -472,8 +487,9 @@ aliases through that same artifact without writable executable handles in the te
 runner. `maestro-tooling` builds, fingerprints and stages the host artifact in the
 existing test bundle and nextest setup exports its explicit path, including after
 archive relocation. This adds no domain dependency or guest/browser native edge.
-Typed isolated native setup is planned; existing shell setup remains documented
-until every caller moves. See [child-process tests](development.md#child-process-tests).
+Each isolated child applies its typed native setup at its entry, so the test runner
+keeps its own modes, limits, session and environment. See
+[child-process tests](development.md#child-process-tests).
 
 The conventions checker rejects Rust string tokens whose decoded value is
 `--exact` outside `maestro-test-process`, reporting the source path and first

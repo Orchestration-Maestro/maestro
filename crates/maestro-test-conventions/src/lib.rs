@@ -14,6 +14,8 @@ mod config_scripts;
 mod duplicates;
 /// Shared-helper ownership in the extension example tests.
 mod example_helpers;
+/// Native fixture setup selection for declared test-process callers.
+mod fixture_selection;
 /// Binding manifest lint exceptions and generated extension source checks.
 mod generated;
 /// Workspace membership and dependency graph checks.
@@ -66,6 +68,8 @@ mod time_limits;
 /// `terminate-after` must be the fewest whole periods that cover those seconds.
 /// Issue references are checked offline; reviewers verify that each issue is open.
 /// Periods use positive whole seconds (`"Ns"`).
+///
+/// Native fixture setup selection must match the declared test-process callers plus their owner.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without
@@ -121,6 +125,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     test_budget::check(root)?;
     config_scripts::check(root)?;
     let (metadata, packages) = graph::check(root)?;
+    fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
     graph::packages::check(&metadata, &members, &packages)?;
     child_tests::check(&members)?;

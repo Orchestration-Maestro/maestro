@@ -95,6 +95,38 @@ pub enum Scenario {
     Records,
     /// Split Unicode and JSONL bytes across acknowledged writes.
     Fragments,
+    /// Answer a prompt, four correlated dialogs and six notices in order.
+    DialogTour,
+    /// Answer the local demonstration prompt and end normally.
+    LocalDialogTour,
+    /// Reply to one prompt, report four notice severities and end normally.
+    Notifications,
+    /// Keep a padded and an empty selection value in their correlated replies.
+    SelectionReplies,
+    /// Report dialog controls as literal text while still answering them.
+    DialogText,
+    /// Preserve a confirmation message's own line breaks.
+    MultilineCommand,
+    /// Treat streamed text, tool names and errors as literal data.
+    LiteralText,
+    /// Report the first termination signal in the file `PEER_MARKER` names.
+    TerminationMarker,
+    /// Announce readiness, check one prompt and end with status seven.
+    PromptExit,
+    /// Cancel a startup dialog, then answer state with Unicode separators over CRLF.
+    UnicodeState,
+    /// Accept a prompt and emit the terminal event before the acceptance.
+    PromptAcceptance,
+    /// Accept a prompt, then keep streaming until the terminal event.
+    EndAfterAcceptance,
+    /// Accept a prompt and close the stream before any terminal event.
+    AcceptedEof,
+    /// End with status three after a successful reply.
+    ExitAfterReply,
+    /// Refuse the startup request without a terminal event.
+    RefusedState,
+    /// Close the stream before answering anything.
+    EarlyEof,
 }
 
 impl Scenario {
@@ -140,6 +172,22 @@ impl Scenario {
             Self::Malformed => "Malformed",
             Self::Records => "Records",
             Self::Fragments => "Fragments",
+            Self::DialogTour => "DialogTour",
+            Self::LocalDialogTour => "LocalDialogTour",
+            Self::Notifications => "Notifications",
+            Self::SelectionReplies => "SelectionReplies",
+            Self::DialogText => "DialogText",
+            Self::MultilineCommand => "MultilineCommand",
+            Self::LiteralText => "LiteralText",
+            Self::TerminationMarker => "TerminationMarker",
+            Self::PromptExit => "PromptExit",
+            Self::UnicodeState => "UnicodeState",
+            Self::PromptAcceptance => "PromptAcceptance",
+            Self::EndAfterAcceptance => "EndAfterAcceptance",
+            Self::AcceptedEof => "AcceptedEof",
+            Self::ExitAfterReply => "ExitAfterReply",
+            Self::RefusedState => "RefusedState",
+            Self::EarlyEof => "EarlyEof",
         }
     }
 }
@@ -189,6 +237,22 @@ impl FromStr for Scenario {
             "Malformed" => Ok(Self::Malformed),
             "Records" => Ok(Self::Records),
             "Fragments" => Ok(Self::Fragments),
+            "DialogTour" => Ok(Self::DialogTour),
+            "LocalDialogTour" => Ok(Self::LocalDialogTour),
+            "Notifications" => Ok(Self::Notifications),
+            "SelectionReplies" => Ok(Self::SelectionReplies),
+            "DialogText" => Ok(Self::DialogText),
+            "MultilineCommand" => Ok(Self::MultilineCommand),
+            "LiteralText" => Ok(Self::LiteralText),
+            "TerminationMarker" => Ok(Self::TerminationMarker),
+            "PromptExit" => Ok(Self::PromptExit),
+            "UnicodeState" => Ok(Self::UnicodeState),
+            "PromptAcceptance" => Ok(Self::PromptAcceptance),
+            "EndAfterAcceptance" => Ok(Self::EndAfterAcceptance),
+            "AcceptedEof" => Ok(Self::AcceptedEof),
+            "ExitAfterReply" => Ok(Self::ExitAfterReply),
+            "RefusedState" => Ok(Self::RefusedState),
+            "EarlyEof" => Ok(Self::EarlyEof),
             _ => Err(io::Error::other("unknown RPC peer scenario")),
         }
     }

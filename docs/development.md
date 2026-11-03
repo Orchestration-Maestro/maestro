@@ -134,12 +134,15 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
-Compile each changed crate separately when checking helper availability:
+Lint each changed browser crate separately, including all test and example targets:
 
 ```sh
-~/.local/bin/capped cargo check --locked --tests \
-  --target wasm32-unknown-unknown -p maestro-tools
+~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+  --all-targets -p maestro-models -- -D warnings
 ```
+
+`clippy --all-targets -D warnings` also rejects unused native-only helpers that
+`check --tests` leaves as warnings.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
@@ -1115,7 +1118,9 @@ the child before making the shared Cargo home unusable. The cold test copies onl
 the source configuration into its initially empty Cargo home. Its Cargo target
 directory also starts empty, so the recipes still prove compilation from clean state.
 The cold recipe uses `fixture_command` to keep its private home out of the
-compiler wrapper's cache keys.
+compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
+by the build host applies, and with none Cargo compiles with every core the test reserves.
+The other recipe tests keep three jobs.
 
 Cargo builds that share one target directory with other builds, the test build's or the
 one the browser author setup prepares, keep the shared home.
@@ -1130,14 +1135,20 @@ shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in
 home, so its first build prints a wait on its own `cargo run`, not on another
 test.
 
-On Unix, when `RUSTC_WRAPPER` is set, `fixture_command` points it at a script,
-`rustc-wrapper.sh`, in the fixture root. The script unsets `CARGO_HOME` and runs
-the original wrapper. `sccache` hashes every `CARGO_*` variable into the key of
-each rustc call, so a wrapper that saw the private home would give the registry
-crates of each fixture a key that no other fixture shares. Cargo itself keeps the
-private home and its lock. `fixture_command_hides_cargo_home_from_the_compiler_wrapper`
-runs a fixture build behind a recording wrapper and checks that it never sees
-`CARGO_HOME`.
+On Unix, when `RUSTC_WRAPPER` or, failing that, `CARGO_BUILD_RUSTC_WRAPPER` is set,
+`fixture_command` points `RUSTC_WRAPPER` at the prepared fixture's `hide-home`
+wrapper, installed as `rustc-wrapper` in the fixture root. Shared CI sets the second
+variable. The wrapper unsets `CARGO_HOME` and `CARGO_TARGET_DIR` and runs the
+original wrapper, which it reads from `MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache`
+hashes every `CARGO_*` variable into the key of each rustc call, so a wrapper that
+saw the private home or the per-run target directory would give the registry crates
+of each fixture a key that no other fixture shares. Cargo itself keeps both
+variables and passes the compiler its output directory explicitly.
+`fixture_command_hides_private_cargo_paths_from_the_compiler_wrapper` runs a
+fixture build behind the `recording` wrapper, which logs the `CARGO_HOME` and the
+`CARGO_TARGET_DIR` its compiler saw, and checks that it never sees either.
+`fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper` does the same for a
+wrapper inherited as `CARGO_BUILD_RUSTC_WRAPPER`.
 
 Three tests (`workspace_fixtures_never_reach_the_shared_cargo_home`,
 `browser_resolution_never_reaches_the_shared_cargo_home` and
@@ -1198,12 +1209,16 @@ is [Rust test children](specs/test-processes.md).
 
 #### Direct native fixtures
 
-Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
-currently served packages: `maestro-test-process`, `maestro-tooling`,
-`maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
-attachment-completion tests and `maestro-app`. Local setup builds the example
-with the locked host `dev` profile and reads Cargo's emitted executable path. It
-records source inputs, content digest and host in
+Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
+`maestro-test-process` and every crate the crate graph allows to depend on it.
+To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
+add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
+`.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
+shared selection or docs edit. The conventions check rejects missing or extra
+crates and requires every filter term to be exactly `package(=name)`, joined by `|`.
+Run `just prepare-tests` before a filtered nextest run on any declared caller.
+Local setup builds the example with the locked host `dev` profile and reads Cargo's
+emitted executable path. It records source inputs, content digest and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1227,18 +1242,25 @@ An unknown or malformed record fails before connecting or writing the optional
 installed aliases leave all operands untouched. Add cohesive finite Rust fixture
 families to this one target, never a script evaluator or another launcher.
 
-Two further families stand in for a program the product itself launches. An
-`editor` record reports the file the controlled editor was asked to edit, skips
-the editor's own `--custom` option and ends with status 7. The process tests
-install it under the name the product resolves from `PATH`, so the shell
-evaluation under test stays real. An `echo` record prints the single line that
-follows it, which lets executable selection tests run a native program that
-prints the name their fixture authored. Neither family writes harness text.
-The editor writes the edited file's path to the file named by
-`MAESTRO_EDITOR_RESULT` and fails if that variable is unset. For example, with a
-`vi.fixture` record containing only `editor` and
-`MAESTRO_EDITOR_RESULT=/scratch/editor-result`, running `vi --custom notes.txt`
-writes `notes.txt` followed by a newline to `/scratch/editor-result` and exits 7.
+The portable `editor` family reads one JSON object after the family line. To
+report the edited path, set `result` to the name of the environment variable
+holding the output path. It skips its own `--custom` option and writes the next
+operand followed by a newline. A missing variable fails before file effects.
+For example, with `MAESTRO_EDITOR_RESULT=/scratch/editor-result`, this
+`vi.fixture` record makes `vi --custom notes.txt` write `notes.txt` followed by a
+newline to `/scratch/editor-result` and exit 7:
+
+```text
+editor
+{"result":"MAESTRO_EDITOR_RESULT","code":7}
+```
+
+The process tests install the alias under the name the product resolves from
+`PATH`, so shell evaluation stays real. The same record can select the file
+effects described under [Viewer, editor and trash aliases](#viewer-editor-and-trash-aliases).
+The `echo` family prints the single line following its family line, so executable
+selection tests can run a native program that prints their authored name.
+Neither family writes harness text.
 
 #### Command stand-ins
 
@@ -1255,6 +1277,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `prefixed` | Requires `--prefix` and a prefix operand first. For `root`, writes the prefix followed by `suffix` and a newline. Every other invocation appends its operands to `log`, one per line. |
 
 A controlled package command for the package manager settings records its
 acquisitions without a package manager:
@@ -1277,12 +1300,59 @@ Keep each alias in a test's disposable directory and pass its absolute path as t
 configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it.
 
+A command that only prints installation output uses the `output` scenario. The
+command-line startup tests install it as `controlled-npm` and write its two install
+lines, so the protocol modes keep an empty standard output while the chatter reaches
+standard error. A cleared child needs `MAESTRO_NATIVE_FIXTURE` passed on, because
+`env_clear` drops the preparation variable.
+
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
 and stages native copies of both preparation examples. It also reports the two
 finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
+
+#### Repository recipe stand-ins
+
+A recipe workspace answers its own commands without an interpreter. Install the
+prepared artifact under each name the recipe resolves from `PATH`, then run the
+recipe:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let bin = directory.path().join("bin");
+    std::fs::create_dir_all(&bin)?;
+    for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
+        let alias = bin.join(name);
+        maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+        let mut record = alias.clone().into_os_string();
+        record.push(".fixture");
+        std::fs::write(record, "tooling-command\n{\"scenario\":\"stand-in\"}")?;
+    }
+    Ok(())
+}
+```
+
+The record's first line selects the family and its `scenario` selects one finite
+behavior; an unknown family, scenario or field fails before any effect.
+
+| Scenario | Behavior |
+| --- | --- |
+| `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
+| `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
+| `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
+
+A runner that starts `just build` in a recipe workspace therefore never needs
+Cargo, `mise` or `watchexec` of its own: each call reaches the installed alias,
+and only the operations that need the real program forward to one. Installing
+needs the artifact nextest's `native-fixture` setup exports, so run
+`just prepare-tests` first; without it, a fixture command that needs the wrapper
+fails instead of building a fallback.
 
 The author example reads a `tooling-author` line followed by one JSON scenario.
 For example:
@@ -1308,8 +1378,27 @@ sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
-records. Other tooling fixture families and Unix `shell_setup` keep their existing
-contracts.
+records. Other tooling fixture families keep their existing contracts.
+
+#### Retained native boundaries
+
+These paths keep a real interpreter or native program because that program is the
+product operation under test. A controlled stand-in would remove the behaviour the
+test observes.
+
+| Path | Retained operation | Reason |
+| --- | --- | --- |
+| `crates/maestro-credentials/src/credentials/tests.rs:179`, `:219` | `/bin/sh` and `/system/bin/sh` compared as launch descriptions. | The configured and default shell is the product behaviour, and these values never start a process. |
+| `crates/maestro-credentials/src/credentials/tests.rs:205-215` | One real `!if read line; ...` resolution through that shell. | The resolver's configured shell is the operation under test. |
+| `crates/maestro-credentials/src/credentials/tests.rs:240-266` | Windows `cmd.exe` and `bash.exe` launch descriptions. | The launch shape is the product behaviour under test, and these values are compared, never run. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:136-149` | The Windows Git Bash, `bash.exe -c`, that runs configured helpers. | The helper launch needs the native shell the selector finds. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:153-163` | `!printf` payloads, one piped through `tr`, resolved by that shell. | Every payload is authored shell text, and the assertions are on the resolver's result. |
+| `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
+| `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
+| `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
+| `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
+| `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
+| `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
 
 #### Application RPC peers
 
@@ -1343,6 +1432,35 @@ interrupt peer reads commands on one thread and records TERM through a native
 signal flag. On EOF, it reports `terminated` only if TERM was observed, followed
 by `input closed` over the release socket. Plain EOF exits without waiting for a
 signal. To check both paths, send TERM before closing input, or close input alone.
+
+The terminal client example and the client example's checks use the same family on
+every native platform. `DialogTour` answers a prompt, four correlated dialogs and
+six notices before ending with status seven; `LocalDialogTour` answers the local
+demonstration prompt; `Notifications` reports each notice severity. The remaining
+scenarios keep authored text literal:
+
+| Scenario | Behavior |
+| --- | --- |
+| `SelectionReplies` | Emits a padded and an empty selection and requires each value in its own correlated reply. |
+| `DialogText` | Reports dialog chrome that contains terminal controls and requires the answer to repeat them. |
+| `MultilineCommand` | Requires a confirmation of a message that holds its own blank line. |
+| `LiteralText` | Refuses the prompt, then streams text, a tool name and a control sequence as data before ending normally. |
+| `TerminationMarker` (Unix only) | Reads the first termination signal and writes `SIGTERM` to the file `PEER_MARKER` names. |
+| `PromptExit` | Reports readiness, requires the first prompt and ends with status seven. |
+| `UnicodeState` | Answers a cancelled startup dialog, then sends state with U+2028 and U+2029 inside a CRLF-terminated record. |
+| `PromptAcceptance` | Answers state, emits `agent_end` and only then accepts the prompt. |
+| `EndAfterAcceptance` | Accepts the prompt and streams a delta before `agent_end`. |
+| `AcceptedEof` | Accepts the prompt and closes the stream before any terminal event. |
+| `ExitAfterReply` | Answers the first request and exits with status three after input closes. |
+| `RefusedState` | Refuses the startup request without a terminal event. |
+| `EarlyEof` | Closes the stream before answering. |
+
+`UnicodeState`, `PromptAcceptance`, `EndAfterAcceptance` and `ExitAfterReply`
+require the client to close its input without another command after its last
+reply, so a stray command fails the check.
+
+The client example's checks launch the shipped `examples/sdk/rpc.py` against an
+installed alias of this family, so only the example itself runs under Python 3.
 
 #### Footer Git aliases
 
@@ -1434,6 +1552,7 @@ The finite scenarios use these fields:
 | Scenario | Fields and behavior |
 | --- | --- |
 | `response` | `args` records the JSON operand array; `stdout` and `stderr` are byte arrays. `code` selects the status; optional `signal: "SIGTERM"` ends by native signal instead. |
+| `supplied` | Writes `{"argv": [...], "cwd": ...}` to `observation`. Reads the two streams and numeric status from the files named by `stdout`, `stderr` and `code`, so a test can change the outcome between searches. If the file named by `marker` exists, removes its own executable before reporting, as when a running search's installation is replaced. |
 | `probe` | `name`, optional `log`, `stdout` byte array and `code`. Appends `name` and the operands to the log, requires exactly `--version`, then returns the version bytes and status. Discovery checks launchability, not version compatibility. |
 | `marker` | Writes `text` to `path`. With `copy_input: true`, copies the first operand's file to stdout, like a search preprocessor. Execute it once as a positive control, remove the sentinel, then assert hostile search operands never recreate it. |
 | `probe-wait` | Connects to Unix `socket`, writes `ready`, then waits for a byte or EOF. Dropping discovery must stop this real process. |
@@ -1458,6 +1577,195 @@ and startup cases replace `PATH` explicitly; ordinary native find/grep corpus
 cases still use the provisioned real tools. Run the complete `maestro-tools`
 nextest selection to qualify both routes. A missing real tool fails the native
 cases; the fixture never replaces or downloads it.
+
+#### Command payloads
+
+On Unix, install the same artifact as the program under test to observe command
+execution without an interpreter. Write `exec` on the first line of
+`<alias>.fixture`, followed by one JSON object with a `scenario` field. The whole
+record is parsed before any stream, socket or directory changes; unknown fields
+and unknown scenarios fail first.
+
+A `read_support::payload` call in `maestro-tools` installs the alias and writes
+that record. The held-child cases connect to a parent-owned TCP port, so the
+record carries `port`. For example, a child that reports readiness and finishes
+after one release byte:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({"scenario": "holder", "port": 9099});
+    std::fs::write(directory.path().join("child.fixture"), format!("exec\n{record}"))?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("child"),
+    )?;
+    Ok(())
+}
+```
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `operands` | Requires closed standard input, then writes `operand|cwd|HOME` for the first operand. |
+| `streams` | Writes the terminal-coloured prefix and 300000 `o` bytes to standard output, then 300000 `e` bytes and CRLF to standard error. |
+| `utf8` | With `port` and `split`, writes the first `split` bytes of one four-byte scalar to both outputs, announces `READY`, waits for a byte, then writes the rest. |
+| `malformed` | Writes `a`, byte FF and `b` to standard output, and an incomplete scalar to standard error. |
+| `cwd` | Writes the directory this process inherited. |
+| `holder` | On `port`, announces `READY`, waits for one byte, then writes `bye`. |
+| `stubborn` | On `port`, registers TERM first, announces `READY`, and answers each TERM with `bye` on standard output and `T` on the socket until killed, released by one byte or disconnected. |
+| `descendant` | Writes `early` and `diag`, starts a linked descendant as `MTP_ROLE=descendant`, then exits. The descendant answers each `p` with `E`, writes `late` on any other byte, and is a real child of this process. |
+| `yielding` | On `port`, announces `READY` under the default TERM action and answers each `p` with `E` until another byte or EOF. |
+| `exchange` | On `port`, requires one `x` byte, writes `one` to standard output, requires a second `x`, then writes `two` to standard error. |
+| `raw` | Connects to `port`, writes `raw`, NUL, a colour escape, CRLF and byte FF to standard output, waits for one release byte, then writes `stderr` to standard error. |
+| `interleaved` | Connects to `port`, writes bytes F0 9F, waits for one release byte, writes `err` to standard error, waits for another byte, then writes bytes 98 80 and 262144 zero bytes to standard output. |
+| `termination` | Connects to `port` and writes its PID followed by a newline. After one release byte, writes `alive` and a newline; after a second byte, writes `survived` to the file of that name in its working directory. Closing the channel before either byte fails without writing the marker. |
+| `identity` | Writes this process's session and process group, one per line. |
+| `tree-root` | On `port`, writes `READY`, starts a linked descendant as `MTP_ROLE=tree-leaf`, waits for it to end, then waits for one control byte or EOF. |
+| `tree-leaf` | On `port`, writes `READY` and holds the channel until the tree is killed. |
+| `blocked` | Registers TERM, announces `READY` on the optional `port`, then waits for one termination notification and finishes. An optional `code` selects its exit code after handling TERM. To test a deadline, poll execution once on a paused runtime, wait for `READY`, then advance the clock; resume real time to collect native exit and pipe completion. |
+| `grace` | On Linux, writes `held`, then writes `grace` into standard output `pid` names after one input line or EOF. Finishes after a second input line or when input closes. |
+
+The `MTP_ROLE` variable selects a linked-descendant role for the same record; no
+other selection uses it. Shell parsing stays on the real shell: select the
+shell itself when the command grammar, session identity or process group is the
+observation, and use a payload only for what runs inside it. Use `exec <alias>`
+when the payload must keep the shell's PID, process group and open descriptors.
+Streaming cases release each next write only after the sink has received the
+preceding bytes; no file gate or busy loop paces the child.
+
+#### Native IO children
+
+On Unix, install the same artifact as the program a byte-level operation launches.
+Write `child` on the first line of `<alias>.fixture` and a JSON object whose
+`scenario` selects one finite behavior. The fixture parses the whole record before
+any stream, socket or descendant effect, and it rejects an unknown scenario or
+field. To write both streams and exit, use the `command` family's `output`
+scenario.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `pending` | Writes `00 ff e2` on standard output and `error` with a NUL on standard error, releases when one input byte arrives, then writes `82 ac` followed by that byte, writes `last` on standard error and relays the rest of standard input. Every write is acknowledged by the bytes the test reads, so no chunk boundary is assumed. |
+| `arguments` | Reports the working directory and the untouched operands as one JSON array. |
+| `relay` | Writes `ready` when its `ready` field is true, relays standard input to standard output until it ends, then writes the `tail` bytes on standard error. |
+| `announce` | Sends its process id, eight bytes big-endian, on the parent's `port`, waits for one release byte, writes the `stdout` and `stderr` byte arrays, then exits with status 0. The required boolean `stdin` selects the release source: standard input when true, the parent socket when false. |
+| `grouped` | Sends its process id and group id on the parent's `port`, waits for the release byte, then exits with status 0. |
+| `challenge` | Sends its process id and session id, reads a 16-byte challenge, answers with its process id and that challenge, waits for the release byte, then exits with status 23. |
+| `early` | Writes the `stdout` and `stderr` byte arrays, starts `holder` with both pipes inherited, then exits with `code` while that descendant keeps them. |
+| `identity` | Writes `[process id, group id, session id]` and a newline, starts `holder` when one is named, then waits for one input byte. |
+
+A controlled child that reports a prefix before its caller releases it:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("child");
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &alias,
+    )?;
+    let record = serde_json::json!({"scenario": "announce", "port": 5091,
+        "stdin": false, "stdout": [], "stderr": []});
+    std::fs::write(directory.path().join("child.fixture"), format!("child\n{record}"))?;
+    Ok(())
+}
+```
+
+Pass the alias absolute path as the command the native operation launches, and
+seed the record with the port the parent test listens on. The `early` and
+`identity` scenarios name a second alias in `holder`; install that one with a
+`grouped`, `announce` or `relay` record so the descendant has its own protocol.
+
+The native I/O component captures the active run's signal before spawning an
+abort-bound child. After subscribing, it also checks whether cancellation already
+happened during spawn. The abort fixture waits on standard input, so releasing
+the child handle closes that input and ends the child even if signal binding fails.
+Watch payloads belong to one registration: opening a watch discards any unconsumed
+payload from the closed registration.
+
+#### Clipboard bytes
+
+Install the same artifact as a clipboard writer when an application test needs real
+standard input, standard output, status or a loopback transfer:
+
+```sh
+just prepare-tests
+cargo nextest run --locked -p maestro-app -E 'test(/^clipboard_(copy|images)::/)'
+```
+
+The artifact copies itself into the alias, so no system installer has to answer on
+the path.
+
+Write `clipboard` on the first line of `<alias>.fixture`, followed by a JSON object
+with a `scenario` field. The fixture parses the whole record before it reads a
+stream or opens a socket, and rejects unknown fields, unknown scenarios and values
+outside their type.
+
+| Scenario | Fields and behavior |
+| --- | --- |
+| `echo` | Copies standard input to standard output, writes the single operand to standard error, then exits with `code`. |
+| `send` | Connects to `port` on the loopback address, sends standard input, closes the connection and exits. A detached writer delivers bytes after its caller returned. |
+| `fill` | Writes `count` copies of `byte` to standard output, so a bounded capture reaches its exact limit. |
+
+For example, a capture that must fail one byte past its limit records a filler and
+runs the alias the way the product would:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let alias = directory.path().join("wl-paste");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+    std::fs::write(
+        directory.path().join("wl-paste.fixture"),
+        "clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":52428801}",
+    )?;
+    Ok(())
+}
+```
+
+The application clipboard tests keep their own assertions. The text route checks the
+forwarded operand, both captured streams and status 7; the detached route checks the
+bytes its listener receives; the image route checks a capture at 50 MiB and one byte
+past it.
+
+#### Viewer, editor and trash aliases
+
+Install the same artifact as `open`, `xdg-open`, `explorer.exe`, an editor name
+or `trash` when a test observes a desktop viewer launch, an edit or a session
+deletion. Write the family on the first line of `<alias>.fixture`, followed by a
+JSON object that the fixture parses before any effect; unknown fields and
+malformed values fail at once. The chat tests install these aliases through one
+helper in `tests/support/native_alias.rs`.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let editor = directory.path().join("ed");
+    std::fs::write(
+        editor.with_file_name("ed.fixture"),
+        format!("editor\n{}", serde_json::json!({
+            "argv": directory.path().join("argv"),
+            "before": directory.path().join("before"),
+            "content": b"edited\n",
+        })),
+    )?;
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor)?;
+    Ok(())
+}
+```
+
+The families use these fields:
+
+| Family | Fields and behavior |
+| --- | --- |
+| `browser_launch` | `port` names the parent's loopback listener. The viewer writes its own launched name and its literal operands as one JSON array, waits for the parent's `!` byte, answers `done` and exits 1. A viewer that never connects leaves the parent waiting, so install the alias before the product launch. |
+| `editor` | `argv` receives the launched name and every operand, each ending at a NUL. `result` names the environment variable holding the output path for the edited filename. `before` receives the file's original bytes, `content` the new bytes, and `copy` a mode-preserving copy. `remove` deletes the file, `directory` replaces it with a directory, `read_only_parent` makes its directory read-only on Unix. `descriptors` records the three standard descriptors' device, inode, mode and device number on Linux. `code` selects the status; `signal: "SIGTERM"` ends by the native signal on Unix instead. Unsupported platform effects fail before any file effects. |
+| `trash` | `log` receives each literal operand on its own line, `remove` deletes the first operand, `stderr` supplies the captured diagnostic bytes and `code` the status. Install no alias at all to observe a missing program. |
 
 #### Credential processes
 
@@ -1508,6 +1816,43 @@ credential tests install a `GoogleExecutable` alias as the executable source of
 an external account credential. Neither program needs an interpreter or an
 `install` command.
 
+#### Notification and repository Git aliases
+
+Install the same artifact as `notify-send` or `git` when a test must observe the
+operands the product hands to those programs.
+
+| Family | Fields | Behavior |
+| --- | --- | --- |
+| `notify-send` | `args`, `code` | Writes each untouched operand on its own line to `args`, records nothing when `args` is null, then ends with `code`. |
+| `git`, scenario `Probe` | `cwd` | Answers the three queries that repository discovery runs against a reftable checkout: `symbolic-ref --quiet --short HEAD` reports `topic`, `rev-parse --verify HEAD` reports `0123456789abcdef`, and `rev-parse --verify missing` writes output the caller discards and ends with a failing status. Every query must name `cwd` after `-C`; another directory, a non-text operand or any other operands end with status 2 before output. |
+
+For the repository probe, write `git` and `Probe` on separate lines, followed by
+the JSON object containing `cwd`. This portable scenario shares the Git family
+with the Unix footer scenarios above.
+
+A failing notifier records nothing:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({ "args": null, "code": 1 });
+    std::fs::write(
+        directory.path().join("notify-send.fixture"),
+        format!("notify-send\n{record}"),
+    )?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("notify-send"),
+    )?;
+    Ok(())
+}
+```
+
+A recording notifier names its file in `args` instead, and a Git alias names the
+checkout every query must carry. Point `PATH` at the directory holding either
+alias, so the product finds it by its own program name.
+
 #### Checked reruns
 
 A test that re-runs one test in a fresh process starts it through
@@ -1539,10 +1884,15 @@ zero, sends standard output there and checks the prefix through that same open
 file. Nonempty files or nonzero cursors are rejected before launch, including
 append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
-descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
-executable replaces the shell, in the interpreter the caller names by absolute
-path: neither this process's `PATH` nor the child's selects it, and a relative
-path is refused before anything runs.
+descriptor or setup setting. `setup` (Unix) carries an `IsolatedSetup` request.
+The child applies its effects in a fixed order: umask, new session, nonterminating
+file-size handling, then process-count limit. The builder writes that request into
+the child's environment and the child applies it through
+`IsolatedSetup::apply_requested` before its body, holding the returned guard. The
+runner keeps its own modes, limits, session and environment, and a refused effect
+stops the child before anything is observed. The umask contains only octal permission
+bits (`000` through `777`); the child checks its conversion to the platform's native
+mode type before applying it.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
@@ -1550,9 +1900,11 @@ selected test starts; callers still check its exit status and scenario output.
 `env_clear()` preserves the inherited coverage profile destination, and later
 caller edits can override or remove it. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
-reaping. Settings helpers select supplied complete nested identities with `named`
-and apply shell setup through `shell_setup`, keeping reports separate from exit
-status checks.
+reaping. Call `CheckedChild::start` when the test uses its own command to launch
+the selected child; it proves the same prologue and reaps a failed start. Settings
+helpers select supplied complete nested identities with `named` and request a
+process-count limit through `setup`, keeping reports separate from exit status
+checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
