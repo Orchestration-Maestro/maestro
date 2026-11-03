@@ -14,6 +14,7 @@ use maestro_app::{
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Component;
 use serde::Deserialize;
+use std::ffi::OsStr;
 use std::{any::Any, cell::Cell, io, path::Path, rc::Rc};
 
 mod loaded;
@@ -263,7 +264,10 @@ fn context_files(located: Vec<Located>) -> Vec<ContextFile> {
 
 /// Runs `body` in a fresh child whose home directory and locale are the recorded ones.
 fn in_home(test: &str, body: impl AsyncFnOnce(&Path)) {
-    let environment = [("HOME", HOME), ("LANG", "C.UTF-8")];
+    let environment = [
+        (OsStr::new("HOME"), OsStr::new(HOME)),
+        (OsStr::new("LANG"), OsStr::new("C.UTF-8")),
+    ];
     isolated_case(test, "child", &environment, body);
 }
 
@@ -553,9 +557,9 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
         else {
             panic!("a native home case");
         };
-        let environment: &[(&str, &str)] = match mode.as_str() {
-            "supplied" => &[("HOME", "/tmp/supplied-home")],
-            "empty" => &[("HOME", "")],
+        let environment: &[(&OsStr, &OsStr)] = match mode.as_str() {
+            "supplied" => &[(OsStr::new("HOME"), OsStr::new("/tmp/supplied-home"))],
+            "empty" => &[(OsStr::new("HOME"), OsStr::new(""))],
             other => panic!("an unknown home mode {other}"),
         };
         isolated_case(test, &mode, environment, async |directory| {

@@ -566,7 +566,7 @@ Move the existing matchers only after this contract lands, through
 external `sha2 =0.11.0`, which shortens lock and record names for long file names. Only theme and application
 may depend on watch; only settings, credentials, workspace, detection, session and application
 may depend on lock. Application uses maestro-lock's recoverable in-place
-`replace` for component saves, preserving native identity.
+`replace` for component saves on native targets only, preserving native identity.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -596,10 +596,13 @@ headers use 0 for native defaults, 1 for AfterSync and 2 for AtCreation. Unix
 read-only AtCreation replay durably stages the observed mode as AfterSync before
 adding owner-write, then restores and syncs that mode before removing the record.
 Ordinary creation never widens permissions; Windows retains its read-only mapping.
-Feature owners keep serialization and symbolic-link policy. Neither leaf
-introduces a common background runtime, scheduler, retry policy or listener
-framework. Feature-specific timing, process, subscription and teardown semantics
-and current public capabilities are retained.
+Native extension file saves are owned by `maestro-app::extension_native_io::files`;
+the application uses the lock owner for publication. The guest and runtime adapter
+forward calls without their own writer or dependency on lock. Feature owners keep
+serialization, symbolic-link policy and asynchronous credential acquisition.
+Neither leaf introduces a common background runtime, scheduler, retry policy or
+listener framework. Feature-specific timing, process, subscription and teardown
+semantics and current public capabilities are retained.
 
 `maestro-listing` is a core leaf below layer 0 with no workspace dependencies,
 including the path utility. Its one job is listing directory entries: it returns
@@ -786,10 +789,13 @@ See [Rust test children](test-processes.md) for the complete contract.
 Its native helpers also provide loopback servers, completed child probes,
 executable installation and child-build toolchain selection.
 
-On Unix the owner currently runs caller-supplied setup text in the interpreter the
-caller names by absolute path. Typed isolated native setup is planned; shell setup
-remains until all its callers move together. The owner uses the approved `rustix`
-stdio operations for descriptor replacement. It has no workspace dependencies except the native feature unifier and
+On Unix the owner applies each isolated child's typed native setup at that child's
+entry: a file creation umask, a process-count limit, a nonterminating file-size
+handler and a new session. The parent carries the request and keeps its own modes,
+limits, session and environment, and a refused effect stops the child before its
+body. The owner uses the approved `rustix` stdio and process operations for
+descriptor replacement and those effects, and the locked `signal-hook` flag
+registration for the file-size handler. It has no workspace dependencies except the native feature unifier and
 one native development edge to the disposable directory owner for its own child
 fixtures, and it is excluded from the foundation utility permission. Its only
 incoming edges are

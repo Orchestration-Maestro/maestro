@@ -48,6 +48,19 @@ pub(super) async fn session(
 pub(super) struct Io(pub(super) Rc<dyn NativeIo>);
 
 impl NativeIo for Io {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        self.0.save_file(path, bytes, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        self.0.file_mode(path)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.set_file_mode(path, mode)
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.create_dir(path, mode)
+    }
+
     fn watch(&self, path: String, listener: Rc<dyn Fn()>) -> Result<Rc<dyn FsWatcher>, String> {
         self.0.watch(path, listener)
     }

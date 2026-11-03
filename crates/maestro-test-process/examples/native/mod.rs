@@ -8,6 +8,8 @@ mod author;
 #[cfg(unix)]
 mod browser_launch;
 mod cargo;
+#[cfg(unix)]
+mod child;
 mod clipboard;
 #[cfg(unix)]
 mod command;
@@ -34,6 +36,9 @@ enum Request {
     /// Stand in for a controlled native program.
     #[cfg(unix)]
     Command(command::Record, Vec<OsString>),
+    /// Act as the native child a byte-level operation launched.
+    #[cfg(unix)]
+    Child(child::Record, Vec<OsString>),
     /// Stand in for the preparation fixture's native Cargo boundary.
     Cargo(cargo::Record, Vec<OsString>),
     /// Produce controlled clipboard bytes for the application's native operations.
@@ -107,6 +112,8 @@ impl Request {
             Some("observe") => Ok(Self::Observe(observe::Record::parse(&text)?, operands)),
             #[cfg(unix)]
             Some("command") => Ok(Self::Command(command::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("child") => Ok(Self::Child(child::Record::parse(&text)?, operands)),
             Some("tooling-cargo") => Ok(Self::Cargo(cargo::Record::parse(&text)?, operands)),
             Some("clipboard") => Ok(Self::Clipboard(clipboard::Record::parse(&text)?, operands)),
             Some("git") => Ok(Self::Git(git::Record::parse(&text)?, operands)),
@@ -151,6 +158,8 @@ pub(super) fn run() -> io::Result<()> {
         Request::Observe(record, operands) => observe::run(&record, &operands),
         #[cfg(unix)]
         Request::Command(record, operands) => command::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Child(record, operands) => child::run(&record, &operands),
         Request::Cargo(record, operands) => cargo::run(&record, &operands),
         Request::Clipboard(record, operands) => clipboard::run(&record, &operands),
         Request::Git(record, operands) => git::run(&record, &operands),

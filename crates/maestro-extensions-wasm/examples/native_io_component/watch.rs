@@ -19,7 +19,7 @@ use std::{
 struct Slot {
     /// Original native registration, retained across commands.
     watch: RefCell<Option<Rc<dyn FsWatcher>>>,
-    /// Last delivered payload, without assuming native event counts.
+    /// Current registration's last delivered payload, without assuming native event counts.
     effect: RefCell<Option<Value>>,
     /// Wakes the consumer when a callback delivers its effect.
     waiting: RefCell<Option<Waker>>,
@@ -137,6 +137,7 @@ fn open(io: &dyn NativeIo, slot: &Rc<Slot>, data: &Value) -> ExtensionResult<()>
     let payload = json!({"path":path});
     let close = data["self_close"].as_bool().unwrap_or(false);
     let (weak, released) = (Rc::downgrade(slot), OnDrop(slot.released.clone()));
+    slot.effect.borrow_mut().take();
     *slot.watch.borrow_mut() = Some(io.watch(
         path,
         Rc::new(move |emitter| {

@@ -1,7 +1,7 @@
 //! Strict corpus replay with isolated environment and native failure controls.
 use super::child;
 use base64::{Engine, engine::general_purpose::STANDARD};
-use maestro_test_process::TestProcess;
+use maestro_test_process::{IsolatedSetup, TestProcess};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -192,6 +192,12 @@ fn check_link(root: &Path, path: &Path, item: &Entry) {
     );
 }
 
+/// Applies this child's requested setup, then runs the selected conversion operation.
+fn operation_child() {
+    let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
+    operation();
+}
+
 fn operation() {
     use maestro_app::configuration::migrations::{
         migrate_auth_to_auth_json, migrate_sessions_from_agent_root,
@@ -245,7 +251,7 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
     let lines = if let Some(limit) = limit {
         let output = TestProcess::current(name)
             .unwrap()
-            .shell_setup("/bin/bash", "trap '' XFSZ")
+            .setup(IsolatedSetup::new().file_size_continues())
             .env("STARTUP_FILE_LIMIT", limit.to_string())
             .nocapture()
             .single_threaded()
@@ -281,7 +287,7 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
 /// Check that a limited operation leaves room for exit-time profile writes.
 pub fn check_file_limit_restoration(name: &str) {
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        operation();
+        operation_child();
         return;
     }
     let scratch = child::Scratch::new();
@@ -318,13 +324,13 @@ pub fn check_file_limit_restoration(name: &str) {
 
 pub fn run(name: &str) {
     if std::env::var_os("STARTUP_OPERATION").is_some() {
-        operation();
+        operation_child();
         return;
     }
     if std::env::var_os("STARTUP_CORPUS_CHILD").is_none() {
         let output = TestProcess::current(name)
             .unwrap()
-            .shell_setup("/bin/bash", "umask 002")
+            .setup(IsolatedSetup::new().umask(0o002))
             .nocapture()
             .single_threaded()
             .env("STARTUP_CORPUS_CHILD", "1")
@@ -338,6 +344,7 @@ pub fn run(name: &str) {
         );
         return;
     }
+    let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
     let mut corpus: BTreeMap<String, Vec<Case>> =
         serde_json::from_str(include_str!("../fixtures/startup_conversions.json")).unwrap();
     assert_eq!(corpus.len(), 29);

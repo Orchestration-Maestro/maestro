@@ -24,6 +24,7 @@ use maestro_app::{
 use maestro_tui::{Component, Focusable, KeybindingKeys};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value, json};
+use std::ffi::OsStr;
 use std::{
     any::Any,
     borrow::Cow,
@@ -584,7 +585,7 @@ fn logout_options_keep_saved_kinds_and_stable_names() {
     isolated_case(
         TEST,
         "child",
-        &[("LC_ALL", "en_US.UTF-8")],
+        &[(OsStr::new("LC_ALL"), OsStr::new("en_US.UTF-8"))],
         async |directory| {
             for (index, (input, expected)) in cases::<Listing, Listed>(TEST).into_iter().enumerate()
             {

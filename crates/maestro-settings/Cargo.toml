@@ -26,6 +26,9 @@ maestro-lock = { path = "../maestro-lock" }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true, features = ["std", "process"] }
+
 [dev-dependencies]
 tokio = { version = "=1.53.3", default-features = false, features = ["sync", "rt"] }
 
