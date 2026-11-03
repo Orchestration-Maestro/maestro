@@ -4,6 +4,9 @@
 shared text operations and a per-stream decoder; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
+- **POSIX shell operands.** `shell_quote` serializes one literal operand; native process
+  helpers and guest authoring share it. Safe nonempty words remain unquoted, and all
+  other values use single quotes with embedded apostrophes escaped.
 - **Terminal controls.** `terminal::strip_ansi` removes matches of one cached terminal
   escape expression; `terminal::sanitize_binary_output` drops C0 controls except TAB,
   LF and CR, plus U+FFF9 to U+FFFB. Tools and opt-in Markdown content emission share

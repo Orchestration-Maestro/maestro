@@ -182,8 +182,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   existing theme paths may re-export moved types, not duplicate implementations.
   Land this contract before creating the leaves; size moves by net added
   production lines with matching moved/deleted counts, not claimed savings.
-- `maestro-process` is a declared core leaf below layer 0 with no workspace
-  dependencies, including the path and cancellation leaves. Only tools, packages,
+- `maestro-process` is a declared core owner below layer 0 depending only on
+  `maestro-text`, which owns shared POSIX shell operand serialization. Only tools, packages,
   credentials, detection, the application, the daemon, the toolkit and the terminal adapter may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
   all output handling. Its retained-front byte queue is shared by pane-process input

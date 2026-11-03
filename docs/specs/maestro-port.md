@@ -356,7 +356,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
-| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
+| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, POSIX shell operands, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
@@ -366,7 +366,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-lock` | guard file writes | `maestro-path` | below 0 |
-| `maestro-process` | own native child-process lifecycles | — | below 0 |
+| `maestro-process` | own native child-process lifecycles | `maestro-text` | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
@@ -640,15 +640,15 @@ and [file-lock acquisition ownership](https://github.com/Orchestration-Maestro/m
 Size each relocation by net added production lines, showing matching moved and
 deleted lines; moving lines is not a code saving.
 
-`maestro-process` is a core leaf below layer 0 with no workspace dependencies,
-including the path and cancellation leaves. It owns native child-process lifecycles:
+`maestro-process` is a core owner below layer 0 depending only on `maestro-text`
+for POSIX shell operand serialization. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
 pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, detection, the application and the
 terminal toolkit, terminal adapter and the daemon may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
-with their feature owners. The process leaf also owns the retained-front byte queue
+with their feature owners. The process owner also owns the retained-front byte queue
 shared by pane-process input and native terminal output: ordered admission, partial
 write advancement and failure cleanup. Callers choose the write chunk bound and
 keep descriptor readiness, lifecycle and error-reporting policy. It owns native
@@ -689,7 +689,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
-request owner (`maestro-request`), watch leaf (`maestro-watch`), process leaf (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
+request owner (`maestro-request`), watch leaf (`maestro-watch`), process owner (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`), package records (`maestro-package`) and brand projection
