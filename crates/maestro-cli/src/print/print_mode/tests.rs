@@ -773,15 +773,19 @@ fn json_keeps_every_subscribed_session_event_record() {
 
         assert_eq!(run(&recorder, json(&["report"])).await, Ok(0));
 
-        let written = recorder.stdout.borrow();
-        let records: Vec<serde_json::Value> = written
-            .lines()
-            .map(|line| serde_json::from_str(line).expect("one JSON record per line"))
-            .collect();
+        // Byte equality, not parsed values: it also proves every record is compact and keeps
+        // the authored key order.
+        let expected = every_event_record()
+            .iter()
+            .fold(String::new(), |mut text, record| {
+                text.push_str(&record.to_string());
+                text.push('\n');
+                text
+            });
         assert_eq!(
-            records,
-            every_event_record(),
-            "each subscribed variant crosses unchanged, once, in order"
+            recorder.stdout.borrow().as_str(),
+            expected,
+            "each subscribed variant crosses unchanged, once, in order, as one compact record"
         );
         assert_eq!(*recorder.stderr.borrow(), Vec::<String>::new());
     });
