@@ -1,4 +1,4 @@
-//! The Cargo and recipe tools the fixture-sources and browser setups run.
+//! The Cargo and recipe stand-ins the tooling tests install.
 
 use std::ffi::{OsStr, OsString};
 use std::io::{self, Write};
@@ -58,7 +58,7 @@ pub(super) enum Record {
         code: u8,
     },
     /// Act as a Trunk hook: copy the stylesheet, report the hook environment, end with its status.
-    TrunkHook,
+    TrunkHook {},
     /// Append the call and the matching variables to a log and refuse one chosen first operand.
     CallLog {
         /// Destination appended to, created when it is absent.
@@ -111,7 +111,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             write_stderr(stderr.as_bytes())?;
             leave(i32::from(*code))
         }
-        Record::TrunkHook => trunk_hook(args),
+        Record::TrunkHook {} => trunk_hook(args),
         Record::CallLog {
             path,
             prefixes,
@@ -248,16 +248,11 @@ fn announce(rebuilt: Option<&str>, args: &[OsString]) -> io::Result<()> {
     let Some(path) = rebuilt else {
         return Ok(());
     };
-    std::fs::copy(std::env::current_exe()?, path)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755))?;
-    }
+    super::install(Path::new(path))?;
     std::fs::write(format!("{path}.fixture"), "echo\nexample\n")
 }
 
-/// Append one line to a log, creating it when it is absent.
+/// Append `text` and a newline, creating the log when it is absent.
 fn append(path: impl AsRef<Path>, text: &str) -> io::Result<()> {
     let mut file = std::fs::OpenOptions::new()
         .create(true)
