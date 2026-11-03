@@ -4180,6 +4180,7 @@ dependencies = [
  "maestro-package",
  "maestro-request",
  "maestro-test-directory",
+ "maestro-test-process",
  "maestro-text",
  "maestro-tool",
  "num-traits",
