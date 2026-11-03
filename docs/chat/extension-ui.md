@@ -125,18 +125,20 @@ extension issues.
 
 Input is matched against the selected keys by their lowercased spelling, in selection
 order. The first match consumes the input and starts its callback, and every other input,
-including the same key with another modifier, reaches the editor unchanged. A callback
-runs on the terminal runtime after the input returns, so a handler never blocks typing,
-and its failure appears as `Error: Shortcut handler error: <message>` through the
-transcript's error notice.
+including the same key with another modifier, reaches the editor unchanged. The handler
+is called as the input is handled; the future it returns runs on the input thread's local
+runtime without being awaited, so input handling never waits for it to finish. That
+future's own work still occupies the input thread while it is polled. Its failure appears
+as `Error: Shortcut handler error: <message>` through the transcript's error notice.
 
 Each callback receives a context built when the key is pressed, from the runner the
 session has now. It reads the current session's working directory, model, idle state,
 pending messages, context usage and system prompt, and it asks that runner to abort,
 compact or shut down. Its UI is the mode itself. Shutting down while idle ends the mode at
-once; while a response streams, the agent's end does. A context kept from a runner the
-session has discarded fails as stale
-instead of answering with old state. The interceptor holds the mode weakly, so it never
+once; while a response streams, the agent's end does. A context kept from a runner fails
+as stale instead of answering with old state, but only once that runner is invalidated,
+as session replacement and disposal do; a reload alone leaves the retired runner's
+contexts valid. The interceptor holds the mode weakly, so it never
 keeps the presentation alive; a callback that already started may keep it until it
 finishes.
 
