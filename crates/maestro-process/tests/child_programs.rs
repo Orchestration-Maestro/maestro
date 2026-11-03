@@ -101,10 +101,10 @@ fn wait_for_signal() -> ! {
 /// descriptors this process still shares with the parent that reads them.
 pub fn spawn_descendant(program: impl Fn(), variables: &[(&str, &str)]) -> std::process::Child {
     let started = TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let port = started.local_addr().unwrap().port().to_string();
+    let started_port = started.local_addr().unwrap().port().to_string();
     let mut command = command(program, variables);
     command
-        .env("CHILD_STARTED_PORT", port)
+        .env("CHILD_STARTED_PORT", started_port)
         .stdin(Stdio::piped());
     let child = command.spawn().unwrap();
     started.accept().unwrap();
