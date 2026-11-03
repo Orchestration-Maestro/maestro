@@ -979,7 +979,7 @@ The Git-pinned engine includes the shared modification time in its cache
 namespace, so the preparer and consuming test binaries share compiled code.
 The example builds every exported component in one Cargo invocation, so Cargo
 compiles them in parallel, warms their Wasmtime compilation cache
-in the cache the setup selects (on Linux the run's own `component-cache` beside the
+in the engine's cache (on Linux the run's own `component-cache` beside the
 profile directory) on up to four threads and exports each path to the tests' processes.
 Component contents, compiler settings and CPU features still determine cache
 compatibility.
