@@ -1418,9 +1418,13 @@ scenarios keep authored text literal:
 | `PromptAcceptance` | Answers state, emits `agent_end` and only then accepts the prompt. |
 | `EndAfterAcceptance` | Accepts the prompt and streams a delta before `agent_end`. |
 | `AcceptedEof` | Accepts the prompt and closes the stream before any terminal event. |
-| `ExitAfterReply` | Answers the first request, reads input to its end and exits with status three. |
+| `ExitAfterReply` | Answers the first request, requires the client to close its input without another command and exits with status three. |
 | `RefusedState` | Refuses the startup request without a terminal event. |
 | `EarlyEof` | Closes the stream before answering. |
+
+`UnicodeState`, `PromptAcceptance`, `EndAfterAcceptance` and `ExitAfterReply`
+require the client to close its input without another command after its last
+reply, so a stray command fails the check.
 
 The client example's checks launch the shipped `examples/sdk/rpc.py` against an
 installed alias of this family, so only the example itself runs under Python 3.

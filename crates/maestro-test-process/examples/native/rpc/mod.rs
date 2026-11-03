@@ -61,6 +61,8 @@ impl Record {
     }
 
     /// Construct only the input states each module can execute.
+    ///
+    /// Both constructors name every scenario, so a new one fails to compile until it is placed.
     fn from_scenario(scenario: Scenario) -> io::Result<Self> {
         #[cfg(unix)]
         {
@@ -99,7 +101,41 @@ fn native_scenario(scenario: Scenario) -> io::Result<Option<Record>> {
         Scenario::Resist => Record::Lifecycle(Lifecycle::Resist),
         Scenario::Restart => Record::Lifecycle(Lifecycle::Restart),
         Scenario::ClosedInput => Record::Lifecycle(Lifecycle::ClosedInput),
-        _ => return Ok(None),
+        Scenario::DialogTour
+        | Scenario::LocalDialogTour
+        | Scenario::Notifications
+        | Scenario::SelectionReplies
+        | Scenario::DialogText
+        | Scenario::MultilineCommand
+        | Scenario::LiteralText
+        | Scenario::PromptExit
+        | Scenario::UnicodeState
+        | Scenario::PromptAcceptance
+        | Scenario::EndAfterAcceptance
+        | Scenario::AcceptedEof
+        | Scenario::ExitAfterReply
+        | Scenario::RefusedState
+        | Scenario::EarlyEof
+        | Scenario::Serve
+        | Scenario::Burst
+        | Scenario::Replay
+        | Scenario::Records
+        | Scenario::Refuse
+        | Scenario::Reversed
+        | Scenario::Malformed
+        | Scenario::LateState
+        | Scenario::LateEnd
+        | Scenario::LateAnswers
+        | Scenario::LateExit
+        | Scenario::Answered
+        | Scenario::Collections
+        | Scenario::Prompt
+        | Scenario::RejectPrompt
+        | Scenario::Cancelled
+        | Scenario::Settle
+        | Scenario::Linear
+        | Scenario::Received
+        | Scenario::Withhold => return Ok(None),
     }))
 }
 
@@ -144,7 +180,25 @@ fn portable_scenario(scenario: Scenario) -> io::Result<Record> {
         Scenario::Linear => Record::Events(Event::Responding(Response::Linear)),
         Scenario::Received => Record::Events(Event::Received),
         Scenario::Withhold => Record::Events(Event::Withhold),
-        _ => return Err(io::Error::other("scenario needs a Unix host")),
+        Scenario::Session
+        | Scenario::IdleInterrupt
+        | Scenario::Launch
+        | Scenario::Report
+        | Scenario::Tick
+        | Scenario::Fragments
+        | Scenario::Descendant
+        | Scenario::PipeHolder
+        | Scenario::TerminationMarker
+        | Scenario::Entry
+        | Scenario::BootFailure
+        | Scenario::Kill
+        | Scenario::Booting
+        | Scenario::ForwardStderr
+        | Scenario::DeliverStderr
+        | Scenario::SplitStderr
+        | Scenario::Resist
+        | Scenario::Restart
+        | Scenario::ClosedInput => return Err(io::Error::other("scenario needs a Unix host")),
     })
 }
 

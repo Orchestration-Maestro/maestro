@@ -2,10 +2,10 @@
 
 use std::io;
 
-use maestro_test_process::child::{leave, write_stdout};
+use maestro_test_process::child::{leave, read_input, write_stdout};
 use serde_json::{Value, json};
 
-use super::{Commands, drain, emit, refuse, respond};
+use super::{Commands, emit, refuse, respond};
 
 /// One client check, selected before any protocol output.
 #[derive(Clone, Copy)]
@@ -35,6 +35,18 @@ fn expect(commands: &mut Commands, expected: &Value) -> io::Result<Value> {
     Ok(command)
 }
 
+/// Require the client to close its input without sending another command.
+fn closed() -> io::Result<()> {
+    let rest = read_input()?;
+    if rest.is_empty() {
+        return Ok(());
+    }
+    Err(io::Error::other(format!(
+        "unexpected input after the reply: {}",
+        String::from_utf8_lossy(&rest).trim_end()
+    )))
+}
+
 /// Write one record terminated by CRLF rather than LF.
 fn emit_crlf(record: &Value) -> io::Result<()> {
     write_stdout(&serde_json::to_vec(record)?)?;
@@ -54,7 +66,7 @@ fn unicode_state() -> io::Result<()> {
         &json!({"type": "response", "id": "state", "success": true, "data": {"sessionName": "a\u{2028}b\u{2029}c"}}),
     )?;
     drop(commands);
-    drain()
+    closed()
 }
 
 /// Answer state, then accept the prompt after the terminal event it is still waiting for.
@@ -76,7 +88,7 @@ fn prompt_acceptance() -> io::Result<()> {
     emit(&json!({"type": "agent_end", "messages": []}))?;
     respond(&prompt, None)?;
     drop(commands);
-    drain()
+    closed()
 }
 
 /// Accept the prompt first and keep streaming until the terminal event.
@@ -94,7 +106,7 @@ fn end_after_acceptance() -> io::Result<()> {
     )?;
     emit(&json!({"type": "agent_end", "messages": []}))?;
     drop(commands);
-    drain()
+    closed()
 }
 
 /// Accept the prompt and close the stream without a terminal event.
@@ -106,11 +118,11 @@ fn accepted_eof() -> io::Result<()> {
     respond(&prompt, None)
 }
 
-/// Answer the first request, read input to its end, then end with status three.
+/// Answer the first request, require silence, then end with status three.
 fn exit_after_reply() -> io::Result<()> {
     let request = Commands::new().required()?;
     respond(&request, None)?;
-    drain()?;
+    closed()?;
     leave(3)
 }
 
