@@ -655,17 +655,19 @@ fn refusing() -> ExtensionFactory<Local> {
 }
 
 /// Asserts the operation's artifact survived a refused removal and leaves it removable for the
-/// next case; a host that removed it anyway reports the premise instead.
+/// next case; a privileged host, which refuses every removal, reports the premise instead.
 fn assert_kept_artifact(test: &str) {
-    let Some(artifact) = artifacts().first().cloned() else {
+    if !removal_is_refused() {
         eprintln!("{test} needs a host whose artifact removal is refused");
         return;
-    };
-    let restoring = maestro_test_directory::deny(&artifact, 0o500).unwrap();
-    assert!(
-        restoring.is_some(),
-        "the artifact is kept only while removal is refused"
-    );
+    }
+    let artifact = artifacts()
+        .first()
+        .cloned()
+        .expect("the artifact whose removal was refused is kept");
+    let restoring = maestro_test_directory::deny(&artifact, 0o500)
+        .unwrap()
+        .expect("the artifact's removal stays refused");
     assert!(
         artifact.join("session.html").exists(),
         "the exported document is kept"
@@ -675,6 +677,15 @@ fn assert_kept_artifact(test: &str) {
     fs::set_permissions(&artifact, mode).unwrap();
     fs::remove_file(artifact.join("session.html")).unwrap();
     fs::remove_dir(&artifact).unwrap();
+}
+
+/// Whether a removal in this process's identity is refused, as it is for the controlled child
+/// that removes the artifact; a privileged host refuses nothing.
+fn removal_is_refused() -> bool {
+    let scratch = maestro_test_directory::Scratch::new().expect("a scratch directory");
+    maestro_test_directory::deny(scratch.path(), 0o500)
+        .unwrap()
+        .is_some()
 }
 
 /// Asserts the document the child received is the one the application owner writes for the same
@@ -868,8 +879,9 @@ fn share_and_copy_commands_clear_editor_after_completion() {
     let cases: Vec<(Submitted, Routed)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 6);
     drop(run(TEST, "child", Some(0o700), async |directory| {
+        let mut kept_while_running = false;
         for (case, expected) in &cases {
-            let world = started(directory).await;
+            let world = exportable(directory).await;
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &case.text);
             if !expected.routed {
@@ -887,10 +899,33 @@ fn share_and_copy_commands_clear_editor_after_completion() {
             );
             assert!(recalled(&world.mode.editor).is_empty(), "{}", case.text);
             assert_eq!(world.runtime.futures(), 1, "{}", case.text);
-            drive(&world).await.unwrap();
+            // A buffer typed while the command's work runs is kept until that work
+            // settles, and the work then clears it; clearing as the work starts is seen here.
+            world.mode.editor.set_text("seeded");
+            let mut operation = world
+                .runtime
+                .take_futures()
+                .pop()
+                .expect("the admitted operation");
+            if let Some(result) = poll(&mut operation) {
+                assert!(result.is_ok(), "{}", case.text);
+            } else {
+                assert_eq!(
+                    world.mode.editor.get_text(),
+                    "seeded",
+                    "{} keeps a buffer typed while it runs",
+                    case.text
+                );
+                kept_while_running = true;
+                assert!(operation.await.is_ok(), "{}", case.text);
+            }
             assert_eq!(world.mode.editor.get_text(), "", "{}", case.text);
             assert_eq!(world.runtime.futures(), 0, "{}", case.text);
         }
+        assert!(
+            kept_while_running,
+            "a command that runs on was observed holding a typed buffer"
+        );
         seeded_buffer_survives_until_settled(directory).await;
     }));
 }
@@ -952,6 +987,7 @@ async fn export_failures(directory: &Path, keep: &Path) {
     );
     assert!(artifacts().is_empty(), "the artifact is gone");
     assert!(keep.exists(), "an unrelated file is kept");
+    #[cfg(target_os = "linux")]
     partly_written_document(directory, keep).await;
 }
 
@@ -1212,8 +1248,8 @@ fn greeting(control: &mut std::net::TcpStream) -> String {
     line
 }
 
-/// Runs `/share` over `frames`, granting each continuation only after the running command has
-/// consumed every byte written before it, so no scalar is decoded from a coalesced read.
+/// Runs `/share` over `frames`, letting the running command consume every byte written
+/// before each request, so no scalar is decoded from a coalesced read.
 async fn acknowledged(directory: &Path, frames: &[Value], exit: u8) -> World {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -1231,6 +1267,10 @@ async fn acknowledged(directory: &Path, frames: &[Value], exit: u8) -> World {
             b'R',
             "the child asks to continue"
         );
+        // Polling alone never turns the runtime's driver, so the pipe would stay
+        // unreadable and the next grant would join this byte to the bytes after it.
+        // The turn lets the command read what the child wrote before its request.
+        tokio::task::yield_now().await;
         assert!(poll(&mut operation).is_none(), "the command waits for more");
         std::io::Write::write_all(&mut control, b"x").unwrap();
     }
