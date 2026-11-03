@@ -912,18 +912,14 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
-    for owner in [
-        "maestro-test-process",
-        "maestro-test-directory",
-        "maestro-path",
-    ] {
-        let dependency = workspace.path().join("crates").join(owner);
+    for owner in crate::tooling_closure::tooling_local_dependencies() {
+        let dependency = workspace.path().join("crates").join(&owner);
         copy_tree(
-            &source.join("..").join(owner).join("src"),
+            &source.join("..").join(&owner).join("src"),
             &dependency.join("src"),
         );
         fs::copy(
-            source.join("..").join(owner).join("Cargo.toml"),
+            source.join("..").join(&owner).join("Cargo.toml"),
             dependency.join("Cargo.toml"),
         )
         .unwrap();
