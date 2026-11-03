@@ -1,4 +1,4 @@
-//! Daemon socket operations, pane rendering and host theme records exposed to frontends.
+//! Daemon operations, pane rendering, themes, supported agents and default settings exposed to frontends.
 
 /// The daemon operations and records used by native frontends.
 pub mod daemon {
