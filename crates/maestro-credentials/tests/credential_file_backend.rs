@@ -284,7 +284,6 @@ mod tests {
             errors[0].downcast_ref::<TryLockError>(),
             Some(TryLockError::WouldBlock)
         ));
-        assert_eq!(storage.list(), ["openai"]);
         assert_eq!(std::fs::read_to_string(&path).unwrap(), initial);
         storage.reload();
         assert_eq!(storage.drain_errors().len(), 1);
@@ -429,6 +428,25 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
+    fn refused_file_write_disappears_at_the_next_read() {
+        let dir = TempDir::without_forks("refused-write");
+        let path = dir.path("auth.json");
+        let initial = pretty(&[("a", "1")]);
+        std::fs::write(&path, &initial).unwrap();
+        let storage = AuthStorage::create(&path);
+        let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+            return;
+        };
+
+        storage.set("p", api_key("refused"));
+
+        assert_eq!(storage.drain_errors().len(), 1);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), initial);
+        assert!(!storage.get_all().contains_key("p"));
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn removed_or_absent_records_rewrite_the_document() {
         let dir = TempDir::without_forks("rewrite");
         let path = dir.path("auth.json");
@@ -486,16 +504,6 @@ mod tests {
                 tokio::task::yield_now().await;
                 tokio::task::yield_now().await;
                 Ok(Some(format!("{}{marker}", current.unwrap_or_default())))
-            })
-        })
-    }
-
-    /// Callback that counts its runs.
-    fn counting(calls: &AtomicUsize) -> AsyncLockUpdate<'_> {
-        Box::new(move |_| {
-            Box::pin(async move {
-                calls.fetch_add(1, Ordering::SeqCst);
-                Ok(None)
             })
         })
     }
@@ -619,6 +627,29 @@ mod tests {
     }
 
     #[test]
+    fn has_follows_records_another_storage_wrote_or_removed() {
+        let (dir, reader) = after_another_storage_writes("reread-has");
+        assert!(reader.has("written"));
+        AuthStorage::create(&dir.path("auth.json")).remove("written");
+        assert!(!reader.has("written"));
+        assert_eq!(
+            block_on(reader.get_api_key("written", false, &NoOperations)).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn request_key_is_gone_after_another_storage_removes_it() {
+        let (dir, reader) = after_another_storage_writes("removed-request-key");
+        assert_eq!(reader.get("written"), Some(api_key("fresh")));
+        AuthStorage::create(&dir.path("auth.json")).remove("written");
+        assert_eq!(
+            block_on(reader.get_api_key("written", false, &NoOperations)).unwrap(),
+            None
+        );
+    }
+
+    #[test]
     fn auth_checks_see_credentials_another_storage_wrote() {
         let (_dir, reader) = after_another_storage_writes("reread-auth");
         assert!(reader.has_auth("written").unwrap());
@@ -667,55 +698,6 @@ mod tests {
             );
             #[cfg(unix)]
             assert_eq!(mode(&path), 0o600);
-        });
-    }
-
-    /// Run one async operation while another holder releases the sidecar at `release_ms`.
-    async fn release_at(path: &str, release_ms: u64) -> (Result<(), bool>, Duration, usize) {
-        let holder = hold_lock(path);
-        let backend = FileAuthStorageBackend::new(path);
-        let calls = AtomicUsize::new(0);
-        let started = tokio::time::Instant::now();
-        let operation = async {
-            let result = backend
-                .with_lock_async(counting(&calls))
-                .await
-                .map_err(|error| {
-                    matches!(
-                        error.downcast_ref::<TryLockError>(),
-                        Some(TryLockError::WouldBlock)
-                    )
-                });
-            (result, started.elapsed())
-        };
-        let release = async {
-            tokio::time::sleep(Duration::from_millis(release_ms)).await;
-            drop(holder);
-        };
-        let ((result, elapsed), ()) = tokio::join!(operation, release);
-        (result, elapsed, calls.into_inner())
-    }
-
-    #[test]
-    fn async_file_contention_obeys_bounded_schedule() {
-        block_on_paused(async {
-            let dir = TempDir::without_forks("async-schedule");
-            let path = dir.path("auth.json");
-            let deadlines = [
-                100, 300, 700, 1500, 3100, 6300, 12_700, 22_700, 32_700, 42_700,
-            ];
-            let mut previous = 0;
-            for deadline in deadlines {
-                let (result, elapsed, calls) = release_at(&path, previous + 1).await;
-                assert_eq!(result, Ok(()), "release at {}", previous + 1);
-                assert_eq!(elapsed, Duration::from_millis(deadline));
-                assert_eq!(calls, 1);
-                previous = deadline;
-            }
-            let (result, elapsed, calls) = release_at(&path, 42_701).await;
-            assert_eq!(result, Err(true));
-            assert_eq!(elapsed, Duration::from_millis(42_700));
-            assert_eq!(calls, 0);
         });
     }
 
@@ -835,9 +817,9 @@ mod tests {
         let dir = TempDir::without_forks("pending-waiter");
         let path = expired_file(&dir, "f6-wait");
         let storage = AuthStorage::create(&path);
-        let holder = hold_lock(&path);
         let idle = Arc::strong_count(&provider);
         let mut request = storage.get_api_key("f6-wait", true, &operations);
+        let holder = hold_lock(&path);
         assert!(poll_once(&mut request).is_pending());
         assert_eq!(Arc::strong_count(&provider), idle + 1);
         drop(request);

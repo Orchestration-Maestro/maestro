@@ -446,19 +446,22 @@ sending the request; the body limit restarts after each chunk. Private clients
 and browser transport keep their own policies. A finite setting too large to
 represent as a duration returns a conversion error.
 
-While install telemetry is on, requests to `openrouter` or an `openrouter.ai`
-address carry `HTTP-Referer: https://github.com/Orchestration-Maestro/maestro`,
+While install telemetry is on, requests to `openrouter` or a base URL containing
+`openrouter.ai` (case-sensitive, anywhere in the URL) carry
+`HTTP-Referer: https://github.com/Orchestration-Maestro/maestro`,
 `X-OpenRouter-Title: maestro` and `X-OpenRouter-Categories: cli-agent`. Requests
 to `nvidia` or an `integrate.api.nvidia.com` address carry
 `X-BILLING-INVOKE-ORIGIN: maestro`. Requests to Cloudflare's providers or to
 `api.cloudflare.com` and `gateway.ai.cloudflare.com` addresses carry
 `User-Agent: maestro-coding-agent`. Requests to `opencode`, `opencode-go` or an
-`opencode.ai` address that carry a session ID also send `x-opencode-session` and
-`x-opencode-client: maestro`, whatever the telemetry setting.
+`opencode.ai` address that carry a nonempty session ID also send
+`x-opencode-session` and `x-opencode-client: maestro`, whatever the telemetry setting.
 
-An address matches by its parsed host, ignoring case. A path or query that only
-names a host, such as `https://proxy.example/api.cloudflare.com/v1`, matches
-nothing.
+NVIDIA, Cloudflare and OpenCode addresses match by parsed host, ignoring case.
+A path or query that only names one of those hosts, such as
+`https://proxy.example/api.cloudflare.com/v1`, does not match. OpenRouter also
+matches subdomains and proxy paths containing the exact text `openrouter.ai`.
+An empty session ID sends neither OpenCode header.
 
 Extensions can replace each request payload through `before_provider_request`,
 hear each response status and headers through `after_provider_response`, and

@@ -454,9 +454,9 @@ fn api_key_store_failure_remains_a_store_diagnostic() {
             sign_in_to(&world, AuthType::ApiKey, "custom-key");
             answer(&world, "secret");
             assert_eq!(
-                stored_key(&world, "custom-key").as_deref(),
-                Some("secret"),
-                "memory accepts it"
+                stored_key(&world, "custom-key"),
+                None,
+                "the next read discards the key whose write was refused"
             );
             assert_eq!(
                 std::fs::read_to_string(&file).unwrap(),

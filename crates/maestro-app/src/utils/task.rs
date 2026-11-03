@@ -19,3 +19,18 @@ pub fn start_now(mut task: LocalTask, spawn: impl FnOnce(LocalTask)) {
         spawn(task);
     }
 }
+
+/// Forwards admissions onto the caller's local task set, without running work on senders.
+/// Closing the sender ends forwarding; already admitted work retains its own lifetime.
+pub(crate) fn forward<T: 'static>(
+    local: &std::rc::Rc<tokio::task::LocalSet>,
+    work: impl Fn(T) -> LocalTask + 'static,
+) -> tokio::sync::mpsc::UnboundedSender<T> {
+    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+    drop(local.spawn_local(async move {
+        while let Some(message) = receiver.recv().await {
+            drop(tokio::task::spawn_local(work(message)));
+        }
+    }));
+    sender
+}

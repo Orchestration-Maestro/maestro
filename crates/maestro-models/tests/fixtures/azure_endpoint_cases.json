@@ -11417,8 +11417,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -11487,8 +11487,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -11558,8 +11558,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -11628,8 +11628,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -11700,8 +11700,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -11770,8 +11770,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -11847,8 +11847,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -11917,8 +11917,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -11992,8 +11992,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -12062,8 +12062,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -12133,8 +12133,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -12203,8 +12203,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -12277,8 +12277,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -12347,8 +12347,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -25876,8 +25876,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -25946,8 +25946,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26013,8 +26013,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26083,8 +26083,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26150,8 +26150,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26220,8 +26220,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26287,8 +26287,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26357,8 +26357,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26423,8 +26423,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26493,8 +26493,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26560,8 +26560,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26630,8 +26630,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26697,8 +26697,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26767,8 +26767,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -26834,8 +26834,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -26904,8 +26904,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },
@@ -43552,8 +43552,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         }
@@ -43622,8 +43622,8 @@
             "model",
             "input",
             "stream",
-            "store",
             "prompt_cache_key",
+            "store",
             "reasoning"
           ]
         },

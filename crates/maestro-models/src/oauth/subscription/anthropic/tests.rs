@@ -1393,7 +1393,7 @@ mod oauth_callback {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         let server = super::super::callback::bind("good".into()).await.unwrap();
         for (target, expected) in [("http://[", 400), ("//[", 500)] {
-            let mut peer = tokio::net::TcpStream::connect("127.0.0.1:53692")
+            let mut peer = tokio::net::TcpStream::connect(("127.0.0.1", server.port.unwrap()))
                 .await
                 .unwrap();
             let request =

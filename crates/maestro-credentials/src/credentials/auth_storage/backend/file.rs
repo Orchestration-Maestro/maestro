@@ -6,14 +6,22 @@ use std::io::{self, ErrorKind};
 use std::path::Path;
 use std::time::Duration;
 
-/// Waits between contended attempts of the asynchronous acquisition, in milliseconds.
-const ASYNC_LOCK_DELAYS_MS: [u64; 10] = [100, 200, 400, 800, 1600, 3200, 6400, 10000, 10000, 10000];
+/// Number of waits before scheduled acquisition gives up on contention.
+const LOCK_WAITS: u32 = 10;
+/// Initial exponential wait in milliseconds, before random lengthening.
+const LOCK_MIN_MS: f64 = 100.0;
+/// Maximum wait in milliseconds, applied after random lengthening and rounding.
+const LOCK_MAX_MS: f64 = 10_000.0;
 
 /// Credential file at a caller-resolved path; relative paths use the working directory.
 #[derive(Debug)]
 pub struct FileAuthStorageBackend {
     /// Credential file location.
     auth_path: String,
+    /// Fresh draw in `[0, 1)` for each contended wait.
+    draw: fn() -> f64,
+    /// Blocking wait used by synchronous rereads.
+    wait: fn(Duration),
 }
 
 impl FileAuthStorageBackend {
@@ -22,7 +30,23 @@ impl FileAuthStorageBackend {
     pub fn new(auth_path: &str) -> Self {
         Self {
             auth_path: auth_path.to_owned(),
+            draw: maestro_models::unit_random,
+            wait: std::thread::sleep,
         }
+    }
+
+    /// Replace random draws for deterministic acquisition tests.
+    #[cfg(test)]
+    pub(in crate::credentials::auth_storage) fn with_draw(mut self, draw: fn() -> f64) -> Self {
+        self.draw = draw;
+        self
+    }
+
+    /// Replace blocking waits for controlled competing writers.
+    #[cfg(test)]
+    pub(in crate::credentials::auth_storage) fn with_wait(mut self, wait: fn(Duration)) -> Self {
+        self.wait = wait;
+        self
     }
 
     /// Create missing credential parent directories privately.
@@ -43,18 +67,50 @@ impl FileAuthStorageBackend {
         maestro_lock::acquire_write_bounded(Path::new(&self.auth_path), true).map_err(lock_error)
     }
 
-    /// Lock the sidecar, waiting the scheduled delays while another holder has it.
+    /// Waits shared by blocking rereads and asynchronous locked refreshes.
+    fn scheduled_delays(&self) -> impl Iterator<Item = Duration> + '_ {
+        (0..LOCK_WAITS).map(|attempt| {
+            let millis = ((1.0 + (self.draw)()) * LOCK_MIN_MS * f64::from(1_u32 << attempt))
+                .round()
+                .min(LOCK_MAX_MS);
+            Duration::from_secs_f64(millis / 1000.0)
+        })
+    }
+
+    /// Acquire once, returning the next contention delay or the terminal acquisition error.
+    fn attempt(
+        &self,
+        delays: &mut impl Iterator<Item = Duration>,
+    ) -> Result<Result<WriteLock, Duration>, AuthStorageError> {
+        match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
+            Ok(holder) => Ok(Ok(holder)),
+            Err(error @ TryLockError::WouldBlock) => {
+                delays.next().map(Err).ok_or_else(|| lock_error(error))
+            }
+            Err(error) => Err(lock_error(error)),
+        }
+    }
+
+    /// Lock the sidecar, blocking for scheduled delays while another holder has it.
+    fn acquire_waiting(&self) -> Result<WriteLock, AuthStorageError> {
+        self.create_parents()?;
+        let mut delays = self.scheduled_delays();
+        loop {
+            match self.attempt(&mut delays)? {
+                Ok(holder) => return Ok(holder),
+                Err(delay) => (self.wait)(delay),
+            }
+        }
+    }
+
+    /// Lock the sidecar, awaiting scheduled delays while another holder has it.
     async fn acquire_async(&self) -> Result<WriteLock, AuthStorageError> {
         self.create_parents()?;
-        let mut delays = ASYNC_LOCK_DELAYS_MS.into_iter();
+        let mut delays = self.scheduled_delays();
         loop {
-            match maestro_lock::try_acquire_write(Path::new(&self.auth_path), true) {
+            match self.attempt(&mut delays)? {
                 Ok(holder) => return Ok(holder),
-                Err(error @ TryLockError::WouldBlock) => match delays.next() {
-                    Some(delay) => tokio::time::sleep(Duration::from_millis(delay)).await,
-                    None => return Err(lock_error(error)),
-                },
-                Err(error) => return Err(lock_error(error)),
+                Err(delay) => tokio::time::sleep(delay).await,
             }
         }
     }
@@ -156,6 +212,11 @@ fn publish(holder: WriteLock, text: &str) -> io::Result<()> {
 }
 
 impl AuthStorageBackend for FileAuthStorageBackend {
+    fn read_waiting(&self) -> Result<Option<String>, AuthStorageError> {
+        let _lock = self.acquire_waiting()?;
+        self.read().map_err(Into::into)
+    }
+
     fn with_lock(
         &self,
         update: &mut dyn FnMut(Option<&str>) -> LockUpdate,

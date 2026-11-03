@@ -14,6 +14,7 @@ mod fixture_sources_setup;
 mod native_setup;
 mod nextest_priorities;
 mod nextest_selection;
+mod nextest_wrapper;
 mod prepared_setup_packages;
 mod setup_docs;
 mod shared_ci_callers;
