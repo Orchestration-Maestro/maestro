@@ -8,6 +8,7 @@ use std::os::unix::process::CommandExt;
 use maestro_test_process::child::{leave, read_input, variable, write_stderr, write_stdout};
 use rustix::process::{Signal, getpid, kill_process};
 use serde::Deserialize;
+use signal_hook::consts::{SIGHUP, SIGTERM};
 
 /// Native termination instead of a numeric status.
 #[derive(Deserialize)]
@@ -204,6 +205,21 @@ pub(super) enum Record {
     },
     /// Record one package-manager command and answer it.
     Package {},
+    /// Hold the hangup, report readiness, then tell the socket operand once it arrives.
+    HoldHangup {},
+    /// Read one release byte from the socket operand, then end.
+    AwaitRelease {},
+    /// Report the role, pane and working directory, then stay alive until terminated.
+    ReportEnvironment {},
+    /// Serve a Cargo metadata document read at run time.
+    Metadata {
+        /// Document served when the operands select declared members only.
+        declared: String,
+        /// Document served otherwise.
+        resolved: String,
+        /// Optional operand log this invocation appends to first.
+        argv_log: Option<ArgvLog>,
+    },
     /// Answer a package-manager query that receives its prefix as the first operands.
     Prefixed {
         /// Text appended to the prefix operand for a root query.
@@ -256,8 +272,88 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             code,
         } => query(operands, prefix, denied, error, *code),
         Record::Package {} => package(operands),
+        Record::HoldHangup {} => hold_hangup(operands),
+        Record::AwaitRelease {} => await_release(operands),
+        Record::ReportEnvironment {} => report_environment(),
+        Record::Metadata {
+            declared,
+            resolved,
+            argv_log,
+        } => metadata(operands, declared, resolved, argv_log.as_ref()),
         Record::Prefixed { suffix, log } => prefixed(operands, suffix, log),
     }
+}
+
+/// The single socket path a coordination scenario needs.
+fn socket_path(operands: &[OsString]) -> io::Result<&OsString> {
+    match operands {
+        [path] => Ok(path),
+        _ => Err(io::Error::other("expected one socket path")),
+    }
+}
+
+/// Stay alive until the process is terminated.
+fn remain() -> ! {
+    loop {
+        std::thread::park();
+    }
+}
+
+/// Queue the hangup before readiness, so one that arrives early is not lost, then tell the
+/// socket with `h` and run on.
+fn hold_hangup(operands: &[OsString]) -> io::Result<()> {
+    let path = socket_path(operands)?;
+    let mut reader = trap(SIGHUP)?;
+    write_stdout(b"\nready\n")?;
+    reader.read_exact(&mut [0])?;
+    UnixStream::connect(path)?.write_all(b"h")?;
+    remain()
+}
+
+/// Announce with `w`, then wait for the release byte without polling.
+fn await_release(operands: &[OsString]) -> io::Result<()> {
+    let mut socket = UnixStream::connect(socket_path(operands)?)?;
+    socket.write_all(b"w")?;
+    socket.read_exact(&mut [0])?;
+    leave(0)
+}
+
+/// Print `seen:<ROLE>|<MAESTRO_PANE_ID>|<working directory>` on its own line, then run on.
+fn report_environment() -> io::Result<()> {
+    write_stdout(
+        format!(
+            "\nseen:<{}>|<{}>|<{}>\n",
+            variable("ROLE").unwrap_or_default(),
+            variable("MAESTRO_PANE_ID").unwrap_or_default(),
+            std::env::current_dir()?.display()
+        )
+        .as_bytes(),
+    )?;
+    remain()
+}
+
+/// Serve the declared document for `--no-deps` and the resolved one otherwise.
+///
+/// Only the `metadata` operation is answered; anything else fails before it is logged.
+fn metadata(
+    operands: &[OsString],
+    declared: &str,
+    resolved: &str,
+    argv_log: Option<&ArgvLog>,
+) -> io::Result<()> {
+    if operands.first().is_none_or(|first| first != "metadata") {
+        return Err(io::Error::other("expected the `metadata` operation"));
+    }
+    if let Some(log) = argv_log {
+        record_argv(log, operands)?;
+    }
+    let path = if operands.iter().any(|operand| operand == "--no-deps") {
+        declared
+    } else {
+        resolved
+    };
+    write_stdout(&std::fs::read(path)?)?;
+    leave(0)
 }
 
 /// Print each recorded value, joined by `|`.
@@ -364,7 +460,7 @@ fn forward(marker: &Append, program: &str, operands: &[OsString]) -> io::Result<
 impl Hold {
     /// Drain the shared input, announce readiness, wait for the release and report.
     fn run(&self) -> io::Result<()> {
-        let termination = self.terminate.as_ref().map(|_| termination()).transpose()?;
+        let termination = self.terminate.as_ref().map(|_| trap(SIGTERM)).transpose()?;
         drop(read_input()?);
         if let Some(ready) = &self.ready {
             std::fs::write(ready, b"ready")?;
@@ -387,11 +483,10 @@ impl Hold {
     }
 }
 
-/// A read end that becomes readable when this process's SIGTERM handler writes one byte.
-fn termination() -> io::Result<UnixStream> {
+/// A read end that becomes readable when this process's handler for `signal` writes one byte.
+fn trap(signal: i32) -> io::Result<UnixStream> {
     let (reader, writer) = UnixStream::pair()?;
-    signal_hook::low_level::pipe::register(signal_hook::consts::SIGTERM, writer)
-        .map_err(io::Error::other)?;
+    signal_hook::low_level::pipe::register(signal, writer).map_err(io::Error::other)?;
     Ok(reader)
 }
 

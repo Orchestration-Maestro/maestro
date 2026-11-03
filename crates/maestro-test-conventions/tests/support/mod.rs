@@ -197,10 +197,31 @@ impl Workspace {
 
 #[cfg(unix)]
 impl Workspace {
-    pub fn command(&self, name: &str, body: &str) -> PathBuf {
+    /// Install the prepared native fixture as `name` in the workspace root, answering as the
+    /// `command` family `record` says. The alias is copied by a child, and its record is a
+    /// sibling file that is read, never executed.
+    pub fn command(&self, name: &str, record: &serde_json::Value) -> PathBuf {
+        let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+            .expect("run just prepare-tests, then run these tests with cargo nextest");
         let path = self.root.path().join(name);
-        fs::write(&path, format!("{body}\n")).unwrap();
+        maestro_test_process::install_executable(std::path::Path::new(&artifact), &path).unwrap();
+        fs::write(record_path(&path), format!("command\n{record}")).unwrap();
         path
+    }
+
+    /// A Cargo that serves `declared` for `--no-deps` and `resolved.json` otherwise, both read
+    /// from the workspace root when it runs, and logs its operands as `mark` when one is given.
+    pub fn metadata_command(&self, name: &str, declared: &str, mark: Option<&str>) -> PathBuf {
+        let root = self.root.path();
+        let mut record = serde_json::json!({
+            "scenario": "metadata",
+            "declared": root.join(declared),
+            "resolved": root.join("resolved.json"),
+        });
+        if let Some(mark) = mark {
+            record["argv_log"] = serde_json::json!({"path": root.join("order"), "mark": mark});
+        }
+        self.command(name, &record)
     }
 
     pub fn metadata(&self) -> serde_json::Value {
@@ -255,11 +276,8 @@ impl Workspace {
             serde_json::to_vec(resolved).unwrap(),
         )
         .unwrap();
-        let cargo = self.command(
-            "cargo-probe",
-            "case \" $* \" in *' --no-deps '*) cat declared.json ;; *) cat resolved.json ;; esac",
-        );
-        let rustc = self.command("rustc-probe", "printf 'host: x86_64-unknown-linux-gnu\\n'");
+        let cargo = self.metadata_command("cargo-probe", "declared.json", None);
+        let rustc = self.command("rustc-probe", &host_report());
         (cargo, rustc)
     }
 
@@ -276,18 +294,14 @@ impl Workspace {
         cargo: &std::path::Path,
         rustc: &std::path::Path,
     ) -> maestro_test_process::TestProcess {
-        let launcher =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
         maestro_test_process::TestProcess::named(
             "architecture::metadata_graph_failures_cross_the_public_interface",
         )
         .unwrap()
         .nocapture()
         .env("MAESTRO_CONVENTIONS_PROBE_ROOT", self.root.path())
-        .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
-        .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
-        .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
-        .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc)
+        .env("CARGO", cargo)
+        .env("RUSTC", rustc)
     }
 }
 
@@ -301,4 +315,24 @@ fn run_probe(command: maestro_test_process::TestProcess) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+/// The sibling file that holds an installed alias's scenario record.
+#[cfg(unix)]
+pub fn record_path(alias: &std::path::Path) -> PathBuf {
+    let mut record = alias.as_os_str().to_owned();
+    record.push(".fixture");
+    record.into()
+}
+
+/// A stand-in that writes the given bytes to each stream and ends with `code`.
+#[cfg(unix)]
+pub fn output(stdout: &[u8], stderr: &[u8], code: u8) -> serde_json::Value {
+    serde_json::json!({"scenario": "output", "stdout": stdout, "stderr": stderr, "code": code})
+}
+
+/// The answer of a compiler whose host triple is the Linux one.
+#[cfg(unix)]
+pub fn host_report() -> serde_json::Value {
+    output(b"host: x86_64-unknown-linux-gnu\n", b"", 0)
 }

@@ -196,6 +196,25 @@ fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
     );
 }
 
+/// The conventions recipe stages the setup tool before nextest runs the checker's own suite.
+#[test]
+fn maestro_test_conventions_recipe_stages_the_setup_tool_before_nextest() {
+    let workspace = Workspace::new();
+    fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
+
+    let output = workspace.run("test-conventions");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        workspace.log(),
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|-p|maestro-test-conventions|--locked\n"
+    );
+}
+
 /// The check recipe stages the setup tool before any step that could start nextest.
 #[test]
 fn maestro_check_recipe_stages_the_setup_tool_first() {
