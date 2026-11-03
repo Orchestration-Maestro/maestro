@@ -662,7 +662,7 @@ fn encoding_failures_stay_apart() {
         Ok(None),
         Ok(Some(Document::Fine)),
         Ok(Some(Document::Broken("result encoding failed"))),
-        Err(AUTHORED_FAILURE.to_owned()),
+        Err(AUTHORED_FAILURE.into()),
     ];
     for event in &events {
         for decision in &decisions {
@@ -673,7 +673,7 @@ fn encoding_failures_stay_apart() {
                     Ok(result) => {
                         Decision::Returned(result.as_ref().map(Document::encoded).transpose())
                     }
-                    Err(message) => Decision::Failed(message.clone()),
+                    Err(diagnostic) => Decision::Failed(diagnostic.message.clone()),
                 },
             };
             assert_eq!(guest_family::delivery(outcome), expected);

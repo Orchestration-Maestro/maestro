@@ -11,14 +11,14 @@ use maestro_extensions::{
     Cancellation, CommandContextOperations, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, create_extension_runtime,
     load_extension_from_factory,
-    types::{ExtensionHandle, ExtensionRuntime, ProviderActions},
+    types::{ExtensionError, ExtensionHandle, ExtensionRuntime, ProviderActions},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
 
-mod cases;
+pub(crate) mod cases;
 mod input;
 mod sessions;
 mod values;
@@ -39,7 +39,7 @@ struct Case {
 }
 
 /// Loaded hook components and the controls every case shares.
-pub(super) struct Harness {
+pub(crate) struct Harness {
     /// Loaded instances, labelled `<extension:i>`.
     owners: Vec<ExtensionHandle<Local>>,
     /// The runtime the instances share.
@@ -62,17 +62,47 @@ pub(super) struct Gate {
 }
 
 /// One case's runner and the diagnostics its error listener received.
-pub(super) struct Run {
+pub(crate) struct Run {
     /// Runner over the case's instances.
-    pub(super) runner: Rc<ExtensionRunner<Local>>,
-    /// Received diagnostics, without engine stack text.
-    errors: Rc<RefCell<Vec<Value>>>,
+    pub(crate) runner: Rc<ExtensionRunner<Local>>,
+    /// Received failures, with every field the listener saw.
+    errors: Rc<RefCell<Vec<ExtensionError>>>,
 }
 
 impl Run {
-    /// The diagnostics received so far.
-    pub(super) fn errors(&self) -> Value {
-        Value::Array(self.errors.borrow().clone())
+    /// The diagnostics received so far, without engine stack text.
+    pub(crate) fn errors(&self) -> Value {
+        Value::Array(
+            self.errors
+                .borrow()
+                .iter()
+                .map(|error| {
+                    json!({
+                        "extensionPath": error.extension_path,
+                        "event": error.event,
+                        "error": error.error,
+                    })
+                })
+                .collect(),
+        )
+    }
+
+    /// The diagnostics received so far, each with the stack its author supplied.
+    pub(crate) fn diagnostics(&self) -> Value {
+        Value::Array(
+            self.errors
+                .borrow()
+                .iter()
+                .map(|error| {
+                    json!({
+                        "extensionPath": error.extension_path,
+                        "event": error.event,
+                        "error": error.error,
+                        "stack": error.stack,
+                    })
+                })
+                .collect(),
+        )
     }
 }
 
@@ -83,7 +113,7 @@ pub(super) fn label(index: usize) -> String {
 
 impl Harness {
     /// Loads the pool concurrently, each instance on its own Store.
-    async fn load() -> Self {
+    pub(crate) async fn load() -> Self {
         let path = std::env::var("MAESTRO_HOOK_COMPONENT").unwrap();
         let runtime = create_extension_runtime::<Local>();
         let bus = TracedBus::new();
@@ -109,7 +139,7 @@ impl Harness {
     /// A runner over the first `count` instances, each with only `handlers[i]` registered.
     ///
     /// `handlers[i]` lists the steps of each handler instance `i` registers for `event`.
-    pub(super) async fn prepare(&self, event: &str, handlers: &[Vec<Value>]) -> Run {
+    pub(crate) async fn prepare(&self, event: &str, handlers: &[Vec<Value>]) -> Run {
         let owners = self.owners[..handlers.len()].to_vec();
         for (index, owner) in owners.iter().enumerate() {
             let mut owner = owner.write().unwrap();
@@ -181,11 +211,7 @@ impl Harness {
         let errors = Rc::new(RefCell::new(Vec::new()));
         let received = errors.clone();
         let _keep = runner.on_error(Rc::new(move |error| {
-            received.borrow_mut().push(json!({
-                "extensionPath": error.extension_path,
-                "event": error.event,
-                "error": error.error,
-            }));
+            received.borrow_mut().push(error.clone());
             Ok(())
         }));
         Run { runner, errors }

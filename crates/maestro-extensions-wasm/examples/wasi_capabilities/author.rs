@@ -6,7 +6,7 @@
 )]
 use maestro_extensions_wasm::{
     CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture,
+    ExtensionFuture, HookResult,
     child_process::{SpawnOptions, Stdio},
     tools::path_utils::guest_path,
 };
@@ -52,7 +52,7 @@ async fn dispatch(
     context: ExtensionContext,
     reporter: ExtensionAPI,
     calls: u32,
-) -> Result<Option<ExtensionEventResult>, String> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let result = resources(event, context).await?;
     let ExtensionEvent::ResourcesDiscover(request) = event else {
         return Err("unexpected callback".into());

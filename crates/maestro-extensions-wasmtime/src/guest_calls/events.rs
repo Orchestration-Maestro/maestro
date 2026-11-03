@@ -18,9 +18,9 @@ pub(crate) enum Decision {
     /// A returned document, including an encoding failure.
     #[component(name = "returned")]
     Returned(Encoded),
-    /// A handler failure, not a returned value.
+    /// A handler failure, not a returned value, with the diagnostic fields it supplied.
     #[component(name = "failed")]
-    Failed(String),
+    Failed(crate::schema_wire::Error),
 }
 /// Independent canonical event outcomes, as the guest returns them.
 #[derive(ComponentType, Lift)]
@@ -103,12 +103,7 @@ impl Handle {
             let handler = handler.clone();
             let registry = registry.clone();
             let name = name.clone();
-            Box::pin(async move {
-                handler
-                    .invoke_event(event, context, &name, registry)
-                    .await
-                    .map_err(Into::into)
-            })
+            Box::pin(async move { handler.invoke_event(event, context, &name, registry).await })
         })
     }
 
@@ -119,7 +114,7 @@ impl Handle {
         context: ExtensionContext,
         name: &str,
         registry: Registry,
-    ) -> Result<Option<R>, String> {
+    ) -> Result<Option<R>, maestro_extensions::EventError> {
         let data = event.encode(name)?;
         let signal = event
             .signal()
@@ -147,7 +142,7 @@ impl Handle {
         event: &mut V,
         outcome: Outcome,
         registry: Registry,
-    ) -> Result<Option<R>, String> {
+    ) -> Result<Option<R>, maestro_extensions::EventError> {
         let operations = outcome
             .operations
             .map(|owner| super::bash::ReturnedBash::new(owner, registry));
@@ -156,7 +151,11 @@ impl Handle {
         }
         let decision = match outcome.decision {
             Decision::Returned(encoded) => encoded?,
-            Decision::Failed(error) => return Err(error),
+            Decision::Failed(error) => {
+                return Err(Box::new(maestro_extensions::DiagnosticErrorInfo::from(
+                    error,
+                )));
+            }
         };
         let mut result: Option<R> = decision.map(|data| R::decode(&data)).transpose()?;
         if let Some(result) = &mut result {

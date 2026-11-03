@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     AgentMessage, AssistantContent, ExtensionAPI, ExtensionContext, ExtensionEventResult,
-    ExtensionFuture, ExtensionResult, Message, NotificationType, SessionEntry,
+    ExtensionFuture, ExtensionResult, HookFuture, Message, NotificationType, SessionEntry,
 };
 
 /// Characters of the reply line kept before the ellipsis.
@@ -57,7 +57,7 @@ fn commit_message(line: &str) -> String {
 fn commit_on_exit(
     api: ExtensionAPI,
     ctx: ExtensionContext,
-) -> ExtensionFuture<'static, Option<ExtensionEventResult>> {
+) -> HookFuture<'static, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let status = api
             .exec("git", &["status".into(), "--porcelain".into()], None)

@@ -49,6 +49,20 @@ impl DiagnosticErrorInfo {
     }
 }
 
+impl From<String> for DiagnosticErrorInfo {
+    /// The supplied text alone: no name, stack or code.
+    fn from(message: String) -> Self {
+        Self::new(None, message)
+    }
+}
+
+impl From<&str> for DiagnosticErrorInfo {
+    /// The supplied borrowed text alone: no name, stack or code.
+    fn from(message: &str) -> Self {
+        Self::new(None, message)
+    }
+}
+
 impl fmt::Display for DiagnosticErrorInfo {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(&format_thrown_value(DiagnosticInput::Error(self)))

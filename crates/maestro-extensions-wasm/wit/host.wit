@@ -411,8 +411,8 @@ interface host {
     record bash-capabilities { output: bash-output, signal: option<abort-signal> }
     /// A JSON document, no document, or the message that explains why encoding failed.
     type encoded = result<option<string>, string>;
-    /// How an event callback ended: with an encoded result, or with the message it failed with.
-    variant decision { returned(encoded), failed(string) }
+    /// How an event callback ended: with an encoded result, or with the diagnostic it supplied.
+    variant decision { returned(encoded), failed(diagnostic-error-info) }
     /// Independent edited-event encoding, decision encoding and the identity of returned
     /// operations. Replacing the event kind leaves the edited document absent.
     record event-outcome { event: encoded, decision: decision, operations: option<callback> }

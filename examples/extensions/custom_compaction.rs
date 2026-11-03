@@ -9,8 +9,8 @@
 
 use maestro_extensions_wasm::{
     AbortSignal, AssistantContent, CompactionResult, Context, ExtensionAPI, ExtensionContext,
-    ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult, Message, Model,
-    NotificationType, Presence, ProviderStreamOptions, ResolvedRequestAuth,
+    ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult, HookResult, Message,
+    Model, NotificationType, Presence, ProviderStreamOptions, ResolvedRequestAuth,
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionEvent, StopReason, StreamOptions,
     TextContent, UserBlock, UserContent, UserMessage, complete, convert_to_llm,
     serialize_conversation, utils,
@@ -204,7 +204,7 @@ async fn on_compact(
     api: ExtensionAPI,
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let ExtensionEvent::Session(SessionEvent::BeforeCompact(event)) = event else {
         return Ok(None);
     };

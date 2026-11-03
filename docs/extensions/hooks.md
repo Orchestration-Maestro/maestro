@@ -44,8 +44,13 @@ path, without normalization.
 
 Other callback failures are delivered to the runner's error listeners and dispatch
 continues. A listener failure propagates and stops dispatch. Native mutable operand
-edits are not rolled back on callback failure. Authored diagnostic stacks survive;
-engine stack text is not manufactured. A changed-role replacement reports exactly
+edits are not rolled back on callback failure, so an edit made before a separately
+failed decision still reaches the handlers after it.
+
+A hook returns `HookResult`, which fails with the shared diagnostic fields. The
+runner reports the event it was invoked for, the extension path and the supplied
+message and stack; a stack the author did not supply stays absent, and engine stack
+text is never manufactured. A changed-role replacement reports exactly
 `message_end handlers must return a message with the same role`.
 
 Artifact discovery and loading are not supplied by this hook runner. They are a
