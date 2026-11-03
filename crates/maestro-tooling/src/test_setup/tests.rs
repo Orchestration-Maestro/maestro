@@ -361,3 +361,59 @@ fn component_inputs_hold_the_example_files_of_the_dependency_rule() {
         "{escaped}"
     );
 }
+
+/// The setup example exports the pinned search programs beside the components; staging takes the
+/// components alone, so a search program with no dependency file is never read as a component.
+#[test]
+fn staging_stages_components_alone() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    let checkout = root.join("checkout");
+    let output = root.join("output");
+    let target = root.join("target");
+    for directory in [
+        checkout.join("examples"),
+        checkout.join("out"),
+        output.clone(),
+        target.clone(),
+    ] {
+        std::fs::create_dir_all(directory).unwrap();
+    }
+    let built = checkout.join("out/a.wasm");
+    std::fs::write(checkout.join("examples/a.rs"), "example").unwrap();
+    std::fs::write(&built, b"component").unwrap();
+    std::fs::write(
+        checkout.join("out/a.d"),
+        format!("{}: examples/a.rs\n\nexamples/a.rs:\n", built.display()),
+    )
+    .unwrap();
+    assert!(
+        Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(&checkout)
+            .status()
+            .unwrap()
+            .success()
+    );
+    // A hosted tool install keeps its program below a versioned directory with no extension.
+    let install = checkout
+        .join(".local/share/mise/installs/ripgrep/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl");
+    std::fs::create_dir_all(&install).unwrap();
+    let rg = install.join(executable("rg", EXE_EXTENSION));
+    std::fs::write(&rg, b"search program").unwrap();
+    std::fs::write(
+        environment_file(&target),
+        format!(
+            "MAESTRO_TEST_RG={}\nMAESTRO_AUTHOR_COMPONENT={}\n",
+            rg.display(),
+            built.display()
+        ),
+    )
+    .unwrap();
+    let shared = Inputs::new(&checkout, BTreeSet::new(), BTreeSet::new()).unwrap();
+    let staged = stage_components(&checkout, &output, &target, &shared, &[]).unwrap();
+    assert_eq!(
+        staged.keys().map(String::as_str).collect::<Vec<_>>(),
+        ["MAESTRO_AUTHOR_COMPONENT"]
+    );
+}
