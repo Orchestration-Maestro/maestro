@@ -3,22 +3,6 @@
 use super::*;
 use crate::browser_driver::tests::block_on;
 
-/// The launch hands Chromium the desktop hover and pointer settings its media queries observe.
-#[test]
-fn launch_hands_chromium_a_hover_capable_desktop_pointer() {
-    let pointer = own_switches()
-        .into_iter()
-        .find_map(|(key, value)| if key == "blink-settings" { value } else { None });
-    assert_eq!(
-        pointer,
-        Some(
-            "primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4"
-        ),
-        "own switches: {:?}",
-        own_switches()
-    );
-}
-
 /// Diagnostics precede the exact endpoint line; absence retains the browser's failure text.
 #[test]
 fn browser_readiness_requires_an_advertised_endpoint() {

@@ -76,35 +76,22 @@ impl Process {
 const DESKTOP_POINTER_SETTINGS: &str =
     "primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4";
 
-/// The driver's own launch switches, in the key and value form the library joins for Chromium.
-fn own_switches() -> [(&'static str, Option<&'static str>); 4] {
-    [
-        ("force-device-scale-factor", Some("1.25")),
-        ("js-flags", Some("--expose-gc")),
-        ("blink-settings", Some(DESKTOP_POINTER_SETTINGS)),
-        ("no-startup-window", None),
-    ]
-}
-
 /// Build the launch configuration from the driver's switches and the caller's.
 fn config(executable: &Path, profile: &Path, args: &[String]) -> io::Result<BrowserConfig> {
-    let builder = own_switches().into_iter().fold(
-        BrowserConfig::builder()
-            .chrome_executable(executable)
-            .user_data_dir(profile)
-            .no_sandbox(),
-        |builder, (key, value)| match value {
-            Some(value) => builder.arg((key, value)),
-            None => builder.arg(key),
-        },
-    );
-    let builder = args.iter().try_fold(builder, |builder, argument| {
-        let (key, value) = switch(argument)?;
-        Ok::<_, io::Error>(match value {
-            Some(value) => builder.arg((key, value)),
-            None => builder.arg(key),
-        })
-    })?;
+    let mut builder = BrowserConfig::builder()
+        .chrome_executable(executable)
+        .user_data_dir(profile)
+        .no_sandbox()
+        .arg(("force-device-scale-factor", "1.25"))
+        .arg(("js-flags", "--expose-gc"))
+        .arg(("blink-settings", DESKTOP_POINTER_SETTINGS))
+        .arg("no-startup-window");
+    for argument in args {
+        builder = match switch(argument)? {
+            (key, Some(value)) => builder.arg((key, value)),
+            (key, None) => builder.arg(key),
+        };
+    }
     builder.build().map_err(io::Error::other)
 }
 
