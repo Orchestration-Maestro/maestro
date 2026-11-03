@@ -27,6 +27,9 @@ impl Page<'_> {
             .cloned()
             .ok_or_else(|| io::Error::other("binding context removed"))?;
         let result = self.invoke(&context, &payload).await;
+        if !self.context_exists(&context.session, context.id) {
+            return Ok(());
+        }
         let (value, error) = match &result {
             Ok(value) => (value.clone(), Value::Null),
             Err(error) => (Value::Null, json!(error.to_string())),
@@ -36,7 +39,10 @@ impl Page<'_> {
             .evaluate_in(&context, &expression, true)
             .await
             .map(|_| ());
-        // Rejected callbacks settle the awaiting export; a removed caller cannot receive a reply.
+        if !self.context_exists(&context.session, context.id) {
+            return Ok(());
+        }
+        // Rejected callbacks settle the awaiting export; a caller removed meanwhile cannot receive a reply.
         match (result, replied) {
             (Ok(_), replied) => replied,
             (Err(_), Ok(())) => Ok(()),

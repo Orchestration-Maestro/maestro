@@ -20,20 +20,14 @@ impl Process {
         profile: &Path,
         args: &[String],
     ) -> io::Result<(Self, String)> {
-        let config = BrowserConfig::builder()
-            .chrome_executable(executable)
-            .user_data_dir(profile)
-            .no_sandbox()
-            .args(["--force-device-scale-factor=1.25", "--js-flags=--expose-gc"])
-            .args(args.iter().cloned())
-            .build()
-            .map_err(io::Error::other)?;
-        let mut child = config.launch().map_err(|error| {
-            io::Error::new(
-                error.kind(),
-                format!("cannot launch {}: {error}", executable.display()),
-            )
-        })?;
+        let mut child = config(executable, profile, args)?
+            .launch()
+            .map_err(|error| {
+                io::Error::new(
+                    error.kind(),
+                    format!("cannot launch {}: {error}", executable.display()),
+                )
+            })?;
         let stderr = child
             .stderr
             .take()
@@ -76,6 +70,40 @@ impl Process {
         let drained = self.diagnostics.await.map_err(io::Error::other)?;
         stopped.and(drained)
     }
+}
+
+/// Build the launch configuration from the driver's switches and the caller's.
+fn config(executable: &Path, profile: &Path, args: &[String]) -> io::Result<BrowserConfig> {
+    let mut builder = BrowserConfig::builder()
+        .chrome_executable(executable)
+        .user_data_dir(profile)
+        .no_sandbox()
+        .arg(("force-device-scale-factor", "1.25"))
+        .arg(("js-flags", "--expose-gc"))
+        .arg("no-startup-window");
+    for argument in args {
+        builder = match switch(argument)? {
+            (key, Some(value)) => builder.arg((key, value)),
+            (key, None) => builder.arg(key),
+        };
+    }
+    builder.build().map_err(io::Error::other)
+}
+
+/// Split a caller's `--key[=value]` switch into the key and value the library joins itself.
+fn switch(argument: &str) -> io::Result<(&str, Option<&str>)> {
+    let body = argument
+        .strip_prefix("--")
+        .filter(|body| !body.is_empty() && !body.starts_with(['-', '=']))
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("browser switch must be --key or --key=value: {argument}"),
+            )
+        })?;
+    Ok(body
+        .split_once('=')
+        .map_or((body, None), |(key, value)| (key, Some(value))))
 }
 
 /// Wait for Chromium's advertised endpoint or its diagnostic stream's EOF.

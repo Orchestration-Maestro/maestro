@@ -417,7 +417,10 @@ impl<'a> Page<'a> {
         self.deferral.initializing.insert(session.clone());
         let ready = self.attach_session(&session, params).await;
         self.deferral.initializing.remove(&session);
-        ready?;
+        if ready.is_err() {
+            // A frame that failed its own setup is reported where it is used, not by the awaited command.
+            self.detached(session.as_ref())?;
+        }
         while self.deferral.initializing.is_empty()
             && let Some(event) = self.deferral.calls.pop_front()
         {
@@ -448,7 +451,7 @@ impl<'a> Page<'a> {
     }
 
     /// Match the default world within its renderer, whose identifiers may overlap others.
-    fn context_exists(&self, session: &SessionId, id: i64) -> bool {
+    pub(super) fn context_exists(&self, session: &SessionId, id: i64) -> bool {
         self.contexts
             .values()
             .any(|context| context.session == *session && context.id == id)

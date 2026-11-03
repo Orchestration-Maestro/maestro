@@ -487,3 +487,137 @@ async fn caller_session(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
     }
     received
 }
+
+/// An iframe removed while its setup commands are in flight settles its own host call and leaves
+/// the awaited command alone.
+#[test]
+fn iframe_removed_during_setup_settles_its_host_call() {
+    block_on(async {
+        let (mut dispatcher, peer) = connect_peer(removed_during_setup).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "removed", &mut lines, &expected)
+            .await
+            .unwrap();
+        page.initialize().await.unwrap();
+        page.evaluate(HOLD).await.unwrap();
+        page.close().await.unwrap();
+        assert_eq!(
+            peer.await.unwrap(),
+            [format!(
+                "__maestroReply(1,null,{})",
+                json!("mounted frame not found probe:\"雪]")
+            )]
+        );
+    });
+}
+
+/// Attach an iframe during the held evaluation, remove it as its first setup command arrives and
+/// call the host before answering that command, which Chromium never does.
+///
+/// Returns every reply the driver evaluated in the root world.
+async fn removed_during_setup(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
+    let [attached, _] = iframe_events(false);
+    let detached = json!({
+        "method":"Target.detachedFromTarget","sessionId":"session",
+        "params":{"sessionId":"child-session"}
+    });
+    let (mut held, mut replies) = (None, Vec::new());
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        let expression = call["params"]["expression"].as_str().unwrap_or_default();
+        if method == "Runtime.evaluate" && expression == HOLD {
+            held = Some(call["id"].clone());
+            send(&mut socket, attached.clone()).await;
+            continue;
+        }
+        if method == "Page.enable" && call["sessionId"] == "child-session" {
+            send(&mut socket, detached.clone()).await;
+            send(&mut socket, binding_called(1)).await;
+            continue;
+        }
+        let result = match method {
+            "Runtime.enable" => {
+                send(&mut socket, context_created("session", 1, "root")).await;
+                json!({})
+            }
+            "Runtime.evaluate" if expression.starts_with("__maestroReply(") => {
+                replies.push(expression.to_owned());
+                json!({"result":{"value":null}})
+            }
+            "Runtime.evaluate" => json!({"result":{"type":"object","subtype":"null","value":null}}),
+            _ => shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}")),
+        };
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if let Some(held) = held.take_if(|_| !replies.is_empty()) {
+            send(
+                &mut socket,
+                json!({"id":held,"result":{"result":{"value":null}}}),
+            )
+            .await;
+        }
+        if method == "Target.disposeBrowserContext" {
+            break;
+        }
+    }
+    replies
+}
+
+/// A host call whose caller renderer is gone has no reply to deliver, so closing the page succeeds.
+#[test]
+fn host_call_from_a_closing_page_does_not_fail_close() {
+    block_on(async {
+        let (mut dispatcher, peer) = connect_peer(caller_removed_while_closing).await;
+        let mut lines = Vec::new();
+        let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
+        let mut page = Page::open(&mut dispatcher, "closing", &mut lines, &expected)
+            .await
+            .unwrap();
+        page.initialize().await.unwrap();
+        page.close().await.unwrap();
+        peer.await.unwrap();
+    });
+}
+
+/// Call the host while the target closes, then remove the caller's renderer before its lookup is
+/// answered, as Chromium drops commands of a destroyed renderer. Replies to that renderer are
+/// refused.
+async fn caller_removed_while_closing(mut socket: WebSocketStream<TcpStream>) {
+    let detached = json!({"method":"Target.detachedFromTarget","params":{"sessionId":"session"}});
+    let mut close = None;
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        let expression = call["params"]["expression"].as_str().unwrap_or_default();
+        if method == "Target.closeTarget" {
+            close = Some(call["id"].clone());
+            send(&mut socket, binding_called(1)).await;
+            continue;
+        }
+        if method == "Runtime.evaluate"
+            && call["params"]["contextId"] == 1
+            && !expression.starts_with("__maestroReply(")
+        {
+            send(&mut socket, detached.clone()).await;
+            let close = close.take().expect("the target close is held");
+            send(&mut socket, json!({"id":close,"result":{}})).await;
+            continue;
+        }
+        let response = if expression.starts_with("__maestroReply(") {
+            json!({"id":call["id"],"error":{"code":-32001,"message":"Session with given id not found."}})
+        } else if method == "Runtime.enable" {
+            send(&mut socket, context_created("session", 1, "root")).await;
+            json!({"id":call["id"],"result":{}})
+        } else {
+            let result = if method == "Runtime.evaluate" {
+                json!({"result":{"value":null}})
+            } else {
+                shared_reply(&call).unwrap_or_else(|| panic!("unexpected command {method}"))
+            };
+            json!({"id":call["id"],"result":result})
+        };
+        send(&mut socket, response).await;
+        if method == "Target.disposeBrowserContext" {
+            break;
+        }
+    }
+}

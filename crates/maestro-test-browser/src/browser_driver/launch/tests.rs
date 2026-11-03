@@ -23,3 +23,37 @@ fn browser_readiness_requires_an_advertised_endpoint() {
         assert!(ready(&mut empty).await.is_err());
     });
 }
+
+/// Caller switches become the library's key and value, so Chromium sees one `--` and merged lists.
+#[test]
+fn launch_switches_reach_chromium() {
+    assert_eq!(
+        switch("--disable-features=IsolateSandboxedIframes").unwrap(),
+        ("disable-features", Some("IsolateSandboxedIframes"))
+    );
+    assert_eq!(
+        switch("--js-flags=--expose-gc").unwrap(),
+        ("js-flags", Some("--expose-gc"))
+    );
+    assert_eq!(
+        switch("--no-startup-window").unwrap(),
+        ("no-startup-window", None)
+    );
+}
+
+/// A switch without exactly one leading `--` and a key is refused before launch.
+#[test]
+fn launch_switches_without_the_required_prefix_are_refused() {
+    for argument in [
+        "disable-features=x",
+        "-disable-features=x",
+        "----disable-features=x",
+        "--",
+        "--=x",
+        "",
+    ] {
+        let error = switch(argument).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput, "{argument}");
+        assert!(error.to_string().contains("--key"), "{argument}: {error}");
+    }
+}

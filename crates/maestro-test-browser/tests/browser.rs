@@ -487,7 +487,7 @@ async fn delivery(shared: bool, mode: Delivery) -> io::Result<()> {
         page.evaluate(&format!("({MOUNT})(false,0,false,{})",json!(setup))).await?;
         let targets=page.send(None,"Target.getTargets",json!({})).await?;
         let selected=targets["targetInfos"].as_array().unwrap().iter().find(|target| target["type"]=="iframe");
-        assert_eq!(selected.is_none(),shared,"actual selected-renderer route");
+        assert_eq!(selected.is_none(),shared,"actual selected-renderer route: {targets}");
         let session=if let Some(selected)=selected {
             let attached=page.send(None,"Target.attachToTarget",json!({"targetId":selected["targetId"],"flatten":true})).await?;
             Some(attached["sessionId"].as_str().unwrap().to_owned())
@@ -540,8 +540,70 @@ fn sandbox_targets_close_after_native_operations() {
             let result=browser.check(&format!("{origin}/"),"target-cleanup",&expression).await;
             assert_eq!(result.is_ok(),!missing);
             let after=browser.execute("Target.getTargets",json!({})).await?;
-            assert!(!after["targetInfos"].as_array().unwrap().iter().any(|target|target["type"]=="iframe"||target["url"].as_str().is_some_and(|url|url.starts_with(origin))));
+            assert!(!after["targetInfos"].as_array().unwrap().iter().any(|target|target["type"]=="iframe"||target["url"].as_str().is_some_and(|url|url.starts_with(origin))),"retained targets: {after}");
         }
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// The driver's switches and the caller's reach the browser as one switch each.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn launch_switches_reach_chromium() {
+    let args = vec!["--disable-features=IsolateSandboxedIframes".to_owned()];
+    run(fixture(&args, async |browser, _| {
+        let line = browser
+            .execute("Browser.getBrowserCommandLine", json!({}))
+            .await?;
+        let arguments: Vec<&str> = line["arguments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|argument| argument.as_str())
+            .collect();
+        assert!(
+            !arguments
+                .iter()
+                .any(|argument| argument.starts_with("----")),
+            "{arguments:?}"
+        );
+        for switch in [
+            "--force-device-scale-factor=1.25",
+            "--js-flags=--expose-gc",
+            "--no-startup-window",
+        ] {
+            assert!(arguments.contains(&switch), "{switch} in {arguments:?}");
+        }
+        let features = arguments
+            .iter()
+            .find_map(|argument| argument.strip_prefix("--disable-features="))
+            .unwrap_or_default();
+        assert!(
+            features
+                .split(',')
+                .any(|name| name == "IsolateSandboxedIframes"),
+            "{arguments:?}"
+        );
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// A fresh browser holds no page or frame target before the driver opens its own.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn browser_holds_only_driver_pages() {
+    run(fixture(&[], async |browser, _| {
+        let targets = browser.execute("Target.getTargets", json!({})).await?;
+        assert!(
+            !targets["targetInfos"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|target| matches!(target["type"].as_str(), Some("page" | "iframe"))),
+            "startup targets: {targets}"
+        );
         Ok(())
     }))
     .unwrap();
