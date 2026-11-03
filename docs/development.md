@@ -1190,9 +1190,10 @@ Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
-tests) and the command-line startup tests. Local setup builds the example with the
-locked host `dev` profile and reads Cargo's emitted executable path. It records
-source inputs, content digest and host in
+tests), the command-line startup tests and the daemon's notification and repository
+discovery cases. Local setup builds the example with the locked host `dev` profile
+and reads Cargo's emitted executable path. It records source inputs, content digest
+and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
 Prepared archive runs validate the staged copy and export its remapped absolute
 path without building. A missing or stale archive artifact fails setup. Re-run
@@ -1610,6 +1611,43 @@ row's directory and read its count beside the file they compare. The Google
 credential tests install a `GoogleExecutable` alias as the executable source of
 an external account credential. Neither program needs an interpreter or an
 `install` command.
+
+#### Notification and repository Git aliases
+
+Install the same artifact as `notify-send` or `git` when a test must observe the
+operands the product hands to those programs.
+
+| Family | Fields | Behavior |
+| --- | --- | --- |
+| `notify-send` | `args`, `code` | Writes each untouched operand on its own line to `args`, records nothing when `args` is null, then ends with `code`. |
+| `git`, scenario `Probe` | `cwd` | Answers the three queries that repository discovery runs against a reftable checkout: `symbolic-ref --quiet --short HEAD` reports `topic`, `rev-parse --verify HEAD` reports `0123456789abcdef`, and `rev-parse --verify missing` writes output the caller discards and ends with a failing status. Every query must name `cwd` after `-C`; another directory, a non-text operand or any other operands end with status 2 before output. |
+
+For the repository probe, write `git` and `Probe` on separate lines, followed by
+the JSON object containing `cwd`. This portable scenario shares the Git family
+with the Unix footer scenarios above.
+
+A failing notifier records nothing:
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
+    let directory = maestro_test_directory::Scratch::new()?;
+    let record = serde_json::json!({ "args": null, "code": 1 });
+    std::fs::write(
+        directory.path().join("notify-send.fixture"),
+        format!("notify-send\n{record}"),
+    )?;
+    maestro_test_process::install_executable(
+        std::path::Path::new(&artifact), &directory.path().join("notify-send"),
+    )?;
+    Ok(())
+}
+```
+
+A recording notifier names its file in `args` instead, and a Git alias names the
+checkout every query must carry. Point `PATH` at the directory holding either
+alias, so the product finds it by its own program name.
 
 #### Checked reruns
 
