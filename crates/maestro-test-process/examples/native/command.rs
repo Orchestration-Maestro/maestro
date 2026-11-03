@@ -192,13 +192,12 @@ fn await_release(operands: &[OsString]) -> io::Result<()> {
 
 /// Print `seen:<ROLE>|<MAESTRO_PANE_ID>|<working directory>` on its own line, then run on.
 fn report_environment() -> io::Result<()> {
-    let variable = |name| std::env::var(name).unwrap_or_default();
     let directory = std::env::current_dir()?;
     write_stdout(
         format!(
             "\nseen:<{}>|<{}>|<{}>\n",
-            variable("ROLE"),
-            variable("MAESTRO_PANE_ID"),
+            variable("ROLE").unwrap_or_default(),
+            variable("MAESTRO_PANE_ID").unwrap_or_default(),
             directory.display()
         )
         .as_bytes(),

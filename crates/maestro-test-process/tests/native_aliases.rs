@@ -329,19 +329,13 @@ fn metadata_stand_in_serves_declared_and_resolved_documents_per_run() {
     let declared = root.path().join("declared.json");
     let resolved = root.path().join("resolved.json");
     let log = root.path().join("order");
-    let cargo = root.path().join("cargo");
-    install_executable(&artifact(), &cargo).unwrap();
     let record = json!({
         "scenario": "metadata",
         "declared": declared,
         "resolved": resolved,
         "argv_log": {"path": log, "mark": "cargo"}
     });
-    std::fs::write(
-        root.path().join("cargo.fixture"),
-        format!("command\n{record}"),
-    )
-    .unwrap();
+    let cargo = command_alias(root.path(), "cargo", &record);
     let run = |operands: &[&str]| Command::new(&cargo).args(operands).output().unwrap();
     for (document, operands, expected) in [
         (

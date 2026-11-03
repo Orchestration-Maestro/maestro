@@ -21,7 +21,7 @@ use maestro_protocol::{
 use maestro_test_directory::Scratch;
 use maestro_workspace::layout::PaneId;
 use serde_json::{Value, json};
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 
@@ -469,29 +469,63 @@ fn install_leaf(directory: &Path, name: &str, scenario: &str) -> PathBuf {
     path
 }
 
-/// Listens at `socket` and releases every waiting leaf once a holder reports its hangup.
-///
-/// A leaf announces itself with `w` and a holder reports with `h`; a leaf that announces after the
-/// hangup is released at once.
-fn relay_hangup(socket: &Path) {
-    let listener = UnixListener::bind(socket).unwrap();
-    std::thread::spawn(move || {
-        let mut waiting: Vec<UnixStream> = Vec::new();
-        let mut hung_up = false;
-        for stream in listener.incoming() {
-            let mut stream = stream.unwrap();
-            let mut kind = [0];
-            stream.read_exact(&mut kind).unwrap();
-            if kind == *b"h" {
-                hung_up = true;
-                waiting.drain(..).for_each(release);
-            } else if hung_up {
-                release(stream);
-            } else {
-                waiting.push(stream);
-            }
-        }
+/// Run the layout operation with a checked relay, returning as soon as either fails.
+async fn relay_hangup(
+    socket: &Path,
+    body: impl std::future::Future<Output = ()>,
+) -> io::Result<()> {
+    let listener = UnixListener::bind(socket)?;
+    let (report, result) = tokio::sync::oneshot::channel();
+    let relay = std::thread::spawn(move || {
+        // A failed body may drop its receiver before the relay ends.
+        let _ = report.send(release_after_hangup(&listener));
     });
+    tokio::try_join!(
+        async {
+            result.await.map_err(io::Error::other)??;
+            relay
+                .join()
+                .map_err(|_| io::Error::other("hangup relay panicked"))
+        },
+        async {
+            body.await;
+            Ok(())
+        }
+    )?;
+    Ok(())
+}
+
+/// Release the one waiting leaf after the one holder reports its hangup, in either arrival order.
+fn release_after_hangup(listener: &UnixListener) -> io::Result<()> {
+    let mut waiting = None;
+    let mut hung_up = false;
+    for stream in listener.incoming() {
+        let mut stream = stream?;
+        let mut kind = [0];
+        stream.read_exact(&mut kind)?;
+        match kind {
+            [b'h'] => hung_up = true,
+            [b'w'] => waiting = Some(stream),
+            _ => return Err(io::Error::other("unknown relay announcement")),
+        }
+        if hung_up && let Some(leaf) = waiting.take() {
+            release(leaf);
+            return Ok(());
+        }
+    }
+    Err(io::Error::other("hangup relay closed before release"))
+}
+
+/// A peer that closes before announcing returns its I/O error to the layout operation.
+#[test]
+fn hangup_relay_reports_closed_stream() {
+    let scratch = Scratch::new().unwrap();
+    let socket = scratch.path().join("hangup");
+    let error = crate::support::runtime::block_on(relay_hangup(&socket, async {
+        drop(UnixStream::connect(&socket).unwrap());
+    }))
+    .unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::UnexpectedEof);
 }
 
 /// Sends the release byte; a leaf that already ended needs none.
@@ -530,22 +564,25 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
             add_workspaces(app, &["/tabs"]);
             let scratch = Scratch::new().unwrap();
             let socket = scratch.path().join("hangup");
-            relay_hangup(&socket);
-            let holder = apply_wire(
-                &holds_until_terminated(scratch.path(), &socket),
-                &json!({"tab_id": "w1:t1"}),
-            );
-            let held = applied(answer(app, holder).await);
-            wait_until_ready(app, &held).await;
-            let replacement = apply_wire(
-                &exits_once_released(scratch.path(), &socket),
-                &json!({"tab_id": "w1:t2"}),
-            );
-            assert_eq!(
-                answer(app, replacement).await,
-                failure("layout_apply_failed", "new layout tab disappeared")
-            );
-            assert!(workspace_ids(app).is_empty());
+            Box::pin(relay_hangup(&socket, async {
+                let holder = apply_wire(
+                    &holds_until_terminated(scratch.path(), &socket),
+                    &json!({"tab_id": "w1:t1"}),
+                );
+                let held = applied(answer(app, holder).await);
+                wait_until_ready(app, &held).await;
+                let replacement = apply_wire(
+                    &exits_once_released(scratch.path(), &socket),
+                    &json!({"tab_id": "w1:t2"}),
+                );
+                assert_eq!(
+                    answer(app, replacement).await,
+                    failure("layout_apply_failed", "new layout tab disappeared")
+                );
+                assert!(workspace_ids(app).is_empty());
+            }))
+            .await
+            .unwrap();
         },
     );
 }
@@ -558,36 +595,39 @@ fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout
             add_workspaces(app, &["/first", "/second", "/third"]);
             let scratch = Scratch::new().unwrap();
             let socket = scratch.path().join("hangup");
-            relay_hangup(&socket);
-            let leaving = apply_wire(
-                &exits_once_released(scratch.path(), &socket),
-                &json!({"tab_id": "w1:t1"}),
-            );
-            applied(answer(app, leaving).await);
-            let holder = apply_wire(
-                &holds_until_terminated(scratch.path(), &socket),
-                &json!({"tab_id": "w2:t1"}),
-            );
-            let held = applied(answer(app, holder).await);
-            wait_until_ready(app, &held).await;
-            let replacement = apply_wire(&sleeper(), &json!({"tab_id": "w2:t2"}));
-            let layout = applied(answer(app, replacement).await);
-            assert_eq!(
-                (layout.workspace_id.as_str(), layout.tab_id.as_str()),
-                ("w2", "w2:t3")
-            );
-            assert_eq!(workspace_ids(app), ["w2", "w3"]);
-            let closed: Vec<_> = events_after(app, 0)
-                .into_iter()
-                .filter_map(|event| match event {
-                    EventData::TabClosed {
-                        tab_id,
-                        workspace_id,
-                    } if tab_id == "w2:t2" => Some(workspace_id),
-                    _ => None,
-                })
-                .collect();
-            assert_eq!(closed, ["w2"]);
+            Box::pin(relay_hangup(&socket, async {
+                let leaving = apply_wire(
+                    &exits_once_released(scratch.path(), &socket),
+                    &json!({"tab_id": "w1:t1"}),
+                );
+                applied(answer(app, leaving).await);
+                let holder = apply_wire(
+                    &holds_until_terminated(scratch.path(), &socket),
+                    &json!({"tab_id": "w2:t1"}),
+                );
+                let held = applied(answer(app, holder).await);
+                wait_until_ready(app, &held).await;
+                let replacement = apply_wire(&sleeper(), &json!({"tab_id": "w2:t2"}));
+                let layout = applied(answer(app, replacement).await);
+                assert_eq!(
+                    (layout.workspace_id.as_str(), layout.tab_id.as_str()),
+                    ("w2", "w2:t3")
+                );
+                assert_eq!(workspace_ids(app), ["w2", "w3"]);
+                let closed: Vec<_> = events_after(app, 0)
+                    .into_iter()
+                    .filter_map(|event| match event {
+                        EventData::TabClosed {
+                            tab_id,
+                            workspace_id,
+                        } if tab_id == "w2:t2" => Some(workspace_id),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(closed, ["w2"]);
+            }))
+            .await
+            .unwrap();
         },
     );
 }

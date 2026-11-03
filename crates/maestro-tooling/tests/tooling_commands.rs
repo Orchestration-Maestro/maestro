@@ -2679,21 +2679,7 @@ fn add_conventions_checker(workspace: &Path) -> PathBuf {
         workspace,
         &["add", "--", "Cargo.toml", "Cargo.lock", "crates"],
     );
-    git(
-        workspace,
-        &[
-            "-c",
-            "user.name=Fixture",
-            "-c",
-            "user.email=fixture@example.invalid",
-            "-c",
-            "commit.gpgsign=false",
-            "commit",
-            "--quiet",
-            "-m",
-            "checker",
-        ],
-    );
+    commit_staged_fixture(workspace);
     checker
 }
 
@@ -3311,6 +3297,12 @@ fn commit_fixture(workspace: &Path) {
             "caller",
         ],
     );
+    commit_staged_fixture(workspace);
+}
+
+/// Commit staged fixture inputs with the controlled local author.
+#[cfg(unix)]
+fn commit_staged_fixture(workspace: &Path) {
     git(
         workspace,
         &[
