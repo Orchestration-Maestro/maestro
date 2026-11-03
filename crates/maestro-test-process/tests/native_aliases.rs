@@ -288,6 +288,8 @@ fn malformed_command_records_have_no_partial_effects() {
         json!({"scenario": "unknown"}),
         json!({"scenario": "package", "unknown": true}),
         json!({"scenario": "labelled", "unknown": true}),
+        json!({"scenario": "metadata", "declared": "declared.json"}),
+        json!({"scenario": "metadata", "declared": "d", "resolved": "r", "unknown": true}),
     ];
     for (field, value) in [
         ("code", json!(256)),
@@ -318,6 +320,62 @@ fn malformed_command_records_have_no_partial_effects() {
         assert!(run.stdout.is_empty());
         assert!(!sentinel.exists(), "partial effects for {record}");
     }
+}
+
+/// The metadata stand-in reads its documents when it runs and answers only the metadata operation.
+#[cfg(unix)]
+#[test]
+fn metadata_stand_in_serves_declared_and_resolved_documents_per_run() {
+    use serde_json::json;
+    let root = Scratch::new().unwrap();
+    let declared = root.path().join("declared.json");
+    let resolved = root.path().join("resolved.json");
+    let log = root.path().join("order");
+    let cargo = root.path().join("cargo");
+    install_executable(&artifact(), &cargo).unwrap();
+    let record = json!({
+        "scenario": "metadata",
+        "declared": declared,
+        "resolved": resolved,
+        "argv_log": {"path": log, "mark": "cargo"}
+    });
+    std::fs::write(
+        root.path().join("cargo.fixture"),
+        format!("command\n{record}"),
+    )
+    .unwrap();
+    let run = |operands: &[&str]| Command::new(&cargo).args(operands).output().unwrap();
+    for (document, operands, expected) in [
+        (
+            "first",
+            &["metadata", "--no-deps", "--offline"][..],
+            &b"first"[..],
+        ),
+        ("second", &["metadata", "--no-deps"][..], b"second"),
+        (
+            "third",
+            &["metadata", "--filter-platform", "x"][..],
+            b"third",
+        ),
+    ] {
+        let target = if operands.contains(&"--no-deps") {
+            &declared
+        } else {
+            &resolved
+        };
+        std::fs::write(target, document).unwrap();
+        let output = run(operands);
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected);
+    }
+    // Another operation is refused without output, and only served runs are logged.
+    let refused = run(&["build"]);
+    assert!(!refused.status.success());
+    assert!(refused.stdout.is_empty());
+    assert_eq!(
+        std::fs::read(&log).unwrap(),
+        b"cargo\0metadata\0--no-deps\0--offline\0cargo\0metadata\0--no-deps\0cargo\0metadata\0--filter-platform\0x\0"
+    );
 }
 
 /// Concurrent installations leave launchable copies with independently mutable ages.

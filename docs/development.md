@@ -34,7 +34,9 @@ unstaged.
 Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
 no crates. They never widen a mixed change's selection. With no staged crate, the
 hook skips formatting and Clippy. The full conventions suite runs only for staged
-paths under `crates/maestro-test-conventions/`, guarding the checker itself.
+paths under `crates/maestro-test-conventions/`, guarding the checker itself. It runs as
+`just test-conventions`, which prepares the native fixture its probes install and then
+runs the suite with nextest.
 Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
 the browser entry is present, guarding targets outside native Clippy.
 
@@ -1190,8 +1192,8 @@ Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` for the
 currently served packages: `maestro-test-process`, `maestro-tooling`,
 `maestro-tools`, `maestro-process`, `maestro-models`, the toolkit's
 attachment-completion tests, `maestro-app` (including its RPC client and clipboard
-tests), the command-line startup tests and the daemon's notification and repository
-discovery cases. Local setup builds the example with the locked host `dev` profile
+tests), the command-line startup tests, the conventions checker's architecture
+tests and the daemon's notification and repository discovery cases. Local setup builds the example with the locked host `dev` profile
 and reads Cargo's emitted executable path. It records source inputs, content digest
 and host in
 `target/test-setup/native-fixture.json`; unchanged inputs reuse that artifact.
@@ -1245,6 +1247,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
 | `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `metadata` | Requires `metadata` first and fails anything else before any effect. Reads and prints the file named by `declared` when an operand is `--no-deps`, and the file named by `resolved` otherwise. The files are read on each run, so a test rewrites them between runs. Optional `argv_log` (`path`, `mark`) appends the invocation as `output` does. |
 
 A controlled package command for the package manager settings records its
 acquisitions without a package manager:
@@ -1266,6 +1269,15 @@ fn main() -> std::io::Result<()> {
 Keep each alias in a test's disposable directory and pass its absolute path as the
 configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it.
+
+The conventions checker's architecture tests answer its Cargo metadata and compiler
+queries the same way. `Workspace::metadata_command` installs a `metadata` Cargo whose
+`declared` and `resolved` files sit in the fixture workspace, and `Workspace::command`
+installs an `output` compiler that prints a host line, fails, or prints text without
+one. Both probes run in a child, and a failing alias stands in for a compiler wrapper
+that must never run. A test that holds a writer open does so on the alias's `.fixture`
+record, because a writer on the executable itself makes the launch fail with
+`Text file busy`.
 
 A command that only prints installation output uses the `output` scenario. The
 command-line startup tests install it as `controlled-npm` and write its two install

@@ -79,6 +79,15 @@ pub(super) enum Record {
     },
     /// Record one package-manager command and answer it.
     Package {},
+    /// Serve a Cargo metadata document read at run time.
+    Metadata {
+        /// Document served when the operands select declared members only.
+        declared: String,
+        /// Document served otherwise.
+        resolved: String,
+        /// Optional operand log this invocation appends to first.
+        argv_log: Option<ArgvLog>,
+    },
 }
 
 impl Record {
@@ -128,7 +137,36 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
             code,
         } => query(operands, prefix, denied, error, *code),
         Record::Package {} => package(operands),
+        Record::Metadata {
+            declared,
+            resolved,
+            argv_log,
+        } => metadata(operands, declared, resolved, argv_log.as_ref()),
     }
+}
+
+/// Serve the declared document for `--no-deps` and the resolved one otherwise.
+///
+/// Only the `metadata` operation is answered; anything else fails before it is logged.
+fn metadata(
+    operands: &[OsString],
+    declared: &str,
+    resolved: &str,
+    argv_log: Option<&ArgvLog>,
+) -> io::Result<()> {
+    if operands.first().is_none_or(|first| first != "metadata") {
+        return Err(io::Error::other("expected the `metadata` operation"));
+    }
+    if let Some(log) = argv_log {
+        record_argv(log, operands)?;
+    }
+    let path = if operands.iter().any(|operand| operand == "--no-deps") {
+        declared
+    } else {
+        resolved
+    };
+    write_stdout(&std::fs::read(path)?)?;
+    leave(0)
 }
 
 /// Append the working directory and then the recorded bytes to one file.

@@ -6,6 +6,8 @@ use std::fmt::Write;
 
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
+#[cfg(unix)]
+use support::{host_report, output, record_path};
 
 #[test]
 fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
@@ -369,15 +371,15 @@ fn metadata_command_failure_is_reported_not_accepted() {
     {
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-models"]);
-        let rustc = workspace.command("rustc", "printf 'host: x86_64-unknown-linux-gnu\\n'");
+        let rustc = workspace.command("rustc", &host_report());
         workspace.probe(
             &workspace.root.path().join("missing-cargo"),
             &rustc,
             "cargo metadata failed:",
         );
-        let failure = workspace.command("failure", "echo controlled-stderr >&2; exit 7");
+        let failure = workspace.command("failure", &output(b"", b"controlled-stderr\n", 7));
         workspace.probe(&failure, &rustc, "controlled-stderr");
-        let invalid = workspace.command("invalid", "printf 'not JSON'");
+        let invalid = workspace.command("invalid", &output(b"not JSON", b"", 0));
         workspace.probe(&invalid, &rustc, "invalid cargo metadata:");
     }
 }
@@ -1138,11 +1140,11 @@ fn metadata_fixtures_run_while_scenario_data_is_open() {
         serde_json::to_vec(&workspace.metadata()).unwrap(),
     )
     .unwrap();
-    let cargo = workspace.command("cargo", "cat resolved.json");
-    let rustc = workspace.command("rustc", "printf 'host: x86_64-unknown-linux-gnu\\n'");
+    let cargo = workspace.metadata_command("cargo", "resolved.json", None);
+    let rustc = workspace.command("rustc", &host_report());
     let writer = std::fs::OpenOptions::new()
         .write(true)
-        .open(&cargo)
+        .open(record_path(&cargo))
         .unwrap();
     workspace.probe(&cargo, &rustc, "ok");
     drop(writer);
@@ -1162,8 +1164,7 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
         return;
     }
     let workspace = Workspace::new();
-    let failing =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
+    let failing = workspace.command("failing-wrapper", &output(b"", b"", 2));
     let missing = workspace.root.path().join("missing-wrapper");
     for wrapper in [None, Some(failing), Some(missing)] {
         let mut command = maestro_test_process::TestProcess::current(
@@ -1688,40 +1689,51 @@ fn check_declared(root: &std::path::Path, declared: &serde_json::Value) -> Resul
 #[cfg(unix)]
 fn command_order_and_host_failures(workspace: &Workspace, valid: &serde_json::Value) {
     workspace.metadata_probe(valid, valid, "ok");
-    let cargo = workspace.command(
-        "ordered-cargo",
-        "printf 'cargo %s\\n' \"$*\" >> order; cat resolved.json",
-    );
-    let rustc = workspace.command(
-        "ordered-rustc",
-        &format!(
-            "printf 'rustc %s\\n' \"$*\" >> {log:?}; printf 'host: x86_64-unknown-linux-gnu\\n'",
-            log = workspace.root.path().join("order")
-        ),
-    );
+    let cargo = workspace.metadata_command("ordered-cargo", "declared.json", Some("cargo"));
+    let mut logged = host_report();
+    logged["argv_log"] =
+        serde_json::json!({"path": workspace.root.path().join("order"), "mark": "rustc"});
+    let rustc = workspace.command("ordered-rustc", &logged);
     workspace.probe(&cargo, &rustc, "ok");
-    let log = std::fs::read_to_string(workspace.root.path().join("order")).unwrap();
-    let lines: Vec<_> = log.lines().collect();
-    assert_eq!(lines.len(), 3, "{log}");
+    let log = std::fs::read(workspace.root.path().join("order")).unwrap();
+    let lines = invocations(&log);
+    assert_eq!(lines.len(), 3, "{lines:?}");
     assert!(
         lines[0].contains("--no-deps") && lines[0].contains("--offline"),
-        "{log}"
+        "{lines:?}"
     );
     assert_eq!(lines[1], "rustc -vV");
     assert!(
         lines[2].contains("--filter-platform x86_64-unknown-linux-gnu")
             && lines[2].contains("--offline"),
-        "{log}"
+        "{lines:?}"
     );
-    for line in [lines[0], lines[2]] {
+    for line in [&lines[0], &lines[2]] {
         assert!(
             line.contains("--format-version 1")
                 && !line.contains("--all-features")
                 && !line.contains("--no-default-features"),
-            "{log}"
+            "{lines:?}"
         );
     }
     compiler_host_failures(workspace, &cargo);
+}
+
+/// The recorded invocations as `name operands...` lines, split at each mark.
+#[cfg(unix)]
+fn invocations(log: &[u8]) -> Vec<String> {
+    let mut lines: Vec<Vec<String>> = Vec::new();
+    for field in log
+        .split(|byte| *byte == 0)
+        .filter(|field| !field.is_empty())
+    {
+        let field = String::from_utf8_lossy(field).into_owned();
+        match (field.as_str(), lines.last_mut()) {
+            ("cargo" | "rustc", _) | (_, None) => lines.push(vec![field]),
+            (_, Some(line)) => line.push(field),
+        }
+    }
+    lines.iter().map(|line| line.join(" ")).collect()
 }
 
 #[cfg(unix)]
@@ -1731,25 +1743,25 @@ fn compiler_host_failures(workspace: &Workspace, cargo: &std::path::Path) {
         &workspace.root.path().join("missing-rustc"),
         "rustc -vV failed:",
     );
-    for (body, expected) in [
+    for (record, expected) in [
         (
-            "echo compiler-failure >&2; exit 9",
+            output(b"", b"compiler-failure\n", 9),
             "rustc -vV failed (exit status: 9): compiler-failure",
         ),
         (
-            "printf 'release: 1.98.0\\n'",
+            output(b"release: 1.98.0\n", b"", 0),
             "rustc -vV failed: missing or empty host line",
         ),
         (
-            "printf 'host:    \\n'",
+            output(b"host:    \n", b"", 0),
             "rustc -vV failed: missing or empty host line",
         ),
     ] {
-        let rustc = workspace.command("failed-rustc", body);
+        let rustc = workspace.command("failed-rustc", &record);
         workspace.probe(cargo, &rustc, expected);
         workspace.probe(
             cargo,
-            &workspace.command("valid-rustc", "printf 'host: x86_64-unknown-linux-gnu\\n'"),
+            &workspace.command("valid-rustc", &host_report()),
             "ok",
         );
     }
