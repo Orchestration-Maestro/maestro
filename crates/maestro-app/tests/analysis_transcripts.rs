@@ -593,6 +593,51 @@ fn analysis_runs_each_file_before_aggregation() {
     );
 }
 
+/// Assert both recorded prompts name their instruction files and summary paths in order.
+#[cfg(unix)]
+fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[String]) {
+    let arguments = invocations(receipt);
+    assert_eq!(arguments.len(), 2);
+    for invocation in &arguments {
+        assert_eq!(
+            invocation[..5],
+            ["--mode", "json", "--tools", "read,write", "-p"]
+        );
+    }
+    let prompt = &arguments[0][5];
+    assert!(
+        prompt.contains(&format!(
+            "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
+        )),
+        "{prompt:?}"
+    );
+    assert!(prompt.contains(
+        "Only after reading the ENTIRE file, perform the analysis and write the summary"
+    ));
+    assert!(prompt.contains("- Do not include any other text outside this format"));
+    assert!(prompt.contains(&format!(
+        "The file {output}/session-transcripts-000.txt has "
+    )));
+    assert!(prompt.contains(&format!(
+        "lines. Read it in full using chunked reads, then write your analysis to {}",
+        summaries[0]
+    )));
+    let aggregation = &arguments[1][5];
+    assert!(
+        aggregation.contains(&format!(
+            "STEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{agents}\n\nSTEP 2: Read ALL of the following summary files:\n{}\n\n",
+            summaries.join("\n")
+        )),
+        "{aggregation:?}"
+    );
+    assert!(
+        aggregation.ends_with(&format!(
+            "Write the final summary to {output}/FINAL-SUMMARY.txt"
+        )),
+        "{aggregation:?}"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
@@ -614,172 +659,18 @@ fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
             sessions(base, &project, &[("a.jsonl", &journal(true))]);
             let output = format!("{base}/out");
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
-            std::fs::write(
+            let summaries = [
                 format!("{output}/session-transcripts-000.summary.txt"),
-                "PATTERN",
-            )
-            .unwrap();
+                format!("{output}/session-transcripts-001.summary.txt"),
+            ];
+            for summary in &summaries {
+                std::fs::write(summary, "PATTERN").expect("the summary file is writable");
+            }
             let run = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(run.succeeded(), "{run:?}");
-            let arguments = invocations(&receipt);
-            let arguments = &arguments[0];
-            assert_eq!(
-                arguments[..5],
-                ["--mode", "json", "--tools", "read,write", "-p"]
-            );
-            let prompt = &arguments[5];
             let agents = format!("{base}/home/.maestro/agent/AGENTS.md\n{project}/AGENTS.md");
-            assert!(
-                prompt.contains(&format!(
-                    "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
-                )),
-                "{prompt:?}"
-            );
-            assert!(prompt.contains(
-                "Only after reading the ENTIRE file, perform the analysis and write the summary"
-            ));
-            assert!(prompt.contains("- Do not include any other text outside this format"));
-            assert!(prompt.contains(&format!(
-                "The file {output}/session-transcripts-000.txt has "
-            )));
-            assert!(prompt.contains(&format!(
-                "lines. Read it in full using chunked reads, then write your analysis to {output}/session-transcripts-000.summary.txt"
-            )));
-        },
-    );
-}
-
-/// The complete instructions one transcript child receives after its opening line.
-#[cfg(unix)]
-const READING: &str = "READING THE TRANSCRIPT:
-The transcript file is large. Read it in chunks of 1000 lines using offset/limit parameters:
-1. First: read with limit=1000 (lines 1-1000)
-2. Then: read with offset=1001, limit=1000 (lines 1001-2000)
-3. Continue incrementing offset by 1000 until you reach the end
-4. Only after reading the ENTIRE file, perform the analysis and write the summary
-
-ANALYSIS TASK:
-Look for patterns where the user repeatedly gives similar instructions. These could become:
-- AGENTS.md entries: coding style rules, behavior guidelines, project conventions
-- Skills: multi-step workflows with external tools (search, browser, APIs)
-- Prompt templates: reusable prompts for common tasks
-
-Compare each pattern against the existing AGENTS.md content to determine if it's NEW or EXISTING.
-
-OUTPUT FORMAT (strict):
-Write a file with exactly this structure. Use --- as separator between patterns.
-
-PATTERN: <short descriptive name>
-STATUS: NEW | EXISTING
-TYPE: agents-md | skill | prompt-template
-FREQUENCY: <number of times observed>
-EVIDENCE:
-- \"<exact quote 1>\"
-- \"<exact quote 2>\"
-- \"<exact quote 3>\"
-DRAFT:
-<proposed content for AGENTS.md entry, SKILL.md, or prompt template>
----
-
-Rules:
-- Only include patterns that appear 2+ times
-- STATUS is NEW if not in AGENTS.md, EXISTING if already covered
-- EVIDENCE must contain exact quotes from the transcripts
-- DRAFT must be ready-to-use content
-- If no patterns found, write \"NO PATTERNS FOUND\"
-- Do not include any other text outside this format";
-
-/// The complete instructions the aggregating child receives after its summary list.
-#[cfg(unix)]
-const MERGING: &str = "STEP 3: Create a consolidated final summary that:
-1. Merges duplicate patterns (same pattern found in multiple files)
-2. Ranks patterns by total frequency across all files
-3. Groups by status (NEW first, then EXISTING) and type
-4. Provides the best/most complete DRAFT for each unique pattern
-5. Verify STATUS against AGENTS.md content (pattern may be marked NEW in summaries but actually exists)
-
-OUTPUT FORMAT (strict):
-Write the final summary with this structure:
-
-# NEW PATTERNS (not yet in AGENTS.md)
-
-## AGENTS.MD: <pattern name>
-Total Frequency: <sum across all files>
-Evidence:
-- \"<best quotes>\"
-Draft:
-<consolidated draft>
-
-## SKILL: <pattern name>
-...
-
-## PROMPT-TEMPLATE: <pattern name>
-...
-
----
-
-# EXISTING PATTERNS (already in AGENTS.md, for reference)
-
-## <pattern name>
-Total Frequency: <N>
-Already covered by: <quote relevant section from AGENTS.md>
-
----
-
-# SUMMARY
-- New patterns to add: <N>
-- Already covered: <N>
-- Top 3 new patterns by frequency: <list>";
-
-#[cfg(unix)]
-#[test]
-fn analysis_prompts_carry_the_complete_child_instructions() {
-    let path = "$BASE/bin";
-    with_environment(
-        "analysis_prompts_carry_the_complete_child_instructions",
-        &[("PATH", path)],
-        |base| {
-            let receipt = format!("{base}/argv");
-            child(base, 0, &receipt);
-            let project = format!("{base}/project");
-            std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
-            std::fs::write(format!("{project}/AGENTS.md"), "rules")
-                .expect("the rules are writable");
-            std::fs::create_dir_all(format!("{base}/home/.maestro/agent"))
-                .expect("the agent directory is creatable");
-            std::fs::write(format!("{base}/home/.maestro/agent/AGENTS.md"), "rules")
-                .expect("the rules are writable");
-            sessions(base, &project, &[("a.jsonl", &journal(true))]);
-            let output = format!("{base}/out");
-            std::fs::create_dir_all(&output).expect("the output directory is creatable");
-            let summary = format!("{output}/session-transcripts-000.summary.txt");
-            std::fs::write(&summary, "PATTERN").expect("the summary file is writable");
-            let run = run_transcripts(&["--analyze", "--output", &output, &project], false)
-                .expect("the command writes its transcripts");
-            assert!(run.succeeded(), "{run:?}");
-            let transcript = format!("{output}/session-transcripts-000.txt");
-            let written =
-                std::fs::read_to_string(&transcript).expect("the transcript file is readable");
-            let lines = written.split('\n').count();
-            let agents = format!("{base}/home/.maestro/agent/AGENTS.md\n{project}/AGENTS.md");
-            let analysis = format!(
-                "You are analyzing session transcripts to identify recurring user instructions that could be automated.\n\nSTEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: {READING}\n\nThe file {transcript} has {lines} lines. Read it in full using chunked reads, then write your analysis to {summary}"
-            );
-            let aggregation = format!(
-                "You are aggregating pattern analysis results from multiple summary files.\n\nSTEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{agents}\n\nSTEP 2: Read ALL of the following summary files:\n{summary}\n\n{MERGING}\n\nWrite the final summary to {output}/FINAL-SUMMARY.txt"
-            );
-            let prompts = invocations(&receipt)
-                .into_iter()
-                .map(|arguments| {
-                    assert_eq!(
-                        arguments[..5],
-                        ["--mode", "json", "--tools", "read,write", "-p"]
-                    );
-                    arguments[5].clone()
-                })
-                .collect::<Vec<_>>();
-            assert_eq!(prompts, [analysis, aggregation]);
+            assert_prompt_paths(&receipt, &agents, &output, &summaries);
         },
     );
 }
@@ -816,7 +707,9 @@ fn analysis_reports_a_child_summary_only_after_the_child_exits() {
                 failed.stdout.contains("Created 1 summary files"),
                 "{failed:?}"
             );
-            // The same write from a child that exits successfully is reported once it exits.
+            // Without the earlier write, only a child that writes its own summary and exits
+            // successfully can produce the reported line.
+            std::fs::remove_file(&summary).expect("the earlier summary is removable");
             child_appending(base, &summary, "PATTERN\n", 0, &receipt);
             let written = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
