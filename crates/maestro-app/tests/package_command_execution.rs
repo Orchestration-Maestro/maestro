@@ -159,7 +159,7 @@ fn inherited_steps_run_authored_operands_with_the_parent_environment() {
     }
 }
 
-/// The parent environment and the inherited streams, as the step's stand-in reports them.
+/// The authored operands and the parent environment, as the step's stand-in records them.
 fn inherited_steps_run_authored_operands_child() {
     let scratch = crate::child::Scratch::new();
     let root = scratch.join("");

@@ -431,7 +431,7 @@ fn holder(stdout: &[u8], stderr: &[u8], descendant: &str) -> io::Result<()> {
     leave(0)
 }
 
-/// Append the working directory and then the recorded bytes to one file.
+/// Append the working directory, the named variable and then the recorded bytes to one file.
 fn append_to(append: &Append) -> io::Result<()> {
     let mut line = Vec::new();
     if append.cwd {
