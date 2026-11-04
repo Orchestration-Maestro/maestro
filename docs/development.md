@@ -565,15 +565,17 @@ watch-test child lines, setup command lines and blocking-operation phases to
 per-test files in `MAESTRO_TEST_DIAGNOSTICS_DIR`, or
 `target/browser-author-diagnostics/` when it is unset, outside disposable fixtures
 and isolated home directories. Set the variable to an absolute path; a relative
-one resolves against `crates/maestro-tooling`. The harness does not capture
-commands whose output a test reads only after they exit. A forced-kill
-test checks both directory routes and verifies that child lines survive termination
-while still reaching stderr and the watch consumer. There are no exact build counts
-or negative observation windows. Their watch processes share a test-owned
-process group, stopped on completion or panic. Before starting a watch-test
-process group, the harness directs its LLVM profiles into that fixture's target
-directory, outside the merged coverage profile set, because cleanup can forcibly
-stop its descendants.
+one resolves against `crates/maestro-tooling`. Each line starts with the seconds
+since the first record in the process, and every recipe records its start and its
+exit status, so one file shows where a slow attempt spent its time. The harness
+does not capture commands whose output a test reads only after they exit. A
+forced-kill test checks both directory routes and verifies that child lines survive
+termination while still reaching stderr and the watch consumer. There are no exact
+build counts or negative observation windows. Their watch processes share a
+test-owned process group, stopped on completion or panic. Before starting a
+watch-test process group, the harness directs its LLVM profiles into that fixture's
+target directory, outside the merged coverage profile set, because cleanup can
+forcibly stop its descendants.
 
 Browser author tests keep the checked-in full fixture and its independent lock
 unchanged. Pipeline-only tests use disposable copies with the minimal bootstrap
@@ -1362,6 +1364,14 @@ checkout. Outside nextest, the first cold-source caller runs the same setup. The
 shared-home isolation test prepares both source sets in its parent and forwards their
 configuration paths to the child before making the shared Cargo home unusable. The cold
 test copies only the source configuration into its initially empty Cargo home.
+
+The setup also runs for the test that proves source preparation works without nextest's
+exports: that test clears the exported paths and reruns the isolation test as a child, so
+the child prepares the sources itself. That preparation vendored every package and built
+the seed from nothing, which spent most of the test's time. The setup runs before the
+tests, so the child's repeated preparation finds the directory for the same key and
+returns it at once. The vendoring keeps its cost, paid once per run by the setup, and a
+shard that runs only these tests still builds the seed it does not read.
 
 The same setup also builds the cold bootstrap's native targets once per key, with the
 commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
