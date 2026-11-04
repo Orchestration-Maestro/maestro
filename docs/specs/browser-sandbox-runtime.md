@@ -8,7 +8,7 @@ Maestro's browser sandbox embeds ten handwritten JavaScript runtime files. That 
 
 Build Maestro's sandbox runtime as Rust for the browser, using the existing locked browser bindings. Install it in the isolated frame before the authored scripts that depend on it. Supplied JavaScript remains executable content; compiler-generated binding glue remains generated output. Keep one provider interface, frame lifecycle, router and result collector. **Confidence: proven requirement; reconstruction likely; startup qualification unknown. Evidence: C01-C02, C07-C11.**
 
-The implementation is blocked on a measured bootstrap, public-API and content-security-policy receipt. A deferred module placed beside active HTML does not establish installation order. No proposed bootstrap is selected by this specification. **Confidence: unknown feasibility. Evidence: C08-C09, C12; bootstrap qualification acceptance below.**
+The implementation is blocked on a measured bootstrap, public-API and content-security-policy receipt. A deferred module placed beside active HTML does not establish installation order. The [bootstrap qualification receipt](#bootstrap-qualification-receipt) selects parser-blocking generated startup and lists the decisions still open before dispatch. **Confidence: measured for the prototype; open decisions listed. Evidence: C08-C09, C12; the receipt below.**
 
 ## User stories
 
@@ -138,6 +138,94 @@ Do not add same-origin permission, generic unsafe-eval, wildcard script/connect 
 
 Measure prototype and final release bytes separately. T01 measures the selected bootstrap path's size limit: the largest tested module that still installs before classic scripts under the measured CSP. Record the exact browser/toolchain, probe inputs, passing/failing sizes and failures next to an estimate of the complete optimized runtime, including its basis and uncertainty. If that estimate exceeds the measured limit, T01 reports the result and the implementation is not dispatched. An unestablished limit or unsupported estimate is an incomplete receipt, not a pass. No throwaway full runtime is required. The final acceptance reruns identical witnesses against the actual optimized all-provider bundle. A size-dependent failure returns for a decision, with no authored-script fallback or policy relaxation. The measured browser limit is qualification evidence, not an invented product limit.
 
+## Bootstrap qualification receipt
+
+This receipt records what the bootstrap qualification measured. It selects a loader and names the public API, but it does not deliver the production runtime: the ten handwritten runtime files and their envelopes are unchanged until the implementation issue lands.
+
+### Measurement setup
+
+The pinned Chromium job ran Chromium 156.0.8078.4 (supplier revision 1248), wasm-bindgen CLI and library 0.2.129, js-sys and web-sys 0.3.106 and the repository's pinned Rust toolchain. The prototype is a Rust runtime bundle beside the existing browser-module fixtures, `crates/maestro-web/tests/fixtures/browser_modules/sandbox_runtime`. It has its own manifest and lock and uses no dependency or feature beyond the existing fixture set. The browser runner's package step builds it in release for `wasm32-unknown-unknown` and generates classic-script glue with `wasm-bindgen --target no-modules --no-modules-global __maestroSandboxRuntime --no-typescript`. Eight exports in the loading family exercise it, in `crates/maestro-web/tests/sandbox_bootstrap_browser.rs`. Each export logs `RECEIPT bootstrap` lines and asserts the rows below. The qualifying run is [41773572302](https://github.com/Orchestration-Maestro/maestro/actions/runs/41773572302) (`COMPLETE 277/277`). A failed-and-restored mutation run, [41773604662](https://github.com/Orchestration-Maestro/maestro/actions/runs/41773604662), turns all eight exports red (`COMPLETE 269/277`). It skips the last selection, completes before the joined callbacks and stops the compile search below the limit.
+
+The prototype installs the sandbox identifier and merged data globals, then each runtime selection in entry order. Its one built-in is a live synchronous `listAttachments`. It also runs supplied providers, settles asynchronous programs and stages documents for the comparison path.
+
+### Selected loader: parser-blocking generated startup
+
+At the runtime insertion point, the prepared document carries, in order:
+
+1. one inert carrier per supplied provider: `<template data-maestro-sandbox-provider><svg><script>` holding `(<function>)(<quoted sandbox id>);`, encoded as today;
+2. one inert configuration block, `<script type="application/json" data-maestro-sandbox>`, holding the sandbox identifier, the merged globals and the ordered selections, with `<` written as `\u003c`;
+3. the generated glue as a classic script (placement below);
+4. one loading statement: `__maestroSandboxRuntime.initSync({module:Uint8Array.fromBase64("<module>")});`.
+
+Synchronous instantiation runs the Rust start function before the parser reaches the next element. It assigns `sandboxId` and every global, then installs each selection in order. At a supplied provider's position it moves the carrier's parser-created script into the head, where it runs at once, then removes the carrier. Last it removes the configuration block and the loading script. JavaScript programs run from a hidden SVG module carrier holding `__maestroSandboxRuntime.run(async () => {\n<code>\n});`. Rust removes the carrier and awaits the program. It invokes `__completionCallbacks` in order with true or false, joins them through `Promise.all` and logs a failed join without replacing the outcome, then awaits `complete`.
+
+Three generated call expressions remain as JavaScript text, none with runtime logic: the loading statement, the program envelope (an asynchronous body with `return` cannot be compiled without `Function` or `eval`) and the supplied-provider invocation, which keeps today's calling contract. Keeping them is a decision for the implementation issue; the measured alternative to the envelope is the generic eval permission this contract forbids.
+
+The measured alternative, Rust-controlled staging, fails the Trusted Types row (see the staging comparison).
+
+### Glue placement on `about:srcdoc`
+
+The generated no-modules glue computes its own address as it loads: `new URL(document.currentScript.src, location.href)`. An inline script has an empty `src`. The `about:srcdoc` address has an opaque path, so the parse fails with `TypeError: Failed to construct 'URL': Invalid URL` and no helper installs. Blob and data addresses have opaque paths too. Documents with hierarchical addresses keep the glue inline: the supplied sandbox URL, and a downloaded file opened from disk. A srcdoc frame loads the same glue as a parser-blocking `<script src=… crossorigin>` from the application origin, followed by the inline loading statement. CORS mode keeps the glue's own errors readable in the opaque-origin frame; the serving host answers with `Access-Control-Allow-Origin`. Maestro never edits generated output. This served file is a resource difference and returns for a decision (see the decisions below).
+
+### Size, compilation and reproducibility
+
+| Measurement | Result |
+| --- | --- |
+| Main-thread synchronous compilation limit | 8,388,608 bytes compile. 8,388,609 bytes are refused: ``RangeError: WebAssembly.Compile is disallowed on the main thread, if the buffer size is larger than 8MB. Use WebAssembly.compile, compile on a worker thread, or use the flag `--enable-features=WebAssemblyUnlimitedSyncCompilation`.`` |
+| Search method | Binary search between the bundle's own size and 64 MiB, padding the real module with one custom section |
+| Largest module installed before classic scripts under the hash policy | 8,388,608 bytes, in an 11,185,940-byte srcdoc document; the next byte is refused with the same `RangeError` |
+| Prototype bundle (release, no wasm-opt) | module 79,470 bytes (SHA-256 `cf9e5c912222ab1bb9dced6ef1cc5c8c35e1e801a9a619def10448c283a68bc9`); glue 23,644 bytes (SHA-256 `d2924055d8697b1a623f06aff4c2d95ff02ce5714d2b018b5efc5617a0fc8de4`); inline glue and loader 129,674 bytes |
+| Reproducibility | Two release builds, the second uncached in its own target directory, produce byte-identical glue and module |
+| Full-runtime estimate | At most about 0.85 MB, about 10% of the limit |
+
+The estimate scales the whole prototype module by the ratio of the runtime JavaScript it replaces. The prototype's behaviour covers about 1.4 KB of today's 14,827 bytes of handwritten runtime JavaScript (data installation, the attachment listing, settlement and the two boot programs), a factor of about 10.6. Scaling the whole module overstates the result, since glue, allocator and binding support are fixed costs, and wasm-opt is not applied. A threefold error in Rust bytes per behaviour still gives about 2.5 MB, under the limit. The estimate does not exceed the measured limit, so size does not block implementation dispatch. The final acceptance reruns these witnesses against the actual optimized bundle.
+
+### Policy matrix
+
+| Path and policy | Observation |
+| --- | --- |
+| srcdoc, inherited `script-src 'self' <digests> 'wasm-unsafe-eval'` | Selections install in order before the first head and body classic scripts, at the real size and at the limit |
+| srcdoc, digest of the loading statement missing | Loading refused without an exception; helpers absent; the carrier stays inert |
+| srcdoc, digest of encoded carrier markup instead of decoded text | That provider is refused; the built-ins around it still install |
+| srcdoc, inherited `require-trusted-types-for 'script'` with an HTML-only default policy | Installs unchanged; no Trusted Types sink is used |
+| srcdoc, the frame document requires Trusted Types with no policy object | Installs unchanged |
+| srcdoc, a provider turns Trusted Types to `none` inside the frame | Later selections and providers still install |
+| srcdoc, `'wasm-unsafe-eval'` missing | `CompileError`: the module violates `script-src` because `'unsafe-eval'` is not allowed; helpers absent |
+| srcdoc, inline glue | `TypeError: Failed to construct 'URL': Invalid URL`; helpers absent |
+| Supplied URL, document policy `script-src <digests> 'wasm-unsafe-eval'` | Inline glue; installs in order before the first head and body classic scripts |
+| Offline single file, `default-src 'none'; script-src <digests> 'wasm-unsafe-eval'` | Inline glue and embedded module install with every resource refused |
+| Asynchronous programs, srcdoc, `script-src 'self' <digests> 'wasm-unsafe-eval'` | await, return, throw, `import.meta.url` equal to the base URL, relative dynamic import and ordered callbacks complete without `Function` or `eval` |
+
+Today's frame needs no WebAssembly permission. Hosts pin four digests: runtime, program module, head boot and body remover. The selected loader changes that policy as follows:
+
+- add `'wasm-unsafe-eval'` to the frame's script policy. Pages under a policy already need it for their own modules ([browser frontend](../browser/frontend.md)). It grants no JavaScript `eval` or `Function`;
+- pin the loading statement's digest. It is fixed for one bundle, because the configuration moved to the inert data block. Pin each supplied provider invocation and the program module as today. The head boot and body remover digests disappear;
+- on srcdoc, admit the served glue through the existing `'self'` source and serve it with CORS headers.
+
+The change adds no same-origin permission, generic `unsafe-eval`, wildcard origin, `blob:` or `data:` source, and no policy bypass. Unmatched scripts are still refused.
+
+### Staging comparison
+
+The staging path initializes the same module asynchronously in a document that holds only the configuration and the loader. It then calls `document.open`, installs, and writes the authored document with `document.write`. Without Trusted Types it installs before the first classic script. Under the inherited `require-trusted-types-for 'script'` with an HTML-only default policy, the case today's runtime passes, the frame realm has no policy object. `document.write` is refused with `TypeError` and the authored document never runs. `document.open` also discards every window listener and adds a second load event. The parser-blocking loader passes that same row, so staging is not selected.
+
+### Public API and callers
+
+Planned spellings, compiled by the implementation issue before consumers change:
+
+- Provider selection, application-owned: `SandboxRuntimeProvider::get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo>` with `enum Runtime { Builtin(BuiltinRuntime), Content(String), Empty }` and `enum BuiltinRuntime { Artifacts, Attachments, Console, FileDownload }`. The four built-in providers return `Builtin`. The contribution adapter (`crates/maestro-web/src/contributions/adapters.rs:265`) returns `Content`. Test providers in the app and web integration targets switch to the same return type.
+- Bundle supply: a runtime-only entry, the `sandbox_runtime` cdylib example of `maestro-web`, built by a repository-tooling generator. The generator runs a release build and `wasm-bindgen --target no-modules`, then writes the glue and module as a checked-in generated bundle under `crates/maestro-web/src/components/sandbox/`. The library embeds them with `include_str!` and `include_bytes!`. A `--check` mode regenerates and compares them in CI. The example never reads the embedded bytes, so the build has no cycle. The measured reproducibility above is what makes `--check` stable.
+- Constructors and defaults stay as they are: `SandboxIframe::new` (`html_artifact/body.rs:208`, `contributions/adapters.rs:222`), `BrowserSandboxHost`, the `JAVASCRIPT_REPL_TOOL` default (`tools/javascript_repl.rs:28`) and `prepare_html_document` (`browser/frame.rs:34`, `browser/execution.rs:273`, `html_artifact/header.rs:144`).
+- Bridge: `RuntimeMessageBridge::generate_bridge_code` (`runtime_message_bridge.rs:48`, root export `lib.rs:90`) stops generating source. The iframe bridge becomes a configuration field the runtime installs. Its one production caller (`sandboxed_iframe/runtime.rs:21`), the documentation example and the two test callers (`tests/runtime_bridge.rs`, `tests/sandbox_exports.rs`) change with it. The user-script role keeps its options and context meaning. Its replacement emits the same glue, loader and an install call with the sandbox identifier for the extension world. That world's policy must admit `'wasm-unsafe-eval'`, and it is not qualified by this receipt.
+
+### Decisions still open
+
+Each returns for an explicit decision before the implementation issue is dispatched:
+
+1. Serving the glue for srcdoc frames from a fixed same-origin path, with CORS headers, beside the embedded bundle.
+2. Adding `'wasm-unsafe-eval'` to the frame policy that hosts pin.
+3. Keeping the three generated call expressions as the only JavaScript text.
+4. Qualifying the extension user-script world, which the pinned job cannot exercise.
+
 ## Testing decisions
 
 The existing prepared-document, load/execute, artifact-download and browser-export seams are the acceptance boundary. Native tests retain host provider, routing and result behavior; the pinned Chromium job proves actual globals, realms, ordering, CSP and download effects. Keep each crate's single integration test program. **Confidence: proven testing requirement. Evidence: C01, C07-C14.**
@@ -205,14 +293,14 @@ Add **Sandbox runtime bundle**: "The matching prebuilt WebAssembly runtime and g
 
 ### Open questions and required receipts
 
-All entries are **unknown**, with a named owner and a blocking observation.
+Each entry names its owner, its blocking observation and what the [bootstrap qualification receipt](#bootstrap-qualification-receipt) settled.
 
 | Question | Owner and closure |
 | --- | --- |
-| Which generated bootstrap preserves first-script ordering and the current CSP/Trusted Types observations in both loading paths? | Bootstrap spike. Save the measured matrix, proposed policy text and approved mechanism before implementation dispatch. C08-C09, C12. |
-| How are asynchronous user bodies and supplied runtime functions executed while preserving return/await, import.meta, relative imports and current policy refusal? | Bootstrap spike. Execute actual programs in the isolated realm; generic Function/eval permission is not assumed. C02, C08, C12. |
-| What replaces public bridge source generation, and how does the immutable matching bundle reach each constructor/default and standalone download without a build cycle? | Bootstrap spike. Publish exact signatures, native/browser availability, all caller edits and a normal-build/offline witness. C02, C07-C08, C11, C13. |
-| Does the proposed runtime fit the qualified bootstrap, and does the actual release bundle pass? | Bootstrap spike measures the largest module that installs before classic scripts under CSP and records a supported full-runtime size estimate beside it; an exceeding estimate blocks dispatch. Implementation reruns identical witnesses against the actual optimized all-provider bundle and returns any failure for a decision. C01, C12-C13. |
+| Which generated bootstrap preserves first-script ordering and the current CSP/Trusted Types observations in both loading paths? | Bootstrap spike. Save the measured matrix, proposed policy text and approved mechanism before implementation dispatch. C08-C09, C12. **Measured:** parser-blocking generated startup on both paths; srcdoc needs served glue, an open decision. |
+| How are asynchronous user bodies and supplied runtime functions executed while preserving return/await, import.meta, relative imports and current policy refusal? | Bootstrap spike. Execute actual programs in the isolated realm; generic Function/eval permission is not assumed. C02, C08, C12. **Measured:** a module envelope settled in Rust; supplied providers run from inert carriers. Keeping the envelope is an open decision. |
+| What replaces public bridge source generation, and how does the immutable matching bundle reach each constructor/default and standalone download without a build cycle? | Bootstrap spike. Publish exact signatures, native/browser availability, all caller edits and a normal-build/offline witness. C02, C07-C08, C11, C13. **Named:** a checked-in generated bundle with unchanged constructors; reproducible prototype builds and an offline witness. The user-script world stays unqualified. |
+| Does the proposed runtime fit the qualified bootstrap, and does the actual release bundle pass? | Bootstrap spike measures the largest module that installs before classic scripts under CSP and records a supported full-runtime size estimate beside it; an exceeding estimate blocks dispatch. Implementation reruns identical witnesses against the actual optimized all-provider bundle and returns any failure for a decision. C01, C12-C13. **Measured:** 8 MiB limit against an estimate of at most about 0.85 MB; the actual bundle remains for the implementation issue. |
 
 ### Public source evidence
 
