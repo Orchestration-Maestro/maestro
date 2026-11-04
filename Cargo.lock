@@ -4025,6 +4025,7 @@ dependencies = [
  "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
+ "maestro-cli",
  "maestro-dependencies",
  "maestro-listeners",
  "maestro-test-directory",

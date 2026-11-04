@@ -76,10 +76,86 @@ fn install_document(text: &str) {
 
 /// Check the complete remove document.
 fn remove_document(text: &str) {
+    assert!(text.starts_with("Usage:\n  maestro remove <source> [-l]\n\nRemove a package"));
     assert!(text.contains(
         "Remove a package and its source from settings.\nAlias: maestro uninstall <source> [-l]\n"
     ));
-    assert!(text.contains("  maestro uninstall npm:@foo/bar\n"));
+    assert!(
+        text.contains("  -l, --local    Remove from project settings (.maestro/settings.json)")
+    );
+    assert!(text.contains("  maestro remove npm:@foo/bar\n"));
+    assert!(text.ends_with("  maestro uninstall npm:@foo/bar\n\n"));
+}
+
+#[test]
+fn uninstall_alias_claims_and_acts_like_remove() {
+    let harness = Harness::new(Some(json!({ "packages": ["npm:a"] })), None);
+    help_document(&harness, &["uninstall", "--help"], remove_document);
+    harness.stdout.clear();
+    assert!(harness.run(&["uninstall", "npm:a"]));
+    assert!(harness.stdout.text().contains("Removed npm:a\n"));
+    let stored = harness.supplied().borrow().get_global_settings();
+    assert!(
+        stored.0["packages"].as_array().is_none_or(Vec::is_empty),
+        "the alias removes the global registration: {stored:?}"
+    );
+}
+
+#[test]
+fn local_install_and_removal_write_project_settings() {
+    let harness = Harness::new(Some(json!({})), None);
+    let source = scratch_source(&harness, "local");
+
+    assert!(harness.run(&["install", "-l", &source]));
+    let stored = harness.supplied().borrow().get_project_settings();
+    assert_eq!(
+        stored.0["packages"],
+        json!(["../../local"]),
+        "the local route writes the project file with its own base"
+    );
+
+    harness.stdout.clear();
+    assert!(harness.run(&["remove", "-l", &source]));
+    assert!(
+        harness
+            .stdout
+            .text()
+            .contains(&format!("Removed {source}\n"))
+    );
+    let stored = harness.supplied().borrow().get_project_settings();
+    assert!(
+        stored
+            .0
+            .get("packages")
+            .is_none_or(|entry| entry.as_array().is_none_or(Vec::is_empty)),
+        "the local removal empties the project file: {stored:?}"
+    );
+    let global = harness.supplied().borrow().get_global_settings();
+    assert!(
+        global
+            .0
+            .get("packages")
+            .is_none_or(|entry| entry.as_array().is_none_or(Vec::is_empty)),
+        "the local removal never touches the user file: {global:?}"
+    );
+}
+
+#[test]
+fn a_listing_shows_where_each_row_is_installed() {
+    let harness = Harness::new(Some(json!({ "packages": ["npm:a"] })), None);
+    let root = harness.scratch.path().join("npm-root");
+    std::fs::create_dir_all(root.join("a")).expect("installation directory");
+    *harness.state.effects.sync_stdout.borrow_mut() =
+        [root.to_string_lossy().into_owned()].into_iter().collect();
+
+    assert!(harness.run(&["list"]));
+    assert_eq!(
+        harness.stdout.text(),
+        format!(
+            "User packages:\n  npm:a\n    {}\n",
+            root.join("a").to_string_lossy()
+        )
+    );
 }
 
 /// Check the complete update document.
@@ -723,25 +799,32 @@ fn self_update_uses_global_command_without_lookup() {
 
 #[test]
 fn self_update_defaults_missing_release_identity() {
-    let mut harness = Harness::new(Some(json!({})), None);
-    harness.origin = "https://controlled.invalid".into();
-    harness.release(200, &json!({"version":"999.0.0"}).to_string());
-    assert!(harness.run(&["update", "--self"]));
-    assert_eq!(harness.runs().len(), 1);
-    assert!(
-        harness.runs()[0].contains(" maestro") || harness.runs()[0].ends_with("maestro"),
-        "{:?}",
-        harness.runs()
-    );
-    assert!(harness.stdout.text().contains("Updated maestro\n"));
-    assert_eq!(
-        harness
-            .release_requests
-            .load(std::sync::atomic::Ordering::SeqCst),
-        1
-    );
-    assert!(harness.stderr.text().is_empty());
-    assert_eq!(harness.exit_code.get(), None);
+    for body in [
+        json!({"version":"999.0.0"}),
+        // A release record without its version supplies no newer release, and the
+        // plan still installs under the default identity.
+        json!({"notes":"identical"}),
+    ] {
+        let mut harness = Harness::new(Some(json!({})), None);
+        harness.origin = "https://controlled.invalid".into();
+        harness.release(200, &body.to_string());
+        assert!(harness.run(&["update", "--self"]));
+        assert_eq!(harness.runs().len(), 1);
+        assert!(
+            harness.runs()[0].contains(" maestro") || harness.runs()[0].ends_with("maestro"),
+            "{:?}",
+            harness.runs()
+        );
+        assert!(harness.stdout.text().contains("Updated maestro\n"));
+        assert_eq!(
+            harness
+                .release_requests
+                .load(std::sync::atomic::Ordering::SeqCst),
+            1
+        );
+        assert!(harness.stderr.text().is_empty());
+        assert_eq!(harness.exit_code.get(), None);
+    }
 }
 
 #[test]
@@ -819,7 +902,8 @@ fn renamed_release_runs_ordered_replacement() {
 }
 
 #[test]
-fn renamed_install_failure_has_manual_fallback() {
+fn renamed_release_removal_failure_has_manual_fallback() {
+    // The removal step fails, so the renamed installation never runs.
     let mut harness = Harness::new(Some(json!({ "npmCommand": ["npm", "--global"] })), None);
     harness.origin = "https://controlled.invalid".into();
     harness.release(
@@ -839,6 +923,49 @@ fn renamed_install_failure_has_manual_fallback() {
             .stderr
             .text()
             .starts_with("Error: npm --global uninstall -g maestro exited with code 23\n"),
+        "{}",
+        harness.stderr.text()
+    );
+    assert!(
+        harness.stderr.text().contains(
+            "If this keeps failing, run this command yourself: npm --global uninstall -g maestro && \
+             npm --global install -g --ignore-scripts maestro-next\n"
+        ),
+        "{}",
+        harness.stderr.text()
+    );
+    assert!(!harness.stdout.text().contains("Updated maestro"));
+    assert_eq!(harness.exit_code.get(), Some(1));
+}
+
+#[test]
+fn renamed_release_install_failure_has_manual_fallback() {
+    // The renamed installation itself fails after the removal succeeded.
+    let mut harness = Harness::new(Some(json!({ "npmCommand": ["npm", "--global"] })), None);
+    harness.origin = "https://controlled.invalid".into();
+    harness.release(
+        200,
+        &json!({ "version": "999.0.0", "packageName": "maestro-next" }).to_string(),
+    );
+    harness
+        .state
+        .updates
+        .steps
+        .borrow_mut()
+        .extend([maestro_cli_step(0), maestro_cli_step(23)]);
+    assert!(harness.run(&["update", "--self"]));
+    assert_eq!(
+        harness.runs(),
+        [
+            "npm --global uninstall -g maestro",
+            "npm --global install -g --ignore-scripts maestro-next"
+        ]
+    );
+    assert!(
+        harness.stderr.text().contains(
+            "Error: npm --global install -g --ignore-scripts maestro-next exited with \
+                       code 23\n"
+        ),
         "{}",
         harness.stderr.text()
     );
@@ -897,24 +1024,66 @@ fn update_source_suggestion_preserves_settings() {
         settings_text(&format!("{}/settings.json", harness.agent_dir)),
         before
     );
+
+    // An answer from the configured source still preserves the settings and names
+    // where the installation actually lives.
+    harness.stderr.clear();
+    harness.exit_code.set(None);
+    *harness.state.updates.sync_failure.borrow_mut() = None;
+    *harness.state.updates.queries.borrow_mut() =
+        ["/unrelated/root".to_owned()].into_iter().collect();
+    assert!(harness.run(&["update", "--self"]));
+    assert_eq!(
+        harness.stderr.text(),
+        "error: maestro cannot self-update this installation.\n\
+         This installation is not managed by a global npm install. Update it with the \
+         package manager, wrapper, or source checkout that provides it.\n\
+         \nLocation of maestro executable: /opt/maestro/bin/maestro\n"
+    );
+    assert_eq!(harness.exit_code.get(), Some(1));
+    assert!(harness.runs().is_empty());
+    assert!(!harness.stdout.text().contains("Updating maestro with"));
+    assert_eq!(
+        settings_text(&format!("{}/settings.json", harness.agent_dir)),
+        before
+    );
 }
 
 #[test]
 fn package_walks_remain_linear() {
-    let mut previous = 0;
     for count in [16, 32, 64] {
         let packages: Vec<serde_json::Value> = (0..count)
             .map(|index| json!(format!("npm:pkg{index}")))
             .collect();
         let harness = Harness::new(Some(json!({ "packages": packages })), None);
+        // The one global-root lookup answers for every row.
+        *harness.state.effects.sync_stdout.borrow_mut() =
+            ["npm-root".to_owned()].into_iter().collect();
         assert!(harness.run(&["list"]));
         let visited = harness.state.effects.calls.borrow().len();
-        assert!(visited >= count, "{visited} < {count}");
-        assert!(visited >= previous, "work shrinks with more rows");
-        previous = visited;
+        assert_eq!(
+            visited,
+            1,
+            "the root lookup is reused: {count} rows, {:?}",
+            harness.calls()
+        );
         let stdout = harness.stdout.text();
         assert_eq!(stdout.matches("  npm:pkg").count(), count);
     }
+    // A rescan of an unconfigured root walks every row again and still produces the
+    // same listing, so the single lookup above is what the bound requires.
+    let packages: Vec<serde_json::Value> = (0..16)
+        .map(|index| json!(format!("npm:pkg{index}")))
+        .collect();
+    let harness = Harness::new(Some(json!({ "packages": packages })), None);
+    assert!(harness.run(&["list"]));
+    let rescans = harness.state.effects.calls.borrow().len();
+    assert_eq!(
+        rescans, 16,
+        "{rescans} rows rescanned their unconfigured root"
+    );
+    let stdout = harness.stdout.text();
+    assert_eq!(stdout.matches("  npm:pkg").count(), 16);
 }
 
 #[test]

@@ -432,7 +432,57 @@ fn argv_traversal_reads_each_token_a_bounded_number_of_times() {
             .filter(|diagnostic| diagnostic.r#type == DiagnosticType::Error)
             .collect();
         assert!(diagnostics.is_empty());
+        let reads = maestro_cli::input::args::token_reads();
+        assert!(
+            reads <= 2 * count + 1,
+            "a linear scan reads every token at most twice: {reads} for {count}"
+        );
+        let (_, rescan) = suffix_rescan_scan(&argv);
+        assert!(
+            2 * count + 1 < rescan,
+            "the bound rejects the rescan for count {count}: {rescan} reads"
+        );
     }
+}
+
+/// A rescan that rereads the remaining suffix at every positional token, collecting
+/// the messages only.
+fn suffix_rescan_scan(argv: &[String]) -> (Vec<&str>, usize) {
+    let mut messages = Vec::new();
+    let mut reads = 0;
+    for (index, token) in argv.iter().enumerate() {
+        reads += 1;
+        if token.starts_with('-') {
+            continue;
+        }
+        // Its value lookup rereads the whole remaining suffix.
+        reads += argv.len() - index;
+        messages.push(token.as_str());
+    }
+    (messages, reads)
+}
+
+#[test]
+fn equal_tokens_cannot_hide_a_rescan() {
+    let argv: Vec<String> = vec!["message".to_owned(); 64];
+    let parsed = parse_args(&argv);
+    assert_eq!(parsed.messages.len(), 64);
+    assert_eq!(parsed.messages.back().map(String::as_str), Some("message"));
+    let (rescan_messages, rescan_reads) = suffix_rescan_scan(&argv);
+    let authored: Vec<&str> = argv.iter().map(String::as_str).collect();
+    assert_eq!(
+        rescan_messages, authored,
+        "the rescan keeps the same retained messages"
+    );
+    let reads = maestro_cli::input::args::token_reads();
+    assert!(
+        reads <= 2 * argv.len() + 1,
+        "equal tokens keep the linear bound: {reads}"
+    );
+    assert!(
+        rescan_reads > 2 * argv.len() + 1,
+        "the same output through {rescan_reads} reads exceeds the bound"
+    );
 }
 
 #[test]

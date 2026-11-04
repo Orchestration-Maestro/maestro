@@ -84,6 +84,8 @@ struct Recorder {
     bindings: RefCell<Vec<ExtensionBindings>>,
     /// Whether a binding session announces an event of its own.
     announce_on_bind: Cell<bool>,
+    /// The shutdown events a disposed session's runner received.
+    shutdown_events: RefCell<Vec<serde_json::Value>>,
     /// The next prompt replaces the session.
     replace_on_prompt: Cell<bool>,
     /// The session a replacement installs.
@@ -181,6 +183,16 @@ struct TestSession {
     recorder: Rc<Recorder>,
     /// How many prompts this session received.
     prompted: Cell<usize>,
+}
+
+impl TestSession {
+    /// Delivers the shutdown event of the owning runtime to the session's runner.
+    fn emit_session_shutdown(&self) {
+        self.recorder
+            .shutdown_events
+            .borrow_mut()
+            .push(json!({"reason": "quit"}));
+    }
 }
 
 impl PrintSession for TestSession {
@@ -301,6 +313,7 @@ impl PrintRuntime for TestRuntime {
 
     fn dispose(&self) -> PrintFuture<()> {
         self.recorder.push("dispose");
+        self.recorder.current().emit_session_shutdown();
         let started = self.recorder.dispose_announced.borrow_mut().take();
         if let Some(started) = started {
             let _ = started.send(());
@@ -351,6 +364,7 @@ fn effects(recorder: &Rc<Recorder>) -> PrintEffects {
         write_stdout: {
             let recorder = Rc::clone(recorder);
             Rc::new(move |text| {
+                recorder.push("write");
                 if recorder.stdout_failure.get() {
                     return Err(io::Error::other("write failed"));
                 }
@@ -948,6 +962,11 @@ async fn terminated_exit(
     assert!(recorder.exits.borrow().is_empty(), "disposal is pending");
     drop(settlement.borrow_mut().take());
     assert_eq!(exit_status(&exited).await, 143, "the termination status");
+    assert_eq!(
+        *recorder.shutdown_events.borrow(),
+        [json!({"reason": "quit"})],
+        "the terminating disposal reports quit to the bound runner"
+    );
     Ok(())
 }
 
@@ -964,6 +983,11 @@ async fn repeated_signal_exit(
     assert!(recorder.exits.borrow().is_empty(), "and is still pending");
     recorder.signal(TerminationSignal::Hangup);
     assert_eq!(exit_status(&exited).await, 129, "the hangup status");
+    assert_eq!(
+        *recorder.shutdown_events.borrow(),
+        [json!({"reason": "quit"})],
+        "one disposal reported quit exactly once to the bound runner"
+    );
     Ok(())
 }
 
@@ -977,6 +1001,11 @@ async fn rejected_disposal_exit(
         exit_status(&exited).await,
         143,
         "a rejected disposal still exits"
+    );
+    assert_eq!(
+        *recorder.shutdown_events.borrow(),
+        [json!({"reason": "quit"})],
+        "the rejected disposal reported quit before it failed"
     );
     Ok(())
 }
@@ -1222,7 +1251,7 @@ fn handler_registration_and_removal_match_supported_signals() {
 fn retained_rebind_releases_the_ended_run() {
     on_task_set(async {
         let recorder = recorder();
-        assert_eq!(run(&recorder, text(&["hold"])).await, Ok(0));
+        assert_eq!(run(&recorder, json(&["hold"])).await, Ok(0));
         let rebind = recorder.rebind.borrow().clone().expect("a kept rebind");
         let bindings = recorder.count("bind");
         let subscribed = recorder.count("subscribe");
@@ -1239,6 +1268,14 @@ fn retained_rebind_releases_the_ended_run() {
         );
         assert_eq!(recorder.count("subscribe"), subscribed);
         assert_eq!(recorder.count("dispose"), 1);
+        // A released run holds no live subscription that would write an event record.
+        let written = recorder.stdout.borrow().clone();
+        recorder.emit(&AgentSessionEvent::SessionInfoChanged { name: None });
+        assert_eq!(
+            *recorder.stdout.borrow(),
+            written,
+            "the released run writes nothing after the rebind"
+        );
     });
 }
 
@@ -1294,6 +1331,11 @@ fn prompt_and_text_traversals_stay_linear() {
                 &blocks.iter().map(String::as_str).collect::<Vec<_>>(),
             ));
             assert_eq!(run(&text_recorder, text(&[])).await, Ok(0));
+            assert_eq!(
+                text_recorder.count("write"),
+                blocks.len(),
+                "each text block is one write along the run's own path"
+            );
             let written = text_recorder.stdout.borrow().clone();
             let expected: String = blocks.iter().fold(String::new(), |mut text, block| {
                 text.push_str(block);
