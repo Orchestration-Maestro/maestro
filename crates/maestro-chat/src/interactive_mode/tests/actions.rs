@@ -143,7 +143,7 @@ pub(super) fn run_action(world: &World, action: &str) {
 
 /// The names in the child's temporary directory.
 fn temporary_names() -> Vec<String> {
-    let mut names: Vec<_> = std::fs::read_dir(std::env::temp_dir())
+    let mut names: Vec<_> = std::fs::read_dir(maestro_test_directory::temporary_root())
         .unwrap()
         .map(|entry| entry.unwrap().file_name().into_string().unwrap())
         .collect();
@@ -270,7 +270,7 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
                 let frame = world.terminal.writes().concat();
                 assert!(frame.contains(expected.text.lines().next().unwrap_or_default()));
                 let recorded = std::fs::read_to_string(bin.join("argv")).unwrap();
-                let file = std::env::temp_dir().join(EDIT_FILE);
+                let file = maestro_test_directory::temporary_root().join(EDIT_FILE);
                 // The first field is the editor's own name.
                 let mut args: Vec<_> = recorded.split_terminator('\0').skip(1).collect();
                 assert_eq!(args.pop(), Some(file.to_str().unwrap()));
@@ -367,7 +367,7 @@ fn clipboard_paste_keeps_image_bytes_and_inserts_at_the_cursor() {
                 world.runtime.settle().unwrap();
                 paste(&world);
                 let [name] = temporary_names().try_into().unwrap();
-                let path = std::env::temp_dir().join(&name);
+                let path = maestro_test_directory::temporary_root().join(&name);
                 let stem = name
                     .strip_prefix("maestro-clipboard-")
                     .and_then(|rest| rest.strip_suffix(&format!(".{}", expected.extension)))
@@ -464,17 +464,17 @@ fn clipboard_write_failure_is_silent() {
         let world = started(directory).await;
         world.mode.editor.set_text("before");
         world.runtime.settle().unwrap();
-        std::fs::remove_dir(std::env::temp_dir()).unwrap();
+        std::fs::remove_dir(maestro_test_directory::temporary_root()).unwrap();
         world.mode.paste_clipboard_result(Ok(Some(image())));
-        assert!(!std::env::temp_dir().exists());
+        assert!(!maestro_test_directory::temporary_root().exists());
         assert_eq!(world.mode.editor.get_text(), "before");
         assert_eq!(world.runtime.pending(), 0);
         #[cfg(target_os = "linux")]
         {
-            std::fs::create_dir(std::env::temp_dir()).unwrap();
+            std::fs::create_dir(maestro_test_directory::temporary_root()).unwrap();
             // One byte fits, so the file is created and the rest of the image fails to write.
             let previous = file_size_limit(Some(1));
-            let control = std::env::temp_dir().join("control");
+            let control = maestro_test_directory::temporary_root().join("control");
             let error = std::fs::write(&control, "ab").unwrap_err();
             assert_eq!(error.kind(), io::ErrorKind::FileTooLarge);
             std::fs::remove_file(control).unwrap();
@@ -516,7 +516,7 @@ fn temporary_files_preserve_existing_entries_and_private_bytes() {
                 .runtime
                 .set_environment("VISUAL", editor.to_str().unwrap());
             world.mode.editor.set_text("draft");
-            let file = std::env::temp_dir().join(EDIT_FILE);
+            let file = maestro_test_directory::temporary_root().join(EDIT_FILE);
             let target = directory.join("target");
             std::fs::write(&target, "unrelated").unwrap();
             for existing in ["file", "link"] {
@@ -548,7 +548,7 @@ fn temporary_files_preserve_existing_entries_and_private_bytes() {
             assert_eq!(temporary_names(), Vec::<String>::new());
             world.mode.paste_clipboard_result(Ok(Some(image())));
             let [name] = temporary_names().try_into().unwrap();
-            let pasted = std::env::temp_dir().join(name);
+            let pasted = maestro_test_directory::temporary_root().join(name);
             let mode = std::fs::metadata(&pasted).unwrap().permissions().mode();
             assert_eq!(mode & 0o7777, 0o600);
             assert_eq!(std::fs::read(pasted).unwrap(), image().bytes);

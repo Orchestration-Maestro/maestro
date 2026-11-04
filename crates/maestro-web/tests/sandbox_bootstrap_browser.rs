@@ -441,3 +441,147 @@ pub async fn bootstrap_staging_alternative_needs_a_trusted_html_sink() {
         ])
     );
 }
+
+/// Records uncaught errors, then every listener, timer and observer the frame registers while recording.
+///
+/// A call from code with no script URL goes to `outside`, not `registered`: the policy admits no
+/// eval, so only the test driver's own evaluations run without one, and the driver may install its
+/// listeners at any point of the document.
+const RECORDER: &str = "window.S={errors:[],registered:[],outside:[],recording:true};addEventListener('error',e=>{S.errors.push(e.error?e.error.name+': '+e.error.message:'muted: '+e.message);e.preventDefault()});const caller=()=>{const p=Error.prepareStackTrace;Error.prepareStackTrace=(_,s)=>s;const s=new Error().stack;Error.prepareStackTrace=p;return s[2].getScriptNameOrSourceURL()};for(const[o,k]of[[EventTarget.prototype,'addEventListener'],[window,'setTimeout'],[window,'setInterval'],[window,'requestAnimationFrame'],[window,'requestIdleCallback'],[window,'queueMicrotask'],[MutationObserver.prototype,'observe']]){const f=o[k];o[k]=function(...a){if(S.recording)(caller()?S.registered:S.outside).push(typeof a[0]==='string'?k+':'+a[0]:k);return f.apply(this,a)}}";
+/// Ends recording after the loader and reads the helpers and scaffold it left.
+const RECORDED: &str = "S.recording=false;S.first=typeof listAttachments;S.config=document.querySelectorAll('script[data-maestro-sandbox]').length;S.trace=self.__sandboxInstallTrace?[...__sandboxInstallTrace]:null";
+
+/// Startup and refused startup register no frame listener, timer or observer; only refusal leaves inert scaffold.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_startup_leaves_no_frame_registrations() {
+    let bundle = Bundle::load().await;
+    let mut observed = Vec::new();
+    for (label, permission) in [("started", " 'wasm-unsafe-eval'"), ("refused", "")] {
+        let runtime = Runtime::new(
+            Bundle::served(&bundle.wasm),
+            &config(&["attachments", "provider"]),
+            ID,
+            &[TRACE_PROVIDER],
+        );
+        let html = format!(
+            "<!DOCTYPE html><html><head><script>{RECORDER}</script>{}<script>{RECORDED}</script></head><body></body></html>",
+            runtime.markup
+        );
+        let policy = format!(
+            "script-src 'self' {}{permission}",
+            digests(&[RECORDER, &runtime.boot, &runtime.providers[0], RECORDED]).await
+        );
+        let mount = Mount {
+            policy: &policy,
+            ..Mount::default()
+        };
+        let (state, _) = observe(&html, mount).await;
+        receipt(&format!("registrations {label}: {state}"));
+        let mut row = fields(
+            &state,
+            &["registered", "first", "config", "scaffold", "trace"],
+        );
+        row["errors"] = state["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|error| Value::from(error.as_str().unwrap().split(':').next().unwrap()))
+            .collect();
+        observed.push(row);
+    }
+    assert_eq!(
+        Value::from(observed),
+        json!([
+            {"registered":[],"first":"function","config":0,"scaffold":0,"trace":["attachments:object",format!("provider:{ID}:function")],"errors":[]},
+            {"registered":[],"first":"undefined","config":1,"scaffold":1,"trace":null,"errors":["CompileError"]},
+        ])
+    );
+}
+
+/// Body script that reads the helpers once the delayed loader has run on the same event.
+const AFTER: &str = "addEventListener('DOMContentLoaded',()=>{S.after={type:typeof listAttachments,trace:[...__sandboxInstallTrace],id:sandboxId,live:listAttachments().map(a=>a.id).join()}})";
+
+/// A loader started after the parser has passed it still installs data and selections in order.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_delayed_start_installs_selections_in_order() {
+    let bundle = Bundle::load().await;
+    let served = Bundle::served(&bundle.wasm);
+    let runtime = repeated(Boot {
+        prefix: served.prefix,
+        script: format!(
+            "addEventListener('DOMContentLoaded',()=>{{{}}})",
+            served.script
+        ),
+    });
+    let html = format!(
+        "<!DOCTYPE html><html><head>{}<script>{HEAD}</script></head><body><script>{BODY}</script><script>{AFTER}</script></body></html>",
+        runtime.markup
+    );
+    let policy = format!(
+        "script-src 'self' {} {} 'wasm-unsafe-eval'",
+        artifact_hashes(&runtime).await,
+        digests(&[AFTER]).await
+    );
+    let mount = Mount {
+        policy: &policy,
+        ..Mount::default()
+    };
+    let (state, _) = observe(&html, mount).await;
+    receipt(&format!("delayed state={state}"));
+    assert_eq!(
+        fields(
+            &state,
+            &[
+                "first", "count", "trace", "second", "after", "head", "scaffold"
+            ]
+        ),
+        json!({
+            "first":"undefined","count":-1,"trace":null,"second":"undefined",
+            "after":{"type":"function","trace":repeated_trace(),"id":ID,"live":"a"},
+            "head":"script,script,script","scaffold":0
+        })
+    );
+}
+
+/// Authored scripts that log their order beside the completion provider.
+const ORDERED: [&str; 4] = [
+    "S.log.push('head:'+typeof complete)",
+    "S.log.push('module')",
+    "S.log.push('body')",
+    "S.log.push('trailing')",
+];
+/// The completion signal an HTML artifact appends after its whole source.
+const SUFFIX: &str = "if (window.complete) window.complete();";
+
+/// The appended completion signal runs after source following `</html>` and before module scripts.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_completion_follows_trailing_source() {
+    let bundle = Bundle::load().await;
+    let runtime = Runtime::new(
+        Bundle::served(&bundle.wasm),
+        &config(&["provider"]),
+        ID,
+        &[COMPLETION],
+    );
+    let [head, module, body, trailing] = ORDERED;
+    let html = format!(
+        "<!DOCTYPE html><html><head>{}<script>{head}</script><script type=\"module\">{module}</script></head><body><script>{body}</script></body></html><script>{trailing}</script><script>{SUFFIX}</script>",
+        runtime.markup
+    );
+    let mut texts = vec![runtime.boot.as_str(), runtime.providers[0].as_str(), SUFFIX];
+    texts.extend(ORDERED);
+    let policy = format!(
+        "script-src 'self' {} 'wasm-unsafe-eval'",
+        digests(&texts).await
+    );
+    let mount = Mount {
+        policy: &policy,
+        ..Mount::default()
+    };
+    let (state, _) = observe(&html, mount).await;
+    receipt(&format!("completion state={state}"));
+    assert_eq!(
+        fields(&state, &["log", "body"]),
+        json!({"log":["head:function","body","trailing","complete","module"],"body":"script,script,script"})
+    );
+}

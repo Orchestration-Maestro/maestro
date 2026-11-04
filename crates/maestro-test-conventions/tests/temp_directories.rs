@@ -183,7 +183,12 @@ fn production_temporary_directory_is_accepted() {
 
 #[test]
 fn unmigrated_crate_keeps_its_own_directories_until_its_batch() {
-    check("maestro-chat", "tests/session_picker.rs", SEEDED, &[]);
+    check(
+        "maestro-cli",
+        "tests/package_command_checks.rs",
+        SEEDED,
+        &[],
+    );
 }
 
 /// The detection helper that returned a platform directory it never created.
@@ -341,6 +346,12 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         "maestro-resources",
         "tests/skill_discovery.rs",
         "//! Skill discovery.\n\n#[test]\nfn discovery_runs_from_the_platform_directory() {\n    let cwd = std::env::temp_dir();\n    assert!(cwd.is_absolute());\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-chat",
+        "tests/extension_editor.rs",
+        "//! Extension editor fixtures.\n\n#[test]\nfn the_editor_reads_its_handoff_file() {\n    let path = std::env::temp_dir().join(\"maestro-extension-editor.md\");\n    std::fs::write(&path, b\"draft\").unwrap();\n}\n",
         &[5],
     ),
 ];

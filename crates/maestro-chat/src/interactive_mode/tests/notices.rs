@@ -195,6 +195,43 @@ struct SelectionInput {
     last: Option<String>,
     /// Packaged release history.
     changelog: String,
+    /// Where the history file stands; a recorded case writes `changelog` there.
+    #[serde(skip)]
+    history: History,
+    /// Whether the terminal refuses to start.
+    #[serde(skip)]
+    start_fails: bool,
+    /// Whether the service origin is explicitly empty.
+    #[serde(skip)]
+    no_origin: bool,
+}
+
+/// Where the packaged release history stands when a startup reads it.
+#[derive(Clone, Copy, Default)]
+enum History {
+    /// A file holding the case's history.
+    #[default]
+    Written,
+    /// No file.
+    Missing,
+    /// A directory at the file path, so reading it fails on every Unix host.
+    Unreadable,
+}
+
+impl History {
+    /// Puts the history file at `path` in this state, holding `contents` when written.
+    fn place(self, path: &std::path::Path, contents: &str) {
+        if path.is_dir() {
+            std::fs::remove_dir(path).unwrap();
+        } else if path.exists() {
+            std::fs::remove_file(path).unwrap();
+        }
+        match self {
+            Self::Written => std::fs::write(path, contents).unwrap(),
+            Self::Missing => {}
+            Self::Unreadable => std::fs::create_dir(path).unwrap(),
+        }
+    }
 }
 
 /// The selected content and stored version.
@@ -209,30 +246,83 @@ struct SelectionExpected {
     reports: Vec<String>,
 }
 
+/// Startups over a history file that is missing, empty or unreadable, over a resumed
+/// session, before a terminal that refuses to start and with an empty service origin;
+/// three of them place an unreadable file and two of those read it.
+fn unrecorded_selections() -> Vec<(SelectionInput, SelectionExpected)> {
+    let input = |history, messages, last: Option<&str>| SelectionInput {
+        op: "select".to_owned(),
+        messages,
+        last: last.map(str::to_owned),
+        changelog: String::new(),
+        history,
+        start_fails: false,
+        no_origin: false,
+    };
+    let expected = |last: Option<&str>, reports: &[&str]| SelectionExpected {
+        markdown: None,
+        last: last.map(str::to_owned),
+        reports: reports.iter().map(|&report| report.to_owned()).collect(),
+    };
+    let mut cases = Vec::new();
+    for history in [History::Missing, History::Written, History::Unreadable] {
+        cases.push((
+            input(history, 0, None),
+            expected(Some("<version>"), &["<version>"]),
+        ));
+        cases.push((
+            input(history, 0, Some("1.0.0")),
+            expected(Some("1.0.0"), &[]),
+        ));
+    }
+    cases.push((input(History::Unreadable, 1, None), expected(None, &[])));
+    let failing = SelectionInput {
+        start_fails: true,
+        ..input(History::Written, 0, None)
+    };
+    cases.push((failing, expected(Some("<version>"), &["<version>"])));
+    let unhosted = SelectionInput {
+        no_origin: true,
+        ..input(History::Written, 0, None)
+    };
+    cases.push((unhosted, expected(Some("<version>"), &[])));
+    cases
+}
+
 #[test]
 fn changelog_startup_selects_new_entries_and_records_seen_version() {
     const TEST: &str = "changelog_startup_selects_new_entries_and_records_seen_version";
-    isolated_package(TEST, async |directory, package| {
-        for (input, expected) in cases::<SelectionInput, SelectionExpected>(FIXTURES, TEST) {
+    let stderr = isolated_package(TEST, async |directory, package| {
+        let recorded = cases::<SelectionInput, SelectionExpected>(FIXTURES, TEST);
+        for (input, expected) in recorded.into_iter().chain(unrecorded_selections()) {
             selection_case(directory, package, input, expected).await;
         }
     });
+    if maestro_test_process::selection().is_child() {
+        return;
+    }
+    let warnings = String::from_utf8_lossy(&stderr)
+        .matches("Could not parse changelog")
+        .count();
+    assert_eq!(warnings, 2, "a resumed session never reads the history");
 }
 
-/// Runs one selection through initialization and the actual reporting transport.
-async fn selection_case(
+/// A mode reporting through `fetch` with telemetry enabled, the service origin and
+/// previously recorded version `input` selects, and its existing messages.
+fn selection_world(
     directory: &std::path::Path,
-    package: &std::path::Path,
-    input: SelectionInput,
-    expected: SelectionExpected,
-) {
-    assert_eq!(input.op, "select");
-    std::fs::write(package.join("CHANGELOG.md"), input.changelog).unwrap();
-    let last = input.last;
-    let (fetch, requests) = reporting_transport();
+    input: &SelectionInput,
+    fetch: maestro_app::Fetch,
+) -> World {
+    let last = input.last.clone();
+    let origin = if input.no_origin {
+        ""
+    } else {
+        "https://service.invalid"
+    };
     let world = Setup {
         options: crate::InteractiveModeOptions {
-            service_origin: Some("https://service.invalid".into()),
+            service_origin: Some(origin.into()),
             fetch: Some(fetch),
             ..Default::default()
         },
@@ -246,10 +336,32 @@ async fn selection_case(
     }
     .build(directory);
     seed_current_messages(&world, input.messages);
+    world
+}
+
+/// Runs one selection through initialization and the actual reporting transport.
+async fn selection_case(
+    directory: &std::path::Path,
+    package: &std::path::Path,
+    input: SelectionInput,
+    expected: SelectionExpected,
+) {
+    assert_eq!(input.op, "select");
+    input
+        .history
+        .place(&package.join("CHANGELOG.md"), &input.changelog);
+    let (fetch, requests) = reporting_transport();
+    let world = selection_world(directory, &input, fetch);
     REPORT_SETTINGS.with(|slot| {
         *slot.borrow_mut() = Some(world.host.session().settings_manager().clone());
     });
-    world.mode.init().await.unwrap();
+    if input.start_fails {
+        world
+            .terminal
+            .set_hide_error(Some(std::io::ErrorKind::BrokenPipe));
+    }
+    let started = world.mode.init().await;
+    assert_eq!(started.is_err(), input.start_fails, "{started:?}");
     REPORT_SETTINGS.with(|slot| {
         slot.borrow_mut().take();
     });
@@ -1164,6 +1276,7 @@ fn startup_package_check_uses_current_directories_settings_and_recovers() {
     const TEST: &str = "startup_package_check_uses_current_directories_settings_and_recovers";
     super::isolated_case(TEST, "child", &[], async |directory| {
         let world = native_package_world(directory);
+        assert_service_project_unread(&world, directory).await;
         let (first, errors) = super::driving(&world, world.mode.check_for_package_updates()).await;
         assert!(errors.is_empty());
         assert_eq!(first, ["before"]);
@@ -1200,6 +1313,33 @@ fn startup_package_check_uses_current_directories_settings_and_recovers() {
             observed
         );
     });
+}
+
+/// A project package installed only under the services' working directory, and not under
+/// the session's, is never checked.
+async fn assert_service_project_unread(world: &World, root: &std::path::Path) {
+    let installed = root.join("service/.maestro/npm/node_modules/service-only");
+    std::fs::create_dir_all(&installed).unwrap();
+    std::fs::write(
+        installed.join("package.json"),
+        "{\n  \"version\": \"1\"\n}\n",
+    )
+    .unwrap();
+    let settings = world.host.session().settings_manager().clone();
+    let configured = |name: &str| vec![maestro_app::PackageSource::Source(format!("npm:{name}"))];
+    settings
+        .borrow_mut()
+        .set_project_packages(configured("service-only"));
+    let (found, errors) = super::driving(world, world.mode.check_for_package_updates()).await;
+    assert!(errors.is_empty());
+    assert!(
+        found.is_empty(),
+        "the services' directory is not read: {found:?}"
+    );
+    assert!(!root.join("npm-observed").exists());
+    settings
+        .borrow_mut()
+        .set_project_packages(configured("before"));
 }
 
 /// Settings handed to the real input hook after the mode has been constructed.
@@ -1812,9 +1952,21 @@ async fn assert_current_agent_root(world: &World, root: &std::path::Path) {
         "log": root.join("git-observed"),
     });
     install_command(root, "git", &scenario);
+    let session = world.host.session();
+    let services_root = std::path::PathBuf::from(&world.host.services().agent_dir);
+    std::fs::create_dir_all(services_root.join("git/example.test/team/other")).unwrap();
+    session
+        .settings_manager()
+        .borrow_mut()
+        .set_packages(vec![maestro_app::PackageSource::Source(
+            "https://example.test/team/other".into(),
+        )]);
+    let (result, errors) = super::driving(world, world.mode.check_for_package_updates()).await;
+    assert!(errors.is_empty());
+    assert_eq!(result, ["after"], "the services' agent root is not read");
+    assert!(!root.join("git-observed").exists());
     let checkout = root.join("git/example.test/team/repo");
     std::fs::create_dir_all(&checkout).unwrap();
-    let session = world.host.session();
     session
         .settings_manager()
         .borrow_mut()

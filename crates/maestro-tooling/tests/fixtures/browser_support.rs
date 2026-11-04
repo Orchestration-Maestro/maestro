@@ -123,6 +123,7 @@ impl Browser {
     }
 
     pub fn command(&self, recipe: &str) -> Command {
+        record(format!("phase: recipe {recipe}"));
         let mut command = super::toolchain_support::command("just");
         command.arg(recipe);
         self.configure(&mut command);
@@ -165,7 +166,9 @@ impl Browser {
     }
 
     pub fn run(&self, recipe: &str) -> Output {
-        self.command(recipe).output().unwrap()
+        let output = self.command(recipe).output().unwrap();
+        record(format!("phase: recipe {recipe} {}", output.status));
+        output
     }
 
     pub fn path(&self, path: &str) -> PathBuf {

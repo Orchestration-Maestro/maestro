@@ -21,7 +21,11 @@ pub fn check_by_environment<R>(
 ) -> TestResult {
     let (here, own): (Vec<_>, Vec<_>) = rows.iter().partition(|row| environment(row).is_none());
     let group = run_per_environment(test, own, |row| {
-        environment(row).cloned().unwrap_or_default()
+        environment(row)
+            .into_iter()
+            .flatten()
+            .map(|(name, value)| (name.clone(), Some(value.clone())))
+            .collect()
     })?;
     group.unwrap_or(here).into_iter().try_for_each(check)
 }
@@ -49,10 +53,10 @@ pub fn selected<'a, R>(
     assert!(!rows.is_empty(), "{test} owns cases");
     let mut cases = Vec::new();
     for row in rows {
-        let variables: BTreeMap<String, String> = environment(row)?
+        let variables: BTreeMap<String, Option<String>> = environment(row)?
             .into_iter()
             .flatten()
-            .map(|(name, value)| (name.to_owned(), value.to_owned()))
+            .map(|(name, value)| (name.to_owned(), Some(value.to_owned())))
             .collect();
         cases.push((row, variables));
     }

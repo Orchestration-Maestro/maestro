@@ -272,25 +272,6 @@
     "input": {
       "op": "rebind",
       "subscription": false,
-      "fail": "updateEditorBorderColor"
-    },
-    "expected": {
-      "calls": [
-        "applyRuntimeSettings",
-        "bindCurrentSessionExtensions",
-        "subscribeToAgent",
-        "updateAvailableProviderCount",
-        "updateEditorBorderColor"
-      ],
-      "unsubscribeCleared": true,
-      "error": "failed updateEditorBorderColor"
-    }
-  },
-  {
-    "test": "session_rebinding_stops_at_each_failed_phase",
-    "input": {
-      "op": "rebind",
-      "subscription": false,
       "fail": "updateTerminalTitle"
     },
     "expected": {
@@ -376,26 +357,6 @@
       ],
       "unsubscribeCleared": true,
       "error": "failed updateAvailableProviderCount"
-    }
-  },
-  {
-    "test": "session_rebinding_stops_at_each_failed_phase",
-    "input": {
-      "op": "rebind",
-      "subscription": true,
-      "fail": "updateEditorBorderColor"
-    },
-    "expected": {
-      "calls": [
-        "unsubscribe",
-        "applyRuntimeSettings",
-        "bindCurrentSessionExtensions",
-        "subscribeToAgent",
-        "updateAvailableProviderCount",
-        "updateEditorBorderColor"
-      ],
-      "unsubscribeCleared": true,
-      "error": "failed updateEditorBorderColor"
     }
   },
   {

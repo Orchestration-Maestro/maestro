@@ -155,6 +155,18 @@ impl Runtime {
     }
 }
 
+/// Authored document carrying the `head` script, the loader with one attachment selection, then
+/// the `body` script.
+pub(crate) fn loader_document(head: &str, boot: Boot, body: &str) -> String {
+    let id = "bootstrap-loader";
+    let config =
+        serde_json::json!({"sandboxId":id,"globals":{"attachments":[]},"runtime":["attachments"]});
+    format!(
+        "<html><head><script>{head}</script>{}</head><body><script>{body}</script></body></html>",
+        Runtime::new(boot, &config, id, &[]).markup
+    )
+}
+
 /// Encode text for an SVG script carrier.
 pub(crate) fn encode(code: &str) -> String {
     code.replace('&', "&amp;")

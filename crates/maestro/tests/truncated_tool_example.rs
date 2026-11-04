@@ -29,8 +29,8 @@ fn isolated(name: &str) -> bool {
     let component =
         std::env::var(COMPONENT).expect("nextest author-component setup builds truncated_tool");
     let environment = BTreeMap::from([
-        ("PATH", directory.path().display().to_string()),
-        (COMPONENT, component),
+        ("PATH", Some(directory.path().display().to_string())),
+        (COMPONENT, Some(component)),
     ]);
     maestro_test_process::run_per_environment(name, [()], |()| environment.clone())
         .unwrap()
