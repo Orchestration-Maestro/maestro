@@ -66,8 +66,17 @@ const OWNED_FUNCTIONS: &[&str] = &["serialize_json_line", "serialize_rpc_respons
 /// Session configuration record that only the shared interactive test setup constructs.
 const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
 
+/// The session configuration record written as a raw identifier.
+const RAW_SESSION_CONFIGURATION: &str = "r#AgentSessionConfig";
+
 /// The one owner of the interactive-mode test session setup.
 const SESSION_SETUP: &str = "tests/footer_support/session.rs";
+
+#[cfg(test)]
+thread_local! {
+    /// Identifier spellings materialized by the declaration scan on the current test thread.
+    static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
 
 #[derive(Default)]
 /// Declarations and interface-generation macros found in one source.
@@ -104,7 +113,7 @@ impl Records {
 
     /// Record the first line that names the shared interactive session configuration.
     fn session_configuration(&mut self, keyword: &proc_macro2::Ident) {
-        if keyword.unraw() == SESSION_CONFIGURATION {
+        if keyword == SESSION_CONFIGURATION || keyword == RAW_SESSION_CONFIGURATION {
             self.session_configuration_line
                 .get_or_insert(keyword.span().start().line);
         }
@@ -112,15 +121,21 @@ impl Records {
 
     /// Record a recognized declaration with its unescaped name.
     fn declaration(&mut self, keyword: &proc_macro2::Ident, following: &[TokenTree]) {
-        let kind = keyword.to_string();
         let Some(TokenTree::Ident(name)) = following.first() else {
             return;
         };
-        let owned_function =
-            kind == "fn" && OWNED_FUNCTIONS.contains(&name.unraw().to_string().as_str());
-        if !DECLARATION_KINDS.contains(&kind.as_str()) && !owned_function {
+        // Keywords are never raw, so comparing the written identifier is exact.
+        let kind = if keyword == "fn" && OWNED_FUNCTIONS.contains(&spelling(name).as_str()) {
+            "fn"
+        } else if let Some(kind) = DECLARATION_KINDS
+            .iter()
+            .copied()
+            .find(|kind| keyword == kind)
+        {
+            kind
+        } else {
             return;
-        }
+        };
         if kind == "union" && !union_body(following.get(1)) {
             return;
         }
@@ -131,11 +146,10 @@ impl Records {
                 .take_while(|token| !matches!(token, TokenTree::Group(_)))
                 .cloned()
                 .collect();
-            self.struct_heads
-                .push((name.unraw().to_string(), line, head));
+            self.struct_heads.push((spelling(name), line, head));
         }
         self.declarations
-            .push((name.unraw().to_string(), kind, line));
+            .push((spelling(name), kind.to_owned(), line));
     }
 
     /// Record supported interface-generation macro inputs.
@@ -164,6 +178,13 @@ impl Records {
                 .push((tokens[0].span().start().line, mac.tokens));
         }
     }
+}
+
+/// Spell an identifier without its raw prefix.
+fn spelling(ident: &proc_macro2::Ident) -> String {
+    #[cfg(test)]
+    SPELLINGS.set(SPELLINGS.get() + 1);
+    ident.unraw().to_string()
 }
 
 /// Recognize token groups belonging to an attribute.
@@ -435,3 +456,6 @@ fn shared_event_record(name: &str) -> bool {
             | "BeforeAgentStartEventResult"
     )
 }
+
+#[cfg(test)]
+mod tests;

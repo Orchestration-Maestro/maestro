@@ -15,10 +15,17 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             let Some(syntax) = &source.syntax else {
                 continue;
             };
+            let testing = test_scope(member, source);
+            // Every finding needs test code, so a source without any is not visited.
+            if !testing && source.test_spans().is_empty() {
+                continue;
+            }
+            #[cfg(test)]
+            VISITED.set(VISITED.get() + 1);
             let mut aliases = Aliases::default();
             aliases.visit_file(syntax);
             let mut calls = Calls {
-                testing: test_scope(member, source),
+                testing,
                 tracing_owner: member.name == crate::graph::TEST_TRACING,
                 found: Vec::new(),
                 imports: aliases.0,
@@ -48,6 +55,14 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             .collect::<Vec<_>>()
             .join("\n"))
     }
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Sources whose syntax this check visits on the current test thread.
+    static VISITED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Call paths and method names spelled by this check on the current test thread.
+    static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Recognized test-source portability or synchronization violation.
@@ -248,16 +263,20 @@ impl<'ast> Visit<'ast> for Calls {
     inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
     inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        let name = call.method.unraw().to_string();
-        if self.testing && timed_wait(&name) {
-            let position = call.span().start();
-            self.found
-                .push(((position.line, position.column), Diagnostic::Timer(name)));
-        } else if name == "with_subscriber" {
-            self.capture(
-                call.method.span().start(),
-                "tracing::instrument::WithSubscriber::with_subscriber",
-            );
+        if self.testing {
+            #[cfg(test)]
+            SPELLINGS.set(SPELLINGS.get() + 1);
+            let name = call.method.unraw().to_string();
+            if timed_wait(&name) {
+                let position = call.span().start();
+                self.found
+                    .push(((position.line, position.column), Diagnostic::Timer(name)));
+            } else if name == "with_subscriber" {
+                self.capture(
+                    call.method.span().start(),
+                    "tracing::instrument::WithSubscriber::with_subscriber",
+                );
+            }
         }
         syn::visit::visit_expr_method_call(self, call);
     }
@@ -266,7 +285,12 @@ impl<'ast> Visit<'ast> for Calls {
         while let syn::Expr::Paren(parenthesized) = callee {
             callee = &parenthesized.expr;
         }
-        if let syn::Expr::Path(path) = callee {
+        // Timers and captures are reported only in test code.
+        if self.testing
+            && let syn::Expr::Path(path) = callee
+        {
+            #[cfg(test)]
+            SPELLINGS.set(SPELLINGS.get() + 1);
             let name = path_name(&path.path);
             let last = name.rsplit("::").next().unwrap_or(&name);
             let timer = if timed_wait(last) {
@@ -274,9 +298,7 @@ impl<'ast> Visit<'ast> for Calls {
             } else {
                 self.resolve(&name, TIMERS)
             };
-            if self.testing
-                && let Some(api) = timer
-            {
+            if let Some(api) = timer {
                 let position = call.span().start();
                 self.found.push((
                     (position.line, position.column),
@@ -307,3 +329,6 @@ fn path_name(path: &syn::Path) -> String {
         .collect::<Vec<_>>()
         .join("::")
 }
+
+#[cfg(test)]
+mod tests;

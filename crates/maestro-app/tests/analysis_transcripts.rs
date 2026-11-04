@@ -458,6 +458,24 @@ fn child(directory: &str, exit: u8, receipt: &str) {
     );
 }
 
+/// Install a controlled `maestro` child below `directory` that appends `text` to `path`
+/// before it reports the recorded status.
+#[cfg(unix)]
+fn child_appending(directory: &str, path: &str, text: &str, exit: u8, receipt: &str) {
+    crate::native::command(
+        std::path::Path::new(directory).join("bin").as_path(),
+        "maestro",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": b"".as_slice(),
+            "stderr": b"".as_slice(),
+            "code": exit,
+            "append": {"path": path, "cwd": false, "bytes": text.as_bytes()},
+            "argv_log": {"path": receipt, "mark": MARK},
+        }),
+    );
+}
+
 /// The line that opens one recorded invocation.
 #[cfg(unix)]
 const MARK: &str = "=== invocation ===";
@@ -575,6 +593,51 @@ fn analysis_runs_each_file_before_aggregation() {
     );
 }
 
+/// Assert both recorded prompts name their instruction files and summary paths in order.
+#[cfg(unix)]
+fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[String]) {
+    let arguments = invocations(receipt);
+    assert_eq!(arguments.len(), 2);
+    for invocation in &arguments {
+        assert_eq!(
+            invocation[..5],
+            ["--mode", "json", "--tools", "read,write", "-p"]
+        );
+    }
+    let prompt = &arguments[0][5];
+    assert!(
+        prompt.contains(&format!(
+            "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
+        )),
+        "{prompt:?}"
+    );
+    assert!(prompt.contains(
+        "Only after reading the ENTIRE file, perform the analysis and write the summary"
+    ));
+    assert!(prompt.contains("- Do not include any other text outside this format"));
+    assert!(prompt.contains(&format!(
+        "The file {output}/session-transcripts-000.txt has "
+    )));
+    assert!(prompt.contains(&format!(
+        "lines. Read it in full using chunked reads, then write your analysis to {}",
+        summaries[0]
+    )));
+    let aggregation = &arguments[1][5];
+    assert!(
+        aggregation.contains(&format!(
+            "STEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{agents}\n\nSTEP 2: Read ALL of the following summary files:\n{}\n\n",
+            summaries.join("\n")
+        )),
+        "{aggregation:?}"
+    );
+    assert!(
+        aggregation.ends_with(&format!(
+            "Write the final summary to {output}/FINAL-SUMMARY.txt"
+        )),
+        "{aggregation:?}"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
@@ -596,38 +659,73 @@ fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
             sessions(base, &project, &[("a.jsonl", &journal(true))]);
             let output = format!("{base}/out");
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
-            std::fs::write(
+            let summaries = [
                 format!("{output}/session-transcripts-000.summary.txt"),
-                "PATTERN",
-            )
-            .unwrap();
+                format!("{output}/session-transcripts-001.summary.txt"),
+            ];
+            for summary in &summaries {
+                std::fs::write(summary, "PATTERN").expect("the summary file is writable");
+            }
             let run = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(run.succeeded(), "{run:?}");
-            let arguments = invocations(&receipt);
-            let arguments = &arguments[0];
-            assert_eq!(
-                arguments[..5],
-                ["--mode", "json", "--tools", "read,write", "-p"]
-            );
-            let prompt = &arguments[5];
             let agents = format!("{base}/home/.maestro/agent/AGENTS.md\n{project}/AGENTS.md");
+            assert_prompt_paths(&receipt, &agents, &output, &summaries);
+        },
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn analysis_reports_a_child_summary_only_after_the_child_exits() {
+    let path = "$BASE/bin";
+    with_environment(
+        "analysis_reports_a_child_summary_only_after_the_child_exits",
+        &[("PATH", path)],
+        |base| {
+            let (project, output) = prepared(base);
+            let summary = format!("{output}/session-transcripts-000.summary.txt");
+            let receipt = format!("{base}/argv");
+            // The child writes its summary and fails: its write is counted, its success is not.
+            child_appending(base, &summary, "PATTERN\n", 3, &receipt);
+            let failed = run_transcripts(&["--analyze", "--output", &output, &project], false)
+                .expect("the command writes its transcripts");
+            assert!(failed.succeeded(), "{failed:?}");
             assert!(
-                prompt.contains(&format!(
-                    "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
-                )),
-                "{prompt:?}"
+                failed
+                    .stderr
+                    .contains("Failed to analyze session-transcripts-000.txt"),
+                "{failed:?}"
             );
-            assert!(prompt.contains(
-                "Only after reading the ENTIRE file, perform the analysis and write the summary"
-            ));
-            assert!(prompt.contains("- Do not include any other text outside this format"));
-            assert!(prompt.contains(&format!(
-                "The file {output}/session-transcripts-000.txt has "
-            )));
-            assert!(prompt.contains(&format!(
-                "lines. Read it in full using chunked reads, then write your analysis to {output}/session-transcripts-000.summary.txt"
-            )));
+            assert!(
+                !failed
+                    .stdout
+                    .contains("  -> session-transcripts-000.summary.txt"),
+                "{failed:?}"
+            );
+            assert!(
+                failed.stdout.contains("Created 1 summary files"),
+                "{failed:?}"
+            );
+            // Without the earlier write, only a child that writes its own summary and exits
+            // successfully can produce the reported line.
+            std::fs::remove_file(&summary).expect("the earlier summary is removable");
+            child_appending(base, &summary, "PATTERN\n", 0, &receipt);
+            let written = run_transcripts(&["--analyze", "--output", &output, &project], false)
+                .expect("the command writes its transcripts");
+            assert!(written.succeeded(), "{written:?}");
+            assert!(
+                written
+                    .stdout
+                    .contains("  -> session-transcripts-000.summary.txt"),
+                "{written:?}"
+            );
+            assert!(
+                written
+                    .stdout
+                    .contains("Aggregating findings into final summary..."),
+                "{written:?}"
+            );
         },
     );
 }

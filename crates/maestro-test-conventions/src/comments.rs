@@ -15,7 +15,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 
 /// Report the first forbidden comment with its source line.
 fn check_file(source: &Source) -> Result<(), String> {
-    for (start, comment) in crate::source::comments(&source.contents) {
+    for (start, comment) in crate::source::comments(source) {
         if let Some(offset) = forbidden(comment) {
             let line = crate::source::line(&source.contents, start + offset);
             return Err(format!(

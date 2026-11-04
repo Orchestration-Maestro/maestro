@@ -245,18 +245,21 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 57 loading exports and 194 contribution exports. Packaging
-also builds the two runtime-module fixtures, each from its own manifest and lock
-with its own binding glue, into a copy of the fixture package. It builds the
-prototype sandbox runtime the same way, with classic-script glue
+26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
+exports. Packaging also builds the two runtime-module fixtures, each from its own
+manifest and lock with its own binding glue, into a copy of the fixture package.
+It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
 records what they measure. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
+Canvas exports run on a page that holds only an 800 by 600 `#canvas` at the page
+origin, with no body margin, because they compare canvas points with page
+coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 277/277` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 346/346` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -372,12 +375,26 @@ completion is the render signal, so no test here waits on a clock. The native
 report test holds the fixture byte-for-byte, so a template change has to move
 both.
 
-Canvas session-header tests and offline tool cards are not executed; the latter
-still depend on the canvas renderer. The reading, PDF, Markdown and SVG artifact,
-export, session-link and session-download exports also need the `#canvas` element
-that the driver's page does not provide, so they are compiled but not executed;
-[the canvas export issue](https://github.com/Orchestration-Maestro/maestro/issues/4133)
-tracks running them. Transcript execution is tracked separately
+The canvas family covers every export that reads the page's `#canvas`: the
+session-header, reading, PDF, Markdown and SVG artifact, artifact panel,
+spreadsheet, text and image, generic file, tool renderer, offline tool card,
+expandable-output, session-link and session-download exports. Eight of them
+compile but do not run: each also awaits the screenshot observation
+(`readingPaint`), which the driver does not supply yet.
+[The screenshot test issue](https://github.com/Orchestration-Maestro/maestro/issues/2613)
+tracks it:
+
+- `header_trailing_spacing_precedes_following_widget`
+- `reading_viewport_keeps_content_and_occluders_clipped`
+- `reading_frame_neighbors_keep_existing_paint`
+- `export_rendering_uses_the_selected_brand_roles`
+- `copy_link_native_slot_composition_preserves_reading_selection`
+- `generic_guidance_is_literal_selectable_and_localized`
+- `tool_card_image_and_diff_layout_uses_native_content`
+- `tool_cards_use_selected_brand_roles_without_changing_custom_html`
+
+The driver's inventory test fails when an export in those source files is in
+neither the canvas family nor this list. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
@@ -983,13 +1000,14 @@ Development and test profiles use `debug = "line-tables-only"` for workspace cra
 backtraces retain file:line for workspace code, without debugger variable views.
 Dependencies build without debug info, so their frames show function names only;
 this keeps target directories about a sixth smaller.
-They also build `cranelift-codegen` and `regalloc2` optimised, because tests
-compile extension components and an unoptimised code generator makes each
-compile about five times slower, and `syn` and `proc-macro2`
-optimised, because the conventions tests parse every workspace source, and `sha2`
-optimised, because the test setup hashes the lock files on every nextest run and an
-unoptimised digest makes its reused-directory path about three times slower;
-release builds are unchanged.
+They also build these dependencies optimised; release builds are unchanged:
+
+- `cranelift-codegen` and `regalloc2`: tests compile extension components, and an
+  unoptimised code generator makes each compile about five times slower.
+- `syn`, `proc-macro2` and `ra-ap-rustc_lexer`: the conventions tests parse and lex
+  every workspace source.
+- `sha2`: the test setup hashes the lock files on every nextest run, and an
+  unoptimised digest makes its reused-directory path about three times slower.
 
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
@@ -1454,7 +1472,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, `"SIGKILL"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `split` writes each standard output byte on its own, so a reader must reassemble split UTF-8. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, `"SIGKILL"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `split` writes each standard output byte on its own, so a reader must reassemble split UTF-8. Optional `append` (`path`, `bytes`, `cwd` to append the working directory first, and `variable` to append that variable's `name=<text>` line, empty when unset) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `report` | `fields` lists what to print, joined by one bar in that order: `{"variable": "NAME"}` for a variable that reads empty when unset, `"working-directory"`, `{"operand": N}` for one operand by position, and `"input"` for the number of bytes standard input held. |
 | `stdio` | Prints every operand in angle brackets, `out-<invoked name>`, one line of input as `stdin:<line>` and the working directory on standard output, and `err-<invoked name>` on standard error. |

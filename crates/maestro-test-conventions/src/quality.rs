@@ -6,7 +6,7 @@ use syn::spanned::Spanned;
 use crate::generated;
 use crate::graph::UNIFIER;
 use crate::source::{
-    Member, Source, cfg_test, item_attributes, read_manifest, test_layout, test_spans,
+    Member, Source, cfg_test, covered, item_attributes, read_manifest, test_layout,
 };
 
 /// Verify protected lint settings and production source size for every member.
@@ -36,8 +36,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     if generated::catalog_source(member, source) || test_layout(path, &member.directory) {
         return Ok(());
     }
-    let contents = &source.contents;
-    let lines = production_lines(contents, source.syntax.as_ref());
+    let lines = production_lines(source);
     if lines > 500 {
         return Err(format!(
             "{}: {lines} production lines exceeds 500",
@@ -48,10 +47,13 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
 }
 
 /// Count lines with non-whitespace characters outside documentation tokens and test-only spans.
-fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
-    let mut exclusions = test_spans(syntax);
-    exclusions.extend(documentation_spans(contents));
-    let end = syntax
+fn production_lines(source: &Source) -> usize {
+    let contents = &source.contents;
+    let testing = source.test_spans();
+    let documentation = documentation_spans(source);
+    let end = source
+        .syntax
+        .as_ref()
         .and_then(|syntax| syntax.items.last())
         .filter(|item| cfg_test(item_attributes(item)))
         .map_or(contents.lines().count(), |item| item.span().end().line);
@@ -63,36 +65,19 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
             // Span columns and text columns both count Unicode characters.
             text.chars().enumerate().any(|(column, character)| {
                 !character.is_whitespace()
-                    && !exclusions
-                        .iter()
-                        .any(|span| span.contains(&(line + 1, column)))
+                    && !covered(testing, (line + 1, column))
+                    && !covered(&documentation, (line + 1, column))
             })
         })
         .count()
 }
 
-/// Locates documentation tokens in the Unicode coordinates used by syntax spans.
-fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
+/// Locates documentation tokens, in source order, in the Unicode coordinates used by syntax spans.
+fn documentation_spans(source: &Source) -> Vec<std::ops::Range<(usize, usize)>> {
     let mut spans = Vec::new();
-    let mut tokens = crate::source::tokens(contents).peekable();
-    let mut position = (
-        1,
-        tokens
-            .peek()
-            .map_or(0, |(_, range)| contents[..range.start].chars().count()),
-    );
-    for (kind, range) in tokens {
-        let offset = range.start;
-        let end = range.end;
-        let next = contents[offset..end]
-            .chars()
-            .fold(position, |(line, column), character| {
-                if character == '\n' {
-                    (line + 1, 0)
-                } else {
-                    (line, column + 1)
-                }
-            });
+    let mut position = (1, 0);
+    let mut counted = 0;
+    for (kind, range) in &source.tokens {
         if matches!(
             kind,
             TokenKind::LineComment { doc_style: Some(_) }
@@ -101,11 +86,24 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
                     ..
                 }
         ) {
-            spans.push(position..next);
+            let start = advance(position, &source.contents[counted..range.start]);
+            position = advance(start, &source.contents[range.clone()]);
+            counted = range.end;
+            spans.push(start..position);
         }
-        position = next;
     }
     spans
+}
+
+/// Advance a line and Unicode column position across text.
+fn advance(position: (usize, usize), text: &str) -> (usize, usize) {
+    text.chars().fold(position, |(line, column), character| {
+        if character == '\n' {
+            (line + 1, 0)
+        } else {
+            (line, column + 1)
+        }
+    })
 }
 
 /// Require each crate to enable workspace lint inheritance.
@@ -248,3 +246,6 @@ fn json_precision_missing(
         .unwrap_or(alias);
     package == "serde_json" && (!inherited || !has_json_precision(identity))
 }
+
+#[cfg(test)]
+mod tests;

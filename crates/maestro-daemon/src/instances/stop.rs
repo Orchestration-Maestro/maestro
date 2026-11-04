@@ -146,12 +146,14 @@ fn read_stop_reply(stream: &mut LocalStream, deadline: Instant) -> io::Result<Op
         let Some(timeout) = socket_timeout_until(deadline) else {
             return Ok(None);
         };
-        if let Err(error) = stream.set_recv_timeout(Some(timeout)) {
-            return if stop_timeout_error_allows_wait(&error) {
-                Ok(None)
-            } else {
-                Err(error)
-            };
+        let rearm = stream.set_recv_timeout(Some(timeout));
+        match rearm {
+            Ok(()) => {}
+            // A deadline the Unix kernel refuses once the peer disconnected marks a fully
+            // shut down socket, whose queued reply cannot block the direct reads below.
+            Err(error) if cfg!(unix) && error.kind() == io::ErrorKind::InvalidInput => {}
+            Err(error) if stop_timeout_error_allows_wait(&error) => return Ok(None),
+            Err(error) => return Err(error),
         }
         let mut bytes = [0; 1024];
         let read = stream.read(&mut bytes)?;

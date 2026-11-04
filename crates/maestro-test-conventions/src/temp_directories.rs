@@ -28,6 +28,8 @@ const MIGRATED_CRATES: &[&str] = &[
     "maestro-tui",
     "maestro-workspace",
     "maestro-credentials",
+    "maestro-tools",
+    "maestro-resources",
     "maestro-chat",
 ];
 

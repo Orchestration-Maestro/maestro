@@ -294,10 +294,10 @@ async fn run_case(browser: &mut Browser, origin: &str, family: &str, name: &str)
         "(async () => {{ const module = await import('/sandbox.js'); await module.default(); await module[{}](url => import(url)); }})()",
         json!(name)
     );
-    let entry = if family == "contributions" {
-        "/contributions.html"
-    } else {
-        "/"
+    let entry = match family {
+        "contributions" => "/contributions.html",
+        "canvas" => "/canvas.html",
+        _ => "/",
     };
     browser
         .check(&format!("{origin}{entry}"), name, &expression)
