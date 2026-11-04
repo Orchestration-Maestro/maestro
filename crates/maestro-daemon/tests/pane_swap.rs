@@ -1,8 +1,8 @@
 //! Pane swap through the daemon's handler: explicit and directional swaps, no-ops and refusals.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, daemon_with_workspaces, event_names, events_after, failure, request,
-    root_pane, split_pane,
+    TestApp, add_tab, daemon_with_workspaces, event_names, events_after, failure, pair, request,
+    split_pane,
 };
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
@@ -17,14 +17,6 @@ fn swap_of(result: Result<ResponseResult, ErrorBody>) -> PaneSwapResult {
         Ok(ResponseResult::PaneSwap { swap }) => swap,
         other => panic!("expected a swap result: {other:?}"),
     }
-}
-
-/// A one-workspace daemon whose first tab holds a pane on the left (focused) and one on the right.
-fn pair() -> (TestApp, PaneId, PaneId) {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&app, 0);
-    let right = split_pane(&mut app, 0, left, SplitDirection::Right);
-    (app, left, right)
 }
 
 /// The leaves of the first tab of the first workspace, in layout order.

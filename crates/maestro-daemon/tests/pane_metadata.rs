@@ -2,13 +2,14 @@
 //! sequences and publication.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, daemon_with_workspaces, detect, events_after, pilot, request, root_pane,
+    TestApp, accepted, daemon_with_workspaces, detect, events_after, pane_record, pilot, request,
+    root_pane,
 };
 use maestro_daemon::terminal::state::{DetectedStateUpdate, TerminalState};
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
     events::EventData,
-    schema::{ErrorBody, PaneInfo, ResponseResult},
+    schema::{ErrorBody, PaneInfo},
 };
 use serde_json::{Value, json};
 use std::{
@@ -39,23 +40,9 @@ fn titled(fields: Value) -> Value {
     wire
 }
 
-/// Answers `wire`, which must succeed with the plain acknowledgement.
-fn accepted(app: &mut TestApp, wire: Value) {
-    let text = wire.to_string();
-    assert_eq!(request(app, wire), Ok(ResponseResult::Ok {}), "{text}");
-}
-
-/// The record of the first pane.
-fn pane(app: &mut TestApp) -> PaneInfo {
-    match request(app, json!({"type": "pane.get", "pane_id": "w1:p1"})) {
-        Ok(ResponseResult::PaneInfo { pane }) => pane,
-        other => panic!("expected a pane: {other:?}"),
-    }
-}
-
 /// The tokens the first pane holds.
 fn tokens(app: &mut TestApp) -> HashMap<String, String> {
-    pane(app).tokens
+    pane_record(app, "w1:p1").tokens
 }
 
 /// What the failure of `wire` is, by code and message.
@@ -135,7 +122,7 @@ fn tokens_ignore_the_agent_guard_of_the_presentation() {
     );
     accepted(&mut app, wire);
     assert_eq!(tokens(&mut app)["summary"], "global");
-    assert_eq!(pane(&mut app).title, None);
+    assert_eq!(pane_record(&mut app, "w1:p1").title, None);
 }
 
 #[test]
@@ -221,14 +208,17 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
             json!({"title": "old", "tokens": {"summary": "old"}, "seq": 9}),
         );
         accepted(&mut app, older);
-        let kept = pane(&mut app);
+        let kept = pane_record(&mut app, "w1:p1");
         assert_eq!(kept.title.as_deref(), Some("new"), "{fresh} then {stale}");
         assert_eq!(kept.tokens["summary"], "new", "{fresh} then {stale}");
         accepted(
             &mut app,
             report(stale, json!({"title": "newer", "seq": 11})),
         );
-        assert_eq!(pane(&mut app).title.as_deref(), Some("newer"));
+        assert_eq!(
+            pane_record(&mut app, "w1:p1").title.as_deref(),
+            Some("newer")
+        );
         let sources: Vec<_> = terminal_of(&app).agent_metadata.keys().collect();
         assert_eq!(sources, ["maestro:claude"], "{fresh} then {stale}");
     }
@@ -281,7 +271,7 @@ fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
         "tokens": {"summary": "reviewing auth", "model": "opus"}
     });
     accepted(&mut app, wire);
-    let reported = pane(&mut app);
+    let reported = pane_record(&mut app, "w1:p1");
     assert_eq!(reported.agent.as_deref(), Some("pi"));
     assert_eq!(reported.title.as_deref(), Some("Refactor auth"));
     assert_eq!(reported.display_agent.as_deref(), Some("Pi auth"));
@@ -299,7 +289,7 @@ fn text_is_cleaned_and_state_labels_are_matched_without_case() {
         "agent": "pi", "title": long, "state_labels": {" Working ": "  busy\u{7}bee "}
     }));
     accepted(&mut app, wire);
-    let reported = pane(&mut app);
+    let reported = pane_record(&mut app, "w1:p1");
     let title = reported.title.unwrap();
     assert!(
         title.starts_with("tabhere xxxx") && title.chars().count() == 80,
@@ -322,14 +312,14 @@ fn presentation_text_and_token_values_are_cleaned_alike() {
     for (raw, kept) in cases {
         let wire = titled(json!({"agent": "pi", "title": raw, "tokens": {"summary": raw}}));
         accepted(&mut app, wire);
-        let reported = pane(&mut app);
+        let reported = pane_record(&mut app, "w1:p1");
         assert_eq!(reported.title.as_deref(), Some(kept.as_str()), "{raw:?}");
         assert_eq!(reported.tokens["summary"], kept, "{raw:?}");
     }
     let blank = " \u{7}\n ";
     let wire = titled(json!({"agent": "pi", "title": blank, "tokens": {"summary": blank}}));
     accepted(&mut app, wire);
-    let reported = pane(&mut app);
+    let reported = pane_record(&mut app, "w1:p1");
     assert_eq!(reported.title, Some("a".repeat(79)));
     assert!(reported.tokens.is_empty());
 }

@@ -20,7 +20,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
-    error::Error,
     path::Path,
     rc::{Rc, Weak},
 };
@@ -147,17 +146,6 @@ async fn commanding(
     world
 }
 
-/// Awaits the work the mode handed its terminal runtime and the work it handed over in
-/// turn, returning the failures that work reported.
-async fn settled(world: &World) -> Vec<Box<dyn Error>> {
-    let mut errors = Vec::new();
-    while world.runtime.futures() > 0 {
-        errors.extend(world.runtime.drain_futures());
-        tokio::task::yield_now().await;
-    }
-    errors
-}
-
 /// Whether any of `rows` contains `text` once styling is removed.
 fn shown(rows: &[String], text: &str) -> bool {
     rows.iter()
@@ -249,7 +237,7 @@ fn command_submission_selects_new_and_compact_with_exact_whitespace() {
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &text);
             let received = poll(&mut waiter);
-            let errors = settled(&world).await;
+            let errors = super::settle_host(&world).await;
             assert!(errors.is_empty(), "{text:?}: {errors:?}");
             let history = recalled(&world.mode.editor);
             match route {
@@ -360,7 +348,7 @@ async fn new_session_case(directory: &Path, input: &NewInput, expected: &NewExpe
     let old = world.host.session();
     let before = world.mode.chat_container.render(80);
     submit(&world.mode, "/new");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     assert_eq!(*guard.requests.borrow(), [(true, true)]);
     assert!(world.mode.working_loader().is_none());
     assert!(world.mode.status_container.children().borrow().is_empty());
@@ -407,7 +395,7 @@ async fn fatal_case(directory: &Path, input: &NewInput) {
         .terminal
         .set_tap(|write| println!("\nWRITE {:?}", strip_ansi(write).unwrap()));
     submit(&world.mode, "/new");
-    drop(settled(&world).await);
+    drop(super::settle_host(&world).await);
     println!("\nPROBE survived");
 }
 
@@ -468,7 +456,7 @@ fn new_session_action_uses_live_bindings() {
             requested("\x1bn"),
             "the constructor binding runs the action"
         );
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         assert_eq!(world.mode.editor.get_text(), "draft");
         assert_eq!(guard.requests.borrow().len(), 1);
         assert!(!requested("\x0e"), "a wrong modifier does nothing");
@@ -480,7 +468,7 @@ fn new_session_action_uses_live_bindings() {
         let old = world.host.session();
         guard.veto.set(false);
         assert!(requested("\x1bm"), "the live binding runs the action");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         assert_eq!(world.mode.editor.get_text(), "draft");
         assert!(!Rc::ptr_eq(&old, &world.host.session()));
         assert!(shown(
@@ -497,7 +485,7 @@ fn new_session_shows_later_responses_and_compaction() {
         let guard = Guard::default();
         let world = commanding(directory, None, &guard, None).await;
         submit(&world.mode, "/new");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         let session = world.host.session();
         session
             .settings_manager()
@@ -511,7 +499,7 @@ fn new_session_shows_later_responses_and_compaction() {
         let rows = world.mode.chat_container.render(80);
         assert!(shown(&rows, "fresh answer"), "the response shows: {rows:?}");
         submit(&world.mode, "/compact");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         let rows = world.mode.chat_container.render(80);
         let failed = "Error: Compaction failed: No API provider registered for api: unknown";
         assert!(
@@ -530,7 +518,7 @@ async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
     with_held_response(&world, async |_| {
         for row in rows {
             submit(&world.mode, row);
-            assert!(settled(&world).await.is_empty());
+            assert!(super::settle_host(&world).await.is_empty());
         }
     })
     .await;
@@ -538,7 +526,7 @@ async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
     assert_eq!(before.len(), rows.len());
     guard.veto.set(veto);
     submit(&world.mode, "/new");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     if veto {
         assert_eq!(pending_shells(&world), before, "a veto keeps the rows");
         return;
@@ -548,7 +536,7 @@ async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
         submit(&world.mode, "steer");
         // The replacement session runs commands in the default shell.
         submit(&world.mode, "!printf 'printed %s\\n' fresh");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         let pending = world.mode.pending_messages_container.render(80);
         assert!(!shown(&pending, "printed mark"), "{pending:?}");
         assert!(shown(&pending, "printed fresh"), "{pending:?}");
@@ -603,7 +591,7 @@ fn command_callbacks_release_mode_after_completion() {
         let second = Guard::default();
         let world = commanding(directory, None, &second, None).await;
         submit(&world.mode, "/new");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         assert_eq!(second.requests.borrow().len(), 1);
         assert!(shown(
             &world.mode.chat_container.render(80),
@@ -741,7 +729,7 @@ async fn compaction_case(directory: &Path, input: CompactInput, expected: &Compa
         .handle_compact_command(input.instructions)
         .await;
     assert!(outcome.is_ok(), "the command reports no outcome itself");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     unsubscribe();
     if expected.compacts {
         assert_eq!(*seen.borrow(), [true], "one compaction after the release");
@@ -838,7 +826,7 @@ async fn subscriber_case(
         _ => {}
     }));
     submit(&world.mode, "/compact");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     unsubscribe();
     let ended = format!("end {error:?}");
     assert_eq!(*events.borrow(), ["start Manual".to_owned(), ended]);

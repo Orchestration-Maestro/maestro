@@ -124,3 +124,35 @@ pub fn reject_sections<T: serde::de::DeserializeOwned>(
         }
     }
 }
+
+/// Browser query helpers for the widget witnesses.
+#[cfg(target_arch = "wasm32")]
+pub mod dom {
+    use wasm_bindgen::JsCast as _;
+
+    /// Every matching descendant in document order.
+    ///
+    /// # Panics
+    /// Panics if the selector is not a valid query.
+    #[must_use]
+    pub fn all(root: &web_sys::Element, selector: &str) -> Vec<web_sys::Element> {
+        let nodes = root.query_selector_all(selector).unwrap();
+        (0..nodes.length())
+            .map(|index| nodes.item(index).unwrap().unchecked_into())
+            .collect()
+    }
+}
+
+/// Controlled message records decoded into the caller's browser record.
+#[cfg(target_arch = "wasm32")]
+pub mod agent_records {
+    /// A user entry saying `text`, decoded into the caller's record.
+    ///
+    /// # Panics
+    /// Panics if the record is malformed.
+    #[must_use]
+    pub fn user_entry<T: serde::de::DeserializeOwned>(text: &str) -> T {
+        serde_json::from_value(serde_json::json!({"role": "user", "content": text, "timestamp": 1}))
+            .unwrap()
+    }
+}

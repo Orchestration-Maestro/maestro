@@ -107,8 +107,7 @@ async fn converse(
 }
 /// A user message with `text`.
 fn user(text: &str) -> AgentMessage<custom_messages::ExampleMessages> {
-    serde_json::from_value(serde_json::json!({"role": "user", "content": text, "timestamp": 1}))
-        .unwrap()
+    crate::support::agent_records::user_entry(text)
 }
 
 /// Titles come from the first sentence within 50 characters, else the first 50 characters,

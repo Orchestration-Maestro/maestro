@@ -212,8 +212,10 @@ tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
 printed.
-The real-browser cases run with `--no-fail-fast`, so one Chromium run reports every
-failing case.
+One run reports every real-browser case. The command runs the driver's own
+`browser::` regressions with `--no-fail-fast`, then the export inventory and the
+report painting, even when a regression fails. It exits with the first failing
+step's status.
 
 The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
@@ -243,14 +245,18 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 49 loading exports and 194 contribution exports. Packaging
+26 execution exports, 57 loading exports and 194 contribution exports. Packaging
 also builds the two runtime-module fixtures, each from its own manifest and lock
-with its own binding glue, into a copy of the fixture package. Contribution
+with its own binding glue, into a copy of the fixture package. It builds the
+prototype sandbox runtime the same way, with classic-script glue
+(`--target no-modules`), for the bootstrap qualification exports; the
+[sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
+records what they measure. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 269/269` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 277/277` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -345,11 +351,55 @@ in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
 `browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]`.
-The job runs when the existing package selection includes a requested package,
-when a nonempty request changes, or for merge groups and main pushes; advisory-only
-runs skip it. Native package selection and the coverage floor stay unchanged.
-See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.15.0/docs/caller-checks.md#chromium-browser-tests).
+The job runs for merge groups and main pushes, and a manual `Browser proof`
+dispatch runs it on a named ref; pull requests and advisory-only runs skip it.
+Native package selection and the coverage floor stay unchanged.
+See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
+
+### Prove a browser test on a branch
+
+Run the Chromium job on any branch, tag or commit, without the merge queue:
+
+```sh
+gh workflow run browser-proof.yml --ref main -f ref=<branch>
+gh run list --workflow browser-proof.yml --event workflow_dispatch --limit 5
+```
+
+`.github/workflows/browser-proof.yml` calls the shared workflow at the release the
+full suite pins, with `browser-only: true` and the `ref` input as the checkout. Only
+the declaration check and the Chromium job run. The workflow file is read from
+`main`; the test code and the `browser-test` recipe come from `ref`. Dispatches share
+one queue: a newer one replaces a queued proof and never cancels a running one.
+This repository keeps the default concurrency key the caller contract requires, so
+a proof joins the shared `main` group and names its artifacts `root`. A proof
+restores the compile cache but never publishes it.
+
+The job saves the recipe's output as `browser-test.log` in the artifact
+`browser-test-root-<attempt>`, whether the recipe passes or fails:
+
+```sh
+gh run download <run-id> --name browser-test-root-1 --dir proof/red
+```
+
+To prove a test red and then green:
+
+1. Push a branch that breaks one assertion of the test. Keep the test registered and
+   its selection unchanged. Note the commit SHA and the test's name.
+2. Dispatch the proof for that branch. The run must fail at that assertion, not in
+   setup or compilation, and still report every other case: the export inventory
+   ends with its `COMPLETE` count.
+3. Restore the assertion on the branch under review and dispatch again. The run must
+   pass.
+4. Save the two `browser-test.log` files as `<test>-red.log` and
+   `<test>-green.log`, with both run URLs, both source SHAs and the shared release.
+5. Delete the throwaway branch.
+
+Use this before a pull request joins the merge queue, whenever its change touches a
+browser test or the code one exercises: pull requests skip the Chromium job, and a
+failure found in the queue costs a full queue cycle.
+See the [manual browser proofs](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#manual-browser-red-and-green-proofs)
+in the shared caller contract.
 
 ## Extension guide lock
 

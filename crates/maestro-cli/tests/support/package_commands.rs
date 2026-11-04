@@ -92,6 +92,8 @@ pub struct Effects {
     pub local: RefCell<std::rc::Weak<tokio::task::LocalSet>>,
     /// Answers for captured commands.
     pub captures: RefCell<VecDeque<io::Result<String>>>,
+    /// Standard output of captured synchronous commands, in call order.
+    pub sync_stdout: RefCell<VecDeque<String>>,
     /// The exit code of an inherited command; absent means success.
     pub inherited: Cell<Option<i32>>,
     /// A failure every captured command reports instead.
@@ -147,7 +149,12 @@ impl PackageOperations for Operations {
         self.0.record("sync", command, args);
         Ok(CommandOutput {
             status: Some(0),
-            stdout: String::new(),
+            stdout: self
+                .0
+                .sync_stdout
+                .borrow_mut()
+                .pop_front()
+                .unwrap_or_default(),
             stderr: String::new(),
         })
     }

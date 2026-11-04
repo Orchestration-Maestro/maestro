@@ -2,6 +2,7 @@
 
 use super::inputs;
 use maestro_tooling::copy_assets;
+use sha2::{Digest as _, Sha256};
 use std::{
     ffi::OsStr,
     fs, io,
@@ -199,6 +200,48 @@ fn modules(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::R
                 .arg(output.join(format!("package/modules/{name}")))
                 .args(["--out-name", "module"]),
         )?;
+    }
+    sandbox_runtime(checkout, cargo, target, output)
+}
+
+/// Build the prototype sandbox runtime in release with classic-script glue for
+/// parser-blocking startup.
+fn sandbox_runtime(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::Result<()> {
+    let bundle = output.join("package/modules/sandbox_runtime");
+    let manifest = checkout
+        .join("crates/maestro-web/tests/fixtures/browser_modules/sandbox_runtime/Cargo.toml");
+    let built = command(
+        Command::new(cargo)
+            .current_dir(checkout)
+            .env("CARGO_TARGET_DIR", target)
+            .args(["build", "--manifest-path"])
+            .arg(manifest)
+            .args([
+                "--lib",
+                "--release",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--locked",
+                "--message-format=json",
+            ]),
+    )?;
+    let wasm = inputs::artifact(&built, "cdylib", "sandbox_runtime_probe")?;
+    command(
+        Command::new("wasm-bindgen")
+            .arg(wasm)
+            .args(["--target", "no-modules", "--no-modules-global"])
+            .arg("__maestroSandboxRuntime")
+            .args(["--no-typescript", "--out-dir"])
+            .arg(&bundle)
+            .args(["--out-name", "runtime"]),
+    )?;
+    for name in ["runtime.js", "runtime_bg.wasm"] {
+        let bytes = fs::read(bundle.join(name))?;
+        println!(
+            "RECEIPT sandbox-runtime {name} bytes={} sha256={}",
+            bytes.len(),
+            maestro_tooling::hex(&Sha256::digest(&bytes))
+        );
     }
     Ok(())
 }
