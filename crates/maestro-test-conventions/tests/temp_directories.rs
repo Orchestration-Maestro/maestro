@@ -295,6 +295,42 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         "//! Terminal input fixtures.\n\n/// Installs a regular file holding `content` as standard input.\npub fn file_input(content: &[u8]) {\n    let path = std::env::temp_dir().join(\"maestro-terminal-input\");\n    std::fs::write(&path, content).unwrap();\n}\n",
         &[5],
     ),
+    (
+        "maestro-ipc",
+        "tests/support/mod.rs",
+        "//! Ipc fixtures.\n\n#[test]\nfn a_request_names_its_own_directory() {\n    let root = std::env::temp_dir();\n    assert!(root.is_absolute());\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-lock",
+        "tests/replacement.rs",
+        "//! Replacement fixtures.\n\n#[test]\nfn a_replacement_replaces_the_previous_file() {\n    let path: std::path::PathBuf = std::env::temp_dir().join(\"maestro-replacement\");\n    std::fs::write(&path, b\"x\").unwrap();\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-listing",
+        "tests/entry_order.rs",
+        "//! Listing order.\n\n#[test]\nfn entries_come_sorted_by_name() {\n    std::fs::create_dir_all(std::env::temp_dir().join(\"maestro-entries\")).unwrap();\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-tui",
+        "tests/fixtures/completion_native.rs",
+        "//! Native completion fixtures.\n\n#[test]\nfn completion_reads_the_authored_root() {\n    let path = std::env::temp_dir().join(\"maestro-completion.json\");\n    std::fs::write(&path, b\"{}\").unwrap();\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-workspace",
+        "tests/support/snapshot.rs",
+        "//! Snapshot fixtures.\n\n#[test]\nfn a_snapshot_roundtrips_through_the_platform_directory() {\n    let root = std::env::temp_dir().join(\"maestro-snapshot\");\n    std::fs::create_dir_all(&root).unwrap();\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-credentials",
+        "tests/config_values.rs",
+        "//! Credential configs.\n\n#[test]\nfn values_read_the_platform_directory() {\n    let value = std::env::temp_dir().to_string_lossy().into_owned();\n    assert!(!value.is_empty());\n}\n",
+        &[5],
+    ),
 ];
 
 #[test]

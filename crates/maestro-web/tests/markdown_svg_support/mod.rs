@@ -6,6 +6,9 @@ mod browser_records;
 mod native_records;
 #[cfg(target_arch = "wasm32")]
 pub use browser_records::{Case, Corpus};
+/// Object URL effects recorded where the document observations read them.
+#[cfg(target_arch = "wasm32")]
+pub mod url_audit;
 #[cfg(not(target_arch = "wasm32"))]
 pub use native_records::{Case, Corpus, Header};
 /// Decode every committed field strictly.

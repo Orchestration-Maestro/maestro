@@ -1,15 +1,13 @@
 //! The reasoning disclosure mounted as native page content and as its element.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{
-    body, call, computed, container, document, driver, host, page_module, rgb, view,
-};
+use crate::contributions_support::{body, computed, container, document, driver, host, rgb, view};
 use maestro_theme::BrandMode;
 use maestro_web::{
     ThinkingBlock,
     dom::{DomView, MountedContent},
 };
 use std::fmt::Write as _;
-use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 /// Reasoning with leading indentation, which only untrimmed content shows as a listing.
@@ -240,7 +238,6 @@ fn element_reconnects_with_one_binding() {
 pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
     import_module: js_sys::Function,
 ) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     for mode in [BrandMode::Dark, BrandMode::Light] {
@@ -256,8 +253,8 @@ pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
             .unwrap();
         let toggle = header(&root(&shown));
         let roles = (color(&view, mode, "muted"), color(&view, mode, "text"));
-        hover_moves_between_roles(&page, &toggle, &roles).await;
-        chevron_turns_and_reverses(&page, &toggle).await;
+        hover_moves_between_roles(&toggle, &roles).await;
+        chevron_turns_and_reverses(&toggle);
         shown.show(&thinking("body", true), &parent, &view).unwrap();
         let label = toggle.last_element_child().unwrap();
         assert_eq!(
@@ -276,16 +273,12 @@ pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
         parent.remove();
     }
 }
-/// The arguments pausing `property` of `element` midway through its 150 ms transition.
-fn midway(element: &Element, property: &str) -> js_sys::Array {
-    js_sys::Array::of3(element, &property.into(), &JsValue::from(75))
+/// Pause `property` of `element` midway through its 150 ms transition, returning its duration.
+fn midway(element: &Element, property: &str) -> Option<f64> {
+    crate::contributions_support::page::seek(element, property, 75.)
 }
 /// Hovering moves the header and glyph from the muted to the text role through intermediate colors.
-async fn hover_moves_between_roles(
-    page: &JsValue,
-    toggle: &HtmlElement,
-    (muted, text): &(String, String),
-) {
+async fn hover_moves_between_roles(toggle: &HtmlElement, (muted, text): &(String, String)) {
     let svg = toggle
         .first_element_child()
         .unwrap()
@@ -294,33 +287,32 @@ async fn hover_moves_between_roles(
     assert_eq!(&computed(toggle, "color"), muted);
     assert_eq!(&computed(&svg, "stroke"), muted);
     pointer(center(toggle), false).await;
-    let duration = call(page, "seek", &midway(toggle, "color")).await;
-    assert_eq!(duration.as_f64(), Some(150.));
+    assert_eq!(midway(toggle, "color"), Some(150.));
     let between = computed(toggle, "color");
     assert!(&between != muted && &between != text, "{between}");
-    call(page, "finish", &js_sys::Array::of1(toggle)).await;
+    crate::contributions_support::page::finish(toggle);
     assert_eq!(&computed(toggle, "color"), text);
     assert_eq!(&computed(&svg, "stroke"), text);
     pointer((0., 0.), false).await;
-    call(page, "finish", &js_sys::Array::of1(toggle)).await;
+    crate::contributions_support::page::finish(toggle);
     assert_eq!(&computed(toggle, "color"), muted);
 }
 /// Expanding turns the chevron through intermediate angles; collapsing midway reverses it.
-async fn chevron_turns_and_reverses(page: &JsValue, toggle: &HtmlElement) {
+fn chevron_turns_and_reverses(toggle: &HtmlElement) {
     let chevron = toggle.first_element_child().unwrap();
     assert_eq!(computed(&chevron, "transform"), "none");
     toggle.click();
-    call(page, "seek", &midway(&chevron, "transform")).await;
+    midway(&chevron, "transform");
     let turning = computed(&chevron, "transform");
     assert!(
         turning.starts_with("matrix(") && !turning.contains(", 1, -1,"),
         "{turning}"
     );
     toggle.click();
-    call(page, "finish", &js_sys::Array::of1(&chevron)).await;
+    crate::contributions_support::page::finish(&chevron);
     assert_eq!(computed(&chevron, "transform"), "none");
     toggle.click();
-    call(page, "finish", &js_sys::Array::of1(&chevron)).await;
+    crate::contributions_support::page::finish(&chevron);
     assert!(computed(&chevron, "transform").contains(", 1, -1,"));
     toggle.click();
 }

@@ -1,0 +1,1 @@
+function(id){window.S={};S.literal='__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__';window.done=new Promise(r=>window.complete=async(error,value)=>{S.error=error;S.value=value;r()});}

@@ -340,7 +340,7 @@ fn assert_tooltip_without_localization(view: &DomView) {
 pub async fn download_dom_defaults_and_caller_options(import_module: &js_sys::Function) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::import(import_module).await;
+    let fixture = Fixture::default();
     assert_default_control(&view);
     assert_filenames(&view, &fixture).await;
     assert_titles(&view);
@@ -355,7 +355,7 @@ pub async fn download_dom_defaults_and_caller_options(import_module: &js_sys::Fu
 pub async fn download_dom_preserves_selected_payload_bytes(import_module: &js_sys::Function) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::import(import_module).await;
+    let fixture = Fixture::default();
     assert_text_payloads(&view, &fixture).await;
     assert_byte_payloads(&view, &fixture).await;
     assert_mime_types(&view, &fixture).await;
@@ -366,7 +366,7 @@ pub async fn download_dom_preserves_selected_payload_bytes(import_module: &js_sy
 pub async fn download_dom_activation_uses_one_scoped_download(import_module: &js_sys::Function) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::import(import_module).await;
+    let fixture = Fixture::default();
     let form = view.document.create_element("form").unwrap();
     body().append_child(&form).unwrap();
     let submits = Submitting::new(&form);
@@ -392,10 +392,9 @@ pub async fn download_dom_activation_uses_one_scoped_download(import_module: &js
     );
     fixture.begin("success");
     driver("driverPointer", &point).await;
-    let observed = fixture.finish(b"pointer", "text/plain", "pointer.bin", true);
-    wasm_bindgen_futures::JsFuture::from(observed)
-        .await
-        .unwrap();
+    fixture
+        .finish(b"pointer", "text/plain", "pointer.bin", true)
+        .await;
     keys.focus().unwrap();
     assert!(
         view.document
@@ -404,10 +403,9 @@ pub async fn download_dom_activation_uses_one_scoped_download(import_module: &js
     );
     fixture.begin("success");
     driver("driverPress", "Enter").await;
-    let observed = fixture.finish(b"keys!", "text/plain", "keys.bin", true);
-    wasm_bindgen_futures::JsFuture::from(observed)
-        .await
-        .unwrap();
+    fixture
+        .finish(b"keys!", "text/plain", "keys.bin", true)
+        .await;
     assert_eq!(submits.count(), 0, "a download button is no submit control");
     drop((pointer_owner, keys_owner, submits));
 }
@@ -419,7 +417,7 @@ pub async fn download_dom_retains_activation_inputs_and_releases_on_drop(
 ) {
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::import(import_module).await;
+    let fixture = Fixture::default();
     let buffer = Uint8Array::from(&[250u8, 1, 2, 249][..]);
     let windowed = buffer.subarray(1, 3);
     let (window_owner, window_control) = mounted(
@@ -458,10 +456,9 @@ pub async fn download_dom_retains_activation_inputs_and_releases_on_drop(
     fixture.begin("success");
     released_control.click();
     kept_control.click();
-    let observed = fixture.finish(b"kept!", "text/plain", "kept.bin", true);
-    wasm_bindgen_futures::JsFuture::from(observed)
-        .await
-        .unwrap();
+    fixture
+        .finish(b"kept!", "text/plain", "kept.bin", true)
+        .await;
     drop(kept);
 }
 
