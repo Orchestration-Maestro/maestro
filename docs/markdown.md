@@ -96,8 +96,9 @@ resumption admits the item again. Item text answers the setext underline
 question by classifying only the lines its answer needs, starting from the
 resume offset when a caller token stopped inside a line, so a settled answer
 costs the item's prefix rather than its whole body. An item's semantic body and
-raw spelling join the pieces they admitted once, when a reader needs them.
-Semantic text can change spelling or be empty without erasing raw consumption.
+raw spelling join the pieces they admitted once, when a reader asks for the whole
+value. Semantic text can change spelling or be empty without erasing raw
+consumption.
 Code continuations reuse one indentation-removal operation; definitions
 continuing paragraph or item text stay literal instead of entering the reference
 index.

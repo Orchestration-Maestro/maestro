@@ -58,7 +58,7 @@ struct ItemLine {
     ending: Ending,
 }
 
-/// One search's classified lines that close it.
+/// Which search a lookup asks about.
 #[derive(Clone, Copy)]
 enum Search {
     /// The setext label search.
@@ -86,7 +86,7 @@ struct Remainder<'a> {
 pub(crate) struct ItemText {
     /// Shared immutable caller predicates.
     grammar: &'static Grammar,
-    /// Classified lines of the retained operand, contiguous from its start.
+    /// Classified lines of the retained operand, which skip a gap the caller consumed.
     lines: Vec<ItemLine>,
     /// Indices of classified lines that close the setext label search.
     setext_stops: Vec<usize>,
@@ -320,8 +320,9 @@ impl ItemText {
     /// Classify the next physical line of the operand, if any bytes remain.
     fn advance(&mut self, remainder: &Remainder<'_>) -> bool {
         let (source, start) = (remainder.source, remainder.start);
-        // Classification never trails the caller's consumed prefix, so the remaining line
-        // bytes are always inside the supplied suffix.
+        // A caller token can consume past the classified frontier, so the line behind it
+        // restarts at the suffix start. Per-line classification is stateless, so that line
+        // classifies the same way whichever offset the suffix has.
         let local = self.framing.saturating_sub(start);
         if local >= source.len() {
             return false;

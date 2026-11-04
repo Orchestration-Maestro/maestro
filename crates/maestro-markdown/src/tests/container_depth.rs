@@ -413,7 +413,6 @@ fn item_paragraph_charge(paragraphs: usize, charge: fn(&super::Work) -> usize) -
 fn item_stop_seeks_stay_proportional_to_the_item() {
     let measured =
         [50, 200].map(|paragraphs| item_paragraph_charge(paragraphs, |work| work.item_seeks));
-    eprintln!("item stop seeks for authored bytes: {measured:?}");
     assert!(
         stays_proportional(measured),
         "item stop seeks per authored byte {measured:?}"

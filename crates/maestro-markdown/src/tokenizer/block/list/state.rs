@@ -283,6 +283,9 @@ impl ItemLines {
     }
 
     /// Charge the unique source this item keeps alive while its list is open.
+    ///
+    /// Both accumulators join their pending pieces first, as a reader of the whole
+    /// value does.
     #[cfg(test)]
     pub(super) fn retained(&mut self, retained: &mut crate::tests::Retained) {
         self.raw.retained(retained);
