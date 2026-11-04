@@ -17,25 +17,10 @@ use std::process::{Command, ExitCode};
 
 use super::normalize::{self, Outcome, archive_signalled};
 use super::{export, prepared_bundle};
+use crate::example_files::EXAMPLE_PACKAGE;
 use crate::exit_code;
 use crate::test_setup::{self, EXAMPLE, example_arguments, executable_name};
-use crate::workspace::Workspace;
-
-/// The sources the setup example is built from, beside the shared build and discovery
-/// directories listed below; the example is outdated once any of them is newer.
-const SOURCES: [&str; 5] = [
-    "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
-    "crates/maestro-extensions-wasm/src/tests/build.rs",
-    "crates/maestro-tooling/src/example_files.rs",
-    "crates/maestro-extensions-wasm/Cargo.toml",
-    "Cargo.lock",
-];
-
-/// The directories whose `.rs` files the setup example is built from.
-const SOURCE_DIRECTORIES: [&str; 2] = [
-    "crates/maestro-extensions-wasm/src/tests/build",
-    "crates/maestro-tooling/src/example_files",
-];
+use crate::workspace::{FIXTURES, Workspace};
 
 /// Prepare the components with a staged or built example and run it, then export the cache
 /// home the example warmed so the tests read the same compiled code.
@@ -110,7 +95,7 @@ fn run_local(
     let profile = if profile == "debug" { "dev" } else { profile };
     let target = directory.parent().unwrap_or(directory);
     if let Some(example) = built_example(directory)
-        && fresh(workspace.root(), &example)
+        && fresh(workspace, &example)
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
         return start(workspace, &example, cache_home);
@@ -142,8 +127,12 @@ fn built_example(directory: &Path) -> Option<PathBuf> {
         .find(|path| path.is_file())
 }
 
-/// Whether `example` is newer than every source it is built from.
-fn fresh(checkout: &Path, example: &Path) -> bool {
+/// Whether `example` is newer than every workspace file it is built from.
+///
+/// The example is compiled from the component crate's own sources, the tooling that compiles
+/// it and the workspace manifest, so a workspace that holds neither package has only the lock to
+/// compare and keeps an installed example.
+fn fresh(workspace: &Workspace, example: &Path) -> bool {
     let modified = |path: &Path| {
         std::fs::metadata(path)
             .and_then(|data| data.modified())
@@ -152,14 +141,38 @@ fn fresh(checkout: &Path, example: &Path) -> bool {
     let Some(built) = modified(example) else {
         return false;
     };
-    let listed = SOURCES.iter().map(|source| checkout.join(source));
-    let discovered = SOURCE_DIRECTORIES
-        .iter()
-        .filter_map(|folder| std::fs::read_dir(checkout.join(folder)).ok())
-        .flatten()
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.extension().is_some_and(|extension| extension == "rs"));
+    let component = workspace.member(EXAMPLE_PACKAGE);
+    let tooling = workspace.member("maestro-tooling");
+    let listed = [
+        component
+            .as_ref()
+            .map(|owner| owner.join(FIXTURES).join(format!("{EXAMPLE}.rs"))),
+        component
+            .as_ref()
+            .map(|owner| owner.join("src/tests/build.rs")),
+        component.as_ref().map(|owner| owner.join("Cargo.toml")),
+        tooling
+            .as_ref()
+            .map(|owner| owner.join("src/example_files.rs")),
+        Some(workspace.root().join("Cargo.lock")),
+    ]
+    .into_iter()
+    .flatten();
+    let discovered = [
+        component
+            .as_ref()
+            .map(|owner| owner.join("src/tests/build")),
+        tooling
+            .as_ref()
+            .map(|owner| owner.join("src/example_files")),
+    ]
+    .into_iter()
+    .flatten()
+    .flat_map(std::fs::read_dir)
+    .flatten()
+    .filter_map(Result::ok)
+    .map(|entry| entry.path())
+    .filter(|path| path.extension().is_some_and(|extension| extension == "rs"));
     listed
         .chain(discovered)
         .filter_map(|source| modified(&source))
