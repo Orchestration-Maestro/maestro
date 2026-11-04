@@ -105,6 +105,7 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     }
     for source in [
         "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
+        "crates/maestro-extensions-wasm/src/lib.rs",
         "crates/maestro-extensions-wasm/src/tests/build.rs",
         "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
         "crates/maestro-tooling/src/example_files.rs",
@@ -120,18 +121,8 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
             .set_modified(std::time::UNIX_EPOCH)
             .unwrap();
     }
-    // The component crate is the manifest this fixture shares with preparation: it holds the
-    // generated example region, so preparation finds it from the workspace alone.
-    let component = root.join("crates/maestro-extensions-wasm/Cargo.toml");
-    std::fs::write(
-        &component,
-        "[package]\nname = \"maestro-extensions-wasm\"\n# example-index:start\n# example-index:end\n",
-    )
-    .unwrap();
-    std::fs::File::open(&component)
-        .unwrap()
-        .set_modified(std::time::UNIX_EPOCH)
-        .unwrap();
+    // Preparation resolves the workspace this root stands for, so the fixture is one.
+    component_workspace(root);
     let example = profile.join("examples/prepare_author_component");
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
@@ -142,6 +133,28 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
         .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(built))
         .unwrap();
     binaries
+}
+
+/// The workspace preparation resolves at the fixture root: its only member is the component
+/// crate, whose manifest holds the generated example region that marks it.
+fn component_workspace(root: &Path) {
+    for (manifest, text) in [
+        (
+            root.join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/maestro-extensions-wasm\"]\nresolver = \"3\"\n",
+        ),
+        (
+            root.join("crates/maestro-extensions-wasm/Cargo.toml"),
+            "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\n\
+             edition = \"2024\"\n# example-index:start\n# example-index:end\n",
+        ),
+    ] {
+        std::fs::write(&manifest, text).unwrap();
+        std::fs::File::open(manifest)
+            .unwrap()
+            .set_modified(std::time::UNIX_EPOCH)
+            .unwrap();
+    }
 }
 
 /// The development tool that nextest's author-component entry runs: a shard receives it in the
