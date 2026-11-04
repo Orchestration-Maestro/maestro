@@ -292,6 +292,12 @@ fn packages_reads_the_platform_directory_into_a_setting() {
 /// Platform directory spellings in the crates added to the migrated scope.
 const ADDED: &[(&str, &str, &str, &[usize])] = &[
     (
+        "maestro-test-process",
+        "tests/environment_groups.rs",
+        "//! Group fixtures.\n\nfn marker(test: &str) -> std::path::PathBuf {\n    let path = std::env::temp_dir().join(format!(\"maestro-groups-{test}\"));\n    std::fs::write(&path, \"\").unwrap();\n    path\n}\n",
+        &[4],
+    ),
+    (
         "maestro-catalog",
         "tests/support/common.rs",
         "//! Catalog fixtures.\n\n/// Disposable native file, created exclusively.\npub struct File(pub std::path::PathBuf);\nimpl File {\n    /// Create one file.\n    pub fn new(bytes: &[u8]) -> Self {\n        let path = std::env::temp_dir().join(\"maestro-catalog.json\");\n        std::fs::write(&path, bytes).unwrap();\n        Self(path)\n    }\n}\n",
