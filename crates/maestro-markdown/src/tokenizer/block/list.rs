@@ -82,6 +82,15 @@ pub(crate) struct ListState {
 }
 
 impl ListState {
+    /// Charge the source and settled output this list keeps alive while it stays open.
+    #[cfg(test)]
+    pub(crate) fn retained(&mut self, retained: &mut crate::tests::Retained) {
+        for item in &mut self.completed {
+            item.retained(retained);
+        }
+        self.item.retained(retained);
+    }
+
     /// Complete the trailing item and admit the next marker's first line.
     fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
         let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
@@ -101,10 +110,7 @@ impl ListState {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| {
             let mut retained = crate::tests::Retained::default();
-            for item in &self.completed {
-                item.retained(&mut retained);
-            }
-            self.item.retained(&mut retained);
+            self.retained(&mut retained);
             work.frame_bytes = work.frame_bytes.max(retained.bytes);
         });
         let following = self.completed.len();
@@ -435,12 +441,16 @@ impl ListFrame {
                 consumed: end,
                 node,
                 list: Some(state),
+                #[cfg(test)]
+                settled: 0,
             }),
             ListTarget::Resumed => Step::Done(Done::Resumed {
                 used: raw,
                 node,
                 rest: self.source.select(end..self.source.len()),
                 list: Some(state),
+                #[cfg(test)]
+                settled: 0,
             }),
         }
     }

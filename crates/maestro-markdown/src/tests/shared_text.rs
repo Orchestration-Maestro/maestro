@@ -1,12 +1,15 @@
 //! Shared authored values at the parser boundary.
-use crate::{MappedText, parse};
-use std::{collections::HashSet, mem::size_of_val, sync::Arc};
+use crate::{Kind, MappedText, Node, parse, tokenizer::block::ListState};
+use std::{collections::HashSet, mem::size_of, mem::size_of_val, sync::Arc};
 
-/// Unique live allocation payloads, excluding allocator headers and hash control bytes.
+/// Unique allocation payloads one output charged, excluding allocator headers and hash control bytes.
 #[derive(Default)]
 pub(crate) struct Retained {
-    /// Allocation addresses already charged while the complete document stays live.
+    /// Allocation addresses this output already charged.
     seen: HashSet<usize>,
+    /// The addresses in `seen`, in the order they were charged, kept only by an accumulator
+    /// that releases charges.
+    order: Option<Vec<usize>>,
     /// Shared allocation payloads plus independently owned native capacities.
     pub(crate) bytes: usize,
     /// Unique backing string capacity, separate from view and native metadata.
@@ -17,7 +20,118 @@ pub(crate) struct Retained {
     pub(crate) nodes: usize,
 }
 
+/// The payload and the addresses a [`Retained`] had charged, so a later charge can be released.
+#[derive(Clone, Copy)]
+struct Taken {
+    /// Payload charged before.
+    bytes: usize,
+    /// Addresses charged before.
+    addresses: usize,
+}
+
+/// Charges one output holds, each owned by the node that trailed the output when it was taken.
+///
+/// A node's own allocations, the payload its closed level handed up with it, its adopted list
+/// state and the item outputs its list publishes are all taken while it trails, so they sit
+/// after its start. Nodes leave an output from its end, so releasing from a node's start
+/// releases that node, the nodes after it and the addresses only they charged. The adopted
+/// state is the one charge that leaves while its node stays, when its list publishes; it
+/// charges into its own accumulator, so it holds no address here.
+pub(crate) struct Charges {
+    /// Payload and addresses the held nodes charged.
+    retained: Retained,
+    /// Where each held node's charges start, in output order.
+    starts: Vec<Taken>,
+    /// Payload the adopted list state charged, released when its list publishes.
+    adopted: usize,
+}
+
+impl Default for Charges {
+    fn default() -> Self {
+        Self {
+            retained: Retained {
+                order: Some(Vec::new()),
+                ..Retained::default()
+            },
+            starts: Vec::new(),
+            adopted: 0,
+        }
+    }
+}
+
+impl Charges {
+    /// Payload the output's contributions charged.
+    pub(crate) fn bytes(&self) -> usize {
+        self.retained.bytes
+    }
+
+    /// Charge one node the output now holds.
+    pub(crate) fn push(&mut self, node: &Node) {
+        self.starts.push(self.retained.taken());
+        settled_node(node, &mut self.retained);
+    }
+
+    /// Charge the trailing node a payload another output already took for it.
+    pub(crate) fn add(&mut self, bytes: usize) {
+        self.retained.bytes += bytes;
+    }
+
+    /// Release every charge the `removed` nodes from `index` on took, as they leave the output.
+    ///
+    /// The adopted state belongs to the trailing node, so it always leaves with them.
+    pub(crate) fn release(&mut self, index: usize, removed: usize) {
+        debug_assert_eq!(
+            self.starts.len(),
+            index + removed,
+            "every node an output holds took its charges"
+        );
+        let Some(start) = self.starts.get(index).copied() else {
+            return;
+        };
+        self.starts.truncate(index);
+        self.retained.release(start);
+        self.adopted = 0;
+    }
+
+    /// Charge the list state the output adopts until its list publishes.
+    ///
+    /// The state charges into its own accumulator, so releasing it leaves no address behind
+    /// and a later adoption of the same allocations charges them again.
+    pub(crate) fn adopt(&mut self, list: Option<&mut ListState>) {
+        let Some(state) = list else {
+            return;
+        };
+        let mut adopted = Retained::default();
+        state.retained(&mut adopted);
+        self.retained.bytes += adopted.bytes;
+        self.adopted = adopted.bytes;
+    }
+
+    /// Release the charge the published list state held.
+    pub(crate) fn release_adopted(&mut self) {
+        self.retained.bytes -= std::mem::take(&mut self.adopted);
+    }
+}
+
 impl Retained {
+    /// How much this accumulator has charged so far.
+    fn taken(&self) -> Taken {
+        Taken {
+            bytes: self.bytes,
+            addresses: self.order.as_ref().map_or(0, Vec::len),
+        }
+    }
+
+    /// Release the payload and the addresses charged after `taken`.
+    fn release(&mut self, taken: Taken) {
+        self.bytes = taken.bytes;
+        if let Some(order) = &mut self.order {
+            for address in order.drain(taken.addresses..) {
+                self.seen.remove(&address);
+            }
+        }
+    }
+
     /// Charge shared string capacity without counting overlapping selected windows twice.
     pub(crate) fn text(&mut self, value: &Arc<String>) {
         if self.arc(value, value.capacity()) {
@@ -27,12 +141,78 @@ impl Retained {
 
     /// Charge shared metadata and its backing capacity once, returning whether it is new.
     pub(crate) fn arc<T>(&mut self, value: &Arc<T>, capacity: usize) -> bool {
-        if !self.seen.insert(Arc::as_ptr(value) as usize) {
+        let address = Arc::as_ptr(value) as usize;
+        if !self.seen.insert(address) {
             return false;
+        }
+        if let Some(order) = &mut self.order {
+            order.push(address);
         }
         self.bytes += size_of_val(value.as_ref()) + capacity;
         true
     }
+}
+
+/// Charge the allocations one settled node owns, returning the children it holds.
+pub(crate) fn settled_node<'a>(node: &'a Node, retained: &mut Retained) -> Option<&'a [Node]> {
+    retained.nodes += 1;
+    node.authored.retained(retained);
+    let children = match &node.kind {
+        Kind::Quote(children, body) => {
+            body.retained(retained);
+            Some(children)
+        }
+        Kind::Paragraph(children)
+        | Kind::Inline(children)
+        | Kind::List(_, children)
+        | Kind::Item(children) => Some(children),
+        Kind::Text(text) => {
+            retained.bytes += text.authored.capacity() + text.decoded.capacity();
+            None
+        }
+        Kind::CodeBlock(body, language) => {
+            retained.bytes += body.capacity() + language.as_ref().map_or(0, String::capacity);
+            None
+        }
+        _ => None,
+    };
+    let children = children?;
+    retained.bytes += children.capacity() * size_of::<Node>();
+    Some(children)
+}
+
+/// Charge every allocation a settled block tree keeps alive, once per allocation.
+pub(crate) fn settled(nodes: &Vec<Node>, retained: &mut Retained) {
+    retained.bytes += nodes.capacity() * size_of::<Node>();
+    let mut pending = vec![nodes.as_slice()];
+    while let Some(nodes) = pending.pop() {
+        for node in nodes {
+            pending.extend(settled_node(node, retained));
+        }
+    }
+}
+#[test]
+fn settled_charges_each_child_vector_capacity() {
+    let gap = || Node {
+        kind: Kind::Gap,
+        authored: MappedText::default(),
+        range: 0..0,
+    };
+    let charge = |children: Vec<Node>| {
+        let nodes = vec![Node {
+            kind: Kind::Paragraph(children),
+            authored: MappedText::default(),
+            range: 0..0,
+        }];
+        let mut retained = Retained::default();
+        settled(&nodes, &mut retained);
+        assert_eq!(retained.nodes, 2);
+        retained.bytes
+    };
+    let mut loose = vec![gap(), gap()];
+    loose.pop();
+    assert_eq!(loose.capacity(), 2);
+    assert_eq!(charge(loose) - charge(vec![gap()]), size_of::<Node>());
 }
 
 #[test]
