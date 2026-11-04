@@ -117,7 +117,7 @@ impl Bodies {
 
 /// Line where a signature starts: its first qualifier, or else its `fn` keyword.
 ///
-/// This is the start of the signature's joined span, read without printing every token.
+/// The line comes from that token's own span, so no signature text is printed to find it.
 fn signature_line(signature: &syn::Signature) -> usize {
     let safety = match &signature.safety {
         syn::Safety::Safe(token) => Some(token.span),

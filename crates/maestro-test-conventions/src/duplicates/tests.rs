@@ -123,6 +123,7 @@ fn signature_lines_start_at_the_first_qualifier() {
     for (text, line) in signatures {
         let signature = syn::parse_str::<syn::Signature>(text).unwrap();
         assert_eq!(super::signature_line(&signature), line, "{text:?}");
-        assert_eq!(signature.span().start().line, line, "{text:?}");
     }
+    let foreign = syn::parse_str::<syn::ForeignItemFn>("\n\nsafe\nfn f();").unwrap();
+    assert_eq!(super::signature_line(&foreign.sig), 3, "safe fn");
 }

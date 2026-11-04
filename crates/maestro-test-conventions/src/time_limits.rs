@@ -277,11 +277,11 @@ impl<'a> Calls<'a> {
 
     /// Resolve the recorded occurrences against the file's imports, keeping source order.
     pub(crate) fn finish(self) -> Vec<((usize, usize), Diagnostic)> {
-        let mut imports = BTreeMap::new();
+        let mut aliases = BTreeMap::new();
         // Every occurrence is test code, so a source without any reads no import.
         if !self.pending.is_empty() {
             for tree in self.uses {
-                self::imports(tree, "", &mut imports);
+                imports(tree, "", &mut aliases);
             }
         }
         let mut found = Vec::new();
@@ -289,14 +289,14 @@ impl<'a> Calls<'a> {
             match pending {
                 Pending::Found(position, diagnostic) => found.push((position, diagnostic)),
                 Pending::Poll(position, name)
-                    if resolve(&imports, &name, OPTIONAL_POLL).is_some() =>
+                    if resolve(&aliases, &name, OPTIONAL_POLL).is_some() =>
                 {
                     found.push((position, Diagnostic::OptionalPoll));
                 }
                 Pending::Poll(..) => {}
                 Pending::Call(call, name) => {
                     let capturing = !self.tracing_owner;
-                    found.extend(resolve_call(&imports, call, &name, capturing));
+                    found.extend(resolve_call(&aliases, call, &name, capturing));
                 }
             }
         }
