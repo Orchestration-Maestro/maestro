@@ -49,6 +49,7 @@ mod overlay_qa_tests_example;
 mod overlay_test_example;
 mod project_rules_example;
 mod provider_catalog;
+mod replacement_callbacks;
 mod retained_components;
 mod retained_contexts;
 mod startup;
