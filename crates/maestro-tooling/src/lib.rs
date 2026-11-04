@@ -231,8 +231,8 @@ fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Run the real-browser regressions and the export inventory, each after any failure of the
-/// other, so one run reports every case; the first failure's status is the command's.
+/// Run the real-browser regressions, then the export inventory even when a regression fails, so
+/// one run reports every case; the first failure's status is the command's.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut regressions = Command::new(cargo);
     regressions.current_dir(checkout).args([
