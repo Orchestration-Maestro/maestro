@@ -997,11 +997,10 @@ async fn partly_written_document(directory: &Path, keep: &Path) {
     let template = layout_dir(&package_root(), "src").join("template.html");
     let body = fs::read_to_string(&template).unwrap();
     fs::write(&template, format!("{body}{}", "x".repeat(8192))).unwrap();
-    let previous = super::actions::file_size_limit(None);
-    super::actions::file_size_limit(Some("1024"));
+    let previous = super::actions::file_size_limit(Some(1024));
     submit(&partial.mode, "/share");
     drive(&partial).await.unwrap();
-    super::actions::file_size_limit(Some(&previous));
+    super::actions::file_size_limit(previous);
     assert_last_row_holds(
         &partial,
         "Error: Failed to export session: File too large",

@@ -8,6 +8,8 @@ use crate::components::session_selector::list::tests::session_picker::decode_cas
 use maestro_app::utils::clipboard_image::ClipboardImage;
 use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
 use maestro_tui::{Component, tui::InputHandler};
+#[cfg(target_os = "linux")]
+use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
@@ -470,15 +472,14 @@ fn clipboard_write_failure_is_silent() {
         #[cfg(target_os = "linux")]
         {
             std::fs::create_dir(std::env::temp_dir()).unwrap();
-            let previous = file_size_limit(None);
             // One byte fits, so the file is created and the rest of the image fails to write.
-            file_size_limit(Some("1"));
+            let previous = file_size_limit(Some(1));
             let control = std::env::temp_dir().join("control");
             let error = std::fs::write(&control, "ab").unwrap_err();
             assert_eq!(error.kind(), io::ErrorKind::FileTooLarge);
             std::fs::remove_file(control).unwrap();
             world.mode.paste_clipboard_result(Ok(Some(image())));
-            file_size_limit(Some(&previous));
+            file_size_limit(previous);
             assert_eq!(temporary_names(), Vec::<String>::new());
             assert_eq!(world.mode.editor.get_text(), "before");
             assert_eq!(world.runtime.pending(), 0);
@@ -486,19 +487,20 @@ fn clipboard_write_failure_is_silent() {
     });
 }
 
-/// Reads this process's soft file-size limit, after setting it to `soft` when supplied.
+/// Lowers this process's soft file-size limit to `soft` bytes, or lifts it with `None`, and
+/// returns the soft limit it had.
 #[cfg(target_os = "linux")]
-pub(super) fn file_size_limit(soft: Option<&str>) -> String {
-    let mut command = std::process::Command::new("prlimit");
-    command.arg(format!("--pid={}", std::process::id()));
-    if let Some(soft) = soft {
-        command.arg(format!("--fsize={soft}:"));
-    } else {
-        command.args(["--fsize", "--raw", "--noheadings", "--output=SOFT"]);
-    }
-    let output = command.output().unwrap();
-    assert!(output.status.success(), "{output:?}");
-    String::from_utf8(output.stdout).unwrap().trim().to_owned()
+pub(super) fn file_size_limit(soft: Option<u64>) -> Option<u64> {
+    let previous = getrlimit(Resource::Fsize);
+    setrlimit(
+        Resource::Fsize,
+        Rlimit {
+            current: soft,
+            maximum: previous.maximum,
+        },
+    )
+    .unwrap();
+    previous.current
 }
 
 #[test]
