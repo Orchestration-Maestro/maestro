@@ -16,8 +16,7 @@ pub async fn default_tool_renderer_preserves_all_recorded_branches(
     use crate::contributions_support::{container, select, text, view};
     let view = view();
     let _elements = crate::contributions_support::host(&view, import_module);
-    let page = crate::contributions_support::page_module(import_module).await;
-    localized_and_literal(&view, &page).await;
+    localized_and_literal(&view).await;
     let parent = container();
     let fixture: Value =
         serde_json::from_str(include_str!("../fixtures/tool_renderers.json")).unwrap();
@@ -189,7 +188,7 @@ pub fn retained_nested_tool_recipe_detaches_with_outer_row(import_module: &js_sy
 
 /// Default labels, empty output and the preparing caption follow localization while the
 /// caption stays literal; a literal output listing shows and copies its original text.
-async fn localized_and_literal(view: &DomView, page: &wasm_bindgen::JsValue) {
+async fn localized_and_literal(view: &DomView) {
     use crate::contributions_support::{Clipboard, Recorded, localized_view, select, text, until};
     for (code, input, output, empty) in [
         ("en", "Input", "Output", "(no output)"),
@@ -237,7 +236,7 @@ async fn localized_and_literal(view: &DomView, page: &wasm_bindgen::JsValue) {
     let clipboard = Recorded::install(Clipboard::Accept);
     let copy = select(&root.node, ".maestro-code button");
     wasm_bindgen::JsCast::unchecked_ref::<web_sys::HtmlElement>(&copy).click();
-    until(page, &copy, || text(&copy) == "Copied!").await;
+    until(&copy, || text(&copy) == "Copied!").await;
     assert_eq!(clipboard.texts(), ["YWJj"]);
     parent.remove();
 }

@@ -1,8 +1,8 @@
 //! Console output mounted as native page content and followed through its own scroller.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, call, computed, container, document, driver, frames, host, page_module,
-    rgb, select, selection, text, until, view,
+    Clipboard, Recorded, computed, container, document, driver, frames, host, rgb, select, text,
+    until, view,
 };
 use maestro_web::{
     ConsoleBlock,
@@ -11,7 +11,7 @@ use maestro_web::{
 };
 use serde::Deserialize;
 use std::rc::Rc;
-use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 /// Console cases recorded from the reference component.
@@ -178,24 +178,24 @@ impl Drop for Placed {
     }
 }
 /// Wait for `element` to show the success feedback.
-async fn copied(page: &JsValue, element: &Element) {
-    until(page, element, || !text(element).is_empty()).await;
+async fn copied(element: &Element) {
+    until(element, || !text(element).is_empty()).await;
 }
 /// Wait for `element` to return to its idle control.
-async fn restored(page: &JsValue, element: &Element) {
-    until(page, element, || text(element).is_empty()).await;
+async fn restored(element: &Element) {
+    until(element, || text(element).is_empty()).await;
 }
 /// Collect page nodes no task boundary keeps alive.
-async fn collect(page: &JsValue) {
+async fn collect() {
     let window = web_sys::window().unwrap();
     let collect: js_sys::Function = js_sys::Reflect::get(&window, &"gc".into())
         .unwrap()
         .unchecked_into();
     for _ in 0..4 {
-        frames(page, 1).await;
+        frames(1).await;
         collect.call0(&window).unwrap();
     }
-    frames(page, 1).await;
+    frames(1).await;
 }
 
 /// The mounted console shows its header, copy title and literal output, scrolled to the end.
@@ -234,10 +234,10 @@ fn assert_updated(mounted: &mut Placed, root: &Element, update: &Update) {
     );
 }
 /// An activation copies the current output once and follows it to the body's end.
-async fn assert_copy_follows(page: &JsValue, root: &Element, clipboard: &Recorded, content: &str) {
+async fn assert_copy_follows(root: &Element, clipboard: &Recorded, content: &str) {
     let control = copy_control(root);
     copy_button(root).click();
-    copied(page, &control).await;
+    copied(&control).await;
     assert_eq!(clipboard.texts(), [content]);
     let (_, scroll) = parts(root);
     assert_eq!(
@@ -255,21 +255,20 @@ fn assert_unchanged_update(mounted: &mut Placed, root: &Element, block: &Console
     assert_eq!(scroll.scroll_top(), 0);
 }
 /// A presentation-only update keeps the selection and reaches the replacement localization.
-async fn assert_localized_update(
-    page: &JsValue,
+fn assert_localized_update(
     mounted: &mut Placed,
     view: &Rc<DomView>,
     (root, block): (&Element, &ConsoleBlock),
     german_cases: &German,
 ) {
-    let _ = call(page, "select", &js_sys::Array::of1(&parts(root).0)).await;
+    crate::contributions_support::page::select_children(&parts(root).0);
     mounted.replace_view(block, german(view));
     assert_eq!(text(&header_label(root)), german_cases.label);
     assert_eq!(
         copy_control(root).get_attribute("title").as_deref(),
         Some(german_cases.title.as_str())
     );
-    let (selected, inside) = selection(page, root).await;
+    let (selected, inside) = crate::contributions_support::page::selection(root);
     assert!(!selected.is_empty() && inside, "selection lost on update");
 }
 
@@ -277,7 +276,6 @@ async fn assert_localized_update(
 /// presentation-only update keeps the root, the body and the selection.
 #[wasm_bindgen]
 pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Function) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture().console;
@@ -285,13 +283,13 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
     let initial = console(&cases.mount.content, ConsoleVariant::Default);
     let mut mounted = Placed::show(Rc::clone(&view), &initial);
     let root = mounted.root();
-    frames(&page, 1).await;
+    frames(1).await;
     assert_mounted(&root, &cases.mount, &cases.copy);
     assert_unchanged_update(&mut mounted, &root, &initial);
     let changed = console(&cases.update.content, variant(&cases.update.variant));
     mounted.update(&changed);
     assert_updated(&mut mounted, &root, &cases.update);
-    assert_copy_follows(&page, &root, &clipboard, &cases.update.content).await;
+    assert_copy_follows(&root, &clipboard, &cases.update.content).await;
     let (_, scroll) = parts(&root);
     scroll.set_scroll_top(0);
     mounted.update(&changed);
@@ -300,29 +298,24 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
         0,
         "an unchanged update reset the scroll"
     );
-    assert_localized_update(&page, &mut mounted, &view, (&root, &changed), &cases.german).await;
+    assert_localized_update(&mut mounted, &view, (&root, &changed), &cases.german);
     mounted.replace_view(&changed, Rc::clone(&view));
     assert_eq!(text(&header_label(&root)), cases.mount.label);
 }
 
 /// Success feedback reads the current text, restores at the console's own duration and
 /// returns to the idle control.
-async fn assert_success_feedback(
-    page: &JsValue,
-    root: &Element,
-    clipboard: &Recorded,
-    cases: &Fixture,
-) {
+async fn assert_success_feedback(root: &Element, clipboard: &Recorded, cases: &Fixture) {
     let control = copy_control(root);
     let idle = control.inner_html();
     let clicked = js_sys::Date::now();
     copy_button(root).click();
-    copied(page, &control).await;
+    copied(&control).await;
     assert_eq!(clipboard.texts(), [cases.console.update.content.as_str()]);
     assert_eq!(text(&control), cases.console.copy.feedback);
     assert_ne!(control.inner_html(), idle);
     assert!(control.query_selector("svg").unwrap().is_some());
-    restored(page, &control).await;
+    restored(&control).await;
     let elapsed = js_sys::Date::now() - clicked;
     assert!(
         (1500.0..2000.0).contains(&elapsed),
@@ -333,7 +326,6 @@ async fn assert_success_feedback(
 
 /// A presented localization reaches both the recorded text and the feedback label.
 async fn assert_german_feedback(
-    page: &JsValue,
     mounted: &mut Placed,
     german_view: Rc<DomView>,
     block: &ConsoleBlock,
@@ -342,7 +334,7 @@ async fn assert_german_feedback(
     mounted.replace_view(block, german_view);
     let control = copy_control(&mounted.root());
     copy_button(&mounted.root()).click();
-    copied(page, &control).await;
+    copied(&control).await;
     assert_eq!(text(&control), cases.german.feedback);
 }
 
@@ -360,7 +352,6 @@ fn assert_refused_copy(root: &Element) {
 pub async fn console_dom_copy_feedback_uses_current_text_and_locale(
     import_module: js_sys::Function,
 ) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture();
@@ -368,11 +359,11 @@ pub async fn console_dom_copy_feedback_uses_current_text_and_locale(
     let block = console(&cases.console.update.content, ConsoleVariant::Error);
     let mut mounted = Placed::show(Rc::clone(&view), &block);
     let root = mounted.root();
-    assert_success_feedback(&page, &root, &clipboard, &cases).await;
+    assert_success_feedback(&root, &clipboard, &cases).await;
     copy_button(&root).click();
-    copied(&page, &copy_control(&root)).await;
+    copied(&copy_control(&root)).await;
     assert_eq!(clipboard.texts().len(), 2);
-    assert_german_feedback(&page, &mut mounted, german(&view), &block, &cases.console).await;
+    assert_german_feedback(&mut mounted, german(&view), &block, &cases.console).await;
     assert_eq!(clipboard.texts().len(), 3);
     let _refused = Recorded::install(Clipboard::Refuse);
     let refused = Placed::show(
@@ -386,7 +377,6 @@ pub async fn console_dom_copy_feedback_uses_current_text_and_locale(
 /// another instance reports its own feedback.
 #[wasm_bindgen]
 pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: js_sys::Function) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture().console;
@@ -406,11 +396,11 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
     copy_button(&left_root).click();
     assert_eq!(clipboard.texts(), [cases.update.content.as_str()]);
     clipboard.settle();
-    copied(&page, &left_copy).await;
+    copied(&left_copy).await;
     assert!(text(&right_copy).is_empty(), "instances shared feedback");
     copy_button(&right_root).click();
     clipboard.settle();
-    copied(&page, &right_copy).await;
+    copied(&right_copy).await;
     assert_eq!(
         clipboard.texts(),
         [cases.update.content.as_str(), cases.german.content.as_str()]
@@ -424,7 +414,7 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
         "reattachment installed a second subscription"
     );
     clipboard.settle();
-    copied(&page, &left_copy).await;
+    copied(&left_copy).await;
     drop(right);
     copy_button(&left_root).click();
     assert_eq!(
@@ -433,12 +423,12 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
         "a released instance held the survivor"
     );
     clipboard.settle();
-    copied(&page, &left_copy).await;
-    assert_retired_completions(&page, &clipboard, &cases).await;
+    copied(&left_copy).await;
+    assert_retired_completions(&clipboard, &cases).await;
 }
 /// A completion that settles after its control disconnected, or after it reconnected,
 /// is retired with the view that asked for it.
-async fn assert_retired_completions(page: &JsValue, clipboard: &Recorded, cases: &Console) {
+async fn assert_retired_completions(clipboard: &Recorded, cases: &Console) {
     let retiring = Placed::show(
         Rc::clone(&view()),
         &console(&cases.mount.content, ConsoleVariant::Default),
@@ -448,7 +438,7 @@ async fn assert_retired_completions(page: &JsValue, clipboard: &Recorded, cases:
     copy_button(&root).click();
     let detached = retiring.detach();
     clipboard.settle();
-    frames(page, 1).await;
+    frames(1).await;
     assert!(
         text(&control).is_empty(),
         "a completion settled after disconnect painted feedback"
@@ -458,7 +448,7 @@ async fn assert_retired_completions(page: &JsValue, clipboard: &Recorded, cases:
     let again = retiring.detach();
     container().append_child(&again).unwrap();
     clipboard.settle();
-    frames(page, 1).await;
+    frames(1).await;
     assert!(
         text(&control).is_empty(),
         "a completion settled after reconnection painted feedback"
@@ -468,7 +458,6 @@ async fn assert_retired_completions(page: &JsValue, clipboard: &Recorded, cases:
 /// A removed console releases its scroller rather than retaining it through the copy callback.
 #[wasm_bindgen]
 pub async fn console_dom_removal_releases_its_subtree(import_module: js_sys::Function) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture().console;
@@ -488,7 +477,7 @@ pub async fn console_dom_removal_releases_its_subtree(import_module: js_sys::Fun
     drop(copy);
     drop(scroller);
     drop(placed);
-    collect(&page).await;
+    collect().await;
     let alive = probes.each_ref().map(|probe| probe.deref().is_some());
     assert!(
         !alive.contains(&true),
@@ -498,17 +487,12 @@ pub async fn console_dom_removal_releases_its_subtree(import_module: js_sys::Fun
 
 /// The console's copy control keeps compact geometry, a muted idle role and an accent
 /// highlight, measured on the painted control.
-async fn assert_compact_control(
-    page: &JsValue,
-    view: &maestro_web::dom::DomView,
-    root: &Element,
-    cases: &Console,
-) {
+async fn assert_compact_control(view: &maestro_web::dom::DomView, root: &Element, cases: &Console) {
     let presentation = view.pack.presentation(view.mode).unwrap();
     let role = |name: &str| rgb(presentation.colors[name]);
     let control = copy_button(root);
     driver("driverPointer", "[0,0,false]").await;
-    settle_transitions(page, &control).await;
+    settle_transitions(&control);
     assert_eq!(computed(&control, "height"), "20px", "compact height");
     assert_eq!(computed(&control, "column-gap"), "4px", "compact gap");
     assert_eq!(computed(&control, "font-size"), "12px", "compact text");
@@ -520,7 +504,7 @@ async fn assert_compact_control(
         rect.y() + rect.height() / 2.
     );
     driver("driverPointer", &point).await;
-    settle_transitions(page, &control).await;
+    settle_transitions(&control);
     assert_eq!(
         computed(&control, "background-color"),
         role("accent"),
@@ -528,13 +512,13 @@ async fn assert_compact_control(
     );
     assert_eq!(computed(&control, "color"), role("on-accent"), "hover role");
     driver("driverPointer", "[0,0,false]").await;
-    assert_success_gap(page, (&control, cases)).await;
+    assert_success_gap((&control, cases)).await;
 }
 /// Complete a copy and measure the success label's rendered separation from its glyph.
-async fn assert_success_gap(page: &JsValue, (control, cases): (&HtmlElement, &Console)) {
+async fn assert_success_gap((control, cases): (&HtmlElement, &Console)) {
     let clipboard = Recorded::install(Clipboard::Accept);
     control.click();
-    copied(page, control).await;
+    copied(control).await;
     assert_eq!(clipboard.texts(), [cases.mount.content.as_str()]);
     assert_eq!(text(control), cases.copy.feedback, "success label");
     let glyph = select(control.as_ref(), "svg").get_bounding_client_rect();
@@ -544,11 +528,11 @@ async fn assert_success_gap(page: &JsValue, (control, cases): (&HtmlElement, &Co
         (gap - 4.0).abs() < 0.5,
         "success label separated by {gap} pixels"
     );
-    restored(page, control).await;
+    restored(control).await;
 }
 /// Finish the control's running transitions, so the next reading is its painted result.
-async fn settle_transitions(page: &JsValue, element: &Element) {
-    call(page, "finish", &js_sys::Array::of1(element)).await;
+fn settle_transitions(element: &Element) {
+    crate::contributions_support::page::finish(element);
 }
 
 /// The console's copy control keeps the reference's compact, muted and accent treatment.
@@ -556,7 +540,6 @@ async fn settle_transitions(page: &JsValue, element: &Element) {
 pub async fn console_dom_control_keeps_compact_muted_and_accent_treatment(
     import_module: js_sys::Function,
 ) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     let cases = fixture().console;
@@ -564,7 +547,7 @@ pub async fn console_dom_control_keeps_compact_muted_and_accent_treatment(
         Rc::clone(&view),
         &console(&cases.mount.content, ConsoleVariant::Default),
     );
-    frames(&page, 1).await;
+    frames(1).await;
     let root = placed.root();
-    assert_compact_control(&page, &view, &root, &cases).await;
+    assert_compact_control(&view, &root, &cases).await;
 }

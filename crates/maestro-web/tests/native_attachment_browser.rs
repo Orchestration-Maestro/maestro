@@ -7,6 +7,8 @@ use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
 use web_sys::{CustomEvent, Element, HtmlElement};
 mod overlay;
+/// Keyboard and overlay-creation hooks.
+mod page;
 
 /// Assign an unreflected element operand.
 fn set(element: &Element, name: &str, value: &JsValue) {
@@ -526,7 +528,7 @@ async fn control_names(view: &Rc<maestro_web::dom::DomView>) {
 }
 
 /// Progressive native pages preserve identity and release finished documents.
-async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>, page: &JsValue) {
+async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>) {
     let record = crate::attachment_support::attachment();
     {
         let mut a = record.write().unwrap();
@@ -534,7 +536,7 @@ async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>, page: &JsValue) {
         a.content = crate::pdf_views_browser::encoded(true);
     }
     let (_, root) = opened(view, record);
-    crate::contributions_support::frames(page, 0).await;
+    crate::contributions_support::frames(0).await;
     let first = root.query_selector(".maestro-pdf img").unwrap().unwrap();
     assert_eq!(
         root.query_selector_all(".maestro-pdf img")
@@ -542,7 +544,7 @@ async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>, page: &JsValue) {
             .length(),
         1
     );
-    crate::contributions_support::frames(page, 2).await;
+    crate::contributions_support::frames(2).await;
     let pages = root.query_selector_all(".maestro-pdf img").unwrap();
     assert_eq!(pages.length(), 3);
     assert!(first.is_same_node(pages.item(0).as_ref()));
@@ -655,13 +657,12 @@ async fn overlay_word_resources(view: &Rc<maestro_web::dom::DomView>) {
 }
 /// Real format fixtures run through the overlay's shared document owners.
 #[wasm_bindgen]
-pub async fn overlay_dom_documents_keep_resources_and_sheet_state(import_module: &Function) {
+pub async fn overlay_dom_documents_keep_resources_and_sheet_state() {
     use base64::Engine as _;
     let view = view();
-    let page = crate::contributions_support::page_module(import_module).await;
-    overlay_pdf(&view, &page).await;
+    overlay_pdf(&view).await;
     overlay::pdf::raw_admission(&view);
-    overlay::pdf::live_replacement(&view, &page).await;
+    overlay::pdf::live_replacement(&view).await;
     overlay_sheets(&view);
     overlay::sheet_replacement(&view);
     overlay::sheet_failure(&view);
@@ -704,12 +705,7 @@ pub async fn overlay_dom_documents_keep_resources_and_sheet_state(import_module:
     close(&root);
 }
 /// Exercise every close route while document work is still pending.
-async fn close_routes(
-    view: &Rc<maestro_web::dom::DomView>,
-    page: &JsValue,
-    native: &crate::browser_fixture_support::FixtureModule,
-    calls: &Rc<std::cell::Cell<u32>>,
-) {
+async fn close_routes(view: &Rc<maestro_web::dom::DomView>, calls: &Rc<std::cell::Cell<u32>>) {
     for route in ["[data-close]", ".maestro-attachment-overlay", "Escape"] {
         let record = crate::attachment_support::attachment();
         {
@@ -743,9 +739,7 @@ async fn close_routes(
         let old_body = root.query_selector(".maestro-pdf").unwrap().unwrap();
         let count = calls.get();
         if route == "Escape" {
-            native
-                .call("pressKey", &Array::of1(&"Escape".into()))
-                .unwrap();
+            page::press_key("Escape");
         } else {
             control(&root, route);
         }
@@ -753,27 +747,20 @@ async fn close_routes(
         assert_eq!(calls.get(), count + 1);
         control(&root, "[data-close]");
         assert_eq!(calls.get(), count + 1);
-        crate::contributions_support::frames(page, 3).await;
+        crate::contributions_support::frames(3).await;
         assert_eq!(old_body.query_selector_all("img").unwrap().length(), 0);
         drop(overlay);
     }
 }
 /// Click routing, cancellation, independent reopen and one-shot notification.
 #[wasm_bindgen]
-pub async fn overlay_dom_close_reopen_and_pending_document_release(import_module: &Function) {
+pub async fn overlay_dom_close_reopen_and_pending_document_release() {
     use std::cell::Cell;
     let view = view();
-    let page = crate::contributions_support::page_module(import_module).await;
-    let native = crate::browser_fixture_support::FixtureModule::import(
-        import_module,
-        &wasm_bindgen::link_to!(module = "/tests/native_attachment_support.js"),
-    )
-    .await
-    .unwrap();
     let calls = Rc::new(Cell::new(0));
-    native.call("beginKeys", &Array::new()).unwrap();
-    close_routes(&view, &page, &native, &calls).await;
-    native.call("finishKeys", &Array::new()).unwrap();
+    let keys = page::Keys::begin();
+    close_routes(&view, &calls).await;
+    keys.finish();
     assert_eq!(Rc::strong_count(&calls), 1);
     assert_eq!(calls.get(), 3);
     overlay::close_callback(&view);
@@ -786,9 +773,7 @@ pub async fn overlay_dom_close_reopen_and_pending_document_release(import_module
     close(&second);
     let (_, first) = opened(&view, crate::attachment_support::attachment());
     let (_, second) = opened(&view, crate::attachment_support::attachment());
-    native
-        .call("pressKey", &Array::of1(&"Escape".into()))
-        .unwrap();
+    page::press_key("Escape");
     assert!(!first.is_connected() && !second.is_connected());
 }
 
@@ -796,7 +781,6 @@ pub async fn overlay_dom_close_reopen_and_pending_document_release(import_module
 async fn download_modes(
     view: &Rc<maestro_web::dom::DomView>,
     download: &crate::session_download_browser::Fixture,
-    native: &crate::browser_fixture_support::FixtureModule,
 ) {
     for mode in ["ok", "create", "append", "removed"] {
         let record = crate::attachment_support::attachment();
@@ -810,20 +794,18 @@ async fn download_modes(
         record.write().unwrap().content = "\t AAH/ \n".into();
         let pre = root.query_selector("pre").unwrap().unwrap();
         download.begin(mode);
-        native.call("beginErrors", &Array::new()).unwrap();
+        let errors = crate::browser_fixture_support::Errors::begin();
         control(&root, "[data-download]");
         let success = matches!(mode, "ok" | "removed");
-        native
-            .call("finishErrors", &Array::of1(&u32::from(!success).into()))
-            .unwrap();
-        wasm_bindgen_futures::JsFuture::from(download.finish(
-            &[0, 1, 255],
-            "application/octet-stream",
-            "literal<&>.bin",
-            success,
-        ))
-        .await
-        .unwrap();
+        errors.finish(usize::from(!success));
+        download
+            .finish(
+                &[0, 1, 255],
+                "application/octet-stream",
+                "literal<&>.bin",
+                success,
+            )
+            .await;
         assert!(
             pre.is_same_node(
                 root.query_selector("pre")
@@ -838,48 +820,36 @@ async fn download_modes(
 }
 /// Original bytes, native refusal propagation and synchronous overlay append failure.
 #[wasm_bindgen]
-pub async fn overlay_dom_downloads_original_bytes_and_reports_failures(import_module: &Function) {
+pub async fn overlay_dom_downloads_original_bytes_and_reports_failures() {
     let view = view();
-    let download = crate::session_download_browser::Fixture::import(import_module).await;
-    let native = crate::browser_fixture_support::FixtureModule::import(
-        import_module,
-        &wasm_bindgen::link_to!(module = "/tests/native_attachment_support.js"),
-    )
-    .await
-    .unwrap();
-    download_modes(&view, &download, &native).await;
+    let download = crate::session_download_browser::Fixture::default();
+    download_modes(&view, &download).await;
     let record = crate::attachment_support::attachment();
     record.write().unwrap().content = "invalid!".into();
     let (_, root) = opened(&view, record);
     download.begin("ok");
-    native.call("beginErrors", &Array::new()).unwrap();
+    let errors = crate::browser_fixture_support::Errors::begin();
     control(&root, "[data-download]");
-    native.call("finishErrors", &Array::of1(&1.into())).unwrap();
-    wasm_bindgen_futures::JsFuture::from(download.finish_none())
-        .await
-        .unwrap();
+    errors.finish(1);
+    download.finish_none();
     assert!(root.query_selector("pre").unwrap().is_some());
     close(&root);
-    refused_overlay_open(&view, &download, &native).await;
+    refused_overlay_open(&view, &download);
     let (_, root) = opened(&view, crate::attachment_support::attachment());
     close(&root);
 }
 
 /// Overlay construction and publication failures return on the synchronous opening route.
-async fn refused_overlay_open(
+fn refused_overlay_open(
     view: &Rc<maestro_web::dom::DomView>,
     download: &crate::session_download_browser::Fixture,
-    native: &crate::browser_fixture_support::FixtureModule,
 ) {
-    let restore: Function = native
-        .call("refuseCreation", &Array::new())
-        .unwrap()
-        .unchecked_into();
+    let refusal = page::refuse_creation();
     let error =
         maestro_web::AttachmentOverlay::open(view, crate::attachment_support::attachment(), None)
             .err()
             .unwrap();
-    restore.call0(&JsValue::UNDEFINED).unwrap();
+    drop(refusal);
     assert!(error.to_string().contains("controlled overlay creation"));
     for mode in ["append", "body"] {
         download.begin(mode);
@@ -895,9 +865,7 @@ async fn refused_overlay_open(
         } else {
             "Missing document body"
         }));
-        wasm_bindgen_futures::JsFuture::from(download.finish_none())
-            .await
-            .unwrap();
+        download.finish_none();
         assert_eq!(
             view.document
                 .query_selector_all("attachment-overlay")
@@ -910,13 +878,13 @@ async fn refused_overlay_open(
 
 /// Every thumbnail branch preserves the original URL and literal filename.
 #[wasm_bindgen]
-pub async fn tile_dom_preview_fallback_badge_and_utf16_names(import_module: &Function) {
+pub async fn tile_dom_preview_fallback_badge_and_utf16_names() {
     let view = view();
     crate::attachment_tiles::native_cases(&view);
     crate::attachment_surfaces::attachment_surfaces_keep_fractional_rects_and_owned_content(&view);
     crate::attachment_surfaces::attachment_styles_follow_caller_brand_pack(&view);
-    tile_hover(&view, import_module).await;
-    crate::attachment_tiles::tile_badge_keeps_image_pointer_route(&view, import_module).await;
+    tile_hover(&view).await;
+    crate::attachment_tiles::tile_badge_keeps_image_pointer_route(&view).await;
 }
 
 /// Removal uses the latest callback and never reaches the opening listener.
@@ -1096,9 +1064,8 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
 }
 
 /// Hover-capable paint and focused removal remain visible through native pointer input.
-async fn tile_hover(view: &maestro_web::dom::DomView, import_module: &Function) {
-    use crate::contributions_support::{call, computed, driver, page_module};
-    let page = page_module(import_module).await;
+async fn tile_hover(view: &maestro_web::dom::DomView) {
+    use crate::contributions_support::{computed, driver};
     let mut tile = maestro_web::components::attachment_tile::AttachmentTile::from(
         crate::attachment_support::attachment(),
     );
@@ -1113,12 +1080,12 @@ async fn tile_hover(view: &maestro_web::dom::DomView, import_module: &Function) 
         &format!("[{}, {}, false]", rect.x() + 10., rect.y() + 10.),
     )
     .await;
-    call(&page, "finish", &Array::of1(&remove)).await;
+    crate::contributions_support::page::finish(&remove);
     assert_eq!(computed(&remove, "opacity"), "1");
     driver("driverPointer", "[700, 500, false]").await;
-    call(&page, "finish", &Array::of1(&remove)).await;
+    crate::contributions_support::page::finish(&remove);
     remove.unchecked_ref::<HtmlElement>().focus().unwrap();
-    call(&page, "finish", &Array::of1(&remove)).await;
+    crate::contributions_support::page::finish(&remove);
     assert_eq!(computed(&remove, "opacity"), "1");
     root.node.unchecked_ref::<Element>().remove();
 }
