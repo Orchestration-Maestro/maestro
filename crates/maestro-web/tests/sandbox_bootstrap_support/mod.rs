@@ -141,9 +141,12 @@ pub(crate) fn wrap(runtime: &str, program: &str) -> String {
     )
 }
 
-/// Pad a module with one custom section to exactly `size` bytes.
+/// Pad a module with one custom section to exactly `size` bytes; its own size is returned unchanged.
 pub(crate) fn padded(wasm: &[u8], size: usize) -> Vec<u8> {
     const NAME: &[u8] = b"maestro-padding";
+    if size == wasm.len() {
+        return wasm.to_vec();
+    }
     let content = (1..=5)
         .map(|width| size - wasm.len() - 1 - width)
         .find(|content| leb(*content).len() == size - wasm.len() - 1 - content)
@@ -384,7 +387,8 @@ pub(crate) async fn mount(html: &str, options: Mount<'_>) -> Mounted {
     let container = inner.create_element("div").unwrap();
     container.set_id(&id);
     inner.body().unwrap().append_child(&container).unwrap();
-    let frame: HtmlIFrameElement = inner.create_element("iframe").unwrap().dyn_into().unwrap();
+    // The host document belongs to another realm, so its frame fails a native type check.
+    let frame: HtmlIFrameElement = inner.create_element("iframe").unwrap().unchecked_into();
     frame.set_attribute("sandbox", FLAGS).unwrap();
     let mut staged = JsValue::UNDEFINED;
     if options.url {
