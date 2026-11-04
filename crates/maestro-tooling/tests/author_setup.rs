@@ -567,7 +567,6 @@ fn marked_fixture(root: &Path) {
         "fn tail() {}\n",
     )
     .unwrap();
-    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/tests/support")).unwrap();
 }
 
 /// Prepare into `target/next-setup` in a child process of the test `test`, whose environment
