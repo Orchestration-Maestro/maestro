@@ -413,6 +413,9 @@ fn assert_profile_counters(profile: &Path) {
 }
 
 /// Controlled tool recording its arguments, environment and phases.
+///
+/// `MAESTRO_FAIL_PHASE` lists `phase` or `phase=status` entries: each listed phase the tool
+/// reaches exits with its status, or 17.
 const FIXTURE_CHILD: &str = r#"
 use std::{env, fs, io::Write, path::PathBuf};
 fn main() {
@@ -449,7 +452,13 @@ fn main() {
         use std::io::Write;
         let mut log = fs::OpenOptions::new().create(true).append(true).open(root.join("phases")).unwrap();
         writeln!(log, "{phase}").unwrap();
-        if env::var("MAESTRO_FAIL_PHASE").ok().as_deref() == Some(&phase) { std::process::exit(17); }
+        if let Ok(failures) = env::var("MAESTRO_FAIL_PHASE") {
+            let failed = failures.split(',').find_map(|entry| {
+                let (name, code) = entry.split_once('=').unwrap_or((entry, "17"));
+                (name == phase).then_some(code)
+            });
+            if let Some(code) = failed { std::process::exit(code.parse().unwrap_or(17)); }
+        }
     }
     if env::args().nth(1).as_deref() == Some("clippy") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
@@ -641,13 +650,12 @@ fn drive() {
         tooling::run(&args, Path::new(&cargo), Path::new(&root))
     };
     match result {
-        Ok(code) => std::process::exit(if code == std::process::ExitCode::SUCCESS {
-            0
-        } else if code == std::process::ExitCode::from(17) {
-            17
-        } else {
-            1
-        }),
+        // Forward the development command's own status, since a test distinguishes its failures.
+        Ok(code) => std::process::exit(
+            (0..=u8::MAX)
+                .find(|status| code == std::process::ExitCode::from(*status))
+                .map_or(1, i32::from),
+        ),
         Err(error) => {
             eprintln!("{error}");
             std::process::exit(1);
@@ -1017,7 +1025,12 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
 fn browser_test_runs_every_selection_after_a_failure() {
     drive();
     let fixture = Fixture::new();
-    for (failing, code) in [("none", 0), ("nextest", 17), ("run", 17)] {
+    for (failing, code) in [
+        ("none", 0),
+        ("nextest", 17),
+        ("run=18", 18),
+        ("nextest=17,run=18", 17),
+    ] {
         let receipt = fixture.root.path().join("receipt/invocations");
         if receipt.exists() {
             fs::remove_file(&receipt).unwrap();

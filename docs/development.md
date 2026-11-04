@@ -341,8 +341,9 @@ in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
 `browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]`.
-The job runs for merge groups and main pushes; pull requests and advisory-only runs
-skip it. Native package selection and the coverage floor stay unchanged.
+The job runs for merge groups and main pushes, and a manual `Browser proof`
+dispatch runs it on a named ref; pull requests and advisory-only runs skip it.
+Native package selection and the coverage floor stay unchanged.
 See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
 
@@ -360,7 +361,9 @@ full suite pins, with `browser-only: true` and the `ref` input as the checkout. 
 the declaration check and the Chromium job run. The workflow file is read from
 `main`; the test code and the `browser-test` recipe come from `ref`. Dispatches share
 one queue: a newer one replaces a queued proof and never cancels a running one.
-A proof restores the compile cache but never publishes it.
+This repository keeps the default concurrency key the caller contract requires, so
+a proof joins the shared `main` group and names its artifacts `root`. A proof
+restores the compile cache but never publishes it.
 
 The job saves the recipe's output as `browser-test.log` in the artifact
 `browser-test-root-<attempt>`, whether the recipe passes or fails:
