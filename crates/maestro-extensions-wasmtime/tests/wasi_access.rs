@@ -22,9 +22,9 @@ fn component_environment_keeps_inherited_values() {
         "component_environment_keeps_inherited_values",
         cases,
         |value| {
-            let mut variables = BTreeMap::from([(COMPONENT, component.as_str())]);
+            let mut variables = BTreeMap::from([(COMPONENT, Some(component.as_str()))]);
             if let Some(value) = value {
-                variables.insert(SENTINEL, value);
+                variables.insert(SENTINEL, Some(value));
             }
             variables
         },
@@ -57,10 +57,12 @@ fn component_host_location_wins_over_inherited_environment() {
         "component_host_location_wins_over_inherited_environment",
         [None, Some(""), Some("/wrong/index.wasm")],
         |supplied| {
-            let mut vars =
-                BTreeMap::from([(COMPONENT, component.as_str()), (SENTINEL, "unrelated Ω")]);
+            let mut vars = BTreeMap::from([
+                (COMPONENT, Some(component.as_str())),
+                (SENTINEL, Some("unrelated Ω")),
+            ]);
             if let Some(value) = supplied {
-                vars.insert(key, value);
+                vars.insert(key, Some(value));
             }
             vars
         },
@@ -111,14 +113,14 @@ fn component_environment_keeps_native_string_conversion() {
         [()],
         |()| {
             BTreeMap::from([
-                (OsString::from(COMPONENT), component.clone()),
+                (OsString::from(COMPONENT), Some(component.clone())),
                 (
                     OsString::from(SENTINEL),
-                    OsString::from_vec(vec![255, 65, 195, 40]),
+                    Some(OsString::from_vec(vec![255, 65, 195, 40])),
                 ),
                 (
                     OsString::from("MAESTRO_WASI_NEIGHBOR"),
-                    OsString::from("valid Ω"),
+                    Some(OsString::from("valid Ω")),
                 ),
             ])
         },

@@ -14,7 +14,7 @@ fn cloudflare_resolved_endpoint_reaches_raw_and_simple_compatibility_calls() -> 
     let Some(_) = maestro_test_process::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
-        |()| std::collections::BTreeMap::<String, String>::new(),
+        |()| std::collections::BTreeMap::<String, Option<String>>::new(),
     )?
     else {
         return Ok(());

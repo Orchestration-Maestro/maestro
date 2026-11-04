@@ -2292,8 +2292,9 @@ mode type before applying it.
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
 selected test starts; callers still check its exit status and scenario output.
-`env_clear()` preserves the inherited coverage profile destination, and later
-caller edits can override or remove it. Live protocols retain `CheckedChild` and
+`env_clear()` preserves the inherited coverage profile destination and the
+compiled-code cache home the run's setup exports, and later caller edits can
+override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. Settings
@@ -2311,18 +2312,22 @@ capture child does so for the rows that overflow, so the capture stops a waiting
 child, never an exiting one.
 
 Cases that read process variables go through `run_per_environment(test, cases,
-environment)`. It groups the cases by the variables `environment` returns and
-reruns the test once per group, in a child that holds exactly those variables
-after `env_clear()`, plus the parent's temporary directory unless the case sets
-one. In the parent, `run_per_environment` returns `None` once every child
-passes, and repeats each passing child's standard error as it goes, so a case that
-left one out keeps its reason. A run shows those lines when it asks for child
-output, as `--nocapture` does, or when the test fails. In a child it returns that
-group's cases in their original order, and the test checks them. Cases that share
-variables therefore share one child and one fixture parse, so don't spawn a child
-per case yourself. A case that needs a fresh process for other state, such as a
-process-wide counter or files created per case, keeps its own child. Use
-`TestProcess::case(id)` to select that case. Set a
+environment)`. It groups the cases by the edits `environment` returns and
+reruns the test once per group, in a child that applies exactly those edits
+after `env_clear()`, plus the compiled-code cache home the run's setup exports
+and the parent's temporary directory, unless the case sets one. A value of
+`Some` sets its variable and `None` removes it, so a case that names a kept
+variable as `None` reaches its child without it. A group child
+that loads a component therefore reuses the compiled code the run prepared
+instead of compiling it again. In the parent, `run_per_environment` returns
+`None` once every child passes, and repeats each passing child's standard error
+as it goes, so a case that left one out keeps its reason. A run shows those lines
+when it asks for child output, as `--nocapture` does, or when the test fails. In
+a child it returns that group's cases in their original order, and the test
+checks them. Cases that share variables therefore share one child and one fixture
+parse, so don't spawn a child per case yourself. A case that needs a fresh process
+for other state, such as a process-wide counter or files created per case, keeps
+its own child. Use `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,

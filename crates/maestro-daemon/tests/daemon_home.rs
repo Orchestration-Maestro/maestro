@@ -18,11 +18,11 @@ enum Home {
 }
 
 /// The `HOME` value the fixture's child receives, when any.
-fn variable(case: Home) -> BTreeMap<&'static str, &'static str> {
+fn variable(case: Home) -> BTreeMap<&'static str, Option<&'static str>> {
     match case {
         Home::Unset => BTreeMap::new(),
-        Home::Empty => BTreeMap::from([("HOME", "")]),
-        Home::Set => BTreeMap::from([("HOME", "/fixture/home")]),
+        Home::Empty => BTreeMap::from([("HOME", Some(""))]),
+        Home::Set => BTreeMap::from([("HOME", Some("/fixture/home"))]),
     }
 }
 

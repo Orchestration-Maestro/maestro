@@ -38,25 +38,25 @@ pub fn with_environment_without(
             .to_string();
         // The cost report reads `HOME` on every platform; Windows lookups read `USERPROFILE`.
         let mut environment = BTreeMap::from([
-            ("HOME".to_owned(), home.clone()),
-            (BASE.to_owned(), base.clone()),
+            ("HOME".to_owned(), Some(home.clone())),
+            (BASE.to_owned(), Some(base.clone())),
         ]);
         if cfg!(windows) {
-            environment.insert("USERPROFILE".to_owned(), home);
+            environment.insert("USERPROFILE".to_owned(), Some(home));
         }
         // The prepared native fixture stays reachable from a cleared child, so a case can
         // install controlled programs without repeating the artifact path.
         if let Some(artifact) = std::env::var_os("MAESTRO_NATIVE_FIXTURE") {
             environment.insert(
                 "MAESTRO_NATIVE_FIXTURE".to_owned(),
-                artifact.to_string_lossy().into_owned(),
+                Some(artifact.to_string_lossy().into_owned()),
             );
         }
         for (key, value) in variables {
-            environment.insert((*key).to_owned(), value.replace("$BASE", &base));
+            environment.insert((*key).to_owned(), Some(value.replace("$BASE", &base)));
         }
         for key in removed {
-            environment.remove(*key);
+            environment.insert((*key).to_owned(), None);
         }
         environment
     };
