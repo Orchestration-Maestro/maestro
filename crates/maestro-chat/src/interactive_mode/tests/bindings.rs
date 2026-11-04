@@ -245,8 +245,8 @@ fn assert_editor(world: &World, padding: u32, max: u32) {
     );
 }
 
-/// Asserts the frame painted after the content shrinks clears the screen only when the
-/// setting asks for it, and leaves the transcript empty.
+/// Empties the transcript, paints a tall frame, then asserts the frame painted after the
+/// content shrinks clears the screen only when the setting asks for it.
 fn assert_painted_shrink(world: &World, clear: bool) {
     world.mode.chat_container.clear();
     world.runtime.settle().unwrap();
