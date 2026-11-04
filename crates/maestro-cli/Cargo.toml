@@ -28,11 +28,7 @@ tokio = { version = "=1.53.3", default-features = false, features = ["signal", "
 name = "integration"
 path = "tests/integration.rs"
 
-[features]
-test-support = []
-
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-cli = { path = ".", features = ["test-support"] }
 maestro-listeners = { path = "../maestro-listeners" }
 futures-util = { workspace = true, features = ["async-await"] }
 maestro-test-directory.workspace = true

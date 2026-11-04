@@ -133,27 +133,6 @@ fn repeat(slot: &mut Option<Vec<String>>, value: String) {
     slot.get_or_insert_with(Vec::new).push(value);
 }
 
-/// The token examinations of the ongoing scan.
-///
-/// The scan looks at each token at most twice: once as the token it consumes and
-/// once as the lookahead of its predecessor, which the traversal guard tests hold
-/// against an upper bound.
-#[cfg(feature = "test-support")]
-static TOKEN_READS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-
-/// Marks one token examination of the scan.
-#[cfg(feature = "test-support")]
-fn mark_read() {
-    TOKEN_READS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-}
-
-/// Reports and clears the examinations the last parse performed.
-#[cfg(feature = "test-support")]
-#[must_use]
-pub fn token_reads() -> usize {
-    TOKEN_READS.swap(0, std::sync::atomic::Ordering::Relaxed)
-}
-
 /// Parse the authored command-line arguments.
 #[must_use]
 pub fn parse_args(args: &[String]) -> Args {
@@ -166,12 +145,6 @@ pub fn parse_args(args: &[String]) -> Args {
         let arg = args[index].as_str();
         let value = args.get(index + 1).map(String::as_str);
         index += 1;
-        #[cfg(feature = "test-support")]
-        // One examination for the token itself and one for its lookahead.
-        {
-            mark_read();
-            mark_read();
-        }
         if consumes_next(&mut result, arg, value) {
             index += 1;
         }

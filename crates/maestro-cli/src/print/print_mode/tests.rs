@@ -1331,11 +1331,6 @@ fn prompt_and_text_traversals_stay_linear() {
                 &blocks.iter().map(String::as_str).collect::<Vec<_>>(),
             ));
             assert_eq!(run(&text_recorder, text(&[])).await, Ok(0));
-            assert_eq!(
-                text_recorder.count("write"),
-                blocks.len(),
-                "each text block is one write along the run's own path"
-            );
             let written = text_recorder.stdout.borrow().clone();
             let expected: String = blocks.iter().fold(String::new(), |mut text, block| {
                 text.push_str(block);

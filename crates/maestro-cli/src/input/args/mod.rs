@@ -5,8 +5,6 @@ mod parse;
 
 pub(crate) use help::describe_options;
 pub use help::print_help;
-#[cfg(feature = "test-support")]
-pub use parse::token_reads;
 pub use parse::{is_valid_thinking_level, parse_args};
 
 use indexmap::IndexMap;
