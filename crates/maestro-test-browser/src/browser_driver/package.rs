@@ -200,7 +200,39 @@ fn modules(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::R
                 .args(["--out-name", "module"]),
         )?;
     }
-    Ok(())
+    sandbox_runtime(checkout, cargo, target, output)
+}
+
+/// Build the prototype sandbox runtime with classic-script glue for parser-blocking startup.
+fn sandbox_runtime(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::Result<()> {
+    let manifest = checkout
+        .join("crates/maestro-web/tests/fixtures/browser_modules/sandbox_runtime/Cargo.toml");
+    let built = command(
+        Command::new(cargo)
+            .current_dir(checkout)
+            .env("CARGO_TARGET_DIR", target)
+            .args(["build", "--manifest-path"])
+            .arg(manifest)
+            .args([
+                "--lib",
+                "--release",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--locked",
+                "--message-format=json",
+            ]),
+    )?;
+    let wasm = inputs::artifact(&built, "cdylib", "sandbox_runtime_probe")?;
+    command(
+        Command::new("wasm-bindgen")
+            .arg(wasm)
+            .args(["--target", "no-modules", "--no-modules-global"])
+            .arg("__maestroSandboxRuntime")
+            .args(["--no-typescript", "--out-dir"])
+            .arg(output.join("package/modules/sandbox_runtime"))
+            .args(["--out-name", "runtime"]),
+    )
+    .map(drop)
 }
 
 /// Write only the fixed bootstrap documents and helper module.

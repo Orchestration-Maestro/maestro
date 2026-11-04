@@ -134,7 +134,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
     let parsed = inputs::inventory(INVENTORY).unwrap();
     assert_eq!(
         parsed.families.each_ref().map(|(_, names)| names.len()),
-        [26, 49, 194]
+        [26, 57, 194]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
     for invalid in [
@@ -190,6 +190,7 @@ fn inventory_matches_authored_exports() {
             .collect::<Vec<_>>();
         if *family == "loading" {
             for file in [
+                "sandbox_bootstrap_browser.rs",
                 "native_document_artifacts_browser.rs",
                 "native_html_artifact_browser.rs",
                 "sample_sessions_browser.rs",
