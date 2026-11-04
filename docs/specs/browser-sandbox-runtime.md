@@ -140,7 +140,7 @@ Measure prototype and final release bytes separately. T01 measures the selected 
 
 ## Bootstrap qualification receipt
 
-This receipt records what the bootstrap qualification measured. It selects a loader and names the public API, but it does not deliver the production runtime: the ten handwritten runtime files and their envelopes are unchanged until the implementation issue lands.
+This receipt records what the bootstrap qualification measured. It selects a loader and names the public API, but it does not deliver the production runtime: the ten handwritten runtime files and their envelopes are unchanged until the implementation issue lands. Five required rows have no witness yet and are marked not qualified under [open questions](#open-questions-and-required-receipts). Until they pass, this receipt does not unblock the implementation issue.
 
 ### Measurement setup
 
@@ -301,6 +301,11 @@ Each entry names its owner, its blocking observation and what the [bootstrap qua
 | How are asynchronous user bodies and supplied runtime functions executed while preserving return/await, import.meta, relative imports and current policy refusal? | Bootstrap spike. Execute actual programs in the isolated realm; generic Function/eval permission is not assumed. C02, C08, C12. **Measured:** a module envelope settled in Rust; supplied providers run from inert carriers. Keeping the envelope is an open decision. |
 | What replaces public bridge source generation, and how does the immutable matching bundle reach each constructor/default and standalone download without a build cycle? | Bootstrap spike. Publish exact signatures, native/browser availability, all caller edits and a normal-build/offline witness. C02, C07-C08, C11, C13. **Named:** a checked-in generated bundle with unchanged constructors; reproducible prototype builds and an offline witness. The user-script world stays unqualified. |
 | Does the proposed runtime fit the qualified bootstrap, and does the actual release bundle pass? | Bootstrap spike measures the largest module that installs before classic scripts under CSP and records a supported full-runtime size estimate beside it; an exceeding estimate blocks dispatch. Implementation reruns identical witnesses against the actual optimized all-provider bundle and returns any failure for a decision. C01, C12-C13. **Measured:** 8 MiB limit against an estimate of at most about 0.85 MB; the actual bundle remains for the implementation issue. |
+| Does removing the frame during startup stop installation and settle the host once? | Bootstrap spike. Remove the frame while the selected loader starts. S11, C08-C10, A14. **Not qualified:** no witness removes a frame during startup. |
+| Do startup, startup failure and removal leave no native resources behind? | Bootstrap spike. Observe listeners, closures, timers, frame state and hidden parents after the selected loader starts, fails or is removed. C07-C10, A14. **Not qualified:** no witness checks for leaked native resources. |
+| Does the current frame's one-shot ready or error handshake settle once? | Bootstrap spike. Send the handshake twice, and from a replaced frame, under the selected loader. C07, C10, A09. **Not qualified:** no witness settles the handshake under the selected loader. |
+| Do helpers stay correct when initialization is delayed? | Bootstrap spike. Start the runtime after the parser has passed the loading point and trace first-script access and order. C08-C09, S11. **Not qualified:** no witness delays initialization. |
+| Does completion wait for the whole authored source? | Bootstrap spike. Place authored source after `</html>` and order completion after it. C11-C12, A10. **Not qualified:** no witness orders completion after trailing source. |
 
 ### Public source evidence
 
