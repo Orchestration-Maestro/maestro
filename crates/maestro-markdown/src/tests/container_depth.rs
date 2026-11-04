@@ -325,6 +325,51 @@ fn deep_reply_list_parses_on_a_small_stack() {
     depth_rows(REDUCED_STACK, || indented(300, "> "), (601, 1_201));
 }
 
+/// Work one fresh parse of a depth-`levels` indented chain charges, with the authored
+/// size of that chain.
+fn item_text_charge(levels: usize, charge: fn(&super::Work) -> usize) -> (usize, usize) {
+    let source = indented(levels, "");
+    let bytes = source.len();
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = parse_with_options(source, MarkedOptions::Terminal);
+    assert_eq!(shape(&document).0, 2 * levels);
+    (super::WORK.with_borrow(charge), bytes)
+}
+
+/// Whether work per authored byte at four times the depth stays within twice the shallower
+/// chain's, so an item's work follows its own lines instead of every level above it.
+fn stays_proportional([shallow, deep]: [(usize, usize); 2]) -> bool {
+    (deep.0 as u128) * (shallow.1 as u128) <= 2 * (shallow.0 as u128) * (deep.1 as u128)
+}
+
+#[test]
+fn deep_item_text_classification_stays_proportional_to_the_source() {
+    let measured = [75, 300].map(|levels| item_text_charge(levels, |work| work.paragraph_bytes));
+    assert!(
+        stays_proportional(measured),
+        "item text classified per authored byte {measured:?}"
+    );
+}
+
+#[test]
+fn deep_item_text_joins_stay_proportional_to_the_source() {
+    let measured = [75, 300].map(|levels| item_text_charge(levels, |work| work.joined_bytes));
+    assert!(
+        stays_proportional(measured),
+        "joined item text bytes per authored byte {measured:?}"
+    );
+}
+
+#[test]
+fn deep_item_stop_rules_stay_proportional_to_the_source() {
+    let measured =
+        [75, 300].map(|levels| item_text_charge(levels, |work| work.block_recognizer_bytes));
+    assert!(
+        stays_proportional(measured),
+        "item stop rule bytes per authored byte {measured:?}"
+    );
+}
+
 /// Line visits of one fresh parser run whose container depth is `depth * levels`.
 fn work_of(source: String, depth: usize, levels: usize) -> usize {
     super::WORK.with_borrow_mut(|work| *work = super::Work::default());
@@ -351,4 +396,25 @@ fn deep_quote_resolution_completes_on_a_reduced_stack() {
         ))
     });
     assert_eq!(measured, (2_000, 2_000));
+}
+
+/// Work one fresh parse of a single list item holding `paragraphs` blank-separated
+/// paragraphs charges, with the authored size of the document.
+fn item_paragraph_charge(paragraphs: usize, charge: fn(&super::Work) -> usize) -> (usize, usize) {
+    let source = format!("- a\n{}", "\n  a\n".repeat(paragraphs - 1));
+    let bytes = source.len();
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = parse_with_options(source, MarkedOptions::Terminal);
+    assert_eq!(shape(&document), (2, 3 * paragraphs + 1));
+    (super::WORK.with_borrow(charge), bytes)
+}
+
+#[test]
+fn item_stop_seeks_stay_proportional_to_the_item() {
+    let measured =
+        [50, 200].map(|paragraphs| item_paragraph_charge(paragraphs, |work| work.item_seeks));
+    assert!(
+        stays_proportional(measured),
+        "item stop seeks per authored byte {measured:?}"
+    );
 }

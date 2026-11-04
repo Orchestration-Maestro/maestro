@@ -245,6 +245,27 @@ fn assert_editor(world: &World, padding: u32, max: u32) {
     );
 }
 
+/// Empties the transcript, paints a tall frame, then asserts the frame painted after the
+/// content shrinks clears the screen only when the setting asks for it.
+fn assert_painted_shrink(world: &World, clear: bool) {
+    world.mode.chat_container.clear();
+    world.runtime.settle().unwrap();
+    world.mode.show_error("tall").unwrap();
+    world.runtime.settle().unwrap();
+    let recorded = world.terminal.writes().len();
+    world.mode.chat_container.clear();
+    world.mode.ui.request_render(false);
+    world.runtime.settle().unwrap();
+    let writes = world.terminal.writes();
+    let cleared = writes[recorded..]
+        .iter()
+        .any(|write| write.contains("\u{1b}[2J"));
+    assert_eq!(
+        cleared, clear,
+        "the painted frame follows the shrink policy: {writes:?}"
+    );
+}
+
 /// Asserts the settings effects `expected` reached for `input`, and only those; the
 /// effects after a failure keep the `before` clear-on-shrink, padding and row values.
 fn assert_settings(world: &World, input: &Input, expected: &Settled, before: (bool, u32, u32)) {
@@ -297,11 +318,16 @@ fn runtime_settings_follow_the_current_session_without_crossing_policies() {
             world.mode.apply_runtime_settings().unwrap();
             assert_eq!(changes.get(), moved + 1, "the session's cwd comes back");
             assert_settings(&world, &input, &expected, (false, 0, 0));
-            let Input::Settings { hardware, .. } = input else {
+            let Input::Settings {
+                hardware, clear, ..
+            } = input
+            else {
                 unreachable!()
             };
-            let hidden = world.terminal.writes().iter().any(|w| w == "\x1b[?25l");
-            assert_eq!(hidden, hardware_before && !hardware);
+            let writes = world.terminal.writes();
+            let hidden = writes.iter().any(|w| w == "\u{1b}[?25l");
+            assert_eq!(hidden, hardware_before && !hardware, "{writes:?}");
+            assert_painted_shrink(&world, clear);
             world.mode.apply_runtime_settings().unwrap();
             assert_eq!(changes.get(), moved + 1, "an unchanged cwd notifies nobody");
         }
@@ -1317,6 +1343,71 @@ fn capability_shortcut(
         }))?;
         context.shutdown()
     })
+}
+
+/// What a shortcut's context reports about its turn signal and its queued messages.
+fn abort_state(context: &maestro_app::ExtensionContext) -> Result<Value, maestro_app::EventError> {
+    Ok(json!({
+        "signal": context.signal()?.is_some(),
+        "pending": context.has_pending_messages()?,
+    }))
+}
+
+/// A `ctrl+q` shortcut that records the context's state before and after aborting.
+fn aborting_shortcut(log: &Rc<RefCell<Vec<Value>>>) -> ExtensionShortcut<Local> {
+    let log = Rc::clone(log);
+    ctrl_q(move |context| {
+        log.borrow_mut().push(abort_state(&context)?);
+        context.abort()?;
+        log.borrow_mut().push(abort_state(&context)?);
+        Ok(())
+    })
+}
+
+#[test]
+fn shortcut_abort_observes_the_signal_and_restores_pending_messages() {
+    isolated(
+        "shortcut_abort_observes_the_signal_and_restores_pending_messages",
+        async |directory| {
+            let world = Setup {
+                extension: Some(idle()),
+                ..Setup::default()
+            }
+            .build(directory);
+            let log = Rc::new(RefCell::new(Vec::new()));
+            let session = world.mode.runtime_host.session();
+            register_shortcut(
+                &session.resource_loader().get_extensions(),
+                aborting_shortcut(&log),
+            );
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            super::with_held_response(&world, async |held| {
+                session.steer("queued", &[]).unwrap();
+                world.mode.editor.handle_input("\u{11}");
+                assert!(world.runtime.drain_futures().is_empty());
+                assert!(
+                    held.signal.is_aborted(),
+                    "the abort reaches the running turn"
+                );
+                assert_eq!(
+                    world.mode.editor.get_text(),
+                    "queued",
+                    "the abort puts the queued message back"
+                );
+            })
+            .await;
+            assert_eq!(
+                *log.borrow(),
+                [
+                    json!({"signal": true, "pending": true}),
+                    json!({"signal": true, "pending": false}),
+                ],
+                "the context sees the running signal and loses its queue to the editor"
+            );
+            assert!(world.runtime.drain_futures().is_empty());
+        },
+    );
 }
 
 #[test]

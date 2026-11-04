@@ -145,6 +145,8 @@ pub(crate) struct Work {
     pub(crate) address_checks: usize,
     /// Bytes up to the end of each address candidate the start patterns matched.
     pub(crate) address_bytes: usize,
+    /// Entry comparisons made by a retained item's stop and underline seeks.
+    pub(crate) item_seeks: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.

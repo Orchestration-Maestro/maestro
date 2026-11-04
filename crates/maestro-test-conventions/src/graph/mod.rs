@@ -56,17 +56,26 @@ const NATIVE: &str = "cfg(not(target_arch = \"wasm32\"))";
 /// Validate declared and host-resolved workspace graphs.
 pub(crate) fn check(root: &Path) -> Result<(Metadata, BTreeSet<String>), String> {
     let declared = metadata::load(root, None)?;
-    metadata::identities(&declared)?;
-    test_support::check(&declared)?;
-    let packages = inventory(root, &declared)?;
-    let mut edges = declared_edges(&declared)?;
-    validate(&declared, &edges, &packages)?;
+    let (packages, mut edges) = declared_graph(root, &declared)?;
     let host = metadata::compiler_host()?;
     let resolved = metadata::load(root, Some(&host))?;
     edges.extend(metadata::resolved(&resolved, &declared)?);
     validate(&declared, &edges, &packages)?;
     complete(&declared, &edges, &resolved)?;
     Ok((declared, packages))
+}
+
+/// Validate a declared metadata document and return its packages and declared edges.
+pub(crate) fn declared_graph(
+    root: &Path,
+    declared: &Metadata,
+) -> Result<(BTreeSet<String>, BTreeSet<Edge>), String> {
+    metadata::identities(declared)?;
+    test_support::check(declared)?;
+    let packages = inventory(root, declared)?;
+    let edges = declared_edges(declared)?;
+    validate(declared, &edges, &packages)?;
+    Ok((packages, edges))
 }
 
 /// Require every Cargo member to match the named crate inventory.
