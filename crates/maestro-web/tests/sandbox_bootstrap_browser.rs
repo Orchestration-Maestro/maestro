@@ -437,7 +437,11 @@ pub async fn bootstrap_staging_alternative_needs_a_trusted_html_sink() {
 }
 
 /// Records uncaught errors, then every listener, timer and observer the frame registers while recording.
-const RECORDER: &str = "window.S={errors:[],registered:[],recording:true};addEventListener('error',e=>{S.errors.push(e.error?e.error.name+': '+e.error.message:'muted: '+e.message);e.preventDefault()});for(const[o,k]of[[EventTarget.prototype,'addEventListener'],[window,'setTimeout'],[window,'setInterval'],[window,'requestAnimationFrame'],[window,'requestIdleCallback'],[window,'queueMicrotask'],[MutationObserver.prototype,'observe']]){const f=o[k];o[k]=function(...a){if(S.recording)S.registered.push(typeof a[0]==='string'?k+':'+a[0]:k);return f.apply(this,a)}}";
+///
+/// A call from code with no script URL goes to `outside`, not `registered`: the policy admits no
+/// eval, so only the test driver's own evaluations run without one, and the driver may install its
+/// listeners at any point of the document.
+const RECORDER: &str = "window.S={errors:[],registered:[],outside:[],recording:true};addEventListener('error',e=>{S.errors.push(e.error?e.error.name+': '+e.error.message:'muted: '+e.message);e.preventDefault()});const caller=()=>{const p=Error.prepareStackTrace;Error.prepareStackTrace=(_,s)=>s;const s=new Error().stack;Error.prepareStackTrace=p;return s[2].getScriptNameOrSourceURL()};for(const[o,k]of[[EventTarget.prototype,'addEventListener'],[window,'setTimeout'],[window,'setInterval'],[window,'requestAnimationFrame'],[window,'requestIdleCallback'],[window,'queueMicrotask'],[MutationObserver.prototype,'observe']]){const f=o[k];o[k]=function(...a){if(S.recording)(caller()?S.registered:S.outside).push(typeof a[0]==='string'?k+':'+a[0]:k);return f.apply(this,a)}}";
 /// Ends recording after the loader and reads the helpers and scaffold it left.
 const RECORDED: &str = "S.recording=false;S.first=typeof listAttachments;S.config=document.querySelectorAll('script[data-maestro-sandbox]').length;S.trace=self.__sandboxInstallTrace?[...__sandboxInstallTrace]:null";
 
