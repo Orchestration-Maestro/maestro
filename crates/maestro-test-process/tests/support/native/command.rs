@@ -39,6 +39,8 @@ pub(super) struct Append {
     path: String,
     /// Append the working directory and a newline before the recorded bytes.
     cwd: bool,
+    /// Append the named variable as `name=<text>` before the recorded bytes, empty when unset.
+    variable: Option<String>,
     /// Bytes appended last.
     bytes: Vec<u8>,
 }
@@ -429,7 +431,7 @@ fn holder(stdout: &[u8], stderr: &[u8], descendant: &str) -> io::Result<()> {
     leave(0)
 }
 
-/// Append the working directory and then the recorded bytes to one file.
+/// Append the working directory, the named variable and then the recorded bytes to one file.
 fn append_to(append: &Append) -> io::Result<()> {
     let mut line = Vec::new();
     if append.cwd {
@@ -438,6 +440,12 @@ fn append_to(append: &Append) -> io::Result<()> {
                 .into_os_string()
                 .into_encoded_bytes(),
         );
+        line.push(b'\n');
+    }
+    if let Some(name) = &append.variable {
+        line.extend_from_slice(name.as_bytes());
+        line.push(b'=');
+        line.extend_from_slice(std::env::var(name).unwrap_or_default().as_bytes());
         line.push(b'\n');
     }
     line.extend_from_slice(&append.bytes);

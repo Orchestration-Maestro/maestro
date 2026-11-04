@@ -461,6 +461,14 @@ fn forced_remove_keeps_a_directory_whose_link_climbs_out_through_a_dangling_link
 fn forced_remove_keeps_a_directory_linked_to_a_repository_whose_name_differs_by_one_byte() {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
     let scratch = Scratch::new().unwrap();
+    // Two repositories this behaviour needs exist only where the host keeps the byte
+    // spellings apart.
+    if !scratch
+        .keeps_distinct(&[OsStr::from_bytes(b"repo-\xff"), OsStr::new("repo-\u{fffd}")])
+        .unwrap()
+    {
+        return;
+    }
     let linked = scratch.path().join(OsStr::from_bytes(b"repo-\xff"));
     let lookalike = scratch.path().join("repo-\u{fffd}");
     init_repo_with_commit(&linked);
@@ -590,6 +598,13 @@ fn list_marks_a_bare_repository() {
 fn list_keeps_the_bytes_of_a_checkout_path_that_text_cannot_hold() {
     use std::os::unix::ffi::OsStrExt;
     let scratch = Scratch::new().unwrap();
+    // The checkout path this listing needs exists only where the host stores that name.
+    if !scratch
+        .keeps_distinct(&[<std::ffi::OsStr as OsStrExt>::from_bytes(b"trees-\xff")])
+        .unwrap()
+    {
+        return;
+    }
     let repo = repository(&scratch);
     let checkout = scratch
         .path()

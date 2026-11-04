@@ -433,9 +433,13 @@ fn process_tree_discovery_scales_with_unique_reachable_pids() {
 /// Observes native path identity and explicit environment values after a child starts.
 fn assert_native_process_values() {
     let tree = ProcTree::new();
-    let target = tree
-        .path()
-        .join(std::ffi::OsString::from_vec(b"cwd-\xff".to_vec()));
+    let name = std::ffi::OsString::from_vec(b"cwd-\xff".to_vec());
+    // The working directory this identity check needs exists only where the host stores
+    // that name.
+    if !tree.0.keeps_distinct(&[name.as_os_str()]).unwrap() {
+        return;
+    }
+    let target = tree.path().join(&name);
     std::fs::create_dir(&target).unwrap();
     let authored = tree.path().join("alias");
     std::os::unix::fs::symlink(&target, &authored).unwrap();

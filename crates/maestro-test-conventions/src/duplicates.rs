@@ -54,18 +54,16 @@ impl<'a> Tokens<'a> {
     }
 
     /// Index delimiter bodies once, without rescanning nested function source.
-    fn blocks(&mut self, source: &'a str) -> HashMap<usize, (usize, usize)> {
+    fn blocks(&mut self, source: &'a Source) -> HashMap<usize, (usize, usize)> {
         let mut blocks = HashMap::new();
         let mut stack: Vec<Frame<'a>> = Vec::new();
-        for (kind, range) in crate::source::tokens(source) {
+        for (kind, range) in &source.tokens {
             let offset = range.start;
             let end = range.end;
-            let text = &source[offset..end];
+            let text = &source.contents[offset..end];
             if matches!(
                 kind,
-                TokenKind::Whitespace
-                    | TokenKind::LineComment { .. }
-                    | TokenKind::BlockComment { .. }
+                TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }
             ) {
                 continue;
             }
@@ -175,7 +173,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             }
             Bodies {
                 source,
-                blocks: tokens.blocks(&source.contents),
+                blocks: tokens.blocks(source),
                 sites: &mut sites,
                 testing: false,
             }

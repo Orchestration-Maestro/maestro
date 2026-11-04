@@ -27,40 +27,40 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 /// Check documentation tokens without interpreting comment-like text in literals.
 fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String> {
     let mut line = 1;
+    let mut counted = 0;
     let mut block = Documentation::default();
     let mut style = None;
-    for (kind, range) in crate::source::tokens(&source.contents) {
-        let offset = range.start;
-        let end = range.end;
-        let body = match kind {
+    for (kind, range) in &source.tokens {
+        match kind {
             TokenKind::LineComment {
                 doc_style: Some(owner),
-            } => Some((&source.contents[offset + 3..end], owner)),
+            } => {
+                if style != Some(*owner) {
+                    block.check(source)?;
+                    block = Documentation::default();
+                    style = Some(*owner);
+                }
+                line += crate::source::count_newlines(&source.contents[counted..range.start]);
+                counted = range.start;
+                block.comment(&source.contents[range.start + 3..range.end], line);
+            }
             TokenKind::BlockComment {
                 doc_style: Some(_), ..
             } if !generated_bindings => {
                 return Err(format!(
-                    "{}:{line}: block documentation: use /// or //!",
-                    source.path.display()
+                    "{}:{}: block documentation: use /// or //!",
+                    source.path.display(),
+                    crate::source::line(&source.contents, range.start)
                 ));
             }
-            TokenKind::Whitespace => None,
-            _ => {
+            // Any other token ends the block; an empty block has nothing to check.
+            _ if style.is_some() => {
                 block.check(source)?;
                 block = Documentation::default();
                 style = None;
-                None
             }
-        };
-        if let Some((body, owner)) = body {
-            if style != Some(owner) {
-                block.check(source)?;
-                block = Documentation::default();
-                style = Some(owner);
-            }
-            block.comment(body, line);
+            _ => {}
         }
-        line += crate::source::count_newlines(&source.contents[offset..end]);
     }
     block.check(source)
 }
