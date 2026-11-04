@@ -167,11 +167,11 @@ pub async fn bootstrap_settles_asynchronous_programs_in_rust() {
     let bundle = Bundle::load().await;
     let rows = [
         (
-            "S.started=true;window.__completionCallbacks=[ok=>{S.log.push('callback:'+ok)}];S.metaUrl=import.meta.url;S.base=document.baseURI;S.helper=(await import('./helper.js')).answer;await null;return [sandboxId,42];",
+            "S.started=true;window.__completionCallbacks=[async ok=>{await null;S.log.push('callback:'+ok)}];S.metaUrl=import.meta.url;S.base=document.baseURI;S.helper=(await import('./helper.js')).answer;await null;return [sandboxId,42];",
             json!({"log":["callback:true","complete"],"error":null,"value":[ID,42],"helper":"helper-ok"}),
         ),
         (
-            "S.started=true;window.__completionCallbacks=[ok=>{S.log.push('callback:'+ok)}];throw new TypeError('user failure');",
+            "S.started=true;window.__completionCallbacks=[async ok=>{await null;S.log.push('callback:'+ok)}];throw new TypeError('user failure');",
             json!({"log":["callback:false","complete"],"error":{"message":"user failure"},"value":null,"helper":null}),
         ),
         (
