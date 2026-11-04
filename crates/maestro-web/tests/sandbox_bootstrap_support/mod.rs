@@ -166,14 +166,6 @@ pub(crate) fn loader_document(head: &str, boot: Boot, body: &str) -> String {
     )
 }
 
-/// Address of the packaged page that writes a posted document into its own frame.
-pub(crate) fn writer_url() -> String {
-    format!(
-        "{}/sandbox.html",
-        web_sys::window().unwrap().location().origin().unwrap()
-    )
-}
-
 /// Encode text for an SVG script carrier.
 pub(crate) fn encode(code: &str) -> String {
     code.replace('&', "&amp;")
@@ -452,7 +444,10 @@ pub(crate) async fn mount(html: &str, options: Mount<'_>) -> Mounted {
         .unwrap();
         drop(message(&window, &frame, "sandbox-ready", Some(&reply)));
         let installed = message(&window, &frame, "sandbox-installed", None);
-        frame.set_src(&writer_url());
+        frame.set_src(&format!(
+            "{}/sandbox.html",
+            web_sys::window().unwrap().location().origin().unwrap()
+        ));
         container.append_child(&frame).unwrap();
         installed.await.unwrap();
     } else if options.staged {

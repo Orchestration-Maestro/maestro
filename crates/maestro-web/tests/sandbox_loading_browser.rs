@@ -1,6 +1,6 @@
 //! Actual browser document, event-source and subscription lifetime witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::sandbox_bootstrap_support::{Bundle, loader_document, writer_url};
+use crate::sandbox_bootstrap_support::{Bundle, loader_document};
 use crate::sandbox_loading_support;
 use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
@@ -493,10 +493,7 @@ pub async fn marker_looking_payloads_survive_preparation_and_completion() {
 
 /// Select the packaged writer page for URL loads, or srcdoc.
 fn writer(sandbox: &maestro_web::SandboxIframe, url: bool) {
-    let provider = url.then(|| {
-        SharedHandle::new(|| Ok(writer_url()))
-            as maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider
-    });
+    let provider = url.then(crate::contributions_support::sandbox_url);
     drop(sandbox.sandbox_url_provider.replace(provider));
 }
 
