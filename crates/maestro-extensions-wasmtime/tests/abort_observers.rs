@@ -4,20 +4,25 @@ use maestro_extensions::{
     Cancellation, EventBus, ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local,
     create_event_bus_for, types::ProviderActions,
 };
+use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, thread::ThreadId};
 use tokio::sync::mpsc;
 
 /// Each observed listener label with the thread it ran on.
 pub(super) type Observations = Rc<RefCell<Vec<(String, ThreadId)>>>;
 
-/// Supplies `signal` as the context signal of every later command.
+/// Supplies `signal` as the context signal and the abort target of every later command.
 pub(super) fn bind(runner: &ExtensionRunner<Local>, signal: &Cancellation) {
-    let signal = signal.clone();
+    let (supplied, target) = (signal.clone(), signal.clone());
     runner
         .bind_core(
             Local::unbound_actions(),
             ExtensionContextActions {
-                get_signal: Rc::new(move || Ok(Some(signal.clone()))),
+                get_signal: Rc::new(move || Ok(Some(supplied.clone()))),
+                abort: Rc::new(move || {
+                    target.abort();
+                    Ok(())
+                }),
                 ..Default::default()
             },
             ProviderActions::default(),
@@ -25,17 +30,22 @@ pub(super) fn bind(runner: &ExtensionRunner<Local>, signal: &Cancellation) {
         .unwrap();
 }
 
-/// Runs one signal request of the bridge command and returns its reported outcome.
-pub(super) async fn signal_command(runner: &ExtensionRunner<Local>, request: &str) -> String {
+/// Runs one request of the bridge command and returns its reported outcome.
+async fn bridge(runner: &ExtensionRunner<Local>, request: &str) -> String {
     let command = runner
         .get_command("bridge-observe")
         .unwrap()
         .command
         .handler;
-    command(format!("signal {request}"), runner.create_command_context())
+    command(request.to_owned(), runner.create_command_context())
         .await
         .unwrap_err()
         .to_string()
+}
+
+/// Runs one signal request of the bridge command and returns its reported outcome.
+pub(super) async fn signal_command(runner: &ExtensionRunner<Local>, request: &str) -> String {
+    bridge(runner, &format!("signal {request}")).await
 }
 
 /// Records every observed listener and announces each one on `seen`.
@@ -55,6 +65,32 @@ pub(super) fn observe(events: &EventBus<Local>) -> (Observations, mpsc::Unbounde
         }),
     ));
     (observations, seen)
+}
+
+/// The ordered marks of one abort walk.
+type Trace = Rc<RefCell<Vec<String>>>;
+
+/// Records each reentry payload, appending its mark to `trace` as it arrives.
+fn witness(
+    events: &EventBus<Local>,
+    trace: &Trace,
+) -> (Rc<RefCell<Vec<Value>>>, mpsc::UnboundedReceiver<()>) {
+    let payloads = Rc::new(RefCell::new(Vec::new()));
+    let (announce, seen) = mpsc::unbounded_channel();
+    let (record, ordered) = (payloads.clone(), trace.clone());
+    drop(events.on(
+        "abort-reentered",
+        Rc::new(move |data, _| {
+            ordered.borrow_mut().push(format!(
+                "guest {} aborted={}",
+                data["label"], data["aborted"]
+            ));
+            record.borrow_mut().push(data.as_ref().clone());
+            announce.send(()).unwrap();
+            Ok(None)
+        }),
+    ));
+    (payloads, seen)
 }
 
 /// Completes once every clone of `signal` is gone: a kept native observer of it is released
@@ -255,5 +291,141 @@ fn native_abort_observers_release_at_the_last_consumer() {
         teardown.await.unwrap();
         assert!(errors.borrow().is_empty());
         assert!(!retained.is_aborted());
+    });
+}
+
+/// Runs one abort inside an active callback and returns the marks of its walk.
+async fn reentrant_abort(
+    runner: &ExtensionRunner<Local>,
+    events: &EventBus<Local>,
+    signal: &Cancellation,
+) -> Trace {
+    let walked = Trace::default();
+    let (payloads, mut announced) = witness(events, &walked);
+    bind(runner, signal);
+    let before = walked.clone();
+    let keep_before = signal.subscribe(Rc::new(move || {
+        before.borrow_mut().push("abort.before".to_owned());
+    }));
+    assert_eq!(
+        signal_command(runner, "reenter first").await,
+        "reentered first"
+    );
+    let after = walked.clone();
+    let keep_after = signal.subscribe(Rc::new(move || {
+        after.borrow_mut().push("abort.after".to_owned());
+    }));
+
+    assert_eq!(
+        bridge(runner, "context matrix abort").await,
+        "{\"Ok\":null}"
+    );
+    announced.try_recv().unwrap();
+    assert_eq!(
+        *walked.borrow(),
+        [
+            "abort.before",
+            "guest \"first\" aborted=true",
+            "abort.after"
+        ]
+    );
+    assert_eq!(
+        payloads.borrow().as_slice(),
+        [json!({"label": "first", "aborted": true})]
+    );
+    drop((keep_before, keep_after));
+    walked
+}
+
+/// Reports one failing listener and still runs the healthy listener that follows it.
+async fn failing_observer(
+    runner: &ExtensionRunner<Local>,
+    observations: &Observations,
+    seen: &mut mpsc::UnboundedReceiver<()>,
+) {
+    let signal = Cancellation::new();
+    bind(runner, &signal);
+    assert_eq!(
+        signal_command(runner, "fail second").await,
+        "subscribed second"
+    );
+    assert_eq!(
+        signal_command(runner, "subscribe healthy").await,
+        "subscribed healthy"
+    );
+    assert_eq!(
+        bridge(runner, "context matrix abort").await,
+        "{\"Ok\":null}"
+    );
+    seen.recv().await.unwrap();
+    seen.recv().await.unwrap();
+    assert_eq!(labels(observations), ["second", "healthy"]);
+}
+
+/// Keeps a second instance's own observers and commands free of the first walk.
+async fn independent_instance(observations: &Observations) {
+    let bus = create_event_bus_for::<Local>(Rc::new(|_| panic!("no tails")), Rc::new(|_| {}));
+    let (owner, runner, events) = super::retained_components::loaded_at(
+        bus.for_extension(),
+        super::session::runner_session("/independent").0,
+        "/independent",
+    )
+    .await;
+    let (independent, mut told) = observe(&events);
+    let signal = Cancellation::new();
+    bind(&runner, &signal);
+    assert_eq!(
+        signal_command(&runner, "subscribe other").await,
+        "subscribed other"
+    );
+    signal.abort();
+    told.recv().await.unwrap();
+    assert_eq!(labels(&independent), ["other"]);
+    assert_eq!(labels(observations), ["second", "healthy"]);
+    assert!(
+        bridge(&runner, "witness")
+            .await
+            .starts_with("command:witness|/independent|")
+    );
+    drop((owner, runner, events));
+    bus.clear();
+    drop(bus);
+}
+
+#[test]
+fn component_abort_observer_reentry_uses_the_shared_dispatcher() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, async {
+        let errors = Rc::new(RefCell::new(Vec::new()));
+        let (reporter, teardown) = super::lifetimes::observed_reporter(&errors);
+        let bus = create_event_bus_for::<Local>(Rc::new(|_| panic!("no tails")), reporter);
+        let (owner, runner, events) =
+            super::retained_components::loaded_on(bus.for_extension()).await;
+        let (observations, mut seen) = observe(&events);
+
+        let walked = reentrant_abort(&runner, &events, &Cancellation::new()).await;
+        assert_eq!(walked.borrow().len(), 3);
+        failing_observer(&runner, &observations, &mut seen).await;
+        assert_eq!(
+            errors.borrow().as_slice(),
+            ["Event handler error (abort): abort listener second failed\n"]
+        );
+        assert!(
+            bridge(&runner, "witness")
+                .await
+                .starts_with("command:witness|")
+        );
+        independent_instance(&observations).await;
+
+        drop((owner, runner, events));
+        bus.clear();
+        drop(bus);
+        teardown.await.unwrap();
+        assert_eq!(
+            errors.borrow().as_slice(),
+            ["Event handler error (abort): abort listener second failed\n"]
+        );
     });
 }

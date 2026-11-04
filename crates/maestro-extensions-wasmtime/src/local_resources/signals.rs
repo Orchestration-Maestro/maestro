@@ -82,8 +82,8 @@ impl State {
     /// so a signal that outlives the extension retains none of them. An abort on another thread wakes
     /// the retained waiter, which aborts the signal again here so the observer runs on this
     /// owner; the waiter ends when the observer is released, by removal or after it ran.
-    /// A failed guest listener is not reported yet; abort still returns and later
-    /// observers still run.
+    /// A failed guest listener is reported through its extension's bus; abort still
+    /// returns and later observers still run.
     fn subscribe(
         &self,
         signal: &Cancellation,
@@ -123,13 +123,18 @@ impl State {
         let listener = listener
             .handle(self.registry.admission()?)
             .ok_or("extension Store owner ended")?;
-        crate::compact_calls::notify(
+        let result = crate::compact_calls::notify(
             &listener,
             &self.registry,
             &api.events,
             SynchronousKind::Abort,
             String::new(),
-        )
+        );
+        if let Err(message) = &result {
+            api.events
+                .report_error("abort", &std::io::Error::other(message.clone()));
+        }
+        result
     }
 }
 
