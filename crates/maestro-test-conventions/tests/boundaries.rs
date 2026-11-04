@@ -713,32 +713,25 @@ fn declared_with(
     declaration: &Declaration,
     external: &Path,
 ) -> serde_json::Value {
-    let mut document = declared.clone();
-    let index = document["packages"]
+    let mut edge = dependency_template(declared);
+    edge["name"] = serde_json::json!(library);
+    edge["path"] = serde_json::json!(external);
+    edge["rename"] = serde_json::json!("alias");
+    edge["kind"] = serde_json::json!(declaration.kind);
+    edge["optional"] = serde_json::json!(declaration.optional);
+    edge["target"] = serde_json::json!(declaration.target);
+    support::with_dependency(declared, owner, &edge)
+}
+
+/// Cargo's own record of a dependency edge, from the fixture's declared graph.
+fn dependency_template(declared: &serde_json::Value) -> serde_json::Value {
+    declared["packages"]
         .as_array()
         .unwrap()
         .iter()
-        .position(|package| package["name"] == owner)
-        .expect("the fixture workspace holds every scoped crate");
-    let mut dependencies = document["packages"][index]["dependencies"]
-        .as_array()
+        .find_map(|package| package["dependencies"].as_array()?.first())
         .cloned()
-        .unwrap_or_default();
-    dependencies.push(serde_json::json!({
-        "name": library,
-        "source": null,
-        "req": "*",
-        "kind": declaration.kind,
-        "rename": "alias",
-        "optional": declaration.optional,
-        "uses_default_features": true,
-        "features": [],
-        "target": declaration.target,
-        "registry": null,
-        "path": external,
-    }));
-    document["packages"][index]["dependencies"] = serde_json::json!(dependencies);
-    document
+        .expect("the fixture graph declares workspace edges")
 }
 
 const NONCANONICAL_WIT: &[(&str, &str)] = &[
