@@ -204,4 +204,6 @@ See [multiplexer rendering](../multiplexer.md#rendering) for the public operatio
 `help`, `usage` and `string` for command metadata and help. It uses
 `clap_complete =4.6.5` with defaults disabled to render bash, elvish, fish,
 PowerShell and zsh completions. Both use the MIT OR Apache-2.0 licence.
-The existing chat argument parser continues to consume chat input.
+Unix tests add the existing rustix `=1.1.5`, defaults off and `process`, to deliver
+a real termination signal to a checked child. The existing chat argument parser
+continues to consume chat input.

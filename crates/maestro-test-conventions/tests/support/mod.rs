@@ -137,6 +137,28 @@ pub fn class(name: &str) -> &'static str {
     policy::rule(name).unwrap().class
 }
 
+/// A copy of the declared document in which `owner` also declares `dependency`.
+pub fn with_dependency(
+    document: &serde_json::Value,
+    owner: &str,
+    dependency: &serde_json::Value,
+) -> serde_json::Value {
+    let mut patched = document.clone();
+    let package = patched["packages"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|package| package["name"] == owner)
+        .expect("the declared document holds every fixture crate");
+    let mut dependencies = package["dependencies"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    dependencies.push(dependency.clone());
+    package["dependencies"] = serde_json::json!(dependencies);
+    patched
+}
+
 /// Convert an authored slash-delimited relative path to native components.
 pub fn native_path(relative: &str) -> PathBuf {
     relative.split('/').collect()

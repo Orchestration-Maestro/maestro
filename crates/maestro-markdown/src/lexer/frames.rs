@@ -49,6 +49,10 @@ pub(crate) enum Done {
         node: Node,
         /// Retained trailing list, present only for a list.
         list: Option<Box<ListState>>,
+        /// Payload the closed level's settled output charged, which its node carries up; a
+        /// list level carries its payload in its state instead.
+        #[cfg(test)]
+        settled: usize,
     },
     /// A container level resumed inside a quote produced its operands.
     Resumed {
@@ -60,6 +64,10 @@ pub(crate) enum Done {
         rest: Segmented,
         /// Retained trailing list, present only for a list.
         list: Option<Box<ListState>>,
+        /// Payload the closed level's settled output charged, which its node carries up; a
+        /// list level carries its payload in its state instead.
+        #[cfg(test)]
+        settled: usize,
     },
     /// The container grammar declined its operand.
     Rejected,
@@ -281,8 +289,12 @@ impl Quote {
                 node,
                 rest,
                 list,
+                #[cfg(test)]
+                settled,
             } => {
                 publish_resume(&mut self.frame, used, node, rest, list)?;
+                #[cfg(test)]
+                self.frame.output.charge_settled(settled);
                 self.phase = QuotePhase::Chunk;
             }
             Done::Rejected => self.phase = QuotePhase::Reject,
@@ -297,12 +309,16 @@ impl Quote {
         let Some(node) = self.admitted(lexer) else {
             return self.rejected(lexer);
         };
+        #[cfg(test)]
+        let settled = crate::tests::WORK.with_borrow(|work| work.closed_settled);
         match &self.target {
             QuoteTarget::Container(raw) => match raw.local(&node.range) {
                 Some(consumed) => Step::Done(Done::Consumed {
                     consumed: consumed.end,
                     node,
                     list: None,
+                    #[cfg(test)]
+                    settled,
                 }),
                 None => self.rejected(lexer),
             },
@@ -313,6 +329,8 @@ impl Quote {
                     node,
                     rest: self.frame.source.select(consumed..self.frame.source.len()),
                     list: None,
+                    #[cfg(test)]
+                    settled,
                 })
             }
         }
@@ -407,7 +425,7 @@ impl<E> Lexer<'_, E> {
         {
             return Some(Resume::Continue);
         }
-        let mut old = frame.output.nodes.pop()?;
+        let mut old = frame.output.pop_node()?;
         let mut joined = frame.output.raw()?;
         // A container whose own body is this text's tail loses exactly that body. One a
         // nested level published spells the same content with its quoting removed, so only

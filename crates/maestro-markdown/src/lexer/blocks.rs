@@ -42,6 +42,9 @@ pub(crate) struct BlockTokens {
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
     list: Option<Box<ListState>>,
+    /// Charges the published nodes and the adopted list state hold.
+    #[cfg(test)]
+    charges: Box<crate::tests::Charges>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -94,6 +97,8 @@ impl BlockTokens {
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
                 .then(|| source.select(std::iter::once(0..consumed)).into()),
         );
+        #[cfg(test)]
+        self.charges.push(&node);
         self.nodes.push(node);
     }
 
@@ -102,6 +107,8 @@ impl BlockTokens {
         self.complete();
         self.tail =
             Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
+        #[cfg(test)]
+        self.charges.push(&node);
         self.nodes.push(node);
     }
 
@@ -114,12 +121,42 @@ impl BlockTokens {
         list: Option<Box<ListState>>,
     ) {
         self.push_segmented(raw, node);
+        #[cfg(test)]
+        let mut list = list;
+        #[cfg(test)]
+        self.charges.adopt(list.as_deref_mut());
         self.list = list;
+    }
+
+    /// Payload this output's published nodes and adopted list state charged.
+    ///
+    /// A quote's settled children are charged by this output as they are pushed and hand
+    /// their charge to the level that publishes them, so nothing below the slot is walked.
+    #[cfg(test)]
+    fn settled(&self) -> usize {
+        self.charges.bytes()
+    }
+
+    /// Charge the trailing node the payload its closed level's settled output retained.
+    #[cfg(test)]
+    pub(crate) fn charge_settled(&mut self, bytes: usize) {
+        self.charges.add(bytes);
     }
 
     /// Take the trailing list's item history for publication.
     pub(super) fn take_list(&mut self) -> Option<Box<ListState>> {
-        self.list.take()
+        let list = self.list.take();
+        #[cfg(test)]
+        self.charges.release_adopted();
+        list
+    }
+
+    /// Remove the trailing node, releasing every charge it took.
+    pub(super) fn pop_node(&mut self) -> Option<Node> {
+        let node = self.nodes.pop()?;
+        #[cfg(test)]
+        self.charges.release(self.nodes.len(), 1);
+        Some(node)
     }
 
     /// Drop contributions admitted after `mark`, returning the removed nodes, and restore the
@@ -127,6 +164,8 @@ impl BlockTokens {
     pub(super) fn restore(&mut self, mark: Mark) -> Vec<Node> {
         let removed: Vec<_> = self.nodes.drain(mark.nodes..).collect();
         if !removed.is_empty() {
+            #[cfg(test)]
+            self.charges.release(mark.nodes, removed.len());
             self.list = None;
         }
         for node in &removed {
@@ -202,11 +241,23 @@ impl BlockTokens {
             Tail::Definition => None,
         }
     }
+
+    /// Charge the operands and settled output this step keeps alive while it stays open.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        retained.bytes += self.scopes.capacity() * std::mem::size_of::<(ScopeKey, Segmented)>();
+        for scope in self.scopes.values() {
+            scope.retained(retained);
+        }
+        retained.bytes += self.charges.bytes();
+    }
 }
 impl<E> Lexer<'_, E> {
     /// Publish completed block output and materialize each inline operand once.
     pub(super) fn finish_blocks(&mut self, mut output: BlockTokens) -> Vec<Node> {
         output.complete();
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.closed_settled = output.settled());
         self.scopes.extend(
             output
                 .scopes

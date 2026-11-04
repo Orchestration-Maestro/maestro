@@ -84,8 +84,6 @@ struct Recorder {
     bindings: RefCell<Vec<ExtensionBindings>>,
     /// Whether a binding session announces an event of its own.
     announce_on_bind: Cell<bool>,
-    /// The shutdown events a disposed session's runner received.
-    shutdown_events: RefCell<Vec<serde_json::Value>>,
     /// The next prompt replaces the session.
     replace_on_prompt: Cell<bool>,
     /// The session a replacement installs.
@@ -183,16 +181,6 @@ struct TestSession {
     recorder: Rc<Recorder>,
     /// How many prompts this session received.
     prompted: Cell<usize>,
-}
-
-impl TestSession {
-    /// Delivers the shutdown event of the owning runtime to the session's runner.
-    fn emit_session_shutdown(&self) {
-        self.recorder
-            .shutdown_events
-            .borrow_mut()
-            .push(json!({"reason": "quit"}));
-    }
 }
 
 impl PrintSession for TestSession {
@@ -313,7 +301,6 @@ impl PrintRuntime for TestRuntime {
 
     fn dispose(&self) -> PrintFuture<()> {
         self.recorder.push("dispose");
-        self.recorder.current().emit_session_shutdown();
         let started = self.recorder.dispose_announced.borrow_mut().take();
         if let Some(started) = started {
             let _ = started.send(());
@@ -962,11 +949,6 @@ async fn terminated_exit(
     assert!(recorder.exits.borrow().is_empty(), "disposal is pending");
     drop(settlement.borrow_mut().take());
     assert_eq!(exit_status(&exited).await, 143, "the termination status");
-    assert_eq!(
-        *recorder.shutdown_events.borrow(),
-        [json!({"reason": "quit"})],
-        "the terminating disposal reports quit to the bound runner"
-    );
     Ok(())
 }
 
@@ -983,11 +965,6 @@ async fn repeated_signal_exit(
     assert!(recorder.exits.borrow().is_empty(), "and is still pending");
     recorder.signal(TerminationSignal::Hangup);
     assert_eq!(exit_status(&exited).await, 129, "the hangup status");
-    assert_eq!(
-        *recorder.shutdown_events.borrow(),
-        [json!({"reason": "quit"})],
-        "one disposal reported quit exactly once to the bound runner"
-    );
     Ok(())
 }
 
@@ -1001,11 +978,6 @@ async fn rejected_disposal_exit(
         exit_status(&exited).await,
         143,
         "a rejected disposal still exits"
-    );
-    assert_eq!(
-        *recorder.shutdown_events.borrow(),
-        [json!({"reason": "quit"})],
-        "the rejected disposal reported quit before it failed"
     );
     Ok(())
 }

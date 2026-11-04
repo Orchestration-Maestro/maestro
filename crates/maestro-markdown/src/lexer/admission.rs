@@ -60,6 +60,15 @@ impl Child {
         std::mem::take(&mut self.output)
     }
 
+    /// Charge the settled output and latest operand this item's child keeps alive.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        self.output.retained(retained);
+        if let Some(operand) = self.operand.as_ref() {
+            operand.retained(retained);
+        }
+    }
+
     /// Keep the item's output once its body level completed.
     pub(crate) fn restore_output(&mut self, output: BlockTokens) {
         self.output = output;
