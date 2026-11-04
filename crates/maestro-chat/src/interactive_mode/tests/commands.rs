@@ -5,7 +5,7 @@ use super::super::bash::component_address;
 use super::typed::{poll, recalled, waiting};
 use super::{
     ManualRuntime, Setup, World, admitted, cases, isolated, isolated_case, isolated_output,
-    painted, scripted, submit, with_held_response,
+    painted, submit, with_held_response,
 };
 use crate::InteractiveMode;
 use maestro_app::{
@@ -14,12 +14,12 @@ use maestro_app::{
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
-    error::Error,
     path::Path,
     rc::{Rc, Weak},
 };
@@ -85,7 +85,7 @@ impl Guard {
     /// process reports them too, then vetoes while `veto` holds.
     fn decide(&self) -> SessionBeforeSwitchResult {
         if let Some(mode) = self.mode.borrow().upgrade() {
-            let released = mode.working.loading_animation.borrow().is_none();
+            let released = mode.working_loader().is_none();
             let empty = mode.status_container.children().borrow().is_empty();
             println!("\nPROBE released={released} empty={empty}");
             self.requests.borrow_mut().push((released, empty));
@@ -144,17 +144,6 @@ async fn commanding(
     world.mode.init().await.unwrap();
     world.runtime.settle().unwrap();
     world
-}
-
-/// Awaits the work the mode handed its terminal runtime and the work it handed over in
-/// turn, returning the failures that work reported.
-async fn settled(world: &World) -> Vec<Box<dyn Error>> {
-    let mut errors = Vec::new();
-    while world.runtime.futures() > 0 {
-        errors.extend(world.runtime.drain_futures());
-        tokio::task::yield_now().await;
-    }
-    errors
 }
 
 /// Whether any of `rows` contains `text` once styling is removed.
@@ -248,7 +237,7 @@ fn command_submission_selects_new_and_compact_with_exact_whitespace() {
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &text);
             let received = poll(&mut waiter);
-            let errors = settled(&world).await;
+            let errors = super::settle_host(&world).await;
             assert!(errors.is_empty(), "{text:?}: {errors:?}");
             let history = recalled(&world.mode.editor);
             match route {
@@ -359,9 +348,9 @@ async fn new_session_case(directory: &Path, input: &NewInput, expected: &NewExpe
     let old = world.host.session();
     let before = world.mode.chat_container.render(80);
     submit(&world.mode, "/new");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     assert_eq!(*guard.requests.borrow(), [(true, true)]);
-    assert!(world.mode.working.loading_animation.borrow().is_none());
+    assert!(world.mode.working_loader().is_none());
     assert!(world.mode.status_container.children().borrow().is_empty());
     assert_left(&world, &old, &before, expected);
 }
@@ -406,7 +395,7 @@ async fn fatal_case(directory: &Path, input: &NewInput) {
         .terminal
         .set_tap(|write| println!("\nWRITE {:?}", strip_ansi(write).unwrap()));
     submit(&world.mode, "/new");
-    drop(settled(&world).await);
+    drop(super::settle_host(&world).await);
     println!("\nPROBE survived");
 }
 
@@ -427,7 +416,8 @@ fn new_session_stops_progress_honors_veto_and_uses_runtime_failure_route() {
         };
         let case = format!("fatal{index}");
         let body = async |directory: &Path| fatal_case(directory, input).await;
-        let Some(output) = isolated_output(TEST, &case, &[], "trap '' XFSZ", body) else {
+        let setup = IsolatedSetup::new().file_size_continues();
+        let Some(output) = isolated_output(TEST, &case, &[], setup, body) else {
             continue;
         };
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -466,7 +456,7 @@ fn new_session_action_uses_live_bindings() {
             requested("\x1bn"),
             "the constructor binding runs the action"
         );
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         assert_eq!(world.mode.editor.get_text(), "draft");
         assert_eq!(guard.requests.borrow().len(), 1);
         assert!(!requested("\x0e"), "a wrong modifier does nothing");
@@ -478,7 +468,7 @@ fn new_session_action_uses_live_bindings() {
         let old = world.host.session();
         guard.veto.set(false);
         assert!(requested("\x1bm"), "the live binding runs the action");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         assert_eq!(world.mode.editor.get_text(), "draft");
         assert!(!Rc::ptr_eq(&old, &world.host.session()));
         assert!(shown(
@@ -495,7 +485,7 @@ fn new_session_shows_later_responses_and_compaction() {
         let guard = Guard::default();
         let world = commanding(directory, None, &guard, None).await;
         submit(&world.mode, "/new");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         let session = world.host.session();
         session
             .settings_manager()
@@ -509,7 +499,7 @@ fn new_session_shows_later_responses_and_compaction() {
         let rows = world.mode.chat_container.render(80);
         assert!(shown(&rows, "fresh answer"), "the response shows: {rows:?}");
         submit(&world.mode, "/compact");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         let rows = world.mode.chat_container.render(80);
         let failed = "Error: Compaction failed: No API provider registered for api: unknown";
         assert!(
@@ -523,12 +513,12 @@ fn new_session_shows_later_responses_and_compaction() {
 /// session that `veto` decides, and checks that only a kept session keeps them.
 async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
     let guard = Guard::default();
-    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    let script = super::echoing_script(directory);
     let world = commanding(directory, Some(script), &guard, None).await;
     with_held_response(&world, async |_| {
         for row in rows {
             submit(&world.mode, row);
-            assert!(settled(&world).await.is_empty());
+            assert!(super::settle_host(&world).await.is_empty());
         }
     })
     .await;
@@ -536,7 +526,7 @@ async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
     assert_eq!(before.len(), rows.len());
     guard.veto.set(veto);
     submit(&world.mode, "/new");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     if veto {
         assert_eq!(pending_shells(&world), before, "a veto keeps the rows");
         return;
@@ -546,7 +536,7 @@ async fn pending_reset_case(directory: &Path, rows: &[&str], veto: bool) {
         submit(&world.mode, "steer");
         // The replacement session runs commands in the default shell.
         submit(&world.mode, "!printf 'printed %s\\n' fresh");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         let pending = world.mode.pending_messages_container.render(80);
         assert!(!shown(&pending, "printed mark"), "{pending:?}");
         assert!(shown(&pending, "printed fresh"), "{pending:?}");
@@ -601,7 +591,7 @@ fn command_callbacks_release_mode_after_completion() {
         let second = Guard::default();
         let world = commanding(directory, None, &second, None).await;
         submit(&world.mode, "/new");
-        assert!(settled(&world).await.is_empty());
+        assert!(super::settle_host(&world).await.is_empty());
         assert_eq!(second.requests.borrow().len(), 1);
         assert!(shown(
             &world.mode.chat_container.render(80),
@@ -710,7 +700,7 @@ fn starts(world: &World) -> (Starts, Box<dyn Fn()>) {
     let recorded = Rc::clone(&seen);
     let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
         if let (AgentSessionEvent::CompactionStart { .. }, Some(mode)) = (event, mode.upgrade()) {
-            let released = mode.working.loading_animation.borrow().is_none();
+            let released = mode.working_loader().is_none();
             recorded.borrow_mut().push(released);
         }
     }));
@@ -739,7 +729,7 @@ async fn compaction_case(directory: &Path, input: CompactInput, expected: &Compa
         .handle_compact_command(input.instructions)
         .await;
     assert!(outcome.is_ok(), "the command reports no outcome itself");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     unsubscribe();
     if expected.compacts {
         assert_eq!(*seen.borrow(), [true], "one compaction after the release");
@@ -748,10 +738,7 @@ async fn compaction_case(directory: &Path, input: CompactInput, expected: &Compa
     }
     assert!(seen.borrow().is_empty() && guard.instructions.borrow().is_empty());
     assert_eq!(world.mode.status_container.render(80), status);
-    assert_eq!(
-        world.mode.working.loading_animation.borrow().is_some(),
-        input.loader
-    );
+    assert_eq!(world.mode.working_loader().is_some(), input.loader);
     warned(&world, chat);
 }
 
@@ -839,7 +826,7 @@ async fn subscriber_case(
         _ => {}
     }));
     submit(&world.mode, "/compact");
-    assert!(settled(&world).await.is_empty());
+    assert!(super::settle_host(&world).await.is_empty());
     unsubscribe();
     let ended = format!("end {error:?}");
     assert_eq!(*events.borrow(), ["start Manual".to_owned(), ended]);

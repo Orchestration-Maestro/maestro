@@ -7,6 +7,8 @@ use std::path::Path;
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 use maestro_test_directory::Scratch;
+#[cfg(unix)]
+use maestro_test_process::IsolatedSetup;
 use maestro_test_process::{TestProcess, run_alone, test_name};
 
 /// The harness bytes that open a one-test run.
@@ -392,54 +394,6 @@ fn dropping_live_stdout_closes_the_only_read_end() {
     );
 }
 
-#[cfg(unix)]
-#[test]
-fn shell_setup_runs_when_the_child_replaces_path() {
-    let scratch = Scratch::new().unwrap();
-    let marker = scratch.path().join("setup-ran");
-    let setup = format!("echo ran > '{}'", marker.display());
-    plain(&left_name())
-        .env("PATH", scratch.path())
-        .shell_setup("/bin/bash", setup)
-        .output()
-        .unwrap();
-    assert_eq!(std::fs::read_to_string(&marker).unwrap(), "ran\n");
-}
-
-#[cfg(unix)]
-#[test]
-fn failed_live_start_closes_and_reaps_direct_child() {
-    let scratch = Scratch::new().unwrap();
-    let pid_file = scratch.path().join("pid");
-    let setup = format!(
-        "echo $$ > '{}'; printf 'invalid startup\\n'; read -r line",
-        pid_file.display()
-    );
-    let result = probe(&left_name(), "live")
-        .shell_setup("/bin/bash", setup)
-        .stdin(Stdio::piped())
-        .spawn();
-    let error = result.unwrap_err().to_string();
-    assert!(
-        error.contains("did not start exactly") && error.contains("stdout:\ni"),
-        "{error}"
-    );
-    assert_reaped(&pid_file);
-}
-
-/// Require that the process whose id `pid_file` holds no longer exists, so it was reaped.
-#[cfg(unix)]
-fn assert_reaped(pid_file: &Path) {
-    let pid = std::fs::read_to_string(pid_file).unwrap();
-    let alive = Command::new("kill")
-        .args(["-0", pid.trim()])
-        .stderr(Stdio::null())
-        .status()
-        .unwrap()
-        .success();
-    assert!(!alive, "child {pid} was not reaped");
-}
-
 #[test]
 fn status_replays_streams_separately_with_inherited_stdin() {
     if is_outer() {
@@ -559,22 +513,13 @@ fn file_stdout_accepts_an_empty_append_file() {
 
 #[cfg(unix)]
 #[test]
-fn shell_setup_preserves_configuration_and_proves_exec() {
+fn a_setup_request_keeps_the_launch_configuration() {
     let scratch = Scratch::new().unwrap();
-    let marker = scratch.path().join("marker");
-    let setup = "echo setup >> \"$MTP_MARKER\"";
-    let output = probe(&left_name(), "marker")
-        .shell_setup("/bin/bash", setup)
-        .env("MTP_MARKER", &marker)
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    assert_eq!(std::fs::read_to_string(&marker).unwrap(), "setup\nleft\n");
     let directory = scratch.path().join("work");
     std::fs::create_dir(&directory).unwrap();
     let output = probe(&left_name(), "cwd")
+        .setup(IsolatedSetup::new().umask(0o022))
         .current_dir(&directory)
-        .shell_setup("/bin/bash", "true")
         .env("MTP_VARS", "SHELL_EDIT")
         .env("SHELL_EDIT", "late")
         .output()
@@ -585,17 +530,6 @@ fn shell_setup_preserves_configuration_and_proves_exec() {
         Path::new(&shown["cwd"]).canonicalize().unwrap(),
         directory.canonicalize().unwrap()
     );
-    for setup in ["exit 0", "echo setup-diagnostic >&2; exit 3"] {
-        let error = probe(&left_name(), "marker")
-            .shell_setup("/bin/bash", setup)
-            .output()
-            .unwrap_err();
-        assert!(error.to_string().contains(&left_name()), "{error}");
-        assert_eq!(
-            error.to_string().contains("setup-diagnostic"),
-            setup.contains("diagnostic")
-        );
-    }
 }
 
 #[test]
@@ -645,7 +579,10 @@ fn adapter_route_does_not_discard_os_configuration() {
         ("stdout", plain(&name).stdout(Stdio::piped())),
         ("stderr", plain(&name).stderr(Stdio::null())),
         #[cfg(unix)]
-        ("shell_setup", plain(&name).shell_setup("/bin/bash", "true")),
+        (
+            "setup",
+            plain(&name).setup(IsolatedSetup::new().umask(0o022)),
+        ),
     ];
     for (setting, process) in configured {
         let invoked = std::cell::Cell::new(false);
@@ -757,21 +694,6 @@ fn startup_failures_name_selection_and_keep_diagnostics() {
         .output_with(|_| Err::<Output, _>(std::io::Error::other("invoker failed")))
         .unwrap_err();
     assert!(failure.to_string().contains("invoker failed"));
-    #[cfg(unix)]
-    {
-        let scratch = Scratch::new().unwrap();
-        let pid_file = scratch.path().join("pid");
-        let setup = format!(
-            "echo $$ > '{}'; printf 'invalid startup\\n'; exit 0",
-            pid_file.display()
-        );
-        let error = this().shell_setup("/bin/bash", setup).output().unwrap_err();
-        assert!(
-            error.to_string().contains("did not start exactly"),
-            "{error}"
-        );
-        assert_reaped(&pid_file);
-    }
 }
 
 #[test]
@@ -945,20 +867,7 @@ fn route_outputs(configure: impl Fn(TestProcess) -> TestProcess) -> Vec<String> 
     let process = configure(plain(&name).env("MTP_BEHAVIOR", "cwd"));
     process.status_with_stdout(file).unwrap();
     let from_file = std::fs::read(scratch.path().join("out")).unwrap();
-    #[cfg_attr(not(unix), allow(unused_mut))]
-    let mut outputs = vec![text(&captured.stdout), text(&live.stdout), text(&from_file)];
-    #[cfg(unix)]
-    outputs.push(text(
-        &configure(
-            plain(&name)
-                .env("MTP_BEHAVIOR", "cwd")
-                .shell_setup("/bin/bash", "true"),
-        )
-        .output()
-        .unwrap()
-        .stdout,
-    ));
-    outputs
+    vec![text(&captured.stdout), text(&live.stdout), text(&from_file)]
 }
 
 #[test]
@@ -1052,80 +961,153 @@ fn argument_invoker_keeps_exact_selection_and_caller_result() {
     assert!(!invoked);
 }
 
-/// Variable that marks a shell-setup child and names the parent's disposable layout.
 #[cfg(unix)]
-const SHELL_ROOT: &str = "MTP_SHELL_ROOT";
+#[test]
+fn setup_applies_each_effect_in_the_child_before_its_body() {
+    let scratch = Scratch::new().unwrap();
+    let output = TestProcess::child(setup_probe)
+        .unwrap()
+        .setup(
+            IsolatedSetup::new()
+                .umask(0o022)
+                .process_limit(1)
+                .file_size_continues()
+                .new_session(),
+        )
+        .current_dir(scratch.path())
+        .single_threaded()
+        .output()
+        .unwrap();
+    let printed = text(&output.stdout);
+    assert!(printed.contains("body-entered"), "{printed}");
+    assert!(printed.contains("mode=0644"), "{printed}");
+    assert!(printed.contains("leads-session=true"), "{printed}");
+    assert!(printed.contains("processes=Some(1)"), "{printed}");
+    assert!(printed.contains("file-size=Some(27)/None"), "{printed}");
+}
 
-/// Run this test once in a child whose `command` the parent prepared over `scratch`, and hand
-/// the child's own `body` the disposable root. The parent asserts the child passed.
 #[cfg(unix)]
-fn in_shell_child(command: impl FnOnce(&Scratch) -> Command, body: impl FnOnce(&Path)) {
-    let Some(root) = std::env::var_os(SHELL_ROOT).map(std::path::PathBuf::from) else {
-        let scratch = Scratch::new().unwrap();
-        let output = command(&scratch)
-            .env(SHELL_ROOT, scratch.path())
-            .output()
-            .unwrap();
-        assert!(output.status.success(), "{}", text(&output.stderr));
-        return;
+#[test]
+fn a_child_without_the_file_size_request_ends_by_the_signal() {
+    use std::os::unix::process::ExitStatusExt;
+    let scratch = Scratch::new().unwrap();
+    let status = TestProcess::child(setup_probe)
+        .unwrap()
+        .current_dir(scratch.path())
+        .single_threaded()
+        .output()
+        .unwrap()
+        .status;
+    assert_eq!(status.signal(), Some(signal_hook::consts::SIGXFSZ));
+}
+
+#[cfg(unix)]
+#[test]
+fn a_refused_effect_stops_the_child_before_its_body() {
+    let scratch = Scratch::new().unwrap();
+    let output = TestProcess::child(setup_probe)
+        .unwrap()
+        .setup(IsolatedSetup::new().new_session())
+        .env("MTP_SETUP_LEADER", "1")
+        .current_dir(scratch.path())
+        .single_threaded()
+        .output()
+        .unwrap();
+    let printed = text(&output.stdout);
+    assert!(printed.contains("setup-refused"), "{printed}");
+    assert!(!printed.contains("body-entered"), "{printed}");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_setup_request_leaves_the_parent_process_unchanged() {
+    let scratch = Scratch::new().unwrap();
+    let mode_before = created_mode(&scratch.path().join("before"));
+    let limit_before = rustix::process::getrlimit(rustix::process::Resource::Nproc);
+    let session_before = rustix::process::getsid(None).unwrap();
+    let output = TestProcess::child(setup_probe)
+        .unwrap()
+        .setup(
+            IsolatedSetup::new()
+                .umask(0o077)
+                .process_limit(1)
+                .file_size_continues()
+                .new_session(),
+        )
+        .current_dir(scratch.path())
+        .single_threaded()
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", text(&output.stderr));
+    assert_eq!(created_mode(&scratch.path().join("after")), mode_before);
+    assert_eq!(
+        rustix::process::getrlimit(rustix::process::Resource::Nproc),
+        limit_before
+    );
+    assert_eq!(rustix::process::getsid(None).unwrap(), session_before);
+}
+
+/// An isolated child that applies its requested setup and reports the effects it observes.
+#[cfg(unix)]
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn setup_probe() {
+    // A child that already leads its session refuses a request to lead one.
+    if std::env::var_os("MTP_SETUP_LEADER").is_some() {
+        let _ = rustix::process::setsid();
+    }
+    let _guard = match IsolatedSetup::apply_requested() {
+        Ok(guard) => guard,
+        Err(error) => {
+            println!("setup-refused {error}");
+            return;
+        }
     };
-    body(&root);
+    println!("body-entered");
+    let root = std::env::current_dir().unwrap();
+    println!("mode={:04o}", created_mode(&root.join("created")));
+    println!("leads-session={}", leads_session());
+    println!("processes={:?}", process_limit());
+    let (refused, written) = file_size_outcomes(&root);
+    println!("file-size={refused:?}/{written:?}");
 }
 
+/// The permission bits of a file this child creates at `path`.
 #[cfg(unix)]
-#[test]
-fn shell_setup_refuses_a_relative_interpreter() {
-    let scratch = Scratch::new().unwrap();
-    let marker = scratch.path().join("marker");
-    let error = plain(&left_name())
-        .env("MTP_BEHAVIOR", "marker")
-        .env("MTP_MARKER", &marker)
-        .shell_setup("bash", format!("echo ran > '{}'", marker.display()))
-        .output()
-        .unwrap_err();
-    assert!(error.to_string().contains("not absolute"), "{error}");
-    assert!(
-        !marker.exists(),
-        "the setup ran before the path was refused"
-    );
+fn created_mode(path: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::write(path, b"").unwrap();
+    std::fs::metadata(path).unwrap().permissions().mode() & 0o777
 }
 
+/// Whether this child leads its own session.
 #[cfg(unix)]
-#[test]
-fn shell_setup_reports_a_supplied_interpreter_that_cannot_run() {
-    let scratch = Scratch::new().unwrap();
-    let program = scratch.path().join("bash");
-    std::fs::write(&program, "not a program\n").unwrap();
-    let error = plain(&left_name())
-        .shell_setup(&program, "true")
-        .output()
-        .unwrap_err();
-    assert!(error.to_string().starts_with(&left_name()), "{error}");
-    assert!(std::error::Error::source(&error).is_some());
+fn leads_session() -> bool {
+    rustix::process::getsid(None).is_ok_and(|session| session == rustix::process::getpid())
 }
 
+/// This child's process-count limit.
 #[cfg(unix)]
-#[test]
-fn shell_setup_uses_the_supplied_interpreter_when_the_parent_path_is_absent() {
-    let leaf = "shell_setup_uses_the_supplied_interpreter_when_the_parent_path_is_absent";
-    in_shell_child(
-        |_| {
-            let mut command = outer(leaf);
-            command.env_remove("PATH");
-            command
-        },
-        |root| {
-            let empty = root.join("empty-path");
-            std::fs::create_dir(&empty).unwrap();
-            let marker = root.join("marker");
-            plain(&left_name())
-                .env("MTP_BEHAVIOR", "marker")
-                .env("MTP_MARKER", &marker)
-                .env("PATH", &empty)
-                .shell_setup("/bin/bash", "echo setup >> \"$MTP_MARKER\"")
-                .output()
-                .unwrap();
-            assert_eq!(std::fs::read_to_string(&marker).unwrap(), "setup\nleft\n");
-        },
-    );
+fn process_limit() -> Option<u64> {
+    rustix::process::getrlimit(rustix::process::Resource::Nproc).current
+}
+
+/// A write past a lowered file-size limit, then the same write once the limit is restored.
+#[cfg(unix)]
+fn file_size_outcomes(root: &Path) -> (Option<i32>, Option<i32>) {
+    use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
+    let previous = getrlimit(Resource::Fsize);
+    let lowered = Rlimit {
+        current: Some(64),
+        maximum: previous.maximum,
+    };
+    setrlimit(Resource::Fsize, lowered).unwrap();
+    let refused = std::fs::write(root.join("sized"), [0_u8; 4096])
+        .err()
+        .and_then(|error| error.raw_os_error());
+    setrlimit(Resource::Fsize, previous).unwrap();
+    let written = std::fs::write(root.join("restored"), [0_u8; 4096])
+        .err()
+        .and_then(|error| error.raw_os_error());
+    (refused, written)
 }

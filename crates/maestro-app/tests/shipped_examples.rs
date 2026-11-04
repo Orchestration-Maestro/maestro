@@ -7,8 +7,7 @@ use maestro_markdown::{Cell, Kind, LinkType, Node, Table};
 use std::fs;
 use std::path::Path;
 
-#[path = "../../maestro-markdown/tests/support/nodes.rs"]
-mod nodes;
+use maestro_markdown::test_support::nodes;
 
 /// Resolve the folder through the running process's package directory.
 #[test]
@@ -26,11 +25,14 @@ fn examples_folder_matches_the_shipped_files() {
     let root = Path::new(&folder);
     assert!(root.is_dir(), "{folder}");
     let entries = directory_names(root);
-    assert_eq!(entries, ["README.md", "extensions", "sdk"]);
+    assert_eq!(
+        entries,
+        ["README.md", "extensions", "rpc_extension_ui.rs", "sdk"]
+    );
     assert_index_lists(root, &entries);
     for directory in ["extensions", "sdk"] {
         let path = root.join(directory);
-        assert_index_lists(&path, &recursive_names(&path, &path));
+        assert_index_lists(&path, &example_names(&path, &path));
     }
 }
 
@@ -238,20 +240,51 @@ fn directory_names(directory: &Path) -> Vec<String> {
     names
 }
 
-/// List file names below a directory, relative to its root, in name order.
-fn recursive_names(root: &Path, directory: &Path) -> Vec<String> {
+/// A directory that carries an entry point is one example; its support files need no
+/// row.
+#[test]
+fn directory_example_needs_only_its_entry_point_row() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    fs::create_dir(root.join("provider")).unwrap();
+    fs::write(root.join("provider/main.rs"), "").unwrap();
+    fs::write(root.join("provider/oauth.rs"), "").unwrap();
+    fs::write(
+        root.join("README.md"),
+        "| File |\n| --- |\n| `provider/main.rs` |\n",
+    )
+    .unwrap();
+    assert_eq!(example_names(root, root), ["README.md", "provider/main.rs"]);
+    assert_index_lists(root, &example_names(root, root));
+}
+
+/// List the example names an index page below a directory must carry, relative to its
+/// root, in name order.
+///
+/// Mirrors the rule `maestro_tooling::example_files::collect` owns: a directory that
+/// holds `main.rs` is one example named by that entry point, and its support files need
+/// no row.
+fn example_names(root: &Path, directory: &Path) -> Vec<String> {
     let mut names = Vec::new();
     for entry in fs::read_dir(directory).unwrap() {
         let path = entry.unwrap().path();
-        if path.is_dir() {
-            names.extend(recursive_names(root, &path));
+        let main = path.join("main.rs");
+        if main.is_file() {
+            names.push(relative_name(root, &main));
+        } else if path.is_dir() {
+            names.extend(example_names(root, &path));
         } else {
-            // Index pages link with `/`, whatever the host separator.
-            let relative = path.strip_prefix(root).unwrap();
-            let parts: Vec<_> = relative.iter().map(|part| part.to_string_lossy()).collect();
-            names.push(parts.join("/"));
+            names.push(relative_name(root, &path));
         }
     }
     names.sort();
     names
+}
+
+/// Name one file relative to the index's folder, joining with `/` whatever the host
+/// separator.
+fn relative_name(root: &Path, path: &Path) -> String {
+    let relative = path.strip_prefix(root).unwrap();
+    let parts: Vec<_> = relative.iter().map(|part| part.to_string_lossy()).collect();
+    parts.join("/")
 }

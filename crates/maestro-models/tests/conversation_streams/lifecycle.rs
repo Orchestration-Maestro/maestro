@@ -277,6 +277,20 @@ pub async fn lifetime_failures() -> TestResult {
     Ok(())
 }
 
+/// A configured timeout ends a stalled stream when it elapses, not at the default deadline.
+pub async fn configured_timeout() -> TestResult {
+    let tail = futures_util::stream::pending::<Result<Vec<u8>, FetchError>>();
+    let body = Box::pin(futures_util::stream::iter([Ok(text("kept"))]).chain(tail));
+    let mut settings = options(body_fetch(body));
+    settings.common.timeout_ms = Some(5_000.0);
+    let started = tokio::time::Instant::now();
+    let stream = stream_mistral(corpus::model()?, context()?, Some(settings));
+    let output = stream.result().await;
+    assert_eq!(started.elapsed(), std::time::Duration::from_secs(5));
+    assert_lifetime_result(&output, false);
+    Ok(())
+}
+
 /// Hook/body causes win without replacing their text with the signal classification.
 pub async fn failure_causes() -> TestResult {
     for hook in [true, false] {

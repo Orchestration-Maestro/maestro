@@ -1,0 +1,24 @@
+name: Browser proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to test
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # Runs only the Chromium job on the named ref; like every caller, it keeps the default
+  # concurrency key, so its log artifact is browser-test-root-<attempt>.
+  browser:
+    permissions:
+      contents: read
+      actions: read
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@b664d8fac5bc97049cb9fcfbfe720f285bb534ec # v0.19.15
+    with:
+      browser-only: true
+      checkout-ref: ${{ inputs.ref }}

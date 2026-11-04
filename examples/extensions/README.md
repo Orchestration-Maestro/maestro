@@ -38,10 +38,11 @@ steps.
 Component preparation reads the source markers at run time. Each variable names
 one example; the shared author and context variables are reserved.
 
-The table below is generated from each Rust file's opening documentation and
-Markdown page's heading. Do not edit its rows by hand. `just example-index-check`
-checks that it is current. Keep descriptions and run commands in the example's
-own files, not in this page or `docs/examples.md`.
+The table below is generated from each example's opening documentation and
+Markdown page's heading. A directory example adds one row, from its `main.rs`;
+its support files need no summary. Do not edit its rows by hand.
+`just example-index-check` checks that it is current. Keep descriptions and run
+commands in the example's own files, not in this page or `docs/examples.md`.
 
 The component setup reads source markers at run time; it has no shared example
 list. See [adding an example](../../docs/examples.md).
@@ -80,6 +81,8 @@ resolving conflicts, then regenerate the table.
 | `custom_footer.rs` | A command that toggles a footer showing history usage, the model and Git branch. |
 | `custom_header.md` | Custom header |
 | `custom_header.rs` | Replaces the startup header with a themed illustration and restores it on command. |
+| `custom_message_provider.md` | Custom message provider |
+| `custom_message_provider/main.rs` | Opt-in registration of a custom message-stream provider. |
 | `dirty_repo_guard.md` | Dirty repo guard |
 | `dirty_repo_guard.rs` | Opt-in guard that asks before leaving or forking a repository with uncommitted changes. |
 | `dynamic_tools.md` | Dynamic tools |
@@ -98,6 +101,8 @@ resolving conflicts, then regenerate the table.
 | `hello.rs` | A greeting tool registered by an extension factory. |
 | `hidden_thinking_label.md` | Hidden thinking label |
 | `hidden_thinking_label.rs` | An extension that sets the label shown when thinking blocks are hidden. |
+| `inline_bash.md` | Inline bash expansion |
+| `inline_bash.rs` | An opt-in input hook that expands `!{command}` with shell output before submission. |
 | `input_transform.md` | Input transform |
 | `input_transform.rs` | An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time` show immediate feedback without a model call. Extension-injected input passes through. |
 | `interactive_shell.md` | Interactive shell |
@@ -152,6 +157,7 @@ resolving conflicts, then regenerate the table.
 | `rainbow_editor.rs` | Highlights `ultrathink` in the editor with an animated rainbow shine. |
 | `reload_runtime.md` | Reload runtime |
 | `reload_runtime.rs` | A command that reloads runtime resources and a tool that queues that command. |
+| `rpc_demo.rs` | A companion extension exercising the terminal client's RPC UI methods. |
 | `send_user_message.md` | Send user message |
 | `send_user_message.rs` | User-message delivery: commands that send ordinary, steering, follow-up and structured messages, so a user can reach the agent from an extension. |
 | `session_name.md` | Session name |
@@ -173,6 +179,7 @@ resolving conflicts, then regenerate the table.
 | `summarize.md` | Summarize |
 | `summarize.rs` | An opt-in conversation summary shown in a custom Markdown view. |
 | `support/tail.rs` | Cancellable work handed to the host's independent event-tail executor. |
+| `support/trim.rs` | Example-local trimming through the host's shared whitespace classification. |
 | `system_prompt_header.md` | System prompt header |
 | `system_prompt_header.rs` | Reports the effective system prompt's length as extension status. |
 | `tic_tac_toe.md` | Tic-tac-toe |
@@ -200,6 +207,8 @@ resolving conflicts, then regenerate the table.
 | `widget_placement.rs` | A startup extension that places text widgets above and below the editor. |
 | `with-deps.md` | With deps |
 | `with-deps/main.rs` | A duration tool registered by an extension that declares its own parsing dependency. |
+| `working_indicator.md` | Working indicator |
+| `working_indicator.rs` | A command that selects static, animated, hidden or default working indicators. |
 | `working_message_test.md` | Working message test |
 | `working_message_test.rs` | A startup extension that requests a custom working text and indicator. |
 <!-- example-index:end -->

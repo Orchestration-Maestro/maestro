@@ -56,6 +56,9 @@ model; custom-model fields take precedence. Omitted custom metadata uses the ID
 as name, text input, no reasoning, zero prices, a 128000 context window and a
 16384 output limit.
 
+The `modelOverrides` of a provider also apply to the models an extension registers for it,
+and their `headers` are merged over the registered model's own.
+
 Provider URL and compatibility overrides precede built-in model metadata
 changes. Partial prices and thinking-level maps retain unsupplied fields;
 explicit thinking nulls remain null. Compatibility overlays merge a router or
@@ -81,13 +84,29 @@ the preceding file diagnostic before reloading. `get_error` returns an owned
 `Option<String>`: an earlier observation survives clearing or replacement.
 
 Construction loads without resetting shared account or protocol registrations.
-`refresh` clears request sources and the preceding file diagnostic, resets shared
-registrations, loads the underlying catalog, then replays this registry's retained
-providers in live insertion order. Replacement keeps its slot; removal skips a
-pending provider; removal followed by insertion moves it to the end. Callback
-additions are visited during that replay. A transformation failure stops replay
-with earlier effects still visible. See [OAuth transformations](models/oauth.md)
-for the delegated account behavior.
+`refresh` clears request sources and the preceding file diagnostic, removes this
+registry's own protocol and account registrations, loads the underlying catalog,
+then replays this registry's retained providers in live insertion order.
+Replacement keeps its slot; removal skips a pending provider; removal followed by
+insertion moves it to the end. Callback additions are visited during that replay.
+A transformation failure stops replay with earlier effects still visible. See
+[OAuth transformations](models/oauth.md) for the delegated account behavior.
+
+Registrations are owned. Every dynamic registration this registry installs carries
+an ownership identity derived from a process-unique registry instance and the
+registration name, and removal goes through that identity. A refresh or removal
+therefore touches only this registry's own entries: registrations another registry
+instance or an extension holds in the same process stay registered, whoever
+reloads. Removing an entry also puts back the registration it displaced, which is
+the bundled protocol when the entry had shadowed one. An account entry is removed
+only while the live share under that name is still the one this registry
+installed. Failed registrations keep the ownership rule too: a registration whose
+transformation fails leaves its own installed protocols and account entries with
+the registry, and the next refresh removes them again.
+
+A reload keeps every retained registration. It reloads the base files and replays
+the catalog's own providers, so its registered providers come back by the next
+refresh even while an extension has stopped registering.
 
 ## Callback re-entry
 
@@ -104,7 +123,7 @@ Loading publishes its local selected list only after its complete transformation
 chain succeeds. Public regression witnesses in
 [`catalog_reentry.rs`](../crates/maestro-catalog/tests/catalog_reentry.rs) exercise
 these boundaries, live replay, owned diagnostics and native/local callers; the
-[browser example](../crates/maestro-catalog/examples/browser_catalog_check.rs)
+[browser witness](../crates/maestro-catalog/tests/support/browser_catalog_check.rs)
 provides compile-only evidence for local browser effects.
 
 ## Dynamic providers
@@ -135,7 +154,8 @@ request sources instead replace as a whole when an incoming key is nonempty,
 headers are present, or the auth-header flag is true.
 
 OAuth registration forces the installed ID to the registration name. Raw and
-simple protocol calls forward to the supplied callback under `provider:<name>`;
+simple protocol calls forward to the supplied callback under this registry's own
+ownership identity beside the registration name;
 see [invocation records](records.md) for option carriers. The retained callable
 supports both execution families. Forwarding preserves the original raw/simple
 carrier and the caller's producer admission, without invoking its hooks. Incoming OAuth model
@@ -150,7 +170,8 @@ A transform failure leaves installed handlers, request sources and the replaceme
 list visible, but the failed call does not upsert the incoming configuration.
 Prior edits through an already-retained configuration alias remain visible.
 
-`unregister_provider` does nothing for unknown names. A known name is removed
+`unregister_provider` does nothing for unknown names. Its removal touches only
+entries this registry installed. A known name is removed
 before refresh restores the underlying catalog and replays surviving providers;
 a replay failure does not undo removal. Retained old descriptors and callback
 handles remain independent of later publication or registration changes.
@@ -193,6 +214,11 @@ and model-header sources at their later consuming phases.
 ## Authentication metadata
 
 `has_configured_auth` checks credential presence then configured key presence.
+Cloudflare API-key sources also require an account ID and, for AI Gateway, a
+gateway ID; missing or empty stored IDs fall back independently to the environment.
+Stored OAuth credentials with a registered OAuth handler remain available on
+presence alone, without account lookup, key extraction or refresh. Account
+configuration is still checked at request time.
 `get_available` returns a separate list of shared descriptors, preserving selected
 slot order and duplicates. `get_provider_auth_status` prefers credential metadata,
 otherwise describes a nonempty configured command, environment variable or literal key.

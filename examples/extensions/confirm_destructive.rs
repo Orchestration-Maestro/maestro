@@ -1,4 +1,5 @@
 //! Opt-in confirmation before replacing or forking a session.
+// maestro-component: MAESTRO_CONFIRM_DESTRUCTIVE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -9,7 +10,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     AgentMessage, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, Message, NotificationType, Presence, SessionBeforeForkResult,
+    ExtensionFuture, HookFuture, Message, NotificationType, Presence, SessionBeforeForkResult,
     SessionBeforeSwitchReason, SessionBeforeSwitchResult, SessionEntry, SessionEvent,
 };
 
@@ -21,7 +22,7 @@ use maestro_extensions_wasm::{
 fn before_switch(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         if !ctx.has_ui()? {
             return Ok(None);
@@ -74,7 +75,7 @@ fn before_switch(
 fn before_fork(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         if !ctx.has_ui()? {
             return Ok(None);

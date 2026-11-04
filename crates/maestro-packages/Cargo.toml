@@ -7,6 +7,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-package = { path = "../maestro-package" }
+serde = { workspace = true, optional = true }
 maestro-json = { path = "../maestro-json" }
 maestro-text = { path = "../maestro-text" }
 sha2 = { version = "=0.11.0", default-features = false }
@@ -14,7 +16,6 @@ maestro-pattern = { path = "../maestro-pattern" }
 maestro-settings = { path = "../maestro-settings" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-path = { path = "../maestro-path" }
-git-url-parse = "=0.6.0"
 url = "=2.5.8"
 percent-encoding = "=2.3.2"
 serde_json = { workspace = true, features = ["raw_value"] }
@@ -26,13 +27,15 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt", "proc
 maestro-process = { path = "../maestro-process" }
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
+rustix = { workspace = true, features = ["std", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+futures-util.workspace = true
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
 [dev-dependencies]
+maestro-packages = { path = ".", features = ["test-support"] }
 serde.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "test-util"] }
 
@@ -42,3 +45,6 @@ path = "tests/integration.rs"
 
 [lints]
 workspace = true
+
+[features]
+test-support = ["dep:serde"]

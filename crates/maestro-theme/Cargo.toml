@@ -27,7 +27,7 @@ regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
-maestro-text = { path = "../maestro-text", features = ["collation"] }
+maestro-text = { path = "../maestro-text", features = ["collation", "date-time-format"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
@@ -38,5 +38,19 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time
 name = "integration"
 path = "tests/integration.rs"
 
+[[example]]
+name = "brand_themes"
+path = "scripts/brand_themes.rs"
+
+[[example]]
+name = "browser_author_inputs"
+path = "scripts/browser_author_inputs.rs"
+
 [lints]
 workspace = true
+
+[features]
+test-support = []
+
+[dev-dependencies]
+maestro-theme = { path = ".", features = ["test-support"] }

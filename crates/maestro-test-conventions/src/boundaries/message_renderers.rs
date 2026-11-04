@@ -3,7 +3,11 @@ use std::collections::BTreeMap;
 
 use syn::{ext::IdentExt, visit::Visit};
 
-use crate::source::{Member, Source, inherit_test_context, test_scope};
+use crate::source::{
+    Member, Source,
+    imports::{Import, flatten},
+    inherit_test_context, test_scope,
+};
 
 /// Crate that owns the projected call and the callbacks it retains.
 const OWNER: &str = "maestro-extensions";
@@ -36,7 +40,10 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 testing,
                 found: BTreeMap::new(),
             };
-            aliases.visit_file(syntax);
+            // Only the frontend's raw names are reported, so only its aliases are read.
+            if member.name == FRONTEND {
+                aliases.visit_file(syntax);
+            }
             let mut guard = Guard {
                 member: &member.name,
                 source,
@@ -66,14 +73,6 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     }
 }
 
-/// One item a use tree imports.
-struct Import<'a> {
-    /// Path segments as written, ending with the imported item.
-    path: Vec<&'a syn::Ident>,
-    /// Local name the import binds, absent for a glob.
-    binding: Option<&'a syn::Ident>,
-}
-
 impl Import<'_> {
     /// Name of the item the import binds, where `self` names the module above it.
     fn item(&self) -> Option<&syn::Ident> {
@@ -86,60 +85,16 @@ impl Import<'_> {
     }
 }
 
-/// Every item one use tree imports, whatever nesting or aliasing it writes.
-fn flatten(tree: &syn::UseTree) -> Vec<Import<'_>> {
-    let mut imports = Vec::new();
-    collect(tree, &mut Vec::new(), &mut imports);
-    imports
-}
-
-/// Appends the items of one use tree below the segments already written.
-fn collect<'a>(
-    tree: &'a syn::UseTree,
-    above: &mut Vec<&'a syn::Ident>,
-    imports: &mut Vec<Import<'a>>,
-) {
-    match tree {
-        syn::UseTree::Path(path) => {
-            above.push(&path.ident);
-            collect(&path.tree, above, imports);
-            above.pop();
-        }
-        syn::UseTree::Name(name) => {
-            let bound = if name.ident == "self" {
-                above.last().copied()
-            } else {
-                Some(&name.ident)
-            };
-            above.push(&name.ident);
-            imports.push(Import {
-                path: above.clone(),
-                binding: bound,
-            });
-            above.pop();
-        }
-        syn::UseTree::Rename(rename) => {
-            above.push(&rename.ident);
-            imports.push(Import {
-                path: above.clone(),
-                binding: Some(&rename.rename),
-            });
-            above.pop();
-        }
-        syn::UseTree::Group(group) => {
-            for tree in &group.items {
-                collect(tree, above, imports);
-            }
-        }
-        syn::UseTree::Glob(_) => imports.push(Import {
-            path: above.clone(),
-            binding: None,
-        }),
-    }
+#[cfg(test)]
+thread_local! {
+    /// Identifier spellings materialized by the renderer check on the current test thread.
+    static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Restricted name an identifier spells, ignoring a raw prefix.
 fn restricted(name: &syn::Ident) -> Option<&'static str> {
+    #[cfg(test)]
+    SPELLINGS.set(SPELLINGS.get() + 1);
     let spelling = name.to_string();
     let spelling = spelling.strip_prefix("r#").unwrap_or(&spelling);
     RAW.iter().copied().find(|raw| *raw == spelling)
@@ -192,19 +147,22 @@ struct Guard<'a> {
 
 impl Guard<'_> {
     /// Records a raw identifier reached from the frontend.
-    fn raw(&mut self, written: &str, span: proc_macro2::Span) {
+    fn raw(&mut self, ident: &syn::Ident) {
         if self.member != FRONTEND || self.testing {
             return;
         }
+        #[cfg(test)]
+        SPELLINGS.set(SPELLINGS.get() + 1);
+        let written = ident.unraw().to_string();
         let Some(raw) = self
             .aliases
-            .get(written)
+            .get(&written)
             .copied()
             .or_else(|| RAW.iter().copied().find(|raw| *raw == written))
         else {
             return;
         };
-        let position = span.start();
+        let position = ident.span().start();
         self.found.push((
             self.source.path.display().to_string(),
             (position.line, position.column),
@@ -216,7 +174,7 @@ impl Guard<'_> {
     fn imported(&mut self, tree: &syn::UseTree) {
         for import in flatten(tree) {
             for segment in &import.path {
-                self.raw(&segment.unraw().to_string(), segment.span());
+                self.raw(segment);
             }
         }
     }
@@ -261,14 +219,13 @@ impl<'ast> Visit<'ast> for Guard<'_> {
     }
 
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        let name = call.method.unraw().to_string();
-        self.raw(&name, call.method.span());
+        self.raw(&call.method);
         syn::visit::visit_expr_method_call(self, call);
     }
 
     fn visit_path(&mut self, path: &'ast syn::Path) {
         for segment in &path.segments {
-            self.raw(&segment.ident.unraw().to_string(), segment.ident.span());
+            self.raw(&segment.ident);
         }
         syn::visit::visit_path(self, path);
     }
@@ -298,3 +255,6 @@ impl<'ast> Visit<'ast> for Guard<'_> {
     inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
     inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
 }
+
+#[cfg(test)]
+mod tests;

@@ -5,6 +5,9 @@ use super::{
     controls::Admission,
     unix::{Owner, ReadCallback, ReaderExitCallback},
 };
+use crate::child_process::tests::children;
+use futures_util::FutureExt;
+use maestro_test_process::child::without_harness;
 use std::os::fd::AsRawFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -364,11 +367,6 @@ fn parked_handle() -> (
     (handle, rx, commands)
 }
 
-/// Polls once without installing a timer or spawning work.
-fn poll_once<F: std::future::Future>(future: std::pin::Pin<&mut F>) -> std::task::Poll<F::Output> {
-    future.poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
-}
-
 #[test]
 fn empty_input_does_not_reach_the_terminal() {
     crate::child_process::runtime().unwrap().block_on(async {
@@ -541,7 +539,7 @@ fn async_input_resumes_only_after_capacity_returns() {
         handle.try_write_user_input(b"fill".to_vec()).unwrap();
         let write = handle.write_user_input(b"waiting".to_vec());
         tokio::pin!(write);
-        assert!(poll_once(write.as_mut()).is_pending());
+        assert!(write.as_mut().now_or_never().is_none());
         assert_eq!(data.recv().await.unwrap(), b"fill");
         write.await.unwrap();
         assert_eq!(data.recv().await.unwrap(), b"waiting");
@@ -555,10 +553,10 @@ fn handoff_rejects_input_already_waiting_for_capacity() {
         handle.try_write_user_input(b"occupied".to_vec()).unwrap();
         let write = handle.write_user_input(b"must-return".to_vec());
         tokio::pin!(write);
-        assert!(poll_once(write.as_mut()).is_pending());
+        assert!(write.as_mut().now_or_never().is_none());
         let handoff = handle.begin_handoff(std::time::Duration::from_secs(1));
         tokio::pin!(handoff);
-        assert!(poll_once(handoff.as_mut()).is_pending());
+        assert!(handoff.as_mut().now_or_never().is_none());
         let controls::Control::Begin(reply) = commands.try_recv().unwrap() else {
             panic!("begin control");
         };
@@ -580,7 +578,7 @@ fn full_input_queue_does_not_block_handoff_control() {
         handle.try_write_user_input(vec![7]).unwrap();
         let handoff = handle.begin_handoff(std::time::Duration::from_secs(1));
         tokio::pin!(handoff);
-        assert!(poll_once(handoff.as_mut()).is_pending());
+        assert!(handoff.as_mut().now_or_never().is_none());
         let controls::Control::Begin(reply) = commands.try_recv().unwrap() else {
             panic!("independent control");
         };
@@ -786,7 +784,7 @@ fn actor_redraw_nudge_restores_the_requested_size() {
             let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(30);
             let apply = runner.apply_controls();
             tokio::pin!(apply);
-            assert!(poll_once(apply.as_mut()).is_pending());
+            assert!(apply.as_mut().now_or_never().is_none());
             handle.nudge_child_redraw_after_handoff(second);
             tokio::time::advance(std::time::Duration::from_millis(30)).await;
             finish_at(apply, deadline).await;
@@ -795,7 +793,7 @@ fn actor_redraw_nudge_restores_the_requested_size() {
             let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(30);
             let apply = runner.apply_controls();
             tokio::pin!(apply);
-            assert!(poll_once(apply.as_mut()).is_pending());
+            assert!(apply.as_mut().now_or_never().is_none());
             assert_eq!(rustix::termios::tcgetwinsize(&slave).unwrap().ws_row, 29);
             tokio::time::advance(std::time::Duration::from_millis(30)).await;
             finish_at(apply, deadline).await;
@@ -808,7 +806,7 @@ fn actor_redraw_nudge_restores_the_requested_size() {
         let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(30);
         let apply = runner2.apply_controls();
         tokio::pin!(apply);
-        assert!(poll_once(apply.as_mut()).is_pending());
+        assert!(apply.as_mut().now_or_never().is_none());
         assert_eq!(rustix::termios::tcgetwinsize(&slave2).unwrap().ws_row, 19);
         assert_eq!(rustix::termios::tcgetwinsize(&slave).unwrap().ws_row, 30);
         tokio::time::advance(std::time::Duration::from_millis(30)).await;
@@ -883,9 +881,9 @@ async fn reply_deadline<T>(
 async fn reply_boundary<F: std::future::Future>(future: F) -> F::Output {
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
     tokio::pin!(future);
-    assert!(poll_once(future.as_mut()).is_pending());
+    assert!(future.as_mut().now_or_never().is_none());
     tokio::time::advance(std::time::Duration::from_millis(999)).await;
-    assert!(poll_once(future.as_mut()).is_pending());
+    assert!(future.as_mut().now_or_never().is_none());
     tokio::time::advance(std::time::Duration::from_millis(1)).await;
     finish_at(future, deadline).await
 }
@@ -910,9 +908,9 @@ fn actor_deadlines_restore_admission_without_losing_pending_bytes() {
             let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(2);
             let begin = runner.begin_handoff();
             tokio::pin!(begin);
-            assert!(poll_once(begin.as_mut()).is_pending());
+            assert!(begin.as_mut().now_or_never().is_none());
             tokio::time::advance(std::time::Duration::from_millis(1999)).await;
-            assert!(poll_once(begin.as_mut()).is_pending());
+            assert!(begin.as_mut().now_or_never().is_none());
             tokio::time::advance(std::time::Duration::from_millis(1)).await;
             assert_eq!(
                 finish_at(begin, deadline).await.unwrap_err().to_string(),
@@ -966,10 +964,10 @@ fn admission_keeps_channel_wakes_through_handoff() {
         wake.entered.wait();
         let begin = handle.begin_handoff(std::time::Duration::from_secs(1));
         tokio::pin!(begin);
-        assert!(poll_once(begin.as_mut()).is_pending());
+        assert!(begin.as_mut().now_or_never().is_none());
         let drained = handle.owner.admission.wait_drained();
         tokio::pin!(drained);
-        assert!(poll_once(drained.as_mut()).is_pending());
+        assert!(drained.as_mut().now_or_never().is_none());
         wake.release.wait();
         thread.join().unwrap().unwrap();
         drained.await;
@@ -1148,19 +1146,19 @@ async fn assert_nudge_sizes(
         let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(30);
         let apply = runner.apply_controls();
         tokio::pin!(apply);
-        let first = poll_once(apply.as_mut());
+        let first = apply.as_mut().now_or_never();
         let observed = rustix::termios::tcgetwinsize(slave).unwrap();
         assert_eq!(
             (observed.ws_row, observed.ws_col),
             (temporary_rows, temporary_cols)
         );
         if (rows, cols) == (temporary_rows, temporary_cols) {
-            assert!(first.is_ready());
+            assert!(first.is_some());
             continue;
         }
-        assert!(first.is_pending());
+        assert!(first.is_none());
         tokio::time::advance(std::time::Duration::from_millis(29)).await;
-        assert!(poll_once(apply.as_mut()).is_pending());
+        assert!(apply.as_mut().now_or_never().is_none());
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
         finish_at(apply, deadline).await;
         let observed = rustix::termios::tcgetwinsize(slave).unwrap();
@@ -1221,7 +1219,7 @@ async fn assert_shorter_caller_budget(
     ));
     tokio::pin!(begin);
     tokio::time::advance(std::time::Duration::from_millis(499)).await;
-    assert!(poll_once(begin.as_mut()).is_pending());
+    assert!(begin.as_mut().now_or_never().is_none());
     tokio::time::advance(std::time::Duration::from_millis(1)).await;
     let controls::Control::Rollback(reply) = commands.recv().await.unwrap() else {
         panic!("rollback after caller budget");
@@ -1361,7 +1359,7 @@ fn exit_hook_completion_precedes_master_release() {
         .unwrap();
         let release = handle.release_after_commit();
         tokio::pin!(release);
-        assert!(poll_once(release.as_mut()).is_pending());
+        assert!(release.as_mut().now_or_never().is_none());
         ready.await.unwrap();
         assert!(std::fs::read_link(&path).is_ok());
         assert!(matches!(
@@ -1417,26 +1415,66 @@ fn exit_hook_cancellation_releases_master() {
     assert_eq!(receiver.blocking_recv(), None);
     let mut task = handle.owner.task.lock().unwrap().take().unwrap();
     assert!(
-        matches!(poll_once(std::pin::Pin::new(&mut task)),std::task::Poll::Ready(Err(error)) if error.is_cancelled())
+        matches!(std::pin::Pin::new(&mut task).now_or_never(),Some(Err(error)) if error.is_cancelled())
     );
 }
 
 #[test]
 fn restored_master_is_not_inherited_by_children() {
     crate::child_process::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("restored_master_is_not_inherited_by_children").unwrap(){return;}
-        let (master,_slave)=terminal_pair();
-        rustix::io::fcntl_setfd(&master,rustix::io::FdFlags::empty()).unwrap();
-        assert!(!rustix::io::fcntl_getfd(&master).unwrap().contains(rustix::io::FdFlags::CLOEXEC));
-        let number=master.as_raw_fd();
-        let handle=PtyIoActor::spawn(PtyIoActorConfig {pane_id:5,master_fd:master,initially_quiesced:true,
-            on_read:Box::new(|_|PtyReadResult::default()),on_reader_exit:None}).unwrap();
-        let info=std::fs::read_to_string(format!("/proc/self/fdinfo/{number}")).unwrap();
-        let flags=info.lines().find_map(|line|line.strip_prefix("flags:")).unwrap().trim();
-        let cloexec=u64::from_str_radix(flags,8).unwrap() & u64::from(rustix::fs::OFlags::CLOEXEC.bits()) != 0;
-        let output=std::process::Command::new("/bin/sh").args(["-c",r#"if [ -e "/proc/self/fd/$MAESTRO_TEST_MASTER_FD" ]; then printf leaked; else printf closed; fi"#])
-            .env("MAESTRO_TEST_MASTER_FD",number.to_string()).output().unwrap();
-        assert!(output.status.success());handle.release_after_commit().await.unwrap();
-        assert_eq!((cloexec,output.stdout),(true,b"closed".to_vec()));
+        if maestro_test_process::run_alone("restored_master_is_not_inherited_by_children").unwrap()
+        {
+            return;
+        }
+        let (master, _slave) = terminal_pair();
+        rustix::io::fcntl_setfd(&master, rustix::io::FdFlags::empty()).unwrap();
+        assert!(
+            !rustix::io::fcntl_getfd(&master)
+                .unwrap()
+                .contains(rustix::io::FdFlags::CLOEXEC)
+        );
+        let number = master.as_raw_fd();
+        let handle = PtyIoActor::spawn(PtyIoActorConfig {
+            pane_id: 5,
+            master_fd: master,
+            initially_quiesced: true,
+            on_read: Box::new(|_| PtyReadResult::default()),
+            on_reader_exit: None,
+        })
+        .unwrap();
+        let info = std::fs::read_to_string(format!("/proc/self/fdinfo/{number}")).unwrap();
+        let flags = info
+            .lines()
+            .find_map(|line| line.strip_prefix("flags:"))
+            .unwrap()
+            .trim();
+        let cloexec = u64::from_str_radix(flags, 8).unwrap()
+            & u64::from(rustix::fs::OFlags::CLOEXEC.bits())
+            != 0;
+        let output = children::command(master_descriptor_probe, &[])
+            .env("MAESTRO_TEST_MASTER_FD", number.to_string())
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        handle.release_after_commit().await.unwrap();
+        assert_eq!(
+            (cloexec, without_harness(&output.stdout)),
+            (true, b"closed".to_vec())
+        );
     });
+}
+
+/// Reports whether the descriptor `MAESTRO_TEST_MASTER_FD` names reached this process.
+#[test]
+#[ignore = "runs only inside a controlled child"]
+fn master_descriptor_probe() {
+    let number = maestro_test_process::child::variable("MAESTRO_TEST_MASTER_FD").unwrap();
+    let descriptor = format!("/proc/self/fd/{number}");
+    let answer = if std::path::Path::new(&descriptor).exists() {
+        &b"leaked"[..]
+    } else {
+        b"closed"
+    };
+    maestro_test_process::child::write_stdout(answer).unwrap();
+    maestro_test_process::child::leave(0)
 }

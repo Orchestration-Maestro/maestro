@@ -79,7 +79,8 @@ impl Rig {
                 ThemeOptions::default(),
             )
             .unwrap(),
-        ));
+        ))
+        .unwrap();
         let selected = self.events.clone();
         let cancelled = self.events.clone();
         let storage = self.storage.clone();
@@ -220,6 +221,7 @@ pub fn bypasses() {
             rig.storage.set(
                 "maestro-custom-fallback",
                 maestro_app::AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+                    env: None,
                     key: String::new(),
                 }),
             );

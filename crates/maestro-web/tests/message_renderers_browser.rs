@@ -14,12 +14,9 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 /// Original callback data, unchanged native selection, replacement and release follow the placement.
 #[wasm_bindgen]
-pub async fn custom_message_content_reaches_the_native_reading_consumer(
-    import_module: &js_sys::Function,
-) {
-    use contributions_support::{call, container, page_module, select, selection, text, view};
+pub fn custom_message_content_reaches_the_native_reading_consumer() {
+    use contributions_support::{container, select, text, view};
     let view = view();
-    let page = page_module(import_module).await;
     let parent = container();
     let handle = Arc::new(AtomicU32::new(1));
     let input = message("browser-custom", handle.clone());
@@ -45,12 +42,12 @@ pub async fn custom_message_content_reaches_the_native_reading_consumer(
         select(&root, "a").get_attribute("href").unwrap(),
         "https://example.test/"
     );
-    call(&page, "select", &js_sys::Array::of1(&strong)).await;
+    crate::contributions_support::page::select_children(&strong);
     show(&mut slot, &input, &parent, &view);
     assert!(slot.root().unwrap().is_same_node(Some(&root)));
     assert!(select(&root, "strong").is_same_node(Some(&strong)));
     assert_eq!(
-        selection(&page, &parent).await,
+        crate::contributions_support::page::selection(&parent),
         ("Native message".into(), true)
     );
     replace_renderer(&mut slot, &input, (&parent, &view), &strong);

@@ -26,15 +26,6 @@ impl ModelFileOperations for Text {
 pub fn auth() -> SharedHandle<AuthStorage> {
     SharedHandle::new(AuthStorage::in_memory(AuthStorageData::new()))
 }
-/// Credential commands that answer no value and spawn no process.
-pub struct NoCommands;
-
-impl maestro_credentials::ConfigValueOperations for NoCommands {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        None
-    }
-}
-
 /// Credential commands that fail the test which requests one.
 pub struct ForbiddenCommands;
 
@@ -47,7 +38,7 @@ impl maestro_credentials::ConfigValueOperations for ForbiddenCommands {
 /// Credential commands that fail every key command with no output.
 #[must_use]
 pub fn values() -> ConfigValues {
-    SharedHandle::new(NoCommands)
+    SharedHandle::new(maestro_credentials::test_support::NoCommands)
 }
 
 /// Credential commands that must stay unrequested.
@@ -96,7 +87,7 @@ impl File {
     pub fn new(bytes: &[u8]) -> Self {
         use std::io::Write;
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
+        let path = maestro_test_directory::temporary_root().join(format!(
             "maestro-catalog-{}-{}.json",
             std::process::id(),
             NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)

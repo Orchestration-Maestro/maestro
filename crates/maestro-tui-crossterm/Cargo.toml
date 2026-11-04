@@ -28,7 +28,7 @@ maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["test-util", "sync"] }
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.5", default-features = false, features = ["std", "event", "fs", "stdio", "termios"] }
+rustix = { workspace = true, features = ["std", "event", "fs", "stdio", "termios"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["net", "signal", "macros"] }
 
 [target.'cfg(windows)'.dependencies]
@@ -38,8 +38,24 @@ tokio = { version = "=1.53.3", default-features = false, features = ["macros"] }
 [target.'cfg(unix)'.dev-dependencies]
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 maestro-brand = { path = "../maestro-brand" }
-rustix = { version = "=1.1.5", default-features = false, features = ["pipe", "pty", "process"] }
+rustix = { workspace = true, features = ["pipe", "pty", "process"] }
 
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
+
+[[example]]
+name = "chat_simple"
+path = "tests/support/chat_simple.rs"
+
+[[example]]
+name = "image_test"
+path = "tests/support/image_test.rs"
+
+[[example]]
+name = "key_tester"
+path = "tests/support/key_tester.rs"
+
+[[example]]
+name = "viewport_overwrite_repro"
+path = "tests/support/viewport_overwrite_repro.rs"

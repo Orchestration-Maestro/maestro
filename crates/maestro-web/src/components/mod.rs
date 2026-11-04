@@ -5,6 +5,7 @@ pub mod attachment_tile;
 /// Native connection callbacks for retained component roots.
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod connection;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod diff;
 /// Native single-line input.
 #[cfg(target_arch = "wasm32")]
@@ -55,4 +56,5 @@ pub mod preview_code_toggle;
 #[cfg(target_arch = "wasm32")]
 pub mod provider_key_input;
 
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod expandable_section;

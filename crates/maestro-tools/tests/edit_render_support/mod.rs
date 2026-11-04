@@ -8,6 +8,15 @@ use std::collections::BTreeMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::collections::{BTreeSet, HashSet};
 
+/// Selects the complete macOS expectation when supplied on macOS.
+pub fn for_this_platform<T>(expected: T, macos: Option<T>) -> T {
+    if cfg!(target_os = "macos") {
+        macos.unwrap_or(expected)
+    } else {
+        expected
+    }
+}
+
 /// One independent rendering query.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -20,6 +29,8 @@ pub struct Case {
     pub input: Value,
     /// Source-derived expected output.
     pub expected: Value,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Value>,
 }
 /// The complete corpus and its palette.
 #[derive(Deserialize)]
@@ -71,6 +82,10 @@ pub fn cases(test: &str) -> Vec<Case> {
         .cases
         .into_iter()
         .filter(|case| case.test == test)
+        .map(|mut case| {
+            case.expected = for_this_platform(case.expected, case.expected_macos.take());
+            case
+        })
         .collect();
     assert!(!selected.is_empty());
     selected

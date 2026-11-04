@@ -152,7 +152,7 @@ pub fn assert_panel(
     use maestro_tui::Component;
     assert_eq!(selector.render(80), expected.lines);
     assert_eq!(events.get(), expected.events);
-    assert_eq!(expected.items.len(), if images { 23 } else { 21 });
+    assert_eq!(expected.items.len(), if images { 24 } else { 22 });
     for (index, item) in expected.items.iter().enumerate() {
         assert_inventory_row(selector, item);
         if index + 1 < expected.items.len() {

@@ -11,8 +11,7 @@ mod emphasis_work;
 mod fixture_corpus;
 mod html_progress;
 mod link_windows;
-#[path = "../tests/support/nodes.rs"]
-pub(crate) mod nodes;
+pub(crate) use crate::test_support::nodes;
 mod opener_work;
 mod paragraph_progress;
 mod reference_windows;
@@ -21,7 +20,7 @@ mod segment_balance;
 mod shared_text;
 mod table_progress;
 
-pub(crate) use shared_text::Retained;
+pub(crate) use shared_text::{Charges, Retained, settled};
 
 /// Worker stack well below the main thread's, so depth cannot lean on it.
 pub(crate) const WORKER_STACK: usize = 2 * 1024 * 1024;
@@ -92,6 +91,8 @@ pub(crate) struct Work {
     pub(crate) code_bytes: usize,
     /// Bytes supplied to HTML recognition.
     pub(crate) html_bytes: usize,
+    /// Whole-document bytes searched by the escaped browser angle projection.
+    pub(crate) escaped_bytes: usize,
     /// Bytes visited by physical-line framing, including repeated visits.
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.
@@ -108,6 +109,8 @@ pub(crate) struct Work {
     pub(crate) joined_bytes: usize,
     /// Largest unique source payload a list state kept alive until its release.
     pub(crate) frame_bytes: usize,
+    /// Payload the settled output of the level a caller just finished charged.
+    pub(crate) closed_settled: usize,
     /// Last reentry's mapped end before preserving already consumed chunks.
     pub(crate) reentry_end: usize,
     /// Recognized consumption before the last container reentry.
@@ -144,6 +147,8 @@ pub(crate) struct Work {
     pub(crate) address_checks: usize,
     /// Bytes up to the end of each address candidate the start patterns matched.
     pub(crate) address_bytes: usize,
+    /// Entry comparisons made by a retained item's stop and underline seeks.
+    pub(crate) item_seeks: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
@@ -499,12 +504,13 @@ fn later_paragraphs_clip_at_their_own_block_hints() {
             Delimited("%%", "`"),
             &["p", "block %%`", "`", "block %%`", " t"][..],
         ),
-        // An escaped opening tag does not suppress a later block hint.
+        // An escaped opening tag does not suppress a later block hint, and its closing
+        // angle stays text after the hint splits the paragraph.
         (
             "p <a\n\nq <$$x$$> r\n",
             escaped,
             Delimited("$$", "$$"),
-            &["p <a", "q <", "block $$x$$"][..],
+            &["p <a", "q <", "block $$x$$", "> r"][..],
         ),
     ] {
         assert_eq!(

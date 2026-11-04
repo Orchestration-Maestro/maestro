@@ -1,7 +1,13 @@
+use std::cell::OnceCell;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use cargo_metadata::Metadata;
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
+use syn::{spanned::Spanned, visit::Visit};
+
+/// Flattened Rust import trees.
+pub(crate) mod imports;
 
 /// Loaded workspace member with its Rust sources.
 pub(crate) struct Member {
@@ -13,14 +19,48 @@ pub(crate) struct Member {
     pub(crate) sources: Vec<Source>,
 }
 
-/// Source text with optional parsed Rust syntax.
+/// Source text with the lexer tokens and syntax that every check reads.
 pub(crate) struct Source {
     /// Source file path used in diagnostics.
     pub(crate) path: PathBuf,
     /// Normalized UTF-8 source with consistent line endings.
     pub(crate) contents: String,
+    /// Lexer tokens other than whitespace, in source order, with their byte ranges.
+    pub(crate) tokens: Vec<(TokenKind, Range<usize>)>,
     /// Parsed file syntax, absent for fragments or invalid source.
     pub(crate) syntax: Option<syn::File>,
+    /// Spans of test-gated items, searched on first use.
+    test_spans: OnceCell<Vec<Range<(usize, usize)>>>,
+}
+
+impl Source {
+    /// Parse and lex normalized source text once for every check.
+    pub(crate) fn new(path: PathBuf, mut contents: String) -> Self {
+        let syntax = syn::parse_file(&contents).ok();
+        if let Some(shebang) = syntax.as_ref().and_then(|file| file.shebang.as_ref()) {
+            // Syn retains the newline but removes the shebang before assigning spans.
+            contents.drain(..shebang.len());
+        }
+        let tokens = tokens(&contents)
+            .filter(|(kind, _)| *kind != TokenKind::Whitespace)
+            .collect();
+        Self {
+            path,
+            contents,
+            tokens,
+            syntax,
+            test_spans: OnceCell::new(),
+        }
+    }
+
+    /// Disjoint spans of the parsed test-gated items in source order, searched once per source.
+    pub(crate) fn test_spans(&self) -> &[Range<(usize, usize)>] {
+        self.test_spans.get_or_init(|| {
+            let mut spans = test_spans(self.syntax.as_ref());
+            spans.sort_unstable_by_key(|span| span.start);
+            spans
+        })
+    }
 }
 
 /// Load each workspace member's Rust files with normalized source text.
@@ -37,20 +77,11 @@ pub(crate) fn load(metadata: &Metadata) -> Result<Vec<Member>, String> {
                 .map(|path| {
                     let contents = std::fs::read_to_string(&path)
                         .map_err(|error| format!("{}: {error}", path.display()))?;
-                    let mut contents = contents
+                    let contents = contents
                         .strip_prefix('\u{feff}')
                         .unwrap_or(&contents)
                         .replace("\r\n", "\n");
-                    let syntax = syn::parse_file(&contents).ok();
-                    if let Some(shebang) = syntax.as_ref().and_then(|file| file.shebang.as_ref()) {
-                        // Syn retains the newline but removes the shebang before assigning spans.
-                        contents.drain(..shebang.len());
-                    }
-                    Ok(Source {
-                        path,
-                        contents,
-                        syntax,
-                    })
+                    Ok(Source::new(path, contents))
                 })
                 .collect::<Result<_, String>>()?;
             Ok(Member {
@@ -94,6 +125,12 @@ pub(crate) fn line(source: &str, offset: usize) -> usize {
 thread_local! {
     /// Bytes visited by newline scans on the current test thread.
     static SCANNED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Lexer passes started on the current test thread.
+    static LEXER_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Test-gated span searches on the current test thread.
+    static TEST_SPAN_SEARCHES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Located spans tested for a source position on the current test thread.
+    pub(crate) static SPAN_TESTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Count line breaks in the supplied source slice.
@@ -104,7 +141,9 @@ pub(crate) fn count_newlines(source: &str) -> usize {
 }
 
 /// Yield token kinds with byte ranges in the original source, excluding its shebang.
-pub(crate) fn tokens(source: &str) -> impl Iterator<Item = (TokenKind, std::ops::Range<usize>)> {
+fn tokens(source: &str) -> impl Iterator<Item = (TokenKind, Range<usize>)> {
+    #[cfg(test)]
+    LEXER_PASSES.set(LEXER_PASSES.get() + 1);
     let mut offset = ra_ap_rustc_lexer::strip_shebang(source).unwrap_or(0);
     ra_ap_rustc_lexer::tokenize(&source[offset..], FrontmatterAllowed::No).map(move |token| {
         let start = offset;
@@ -113,21 +152,31 @@ pub(crate) fn tokens(source: &str) -> impl Iterator<Item = (TokenKind, std::ops:
     })
 }
 
-/// Extract line and terminated block comments without inspecting literals.
-pub(crate) fn comments(source: &str) -> Vec<(usize, &str)> {
-    let mut comments = Vec::new();
-    for (kind, range) in tokens(source) {
-        let offset = range.start;
-        let end = range.end;
-        match kind {
-            TokenKind::LineComment { .. } => comments.push((offset + 2, &source[offset + 2..end])),
+/// Line and terminated block comments with the offsets of their bodies, without inspecting literals.
+pub(crate) fn comments(source: &Source) -> impl Iterator<Item = (usize, &str)> {
+    source.tokens.iter().filter_map(|(kind, range)| {
+        let body = match kind {
+            TokenKind::LineComment { .. } => range.start + 2..range.end,
             TokenKind::BlockComment {
                 terminated: true, ..
-            } => comments.push((offset + 2, &source[offset + 2..end - 2])),
-            _ => {}
-        }
-    }
-    comments
+            } => range.start + 2..range.end - 2,
+            _ => return None,
+        };
+        Some((body.start, &source.contents[body]))
+    })
+}
+
+/// Whether a position lies in one of a list of disjoint spans sorted by start.
+///
+/// Only the last span that starts at or before the position can contain it.
+pub(crate) fn covered(spans: &[Range<(usize, usize)>], position: (usize, usize)) -> bool {
+    spans[..spans.partition_point(|span| span.start <= position)]
+        .last()
+        .is_some_and(|span| {
+            #[cfg(test)]
+            SPAN_TESTS.set(SPAN_TESTS.get() + 1);
+            span.contains(&position)
+        })
 }
 
 /// Recognize an item explicitly gated by the test configuration.
@@ -224,7 +273,57 @@ macro_rules! inherit_test_context {
     };
 }
 
-pub(crate) use {exclude_test_item, inherit_test_context};
+/// Locate parsed test-gated items without excluding neighboring production syntax.
+fn test_spans(syntax: Option<&syn::File>) -> Vec<Range<(usize, usize)>> {
+    #[cfg(test)]
+    TEST_SPAN_SEARCHES.set(TEST_SPAN_SEARCHES.get() + 1);
+    let mut testing = TestSpans::default();
+    if let Some(syntax) = syntax {
+        testing.visit_file(syntax);
+    }
+    testing.spans
+}
+
+#[derive(Default)]
+/// Source spans owned by test-gated items.
+struct TestSpans {
+    /// Half-open character ranges occupied by test-only syntax.
+    spans: Vec<Range<(usize, usize)>>,
+}
+
+impl<'ast> Visit<'ast> for TestSpans {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        exclude_test_item!(self, item, item_attributes(item), visit_item);
+    }
+
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        exclude_test_item!(self, item, impl_item_attributes(item), visit_impl_item);
+    }
+
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        exclude_test_item!(self, item, trait_item_attributes(item), visit_trait_item);
+    }
+
+    fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
+        let attributes = match item {
+            syn::ForeignItem::Fn(item) => &item.attrs,
+            syn::ForeignItem::Static(item) => &item.attrs,
+            syn::ForeignItem::Type(item) => &item.attrs,
+            syn::ForeignItem::Macro(item) => &item.attrs,
+            _ => return,
+        };
+        exclude_test_item!(self, item, attributes, visit_foreign_item);
+    }
+}
+
+/// Convert a syntax span into comparable line and character coordinates.
+fn span_positions(span: proc_macro2::Span) -> Range<(usize, usize)> {
+    let start = span.start();
+    let end = span.end();
+    (start.line, start.column)..(end.line, end.column)
+}
+
+pub(crate) use inherit_test_context;
 
 /// Read a Cargo manifest through the native TOML parser.
 pub(crate) fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {

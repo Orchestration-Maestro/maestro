@@ -66,6 +66,18 @@ fn column_slices_keep_whole_graphemes_and_direct_tab_metric() {
 }
 
 #[test]
+fn slice_and_overlay_widths_count_a_tab_as_visible_width_does() {
+    let text = "out 192M\t.run/skill-logs/results-ha";
+    let slice = slice_with_width(text, 0, 10, true);
+    assert_eq!((slice.text.as_str(), slice.width), ("out 192M", 8));
+    assert_eq!(visible_width(&slice.text), slice.width);
+    let segments = extract_segments(text, 10, 13, 10, true);
+    assert_eq!(segments.before, "out 192M\t");
+    assert_eq!(segments.before_width, 11);
+    assert_eq!(visible_width(&segments.before), segments.before_width);
+}
+
+#[test]
 fn column_slice_starts_with_the_escapes_written_before_its_first_grapheme() {
     let line = "\x1b[31ma\x1b[1mbc";
     assert_eq!(slice_by_column(line, 1, 1, false), "\x1b[31m\x1b[1mb");
@@ -233,7 +245,7 @@ fn segments_keep_before_priority_and_gap_style_changes() {
         ),
         ("a\u{754c}b", (0, 1, 1, true), ("", 0, "", 0)),
         ("a\u{754c}b", (0, 1, 1, false), ("", 0, "\u{754c}", 2)),
-        ("\t\u{754c}b", (1, 1, 2, true), ("\t\u{754c}", 2, "b", 1)),
+        ("\t\u{754c}b", (1, 1, 2, true), ("\t", 3, "", 0)),
         ("ab\x1b[31mcd", (1, 2, 2, false), ("a", 1, "\x1b[31mcd", 2)),
         ("ab\x1b[31mcd", (2, 3, 1, false), ("ab", 2, "\x1b[31md", 1)),
     ];

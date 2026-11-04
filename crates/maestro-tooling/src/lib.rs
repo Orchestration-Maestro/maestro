@@ -5,7 +5,10 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
-/// Capture browser compilation diagnostics.
+/// Encode bytes as lowercase hexadecimal.
+pub use test_setup::hex;
+
+/// Compile the browser compile witnesses and capture their diagnostics.
 pub mod check_browser_build;
 /// Copy prepared application assets.
 pub mod copy_assets;
@@ -18,13 +21,31 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Temporary browser-export manifest preparation and lock checks.
+mod browser_export_setup;
+/// The locked packages and the dependency graph between them.
+mod cargo_lock;
+/// Offline generation of locale date-time tables.
+mod date_time_data;
+/// The source files a dependency file names.
+mod dep_info;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
 /// Derived extension documentation table.
 mod example_index;
+/// Path dependencies between workspace members.
+mod member_graph;
+/// Setup commands that nextest runs before the tests that need them.
+mod nextest_setup;
+/// Per-test admission for reserved callback ports.
+mod nextest_wrapper;
+/// Reusable test-setup staging and validation.
+mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
+/// The workspace a development command serves.
+pub mod workspace;
 
 /// Provider credential variables removed by controlled development commands.
 pub(crate) const CREDENTIALS: &[&str] = &[
@@ -74,19 +95,20 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
-        Some("example-index") => example_index::run(args, checkout),
+        Some("example-index") => example_index::run(args, cargo, checkout),
+        Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
+        Some("browser-export-setup") => browser_export_setup::run(args, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
-                match std::fs::remove_dir_all(path) {
-                    Ok(()) => {}
-                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                    Err(error) => return Err(error),
-                }
+                test_setup::remove_directory(&path)?;
             }
             Ok(ExitCode::SUCCESS)
         }
+        Some("nextest-setup") => nextest_setup::run(args),
+        Some("nextest-wrapper") => nextest_wrapper::run(args),
+        Some("prepare-test-setup") => test_setup::run(args, cargo, checkout),
         Some("watch") => watch::run(args, cargo),
         Some("watch-step") => watch::step(args, cargo),
         Some("test-offline") => {
@@ -106,7 +128,8 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             args,
             run_source::Mode::Windows,
         )),
-        Some("check-browser-smoke") => browser_build(cargo, checkout),
+        Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
+        Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
             copy_assets::copy(
@@ -162,19 +185,17 @@ fn asset_directory(owner: &str, cargo: &Path) -> io::Result<std::path::PathBuf> 
         .into_std_path_buf())
 }
 
-/// Wire formatting, the shared check recipe and the delivered browser smoke
-/// command into the hook.
+/// Wire crate-scoped formatting, conventions and the delivered browser smoke command into the hook.
 fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut format = Command::new(cargo);
-    format.current_dir(checkout).args(["fmt", "--all"]);
-    let mut conventions = Command::new(cargo);
-    conventions
-        .current_dir(checkout)
-        .args(["test", "-p", "maestro-test-conventions", "--locked"]);
+    format.current_dir(checkout).arg("fmt");
+    // The suite's probes install the prepared native fixture, which only the recipe prepares.
+    let mut conventions = Command::new("just");
+    conventions.current_dir(checkout).arg("test-conventions");
     let mut smoke = Command::new(std::env::current_exe()?);
     smoke.arg("check-browser-smoke");
     let active = checkout
-        .join("crates/maestro-models/examples/browser_import_check.rs")
+        .join("crates/maestro-models/tests/support/browser_import_check.rs")
         .is_file();
     pre_commit::run(
         checkout,
@@ -185,31 +206,38 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Compile the delivered browser import example and capture its diagnostics.
-fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    if !checkout
-        .join("crates/maestro-models/examples/browser_import_check.rs")
-        .is_file()
-    {
-        return Err(io::Error::other(
-            "browser_import_check entry is not delivered",
-        ));
-    }
-    let mut child = Command::new(cargo);
-    child.current_dir(checkout).args([
-        "build",
+/// Run the real-browser regressions, then the export inventory even when a regression fails, so
+/// one run reports every case; the first failure's status is the command's.
+fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
+    let mut regressions = Command::new(cargo);
+    regressions.current_dir(checkout).args([
+        "nextest",
+        "run",
         "--locked",
         "-p",
-        "maestro-models",
-        "--example",
-        "browser_import_check",
-        "--target",
-        "wasm32-unknown-unknown",
+        "maestro-test-browser",
+        "--run-ignored",
+        "only",
+        "--no-fail-fast",
+        "-E",
+        "test(/^browser::/)",
     ]);
-    check_browser_build::run(
-        &mut child,
-        &std::env::temp_dir().join("maestro-browser-smoke-errors.log"),
-    )
+    let mut inventory = Command::new(cargo);
+    inventory.current_dir(checkout).args([
+        "run",
+        "--quiet",
+        "--locked",
+        "-p",
+        "maestro-test-browser",
+        "--",
+    ]);
+    let regressed = regressions.status()?;
+    let inventoried = inventory.status()?;
+    Ok(exit_code(if regressed.success() {
+        inventoried
+    } else {
+        regressed
+    }))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.
@@ -224,14 +252,27 @@ fn binary_manifest(cargo: &Path, checkout: &Path) -> io::Result<std::path::PathB
 }
 
 /// Read locked root metadata with dependency packages omitted.
-pub(crate) fn locked_metadata(
-    cargo: &Path,
-    checkout: &Path,
-) -> io::Result<cargo_metadata::Metadata> {
+///
+/// # Errors
+/// Returns Cargo execution, locked resolution or metadata decoding failures.
+pub fn locked_metadata(cargo: &Path, checkout: &Path) -> io::Result<cargo_metadata::Metadata> {
     cargo_metadata::MetadataCommand::new()
         .cargo_path(cargo)
         .manifest_path(checkout.join("Cargo.toml"))
         .no_deps()
+        .other_options(vec!["--locked".into()])
+        .exec()
+        .map_err(io::Error::other)
+}
+
+/// Read locked root metadata with dependency packages included.
+///
+/// # Errors
+/// Returns Cargo execution, locked resolution or metadata decoding failures.
+pub fn locked_dependencies(cargo: &Path, checkout: &Path) -> io::Result<cargo_metadata::Metadata> {
+    cargo_metadata::MetadataCommand::new()
+        .cargo_path(cargo)
+        .manifest_path(checkout.join("Cargo.toml"))
         .other_options(vec!["--locked".into()])
         .exec()
         .map_err(io::Error::other)

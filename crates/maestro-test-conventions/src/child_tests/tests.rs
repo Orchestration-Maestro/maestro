@@ -1,6 +1,6 @@
 //! Decoded string-token ownership without macro expansion or source-tree assumptions.
 
-use super::{check, exact_offset};
+use super::check;
 use crate::source::{Member, Source};
 use std::path::PathBuf;
 
@@ -9,12 +9,13 @@ fn member(name: &str, directory: &str, path: &str, contents: &str) -> Member {
     Member {
         name: name.into(),
         directory: PathBuf::from(directory),
-        sources: vec![Source {
-            path: PathBuf::from(path),
-            contents: contents.into(),
-            syntax: syn::parse_file(contents).ok(),
-        }],
+        sources: vec![Source::new(PathBuf::from(path), contents.into())],
     }
+}
+
+/// Locate the first exact-selector string token in one loaded source.
+fn exact_offset(contents: &str) -> Option<usize> {
+    super::exact_offset(&Source::new(PathBuf::new(), contents.into()))
 }
 
 /// Decode all Rust string spellings before comparing the complete value.
@@ -104,4 +105,83 @@ fn exact_child_selection_reports_source_line() {
         Err("models/src/child.rs:4: exact test selection belongs to maestro-test-process".into())
     );
     assert_eq!(exact_offset(source), Some(source.find("r#").unwrap()));
+}
+
+/// Ignore ownership is parsed from attributes, not comments or fixture strings.
+#[test]
+fn ignored_tests_keep_known_execution_owners() {
+    for source in [
+        "#[test] #[ignore] fn helper() {}",
+        "#[test] #[ignore = \"unknown owner\"] fn helper() {}",
+        "#[test] #[ignore = \"runs in the pinned Chromium job\"] fn helper() {}",
+    ] {
+        assert!(
+            check(&[member(
+                "maestro-models",
+                "models",
+                "models/src/tests.rs",
+                source
+            )])
+            .is_err(),
+            "{source}"
+        );
+    }
+    for source in [
+        "#[test] #[ignore = \"runs only inside a controlled child\"] fn helper() {}",
+        "// #[ignore = \"unknown owner\"]\nfn helper() {}",
+        "const SOURCE: &str = r#\"#[ignore = \"unknown owner\"]\"#;",
+    ] {
+        assert!(
+            check(&[member(
+                "maestro-models",
+                "models",
+                "models/src/tests.rs",
+                source
+            )])
+            .is_ok(),
+            "{source}"
+        );
+    }
+}
+
+/// Browser annotations apply to each test, not merely an equal file-wide count.
+#[test]
+fn browser_tests_require_the_pinned_execution_owner() {
+    for source in [
+        "#[test] fn browser() {}",
+        "#[test] #[ignore = \"runs only inside a controlled child\"] fn browser() {}",
+        "#[ignore = \"runs in the pinned Chromium job\"] fn helper() {} #[test] fn browser() {}",
+    ] {
+        let browser = member(
+            "maestro-test-browser",
+            "browser",
+            "browser/tests/browser.rs",
+            source,
+        );
+        assert!(check(&[browser]).is_err(), "{source}");
+    }
+    let mut browser = member(
+        "maestro-test-browser",
+        "browser",
+        "browser/tests/browser.rs",
+        "#[test] #[ignore = \"runs in the pinned Chromium job\"] fn browser() {}",
+    );
+    browser.sources.push(Source::new(
+        "browser/tests/integration.rs".into(),
+        "mod browser;".into(),
+    ));
+    assert!(check(&[browser]).is_ok());
+}
+
+/// Only string-kind literal tokens can hold the selector, so only they are decoded.
+#[test]
+fn exact_child_selection_decodes_only_string_literals() {
+    super::DECODES.set(0);
+    assert_eq!(
+        exact_offset(
+            "let values = (1, 2.5, 'c', b'b', b\"bytes\", c\"text\", \"text\", r\"raw\");"
+        ),
+        None
+    );
+    assert_eq!(super::DECODES.get(), 2);
 }

@@ -1,5 +1,6 @@
 //! Controlled native command helpers.
-use std::{path::Path, process::Command};
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use crate::child;
 pub use child::{Scratch, probe};
@@ -26,15 +27,27 @@ pub fn git(dir: &str, args: &[&str]) -> String {
 }
 
 #[cfg(unix)]
-/// Copy `source` to `target` as an executable through a child process.
-pub fn install_executable(source: &Path, target: &Path) {
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(source)
-        .arg(target)
-        .status()
-        .expect("install starts");
-    assert!(status.success(), "install failed");
+/// Install the prepared native fixture as `name` below `directory`, selected by `record`.
+pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
+    std::fs::create_dir_all(directory).expect("the alias directory is creatable");
+    let path = directory.join(name);
+    maestro_test_process::install_command(&path, &record.to_string())
+        .expect("the native fixture installs");
+    path
+}
+
+#[cfg(unix)]
+/// Install the prepared fixture as `name` with a `clipboard` record in `root`.
+pub fn clipboard_alias(root: &Scratch, name: &str, record: &str) -> std::path::PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    let alias =
+        std::path::PathBuf::from(root.join(&format!("{name}{}", std::env::consts::EXE_SUFFIX)));
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias).unwrap();
+    let mut sibling = alias.as_os_str().to_owned();
+    sibling.push(".fixture");
+    std::fs::write(sibling, format!("clipboard\n{record}")).unwrap();
+    alias
 }
 
 #[cfg(unix)]

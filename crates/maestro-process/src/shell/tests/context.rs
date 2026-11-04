@@ -21,17 +21,19 @@ fn launch_honors_current_directory_search_policy() {
     );
 }
 
+/// Variable carrying the scratch directory a child fixture works in.
+const LAUNCH_CONTEXT_ROOT: &str = "MAESTRO_LAUNCH_CONTEXT_ROOT";
+
 /// Reuses the same executable fixtures in a checked child with a chosen parent directory.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
-    const CHILD: &str = "MAESTRO_LAUNCH_CONTEXT_CHILD";
-    if let Some(root) = std::env::var_os(CHILD) {
-        run(&PathBuf::from(root));
+    /// The case that repeats the fixture comparison in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        run(Path::new(&std::env::var_os(LAUNCH_CONTEXT_ROOT).unwrap()));
         return;
     }
-    let root = std::env::temp_dir().join(format!(
-        "maestro-launch-context-{}-{name}",
-        std::process::id()
-    ));
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let root = owned.path();
     for (directory, text) in [("parent", "parent"), ("chosen", "chosen")] {
         let tools = root.join(directory).join("tools");
         std::fs::create_dir_all(&tools).unwrap();
@@ -42,14 +44,14 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .env(CHILD, &root)
+        .case(CHILD)
+        .env(LAUNCH_CONTEXT_ROOT, root)
         .env("PATHEXT", ".CMD")
         .env("PATH", root.join("parent").join("tools"))
         .env_remove("NoDefaultCurrentDirectoryInExePath")
         .current_dir(root.join(parent))
         .output()
         .unwrap();
-    std::fs::remove_dir_all(root).unwrap();
     assert!(output.status.success(), "{output:?}");
 }
 
@@ -67,15 +69,18 @@ fn only_name() -> &'static str {
     if cfg!(windows) { "only.CMD" } else { "only" }
 }
 
-/// Creates a small nonrecursive native executable.
+/// Creates a small nonrecursive native executable that prints `text`.
 fn write_wrapper(path: &Path, text: &str) {
     #[cfg(windows)]
     std::fs::write(path, format!("@echo {text}\r\n")).unwrap();
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::write(path, format!("#!/bin/sh\nprintf '%s\\n' '{text}'\n")).unwrap();
-        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let artifact =
+            std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
+        maestro_test_process::install_executable(std::path::Path::new(&artifact), path).unwrap();
+        let mut record = path.as_os_str().to_owned();
+        record.push(".fixture");
+        std::fs::write(record, format!("echo\n{text}\n")).unwrap();
     }
 }
 
@@ -318,8 +323,8 @@ fn run_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)]) -> Stri
 
 #[test]
 fn launch_rejects_missing_files_and_directories() {
-    let root = std::env::temp_dir().join(format!("maestro-launch-missing-{}", std::process::id()));
-    std::fs::create_dir(&root).unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let root = owned.path();
     std::fs::create_dir(root.join("nonfile.CMD")).unwrap();
     for program in ["./missing", "./nonfile.CMD"] {
         let error = Launch {
@@ -327,7 +332,7 @@ fn launch_rejects_missing_files_and_directories() {
             args: vec![],
             verbatim: false,
         }
-        .with_context([("PATH", "")], Some(&root))
+        .with_context([("PATH", "")], Some(root))
         .output()
         .unwrap_err();
         assert!(matches!(
@@ -335,5 +340,4 @@ fn launch_rejects_missing_files_and_directories() {
             std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
         ));
     }
-    std::fs::remove_dir_all(root).unwrap();
 }

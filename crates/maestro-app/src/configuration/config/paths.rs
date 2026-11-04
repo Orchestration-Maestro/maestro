@@ -5,7 +5,8 @@ use super::{APP_NAME, CONFIG_DIR_NAME};
 use maestro_path::{dirname, join};
 use std::io;
 
-/// Expand only exact `~` and a leading `~/`, preserving the remaining text.
+/// Expand an exact `~` and a leading `~/`, preserving the remaining text; see
+/// [`maestro_path::expand_tilde`].
 ///
 /// # Errors
 /// Returns the supplied home lookup error when expansion needs it.
@@ -13,13 +14,7 @@ pub fn expand_tilde_path(
     path: &str,
     home: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<String> {
-    if path == "~" {
-        return home();
-    }
-    if let Some(rest) = path.strip_prefix("~/") {
-        return Ok(home()? + "/" + rest);
-    }
-    Ok(path.to_owned())
+    maestro_path::expand_tilde(path, home)
 }
 
 /// Select an override, standalone directory, or nearest package marker, observing the
@@ -211,4 +206,12 @@ pub fn get_sessions_dir(agent_dir: &str) -> String {
 #[must_use]
 pub fn get_debug_log_path(agent_dir: &str) -> String {
     join(&[agent_dir, &format!("{APP_NAME}-debug.log")])
+}
+
+/// Resolve the shipped workspace skill beneath the package directory.
+///
+/// # Errors
+/// Returns path-resolution failures.
+pub fn get_workspace_skill_path(package_dir: &str) -> io::Result<String> {
+    package_path(package_dir, "docs/skills/workspace/SKILL.md")
 }

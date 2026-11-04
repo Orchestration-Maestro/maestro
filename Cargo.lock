@@ -89,6 +89,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anstyle"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000"
+
+[[package]]
 name = "anyhow"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -142,6 +148,23 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
+]
+
+[[package]]
+name = "async-tungstenite"
+version = "0.32.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8acc405d38be14342132609f06f02acaf825ddccfe76c4824a69281e0458ebd4"
+dependencies = [
+ "atomic-waker",
+ "futures-core",
+ "futures-io",
+ "futures-task",
+ "futures-util",
+ "log",
+ "pin-project-lite",
+ "tokio",
+ "tungstenite 0.28.0",
 ]
 
 [[package]]
@@ -1115,6 +1138,70 @@ dependencies = [
 ]
 
 [[package]]
+name = "chromiumoxide"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26ed067eb6c1f660bdb87c05efb964421d2ca262bae0296cdfe38cf0cd949a3e"
+dependencies = [
+ "async-tungstenite",
+ "base64 0.22.1",
+ "chromiumoxide_cdp",
+ "chromiumoxide_types",
+ "dunce",
+ "fnv",
+ "futures",
+ "futures-timer",
+ "pin-project-lite",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "url",
+ "which",
+ "windows-registry",
+]
+
+[[package]]
+name = "chromiumoxide_cdp"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68a6a03a7ebac4ea85308f285d6959a3e6b2ce32a0c9465dc7a7b1db0144eec7"
+dependencies = [
+ "chromiumoxide_pdl",
+ "chromiumoxide_types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "chromiumoxide_pdl"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c602dea92337bc4d824668d78c5b79c3b4ddb29b40dd7218282bbe8fd3fc2091"
+dependencies = [
+ "chromiumoxide_types",
+ "either",
+ "heck",
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "serde_json",
+]
+
+[[package]]
+name = "chromiumoxide_types"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "678d5146e74f16fc4a41978b275af572cd913de1f10270d2b93b6c276bc57d80"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1127,6 +1214,40 @@ dependencies = [
  "wasm-bindgen",
  "windows-link 0.2.1",
 ]
+
+[[package]]
+name = "clap"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa8876b300ab35ba921adea3dfd70157a46249b33f95c9084ae5709785478946"
+dependencies = [
+ "clap_builder",
+]
+
+[[package]]
+name = "clap_builder"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec0797fb7aeb1406c84efac526901f7ec3ead2124f946b494e72879d4b54704d"
+dependencies = [
+ "anstyle",
+ "clap_lex",
+]
+
+[[package]]
+name = "clap_complete"
+version = "4.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0a7a9bfdb35811f9e59832f0f05975114d2251b415fb534108e6f34060fd772"
+dependencies = [
+ "clap",
+]
+
+[[package]]
+name = "clap_lex"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
 name = "clipboard-rs"
@@ -1744,7 +1865,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1994,7 +2115,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2347,6 +2468,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd417de3d1d015fc3bfd2b1ea46dfc7bab72ef86f1cc7cc9c78e728b34a6d1fd"
 
 [[package]]
+name = "futures-timer"
+version = "3.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af43fadb8a98512d547e37b4e92e0ced13e205c061b87b4623eff01d918d6968"
+
+[[package]]
 name = "futures-util"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2426,17 +2553,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "getset"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cf442baaabe4213ce7d1239afc26c039180b6456da2cededa316ae2c8a77a77"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "gif"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2456,18 +2572,6 @@ dependencies = [
  "hashbrown 0.16.1",
  "indexmap 2.14.2",
  "stable_deref_trait",
-]
-
-[[package]]
-name = "git-url-parse"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8df306e4dfc91752e89b74c88ee876c8518890600f82255254828f9192dd003c"
-dependencies = [
- "getset",
- "nom 8.0.0",
- "thiserror 2.0.21",
- "url",
 ]
 
 [[package]]
@@ -3291,8 +3395,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "069323743400cb7ab06a8fe5c1ed911d36b6919ec531661d034c89083629595b"
 dependencies = [
  "doctest-file",
+ "futures-core",
  "libc",
  "recvmsg",
+ "tokio",
  "widestring",
  "windows-sys 0.61.2",
 ]
@@ -3728,6 +3834,7 @@ dependencies = [
  "maestro-cli",
  "maestro-dependencies",
  "maestro-extensions-wasmtime",
+ "maestro-lock",
  "maestro-process",
  "maestro-rpc",
  "maestro-test-directory",
@@ -3735,6 +3842,7 @@ dependencies = [
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
+ "nix 0.31.3",
  "rustix",
  "serde_json",
  "tokio",
@@ -3745,6 +3853,7 @@ name = "maestro-agent"
 version = "0.1.0"
 dependencies = [
  "futures-util",
+ "maestro-agent",
  "maestro-dependencies",
  "maestro-json",
  "maestro-listeners",
@@ -3782,6 +3891,7 @@ dependencies = [
  "maestro-json",
  "maestro-listeners",
  "maestro-listing",
+ "maestro-lock",
  "maestro-markdown",
  "maestro-models",
  "maestro-packages",
@@ -3864,6 +3974,7 @@ dependencies = [
  "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
+ "maestro-credentials",
  "maestro-dependencies",
  "maestro-models",
  "maestro-path",
@@ -3886,6 +3997,8 @@ name = "maestro-cli"
 version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
+ "clap",
+ "clap_complete",
  "futures-util",
  "indexmap 2.14.2",
  "maestro-app",
@@ -3897,6 +4010,7 @@ dependencies = [
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",
@@ -3907,7 +4021,9 @@ dependencies = [
 name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "indexmap 2.14.2",
+ "maestro-credentials",
  "maestro-dependencies",
  "maestro-lock",
  "maestro-models",
@@ -3982,6 +4098,7 @@ dependencies = [
  "hashbrown 0.17.1",
  "iana-time-zone",
  "icu_locale_core",
+ "icu_locale_fallback",
  "icu_normalizer",
  "icu_properties",
  "icu_provider",
@@ -4017,7 +4134,6 @@ dependencies = [
  "simd-adler32",
  "slab",
  "smallvec",
- "socket2",
  "stable_deref_trait",
  "syn 2.0.119",
  "syn 3.0.6",
@@ -4032,8 +4148,6 @@ dependencies = [
  "tracing-subscriber",
  "unicode-width",
  "uuid",
- "windows-sys 0.52.0",
- "windows-sys 0.60.2",
  "windows-sys 0.61.2",
  "winnow",
  "writeable",
@@ -4102,6 +4216,7 @@ dependencies = [
  "maestro-catalog",
  "maestro-credentials",
  "maestro-dependencies",
+ "maestro-extensions",
  "maestro-listeners",
  "maestro-models",
  "maestro-path",
@@ -4122,14 +4237,19 @@ name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "httpdate",
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-entry",
+ "maestro-extensions-wasmtime",
  "maestro-json",
  "maestro-listing",
  "maestro-models",
+ "maestro-package",
  "maestro-request",
  "maestro-test-directory",
+ "maestro-test-process",
+ "maestro-text",
  "maestro-tool",
  "num-traits",
  "regex",
@@ -4210,6 +4330,8 @@ dependencies = [
  "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",
+ "rustix",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -4218,6 +4340,7 @@ version = "0.1.0"
 dependencies = [
  "entities",
  "maestro-dependencies",
+ "maestro-markdown",
  "maestro-text",
  "regress",
  "serde",
@@ -4306,12 +4429,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-package"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
- "git-url-parse",
+ "futures-util",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-package",
+ "maestro-packages",
  "maestro-path",
  "maestro-pattern",
  "maestro-process",
@@ -4354,10 +4488,13 @@ dependencies = [
 name = "maestro-process"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "maestro-dependencies",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
+ "maestro-text",
+ "nix 0.31.3",
  "process-wrap",
  "rustix",
  "serde",
@@ -4385,6 +4522,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-request",
  "serde",
  "serde_json",
 ]
@@ -4422,6 +4560,7 @@ dependencies = [
  "maestro-tui-crossterm",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4436,6 +4575,7 @@ dependencies = [
  "maestro-entry",
  "maestro-json",
  "maestro-listing",
+ "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-request",
@@ -4446,6 +4586,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "uuid",
 ]
@@ -4461,10 +4602,25 @@ dependencies = [
  "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
+ "rustix",
+ "ryu-js",
  "serde",
  "serde_json",
  "tokio",
  "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "maestro-subagents"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "maestro-dependencies",
+ "maestro-extensions-wasm",
+ "maestro-json",
+ "ryu-js",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -4485,6 +4641,28 @@ dependencies = [
  "serde_json",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "maestro-test-browser"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "chromiumoxide",
+ "futures-util",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "maestro-path",
+ "maestro-test-directory",
+ "maestro-tooling",
+ "percent-encoding",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-tungstenite",
 ]
 
 [[package]]
@@ -4517,6 +4695,10 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-test-directory",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
 ]
 
 [[package]]
@@ -4546,6 +4728,7 @@ dependencies = [
  "icu_collator",
  "icu_decimal",
  "icu_locale_core",
+ "icu_locale_fallback",
  "maestro-dependencies",
  "regex",
  "serde",
@@ -4567,6 +4750,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
+ "maestro-theme",
  "maestro-tui",
  "maestro-watch",
  "num-traits",
@@ -4600,6 +4784,7 @@ dependencies = [
  "maestro-test-process",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "toml",
 ]
 
@@ -4628,6 +4813,7 @@ dependencies = [
  "maestro-text",
  "maestro-theme",
  "maestro-tool",
+ "maestro-tools",
  "maestro-tui",
  "num-traits",
  "owo-colors",
@@ -4658,6 +4844,7 @@ dependencies = [
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
+ "maestro-tui",
  "rand 0.10.3",
  "regress",
  "rustix",
@@ -4714,6 +4901,7 @@ dependencies = [
  "maestro-app",
  "maestro-dependencies",
  "maestro-theme",
+ "maestro-web",
  "num-traits",
  "percent-encoding",
  "regress",
@@ -4899,15 +5087,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nom"
-version = "8.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df9761775871bdef83bee530e60050f7e54b1105350d6884eb0fb4f46c2f9405"
-dependencies = [
- "memchr",
-]
-
-[[package]]
 name = "notify"
 version = "8.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4940,7 +5119,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5858,7 +6037,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5900,8 +6079,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e058c7de0b26af77780c769414d6257830bb240f3c38477dbc2c16e5f54d6d4c"
 dependencies = [
  "libc",
- "rand_chacha",
+ "rand_chacha 0.3.1",
  "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9ef1d0d795eb7d84685bca4f72f3649f064e6641543d3a8c415898726a57b41"
+dependencies = [
+ "rand_chacha 0.9.0",
+ "rand_core 0.9.5",
 ]
 
 [[package]]
@@ -5926,12 +6115,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_chacha"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb"
+dependencies = [
+ "ppv-lite86",
+ "rand_core 0.9.5",
+]
+
+[[package]]
 name = "rand_core"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.17",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
+dependencies = [
+ "getrandom 0.3.4",
 ]
 
 [[package]]
@@ -6306,7 +6514,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6374,7 +6582,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6824,7 +7032,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6853,7 +7061,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "psm",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7040,7 +7248,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4ea810f0692f9f51b382fff5893887bb4580f5fa246fde546e0b13e7fcee662"
 dependencies = [
  "fnv",
- "nom 7.1.3",
+ "nom",
  "phf 0.11.3",
  "phf_codegen 0.11.3",
 ]
@@ -7325,7 +7533,7 @@ dependencies = [
  "rustls-pki-types",
  "tokio",
  "tokio-rustls",
- "tungstenite",
+ "tungstenite 0.30.0",
 ]
 
 [[package]]
@@ -7507,6 +7715,23 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "tungstenite"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8628dcc84e5a09eb3d8423d6cb682965dea9133204e8fb3efee74c2a0c259442"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "http 1.5.0",
+ "httparse",
+ "log",
+ "rand 0.9.5",
+ "sha1 0.10.7",
+ "thiserror 2.0.21",
+ "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e48ac77174b19c110a50ab2128b24215ac9cb40e0e12e093fb602d175c569d22"
@@ -7662,6 +7887,12 @@ dependencies = [
  "svgtypes",
  "tiny-skia-path",
 ]
+
+[[package]]
+name = "utf-8"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
 name = "utf16_iter"
@@ -8343,6 +8574,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "which"
+version = "8.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bae2f2b2b816647a1cab1acc91f5bd20812d53cb344382635ec2181940c8034f"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "widestring"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8370,7 +8610,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -8518,15 +8758,6 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
-dependencies = [
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets 0.52.6",
 ]
@@ -8995,9 +9226,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.0.3"
+version = "9.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2d98561b612a84ae525331a7a094429ef8a5772514ed507ff6db5f54badc971"
+checksum = "6e04976da629d3b04204ba8105b396a193af8ad2583b2c79bfb3ab8af580a11e"
 dependencies = [
  "crc32fast",
  "flate2",

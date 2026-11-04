@@ -189,10 +189,16 @@ fn configured_shell_path_runs_the_command() {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let project = scratch.path().join("project");
         std::fs::create_dir_all(&project).unwrap();
-        let source = scratch.path().join("marker-source.sh");
-        std::fs::write(&source, "#!/bin/sh\necho marker-shell\n").unwrap();
-        let shell = project.join("marker.sh");
-        crate::native::install_executable(&source, &shell);
+        let shell = crate::native::command(
+            &project,
+            "marker.sh",
+            &serde_json::json!({
+                "scenario": "output",
+                "stdout": b"marker-shell\n",
+                "stderr": [],
+                "code": 0
+            }),
+        );
         let (h, t) = transcribed(HarnessOptions {
             settings: json!({"shellPath": shell.display().to_string()}),
             scratch: Some(scratch),
@@ -387,11 +393,10 @@ fn failed_flush_keeps_the_unwritten_shell_results() {
         };
         deferred("one");
         deferred("two");
-        release.notify_one();
-        running.await.unwrap().unwrap();
         std::fs::remove_dir_all(&sessions).unwrap();
-        let failed = h.session.prompt("second", PromptOptions::default()).await;
-        assert!(failed.is_err());
+        release.notify_one();
+        let failed = running.await.unwrap();
+        assert!(failed.is_err(), "the settle step reports the failed flush");
         assert!(h.session.has_pending_bash_messages());
         assert_eq!(shell_commands(&h), [json!("one")]);
         std::fs::create_dir_all(&sessions).unwrap();

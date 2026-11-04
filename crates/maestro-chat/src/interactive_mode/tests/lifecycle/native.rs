@@ -24,8 +24,8 @@ impl LifecycleEffects for Native {
     fn now_ms(&self) -> i64 {
         self.inner.now_ms()
     }
-    fn register_signals(&self, term: Rc<dyn Fn()>, hup: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
-        let remove = self.inner.register_signals(term, hup)?;
+    fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
+        let remove = self.inner.register_signals(shutdown)?;
         self.events.borrow_mut().push("register".into());
         let events = Rc::clone(&self.events);
         let removed = Cell::new(false);
@@ -169,6 +169,12 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let directory = scratch.path();
+    super::super::install(
+        directory,
+        "pause",
+        "chat",
+        &serde_json::json!({"scenario": "pause"}),
+    );
     let mut child = TestProcess::current(test)
         .unwrap()
         .env_clear()
@@ -222,8 +228,9 @@ async fn wait_disposal(
 /// Starts a tracked detached child and waits for its actual output before readiness.
 async fn tracked(world: &super::super::World, directory: &Path) {
     let (sent, mut chunks) = tokio::sync::mpsc::unbounded_channel();
+    let pause = directory.join("pause");
     let bash = world.host.session().execute_bash(
-        "echo $$; exec python3 -c 'import signal; signal.pause()'",
+        &format!("echo $$; exec '{}'", pause.display()),
         Some(Box::new(move |chunk| {
             sent.send(chunk.to_owned()).unwrap();
         })),
@@ -243,7 +250,7 @@ fn verify(output: &std::process::Output, directory: &Path, case: &str, second: O
             (None, Some(if second == "TERM" { 15 } else { 1 }))
         );
     } else {
-        let graceful = case == "term";
+        let graceful = matches!(case, "term" | "hup");
         assert_eq!(
             output.status.code(),
             Some(if graceful { 0 } else { 129 }),
@@ -254,7 +261,7 @@ fn verify(output: &std::process::Output, directory: &Path, case: &str, second: O
         assert_eq!(
             log,
             if graceful {
-                "register\nkill\nremove\ndrain\nstop\ndispose\nexit:0"
+                "register\nkill\nremove\ndispose\ndrain\nstop\nexit:0"
             } else {
                 "register\nremove\nkill\nexit:129"
             }

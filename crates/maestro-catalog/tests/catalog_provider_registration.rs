@@ -827,7 +827,29 @@ fn raw_and_simple_callbacks_keep_open_options_results_and_source_ownership() {
     }
     assert!(signal.is_aborted());
     assert_eq!(*calls.lock().unwrap(), ["raw", "simple", "none", "none"]);
+    let held = register_peer_held_account();
     check_callback_release(&registry, handler, model, &terminal, &weak);
+    // The removal keeps the account entry another registry installed under the same name.
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &held,
+        &maestro_models::get_oauth_provider("p").unwrap()
+    ));
+}
+/// Register the account entry another registry holds under the same provider name.
+fn register_peer_held_account() -> maestro_models::OAuthProviderHandle {
+    let peer = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+    peer.register_provider(
+        "p",
+        SharedHandle::new(RwLock::new(ProviderConfigInput {
+            callbacks: maestro_catalog::ProviderCallbacks {
+                oauth: Some(dynamic::oauth("Held by the peer")),
+                ..Default::default()
+            },
+            ..Default::default()
+        })),
+    )
+    .unwrap();
+    maestro_models::get_oauth_provider("p").unwrap()
 }
 /// Assert common options without displaying secret-bearing records.
 fn check_common<E: maestro_models::ProviderExecution>(
@@ -946,9 +968,16 @@ fn check_callback_release(
             .message,
         "Mismatched api: other expected openai-completions"
     );
-    maestro_models::unregister_api_providers("provider:p");
-    assert!(maestro_models::get_api_provider("openai-completions").is_none());
-    registry.unregister_provider("p").unwrap();
+    {
+        let retired = maestro_models::SharedHandle::clone(&handler.stream);
+        registry.unregister_provider("p").unwrap();
+        assert!(!maestro_models::SharedHandle::ptr_eq(
+            &retired,
+            &maestro_models::get_api_provider("openai-completions")
+                .unwrap()
+                .stream
+        ));
+    }
     assert!(weak.upgrade().is_some());
     let result = handler
         .stream
@@ -972,6 +1001,7 @@ fn set_credential_kind(auth: &maestro_credentials::AuthStorage, kind: usize) {
         auth.set(
             "p",
             maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
+                env: None,
                 key: "unused".into(),
             }),
         );

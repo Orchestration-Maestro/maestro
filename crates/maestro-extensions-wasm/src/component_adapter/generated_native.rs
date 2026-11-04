@@ -3,6 +3,19 @@ use super::{Generated, host};
 use crate::{ExtensionFuture, ExtensionResult};
 
 impl crate::component_adapter::native_imports::NativeImports for Generated {
+    fn save_file(&self, path: &str, bytes: &[u8], mode: u32) -> Result<Option<String>, String> {
+        host::save_file(path, bytes, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        host::file_mode(path)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        host::set_file_mode(path, mode)
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        host::create_dir(path, mode)
+    }
+
     type Watcher = host::FsWatcher;
     type Signal = host::AbortSignal;
     fn fetch<'a>(
@@ -20,6 +33,15 @@ impl crate::component_adapter::native_imports::NativeImports for Generated {
         Box::pin(host::sleep(duration, signal))
     }
 
+    fn call_host_operation(
+        &self,
+        operation: host::HostOperation,
+    ) -> ExtensionFuture<'_, serde_json::Value> {
+        Box::pin(async move {
+            let value = host::call_host_operation(operation).await?;
+            serde_json::from_str(&value).map_err(|error| error.to_string())
+        })
+    }
     type Response = host::Response;
     fn response_json<'a>(
         &'a self,

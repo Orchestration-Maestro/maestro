@@ -10,7 +10,8 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, NotificationType, SessionEntry, SessionEvent, utils::is_whitespace_char,
+    ExtensionResult, HookFuture, NotificationType, SessionEntry, SessionEvent,
+    utils::is_whitespace_char,
 };
 
 /// Checkpoint objects and the last leaf observed after a tool result.
@@ -81,7 +82,7 @@ fn on_event(
     ctx: ExtensionContext,
     api: ExtensionAPI,
     checkpoints: Rc<RefCell<Checkpoints>>,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         match event {
             ExtensionEvent::ToolResult(_) => {

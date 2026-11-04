@@ -1,4 +1,5 @@
 //! An opt-in confirmation hook for illustrative dangerous bash patterns.
+// maestro-component: MAESTRO_PERMISSION_GATE_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -9,7 +10,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    Presence, ToolCallEventResult,
+    HookFuture, Presence, ToolCallEventResult,
 };
 use regex::RegexSet;
 use serde::Deserialize;
@@ -33,7 +34,7 @@ fn tool_call(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
     patterns: Rc<RegexSet>,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::ToolCall(event) = event else {
             return Ok(None);

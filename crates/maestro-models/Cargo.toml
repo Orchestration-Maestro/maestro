@@ -36,6 +36,12 @@ idna = "=1.1.0"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 
+[features]
+test-support = ["maestro-request/test-support"]
+
+[dev-dependencies]
+maestro-request = { path = "../maestro-request", features = ["test-support"] }
+
 [lints]
 workspace = true
 
@@ -54,7 +60,7 @@ tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 google-cloud-auth = "=1.17.0"
 uuid = { version = "=1.27.0", default-features = false }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util"] }
-tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
+tokio-tungstenite.workspace = true
 aws-sdk-bedrockruntime = { version = "=1.148.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-config = { version = "=1.12.0", default-features = false, features = ["behavior-version-latest", "default-https-client", "rt-tokio", "credentials-process", "sso", "credentials-login"] }
 aws-sdk-signin = { version = "=1.22.0", default-features = false }
@@ -81,7 +87,7 @@ icu_collator = "=2.3.1"
 tokio = { version = "=1.53.3", features = ["rt", "time", "test-util"] }
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.5", default-features = false, features = ["std", "system"] }
+rustix = { workspace = true, features = ["std", "system"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-version = "=0.100.0"
@@ -99,3 +105,15 @@ crate-type = ["cdylib"]
 name = "cloud_content_browser_witness"
 path = "tests/support/cloud_content_browser.rs"
 crate-type = ["cdylib"]
+
+[[example]]
+name = "browser_import_check"
+path = "tests/support/browser_import_check.rs"
+
+[[example]]
+name = "generate_catalog_data"
+path = "scripts/generate_catalog_data.rs"
+
+[[example]]
+name = "generate_circle_fixture"
+path = "scripts/generate_circle_fixture.rs"

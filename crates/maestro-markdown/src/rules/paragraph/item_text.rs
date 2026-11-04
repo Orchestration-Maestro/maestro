@@ -1,8 +1,8 @@
 //! Setext lookahead over item text admitted one line at a time.
-use super::{Grammar, Heading, blank, carriage, matches, selected, underline};
+use super::{Grammar, Heading, blank, carriage, displayed, matches, selected, underline};
 use crate::{
     MarkedOptions,
-    rules::lines::{Cursor, Input},
+    rules::lines::{Input, line_end},
     source::Segmented,
 };
 use std::ops::Range;
@@ -29,6 +29,19 @@ enum Ending {
     Unterminated,
 }
 
+/// First entry of an ascending list that `before` does not place before the seek.
+///
+/// A partition point answers `before` a logarithmic number of times, so an attempt that
+/// asks again about a list it has grown does not rescan the entries it passed.
+fn seek(items: &[usize], mut before: impl FnMut(usize) -> bool) -> Option<usize> {
+    let at = items.partition_point(|item| {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.item_seeks += 1);
+        before(*item)
+    });
+    items.get(at).copied()
+}
+
 /// One classified line of an operand admitted line by line.
 struct ItemLine {
     /// Authored range of the line, including its terminator.
@@ -45,27 +58,44 @@ struct ItemLine {
     ending: Ending,
 }
 
-/// First line at or after a given one that closes each search.
+/// Which search a lookup asks about.
 #[derive(Clone, Copy)]
-struct Next {
-    /// First line closing the setext label search.
-    setext: usize,
-    /// First line closing the paragraph interruption search.
-    paragraph: usize,
+enum Search {
+    /// The setext label search.
+    Setext,
+    /// The paragraph interruption search.
+    Paragraph,
+}
+
+/// The operand a caller has left, from its first unread byte, and the closing angles
+/// it displays as text by those offsets.
+#[derive(Clone, Copy)]
+struct Remainder<'a> {
+    /// Unread suffix of the operand this attempt reports on.
+    source: &'a Segmented,
+    /// Operand offset of that suffix's first byte.
+    start: usize,
+    /// Closing angles the caller displays as text, by suffix offset.
+    escaped: &'a dyn Fn(usize) -> bool,
 }
 
 /// Setext lookahead over one operand whose lines are admitted one at a time.
+///
+/// Lines are classified only as far as an attempt's answer needs them, so a body
+/// whose first lines already settle both searches costs its prefix, not its length.
 pub(crate) struct ItemText {
     /// Shared immutable caller predicates.
     grammar: &'static Grammar,
-    /// Classified lines of the retained operand.
+    /// Classified lines of the retained operand, which skip a gap the caller consumed.
     lines: Vec<ItemLine>,
-    /// Per-line look-up of each search's next stop.
-    next: Vec<Next>,
-    /// Indices of the lines carrying an eligible underline.
+    /// Indices of classified lines that close the setext label search.
+    setext_stops: Vec<usize>,
+    /// Indices of classified lines that close the paragraph interruption search.
+    paragraph_stops: Vec<usize>,
+    /// Indices of classified lines carrying an eligible underline.
     underlines: Vec<usize>,
-    /// Complete lines a growing-input pass can process.
-    framed: usize,
+    /// Operand offset of the first unclassified byte.
+    framing: usize,
     /// Logical length of the retained operand.
     extent: Option<usize>,
 }
@@ -76,27 +106,38 @@ impl ItemText {
         Self {
             grammar: selected(options),
             lines: Vec::new(),
-            next: Vec::new(),
+            setext_stops: Vec::new(),
+            paragraph_stops: Vec::new(),
             underlines: Vec::new(),
-            framed: 0,
+            framing: 0,
             extent: None,
         }
     }
 
     /// Answer this attempt's heading and whether more input can change it.
     ///
-    /// `source` is the item text still unread, a suffix of the operand the first call saw.
-    pub(crate) fn attempt(&mut self, source: &Segmented) -> (Option<Heading>, bool) {
+    /// `source` is the item text still unread, a suffix of the operand the first call saw,
+    /// and `escaped` reports the closing angles the caller displays as text by its offsets.
+    pub(crate) fn attempt(
+        &mut self,
+        source: &Segmented,
+        escaped: &dyn Fn(usize) -> bool,
+    ) -> (Option<Heading>, bool) {
         let start = match self.extent {
             Some(extent) if extent >= source.len() => extent - source.len(),
             _ => {
-                self.classify(source);
                 self.extent = Some(source.len());
                 0
             }
         };
+        let remainder = Remainder {
+            source,
+            start,
+            escaped,
+        };
         let index = self.lines.partition_point(|line| line.range.start < start);
-        let partial = self.partial(source, start, index);
+        self.ensure(&remainder, index + 1);
+        let partial = self.partial(&remainder, index);
         let origin = if partial.is_some() {
             start
         } else {
@@ -105,47 +146,58 @@ impl ItemText {
                 None => return (None, true),
             }
         };
-        let setext = self.closing(
-            index,
-            ItemLine::setext,
-            |next| next.setext,
-            partial.as_ref(),
-        );
-        let paragraph = self.closing(
-            index,
-            ItemLine::paragraph,
-            |next| next.paragraph,
-            partial.as_ref(),
-        );
+        let partial = partial.as_ref();
+        let setext = self.closing(&remainder, index, Search::Setext, partial);
+        let paragraph = self.closing(&remainder, index, Search::Paragraph, partial);
         match self
-            .first_underline(origin)
+            .first_underline(&remainder, origin, setext)
             .filter(|found| *found <= setext)
         {
-            Some(found) => (
-                Some(self.heading(found, origin)),
-                !self.settled_by_boundary(found),
+            Some(found) => {
+                let heading = self.heading(&remainder, found, origin);
+                let settled = self.settled_by_boundary(&remainder, found);
+                (Some(heading), !settled)
+            }
+            None => (
+                None,
+                !(self.closed_past(&remainder, setext) && self.closed_past(&remainder, paragraph)),
             ),
-            None => (None, !self.ended(setext, paragraph)),
         }
     }
 
     /// Classify the rest of a line that a caller's token stopped inside.
-    fn partial(&self, source: &Segmented, start: usize, index: usize) -> Option<ItemLine> {
+    fn partial(&self, remainder: &Remainder<'_>, index: usize) -> Option<ItemLine> {
+        let start = remainder.start;
         let line = self.lines.get(index.checked_sub(1)?)?;
         let rest = line.range.end.checked_sub(start).filter(|rest| *rest > 0)?;
         let end = self
             .lines
             .get(index)
             .map_or(rest, |next| next.range.end - start);
-        Some(self.line(source, 0..rest, end))
+        Some(self.line(remainder.source, 0..rest, end, remainder.escaped))
     }
 
     /// First underline this attempt can admit, which excludes its own first line.
-    fn first_underline(&self, origin: usize) -> Option<usize> {
-        let rest = self
-            .underlines
-            .partition_point(|found| self.lines[*found].range.start <= origin + 1);
-        self.underlines.get(rest).copied()
+    fn first_underline(
+        &mut self,
+        remainder: &Remainder<'_>,
+        origin: usize,
+        setext: usize,
+    ) -> Option<usize> {
+        loop {
+            let found = seek(&self.underlines, |index| {
+                self.lines[index].range.start <= origin + 1
+            });
+            if let Some(found) = found {
+                return Some(found);
+            }
+            if setext != usize::MAX && self.lines.len() > setext {
+                return None;
+            }
+            if !self.advance(remainder) {
+                return None;
+            }
+        }
     }
 
     /// First line closing one search, honouring an attempt's exempt first line.
@@ -153,96 +205,160 @@ impl ItemText {
     /// A partly consumed first line closes the search at itself, so it answers
     /// below every line an underline can occupy.
     fn closing(
-        &self,
+        &mut self,
+        remainder: &Remainder<'_>,
         index: usize,
-        kind: fn(&ItemLine) -> Stop,
-        next: fn(Next) -> usize,
+        search: Search,
         partial: Option<&ItemLine>,
     ) -> usize {
         let Some(first) = partial else {
-            let found = self.stop(index, next);
-            if found != index || kind(&self.lines[index]) != Stop::Later {
+            let found = self.stop(remainder, index, search);
+            if found != index || self.effect(index, search) != Stop::Later {
                 return found;
             }
-            return self.stop(index + 1, next);
+            return self.stop(remainder, index + 1, search);
         };
-        if kind(first) == Stop::Closed {
+        if Self::search(first, search) == Stop::Closed {
             return index.saturating_sub(1);
         }
-        self.stop(index, next)
+        self.stop(remainder, index, search)
+    }
+
+    /// One classified line's effect on the selected search.
+    fn effect(&self, index: usize, search: Search) -> Stop {
+        self.lines
+            .get(index)
+            .map_or(Stop::Open, |line| Self::search(line, search))
+    }
+
+    /// One classified line's effect on a search.
+    fn search(line: &ItemLine, search: Search) -> Stop {
+        match search {
+            Search::Setext => line.setext,
+            Search::Paragraph => line.paragraph,
+        }
     }
 
     /// First line at or after `index` that closes one search.
-    fn stop(&self, index: usize, next: fn(Next) -> usize) -> usize {
-        self.next
-            .get(index)
-            .map_or(usize::MAX, |entry| next(*entry))
+    fn stop(&mut self, remainder: &Remainder<'_>, index: usize, search: Search) -> usize {
+        loop {
+            let stops = match search {
+                Search::Setext => &self.setext_stops,
+                Search::Paragraph => &self.paragraph_stops,
+            };
+            if let Some(found) = seek(stops, |line| line < index) {
+                return found;
+            }
+            if !self.advance(remainder) {
+                return usize::MAX;
+            }
+        }
     }
 
-    /// Whether the growing-input pass has settled both searches.
-    fn ended(&self, setext: usize, paragraph: usize) -> bool {
-        let processed = self.framed.saturating_sub(1);
-        setext < processed && paragraph < processed
+    /// Whether a terminated line follows the one closing a search.
+    ///
+    /// This is the growing-input pass's settled condition without measuring the operand's
+    /// remaining length.
+    fn closed_past(&mut self, remainder: &Remainder<'_>, index: usize) -> bool {
+        if index == usize::MAX {
+            return false;
+        }
+        self.ensure(remainder, index + 2);
+        self.lines
+            .get(index + 1)
+            .is_some_and(|line| line.ending != Ending::Unterminated)
     }
 
     /// Keep the underline's label, level and closed extent.
-    fn heading(&self, index: usize, origin: usize) -> Heading {
+    fn heading(&mut self, remainder: &Remainder<'_>, index: usize, origin: usize) -> Heading {
         let line = &self.lines[index];
         let mut consumed = line.range.start + line.consumed;
         let mut rest = index + 1;
-        while let Some(next) = self.lines.get(rest) {
+        loop {
+            if self.lines.len() <= rest && !self.advance(remainder) {
+                break;
+            }
+            let Some(next) = self.lines.get(rest) else {
+                break;
+            };
             if next.ending != Ending::Newline {
                 break;
             }
             consumed = next.range.end;
             rest += 1;
         }
+        let content = 0..self.lines[index].range.start - 1 - origin;
+        let level = self.lines[index].underline.unwrap_or(1);
         Heading {
-            content: 0..line.range.start - 1 - origin,
-            level: line.underline.unwrap_or(1),
+            content,
+            level,
             consumed: consumed - origin,
         }
     }
 
     /// Whether a processed non-newline line after the underline settles its extent.
-    fn settled_by_boundary(&self, index: usize) -> bool {
-        let processed = self.framed.saturating_sub(1);
-        let first = index + 1;
-        first < processed
-            && self.lines[first..processed]
-                .iter()
-                .any(|line| line.ending != Ending::Newline)
+    fn settled_by_boundary(&mut self, remainder: &Remainder<'_>, index: usize) -> bool {
+        let mut next = index + 1;
+        loop {
+            self.ensure(remainder, next + 1);
+            let Some(line) = self.lines.get(next) else {
+                return false;
+            };
+            if line.ending != Ending::Newline {
+                break;
+            }
+            next += 1;
+        }
+        self.closed_past(remainder, next)
     }
 
-    /// Classify every line of the retained operand once.
-    fn classify(&mut self, source: &Segmented) {
-        let mut cursor = Cursor::default();
-        let mut ranges = Vec::new();
-        while let Some(range) = cursor.next(source) {
-            ranges.push(range);
+    /// Classify lines until `needed` are known or the operand is exhausted.
+    fn ensure(&mut self, remainder: &Remainder<'_>, needed: usize) {
+        while self.lines.len() < needed && self.advance(remainder) {}
+    }
+
+    /// Classify the next physical line of the operand, if any bytes remain.
+    fn advance(&mut self, remainder: &Remainder<'_>) -> bool {
+        let (source, start) = (remainder.source, remainder.start);
+        // A caller token can consume past the classified frontier, so the line behind it
+        // restarts at the suffix start. Per-line classification is stateless, so that line
+        // classifies the same way whichever offset the suffix has.
+        let local = self.framing.saturating_sub(start);
+        if local >= source.len() {
+            return false;
         }
-        if let Some(range) = cursor.finish(source) {
-            ranges.push(range);
+        let end = line_end(source, local).unwrap_or(source.len());
+        // An unterminated next line still closes the window at the operand's end, so a
+        // header and delimiter pair it holds can interrupt this line.
+        let lookahead = line_end(source, end).unwrap_or(source.len());
+        let line = self.line(source, local..end, lookahead, remainder.escaped);
+        let position = self.lines.len();
+        if line.setext != Stop::Open {
+            self.setext_stops.push(position);
         }
-        let mut lines = Vec::with_capacity(ranges.len());
-        for (index, range) in ranges.iter().enumerate() {
-            let end = ranges.get(index + 1).map_or(range.end, |next| next.end);
-            lines.push(self.line(source, range.clone(), end));
+        if line.paragraph != Stop::Open {
+            self.paragraph_stops.push(position);
         }
-        self.framed = lines
-            .iter()
-            .filter(|line| line.ending != Ending::Unterminated)
-            .count();
-        self.underlines = (0..lines.len())
-            .filter(|index| lines[*index].underline.is_some())
-            .collect();
-        self.lines = lines;
-        self.index();
+        if line.underline.is_some() {
+            self.underlines.push(position);
+        }
+        self.framing = start + end;
+        self.lines.push(ItemLine {
+            range: start + local..start + end,
+            ..line
+        });
+        true
     }
 
     /// Classify one physical line with the shared per-line predicates.
-    fn line(&self, source: &Segmented, range: Range<usize>, end: usize) -> ItemLine {
-        let window = source.window(range.start..end);
+    fn line(
+        &self,
+        source: &Segmented,
+        range: Range<usize>,
+        end: usize,
+        escaped: &dyn Fn(usize) -> bool,
+    ) -> ItemLine {
+        let window = displayed(source.window(range.start..end), range.start, escaped);
         let text = source.window(range.clone());
         let text = text.as_ref();
         let found = underline(text).filter(|_| range.start > 1);
@@ -270,36 +386,5 @@ impl ItemText {
             },
             range,
         }
-    }
-
-    /// Resolve each line's next setext stop and paragraph stop.
-    fn index(&mut self) {
-        let mut next = Next {
-            setext: usize::MAX,
-            paragraph: usize::MAX,
-        };
-        self.next = vec![next; self.lines.len()];
-        for index in (0..self.lines.len()).rev() {
-            let line = &self.lines[index];
-            if line.setext != Stop::Open {
-                next.setext = index;
-            }
-            if line.paragraph != Stop::Open {
-                next.paragraph = index;
-            }
-            self.next[index] = next;
-        }
-    }
-}
-
-impl ItemLine {
-    /// Effect of this line on the setext label search.
-    fn setext(&self) -> Stop {
-        self.setext
-    }
-
-    /// Effect of this line on the paragraph interruption search.
-    fn paragraph(&self) -> Stop {
-        self.paragraph
     }
 }

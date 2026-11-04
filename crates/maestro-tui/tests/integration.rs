@@ -27,7 +27,8 @@ mod fixtures {
     pub mod providers;
     pub mod slice_cases;
     pub mod terminal;
-    pub mod terminals;
+    #[doc(inline)]
+    pub use maestro_tui::test_support::terminals;
     pub mod truncated_cases;
     pub mod truncation_cases;
     pub mod widget_probes;

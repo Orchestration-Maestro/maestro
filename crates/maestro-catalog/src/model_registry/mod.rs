@@ -18,7 +18,11 @@ use maestro_models::{
 use request_auth::ProviderRequestConfig;
 pub use request_auth::ResolvedRequestAuth;
 use std::collections::HashMap;
+use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, PoisonError, RwLock};
+
+/// Process-unique identity handed to each registry instance.
+static NEXT_REGISTRY: AtomicU64 = AtomicU64::new(0);
 
 /// Native file effects may be shared across threads.
 #[cfg(not(target_arch = "wasm32"))]
@@ -60,8 +64,12 @@ pub type ConfigValues = SharedHandle<dyn ConfigValueOperations + Send + Sync>;
 pub type ConfigValues = SharedHandle<dyn ConfigValueOperations>;
 /// Shared mutable descriptor list published by the registry.
 type ModelList = Arc<RwLock<Vec<Arc<RwLock<Model>>>>>;
+/// Live registration order with monotone visit identities.
+type RetainedConfig = (u64, SharedHandle<RwLock<ProviderConfigInput>>);
 /// Local catalog with a retained load diagnostic.
 pub struct ModelRegistry {
+    /// Process-unique identity keying this registry's own registrations.
+    owner: u64,
     /// Accepted credential owner, shared natively and local in the browser.
     auth_storage: SharedHandle<AuthStorage>,
     /// Ordered model-file paths; empty entries disable file access for that entry.
@@ -84,11 +92,18 @@ struct CatalogState {
     /// Provider sources retained by entry identity.
     provider_configs: HashMap<String, Arc<ProviderRequestConfig>>,
     /// Live registration order with monotone visit identities.
-    registered_providers: IndexMap<String, (u64, SharedHandle<RwLock<ProviderConfigInput>>)>,
+    registered_providers: IndexMap<String, RetainedConfig>,
     /// Next registration identity.
     next_provider: u64,
+    /// Account entry this registry installed per provider, for owned removal.
+    installed_account: HashMap<String, maestro_models::OAuthProviderHandle>,
+    /// Protocol and account installs whose retained registration never landed or was removed.
+    orphan_installs: Vec<String>,
     /// Model request sources indexed by exact identity.
     model_headers: HashMap<(String, String), IndexMap<String, String>>,
+    /// Per-model overrides of the model files, by provider and exact identity, for models a
+    /// provider registration adds after the files load.
+    model_overrides: HashMap<String, HashMap<String, composition::ModelOverride>>,
 }
 
 impl ModelRegistry {
@@ -155,6 +170,7 @@ impl ModelRegistry {
         config_values: ConfigValues,
     ) -> Result<Self, CatalogError> {
         let registry = Self {
+            owner: NEXT_REGISTRY.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             auth_storage,
             paths,
             base_paths: RwLock::default(),
@@ -166,7 +182,10 @@ impl ModelRegistry {
                 provider_configs: HashMap::new(),
                 registered_providers: IndexMap::new(),
                 next_provider: 0,
+                installed_account: HashMap::new(),
+                orphan_installs: Vec::new(),
                 model_headers: HashMap::new(),
+                model_overrides: HashMap::new(),
             }),
         };
         registry.load_models()?;
@@ -223,19 +242,34 @@ impl ModelRegistry {
     pub fn auth_storage(&self) -> &SharedHandle<AuthStorage> {
         &self.auth_storage
     }
-    /// Reset shared protocol/account registrations, load the file and replay retained providers.
+    /// Remove this registry's own protocol and account registrations, load the file and
+    /// replay retained providers. The registration each removed protocol entry replaced
+    /// stays live, whoever installed it.
     ///
     /// # Errors
     /// Returns the first transformation failure, retaining effects already applied.
     pub fn refresh(&self) -> Result<(), CatalogError> {
+        let own = {
+            let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+            let mut own = state
+                .registered_providers
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>();
+            own.append(&mut state.orphan_installs);
+            own
+        };
         {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
             state.load_error = None;
             state.provider_configs.clear();
             state.model_headers.clear();
+            state.model_overrides.clear();
         }
-        maestro_models::reset_api_providers();
-        maestro_models::reset_oauth_providers();
+        for name in &own {
+            maestro_models::unregister_api_providers(&self.provider_source(name));
+            self.retire_own_account(name);
+        }
         self.load_models()?;
         let mut cursor = 0;
         loop {
@@ -350,6 +384,26 @@ impl ModelRegistry {
             .get_index(index)
             .map(|(name, (ordinal, config))| (name.clone(), *ordinal, SharedHandle::clone(config)))
     }
+    /// Source identity of this registry's own retained registration of `provider`.
+    fn provider_source(&self, provider: &str) -> String {
+        format!("provider:{}:{provider}", self.owner)
+    }
+    /// Retire this registry's installed account entry while the live entry is still its own.
+    fn retire_own_account(&self, provider: &str) {
+        let installed = self
+            .state
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .installed_account
+            .remove(provider);
+        let still_owns = installed.is_some_and(|installed| {
+            maestro_models::get_oauth_provider(provider)
+                .is_some_and(|live| maestro_models::SharedHandle::ptr_eq(&installed, &live))
+        });
+        if still_owns {
+            maestro_models::unregister_oauth_provider(provider);
+        }
+    }
     /// Retain the source entry identity for a later consuming phase.
     fn request_config(&self, provider: &str) -> Option<Arc<ProviderRequestConfig>> {
         self.state
@@ -372,6 +426,8 @@ impl CatalogState {
                     auth_header: config.auth_header,
                 }),
             );
+            self.model_overrides
+                .insert(provider.clone(), config.model_overrides.clone());
             self.retain_model_headers(provider, &mut config.model_overrides);
         }
     }

@@ -1,7 +1,7 @@
 //! Key entry, the model picker and the provider dialogs against controlled storage and network.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{
-    contributions_support::{computed, container, host, page_module, rgb, text, view},
+    contributions_support::{computed, container, host, rgb, text, view},
     dialog_support::{
         Fetch, Prompts, completed_reply, panel, panels, press, settled, storage, type_text, until,
     },
@@ -22,13 +22,7 @@ fn find(root: &Element, selector: &str) -> Element {
         .unwrap()
         .unwrap_or_else(|| panic!("missing {selector}"))
 }
-/// Every matching descendant in order.
-fn all(root: &Element, selector: &str) -> Vec<Element> {
-    let nodes = root.query_selector_all(selector).unwrap();
-    (0..nodes.length())
-        .map(|index| nodes.item(index).unwrap().unchecked_into())
-        .collect()
-}
+use crate::support::dom::all;
 /// Click `element` as the page would.
 fn click(element: &Element) {
     element.unchecked_ref::<HtmlElement>().click();
@@ -86,7 +80,6 @@ fn key_controls(root: &Element) -> (HtmlInputElement, HtmlButtonElement) {
 pub async fn provider_key_input_tests_with_current_proxy_before_saving(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("key-proxy");
     app.settings.set("proxy.enabled", &true).await.unwrap();
     app.settings
@@ -116,13 +109,15 @@ pub async fn provider_key_input_tests_with_current_proxy_before_saving(import: j
         .await
         .as_string()
         .unwrap();
-    assert!(tree.contains("textbox \"anthropic\""), "{tree}");
+    // The label styles the provider name with `text-transform: capitalize`, and the accessible
+    // name follows the rendered text.
+    assert!(tree.contains("textbox \"Anthropic\""), "{tree}");
     type_text("sk-ant-oat-1").await;
     assert!(!save.disabled());
     save.click();
     assert_eq!(text(&find(&root, ".maestro-badge-secondary")), "Testing...");
     assert!(save.disabled(), "testing blocks another save");
-    until(&page, || has(&root, ".maestro-key-stored")).await;
+    until(|| has(&root, ".maestro-key-stored")).await;
     proxied_request(&fetch.requests());
     let stored = app.provider_keys.get("anthropic").await.unwrap();
     assert_eq!(
@@ -131,20 +126,17 @@ pub async fn provider_key_input_tests_with_current_proxy_before_saving(import: j
         "a saved key is unchanged until edited"
     );
     drop(fetch);
-    direct_after_disabling(&page, &app, &root).await;
+    direct_after_disabling(&app, &root).await;
 }
 /// After the proxy is switched off, an edited key is tested directly.
-async fn direct_after_disabling(page: &JsValue, app: &maestro_app::AppStorage, root: &Element) {
+async fn direct_after_disabling(app: &maestro_app::AppStorage, root: &Element) {
     let (_, save) = key_controls(root);
     type_text("2").await;
     assert!(!save.disabled());
     app.settings.set("proxy.enabled", &false).await.unwrap();
     let fetch = Fetch::install(vec![(200, "text/event-stream", completed_reply())]);
     save.click();
-    until(page, || {
-        fetch.requests().len() == 1 && save.disabled() && !has(root, ".maestro-badge")
-    })
-    .await;
+    until(|| fetch.requests().len() == 1 && save.disabled() && !has(root, ".maestro-badge")).await;
     assert!(
         fetch.requests()[0]
             .url
@@ -172,7 +164,6 @@ pub async fn provider_key_input_reports_failures_and_skips_unmapped_providers(
 ) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("key-failures");
     let refusal =
         r#"{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}"#;
@@ -182,16 +173,16 @@ pub async fn provider_key_input_reports_failures_and_skips_unmapped_providers(
     field.focus().unwrap();
     type_text("bad").await;
     save.click();
-    until(&page, || has(&root, ".maestro-badge-destructive")).await;
+    until(|| has(&root, ".maestro-badge-destructive")).await;
     assert_eq!(
         text(&find(&root, ".maestro-badge-destructive")),
         "✗ Invalid"
     );
     assert!(app.provider_keys.get("anthropic").await.unwrap().is_none());
     assert_eq!(fetch.requests().len(), 1);
-    until(&page, || !has(&root, ".maestro-badge-destructive")).await;
+    until(|| !has(&root, ".maestro-badge-destructive")).await;
     assert_eq!(field.value(), "bad", "the refused key stays editable");
-    unmapped_and_stored(&view, &page, &app).await;
+    unmapped_and_stored(&view, &app).await;
     assert_eq!(
         fetch.requests().len(),
         1,
@@ -199,20 +190,20 @@ pub async fn provider_key_input_reports_failures_and_skips_unmapped_providers(
     );
 }
 /// An unmapped provider's key is stored untested, and a stored key shows on mounting.
-async fn unmapped_and_stored(view: &DomView, page: &JsValue, app: &maestro_app::AppStorage) {
+async fn unmapped_and_stored(view: &DomView, app: &maestro_app::AppStorage) {
     let (other, _second) = key_entry(view, "my-local");
     let (field, save) = key_controls(&other);
     field.focus().unwrap();
     type_text("anything").await;
     save.click();
-    until(page, || has(&other, ".maestro-key-stored")).await;
+    until(|| has(&other, ".maestro-key-stored")).await;
     assert_eq!(
         app.provider_keys.get("my-local").await.unwrap().as_deref(),
         Some("anything")
     );
     app.provider_keys.set("openai", "stored").await.unwrap();
     let (stored, _third) = key_entry(view, "openai");
-    until(page, || has(&stored, ".maestro-key-stored")).await;
+    until(|| has(&stored, ".maestro-key-stored")).await;
     assert!(key_controls(&stored).1.disabled());
 }
 
@@ -255,7 +246,6 @@ pub async fn provider_key_input_keeps_credentials_with_their_provider(import: js
 pub async fn provider_key_input_keeps_edits_made_while_saving(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("key-edited-during-save");
     let (root, _mounted) = key_entry(&view, "local");
     let (field, save) = key_controls(&root);
@@ -266,7 +256,7 @@ pub async fn provider_key_input_keeps_edits_made_while_saving(import: js_sys::Fu
     field
         .dispatch_event(&web_sys::Event::new("input").unwrap())
         .unwrap();
-    until(&page, || has(&root, ".maestro-key-stored")).await;
+    until(|| has(&root, ".maestro-key-stored")).await;
     assert_eq!(
         app.provider_keys.get("local").await.unwrap().as_deref(),
         Some("submitted")
@@ -278,10 +268,7 @@ pub async fn provider_key_input_keeps_edits_made_while_saving(import: js_sys::Fu
     );
     save.click();
     while app.provider_keys.get("local").await.unwrap().as_deref() != Some("later-edit") {}
-    until(&page, || {
-        save.disabled() && !has(&root, ".maestro-badge-secondary")
-    })
-    .await;
+    until(|| save.disabled() && !has(&root, ".maestro-badge-secondary")).await;
 }
 
 /// Rows of the open picker.
@@ -310,7 +297,6 @@ async fn seed_models(app: &maestro_app::AppStorage) {
 pub async fn model_selector_searches_filters_and_selects_by_keyboard(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     seed_models(&storage("model-selector")).await;
     let current = get_model("anthropic", "claude-haiku-4-5").unwrap();
     let chosen: Rc<RefCell<Vec<Model>>> = Rc::default();
@@ -328,7 +314,7 @@ pub async fn model_selector_searches_filters_and_selects_by_keyboard(import: js_
         (focused, search.placeholder()),
         (true, "Search models...".into())
     );
-    until(&page, || text(&shown).contains("local-thinker")).await;
+    until(|| text(&shown).contains("local-thinker")).await;
     let first = rows(&shown).remove(0);
     let current_first = (
         has(&first, ".maestro-model-current"),
@@ -360,7 +346,7 @@ pub async fn model_selector_searches_filters_and_selects_by_keyboard(import: js_
         (ids, selector.is_open(), panels().len()),
         (vec!["local-thinker".to_owned()], false, 0)
     );
-    restricted(&view, &page).await;
+    restricted(&view).await;
 }
 /// The highlighted row carries an accent cue and an idle filter a border, since a panel fill alone
 /// disappears where panel and canvas share a swatch.
@@ -428,11 +414,11 @@ async fn no_results(shown: &Element, chosen: &Rc<RefCell<Vec<Model>>>) {
     assert!(!rows(shown).is_empty());
 }
 /// Allowed providers limit the rows, and real pointer movement highlights the row under it.
-async fn restricted(view: &Rc<DomView>, page: &JsValue) {
+async fn restricted(view: &Rc<DomView>) {
     let selector =
         ModelSelector::open(view, None, Rc::new(|_| {}), Some(vec!["Local Box".into()])).unwrap();
     let shown = panel();
-    until(page, || rows(&shown).len() == 2).await;
+    until(|| rows(&shown).len() == 2).await;
     press("ArrowDown").await;
     assert!(highlighted(&shown, 1));
     let rect = rows(&shown)[0].get_bounding_client_rect();
@@ -476,7 +462,6 @@ fn provider_fields(shown: &Element) -> Vec<HtmlInputElement> {
 pub async fn custom_provider_dialog_tests_saves_and_keeps_edits(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("provider-dialog");
     let prompts = Prompts::install(vec![]);
     let fetch = Fetch::install(vec![(200, "application/json", listing(7))]);
@@ -496,11 +481,11 @@ pub async fn custom_provider_dialog_tests_saves_and_keeps_edits(import: js_sys::
     );
     fields[2].focus().unwrap();
     type_text("secret").await;
-    tested(&page, &shown, &fetch).await;
+    tested(&shown, &fetch).await;
     fields[0].focus().unwrap();
     type_text("My vLLM").await;
     click(&save);
-    until(&page, || !dialog.is_open()).await;
+    until(|| !dialog.is_open()).await;
     assert_eq!(saved.get(), 1);
     let stored = app.custom_providers.get_all().await.unwrap();
     assert_eq!(stored.len(), 1);
@@ -520,7 +505,7 @@ pub async fn custom_provider_dialog_tests_saves_and_keeps_edits(import: js_sys::
             &Presence::Missing
         )
     );
-    edit_keeps_identity(&view, &page, &app, &prompts).await;
+    edit_keeps_identity(&view, &app, &prompts).await;
 }
 /// Identifier-generation failure preserves the form and never creates an empty storage key.
 #[wasm_bindgen]
@@ -578,11 +563,11 @@ fn defaults_and_labels(view: &DomView, shown: &Element) {
     }
 }
 /// A connection test lists five models and the remainder, then a failed test shows its error.
-async fn tested(page: &JsValue, shown: &Element, fetch: &Fetch) {
+async fn tested(shown: &Element, fetch: &Fetch) {
     let test = find(shown, ".maestro-button-outline");
     click(&test);
     assert_eq!(text(&test), "Testing...");
-    until(page, || has(shown, ".maestro-provider-dialog-found")).await;
+    until(|| has(shown, ".maestro-provider-dialog-found")).await;
     let found = find(shown, ".maestro-provider-dialog-found");
     assert!(text(&found).starts_with("Discovered 7 models:"));
     let items = all(&found, "li");
@@ -596,7 +581,7 @@ async fn tested(page: &JsValue, shown: &Element, fetch: &Fetch) {
             .contains(&("authorization".into(), "Bearer secret".into()))
     );
     click(&test);
-    until(page, || {
+    until(|| {
         has(shown, ".maestro-provider-dialog-error")
             && !has(shown, ".maestro-provider-dialog-found")
     })
@@ -606,7 +591,6 @@ async fn tested(page: &JsValue, shown: &Element, fetch: &Fetch) {
 /// Editing a manual provider keeps its identifier and models; a failed save keeps the edits.
 async fn edit_keeps_identity(
     view: &Rc<DomView>,
-    page: &JsValue,
     app: &Rc<maestro_app::AppStorage>,
     prompts: &Prompts,
 ) {
@@ -643,7 +627,7 @@ async fn edit_keeps_identity(
     assert_eq!(name.value(), "Manual 2", "a failed save keeps the edit");
     maestro_app::set_app_storage(Rc::clone(app));
     click(&save);
-    until(page, || !dialog.is_open()).await;
+    until(|| !dialog.is_open()).await;
     let stored = app.custom_providers.get("kept-id").await.unwrap().unwrap();
     assert_eq!(stored.name, "Manual 2");
     assert_eq!(stored.models, original.models);
@@ -669,7 +653,6 @@ pub async fn providers_models_tab_lists_keys_and_manages_custom_providers(
 ) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("providers-tab");
     two_providers(&app).await;
     let _fetch = Fetch::install(vec![(200, "application/json", listing(3))]);
@@ -685,7 +668,7 @@ pub async fn providers_models_tab_lists_keys_and_manages_custom_providers(
         all(&parent, ".maestro-key-input").len(),
         maestro_app::get_providers().len()
     );
-    until(&page, || text(&parent).contains("3 models")).await;
+    until(|| text(&parent).contains("3 models")).await;
     let cards = all(&parent, ".maestro-provider-card");
     let refresh = all(&cards[1], "button").remove(0);
     assert_eq!(
@@ -697,7 +680,7 @@ pub async fn providers_models_tab_lists_keys_and_manages_custom_providers(
         (2, true, "Refresh".into())
     );
     click(&refresh);
-    until(&page, || text(&parent).contains("Disconnected")).await;
+    until(|| text(&parent).contains("Disconnected")).await;
     assert!(
         prompts
             .messages()
@@ -712,7 +695,7 @@ pub async fn providers_models_tab_lists_keys_and_manages_custom_providers(
         "a refused confirmation keeps it"
     );
     click(&delete);
-    until(&page, || all(&parent, ".maestro-provider-card").len() == 1).await;
+    until(|| all(&parent, ".maestro-provider-card").len() == 1).await;
     assert!(
         prompts
             .messages()

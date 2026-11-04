@@ -1,14 +1,17 @@
 //! Local shell grace and completed observer lifetimes.
 #![cfg(unix)]
 #![cfg(test)]
-use crate::{process_support, read_support, runtime::run_paused};
+use crate::{read_support, runtime::run_paused};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
 #[cfg(target_os = "linux")]
 use read_support::pipe_holder;
 use read_support::{Fixture, Scratch};
+use serde_json::json;
 use std::{
+    io::Write,
+    net::{TcpListener, TcpStream},
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -108,14 +111,76 @@ fn local_bash_orders_abort_and_timeout_during_exit_grace() {
     });
 }
 
+/// Reads the root shell's PID while accepting the executed payload's control channel.
+#[cfg(target_os = "linux")]
+async fn root_pid(
+    operation: &mut Operation<'_>,
+    receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
+    listener: &tokio::net::TcpListener,
+    waker: &Waker,
+) -> (u32, tokio::net::TcpStream) {
+    let (bytes, accepted) = drive_until(
+        operation,
+        async { tokio::join!(receiver.recv(), listener.accept()) },
+        waker,
+    )
+    .await;
+    let pid = String::from_utf8(bytes.unwrap())
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap();
+    (pid, accepted.unwrap().0)
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn local_bash_startup_failure_does_not_wait_for_readiness() {
+    run_paused(async {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
+        let mut sink = |_: &[u8]| {};
+        let mut operation = operations.exec(
+            "exit 7",
+            "/",
+            BashExecOptions {
+                on_data: &mut sink,
+                signal: None,
+                timeout: None,
+                env: None,
+            },
+        );
+        let waker = Waker::noop();
+        assert_pending(&mut operation, waker);
+        let observation =
+            std::panic::AssertUnwindSafe(drive_until(&mut operation, listener.accept(), waker))
+                .catch_unwind()
+                .await;
+        drop(listener);
+        assert!(
+            observation.is_err(),
+            "settlement must reject missing readiness"
+        );
+    });
+}
+
 /// Exercises one execution with an independently reaped writer holding its pipe.
 #[cfg(target_os = "linux")]
 async fn grace_case(policy: GracePolicy) {
     let dir = Scratch::new().unwrap();
-    let gate = dir.path().join("exit");
+    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+        .await
+        .unwrap();
+    let payload = read_support::payload(
+        dir.path(),
+        "yielding",
+        &json!({"scenario": "yielding", "port": listener.local_addr().unwrap().port()}),
+    );
     let command = format!(
-        "printf '%s\\n' \"$$\"; while [ ! -f '{}' ]; do :; done",
-        gate.display()
+        "printf '%s\\n' \"$$\"; exec {}",
+        read_support::shell_operand(&payload)
     );
     let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
     let signal = Cancellation::new();
@@ -139,18 +204,10 @@ async fn grace_case(policy: GracePolicy) {
         },
     );
     let waker = Waker::from(Arc::new(Wakes::default()));
-    let pid_bytes = next_chunk(&mut operation, &mut receiver, &waker).await;
-    let pid = String::from_utf8(pid_bytes)
-        .unwrap()
-        .trim()
-        .parse::<u32>()
-        .unwrap();
-    let mut holder = pipe_holder(pid).await;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&gate)
-        .unwrap();
+    let (pid, mut connection) = root_pid(&mut operation, &mut receiver, &listener, &waker).await;
+    drop(listener);
+    let mut holder = pipe_holder(&read_support::grace_holder(dir.path(), pid)).await;
+    connection.write_all(b"x").await.unwrap();
     while std::path::Path::new(&format!("/proc/{pid}")).exists() {
         assert_pending(&mut operation, &waker);
         tokio::task::yield_now().await;
@@ -248,12 +305,26 @@ async fn next_chunk(
     receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
     waker: &Waker,
 ) -> Vec<u8> {
+    drive_until(operation, receiver.recv(), waker)
+        .await
+        .unwrap()
+}
+
+/// Drives the execution while waiting for I/O without advancing the paused clock.
+#[cfg(target_os = "linux")]
+async fn drive_until<F: std::future::Future>(
+    operation: &mut Operation<'_>,
+    future: F,
+    waker: &Waker,
+) -> F::Output {
+    let mut future = std::pin::pin!(future);
     loop {
         assert_pending(operation, waker);
-        if let Ok(chunk) = receiver.try_recv() {
-            return chunk;
+        tokio::select! {
+            biased;
+            result = &mut future => return result,
+            () = tokio::task::yield_now() => {}
         }
-        tokio::task::yield_now().await;
     }
 }
 
@@ -281,7 +352,7 @@ fn local_bash_timeout_fires_at_twenty_five_not_twenty_four_milliseconds() {
 struct ChildWitness {
     /// Unconsumed callback bytes, including any partial acknowledgement.
     bytes: Vec<u8>,
-    /// Root PID reported by the native shell.
+    /// Root PID retained by the shell's executed payload.
     pid: Option<u32>,
     /// Result of the same execution, captured at most once.
     settled: Option<Result<maestro_tools::BashExecResult, maestro_tools::BashError>>,
@@ -289,10 +360,9 @@ struct ChildWitness {
 
 impl ChildWitness {
     /// Saves settlement so a completed future is never polled twice.
-    async fn poll(&mut self, operation: &mut Operation<'_>) {
+    fn poll(&mut self, operation: &mut Operation<'_>) {
         if self.settled.is_none()
-            && let Poll::Ready(result) =
-                process_support::poll_once(&mut std::pin::Pin::new(operation)).await
+            && let Some(result) = std::pin::Pin::new(operation).now_or_never()
         {
             self.settled = Some(result);
         }
@@ -305,7 +375,7 @@ impl ChildWitness {
         receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
     ) -> Vec<u8> {
         loop {
-            self.poll(operation).await;
+            self.poll(operation);
             while let Ok(chunk) = receiver.try_recv() {
                 self.bytes.extend(chunk);
             }
@@ -321,46 +391,40 @@ impl ChildWitness {
     }
 }
 
-/// Creates a gate without truncating an existing entry.
-fn release(dir: &Scratch, name: &str) -> std::io::Result<std::fs::File> {
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(dir.path().join(name))
-}
-
 /// Observes the 24ms acknowledgement and delivers the timer at exactly 25ms.
 async fn drive_timeout(
     witness: &mut ChildWitness,
     operation: &mut Operation<'_>,
     receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
-    dir: &Scratch,
+    connection: &mut TcpStream,
 ) {
     let start = tokio::time::Instant::now();
     tokio::time::advance(Duration::from_millis(24)).await;
-    witness.poll(operation).await;
+    witness.poll(operation);
     assert!(witness.settled.is_none());
-    release(dir, "alive").unwrap();
+    connection.write_all(b"a").unwrap();
     assert_eq!(witness.line(operation, receiver).await, b"alive\n");
     tokio::time::advance(Duration::from_millis(1)).await;
     tokio::time::sleep(Duration::ZERO).await;
     assert_eq!(start.elapsed(), Duration::from_millis(25));
-    witness.poll(operation).await;
+    witness.poll(operation);
 }
 
-/// Attempts both gate releases, terminating a known PID on errors other than an existing gate.
+/// Releases both waits, terminating a known PID if its control channel is closed.
 /// Then drives the same execution to settlement.
-async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>, dir: &Scratch) {
-    for name in ["alive", "release"] {
-        if let Err(error) = release(dir, name)
-            && error.kind() != std::io::ErrorKind::AlreadyExists
-            && let Some(pid) = witness.pid
-        {
-            maestro_tools::utils::shell::kill_process_tree(pid);
-        }
+async fn settle_child(
+    witness: &mut ChildWitness,
+    operation: &mut Operation<'_>,
+    connection: Option<&mut TcpStream>,
+) {
+    if let Some(connection) = connection
+        && connection.write_all(b"ar").is_err()
+        && let Some(pid) = witness.pid
+    {
+        maestro_tools::utils::shell::kill_process_tree(pid);
     }
     while witness.settled.is_none() {
-        witness.poll(operation).await;
+        witness.poll(operation);
         tokio::task::yield_now().await;
     }
 }
@@ -369,6 +433,13 @@ async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>,
 async fn termination_case(stop: Stop) {
     let dir = Scratch::new().unwrap();
     let cwd = dir.text();
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let payload = read_support::payload(
+        dir.path(),
+        "termination",
+        &json!({"scenario": "termination", "port": listener.local_addr().unwrap().port()}),
+    );
+    let command = format!("exec {}", read_support::shell_operand(&payload));
     let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
     let signal = Cancellation::new();
     let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
@@ -381,7 +452,7 @@ async fn termination_case(stop: Stop) {
         let _ = sender.send(data.to_vec());
     };
     let mut operation = operations.exec(
-        "printf '%s\\n' \"$$\"; while [ ! -f alive ] && [ ! -f release ]; do :; done; printf 'alive\\n'; while [ ! -f release ]; do :; done; printf survived > survived",
+        &command,
         &cwd,
         BashExecOptions {
             on_data: &mut sink,
@@ -391,17 +462,22 @@ async fn termination_case(stop: Stop) {
         },
     );
     let mut witness = ChildWitness::default();
+    let mut connection = None;
     let observation = std::panic::AssertUnwindSafe(async {
         let line = witness.line(&mut operation, &mut receiver).await;
+        let socket = connection.insert(listener.accept().unwrap().0);
         witness.pid = Some(std::str::from_utf8(&line).unwrap().trim().parse().unwrap());
         match stop {
-            Stop::Abort => witness.poll(&mut operation).await,
-            Stop::Timeout => drive_timeout(&mut witness, &mut operation, &mut receiver, &dir).await,
+            Stop::Abort => witness.poll(&mut operation),
+            Stop::Timeout => {
+                drive_timeout(&mut witness, &mut operation, &mut receiver, socket).await;
+            }
         }
     })
     .catch_unwind()
     .await;
-    settle_child(&mut witness, &mut operation, &dir).await;
+    drop(listener);
+    settle_child(&mut witness, &mut operation, connection.as_mut()).await;
     if let Err(panic) = observation {
         std::panic::resume_unwind(panic);
     }

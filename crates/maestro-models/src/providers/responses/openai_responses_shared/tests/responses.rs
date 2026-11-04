@@ -154,10 +154,7 @@ pub fn model(overrides: Option<Value>) -> TestResult<Model> {
 }
 
 /// An all-zero usage record.
-pub fn zero_usage() -> Value {
-    json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
-        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}})
-}
+pub use maestro_request::test_support::zero_usage;
 
 /// Fill the members a fixture message leaves out, then decode the context.
 pub fn context(compact: Value) -> TestResult<Context> {
@@ -636,14 +633,16 @@ fn consumed_fields<'a>(path: &str, kind: &str) -> Option<&'a [&'a str]> {
             | "response.completed"
             | "response.incomplete"
             | "response.failed" => &["type", "response"],
-            "response.output_item.added" | "response.output_item.done" => &["type", "item"],
-            "response.content_part.added" | "response.reasoning_summary_part.added" => {
-                &["type", "part"]
+            "response.output_item.added" | "response.output_item.done" => {
+                &["type", "output_index", "item"]
             }
-            "response.function_call_arguments.done" => &["type", "arguments"],
+            "response.content_part.added" | "response.reasoning_summary_part.added" => {
+                &["type", "output_index", "part"]
+            }
+            "response.function_call_arguments.done" => &["type", "output_index", "arguments"],
             "error" => &["type", "code", "message"],
-            _ if kind.rsplit('.').next() == Some("delta") => &["type", "delta"],
-            _ => &["type"],
+            _ if kind.rsplit('.').next() == Some("delta") => &["type", "output_index", "delta"],
+            _ => &["type", "output_index"],
         },
         "created" => &["id"],
         "completed" => &["id", "status", "usage", "service_tier"],

@@ -254,6 +254,7 @@ fn expected_models(value: serde_json::Value) -> Vec<Model> {
     }
 }
 mod emission;
+mod rules;
 
 /// Borrow models in deterministic emitted order.
 fn sorted_models(catalog: &super::Catalog) -> Vec<&Model> {

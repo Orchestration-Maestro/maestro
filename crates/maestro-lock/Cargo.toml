@@ -8,6 +8,7 @@ autotests = false
 
 [dependencies]
 maestro-path = { path = "../maestro-path" }
+sha2 = { version = "=0.11.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
@@ -15,6 +16,9 @@ maestro-dependencies.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
+
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true, features = ["std", "process", "fs"] }
 
 [[test]]
 name = "integration"

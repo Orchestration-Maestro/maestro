@@ -7,6 +7,8 @@ use maestro_app::{
 use maestro_cli::startup::main::runtime::{RuntimeCreation, create_runtime};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
+#[cfg(unix)]
+use std::path::{Path, PathBuf};
 use std::{cell::RefCell, future::Future, rc::Rc, sync::Arc};
 use tokio::task::LocalSet;
 
@@ -36,6 +38,32 @@ impl Fixture {
     async fn with_probe_tool(local: Rc<LocalSet>, settings: SettingsManager) -> Self {
         Self::build(local, settings, |resources| {
             resources.extension_factories.push(register_probe_tool());
+        })
+        .await
+    }
+    /// Record each shutdown event through an actual loaded extension.
+    pub(crate) async fn with_shutdown_watch(
+        local: Rc<LocalSet>,
+        settings: SettingsManager,
+        shutdowns: Rc<RefCell<Vec<Value>>>,
+    ) -> Self {
+        Self::build(local, settings, move |resources| {
+            resources
+                .extension_factories
+                .push(record_shutdowns(&shutdowns));
+        })
+        .await
+    }
+    /// Record each shutdown event to `report` through an actual loaded extension.
+    #[cfg(unix)]
+    pub(crate) async fn with_shutdown_report(
+        local: Rc<LocalSet>,
+        settings: SettingsManager,
+        report: &Path,
+    ) -> Self {
+        let report = report.to_owned();
+        Self::build(local, settings, move |resources| {
+            resources.extension_factories.push(report_shutdowns(report));
         })
         .await
     }
@@ -503,6 +531,47 @@ fn record_starts(events: &Rc<RefCell<Vec<String>>>) -> maestro_app::ExtensionFac
                 record
                     .borrow_mut()
                     .push(serde_json::to_string(event).unwrap());
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// Record each shutdown event to `report` through the real extension registration and dispatch
+/// owners, so a run that ends its process can still report what it delivered.
+#[cfg(unix)]
+fn report_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let report = report.clone();
+        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+            "session_shutdown".into(),
+            Rc::new(move |event, _| {
+                let mut delivered: Vec<Value> = match std::fs::read_to_string(&report) {
+                    Ok(text) => serde_json::from_str(&text).unwrap(),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+                    Err(error) => panic!("the shutdown report is unreadable: {error}"),
+                };
+                delivered.push(serde_json::to_value(event).unwrap());
+                std::fs::write(&report, serde_json::to_vec(&delivered).unwrap()).unwrap();
+                Box::pin(std::future::ready(Ok(None)))
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// Record each shutdown event through the real extension registration and dispatch owners.
+fn record_shutdowns(shutdowns: &Rc<RefCell<Vec<Value>>>) -> maestro_app::ExtensionFactory<Local> {
+    let record = Rc::clone(shutdowns);
+    Rc::new(move |api| {
+        let record = Rc::clone(&record);
+        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+            "session_shutdown".into(),
+            Rc::new(move |event, _| {
+                record
+                    .borrow_mut()
+                    .push(serde_json::to_value(event).unwrap());
                 Box::pin(std::future::ready(Ok(None)))
             }),
         );

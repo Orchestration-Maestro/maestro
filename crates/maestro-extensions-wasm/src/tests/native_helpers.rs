@@ -6,7 +6,7 @@
 )]
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::{Value, json};
-#[path = "../../examples/helper_capabilities.rs"]
+#[path = "../../tests/support/helper_capabilities.rs"]
 mod author;
 /// The unchanged compiled author factory, selected against controlled imports.
 struct Helpers;
@@ -66,4 +66,38 @@ fn helper_fuzzy_filter_rejects_out_of_range_host_positions() -> Result<(), Strin
         super::example_support::release_all(&host, &["command helpers"]);
         Ok(())
     })
+}
+
+/// The proof key the controlled host answers with.
+const PROOF_KEY: (&str, &str) = (
+    "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+    "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+);
+
+#[test]
+fn helper_generate_pkce_decodes_the_host_record() -> Result<(), String> {
+    let host = super::controlled::Controlled::default();
+    let api = super::bus_callbacks::captured_api(&host)?;
+    host.observe().actions.value =
+        json!({"oauth.generate_pkce": {"verifier": PROOF_KEY.0, "challenge": PROOF_KEY.1}});
+    let key: maestro_request::oauth::Pkce = crate::generate_pkce(&api)?;
+    let encoded = serde_json::to_value(&key).map_err(|error| error.to_string())?;
+    assert_eq!(
+        encoded,
+        json!({"verifier":PROOF_KEY.0,"challenge":PROOF_KEY.1})
+    );
+    assert_eq!((key.verifier.as_str(), key.challenge.as_str()), PROOF_KEY);
+    Ok(())
+}
+
+#[test]
+fn helper_generate_pkce_keeps_the_host_failure() -> Result<(), String> {
+    let host = super::controlled::Controlled::default();
+    let api = super::bus_callbacks::captured_api(&host)?;
+    host.observe().actions.error = Some("system entropy unavailable".into());
+    assert_eq!(
+        crate::generate_pkce(&api).unwrap_err(),
+        "system entropy unavailable"
+    );
+    Ok(())
 }

@@ -75,7 +75,7 @@ pub async fn registered(import: &js_sys::Function) {
     use crate::contributions_support::{container, host, select, text, view};
     let view = view();
     let _elements = host(&view, import);
-    let downloads = crate::session_download_browser::Fixture::import(import).await;
+    let downloads = crate::session_download_browser::Fixture::default();
     for header in [Header::Plain, Header::Rich] {
         let fail = registration("document-forwarding", header);
         let parent = container();

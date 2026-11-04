@@ -7,7 +7,7 @@ use placement::adapter;
 /// Already-aborted execution never mounts a frame; direct empty code remains admitted.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_preflight_avoids_all_effects() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let trace = Trace::default();
@@ -65,7 +65,7 @@ use wasm_bindgen::JsCast as _;
 /// Console runtime precedes supplied providers; repeated entries are not deduplicated.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_prepends_console_and_notifies_providers() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for supplied_signal in [false, true] {
@@ -94,7 +94,7 @@ pub async fn execution_prepends_console_and_notifies_providers() {
 /// Providers run before both additional consumers, which precede terminal collection.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_routes_providers_before_all_consumers() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let trace = Trace::default();
@@ -148,7 +148,7 @@ pub async fn execution_routes_providers_before_all_consumers() {
 /// File fields are captured on arrival, while content handles remain live through hooks.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_collects_ordered_logs_and_original_downloads() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let (hook, original) = file_editor();
@@ -212,7 +212,7 @@ pub async fn execution_collects_ordered_logs_and_original_downloads() {
 /// Runtime error keeps earlier console/files and the supplied error fields.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_error_keeps_accumulated_output_and_stack() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let code = "console.log('prior');await returnDownloadableFile('prior','file','text/plain');await complete({message:'failure',stack:'controlled stack'});";
@@ -234,12 +234,12 @@ pub async fn execution_error_keeps_accumulated_output_and_stack() {
 /// Running cancellation settles once after actual frame output and file collection.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_abort_releases_every_acquired_resource() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let trace = Trace::default();
     let signal = Cancellation::new();
-    let observed = fixture.watch("running");
+    let observed = Fixture::watch("running");
     let mut input = request(
         "console.log('before');await returnDownloadableFile('f','x');parent.postMessage({type:'running'},'*');await new Promise(()=>{});",
         vec![
@@ -276,10 +276,10 @@ pub async fn execution_abort_releases_every_acquired_resource() {
 /// Captured production deadline preserves output without claiming elapsed clock proof.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_timeout_preserves_output_and_uses_two_minutes() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
-    let observed = fixture.watch("deadline-ready");
+    let observed = Fixture::watch("deadline-ready");
     let mut execution=sandbox.execute(request("console.log('before');await returnDownloadableFile('f','x');parent.postMessage({type:'deadline-ready'},'*');await new Promise(()=>{});",vec![downloads()]),vec![],false);
     pending(&mut execution);
     wasm_bindgen_futures::JsFuture::from(observed)
@@ -302,12 +302,12 @@ pub async fn execution_timeout_preserves_output_and_uses_two_minutes() {
 /// HTML mode and URL selection are independent, with actual completion in every branch.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_honors_direct_consumers_and_html_mode() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for html in [false, true] {
         for url in [false, true] {
-            let callback = fixture.bootstrap_callback(true);
+            let callback = Fixture::bootstrap_callback(true);
             sandbox
                 .sandbox_url_provider
                 .replace(url.then_some(callback));
@@ -335,7 +335,7 @@ pub async fn execution_honors_direct_consumers_and_html_mode() {
 /// URL selection is read after start hooks; one native handshake sends one document.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_url_handshake_uses_live_callback_once() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let calls = Rc::new(RefCell::new(Vec::new()));
@@ -344,19 +344,17 @@ pub async fn execution_url_handshake_uses_live_callback_once() {
         sandbox
             .sandbox_url_provider
             .replace(Some(SharedHandle::new({
-                let fixture = fixture.clone();
                 move || {
                     initial.borrow_mut().push("initial");
-                    Ok(fixture.bootstrap(false))
+                    Ok(Fixture::bootstrap(false))
                 }
             })));
         let slot = sandbox.sandbox_url_provider.clone();
         let changed = calls.clone();
-        let replacement_fixture = fixture.clone();
         let providers = if replace_in_start {
             vec![SharedHandle::new(Probe {
                 start: Some(Rc::new(move |_| {
-                    replace_bootstrap(&slot, &changed, &replacement_fixture);
+                    replace_bootstrap(&slot, &changed);
                     Ok(())
                 })),
                 ..Probe::default()
@@ -364,17 +362,17 @@ pub async fn execution_url_handshake_uses_live_callback_once() {
         } else {
             vec![]
         };
-        let observed = fixture.watch("bootstrap-waiting");
+        let observed = Fixture::watch("bootstrap-waiting");
         let mut execution = sandbox.execute(request("return 9", providers), vec![], false);
         pending(&mut execution);
         wasm_bindgen_futures::JsFuture::from(observed)
             .await
             .unwrap();
-        fixture.dispatch("sandbox-ready", false);
+        Fixture::dispatch("sandbox-ready", false);
         pending(&mut execution);
-        fixture.dispatch("sandbox-ready", true);
-        fixture.dispatch("sandbox-ready", true);
-        fixture.dispatch("sandbox-error", true);
+        Fixture::dispatch("sandbox-ready", true);
+        Fixture::dispatch("sandbox-ready", true);
+        Fixture::dispatch("sandbox-error", true);
         assert_eq!(
             execution.await.unwrap().return_value.unwrap().0.as_f64(),
             Some(9.0)
@@ -387,17 +385,16 @@ pub async fn execution_url_handshake_uses_live_callback_once() {
 /// Bootstrap failures traverse the existing admitted router and both callback phases.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_url_bootstrap_error_reuses_admitted_router() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     sandbox
         .sandbox_url_provider
         .replace(Some(SharedHandle::new({
-            let fixture = fixture.clone();
-            move || Ok(fixture.bootstrap(false))
+            move || Ok(Fixture::bootstrap(false))
         })));
     let trace = Trace::default();
-    let observed = fixture.watch("bootstrap-waiting");
+    let observed = Fixture::watch("bootstrap-waiting");
     let mut execution = sandbox.execute(
         request(
             "return 9",
@@ -414,9 +411,9 @@ pub async fn execution_url_bootstrap_error_reuses_admitted_router() {
     wasm_bindgen_futures::JsFuture::from(observed)
         .await
         .unwrap();
-    fixture.dispatch("sandbox-error", false);
+    Fixture::dispatch("sandbox-error", false);
     pending(&mut execution);
-    fixture.dispatch("sandbox-error", true);
+    Fixture::dispatch("sandbox-error", true);
     let result = execution.await.unwrap();
     assert!(!result.success);
     let error = result.error.unwrap();
@@ -439,31 +436,30 @@ pub async fn execution_url_bootstrap_error_reuses_admitted_router() {
 /// Pending ready/error observation is detached immediately on cancellation.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_abort_before_url_ready_detaches_handshake() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     sandbox
         .sandbox_url_provider
         .replace(Some(SharedHandle::new({
-            let fixture = fixture.clone();
-            move || Ok(fixture.bootstrap(false))
+            move || Ok(Fixture::bootstrap(false))
         })));
     let signal = Cancellation::new();
     let mut input = request("return 9", vec![]);
     input.signal = Some(signal.clone());
-    let observed = fixture.watch("bootstrap-waiting");
+    let observed = Fixture::watch("bootstrap-waiting");
     let mut execution = sandbox.execute(input, vec![], false);
     pending(&mut execution);
     wasm_bindgen_futures::JsFuture::from(observed)
         .await
         .unwrap();
-    let source = fixture.remember_frame();
+    let source = Fixture::remember_frame();
     fixture.closed(2);
     signal.abort();
     assert_eq!(execution.await.err().unwrap().message, "Execution aborted");
     fixture.closed(0);
-    fixture.dispatch_source("sandbox-ready", &source);
-    fixture.dispatch_source("sandbox-error", &source);
+    Fixture::dispatch_source("sandbox-ready", &source);
+    Fixture::dispatch_source("sandbox-error", &source);
     fixture.closed(0);
     fixture.end();
 }
@@ -471,7 +467,7 @@ pub async fn execution_abort_before_url_ready_detaches_handshake() {
 /// Each start/preparation failure preserves its original diagnostic and unwinds all entries.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_setup_failures_unwind_the_shared_owner() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for phase in ["first-start", "later-start", "data", "runtime"] {
@@ -510,7 +506,7 @@ pub async fn execution_setup_failures_unwind_the_shared_owner() {
 /// Native construction, mounting, registration and URL failures release acquired resources.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_native_failures_unwind_the_shared_owner() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for mode in [
@@ -548,7 +544,7 @@ pub async fn execution_native_failures_unwind_the_shared_owner() {
 /// Explicit validation failures reject without painting a loading error document.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_validation_rejects_without_a_frame_or_live_timer() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for (mode, expected) in [
@@ -595,7 +591,7 @@ pub async fn execution_validation_rejects_without_a_frame_or_live_timer() {
 /// An end-hook failure cannot skip later entries or replace an earlier setup failure.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_end_failure_cannot_prevent_resource_release() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for earlier in [false, true] {
@@ -647,7 +643,7 @@ pub async fn execution_end_failure_cannot_prevent_resource_release() {
 /// Cancellation raised synchronously by a start callback is observed before mounting.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_observes_abort_raised_by_start_hook() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for abort in [true, false] {
@@ -680,7 +676,7 @@ pub async fn execution_observes_abort_raised_by_start_hook() {
 /// Completion awaits gated callbacks and keeps their ordered console output on both outcomes.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_waits_for_completion_callbacks_and_console_flush() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for success in [true, false] {
@@ -692,14 +688,14 @@ pub async fn execution_waits_for_completion_callbacks_and_console_flush() {
                 "throw Error('user failure')"
             }
         );
-        let observed = fixture.watch("callback-ready");
+        let observed = Fixture::watch("callback-ready");
         let mut execution = sandbox.execute(request(&code, vec![]), vec![], false);
         pending(&mut execution);
         wasm_bindgen_futures::JsFuture::from(observed)
             .await
             .unwrap();
         pending(&mut execution);
-        fixture.release_frame();
+        Fixture::release_frame();
         let result = execution.await.unwrap();
         assert_eq!(result.success, success);
         assert_eq!(
@@ -738,7 +734,7 @@ pub async fn execution_waits_for_completion_callbacks_and_console_flush() {
 /// Native serialization failures remain errors after actual execution and owned cleanup.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_serialization_failures_stay_native() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for code in [
@@ -760,7 +756,7 @@ pub async fn execution_serialization_failures_stay_native() {
 /// Shared application whitespace and native numeric spelling reach the final output unchanged.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_preserves_shared_whitespace_and_number_spelling() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     for (code, expected) in [
         (" \n\t", "Code executed successfully (no output)"),
@@ -786,7 +782,7 @@ pub async fn hidden_host_and_default_tool_use_the_same_real_adapter() {
     use maestro_web::browser::sandbox_value::BrowserSandboxValue;
     use maestro_web::{JAVASCRIPT_REPL_TOOL, SandboxRuntimeProvider, SandboxUrlProvider};
 
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let first = JAVASCRIPT_REPL_TOOL.with(|tool| tool.tool.clone());
     let second = JAVASCRIPT_REPL_TOOL.with(|tool| tool.tool.clone());
@@ -819,10 +815,7 @@ pub async fn hidden_host_and_default_tool_use_the_same_real_adapter() {
         );
         *tool.runtime_providers_factory.write().unwrap() =
             Some(SharedHandle::new(move || Ok(vec![provider.clone()])));
-        let url: SandboxUrlProvider = SharedHandle::new({
-            let fixture = fixture.clone();
-            move || Ok(fixture.bootstrap(true))
-        });
+        let url: SandboxUrlProvider = SharedHandle::new(|| Ok(Fixture::bootstrap(true)));
         *tool.sandbox_url_provider.write().unwrap() = Some(url);
     });
     let execute = first.read().unwrap().execute.clone();
@@ -847,18 +840,18 @@ pub async fn hidden_host_and_default_tool_use_the_same_real_adapter() {
 /// Settling one native execution cannot release its still-running sibling.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_instances_do_not_share_cleanup_or_results() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let first = adapter();
     let second = adapter();
-    let observed = fixture.watch("first-running");
+    let observed = Fixture::watch("first-running");
     let mut a=first.execute(request("parent.postMessage({type:'first-running'},'*');await new Promise(resolve=>addEventListener('message',e=>{if(e.data==='release')resolve()}));return 7;",vec![]),vec![],false);
     pending(&mut a);
     wasm_bindgen_futures::JsFuture::from(observed)
         .await
         .unwrap();
-    let source = fixture.remember_frame();
-    let observed = fixture.watch("second-running");
+    let source = Fixture::remember_frame();
+    let observed = Fixture::watch("second-running");
     let signal = Cancellation::new();
     let mut input = request(
         "parent.postMessage({type:'second-running'},'*');await new Promise(()=>{});",
@@ -872,7 +865,7 @@ pub async fn execution_instances_do_not_share_cleanup_or_results() {
         .await
         .unwrap();
     fixture.timers(2);
-    fixture.release_source(&source);
+    Fixture::release_source(&source);
     assert_eq!(a.await.unwrap().return_value.unwrap().0.as_f64(), Some(7.0));
     fixture.closed(2);
     fixture.timers(1);
@@ -886,7 +879,7 @@ pub async fn execution_instances_do_not_share_cleanup_or_results() {
 /// Dropping a polled future releases the containing adapter's run and callback captures.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn executing_future_drop_releases_the_retained_owner() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let trace = Trace::default();
@@ -895,7 +888,7 @@ pub async fn executing_future_drop_releases_the_retained_owner() {
         ..Probe::default()
     });
     let weak = SharedHandle::downgrade(&provider);
-    let observed = fixture.watch("drop-ready");
+    let observed = Fixture::watch("drop-ready");
     let mut execution = sandbox.execute(
         request(
             "parent.postMessage({type:'drop-ready'},'*');await new Promise(()=>{});",
@@ -928,11 +921,11 @@ pub async fn executing_future_drop_releases_the_retained_owner() {
 /// Failed native detach remains owned for retry on both execution and loading paths.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn lifecycle_removal_failures_retain_retryable_native_handles() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     let trace = Trace::default();
-    let observed = fixture.watch("retry-ready");
+    let observed = Fixture::watch("retry-ready");
     let mut execution = sandbox.execute(
         request(
             "parent.postMessage({type:'retry-ready'},'*');await new Promise(()=>{});",
@@ -948,13 +941,13 @@ pub async fn lifecycle_removal_failures_retain_retryable_native_handles() {
     wasm_bindgen_futures::JsFuture::from(observed)
         .await
         .unwrap();
-    let source = fixture.remember_frame();
+    let source = Fixture::remember_frame();
     fixture.fault("detach");
     assert!(sandbox.remove().is_err());
     assert_eq!(execution.await.err().unwrap().message, "Execution aborted");
     fixture.timers(0);
     fixture.closed(2);
-    fixture.dispatch_source("sandbox-error", &source);
+    Fixture::dispatch_source("sandbox-error", &source);
     fixture.fault("");
     sandbox.remove().unwrap();
     fixture.closed(0);
@@ -981,7 +974,7 @@ pub async fn lifecycle_removal_failures_retain_retryable_native_handles() {
 /// Raw native return kinds survive actual frames and reach the registered tool formatter.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_retains_native_returns_through_repl_formatting() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for row in return_cases() {
@@ -991,7 +984,7 @@ pub async fn execution_retains_native_returns_through_repl_formatting() {
             assert!(result.return_value.is_none());
         } else {
             let value = result.return_value.unwrap();
-            fixture.assert_native(&row.name, &value.0);
+            Fixture::assert_native(&row.name, &value.0);
         }
         assert_eq!(tool_output(&row.code).await.unwrap(), row.output);
         hidden_released();
@@ -1016,7 +1009,7 @@ pub async fn execution_retains_native_returns_through_repl_formatting() {
 /// End hooks may replace, add or remove terminal fields before SDK projection.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_reads_terminal_fields_after_end_hooks() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
     for (code, edit, expected) in [
@@ -1062,7 +1055,7 @@ pub async fn execution_reads_terminal_fields_after_end_hooks() {
 pub async fn execution_encodes_nonbyte_download_content() {
     use maestro_app::browser::components::sandboxed_iframe::SandboxFileContent;
 
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     fixture.begin();
     let code = "await returnDownloadableFile('missing.json', undefined);";
     let result = application(code, vec![downloads()]).await.unwrap();
@@ -1099,13 +1092,11 @@ fn replace_bootstrap(
         RefCell<Option<maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider>>,
     >,
     calls: &Rc<RefCell<Vec<&'static str>>>,
-    fixture: &Fixture,
 ) {
     let calls = calls.clone();
-    let fixture = fixture.clone();
     slot.replace(Some(SharedHandle::new(move || {
         calls.borrow_mut().push("replacement");
-        Ok(fixture.bootstrap(false))
+        Ok(Fixture::bootstrap(false))
     })));
 }
 

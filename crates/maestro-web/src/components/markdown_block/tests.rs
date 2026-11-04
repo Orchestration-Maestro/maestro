@@ -162,6 +162,52 @@ fn escaping_keeps_stable_code_and_autolinks_literal() {
     assert_eq!(prepare("<b>x</b>", false).html, "<p><b>x</b></p>\n");
 }
 
+#[test]
+fn clipped_escaped_angle_keeps_its_closing_angle_text() {
+    let html = prepare("<https://example.test/$$x$$>", true).html;
+    assert!(
+        html.starts_with(
+            "<p>&lt;<a target=\"_blank\" rel=\"noopener noreferrer\" \
+             href=\"https://example.test/\">https://example.test/</a></p>\n"
+        ),
+        "{html}"
+    );
+    assert!(html.contains("class=\"maestro-math-block\""), "{html}");
+    assert!(html.ends_with("<p>&gt;</p>\n"), "{html}");
+    let raw = prepare("<https://example.test/$$x$$>", false).html;
+    assert!(raw.ends_with("<blockquote>\n</blockquote>\n"), "{raw}");
+}
+
+#[test]
+fn escaped_angle_span_keeps_its_quote_marker_line_in_the_paragraph() {
+    let html = prepare("a <b\n> quote", true).html;
+    assert_eq!(html, "<p>a &lt;b\n&gt; quote</p>\n");
+    let raw = prepare("a <b\n> quote", false).html;
+    assert!(
+        raw.ends_with("<blockquote>\n<p>quote</p>\n</blockquote>\n"),
+        "{raw}"
+    );
+}
+
+#[test]
+fn code_held_angles_keep_a_later_quote() {
+    for source in ["Compare `a<b`.\n\n> note", "```\n<a\n```\n\n> note"] {
+        let html = prepare(source, true).html;
+        assert!(
+            html.ends_with("<blockquote>\n<p>note</p>\n</blockquote>\n"),
+            "{source:?}: {html}"
+        );
+    }
+    // Stray backticks across blocks are prose, so the clipped angle stays text.
+    let html = prepare(
+        "Type ` to start.\n\n<https://example.test/$$x$$>\n\nThen run `ls`.\n",
+        true,
+    )
+    .html;
+    assert!(html.contains("<p>&gt;</p>\n"), "{html}");
+    assert!(!html.contains("<blockquote>"), "{html}");
+}
+
 /// Script and active-document targets, with the HTML that keeps only their text.
 const REFUSED: [(&str, &str); 9] = [
     ("[x](javascript:alert(1))", "<p>x</p>\n"),

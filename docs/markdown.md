@@ -93,12 +93,15 @@ current end, or whose following content sits on the item's unterminated last
 line. Open indented code continues from the line it reached. A caller block
 tokenizer reads the whole remaining item, so when one is present every
 resumption admits the item again. Item text answers the setext underline
-question from one classification per line, and from the resume offset when a
-caller token stopped inside a line, instead of re-reading the rest of the item,
-so a long item costs its own length. Semantic text can change spelling or be
-empty without erasing raw consumption. Code continuations reuse one
-indentation-removal operation; definitions continuing paragraph or item text
-stay literal instead of entering the reference index.
+question by classifying only the lines its answer needs, starting from the
+resume offset when a caller token stopped inside a line, so a settled answer
+costs the item's prefix rather than its whole body. An item's semantic body and
+raw spelling join the pieces they admitted once, when a reader asks for the whole
+value. Semantic text can change spelling or be empty without erasing raw
+consumption.
+Code continuations reuse one indentation-removal operation; definitions
+continuing paragraph or item text stay literal instead of entering the reference
+index.
 
 Quote and list nesting runs on retained frames, not on native recursion: one frame
 stack drives quote chunks, list items and their block admission, so every deeper
@@ -115,6 +118,9 @@ worklists.
 Depth costs work: each level reads its own operand again, so the cost grows with
 the square of the nesting depth. A single line of 1,000 quotes parses in about a
 second in a development build, 2,000 in about four, and 4,000 in about fifteen.
+Item admission keeps the constant small: the stop rules are consulted only where
+their alternatives can begin, and neither an item's classification nor its joined
+body grows with the levels above it.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and
@@ -137,6 +143,22 @@ newline only when formatting terminal code.
 documentation grammar. Browser selection includes whether authored HTML is
 shown as text. Each document retains that selection and its first-wins reference
 index for later inline interpretation; writers keep presentation policy.
+
+When a browser caller shows authored HTML as text, one pass over the whole
+document records the angle spans it displays literally: a tag from its `<`
+through its closing `>` or a complete closing tag. Code spans and fences are
+left out, because the caller keeps code out of its escaping step: an inline span
+holds one line of characters and a fence closes at the next three backticks, so
+a stray backtick leaves the blocks after it to the ordinary literal-angle
+policy. The block grammar then reads both delimiters as text, so a caller block
+hint inside a span cannot turn its closing angle into a quote marker; the
+remainder stays a paragraph. A span's closing angle that starts a later line
+neither ends the paragraph nor breaks a setext heading's text, at the top level
+or inside a list item, so `a <b` followed by `> quote` is one paragraph. Other
+rules still read that line, so a table header and its delimiter row there end
+the paragraph. A marker outside every span keeps its usual meaning, and the
+unescaped browser, terminal, export and documentation grammars read no such
+projection.
 
 `InlineScope::text()` retains authored container padding. `content_range()`
 selects the semantic child extent in that source, so renderers can re-enter the

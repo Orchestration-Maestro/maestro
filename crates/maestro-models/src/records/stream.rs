@@ -1,20 +1,22 @@
 //! Immediate invocation and eager, independently observed completion.
 pub use crate::builtins::get_env_api_key;
 
-use super::api_registry::{ApiProvider, get_api_provider};
+use super::api_registry::{ApiProvider, get_api_provider, get_api_stream_simple};
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{
     AssistantMessageEventStream, BoxFuture, Context, Model, ProviderExecution, ProviderInvocation,
     ProviderSpawner, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
 };
 
+/// Report the protocol identifier that has no registration.
+fn missing_api(api: &str) -> DiagnosticErrorInfo {
+    DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
+}
 /// Resolve the registered provider or report the missing API.
 fn resolve(api: &str) -> Result<ApiProvider, DiagnosticErrorInfo> {
-    get_api_provider(api).ok_or_else(|| {
-        DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
-    })
+    get_api_provider(api).ok_or_else(|| missing_api(api))
 }
-/// Immediately invoke the registered raw adapter with unchanged inputs.
+/// Immediately invoke the registered raw adapter with the supplied request endpoint.
 ///
 /// # Errors
 /// Returns missing registration or supplied adapter setup failure immediately.
@@ -23,11 +25,17 @@ pub fn stream(
     context: Context,
     options: Option<ProviderStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let model = request_model(
+        model,
+        options
+            .as_ref()
+            .and_then(|options| options.common.base_url.as_deref()),
+    );
     resolve(&model.api)?
         .stream
         .call(model, context, ProviderInvocation::Threaded(options, None))
 }
-/// Immediately invoke the registered simple adapter with unchanged inputs.
+/// Immediately invoke the registered simple adapter with the supplied request endpoint.
 ///
 /// # Errors
 /// Returns missing registration or supplied adapter setup failure immediately.
@@ -36,6 +44,12 @@ pub fn stream_simple(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let model = request_model(
+        model,
+        options
+            .as_ref()
+            .and_then(|options| options.common.base_url.as_deref()),
+    );
     resolve(&model.api)?.stream_simple.call(
         model,
         context,
@@ -80,6 +94,12 @@ pub fn stream_for<E: ProviderExecution>(
     options: Option<ProviderStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let model = request_model(
+        model,
+        options
+            .as_ref()
+            .and_then(|options| options.common.base_url.as_deref()),
+    );
     resolve(&model.api)?
         .stream
         .call(model, context, E::submission(options, E::provided(submit)))
@@ -94,11 +114,32 @@ pub fn stream_simple_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let model = request_model(
+        model,
+        options
+            .as_ref()
+            .and_then(|options| options.common.base_url.as_deref()),
+    );
     resolve(&model.api)?.stream_simple.call(
         model,
         context,
         E::submission(options, E::provided(submit)),
     )
+}
+/// Invoke a chosen simple protocol while retaining the supplied model identity.
+///
+/// # Errors
+/// Returns missing registration or adapter setup failure immediately.
+pub fn stream_simple_via_for<E: ProviderExecution>(
+    api: &str,
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    get_api_stream_simple(api)
+        .ok_or_else(|| missing_api(api))?
+        .call(model, context, E::submission(options, E::provided(submit)))
 }
 /// Start raw invocation now and return an independent result observation, thread-safe on native targets.
 #[must_use]
@@ -119,4 +160,12 @@ pub fn complete_simple_for<E: ProviderExecution>(
     submit: ProviderSpawner<E>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
     completion(stream_simple_for::<E>(model, context, options, submit))
+}
+
+/// Apply a resolved endpoint to the owned invocation descriptor, leaving shared catalog data alone.
+fn request_model(mut model: Model, base_url: Option<&str>) -> Model {
+    if let Some(base_url) = base_url {
+        base_url.clone_into(&mut model.base_url);
+    }
+    model
 }

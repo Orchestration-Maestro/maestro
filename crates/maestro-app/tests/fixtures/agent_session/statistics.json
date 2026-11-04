@@ -149,7 +149,7 @@
     "lastAssistantText": "calling"
   },
   {
-    "name": "a zero-usage newest answer after a compaction leaves usage unknown",
+    "name": "a zero-usage newest answer after a compaction uses the answer before it",
     "contextWindow": null,
     "stats": {
       "sessionId": "$ID",
@@ -167,15 +167,15 @@
       },
       "cost": 0.25,
       "contextUsage": {
-        "tokens": null,
+        "tokens": 128,
         "contextWindow": 128000,
-        "percent": null
+        "percent": 0.1
       }
     },
     "contextUsage": {
-      "tokens": null,
+      "tokens": 128,
       "contextWindow": 128000,
-      "percent": null
+      "percent": 0.1
     },
     "lastAssistantText": "calling"
   },

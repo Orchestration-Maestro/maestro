@@ -11,28 +11,21 @@ use std::{
 /// Component path inherited by the checked child, whose environment is cleared.
 const COMPONENT: &str = "MAESTRO_TRUNCATED_TOOL_COMPONENT";
 
-/// Returns supplied process streams and status without interpreting search operands.
-const SEARCH_PROCESS: &str = r#"#!/usr/bin/python3
-import json, os, sys
-from pathlib import Path
-root = Path(__file__).parent
-(root / "invocation.json").write_text(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd()}))
-if (root / "vanish").exists():
-    Path(__file__).unlink()
-sys.stdout.buffer.write((root / "stdout").read_bytes())
-sys.stderr.buffer.write((root / "stderr").read_bytes())
-sys.exit(int((root / "code").read_text()))
-"#;
-
 /// Runs each process fixture on a checked child PATH, independent of installed search tools.
 fn isolated(name: &str) -> bool {
     if maestro_test_process::selection().is_child() {
         return false;
     }
     let directory = maestro_test_directory::Scratch::new().unwrap();
-    let executable = directory.path().join("rg");
-    std::fs::write(&executable, SEARCH_PROCESS).unwrap();
-    std::fs::set_permissions(executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let record = json!({
+        "scenario": "supplied",
+        "observation": directory.path().join("invocation.json"),
+        "stdout": directory.path().join("stdout"),
+        "stderr": directory.path().join("stderr"),
+        "code": directory.path().join("code"),
+        "marker": directory.path().join("vanish"),
+    });
+    crate::support::native::install(directory.path(), "rg", "search", &record);
     let component =
         std::env::var(COMPONENT).expect("nextest author-component setup builds truncated_tool");
     let environment = BTreeMap::from([
@@ -286,10 +279,10 @@ fn truncation_cases() -> [TruncationCase; 3] {
             2001,
             "lines",
             2000,
-            2002,
+            2001,
             12892,
             12900,
-            "showing 2000 of 2002 lines (12.6KB of 12.6KB). 2 lines (8B) omitted.",
+            "showing 2000 of 2001 lines (12.6KB of 12.6KB). 1 lines (8B) omitted.",
         ),
         (
             "bytes.txt",
@@ -297,10 +290,10 @@ fn truncation_cases() -> [TruncationCase; 3] {
             2,
             "bytes",
             1,
-            3,
+            2,
             30002,
             60006,
-            "showing 1 of 3 lines (29.3KB of 58.6KB). 2 lines (29.3KB) omitted.",
+            "showing 1 of 2 lines (29.3KB of 58.6KB). 1 lines (29.3KB) omitted.",
         ),
         (
             "long.txt",
@@ -308,10 +301,10 @@ fn truncation_cases() -> [TruncationCase; 3] {
             1,
             "bytes",
             0,
-            2,
+            1,
             0,
             54003,
-            "showing 0 of 2 lines (0B of 52.7KB). 2 lines (52.7KB) omitted.",
+            "showing 0 of 1 lines (0B of 52.7KB). 1 lines (52.7KB) omitted.",
         ),
     ]
 }

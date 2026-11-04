@@ -10,6 +10,7 @@ description = "Author-side contract for native-async extension components."
 # example-index:start
 [[example]]
 name = "author_component"
+path = "tests/support/author_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -49,6 +50,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "context_bridge"
+path = "tests/support/context_bridge.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -64,6 +66,11 @@ crate-type = ["cdylib"]
 [[example]]
 name = "custom_header"
 path = "../../examples/extensions/custom_header.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "custom_message_provider"
+path = "../../examples/extensions/custom_message_provider/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -108,6 +115,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "helper_capabilities"
+path = "tests/support/helper_capabilities.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -117,6 +125,12 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "hook_component"
+path = "tests/support/hook_component.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "inline_bash"
+path = "../../examples/extensions/inline_bash.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -131,6 +145,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "local_shell_component"
+path = "tests/support/local_shell_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -160,10 +175,12 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "module_location_component"
+path = "tests/support/module_location_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
 name = "native_io_component"
+path = "tests/support/native_io_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -243,10 +260,22 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "resource_component"
+path = "tests/support/resource_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
 name = "resource_component_reloaded"
+path = "tests/support/resource_component_reloaded.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "rpc_demo"
+path = "../../examples/extensions/rpc_demo.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "sdk_standard_component"
+path = "tests/support/sdk_standard_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -336,6 +365,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "wasi_capabilities"
+path = "tests/support/wasi_capabilities.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -349,15 +379,26 @@ path = "../../examples/extensions/with-deps/main.rs"
 crate-type = ["cdylib"]
 
 [[example]]
+name = "working_indicator"
+path = "../../examples/extensions/working_indicator.rs"
+crate-type = ["cdylib"]
+
+[[example]]
 name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
 # example-index:end
 
+[[example]]
+name = "prepare_author_component"
+path = "tests/support/prepare_author_component.rs"
+
 [dependencies]
+maestro-package = { path = "../maestro-package" }
 maestro-tool = { path = "../maestro-tool" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 maestro-json = { path = "../maestro-json" }
+maestro-text = { path = "../maestro-text" }
 maestro-entry = { path = "../maestro-entry" }
 maestro-request = { path = "../maestro-request" }
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "async-spawn", "std", "inter-task-wakeup"] }
@@ -365,6 +406,7 @@ serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value", "unbounded_depth"] }
 
 [dev-dependencies]
+httpdate.workspace = true
 maestro-listing = { path = "../maestro-listing" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
@@ -373,8 +415,10 @@ ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
+maestro-test-process = { path = "../maestro-test-process" }
 maestro-models = { path = "../maestro-models" }
-wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache"] }
+maestro-extensions-wasmtime = { path = "../maestro-extensions-wasmtime" }
+wasmtime = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async", "cache", "gc", "gc-drc"] }
 wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67", default-features = false, features = ["p2", "p3"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync"] }
 

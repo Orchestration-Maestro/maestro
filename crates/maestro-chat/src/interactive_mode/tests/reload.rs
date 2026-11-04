@@ -6,15 +6,17 @@ use super::extension_widgets::{with_configured_factories, with_factories};
 use super::navigation::{append_user, resume::saved};
 use super::{Setup, World, admitted, isolated, isolated_output, start, started, submit};
 use maestro_app::{
-    ComponentFactory, ContextFile, DiagnosticErrorInfo, ExtensionAPI, ExtensionCommandContext,
-    ExtensionComponent, ExtensionFactory, ExtensionUIFuture, ForkOptions, ForkPosition, Local,
-    NavigateTreeOptions, NewSessionCommandOptions, Presence, ReadonlySessionManager,
-    SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
-    SessionBeforeSwitchResult, SessionBeforeTreeEvent, SessionBeforeTreeResult, SettingsManager,
-    SwitchSessionOptions, WidgetContent,
+    AgentSessionEvent, ComponentFactory, ContextFile, DiagnosticErrorInfo, ExtensionAPI,
+    ExtensionCommandContext, ExtensionComponent, ExtensionFactory, ExtensionUIFuture, ForkOptions,
+    ForkPosition, Local, NavigateTreeOptions, NewSessionCommandOptions, Presence, PromptOptions,
+    ReadonlySessionManager, SessionBeforeForkEvent, SessionBeforeForkResult,
+    SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionBeforeTreeEvent,
+    SessionBeforeTreeResult, SettingsManager, StopReason, SwitchSessionOptions, WidgetContent,
 };
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Cancellation, Component, EditorComponent, Focusable, Text};
 use serde_json::json;
+use std::ffi::OsStr;
 use std::{
     cell::{Cell, RefCell},
     future::Future,
@@ -23,6 +25,43 @@ use std::{
     rc::Rc,
     task::{Context, Poll, Waker},
 };
+
+#[test]
+fn reload_applies_http_idle_limit_to_next_request() {
+    isolated(
+        "reload_applies_http_idle_limit_to_next_request",
+        async |directory| {
+            let world = started(directory).await;
+            *world.host.session().settings_manager().borrow_mut() = SettingsManager::in_memory(
+                serde_json::from_value(json!({"httpIdleTimeoutMs": 60_000})).unwrap(),
+            );
+            reload(&world).await;
+            assert!(shows(&world.mode.chat_container, "Reloaded keybindings"));
+            super::settings::next_http_request_uses_idle_limit(Some(60_000)).await;
+            drop(world.runtime.settle());
+        },
+    );
+}
+
+#[test]
+fn reload_reports_invalid_http_idle_timeout() {
+    isolated(
+        "reload_reports_invalid_http_idle_timeout",
+        async |directory| {
+            let world = started(directory).await;
+            *world.host.session().settings_manager().borrow_mut() = SettingsManager::in_memory(
+                serde_json::from_value(json!({"httpIdleTimeoutMs": -5})).unwrap(),
+            );
+            reload(&world).await;
+            assert!(shows(
+                &world.mode.chat_container,
+                "Reload failed: Invalid httpIdleTimeoutMs setting: -5"
+            ));
+            assert!(!shows(&world.mode.chat_container, "Reloaded keybindings"));
+            drop(world.runtime.settle());
+        },
+    );
+}
 
 #[test]
 fn reload_submit_routes_exact_command() {
@@ -269,8 +308,11 @@ fn reload_listing_failure_restores_captured_editor() {
     if let Some(output) = isolated_output(
         "reload_listing_failure_restores_captured_editor",
         "child",
-        &[],
-        "trap '' XFSZ; export HOME=$'\\xff'",
+        &[(
+            OsStr::new("HOME"),
+            std::os::unix::ffi::OsStrExt::from_bytes(b"\xff"),
+        )],
+        IsolatedSetup::new().file_size_continues(),
         async |directory| failed_reload(directory, "listing").await,
     ) {
         assert!(
@@ -562,31 +604,34 @@ fn failing_widget(api: &ExtensionAPI<Local>) -> WidgetContent {
 
 /// Reloads while a real shell is held until the test releases it.
 async fn reload_during_shell(directory: &Path) {
-    let started = directory.join("shell-started");
     let release = directory.join("shell-release");
+    let held = super::gate(&release);
     let script = super::scripted(
         directory,
         "reload-shell",
-        &format!(
-            ": > {}\nwhile [ ! -e {} ]; do :; done\nprintf 'shell done\\n'",
-            started.display(),
-            release.display()
-        ),
+        &json!([
+            {"hold": {"path": release}},
+            {"print": "shell done\n"},
+        ]),
     );
     let shell = super::bash::shelling(directory, &script).await;
-    let ((), errors) = super::driving(&shell, async {
-        submit(&shell.mode, "!held");
-        super::until_exists(&started).await;
+    let (mut errors, driven) = super::driving(&shell, async {
+        let command = super::start_shell(&shell, "!held");
+        let running = super::held_at(held).await;
         assert!(shell.host.session().is_bash_running());
         submit(&shell.mode, "/reload");
         assert!(admitted(&shell.runtime).await.is_empty());
         assert!(shell.loader.calls.borrow().contains(&"reload"));
-        std::fs::write(&release, "").unwrap();
-        while super::active(&shell).is_some() {
-            tokio::task::yield_now().await;
-        }
+        drop(running);
+        let errors = super::settle_shell(command).await;
+        assert!(
+            super::active(&shell).is_none(),
+            "the released shell row gives up its claim"
+        );
+        errors
     })
     .await;
+    errors.extend(driven);
     assert!(errors.is_empty(), "{errors:?}");
 }
 
@@ -844,6 +889,50 @@ fn command_actions_use_live_idle_resume_and_reload_owners() {
     );
 }
 
+/// The extension command context's idle wait covers the retry wait of a failed response:
+/// it stays pending after the agent's own run has ended and returns once the run settles.
+#[test]
+fn command_wait_for_idle_covers_a_retry_wait() {
+    isolated(
+        "command_wait_for_idle_covers_a_retry_wait",
+        async |directory| {
+            let world = started(directory).await;
+            let session = world.mode.runtime_host.session();
+            let receiver = super::held_response(&world);
+            let waiting = Rc::new(tokio::sync::Notify::new());
+            let notify = Rc::clone(&waiting);
+            drop(session.subscribe(Rc::new(move |event| {
+                if matches!(event, AgentSessionEvent::AutoRetryStart { .. }) {
+                    notify.notify_one();
+                }
+            })));
+            let prompted = Rc::clone(&session);
+            let run = tokio::task::spawn_local(async move {
+                prompted.prompt("run", PromptOptions::default()).await
+            });
+            let held = receiver.await.unwrap();
+            let failure = super::answer();
+            {
+                let mut message = failure.write().unwrap();
+                message.stop_reason = StopReason::Error;
+                message.error_message = Some("overloaded_error".to_owned());
+            }
+            held.stream.end(Some(failure));
+            waiting.notified().await;
+            let mut idle = context(&world).wait_for_idle();
+            assert!(
+                idle.as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+                    .is_pending(),
+                "the retry wait belongs to the run the context waits for"
+            );
+            session.abort_retry();
+            run.await.unwrap().unwrap();
+            idle.await.unwrap();
+        },
+    );
+}
+
 /// Session switching uses the existing resume presenter and missing-directory dialog.
 async fn bound_resume(world: &World, directory: &std::path::Path) {
     for missing in [false, true] {
@@ -948,7 +1037,7 @@ fn fatal_replacements(test: &str) {
             test,
             operation,
             &[],
-            "trap '' XFSZ",
+            IsolatedSetup::new().file_size_continues(),
             async move |directory| {
                 let world = Setup {
                     create: Some(Rc::new(|_| {
@@ -1018,7 +1107,7 @@ async fn new_and_fork_outcomes(directory: &std::path::Path, cancel: bool) {
             if fork && !cancel { "first" } else { "draft" }
         );
         if !fork {
-            assert!(world.mode.working.loading_animation.borrow().is_none());
+            assert!(world.mode.working_loader().is_none());
             assert!(world.mode.status_container.render(120).is_empty());
             assert!(!shows(&world.mode.chat_container, "New session started"));
         }

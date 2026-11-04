@@ -1,4 +1,5 @@
 //! Opt-in guard that asks before leaving or forking a repository with uncommitted changes.
+// maestro-component: MAESTRO_DIRTY_REPO_GUARD_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -9,7 +10,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, NotificationType, Presence, SessionBeforeForkResult,
+    ExtensionResult, HookFuture, NotificationType, Presence, SessionBeforeForkResult,
     SessionBeforeSwitchReason, SessionBeforeSwitchResult, SessionEvent,
 };
 
@@ -60,7 +61,7 @@ fn guard(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
     api: ExtensionAPI,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let (action, cancelled) = match event {
             ExtensionEvent::Session(SessionEvent::BeforeSwitch(event)) => (

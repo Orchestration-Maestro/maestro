@@ -1,4 +1,5 @@
 //! Replaces the startup header with a themed illustration and restores it on command.
+// maestro-component: MAESTRO_CUSTOM_HEADER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -10,7 +11,7 @@ use std::rc::Rc;
 use maestro_extensions_wasm::{
     CallbackEmitter, CommandOptions, Component, ComponentView, ExtensionAPI, ExtensionComponent,
     ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    NotificationType, Theme, config,
+    HookFuture, NotificationType, Theme, config,
 };
 
 /// A header that renders the host version with the live theme its factory received.
@@ -46,7 +47,7 @@ fn session_start(
     api: ExtensionAPI,
     _event: &mut ExtensionEvent,
     ctx: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         if ctx.has_ui()? {
             let version = config::version(&api)?;

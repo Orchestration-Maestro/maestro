@@ -99,6 +99,7 @@ fn container_mapping_matches_the_reference_work_shape() {
             + work.fence_bytes
             + work.code_bytes
             + work.html_bytes
+            + work.escaped_bytes
             + work.framing_bytes
             + work.source_views
             + work.projections

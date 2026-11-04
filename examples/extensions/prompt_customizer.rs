@@ -1,4 +1,5 @@
 //! A prompt-guidance extension that reads the supplied prompt options.
+// maestro-component: MAESTRO_PROMPT_CUSTOMIZER_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,
@@ -11,7 +12,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     BeforeAgentStartEventResult, BuildSystemPromptOptions, ExtensionAPI, ExtensionContext,
-    ExtensionEvent, ExtensionEventResult, ExtensionFuture, Presence,
+    ExtensionEvent, ExtensionEventResult, ExtensionFuture, HookFuture, Presence,
 };
 
 /// The context this extension contributes to every prompt.
@@ -68,7 +69,7 @@ fn add_tool_guidance(options: &BuildSystemPromptOptions, base_prompt: &str) -> S
 fn before_agent_start(
     event: &mut ExtensionEvent,
     _context: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::BeforeAgentStart(event) = event else {
             return Ok(None);

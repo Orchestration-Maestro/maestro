@@ -48,10 +48,21 @@ fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
 
 /// A journal whose wrapped transcript is exactly `units` UTF-16 units long.
 fn sized_transcript(name: &str, units: usize) -> String {
+    sized_transcript_of(name, units, 'x')
+}
+
+/// A journal of `units` UTF-16 units whose message text is `unit` repeated.
+fn sized_transcript_of(name: &str, units: usize, unit: char) -> String {
     let fixed = format!("=== SESSION: {name} ===\n[USER]\n=== END SESSION ===\n")
         .encode_utf16()
         .count();
-    message("user", serde_json::json!("x".repeat(units - fixed)))
+    let padding = units - fixed;
+    assert!(
+        padding.is_multiple_of(unit.len_utf16()),
+        "the requested size fits whole `{unit}` units"
+    );
+    let filler = padding / unit.len_utf16();
+    message("user", serde_json::json!(unit.to_string().repeat(filler)))
 }
 
 #[test]
@@ -214,14 +225,19 @@ fn transcript_blocks_keep_only_the_text_discriminant() {
 
 /// One split case: two sessions of `sizes`, and the lines it must report.
 fn split_case(base: &str, name: &str, sizes: (usize, usize), expected: &[&str]) {
+    split_case_of(base, name, sizes, 'x', expected);
+}
+
+/// One split case of `unit`-filled sessions, and the lines it must report.
+fn split_case_of(base: &str, name: &str, sizes: (usize, usize), unit: char, expected: &[&str]) {
     let project = format!("{base}/{name}");
     std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
     sessions(
         base,
         &project,
         &[
-            ("a.jsonl", &sized_transcript("a.jsonl", sizes.0)),
-            ("b.jsonl", &sized_transcript("b.jsonl", sizes.1)),
+            ("a.jsonl", &sized_transcript_of("a.jsonl", sizes.0, unit)),
+            ("b.jsonl", &sized_transcript_of("b.jsonl", sizes.1, unit)),
         ],
     );
     let output = format!("{base}/{name}-out");
@@ -267,6 +283,38 @@ fn transcript_splits_at_utf16_limit_without_splitting_sessions() {
                 &[
                     "Wrote session-transcripts-000.txt (100000 chars)\n",
                     "Wrote session-transcripts-001.txt (100000 chars)\n",
+                    "Created 2 transcript file(s)",
+                ],
+            );
+        },
+    );
+}
+
+#[test]
+fn transcript_splits_by_utf16_units_with_supplementary_characters() {
+    with_isolated_home(
+        "transcript_splits_by_utf16_units_with_supplementary_characters",
+        |base| {
+            // A supplementary character is two UTF-16 units, so a character count would
+            // pack each pair into one file and report half its size.
+            split_case_of(
+                base,
+                "supplementary-joined",
+                (50_000, 49_996),
+                '\u{1f600}',
+                &[
+                    "Wrote session-transcripts-000.txt (99998 chars)\n",
+                    "Created 1 transcript file(s)",
+                ],
+            );
+            split_case_of(
+                base,
+                "supplementary-separate",
+                (50_002, 49_998),
+                '\u{1f600}',
+                &[
+                    "Wrote session-transcripts-000.txt (50002 chars)\n",
+                    "Wrote session-transcripts-001.txt (49998 chars)\n",
                     "Created 2 transcript file(s)",
                 ],
             );
@@ -389,34 +437,43 @@ const EVENTS: [&str; 8] = [
     r#"{"type":"turn_end"}"#,
 ];
 
-/// Install a controlled `maestro` child in `directory` that prints the events and
+/// Install a controlled `maestro` child below `directory` that prints the events and
 /// records its argv.
-///
-/// # Errors
-/// Returns the native install or write failure.
 #[cfg(unix)]
-fn child(directory: &str, exit: i32, receipt: &str) -> std::io::Result<()> {
-    let bin = format!("{directory}/bin");
-    std::fs::create_dir_all(&bin)?;
-    let mut script = String::from("#!/bin/sh\n");
+fn child(directory: &str, exit: u8, receipt: &str) {
+    let mut output = String::new();
     for event in EVENTS {
-        let _ = writeln!(script, "printf '%s\\n' '{event}'");
+        let _ = writeln!(output, "{event}");
     }
-    let _ = writeln!(
-        script,
-        "printf '%s\\000' '{MARK}' \"$@\" >> \"{receipt}\"\nprintf 'controlled stderr\\n' >&2\nexit {exit}"
+    crate::native::command(
+        std::path::Path::new(directory).join("bin").as_path(),
+        "maestro",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": output.as_bytes(),
+            "stderr": b"controlled stderr\n",
+            "code": exit,
+            "argv_log": {"path": receipt, "mark": MARK},
+        }),
     );
-    let staged = format!("{bin}/maestro.staged");
-    std::fs::write(&staged, script)?;
-    let installer = std::env::var_os("INSTALL").unwrap_or_else(|| "install".into());
-    let status = std::process::Command::new(installer)
-        .args(["-m", "0700", &staged, &format!("{bin}/maestro")])
-        .status()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(std::io::Error::other("the controlled child is installable"))
-    }
+}
+
+/// Install a controlled `maestro` child below `directory` that appends `text` to `path`
+/// before it reports the recorded status.
+#[cfg(unix)]
+fn child_appending(directory: &str, path: &str, text: &str, exit: u8, receipt: &str) {
+    crate::native::command(
+        std::path::Path::new(directory).join("bin").as_path(),
+        "maestro",
+        &serde_json::json!({
+            "scenario": "output",
+            "stdout": b"".as_slice(),
+            "stderr": b"".as_slice(),
+            "code": exit,
+            "append": {"path": path, "cwd": false, "bytes": text.as_bytes()},
+            "argv_log": {"path": receipt, "mark": MARK},
+        }),
+    );
 }
 
 /// The line that opens one recorded invocation.
@@ -439,20 +496,6 @@ fn invocations(receipt: &str) -> Vec<Vec<String>> {
     invocations
 }
 
-/// The absolute path of the installer, kept in the isolated child's environment.
-#[cfg(unix)]
-fn installer() -> String {
-    if let Ok(install) = std::env::var("INSTALL") {
-        return install;
-    }
-    std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
-        .map(|directory| directory.join("install"))
-        .find(|path| path.is_file())
-        .expect("install is on the search path")
-        .display()
-        .to_string()
-}
-
 /// A prepared project with one session and a selected output directory.
 #[cfg(unix)]
 fn prepared(base: &str) -> (String, String) {
@@ -469,9 +512,9 @@ fn analysis_stream_keeps_text_tool_and_turn_branches() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_stream_keeps_text_tool_and_turn_branches",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
-            child(base, 0, &format!("{base}/argv")).expect("the controlled child is installed");
+            child(base, 0, &format!("{base}/argv"));
             let (project, output) = prepared(base);
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
             std::fs::write(
@@ -507,9 +550,9 @@ fn analysis_runs_each_file_before_aggregation() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_runs_each_file_before_aggregation",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
-            child(base, 0, &format!("{base}/argv")).expect("the controlled child is installed");
+            child(base, 0, &format!("{base}/argv"));
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
             let large = sized_transcript("a.jsonl", 60_000);
@@ -550,16 +593,61 @@ fn analysis_runs_each_file_before_aggregation() {
     );
 }
 
+/// Assert both recorded prompts name their instruction files and summary paths in order.
+#[cfg(unix)]
+fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[String]) {
+    let arguments = invocations(receipt);
+    assert_eq!(arguments.len(), 2);
+    for invocation in &arguments {
+        assert_eq!(
+            invocation[..5],
+            ["--mode", "json", "--tools", "read,write", "-p"]
+        );
+    }
+    let prompt = &arguments[0][5];
+    assert!(
+        prompt.contains(&format!(
+            "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
+        )),
+        "{prompt:?}"
+    );
+    assert!(prompt.contains(
+        "Only after reading the ENTIRE file, perform the analysis and write the summary"
+    ));
+    assert!(prompt.contains("- Do not include any other text outside this format"));
+    assert!(prompt.contains(&format!(
+        "The file {output}/session-transcripts-000.txt has "
+    )));
+    assert!(prompt.contains(&format!(
+        "lines. Read it in full using chunked reads, then write your analysis to {}",
+        summaries[0]
+    )));
+    let aggregation = &arguments[1][5];
+    assert!(
+        aggregation.contains(&format!(
+            "STEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{agents}\n\nSTEP 2: Read ALL of the following summary files:\n{}\n\n",
+            summaries.join("\n")
+        )),
+        "{aggregation:?}"
+    );
+    assert!(
+        aggregation.ends_with(&format!(
+            "Write the final summary to {output}/FINAL-SUMMARY.txt"
+        )),
+        "{aggregation:?}"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_prompts_keep_paths_and_all_instruction_paragraphs",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
             let receipt = format!("{base}/argv");
-            child(base, 0, &receipt).expect("the controlled child is installed");
+            child(base, 0, &receipt);
             let project = format!("{base}/project");
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
             std::fs::write(format!("{project}/AGENTS.md"), "rules")
@@ -571,38 +659,73 @@ fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
             sessions(base, &project, &[("a.jsonl", &journal(true))]);
             let output = format!("{base}/out");
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
-            std::fs::write(
+            let summaries = [
                 format!("{output}/session-transcripts-000.summary.txt"),
-                "PATTERN",
-            )
-            .unwrap();
+                format!("{output}/session-transcripts-001.summary.txt"),
+            ];
+            for summary in &summaries {
+                std::fs::write(summary, "PATTERN").expect("the summary file is writable");
+            }
             let run = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(run.succeeded(), "{run:?}");
-            let arguments = invocations(&receipt);
-            let arguments = &arguments[0];
-            assert_eq!(
-                arguments[..5],
-                ["--mode", "json", "--tools", "read,write", "-p"]
-            );
-            let prompt = &arguments[5];
             let agents = format!("{base}/home/.maestro/agent/AGENTS.md\n{project}/AGENTS.md");
+            assert_prompt_paths(&receipt, &agents, &output, &summaries);
+        },
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn analysis_reports_a_child_summary_only_after_the_child_exits() {
+    let path = "$BASE/bin";
+    with_environment(
+        "analysis_reports_a_child_summary_only_after_the_child_exits",
+        &[("PATH", path)],
+        |base| {
+            let (project, output) = prepared(base);
+            let summary = format!("{output}/session-transcripts-000.summary.txt");
+            let receipt = format!("{base}/argv");
+            // The child writes its summary and fails: its write is counted, its success is not.
+            child_appending(base, &summary, "PATTERN\n", 3, &receipt);
+            let failed = run_transcripts(&["--analyze", "--output", &output, &project], false)
+                .expect("the command writes its transcripts");
+            assert!(failed.succeeded(), "{failed:?}");
             assert!(
-                prompt.contains(&format!(
-                    "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
-                )),
-                "{prompt:?}"
+                failed
+                    .stderr
+                    .contains("Failed to analyze session-transcripts-000.txt"),
+                "{failed:?}"
             );
-            assert!(prompt.contains(
-                "Only after reading the ENTIRE file, perform the analysis and write the summary"
-            ));
-            assert!(prompt.contains("- Do not include any other text outside this format"));
-            assert!(prompt.contains(&format!(
-                "The file {output}/session-transcripts-000.txt has "
-            )));
-            assert!(prompt.contains(&format!(
-                "lines. Read it in full using chunked reads, then write your analysis to {output}/session-transcripts-000.summary.txt"
-            )));
+            assert!(
+                !failed
+                    .stdout
+                    .contains("  -> session-transcripts-000.summary.txt"),
+                "{failed:?}"
+            );
+            assert!(
+                failed.stdout.contains("Created 1 summary files"),
+                "{failed:?}"
+            );
+            // Without the earlier write, only a child that writes its own summary and exits
+            // successfully can produce the reported line.
+            std::fs::remove_file(&summary).expect("the earlier summary is removable");
+            child_appending(base, &summary, "PATTERN\n", 0, &receipt);
+            let written = run_transcripts(&["--analyze", "--output", &output, &project], false)
+                .expect("the command writes its transcripts");
+            assert!(written.succeeded(), "{written:?}");
+            assert!(
+                written
+                    .stdout
+                    .contains("  -> session-transcripts-000.summary.txt"),
+                "{written:?}"
+            );
+            assert!(
+                written
+                    .stdout
+                    .contains("Aggregating findings into final summary..."),
+                "{written:?}"
+            );
         },
     );
 }
@@ -613,7 +736,7 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_classifies_spawn_exit_and_missing_summary_outcomes",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
             std::fs::create_dir_all(format!("{base}/bin"))
                 .expect("the child directory is creatable");
@@ -627,7 +750,7 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
                 "{missing:?}"
             );
             // A child that exits nonzero.
-            child(base, 3, &format!("{base}/argv")).expect("the failing child is installed");
+            child(base, 3, &format!("{base}/argv"));
             let failed = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(failed.succeeded(), "{failed:?}");
@@ -638,7 +761,7 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
                 "{failed:?}"
             );
             // A child that succeeds without writing the summary it was asked for.
-            child(base, 0, &format!("{base}/argv")).expect("the controlled child is installed");
+            child(base, 0, &format!("{base}/argv"));
             let unwritten = run_transcripts(&["--analyze", "--output", &output, &project], false)
                 .expect("the command writes its transcripts");
             assert!(unwritten.succeeded(), "{unwritten:?}");
@@ -664,10 +787,10 @@ fn analysis_aggregates_existing_summary_files() {
     let path = "$BASE/bin";
     with_environment(
         "analysis_aggregates_existing_summary_files",
-        &[("PATH", path), ("INSTALL", &installer())],
+        &[("PATH", path)],
         |base| {
             let receipt = format!("{base}/argv");
-            child(base, 0, &receipt).expect("the controlled child is installed");
+            child(base, 0, &receipt);
             let (project, output) = prepared(base);
             std::fs::create_dir_all(&output).expect("the output directory is creatable");
             std::fs::write(

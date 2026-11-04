@@ -44,6 +44,7 @@ mod tests {
             assert!(is_context_overflow(&message(Some(text)), None), "{text}");
         }
         for text in [
+            "Input length (265330) exceeds model's maximum context length (262144).",
             "500 `model runner crashed unexpectedly`",
             "Service unavailable: The service is temporarily unavailable.",
             "Rate limit exceeded, please retry after 30 seconds.",
@@ -53,6 +54,16 @@ mod tests {
             "too many requests: Too many tokens",
         ] {
             assert!(!is_context_overflow(&message(Some(text)), None), "{text}");
+        }
+    }
+
+    #[test]
+    fn maestro_overflow_recognizes_together_and_litellm_wording() {
+        for text in [
+            "The input (140000 tokens) is longer than the model's context length (131072 tokens).",
+            "Requested token count exceeds the model's maximum context length of 131072 tokens",
+        ] {
+            assert!(is_context_overflow(&message(Some(text)), None), "{text}");
         }
     }
 

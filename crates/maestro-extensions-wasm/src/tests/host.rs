@@ -1047,6 +1047,23 @@ impl host::Host for State {
         }))
     }
 
+    fn save_file(
+        &mut self,
+        _path: String,
+        _bytes: Vec<u8>,
+        _mode: u32,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(Err("native files require the production host".into()))
+    }
+    fn file_mode(&mut self, _path: String) -> wasmtime::Result<Result<u32, String>> {
+        Ok(Err("native files require the production host".into()))
+    }
+    fn set_file_mode(&mut self, _path: String, _mode: u32) -> wasmtime::Result<Result<(), String>> {
+        Ok(Err("native files require the production host".into()))
+    }
+    fn create_dir(&mut self, _path: String, _mode: u32) -> wasmtime::Result<Result<(), String>> {
+        Ok(Err("native files require the production host".into()))
+    }
     fn watch(
         &mut self,
         path: String,
@@ -1539,20 +1556,22 @@ impl host::Host for State {
         &mut self,
         auth: Resource<super::reader_host::Reader>,
         path: Option<String>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("create_model_registry", &[serde_json::json!(path)])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn in_memory_model_registry(
         &mut self,
         auth: Resource<super::reader_host::Reader>,
-    ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
+    ) -> wasmtime::Result<Resource<Route>> {
         let reader = self.table.get(&auth)?.clone();
-        Ok(reader
+        let registry = reader
             .unit("in_memory_model_registry", &[])
-            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string())))
+            .and_then(|()| self.table.push(reader).map_err(|error| error.to_string()));
+        self.routed_value(registry.map(host::RouteValue::Catalog))
     }
     fn register_provider(
         &mut self,
@@ -2112,7 +2131,21 @@ impl Harness {
             .run_concurrent(async |accessor| {
                 function.call_concurrent(accessor, (borrow(rep),)).await
             })
-            .await?
+            .await??;
+        // An identity the component handed over stays owned by the host after the guest
+        // dropped its closure.
+        let state = self.store.data_mut();
+        if let Some(handed) = state
+            .observed
+            .handed_over
+            .iter()
+            .position(|key| *key == rep)
+        {
+            state.observed.handed_over.remove(handed);
+            let identity = state.table.delete(Resource::<Identity>::new_own(rep))?;
+            state.observed.drop_identity(identity.0);
+        }
+        Ok(())
     }
 
     /// Releases every registration in the order the host received it, reporting each name with
@@ -2158,6 +2191,14 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    fn call_host_operation(
+        _accessor: &Accessor<State, Self>,
+        _operation: host::HostOperation,
+    ) -> impl Future<Output = wasmtime::Result<Result<String, String>>> {
+        std::future::ready(Ok(
+            Err("host operations require the production host".into()),
+        ))
+    }
     fn fetch(
         accessor: &Accessor<State, Self>,
         request: host::HttpRequest,

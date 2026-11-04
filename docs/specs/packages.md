@@ -109,6 +109,8 @@ agents' hook files, and runtime mechanics ([list](#runtime-mechanics-not-copied)
 - **Allowed dependencies.** A package crate may depend on `maestro-extensions-wasm`, other package crates,
   `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, and approved libraries that build for
   `wasm32-wasip2`.
+- **Enforcement.** The conventions checker reads package classifications from the inventory, checks declared
+  and host-resolved dependencies, and checks component targets and export locations in member sources.
 - **One export per component.** The library is an `rlib` exposing `factory`. The component is the cdylib example
   target `component` at `src/component.rs`, which holds the one `export_extension!` line. A library never exports,
   because two export sets in one component fail to link. Conventions check both rules.
@@ -144,6 +146,18 @@ The full-user host gives components the user's network (name lookup, connect, li
 While the native terminal's queued output runs, component stdout goes through the same ordered queue,
 so it never splits a host frame. Other modes and regular-file destinations inherit stdout.
 Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery 59).
+
+### Guest files
+
+Component saves delegate through application native I/O to
+recoverable in-place `maestro_lock::replace`, with final-link following.
+Requested Unix creation modes apply at open, filtered by umask, before bytes are
+written; rewrites preserve existing modes. File identity, hard links, owner and
+ACLs survive. Unlocked readers may see partial bytes mid-save. The lock owner
+keeps exclusion, recovery, cleanup and committed durability warnings. Existing
+exact-mode callers retain their chmod-after-sync behavior. The
+[component host contract](extension-host.md) describes the file operations and
+qualification required before the guest facade is delivered.
 
 ### Shared libraries
 
@@ -234,10 +248,14 @@ as `maestro mcp`. No package carries server code (delivery 60).
 The skill pack merges three MIT-licensed skill packs and one MIT-licensed prose-pass skill into one skill per
 job (deliveries 62–64). It holds no code, and the skill loader and package discovery read it unchanged.
 
-- **Package.** `packages/maestro-skills/` is a content-only package. It holds `package.json` without a `maestro`
-  member, `skills/<name>/SKILL.md` with supporting files, `references/` beside `skills/`, `LICENSE` and
-  `THIRD-PARTY-NOTICES.md`. Conventional discovery loads `skills/`. `references/` is not a skill directory, and
-  `skills/` holds no loose Markdown file.
+- **Package.** The pack lives in the catalog repository, maestro-manifests, at
+  `manifests/capabilities/practice/maestro-skills/`, with its layout unchanged. It is a content-only package holding
+  `package.json` without a `maestro` member, `skills/<name>/SKILL.md` with supporting files, `references/`
+  beside `skills/`, `LICENSE` and `THIRD-PARTY-NOTICES.md`. Conventional discovery loads `skills/`. `references/`
+  is not a skill directory, and `skills/` holds no loose Markdown file. This repository holds no copy.
+- **Loading.** A release copies the pack from the catalog release it records and publishes it as base-package
+  content. Until base-package installation ships, users add the path of a catalog checkout's pack folder to
+  `packages`. Manifest mode can also select it.
 - **Names.** Every skill is named `maestro-<job>`, and the router is `maestro-ask`. A user or project skill with
   the same name still overrides the pack's.
 - **Invocation.** 23 skills are model-invoked. 14 are type-only (`disable-model-invocation: true`) and run as
@@ -268,8 +286,8 @@ job (deliveries 62–64). It holds no code, and the skill loader and package dis
   carries none of the workspace rules of Maestro's own maintainers.
 - **Notices.** The package's notice file keeps each source author's copyright line and the MIT permission text.
   Third-party text that has an unclear or share-alike licence is rewritten in our own words.
-- **Qualification.** One `maestro-packages` integration test resolves the pack as a package source and loads its
-  skills. It checks the diagnostics, the names, the `/skill:` pointers, router coverage and relative links.
+- **Qualification.** The catalog checks the content. Maestro checks content-only package resolution on a fixture,
+  and a release checks the copied pack through the skill loader.
 - **Growth.** A delivery points only at skills already delivered; later deliveries add their pointers and
   router arms.
 
@@ -284,7 +302,8 @@ setup skill; a vendor best-practices page; and a picture menu whose licence is u
 Every package except plan review is a base package. Plan review is the only optional package and is off by default. Each release publishes the base packages' components as package
 sources. The application lists those sources as the lowest default `packages` source. The reference's
 missing-source install installs them on first run, and a user's object-form filter entry turns one off
-(delivery 61). The skill pack has no component. Its package directory is published as content.
+(delivery 61). The skill pack has no component. The release copies it from the catalog and publishes it as
+content.
 Base packages load before every other extension but keep their ordinary place in the extension list, and a base
 package may publish the base layer and decision hook of
 [manifest mode](manifest-mode.md#core-hooks) (H1, H2, H4). The manifest base package is
@@ -444,3 +463,16 @@ Results match the reference. These mechanisms are replaced, each listed once:
   allowed dependencies (delivery 59).
 - **Completion and explicit later scope.** Replace "added MCP/supervisor capabilities remain later owner phases"
   with "Maestro's packages follow [Maestro packages](packages.md)."
+
+### Native host files
+
+Extension byte saves, permission reads/changes and directory creation with a
+requested mode use the existing native-I/O capability. The application owns
+native paths, link and permission policy in `extension_native_io::files` and
+uses `maestro-lock` for recoverable in-place publication. Saves preserve native
+identity, hard links and existing permissions. Unix creation applies requested
+bits at open, filtered by umask. Unlocked readers may see partial bytes; the next
+coordinated writer completes an interrupted write from its recovery record.
+Guest libraries and packages carry no replacement writer. Save success carries
+an optional durability or recovery-cleanup warning, separate from native errors.
+Windows has no promised POSIX permission bits or ACL configuration. See [host I/O](../extensions/host_io.md).

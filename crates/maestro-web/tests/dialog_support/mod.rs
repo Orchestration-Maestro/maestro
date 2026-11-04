@@ -241,9 +241,9 @@ pub(crate) fn panel() -> web_sys::Element {
     open.remove(0)
 }
 /// Wait, by mutation signals on the body, until `ready` holds.
-pub(crate) async fn until(page: &JsValue, ready: impl Fn() -> bool) {
+pub(crate) async fn until(ready: impl Fn() -> bool) {
     let body = crate::contributions_support::body();
-    crate::contributions_support::until(page, &body, ready).await;
+    crate::contributions_support::until(&body, ready).await;
 }
 /// The anthropic event stream of one completed `ok` reply.
 pub(crate) fn completed_reply() -> String {

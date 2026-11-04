@@ -53,7 +53,7 @@ fn register_read(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
 }
 ```
 
-The [compiled registration example](../../crates/maestro-extensions-wasm/examples/context_bridge/builtin_registered.rs)
+The [compiled registration fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/builtin_registered.rs)
 replaces edit operations, wraps `execute` to report progress, and registers the
 retained definition. It also selects the same definition from
 `create_all_tool_definitions`. The production-host tests invoke preparation,
@@ -246,7 +246,7 @@ sanitization before recording and painting them. Direct `exec` calls still recei
 raw bytes. Supplying the same operations to `BashToolOptions` retains the native
 tool's truncation, artifact and status formatting.
 
-The executable [local shell author example](../../crates/maestro-extensions-wasm/examples/local_shell_component.rs)
+The executable [local shell author fixture](../../crates/maestro-extensions-wasm/tests/support/local_shell_component.rs)
 shows direct execution and interactive interception through the same facade.
 
 ## Replace search observations
@@ -352,6 +352,21 @@ independent `Readable` handles. A read waits for bytes or EOF, preserves arbitra
 data, and returns `None` only at EOF. Reading or closing one alias affects its shared
 consumer; getting another handle does not reset or replay bytes.
 
+`streams::read_to_end` reads a handle's remaining bytes to end of stream without
+decoding them, and returns a read failure unchanged:
+
+```rust
+# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+# use maestro_extensions_wasm::streams::read_to_end;
+# async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
+# let child = api.native_io().spawn("git".into(), vec![], Default::default()).await?;
+let log = if let Some(stdout) = child.stdout() {
+    read_to_end(stdout).await?
+} else { Vec::new() };
+# Ok(())
+# }
+```
+
 `wait` observes the child's exit and both output-close phases without consuming output.
 Numeric exit codes and signal termination remain distinct. `kill` controls the retained
 child and returns false after its exit has been observed. Explicit PID signalling supports
@@ -387,6 +402,8 @@ An omitted method selects GET. Request bodies retain absence, present-empty byte
 and arbitrary binary bytes. Header normalization, status text and response headers
 come from the shared native HTTP client. `ok()` means status 200 through 299;
 other statuses are responses, not fetch errors. Fetch adds no retry or timeout.
+Dropping a pending fetch future cancels that native attempt without aborting the
+caller's signal. It does not undo effects the server has already performed.
 
 Headers arrive before the body completes. A 204 response has no body; an empty 200
 response has a body that returns EOF. Getting `body()` again aliases the same
@@ -431,6 +448,34 @@ handle stop delivery and release its callback. A callback may close its own watc
 its active invocation finishes before its final captures are released. A creation
 failure returns the native error without retaining the callback or stopping a
 sibling watch.
+
+## Settings and packages while loading
+
+`SettingsManager::new(api)` and `DefaultPackageManager::new(api)` call the host's
+own settings and package owners. They work from the factory onwards, before any
+session exists, and again on every reload. The component reads no settings file
+and runs no Git or npm command itself.
+
+- `get_global_settings` and `get_project_settings` return the raw user and project
+  documents. Unknown keys and wrongly typed values stay as written, and the two
+  documents are not merged.
+- `resolve` lists the configured packages; when both scopes name one identity, the
+  project's entry wins. `resolve_extension_sources(sources, scope)` resolves sources
+  the extension chose itself, in one scope, and never writes them to settings. Each
+  typed `ResolvedPackage` descriptor holds `source`, `identity`, `scope` and
+  `installed_path`. A package without resources is listed too.
+- `install(source, scope)` acquires a source at its pin without editing settings.
+- `verify_pin(source, scope)` returns a typed `GitPinStatus` with
+  `expected_commit`, `head_commit`, `changed_paths` and `is_clean()` for a pinned
+  Git checkout and changes nothing.
+  `restore_pin(source, scope)` returns the checkout to its pinned commit and removes
+  changed and untracked files.
+
+`OperationScope` is `User` or `Project`. Offline mode, progress and the configured
+Git and npm commands belong to the package owner. A failure returns the host's
+message, for example `Integrity requires a pinned Git source` for a local source.
+Native factories make the same calls with `ExtensionAPI::host_operation` and a
+`HostOperation` request.
 
 ## Executable example
 
@@ -560,10 +605,15 @@ host's installation facts, not the component's inherited environment.
 ## Read the host's local clock
 
 `utils::local_date_time_string(&api)` reads the host's current wall clock and local
-time zone. It returns the en-US pattern `M/D/YYYY, h:mm:ss AM`, including seconds,
-with unpadded month, day and hour fields on a twelve-hour clock. It does not select
-other locale patterns. The guest carries no time-zone data; host failures remain errors.
+time zone. It returns a numeric date and time, including seconds, using the
+host's selected locale. The host selects the first present `LC_ALL`,
+`LC_MESSAGES`, or `LANG` value and uses the [local date-time formatter](../text.md#local-dates-and-times).
+A missing environment, `C`, or `POSIX` selects en-US. The guest carries no
+time-zone data; host failures remain errors.
 
 `utils::local_time_string(&api, timestamp)` formats an instant, given in milliseconds
-since the Unix epoch, as the host's local time in the same twelve-hour form,
+since the Unix epoch, as the host's local time in the en-US twelve-hour form,
 `h:mm:ss AM`. An instant outside the host's calendar reads as `Invalid Date`.
+Use this helper for time-only labels, as the overlay stream does. Date-time
+punctuation depends on the locale, so splitting date-time text does not reliably
+isolate the time.

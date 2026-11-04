@@ -16,3 +16,4 @@ mod terminal_lifecycle;
 mod terminal_output;
 mod windows_console;
 mod windows_pipe;
+mod windows_support;

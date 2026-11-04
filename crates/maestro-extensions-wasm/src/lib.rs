@@ -11,6 +11,7 @@ mod port;
 mod abort_controller;
 mod agent;
 pub use abort_controller::AbortController;
+pub use maestro_text::line_decoder::ByteLineDecoder;
 pub mod utils;
 #[cfg(target_arch = "wasm32")]
 pub use utils::event_stream::create_assistant_message_event_stream;
@@ -113,7 +114,7 @@ pub use maestro_request::types::{
     OpenAICompletionsCompat, OpenAIResponsesCompat, OpenRouterRouting, Provider, RoutingPrice,
     RoutingSort, RoutingThreshold, SharedAssistantMessage, StopReason, TextContent,
     ThinkingContent, ThinkingFormat, ThinkingLevelMap, ToolCall, ToolResultMessage, Usage,
-    UsageCost, UserBlock, UserContent, UserMessage, VercelGatewayRouting,
+    UsageCost, UserBlock, UserContent, UserMessage, VercelGatewayRouting, calculate_cost,
 };
 pub use messages::*;
 pub use session_manager::*;
@@ -134,6 +135,11 @@ mod schema_error;
 #[cfg(target_arch = "wasm32")]
 pub mod stream;
 #[cfg(target_arch = "wasm32")]
-pub use stream::{complete, complete_simple, stream, stream_simple};
+pub use stream::{complete, complete_simple, stream, stream_simple, stream_simple_via};
 
 pub mod wasi;
+
+pub mod package_manager;
+pub mod settings_manager;
+pub use package_manager::DefaultPackageManager;
+pub use settings_manager::SettingsManager;

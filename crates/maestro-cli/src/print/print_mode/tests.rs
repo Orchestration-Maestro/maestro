@@ -3,11 +3,12 @@ use super::{
     FinalMessage, PrintEffects, PrintFuture, PrintMode, PrintModeOptions, PrintRebind,
     PrintRuntime, PrintSession, SignalPort, run_print_mode_with,
 };
+use maestro_app::agent_session::CompactionReason;
 use maestro_app::{
-    AgentSessionEvent, AgentSessionEventListener, AssistantContent, AssistantMessage,
+    AgentEvent, AgentSessionEvent, AgentSessionEventListener, AssistantContent, AssistantMessage,
     CommandContextOperations, DiagnosticErrorInfo, ExtensionBindings,
     ExtensionCommandContextActions, FileEntry, ImageContent, PromptOptions, SessionChangeResult,
-    StopReason, TerminationSignal, TextContent, Usage, output_guard,
+    StopReason, TerminationSignal, TextContent, ThinkingLevel, Usage, output_guard,
 };
 use maestro_listeners::Listeners;
 use serde_json::json;
@@ -350,6 +351,7 @@ fn effects(recorder: &Rc<Recorder>) -> PrintEffects {
         write_stdout: {
             let recorder = Rc::clone(recorder);
             Rc::new(move |text| {
+                recorder.push("write");
                 if recorder.stdout_failure.get() {
                     return Err(io::Error::other("write failed"));
                 }
@@ -463,10 +465,11 @@ fn image(data: &str) -> ImageContent {
 fn initial_images_reach_input_and_quit_once() {
     on_task_set(async {
         let recorder = recorder();
+        *recorder.final_message.borrow_mut() = Some(assistant(StopReason::Stop, None, &["answer"]));
         let options = PrintModeOptions {
             initial_message: Some("look".to_owned()),
             initial_images: Some(vec![image("first"), image("second")]),
-            ..json(&[])
+            ..text(&[])
         };
         assert_eq!(run(&recorder, options).await, Ok(0));
         assert_eq!(
@@ -476,6 +479,11 @@ fn initial_images_reach_input_and_quit_once() {
                 images: Some(vec![image("first"), image("second")]),
                 interactive_source: true,
             }]
+        );
+        assert_eq!(
+            recorder.stdout.borrow().as_str(),
+            "answer\n",
+            "text mode presents the answer after the image prompt"
         );
         assert_eq!(recorder.count("dispose"), 1);
     });
@@ -681,19 +689,80 @@ fn json_header_precedes_binding_and_raw_events() {
     });
 }
 
+/// Every session event variant a print run can receive, in delivery order.
+fn every_session_event() -> Vec<AgentSessionEvent> {
+    vec![
+        AgentSessionEvent::QueueUpdate {
+            steering: vec!["/hello now".to_owned()],
+            follow_up: Vec::new(),
+        },
+        AgentSessionEvent::CompactionStart {
+            reason: CompactionReason::Threshold,
+        },
+        AgentSessionEvent::SessionInfoChanged {
+            name: Some("quoted \"name\"\n".to_owned()),
+        },
+        AgentSessionEvent::ThinkingLevelChanged {
+            level: ThinkingLevel::Medium,
+        },
+        AgentSessionEvent::CompactionEnd {
+            reason: CompactionReason::Manual,
+            result: None,
+            aborted: true,
+            will_retry: false,
+            error_message: Some("summary failed".to_owned()),
+        },
+        AgentSessionEvent::AutoRetryStart {
+            attempt: 1,
+            max_attempts: 2.0,
+            delay_ms: 2000.0,
+            error_message: "overloaded_error".to_owned(),
+        },
+        AgentSessionEvent::AutoRetryEnd {
+            success: false,
+            attempt: 2,
+            final_error: Some("overloaded_error".to_owned()),
+        },
+        AgentSessionEvent::Agent(Arc::new(RwLock::new(AgentEvent::AgentStart))),
+    ]
+}
+
+/// The records [`every_session_event`] crosses as.
+fn every_event_record() -> Vec<serde_json::Value> {
+    vec![
+        json!({"type": "queue_update", "steering": ["/hello now"], "followUp": []}),
+        json!({"type": "compaction_start", "reason": "threshold"}),
+        json!({"type": "session_info_changed", "name": "quoted \"name\"\n"}),
+        json!({"type": "thinking_level_changed", "level": "medium"}),
+        json!({
+            "type": "compaction_end",
+            "reason": "manual",
+            "aborted": true,
+            "willRetry": false,
+            "errorMessage": "summary failed",
+        }),
+        json!({
+            "type": "auto_retry_start",
+            "attempt": 1,
+            "maxAttempts": 2,
+            "delayMs": 2000,
+            "errorMessage": "overloaded_error",
+        }),
+        json!({
+            "type": "auto_retry_end",
+            "success": false,
+            "attempt": 2,
+            "finalError": "overloaded_error",
+        }),
+        json!({"type": "agent_start"}),
+    ]
+}
+
 #[test]
-fn json_keeps_subscribed_session_event_records() {
+fn json_keeps_every_subscribed_session_event_record() {
     on_task_set(async {
         let recorder = recorder();
-        let events = [
-            AgentSessionEvent::QueueUpdate {
-                steering: vec!["/hello now".to_owned()],
-                follow_up: Vec::new(),
-            },
-            AgentSessionEvent::SessionInfoChanged {
-                name: Some("quoted \"name\"\n".to_owned()),
-            },
-        ];
+        let events = every_session_event();
         let hook: PromptHook = {
             let recorder = Rc::clone(&recorder);
             Rc::new(move || {
@@ -702,14 +771,18 @@ fn json_keeps_subscribed_session_event_records() {
             })
         };
         *recorder.on_prompt.borrow_mut() = Some(hook);
+
         assert_eq!(run(&recorder, json(&["report"])).await, Ok(0));
+
+        // Byte equality, not parsed values: it also proves every record is compact and keeps
+        // the authored key order.
+        let expected = every_event_record()
+            .iter()
+            .fold(String::new(), |text, record| format!("{text}{record}\n"));
         assert_eq!(
             recorder.stdout.borrow().as_str(),
-            concat!(
-                "{\"type\":\"queue_update\",\"steering\":[\"/hello now\"],\"followUp\":[]}\n",
-                "{\"type\":\"session_info_changed\",\"name\":\"quoted \\\"name\\\"\\n\"}\n"
-            ),
-            "each subscribed event crosses unchanged as one compact record"
+            expected,
+            "each subscribed variant crosses unchanged, once, in order, as one compact record"
         );
         assert_eq!(*recorder.stderr.borrow(), Vec::<String>::new());
     });
@@ -1150,7 +1223,8 @@ fn handler_registration_and_removal_match_supported_signals() {
 fn retained_rebind_releases_the_ended_run() {
     on_task_set(async {
         let recorder = recorder();
-        assert_eq!(run(&recorder, text(&["hold"])).await, Ok(0));
+        // Only the JSON stream writes event records, so JSON mode is the release witness.
+        assert_eq!(run(&recorder, json(&["hold"])).await, Ok(0));
         let rebind = recorder.rebind.borrow().clone().expect("a kept rebind");
         let bindings = recorder.count("bind");
         let subscribed = recorder.count("subscribe");
@@ -1167,6 +1241,14 @@ fn retained_rebind_releases_the_ended_run() {
         );
         assert_eq!(recorder.count("subscribe"), subscribed);
         assert_eq!(recorder.count("dispose"), 1);
+        // A released run holds no live subscription that would write an event record.
+        let written = recorder.stdout.borrow().clone();
+        recorder.emit(&AgentSessionEvent::SessionInfoChanged { name: None });
+        assert_eq!(
+            *recorder.stdout.borrow(),
+            written,
+            "the released run writes nothing after the rebind"
+        );
     });
 }
 
@@ -1200,7 +1282,7 @@ fn raw_output_uses_application_guard() {
 }
 
 #[test]
-fn prompt_and_text_traversals_stay_linear() {
+fn every_prompt_and_text_block_reaches_the_run_once() {
     on_task_set(async {
         for size in [8, 16, 32] {
             let prompts_recorder = recorder();

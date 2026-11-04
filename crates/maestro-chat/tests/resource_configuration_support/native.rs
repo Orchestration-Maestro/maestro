@@ -4,7 +4,7 @@ use super::{
     protocol::{resolved, scopes},
     records::Scopes,
 };
-use maestro_chat::components::config_selector::ConfigSelectorOptions;
+use maestro_chat::components::config_selector::ComponentOptions;
 use maestro_theme::Collator;
 use maestro_tui::{Component, tui::InputHandler};
 use serde_json::json;
@@ -28,17 +28,18 @@ pub fn paths() {
             scratch.path(),
             &[],
             &[]
-        ),
+        )
+        .expect("child starts"),
         ["native directory outcomes matched"]
     );
 }
 /// Builds the real native path adapter without changing the supplied project directory.
 fn native(path: &str, base: &str, settings: &Scopes) -> Harness {
-    let (_, theme) = crate::published::published(&colors(0));
+    let (_, theme) = crate::published::published(&colors(0)).unwrap();
     Harness::build(
         resolved(path, Some(base)),
         settings,
-        ConfigSelectorOptions {
+        ComponentOptions {
             cwd: "/unrelated/project".into(),
             agent_dir: "/unrelated/agent".into(),
             theme,

@@ -1,5 +1,6 @@
 //! An opt-in input hook: `?quick <question>` requests a brief answer; `ping` and `time`
 //! show immediate feedback without a model call. Extension-injected input passes through.
+// maestro-component: MAESTRO_INPUT_TRANSFORM_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -10,8 +11,8 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, InputEventResult, InputSource, InputTransform, NotificationType, Presence,
-    utils,
+    ExtensionResult, HookResult, InputEventResult, InputSource, InputTransform, NotificationType,
+    Presence, utils,
 };
 
 /// Trims surrounding characters using the host's shared whitespace definition.
@@ -36,7 +37,7 @@ fn input(
     api: &ExtensionAPI,
     event: &mut ExtensionEvent,
     ctx: &ExtensionContext,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let ExtensionEvent::Input(event) = event else {
         return Ok(None);
     };

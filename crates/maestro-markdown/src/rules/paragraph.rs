@@ -3,7 +3,7 @@ mod item_text;
 use crate::MarkedOptions;
 pub(crate) use item_text::ItemText;
 use regress::Regex;
-use std::{collections::VecDeque, ops::Range, sync::LazyLock};
+use std::{borrow::Cow, collections::VecDeque, ops::Range, sync::LazyLock};
 
 /// Setext captures independent of source ownership.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -123,7 +123,7 @@ static UNDERLINE: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^ {0,3}(=+|-+) *(?:\n+|$)", "").ok());
 
 /// Monotone line framing; at most two completed lines await lookahead.
-pub(crate) struct Recognizer {
+pub(crate) struct Recognizer<'a> {
     /// Shared immutable caller predicates.
     grammar: &'static Grammar,
     /// Shared monotone physical-line framing.
@@ -138,11 +138,14 @@ pub(crate) struct Recognizer {
     setext_open: bool,
     /// Whether a non-newline after the underline has settled its raw end.
     boundary: Boundary,
+    /// Whether the caller displays the angle at an operand offset as text.
+    escaped: &'a dyn Fn(usize) -> bool,
 }
 
-impl Recognizer {
-    /// Begin one block operand without retaining its authored bytes.
-    pub(crate) fn new(options: MarkedOptions) -> Self {
+impl<'a> Recognizer<'a> {
+    /// Begin one block operand without retaining its authored bytes; `escaped` reports
+    /// the closing angles the caller displays as text by their operand offsets.
+    pub(crate) fn new(options: MarkedOptions, escaped: &'a dyn Fn(usize) -> bool) -> Self {
         Self {
             grammar: selected(options),
             cursor: super::lines::Cursor::default(),
@@ -151,6 +154,7 @@ impl Recognizer {
             paragraph_open: true,
             setext_open: true,
             boundary: Boundary::Open,
+            escaped,
         }
     }
 
@@ -199,7 +203,7 @@ impl Recognizer {
             return;
         };
         let end = self.lines.front().map_or(line.end, |next| next.end);
-        let window = source.window(line.start..end);
+        let window = displayed(source.window(line.start..end), line.start, self.escaped);
         let text = source.window(line.clone());
         self.heading_line(&text, &window, &line);
         if self.paragraph_open {
@@ -245,6 +249,25 @@ impl Recognizer {
         self.setext_open =
             !(empty_line || matches(self.grammar.setext.as_ref(), window) || carriage(text));
     }
+}
+
+/// A line's grammar operand as the caller displays it, starting at operand offset `start`.
+///
+/// A quote marker the escaped browser policy shows as text reads in its escaped spelling,
+/// so it neither interrupts a paragraph nor ends a setext label, while every other rule
+/// still reads the line.
+fn displayed<'s>(
+    window: Cow<'s, str>,
+    start: usize,
+    escaped: &dyn Fn(usize) -> bool,
+) -> Cow<'s, str> {
+    let marker = window.bytes().take_while(|byte| *byte == b' ').count();
+    if marker > 3 || window.as_bytes().get(marker) != Some(&b'>') || !escaped(start + marker) {
+        return window;
+    }
+    let mut text = window.into_owned();
+    text.replace_range(marker..=marker, "&gt;");
+    Cow::Owned(text)
 }
 
 /// Captured underline level of one physical line and the end of its match.

@@ -3,8 +3,10 @@
 //! The child's process group is orphaned, so the kernel discards the stop itself while a
 //! helper that handles the signal still receives it.
 #![cfg(target_os = "linux")]
-use super::{World, isolated, isolated_output, started};
+use super::{World, install, isolated, isolated_output, started};
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, tui::InputHandler};
+use serde_json::json;
 use std::{
     io::{BufRead, BufReader, Lines, Write},
     os::unix::process::ExitStatusExt,
@@ -17,15 +19,15 @@ const CTRL_Z: &str = "\x1a";
 
 /// Runs `body` on a started mode inside a Tokio runtime with signal delivery, in a child
 /// that leads a new session, and returns the child's output to the parent.
-fn suspended(test: &str, body: impl AsyncFnOnce(&World)) -> Option<Output> {
+fn suspended(test: &str, body: impl AsyncFnOnce(&World, &Path)) -> Option<Output> {
     isolated_output(
         test,
         "child",
         &[],
-        "exec setsid \"$@\"",
+        IsolatedSetup::new().new_session(),
         async |directory: &Path| {
             let world = started(directory).await;
-            body(&world).await;
+            body(&world, directory).await;
         },
     )
 }
@@ -52,7 +54,7 @@ fn probes(output: &Output) -> Vec<String> {
         .collect()
 }
 
-/// A shell in this process's group that reports a received stop signal, then exits.
+/// A program in this process's group that reports a received stop signal, then exits.
 struct GroupMember {
     /// Held open until the member should stop waiting.
     input: Option<ChildStdin>,
@@ -64,9 +66,14 @@ struct GroupMember {
 
 impl GroupMember {
     /// Starts the member and waits until it handles the stop signal.
-    fn start() -> Self {
-        let mut child = Command::new("bash")
-            .args(["-c", "trap 'echo TSTP; exit' TSTP; echo ready; read -r _"])
+    fn start(directory: &Path) -> Self {
+        let member = install(
+            directory,
+            "member",
+            "chat",
+            &json!({"scenario": "group-member"}),
+        );
+        let mut child = Command::new(member)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -81,14 +88,21 @@ impl GroupMember {
         }
     }
 
-    /// The member's report once it exits: `TSTP`, or nothing when it received no stop.
-    fn finish(mut self) -> Option<String> {
-        if let Some(mut input) = self.input.take() {
-            let _ = input.write_all(b"\n");
-        }
+    /// The member's report once it exits after the stop the caller expects: `TSTP`.
+    ///
+    /// The member's own report decides its exit, so no input is given first.
+    fn finish_after_stop(mut self) -> Option<String> {
         let report = self.reports.next().map(Result::unwrap);
         assert!(self.child.wait().unwrap().success());
         report
+    }
+
+    /// The member's report once input ends it: nothing, since it received no stop.
+    fn finish_by_input(mut self) -> Option<String> {
+        if let Some(mut input) = self.input.take() {
+            let _ = input.write_all(b"\n");
+        }
+        self.finish_after_stop()
     }
 }
 
@@ -109,25 +123,28 @@ fn suspend_windows_reports_without_native_effects() {
 
 #[test]
 fn suspend_resume_restores_the_ui_once() {
-    let output = suspended("suspend_resume_restores_the_ui_once", async |world| {
-        let member = GroupMember::start();
-        world.mode.editor.handle_input(CTRL_Z);
-        assert_eq!(world.terminal.events(), ["start", "stop"]);
-        assert_eq!(member.finish().as_deref(), Some("TSTP"));
-        let mut resumed = world.runtime.take_futures();
-        assert_eq!(resumed.len(), 1);
-        world.terminal.clear_writes();
-        signal("-CONT");
-        resumed.pop().unwrap().await.unwrap();
-        assert_eq!(world.terminal.events(), ["start", "stop", "start"]);
-        world.runtime.settle().unwrap();
-        let border = world.mode.editor.render(80).swap_remove(0);
-        assert!(world.terminal.writes().concat().contains(&border));
-        signal("-CONT");
-        world.runtime.settle().unwrap();
-        assert_eq!(world.runtime.futures(), 0);
-        assert_eq!(world.terminal.events(), ["start", "stop", "start"]);
-    });
+    let output = suspended(
+        "suspend_resume_restores_the_ui_once",
+        async |world, directory| {
+            let member = GroupMember::start(directory);
+            world.mode.editor.handle_input(CTRL_Z);
+            assert_eq!(world.terminal.events(), ["start", "stop"]);
+            assert_eq!(member.finish_after_stop().as_deref(), Some("TSTP"));
+            let mut resumed = world.runtime.take_futures();
+            assert_eq!(resumed.len(), 1);
+            world.terminal.clear_writes();
+            signal("-CONT");
+            resumed.pop().unwrap().await.unwrap();
+            assert_eq!(world.terminal.events(), ["start", "stop", "start"]);
+            world.runtime.settle().unwrap();
+            let border = world.mode.editor.render(80).swap_remove(0);
+            assert!(world.terminal.writes().concat().contains(&border));
+            signal("-CONT");
+            world.runtime.settle().unwrap();
+            assert_eq!(world.runtime.futures(), 0);
+            assert_eq!(world.terminal.events(), ["start", "stop", "start"]);
+        },
+    );
     if let Some(output) = output {
         assert!(output.status.success(), "{output:?}");
     }
@@ -137,8 +154,8 @@ fn suspend_resume_restores_the_ui_once() {
 fn suspend_failure_releases_both_temporary_registrations() {
     let output = suspended(
         "suspend_failure_releases_both_temporary_registrations",
-        async |world| {
-            let member = GroupMember::start();
+        async |world, directory| {
+            let member = GroupMember::start(directory);
             world
                 .terminal
                 .set_stop_error(Some(std::io::ErrorKind::Other));
@@ -152,7 +169,7 @@ fn suspend_failure_releases_both_temporary_registrations() {
             world.runtime.settle().unwrap();
             assert_eq!(world.runtime.futures(), 0);
             assert_eq!(world.terminal.events(), ["start", "stop"]);
-            assert_eq!(member.finish(), None);
+            assert_eq!(member.finish_by_input(), None);
             println!("PROBE released");
             signal("-INT");
         },
@@ -167,7 +184,7 @@ fn suspend_failure_releases_both_temporary_registrations() {
 fn suspend_preserves_existing_interrupt_ownership() {
     let output = suspended(
         "suspend_preserves_existing_interrupt_ownership",
-        async |world| {
+        async |world, _| {
             for round in 1..=2 {
                 world.mode.editor.handle_input(CTRL_Z);
                 signal("-INT");

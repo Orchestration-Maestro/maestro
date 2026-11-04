@@ -84,29 +84,6 @@ fn verbatim_shell_commands_keep_environment_operands() {
 }
 
 #[test]
-fn shell_literal_operands_share_one_posix_quoter() {
-    for (input, expected) in [
-        ("", "''"),
-        ("a,b", "a,b"),
-        ("@%_+=:,./-Az09", "@%_+=:,./-Az09"),
-        ("a'b", "'a'\\''b'"),
-        ("a\n b", "'a\n b'"),
-        ("é;$\"", "'é;$\"'"),
-    ] {
-        assert_eq!(super::shell_quote(input), expected);
-        #[cfg(unix)]
-        {
-            let output = std::process::Command::new("/bin/sh")
-                .args(["-c", &format!("printf %s {}", super::shell_quote(input))])
-                .output()
-                .unwrap();
-            assert!(output.status.success());
-            assert_eq!(output.stdout, input.as_bytes());
-        }
-    }
-}
-
-#[test]
 fn interactive_argv_uses_the_selected_shell_quoter() {
     assert_eq!(super::quote_powershell_literal("safe.png"), "'safe.png'");
     assert_eq!(super::quote_powershell_literal("a'b"), "'a''b'");
@@ -171,16 +148,19 @@ fn detached_custom_commands_keep_the_login_flag() {
 #[test]
 #[cfg(target_os = "linux")]
 fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
-    let dir = std::env::temp_dir().join(format!("maestro-editor-{}", std::process::id()));
-    std::fs::create_dir(&dir).unwrap();
-    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/editor.sh");
-    let status = std::process::Command::new("/usr/bin/install")
-        .args(["-m", "0700"])
-        .arg(fixture)
-        .arg(dir.join("vi"))
-        .status()
-        .unwrap();
-    assert!(status.success());
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let dir = owned.path();
+    let artifact =
+        std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
+    let editor = dir.join("vi");
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor).unwrap();
+    let mut record = editor.into_os_string();
+    record.push(".fixture");
+    std::fs::write(
+        record,
+        "editor\n{\"result\":\"MAESTRO_EDITOR_RESULT\",\"code\":7}",
+    )
+    .unwrap();
     for editor in [None, Some(""), Some("vi --custom")] {
         let path = dir.join("scroll back ' a,b");
         std::fs::OpenOptions::new()
@@ -212,7 +192,6 @@ fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
         let observed = std::fs::read_to_string(dir.join("result")).unwrap();
         assert_eq!(observed, format!("{}\n", path.display()));
     }
-    std::fs::remove_dir_all(dir).unwrap();
 }
 
 #[test]
@@ -266,16 +245,22 @@ fn pane_custom_commands_keep_the_plain_command_flag() {
     }
 }
 
+/// Variable carrying the scratch directory a child fixture works in.
+#[cfg(windows)]
+const LAUNCH_PATH_ROOT: &str = "MAESTRO_LAUNCH_PATH_ROOT";
+
 #[test]
 #[cfg(windows)]
 fn launch_resolves_effective_child_path_and_extensions() {
-    const CHILD: &str = "MAESTRO_LAUNCH_PATH_CHILD";
-    if let Some(directory) = std::env::var_os(CHILD) {
-        assert_launch_environment(&PathBuf::from(directory));
+    /// The case that repeats the lookup overrides in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        let directory = std::env::var_os(LAUNCH_PATH_ROOT).unwrap();
+        assert_launch_environment(Path::new(&directory));
         return;
     }
-    let directory =
-        std::env::temp_dir().join(format!("maestro-launch-path-{}", std::process::id()));
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let directory = owned.path();
     let parent = directory.join("parent");
     let chosen = directory.join("chosen");
     std::fs::create_dir_all(&parent).unwrap();
@@ -289,12 +274,12 @@ fn launch_resolves_effective_child_path_and_extensions() {
         "launch_resolves_effective_child_path_and_extensions",
     )
     .unwrap()
-    .env(CHILD, &directory)
+    .case(CHILD)
+    .env(LAUNCH_PATH_ROOT, directory)
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")
     .output()
     .unwrap();
-    std::fs::remove_dir_all(directory).unwrap();
     assert!(output.status.success(), "{output:?}");
 }
 

@@ -11,14 +11,14 @@ use maestro_extensions::{
     Cancellation, CommandContextOperations, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, create_extension_runtime,
     load_extension_from_factory,
-    types::{ExtensionHandle, ExtensionRuntime, ProviderActions},
+    types::{ExtensionError, ExtensionHandle, ExtensionRuntime, ProviderActions},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
 
-mod cases;
+pub(super) mod cases;
 mod input;
 mod sessions;
 mod values;
@@ -65,14 +65,36 @@ pub(super) struct Gate {
 pub(super) struct Run {
     /// Runner over the case's instances.
     pub(super) runner: Rc<ExtensionRunner<Local>>,
-    /// Received diagnostics, without engine stack text.
-    errors: Rc<RefCell<Vec<Value>>>,
+    /// Received failures, with every field the listener saw.
+    errors: Rc<RefCell<Vec<ExtensionError>>>,
+}
+
+/// One received failure as JSON, with the stack its author supplied if any.
+fn received(error: &ExtensionError) -> Value {
+    json!({
+        "extensionPath": error.extension_path,
+        "event": error.event,
+        "error": error.error,
+        "stack": error.stack,
+    })
 }
 
 impl Run {
-    /// The diagnostics received so far.
+    /// The diagnostics received so far, without engine stack text.
     pub(super) fn errors(&self) -> Value {
-        Value::Array(self.errors.borrow().clone())
+        let without_stack = |error: &ExtensionError| {
+            let mut failure = received(error);
+            if let Some(fields) = failure.as_object_mut() {
+                fields.shift_remove("stack");
+            }
+            failure
+        };
+        Value::Array(self.errors.borrow().iter().map(without_stack).collect())
+    }
+
+    /// The diagnostics received so far, each with the stack its author supplied.
+    pub(super) fn diagnostics(&self) -> Value {
+        Value::Array(self.errors.borrow().iter().map(received).collect())
     }
 }
 
@@ -83,7 +105,7 @@ pub(super) fn label(index: usize) -> String {
 
 impl Harness {
     /// Loads the pool concurrently, each instance on its own Store.
-    async fn load() -> Self {
+    pub(super) async fn load() -> Self {
         let path = std::env::var("MAESTRO_HOOK_COMPONENT").unwrap();
         let runtime = create_extension_runtime::<Local>();
         let bus = TracedBus::new();
@@ -181,11 +203,7 @@ impl Harness {
         let errors = Rc::new(RefCell::new(Vec::new()));
         let received = errors.clone();
         let _keep = runner.on_error(Rc::new(move |error| {
-            received.borrow_mut().push(json!({
-                "extensionPath": error.extension_path,
-                "event": error.event,
-                "error": error.error,
-            }));
+            received.borrow_mut().push(error.clone());
             Ok(())
         }));
         Run { runner, errors }
@@ -200,6 +218,14 @@ fn without_stacks(mut output: Value) -> Value {
         }
     }
     output
+}
+
+#[test]
+fn component_hooks_read_what_earlier_handlers_returned() {
+    local(async {
+        let harness = Harness::load().await;
+        input::reading(&harness).await;
+    });
 }
 
 #[test]

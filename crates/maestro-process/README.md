@@ -46,9 +46,10 @@ interpreter flags remain ordinary arguments. Callers choose inherited or
 captured streams, deadlines and the existing background-console setting before
 launching. The launcher reuses the capture and wait operations below.
 
-`shell_quote` serializes POSIX operands. `quote_powershell_arg` may leave safe
-PowerShell operands unquoted; `quote_powershell_literal` always quotes and is used
-for expression-mode values such as clipboard paths.
+`shell_quote`, shared from the text leaf, serializes POSIX operands.
+`quote_powershell_arg` may leave safe PowerShell operands unquoted;
+`quote_powershell_literal` always quotes and is used for expression-mode values
+such as clipboard paths.
 
 ## Synchronous capture
 
@@ -108,4 +109,6 @@ The local shell ignores the tag and forwards chunks in observed interleaving ord
 new Unix session to that spawn only; ordinary `spawn` and
 `spawn_sync` remain unchanged. Unix forced process/group signals and Windows
 `request_tree_kill` expose native effects; callers choose tree-cleanup policy.
-`EXIT_STDIO_GRACE_MS` supplies the 100 ms local-shell grace.
+`EXIT_STDIO_GRACE_MS` supplies the 100 ms local-shell grace. When the grace
+ends, the wait first reads what the pipes already hold, so output written before
+the exit is kept.

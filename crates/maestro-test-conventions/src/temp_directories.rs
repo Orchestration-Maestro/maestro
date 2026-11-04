@@ -8,7 +8,29 @@ use crate::source::{Member, Source, inherit_test_context, test_scope};
 ///
 /// A later migration batch adds the crates it converts; the batch that finishes the
 /// migration removes this scope so the check covers every crate.
-const MIGRATED_CRATES: &[&str] = &["maestro-daemon", "maestro-session", "maestro-watch"];
+const MIGRATED_CRATES: &[&str] = &[
+    "maestro-daemon",
+    "maestro-session",
+    "maestro-watch",
+    "maestro-detection",
+    "maestro-extensions-wasmtime",
+    "maestro-terminal",
+    "maestro-models",
+    "maestro-app",
+    "maestro-packages",
+    "maestro-catalog",
+    "maestro-process",
+    "maestro-tooling",
+    "maestro-tui-crossterm",
+    "maestro-ipc",
+    "maestro-lock",
+    "maestro-listing",
+    "maestro-tui",
+    "maestro-workspace",
+    "maestro-credentials",
+    "maestro-tools",
+    "maestro-resources",
+];
 
 /// Spelling that names the platform temporary directory.
 const PLATFORM_DIRECTORY: &str = "temp_dir";
@@ -88,6 +110,20 @@ impl References {
 impl<'ast> Visit<'ast> for References {
     fn visit_ident(&mut self, ident: &'ast proc_macro2::Ident) {
         self.record(ident);
+    }
+
+    /// Method names are the receiver's own API, never a platform-directory
+    /// spelling: the standard function is always a call through a path.
+    /// Members stay visited inside the receiver and the arguments, while
+    /// expression attributes are not visited because they never name a call.
+    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
+        self.visit_expr(&call.receiver);
+        for argument in &call.args {
+            self.visit_expr(argument);
+        }
+        if let Some(turbofish) = &call.turbofish {
+            self.visit_angle_bracketed_generic_arguments(turbofish);
+        }
     }
 
     fn visit_use_tree(&mut self, tree: &'ast syn::UseTree) {

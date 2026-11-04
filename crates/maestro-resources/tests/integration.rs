@@ -13,3 +13,5 @@ mod template_expansion;
 mod working_directory;
 
 mod yaml_documents;
+
+mod package_manifest;

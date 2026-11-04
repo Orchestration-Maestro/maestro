@@ -21,6 +21,8 @@ mod credential_reads;
 mod custom_imports;
 mod custom_reads;
 mod effect_imports;
+mod engine;
+pub use engine::component_engine;
 mod event_imports;
 mod event_reads;
 mod event_registration;
@@ -34,6 +36,8 @@ mod frame_writer_imports;
 pub use factory::{
     Installation, artifact_factory, artifact_factory_with_io, artifact_factory_with_stdout,
 };
+/// Typed native file imports use the existing native request pump.
+mod file_imports;
 mod guest_calls;
 mod guest_component;
 mod guest_editor;
@@ -89,6 +93,7 @@ mod ui_imports;
 mod ui_reads;
 mod ui_themes;
 mod wasi;
+pub use wasi::Stdout;
 mod widget_editor_imports;
 mod widget_editors;
 mod widget_foreign;

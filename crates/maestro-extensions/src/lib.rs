@@ -37,6 +37,9 @@
 pub mod callbacks;
 /// Ordered shared channel delivery.
 pub mod event_bus;
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;
 pub use callbacks::CallbackEmitter;
 pub use event_bus::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,
@@ -70,7 +73,7 @@ pub use maestro_models::{
     ProviderSpawner, ProviderStreamOptions, Refinement, SchemaCallback, SchemaCode, SchemaNode,
     SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamFunction, StreamOptions,
     StreamOptionsInput, Threaded, faux_assistant_message, schema_transport, stream_for,
-    stream_simple_for,
+    stream_simple_for, stream_simple_via_for,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::messages::CustomMessageInput;
@@ -229,3 +232,5 @@ pub mod widgets {
     };
 }
 pub use maestro_tui::{AutocompleteItem, Keybinding as AppKeybinding, KeybindingsManager, TUI};
+
+pub use loader::host_operations;

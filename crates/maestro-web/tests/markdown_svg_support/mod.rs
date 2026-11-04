@@ -6,6 +6,9 @@ mod browser_records;
 mod native_records;
 #[cfg(target_arch = "wasm32")]
 pub use browser_records::{Case, Corpus};
+/// Object URL effects recorded where the document observations read them.
+#[cfg(target_arch = "wasm32")]
+pub mod url_audit;
 #[cfg(not(target_arch = "wasm32"))]
 pub use native_records::{Case, Corpus, Header};
 /// Decode every committed field strictly.
@@ -61,14 +64,7 @@ pub fn corpus() -> Corpus {
 pub fn locale(i18n: &maestro_web::I18n, language: &str) {
     i18n.set_language(language).unwrap();
 }
-/// Complete admitted pointer activation.
-#[must_use]
-pub fn click(position: egui::Pos2) -> Vec<egui::Event> {
-    crate::session_header_support::pointer(position, true)
-        .into_iter()
-        .chain(crate::session_header_support::pointer(position, false))
-        .collect()
-}
+pub use crate::support::pointer::click;
 
 /// One complete keyboard activation without repeat or a modifier chord.
 #[must_use]

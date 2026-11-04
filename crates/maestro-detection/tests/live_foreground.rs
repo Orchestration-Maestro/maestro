@@ -10,22 +10,43 @@ use std::{
     process::{Command, Output},
 };
 
+/// The controlled program the checked setup entry runs, selected by its child case.
+///
+/// The direct case replaces itself with the sleep program, which is the whole of its
+/// former shell payload. The other cases read their terminal input before replacing
+/// themselves or hold a member, so they keep the shell whose parsing and `exec -a`
+/// behaviour they observe.
 #[test]
 fn setup_entry() {
-    let Some(script) = std::env::var_os("MAESTRO_DETECTION_SCRIPT") else {
+    let selection = maestro_test_process::selection();
+    let Some(child) = selection.case() else {
         return;
     };
-    let mut command = Command::new("/bin/bash");
-    command
-        .arg("-c")
-        .arg(script)
-        .env_remove("MAESTRO_DETECTION_SCRIPT");
+    let command = match child {
+        "replacement" => shell("read -r command; eval \"$command\""),
+        "wrapper" => shell(
+            "exec -a codex /bin/sleep infinity & member=$!; read -r stop; \
+             kill \"$member\"; wait \"$member\"; exit 0",
+        ),
+        _ => {
+            let mut sleep = Command::new("/bin/sleep");
+            sleep.arg("infinity");
+            sleep
+        }
+    };
     let _ = pty::setup_and_exec(command);
     std::process::exit(1);
 }
 
+/// A shell that runs `script`, as the terminal cases that parse input still need.
+fn shell(script: &str) -> Command {
+    let mut command = Command::new("/bin/bash");
+    command.arg("-c").arg(script);
+    command
+}
+
 /// Observes exec completion through process facts, then reaps the controlled terminal.
-fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> ForegroundJob {
+fn capture_job(child: &str, input: &[u8], release: &[u8], argv0: &str) -> ForegroundJob {
     let mut observed = None;
     TestProcess::named("live_foreground::setup_entry")
         .unwrap()
@@ -38,8 +59,8 @@ fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> Foreg
                 args: harness.iter().map(Into::into).collect(),
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![(
-                    "MAESTRO_DETECTION_SCRIPT".into(),
-                    Some(script.into()),
+                    maestro_test_process::CASE.into(),
+                    Some(child.into()),
                 )]),
             };
             let (pty, mut child) = pty::spawn(
@@ -141,18 +162,18 @@ fn live_foreground_ordinary_program_has_no_agent() {
     if run_alone("live_foreground_ordinary_program_has_no_agent").unwrap() {
         return;
     }
-    let job = capture_job("exec /bin/sleep infinity", b"", b"", "/bin/sleep");
+    let job = capture_job("direct", b"", b"", "/bin/sleep");
     assert!(job.processes.iter().any(|process| process.name == "sleep"));
     assert_eq!(identify_agent_in_job(&job), None);
 }
 
 #[test]
-fn live_shell_exec_replacement_has_no_agent() {
-    if run_alone("live_shell_exec_replacement_has_no_agent").unwrap() {
+fn live_input_then_exec_replacement_has_no_agent() {
+    if run_alone("live_input_then_exec_replacement_has_no_agent").unwrap() {
         return;
     }
     let job = capture_job(
-        "read -r command; eval \"$command\"",
+        "replacement",
         b"exec /bin/sleep infinity\n",
         b"",
         "/bin/sleep",
@@ -166,12 +187,7 @@ fn live_wrapper_member_argv_identifies_an_agent() {
     if run_alone("live_wrapper_member_argv_identifies_an_agent").unwrap() {
         return;
     }
-    let job = capture_job(
-        "/bin/bash -c 'exec -a codex /bin/sleep infinity' & member=$!; read -r stop; kill \"$member\"; wait \"$member\"; exit 0",
-        b"",
-        b"stop\n",
-        "codex",
-    );
+    let job = capture_job("wrapper", b"", b"stop\n", "codex");
     assert!(job.processes.iter().any(|process| process.name == "bash"));
     assert!(job.processes.iter().any(|process| {
         process.name == "sleep"

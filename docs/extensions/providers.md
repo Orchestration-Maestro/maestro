@@ -86,7 +86,7 @@ binding they apply before the call returns. Queued validation failures are
 reported as extension errors, so inspect startup diagnostics as well as exit status.
 
 For working code behind this route, see the
-[provider catalog component](../../crates/maestro-extensions-wasm/examples/context_bridge/providers.rs)
+[provider catalog component](../../crates/maestro-extensions-wasm/tests/support/context_bridge/providers.rs)
 and its [controlled host checks](../../crates/maestro-extensions-wasmtime/tests/provider_catalog.rs).
 Standalone provider example deliveries are tracked separately in
 [#2223](https://github.com/Orchestration-Maestro/maestro/issues/2223) and
@@ -124,7 +124,13 @@ started calls remain valid independently of registry membership.
 For direct catalog work, `context.model_registry()?` exposes
 `register_provider`, `unregister_provider` and `refresh`. These mutate that
 catalog, not the facade's pre-bind queue. Refresh reloads the model file and
-replays retained providers in registration order. Invalid incoming metadata
+replays retained providers in registration order. Refresh and removal touch only
+that catalog's own registrations: providers another session in the same process
+registered stay registered, and removing an entry puts back the registration it
+displaced. A session reload also keeps its catalog's registrations, so an
+extension that stops registering loses its provider only after the catalog stops
+retaining it.
+Invalid incoming metadata
 changes nothing; a later OAuth transformation or replay failure can leave
 already-applied effects visible. Do not assume registration is a transaction.
 
@@ -181,7 +187,7 @@ The installed account ID is the registration name, not the implementation's
 `id()` return value. `name()` supplies the account label;
 `uses_callback_server()` reports optional metadata, not a running listener.
 
-The complete [authored account implementation](../../crates/maestro-extensions-wasm/examples/context_bridge/oauth/registration.rs)
+The complete [authored account implementation](../../crates/maestro-extensions-wasm/tests/support/context_bridge/oauth/registration.rs)
 shows all methods, registration through both the facade and an independent catalog,
 and controlled login and refresh. Its token strings and endpoints are test data,
 not an authorization service. Replace those operations, not just their labels,
@@ -226,11 +232,15 @@ option variant unchanged. Keep the supplied model, context, hooks and cancellati
 signal for that invocation; do not replace options with defaults when forwarding
 to a bundled protocol.
 
-Use the [model callback example](../../crates/maestro-extensions-wasm/examples/context_bridge/model_registered.rs)
+To select that bundled protocol per request, name its identifier through
+[`stream_simple_via`](guest_streams.md#invoking-registered-models); callers and
+final messages keep the model's API identity.
+
+Use the [model callback fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/model_registered.rs)
 for registration and dispatch, the
-[assistant event example](../../crates/maestro-extensions-wasm/examples/context_bridge/assistant_streams.rs)
+[assistant event fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/assistant_streams.rs)
 for every event variant, and the
-[stream lifetime example](../../crates/maestro-extensions-wasm/examples/context_bridge/stream_lifetimes.rs)
+[stream lifetime fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/stream_lifetimes.rs)
 for independently owned producers. These are executable component fixtures, not
 standalone provider packages.
 
@@ -280,13 +290,15 @@ A successful list operation proves catalog publication, not a successful request
 From a Maestro checkout, run the existing offline component checks:
 
 ```sh
+~/.local/bin/capped just prepare-tests
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(provider_catalog::)'
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(oauth::)'
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(model_streams::)'
 ~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(authored_streams::)'
 ```
 
-Nextest runs the repository's component setup script before these tests; direct
+Nextest runs the repository's component setup before these tests, which
+`just prepare-tests` makes ready; direct
 `cargo test` does not supply those fixture paths. The checks compile the real
 guest and exercise the native host. They do not
 validate your server implementation. Before distributing a provider, adapt the

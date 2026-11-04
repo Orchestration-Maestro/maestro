@@ -4,10 +4,12 @@ mod close;
 mod death;
 mod events;
 mod focus;
+mod git_status;
 mod managed;
 mod metadata;
 mod notifications;
 mod ordering;
+mod relocate;
 mod removal;
 mod state_update;
 mod updates;
@@ -16,7 +18,9 @@ pub use notifications::{
     active_tab_suppresses_notifications, is_completion_transition_parts,
     notification_sound_for_state_change, notification_toast_for_pane_state_update,
 };
+pub use relocate::PaneMoveRecovery;
 pub use state_update::{AgentRelease, CompletionPolicy, PaneStateUpdate, pane_agent_status};
+pub use zoom::PaneZoomOutcome;
 
 use maestro_workspace::{layout::PaneId, workspace::Workspace};
 

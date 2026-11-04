@@ -3,6 +3,9 @@
 The [foundation specification](specs/maestro-port.md#crates-and-delivery-order)
 owns the crate graph. `maestro-test-conventions` checks that graph through
 `check_workspace(root)`; it does not execute product capabilities.
+Its crate dependency table lives in `src/graph/policy/table.rs` within the
+conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
+`POLICY` for its existing callers.
 
 ## Application export layout
 
@@ -13,6 +16,21 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 `session`, `settings`, `text` and `tools`. Each area owns its matching `.rs` file;
 `exports/mod.rs` aggregates them without changing the original owners or target
 gates. Unrelated areas therefore need not edit the same declaration file.
+
+### Named exports
+
+Run `just check` to check the application export boundary. Export records and
+operations by name; do not expose the daemon, terminal or Markdown crate itself,
+its modules or its wildcard imports.
+
+The checker follows aliases across source files and local glob imports. A glob
+imports only bindings visible from the importing module and cannot widen their
+visibility through a public relay. Local glob bindings shadow root external-crate
+aliases, including when a later export refers to an earlier alias through `self`.
+
+For example, `pub use maestro_terminal::render::Dirty;` selects one item.
+`pub use maestro_terminal::render;` exposes a whole module and is rejected.
+Application-owned modules may group named records and operations.
 
 ## Inventory and dependencies
 
@@ -36,14 +54,16 @@ No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
-only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
+only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The `maestro-package` leaf owns portable package interchange records; native
+packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
 application re-exports them as `markdown`. The dedicated conventions checker may
 consume the same parser's code-block source ranges for documentation checks.
 Tools may also depend directly on text for shared newline
 normalization. The guest authoring crate may depend on request,
-entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
+entry, tool, JSON and text, never on native session, tool or catalog runtimes. The table is not
 repeated here.
 
 Pure retained [session-tree projection](sessions/tree-projection.md) belongs to
@@ -63,7 +83,10 @@ The binary composition root, conventions checker, terminal scenario harness,
 checked test-process owner, disposable test-directory owner, test tracing owner,
 portable fixture owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
-Repository tooling (`maestro-tooling`) is development-only, never shipped and has
+Browser qualification (`maestro-test-browser`) is dedicated, unpublished and
+depends on tooling for preparation. Hakari excludes its test-only browser stack
+from traversal. Repository tooling (`maestro-tooling`) is development-only, never
+shipped and has
 no internal dependencies apart from the optional utility and the native-only
 feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
@@ -90,7 +113,9 @@ tests that build a real model catalog, the native-only `maestro-detection` to
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
 tests that drive a real session through the scripted provider, the native-only
 `maestro-cli` to `maestro-listeners` development edge for the controlled print
-adapter, and the native development edges from the twenty-three declared callers to the
+adapter, the native-only `maestro` to `maestro-lock` development edge that
+serializes the executable's file-trigger test on the shared host fixture, and the
+native development edges from the twenty-three declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -103,10 +128,11 @@ exact caller list of its
 [directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
 domain or utility edge. The tracing owner
 follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness's
-recording terminal and manual runtime are the one shared test-effect owner, with
-`maestro-cli` as their only declared caller under the same native development
-rules. The portable fixture owner has the eight exact development callers in its
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
+reexports the recording terminal and manual runtime from
+`maestro-tui::test_support`; the harness itself admits only `maestro-cli` under
+the same native development rules. The portable fixture owner has the eight
+exact development callers in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
 be portable or target-specific; normal/build edges and outgoing domain or utility
 edges are forbidden. The policy admits the owner before its member exists.
@@ -121,26 +147,26 @@ children omit `RUSTC_WRAPPER`; the calling process and build commands retain it.
 Package IDs and canonical member paths establish identity, not dependency aliases.
 Optional, build, dev and inactive foreign-target declarations remain subject to policy.
 Malformed metadata and command failures return diagnostics, not acceptance.
+`check_declared_graph` runs the declared pass from a metadata document the caller
+supplies, so the conventions suite rejects a whole family of hypothetical edges from
+one metadata read. Host-resolved edges, the required direct sets and the source
+checks stay with `check_workspace`.
 
 The cancellation leaf has no internal dependencies; only models and the toolkit
 may depend directly on it.
 
 The [shared filesystem effect contract](specs/maestro-port.md#crates-and-delivery-order)
-declares `maestro-watch` and `maestro-lock` as core leaves below layer 0, including
-when their implementations are absent. Watch has no workspace dependency; lock
-may use the optional `maestro-path` utility without changing its leaf status.
-Only theme/application may consume watch; only
-settings/credentials/workspace may consume lock. Watch creation/close, injected watch/timer
-interfaces and native notifications belong to watch; bounded synchronous
-contention acquisition of caller-opened files and atomic byte replacement belong
-to lock. Workspace owns snapshot serialization and link-following policy. Feature owners
-retain reload, refresh, retry, polling, lock-file creation, permissions, in-place persistence,
-unlocking and asynchronous credential acquisition policy. This changes ownership,
-not public capabilities or feature-specific timing, process, subscription and
-teardown semantics; it introduces no generic executor or scheduling policy.
+declares watch below layer 0 without workspace dependencies. Lock depends only
+on path for final-link resolution, using the existing `sha2 =0.11.0` to shorten
+lock and record names for long file names. Only theme/application may consume watch;
+only settings/credentials/workspace/detection/session/application may consume lock.
+The lock owner provides waiting, bounded and single-attempt acquisition plus
+recoverable in-place byte publication. See [file locking](locking.md) for the durable
+copy and replay order.
+Feature owners retain serialization, symbolic-link policy and scheduling.
 
-The process leaf `maestro-process` is declared core below layer 0 with no workspace
-dependencies, including path and cancellation. Only tools, packages, credentials,
+The process owner `maestro-process` is declared core below layer 0 and depends only
+on `maestro-text` for POSIX shell operand serialization. Only tools, packages, credentials,
 detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
@@ -207,9 +233,9 @@ leaf and exact-set rules, alongside the native feature unifier. Any crate in the
 specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, subject to the exclusions in the specification's
 [crate graph](specs/maestro-port.md#crates-and-delivery-order).
-Shared path helpers take supplied directory observations and
-add no global environment, filesystem service, directory cache, scheduler or workspace
-dependency. The edge is ignored when checking a crate's complete
+Shared path helpers take supplied directory observations; `native_homedir` alone
+reads the native home environment and account entry. They add no filesystem
+service, directory cache, scheduler or workspace dependency. The edge is ignored when checking a crate's complete
 direct set or leaf
 status. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
@@ -282,9 +308,27 @@ closures and impl bodies.
 
 ## Quality checks
 
+Native platform viewers belong to the application's `utils::platform_opener`.
+The conventions check reports executable literals outside that owner, including
+nested macros, closures, methods and source fragments. It also tracks local
+`open` bindings into command constructors and rejects the shell `cmd /c start`
+combination. Parsed test-only items are excluded.
+
+A single name passed to `clap::Command::new`, directly or through an explicit
+import, defines a command-line item rather than launching a viewer. The check
+accepts those names without exempting process calls in the same file. Imports
+follow their containing token group, and competing imports keep the process
+check active. Globs, re-export chains, constructed names and type inference are
+not resolved; reviewers check them. For example,
+`use clap::Command; Command::new("open")` is accepted, but
+`std::process::Command::new("open")` beside it is rejected.
+
 Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
 compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for
 maps whose remaining order is never observed. Ordinary maps are unaffected.
+
+Conventions reject a shell script directly under `.config/`: nextest's setup entries call
+the development tool in `maestro-tooling`, which has the type checker, the linter and tests.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
@@ -330,13 +374,15 @@ Conventions reject a platform temporary directory that migrated-crate test code
 names itself. Test-owned code is a test file layout and every item inside an
 inherited `cfg(test)` context, closures and macro arguments included; the
 `temp_dir` spelling is rejected there as a call, as a value or inside macro
-tokens, and its import is rejected anywhere in the crate, whatever the alias.
-The check follows no bindings or data flow. Tests that observe the platform
-directory, name an uncreated socket path under it or pass it as the owner's
-parent read it through `maestro_test_directory::temporary_root`, and directory
-creation and removal go through `Scratch`. The check covers the crates the
-migration onto `maestro-test-directory` has reached, and each batch adds its
-crates until the last one removes the scope. The diagnostic names
+tokens, and its import is rejected anywhere in the crate, whatever the alias. A
+method named `temp_dir` is the receiver's own API, never the platform spelling,
+so a call on a receiver is accepted while every member of its arguments stays
+checked. The check follows no bindings or data flow. Tests that observe the
+platform directory, name an uncreated socket path under it or pass it as the
+owner's parent read it through `maestro_test_directory::temporary_root`, and
+directory creation and removal go through `Scratch`. The check covers the
+crates the migration onto `maestro-test-directory` has reached, and each batch
+adds its crates until the last one removes the scope. The diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
@@ -413,6 +459,14 @@ The current shared wasm job builds these roots; it does not yet run this lint
 command. The [shared wasm-lint rollout](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/73)
 tracks that separate extension. Native strict checks remain unchanged.
 
+A browser compile witness is an example target whose body only compiles for the
+browser target, so native Clippy never reads it. Every witness the workspace keeps
+is listed with its owning package and source in `maestro-tooling`'s browser smoke
+command, which compiles each one for `wasm32-unknown-unknown` and stops at the
+first failure. The commit hook runs it when a staged crate owns a witness, and
+`just check` runs it for the workspace. The shared wasm job builds library roots
+only, so this command is what reports a witness that stopped compiling.
+
 ## Commands and failure evidence
 
 Run `just check`, `just test` and `just ci` with pinned tools. `just check` includes
@@ -443,14 +497,30 @@ application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
 
-Exact test selection belongs to `maestro-test-process`. The conventions checker
-rejects Rust string tokens whose decoded value is `--exact` outside that exact
-Cargo package, reporting the source path and first violating line. It scans all
-loaded Rust sources, including macro tokens, disabled configurations and source
-fragments. Comments, larger fixture strings, byte strings and C strings are not
-selector tokens. This bounded rule does not expand macros, resolve constructed
+Checked test selection and direct native fixtures belong to `maestro-test-process`.
+Its one harness-free example receives literal native operands; its installer copies
+aliases through that same artifact without writable executable handles in the test
+runner. `maestro-tooling` builds, fingerprints and stages the host artifact in the
+existing test bundle and nextest setup exports its explicit path, including after
+archive relocation. This adds no domain dependency or guest/browser native edge.
+Each isolated child applies its typed native setup at its entry, so the test runner
+keeps its own modes, limits, session and environment. See
+[child-process tests](development.md#child-process-tests).
+
+The conventions checker rejects Rust string tokens whose decoded value is
+`--exact` outside `maestro-test-process`, reporting the source path and first
+violating line. It scans all loaded Rust sources, including macro tokens,
+disabled configurations and source fragments. Comments, larger fixture strings,
+byte strings and C strings are not selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
+
+The same source owner checks parsed `ignore` attributes. Ignored tests name
+either their controlled-child owner or the pinned Chromium job. The Chromium
+reason belongs only to `maestro-test-browser/tests/browser.rs`, where every test
+must carry it and the integration root must register that module. Comments and
+fixture strings are not attributes; syntax fragments without a parsed file are
+not checked for ignore ownership.
 
 Every crate builds its integration tests as one program from
 `tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line

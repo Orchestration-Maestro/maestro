@@ -1,7 +1,7 @@
 //! The session view in a real page: request defaults, send admission, history and reader-follow.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{
-    contributions_support::{container, frames, host, page_module, text, view},
+    contributions_support::{container, frames, host, text, view},
     dialog_support::{Fetch, completed_reply, press, settled, storage},
 };
 use maestro_app::{
@@ -395,8 +395,7 @@ async fn proxied(interface: &AgentInterface, first: &Rc<BrowserSession>) {
 
 /// A user entry saying `text`.
 fn said(text: &str) -> AgentMessage<Browser> {
-    serde_json::from_value(serde_json::json!({"role": "user", "content": text, "timestamp": 1}))
-        .unwrap()
+    crate::support::agent_records::user_entry(text)
 }
 /// An assistant entry with usage.
 fn answered() -> AgentMessage<Browser> {
@@ -419,17 +418,13 @@ fn scroller(interface: &AgentInterface) -> HtmlElement {
         .unchecked_into()
 }
 /// Scroll to `distance` pixels from the bottom and let the scroll event arrive.
-async fn scroll_to(page: &wasm_bindgen::JsValue, scroller: &HtmlElement, distance: f64) {
+async fn scroll_to(scroller: &HtmlElement, distance: f64) {
     let bottom = f64::from(scroller.scroll_height() - scroller.client_height());
     js_sys::Reflect::set(scroller, &"scrollTop".into(), &(bottom - distance).into()).unwrap();
-    frames(page, 2).await;
+    frames(2).await;
 }
 /// Grow the history by one entry and let the resize observation arrive.
-async fn grow(
-    page: &wasm_bindgen::JsValue,
-    interface: &AgentInterface,
-    session: &Rc<BrowserSession>,
-) {
+async fn grow(interface: &AgentInterface, session: &Rc<BrowserSession>) {
     session
         .state()
         .read()
@@ -441,7 +436,7 @@ async fn grow(
     interface
         .update(props(session, &Rc::default(), vec![]))
         .unwrap();
-    frames(page, 3).await;
+    frames(3).await;
 }
 /// The scroller's distance from the bottom.
 fn distance(scroller: &HtmlElement) -> f64 {
@@ -459,7 +454,6 @@ fn distance(scroller: &HtmlElement) -> f64 {
 pub async fn agent_interface_scroll_equality_relayout_and_cost_actions(import: js_sys::Function) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let _app = storage("agent-scroll");
     let mut messages: Vec<_> = (0..30)
         .map(|index| said(&format!("line {index}")))
@@ -475,23 +469,23 @@ pub async fn agent_interface_scroll_equality_relayout_and_cost_actions(import: j
         },
         300,
     );
-    frames(&page, 3).await;
+    frames(3).await;
     cost_action(&interface, &clicks).await;
     let scroller = scroller(&interface);
     assert!(distance(&scroller) < 1.0, "the view starts at the bottom");
-    scroll_to(&page, &scroller, 60.0).await;
-    grow(&page, &interface, &session).await;
+    scroll_to(&scroller, 60.0).await;
+    grow(&interface, &session).await;
     assert!(distance(&scroller) > 50.0, "reading up stops following");
-    scroll_to(&page, &scroller, 10.4).await;
+    scroll_to(&scroller, 10.4).await;
     let held = distance(&scroller);
-    grow(&page, &interface, &session).await;
+    grow(&interface, &session).await;
     assert!(
         held >= 10.0 && distance(&scroller) > 10.0,
         "{held} px does not resume"
     );
-    scroll_to(&page, &scroller, 9.2).await;
+    scroll_to(&scroller, 9.2).await;
     let near = distance(&scroller);
-    grow(&page, &interface, &session).await;
+    grow(&interface, &session).await;
     assert!(
         near < 10.0 && distance(&scroller) < 1.0,
         "{near} px follows again"
@@ -563,7 +557,6 @@ pub async fn agent_interface_detach_reconnect_keeps_draft_and_subscription(
 ) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let app = storage("agent-detach");
     app.provider_keys.set("anthropic", "sk-test").await.unwrap();
     let _fetch = Fetch::install(vec![(200, "text/event-stream", completed_reply())]);
@@ -572,7 +565,7 @@ pub async fn agent_interface_detach_reconnect_keeps_draft_and_subscription(
     interface
         .set_input("keep draft", vec![note("keep.txt")])
         .unwrap();
-    frames(&page, 2).await;
+    frames(2).await;
     interface.root().remove();
     session
         .prompt(maestro_app::PromptInput::Text {
@@ -595,17 +588,17 @@ pub async fn agent_interface_detach_reconnect_keeps_draft_and_subscription(
     );
     for _ in 0..2 {
         parent.append_child(interface.root()).unwrap();
-        frames(&page, 2).await;
+        frames(2).await;
         assert_eq!(rows(), 2, "reconnect refreshes the transcript");
         assert_eq!(interface.editor().value(), "keep draft");
         assert_eq!(interface.editor().attachments().len(), 1);
         interface.root().remove();
     }
-    reconnect_during_pending_tool(&page).await;
+    reconnect_during_pending_tool().await;
 }
 
 /// Completing a detached response clears its partial before reconnecting during tool execution.
-async fn reconnect_during_pending_tool(page: &wasm_bindgen::JsValue) {
+async fn reconnect_during_pending_tool() {
     let reply = completed_reply().replace(
         concat!("event: message_delta\ndata: ", r#"{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}"#),
         concat!(
@@ -633,7 +626,7 @@ async fn reconnect_during_pending_tool(page: &wasm_bindgen::JsValue) {
         images: Vec::new(),
     });
     partial.await.unwrap();
-    frames(page, 2).await;
+    frames(2).await;
     let stream = interface
         .root()
         .query_selector(".maestro-stream")

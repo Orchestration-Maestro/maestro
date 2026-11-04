@@ -1,10 +1,10 @@
 //! Binding the current session's extensions, settings and errors to the retained mode.
-use super::{Setup, World, cases, isolated, roles, started};
+use super::{Setup, World, admitted, cases, isolated, roles, started};
 use crate::interactive_mode::InteractiveMode;
 use maestro_app::{
     DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
-    Local, ReadonlyFooterDataProvider, ReadonlySessionManager, ResourcesDiscoverEvent,
-    ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
+    Local, NewSessionCommandOptions, ReadonlyFooterDataProvider, ReadonlySessionManager,
+    ResourcesDiscoverEvent, ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
 };
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
 use maestro_tui::{Component, tui::InputHandler};
@@ -198,7 +198,7 @@ fn write_settings(world: &World, input: &Input) {
         settings.set_clear_on_shrink(clear);
         settings.set_hide_thinking_block(hidden);
     }
-    session.set_auto_compaction_enabled(compact);
+    session.set_auto_compaction_enabled(compact).unwrap();
 }
 
 /// Whether the footer shows the automatic-compaction marker.
@@ -242,6 +242,27 @@ fn assert_editor(world: &World, padding: u32, max: u32) {
     assert_eq!(
         editor.get_autocomplete_max_visible(),
         usize::try_from(max).unwrap()
+    );
+}
+
+/// Empties the transcript, paints a tall frame, then asserts the frame painted after the
+/// content shrinks clears the screen only when the setting asks for it.
+fn assert_painted_shrink(world: &World, clear: bool) {
+    world.mode.chat_container.clear();
+    world.runtime.settle().unwrap();
+    world.mode.show_error("tall").unwrap();
+    world.runtime.settle().unwrap();
+    let recorded = world.terminal.writes().len();
+    world.mode.chat_container.clear();
+    world.mode.ui.request_render(false);
+    world.runtime.settle().unwrap();
+    let writes = world.terminal.writes();
+    let cleared = writes[recorded..]
+        .iter()
+        .any(|write| write.contains("\u{1b}[2J"));
+    assert_eq!(
+        cleared, clear,
+        "the painted frame follows the shrink policy: {writes:?}"
     );
 }
 
@@ -297,15 +318,78 @@ fn runtime_settings_follow_the_current_session_without_crossing_policies() {
             world.mode.apply_runtime_settings().unwrap();
             assert_eq!(changes.get(), moved + 1, "the session's cwd comes back");
             assert_settings(&world, &input, &expected, (false, 0, 0));
-            let Input::Settings { hardware, .. } = input else {
+            let Input::Settings {
+                hardware, clear, ..
+            } = input
+            else {
                 unreachable!()
             };
-            let hidden = world.terminal.writes().iter().any(|w| w == "\x1b[?25l");
-            assert_eq!(hidden, hardware_before && !hardware);
+            let writes = world.terminal.writes();
+            let hidden = writes.iter().any(|w| w == "\u{1b}[?25l");
+            assert_eq!(hidden, hardware_before && !hardware, "{writes:?}");
+            assert_painted_shrink(&world, clear);
             world.mode.apply_runtime_settings().unwrap();
             assert_eq!(changes.get(), moved + 1, "an unchanged cwd notifies nobody");
         }
     });
+}
+
+#[test]
+fn invalid_replacement_http_settings_leave_footer_unchanged() {
+    isolated(
+        "invalid_replacement_http_settings_leave_footer_unchanged",
+        async |directory| {
+            let cwd = directory.join("replacement");
+            std::fs::create_dir(&cwd).unwrap();
+            let world = Setup {
+                create: Some(Rc::new(move |_| {
+                    let replacement =
+                        super::session::session(cwd.to_str().unwrap(), None, |inner| inner);
+                    replacement.session.model().write().unwrap().id = "rejected-model".into();
+                    *replacement.session.settings_manager().borrow_mut() =
+                        maestro_app::SettingsManager::in_memory(
+                            serde_json::from_value(json!({
+                                "httpIdleTimeoutMs": -5,
+                                "compaction": {"enabled": false}
+                            }))
+                            .unwrap(),
+                        );
+                    Box::pin(async { Ok(replacement) })
+                })),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let previous = world.host.session();
+            previous.model().write().unwrap().id = "retained-model".into();
+            previous.set_auto_compaction_enabled(true).unwrap();
+            world.mode.apply_runtime_settings().unwrap();
+            let before = world.mode.footer.render(120);
+            assert!(auto_marker(&world));
+            let changes = cwd_changes(&world);
+
+            let error = world
+                .host
+                .new_session(NewSessionCommandOptions::default())
+                .await
+                .unwrap_err();
+
+            assert!(
+                error
+                    .to_string()
+                    .contains("Invalid httpIdleTimeoutMs setting: -5")
+            );
+            assert!(!Rc::ptr_eq(&previous, &world.host.session()));
+            assert_eq!(world.mode.footer.render(120), before);
+            assert_eq!(
+                changes.get(),
+                0,
+                "rejected settings must not change the cwd"
+            );
+            assert!(auto_marker(&world));
+        },
+    );
 }
 
 #[test]
@@ -367,14 +451,9 @@ async fn command_rows(world: &World) -> Vec<String> {
     let editor = &world.mode.editor;
     editor.set_text("");
     editor.handle_input("/");
-    for _ in 0..10_000 {
-        world.runtime.settle().unwrap();
-        assert!(world.runtime.drain_futures().is_empty());
-        if editor.is_showing_autocomplete() {
-            break;
-        }
-        tokio::task::yield_now().await;
-    }
+    world.runtime.settle().unwrap();
+    assert!(admitted(&world.runtime).await.is_empty());
+    assert!(world.runtime.drain_futures().is_empty());
     assert!(editor.is_showing_autocomplete(), "the command list opens");
     let rows = editor
         .render(80)
@@ -682,11 +761,7 @@ type Gate = Rc<RefCell<Option<tokio::sync::oneshot::Receiver<()>>>>;
 /// An extension that asks through the started UI on session start, records each phase
 /// in `log`, waits at discovery while `gate` holds a receiver, then fails discovery when
 /// `refuse` is set.
-fn asking(
-    log: &Rc<RefCell<Vec<String>>>,
-    gate: &Gate,
-    refuse: &Rc<Cell<bool>>,
-) -> ExtensionFactory<Local> {
+fn asking(log: &Rc<Log>, gate: &Gate, refuse: &Rc<Cell<bool>>) -> ExtensionFactory<Local> {
     let (log, gate, refuse) = (Rc::clone(log), Rc::clone(gate), Rc::clone(refuse));
     Rc::new(move |api| {
         let started = Rc::clone(&log);
@@ -711,29 +786,29 @@ fn asking(
 
 /// Records whether the started UI is `present`, then asks through `ui`.
 async fn ask(
-    log: Rc<RefCell<Vec<String>>>,
+    log: Rc<Log>,
     ui: maestro_app::ExtensionUIContext,
     present: bool,
 ) -> Result<Option<()>, maestro_app::EventError> {
-    log.borrow_mut().push(format!("bind ui={present}"));
+    log.push(format!("bind ui={present}"));
     let chosen = ui
         .select("Choose".to_owned(), vec!["answer".to_owned()], None)
         .await?;
-    log.borrow_mut().push(format!("chose {chosen:?}"));
+    log.push(format!("chose {chosen:?}"));
     Ok(None)
 }
 
 /// Records discovery, waits for `gate` when one is armed, then fails when `refuse` is set.
 async fn discover(
-    log: Rc<RefCell<Vec<String>>>,
+    log: Rc<Log>,
     gate: Option<tokio::sync::oneshot::Receiver<()>>,
     refuse: Rc<Cell<bool>>,
 ) -> Result<Option<ResourcesDiscoverResult>, maestro_app::EventError> {
-    log.borrow_mut().push("discover".to_owned());
+    log.push("discover".to_owned());
     if let Some(gate) = gate {
         gate.await.unwrap();
     }
-    log.borrow_mut().push("discovered".to_owned());
+    log.push("discovered".to_owned());
     if refuse.get() {
         return Err(Box::new(DiagnosticErrorInfo::new(None, "refused")));
     }
@@ -767,15 +842,28 @@ fn ctrl_q(
     }
 }
 
-/// Yields until `log` holds `entry`.
-async fn until_logged(log: &Rc<RefCell<Vec<String>>>, entry: &str) {
-    for _ in 0..10_000 {
-        if log.borrow().iter().any(|seen| seen == entry) {
-            return;
-        }
-        tokio::task::yield_now().await;
+/// The extension's phase records, each announced to a waiting test.
+#[derive(Default)]
+struct Log {
+    /// The records, in order.
+    entries: RefCell<Vec<String>>,
+    /// Signalled after each record.
+    pushed: tokio::sync::Notify,
+}
+
+impl Log {
+    /// Records `entry` and wakes the waiting test.
+    fn push(&self, entry: String) {
+        self.entries.borrow_mut().push(entry);
+        self.pushed.notify_one();
     }
-    panic!("{entry} in {:?}", log.borrow());
+
+    /// Waits until the records hold `entry`.
+    async fn until(&self, entry: &str) {
+        while !self.entries.borrow().iter().any(|seen| seen == entry) {
+            self.pushed.notified().await;
+        }
+    }
 }
 
 /// The transcript's plain rows.
@@ -808,7 +896,7 @@ struct Paused {
     /// The mode and its effects.
     world: World,
     /// The extension's phase records.
-    log: Rc<RefCell<Vec<String>>>,
+    log: Rc<Log>,
     /// Lets discovery continue.
     release: tokio::sync::oneshot::Sender<()>,
     /// Makes the waiting discovery fail.
@@ -820,7 +908,7 @@ struct Paused {
 /// Starts a mode, quiet as selected, with one context file and one shortcut, answers its
 /// session start's question and checks that nothing after binding has run at discovery.
 async fn paused(directory: &Path, quiet: bool) -> Paused {
-    let log = Rc::new(RefCell::new(Vec::new()));
+    let log = Rc::new(Log::default());
     let (release, receiver) = tokio::sync::oneshot::channel();
     let gate: Gate = Rc::new(RefCell::new(Some(receiver)));
     let refuse = Rc::new(Cell::new(false));
@@ -845,10 +933,10 @@ async fn paused(directory: &Path, quiet: bool) -> Paused {
     );
     let mode = Rc::clone(&world.mode);
     let started = tokio::task::spawn_local(async move { mode.init().await.err() });
-    until_logged(&log, "bind ui=true").await;
+    log.until("bind ui=true").await;
     world.runtime.settle().unwrap();
     world.terminal.send_input("\r");
-    until_logged(&log, "discover").await;
+    log.until("discover").await;
     world.loader.calls.borrow_mut().clear();
     assert!(world.mode.editor.on_extension_shortcut().is_none());
     assert!(
@@ -902,7 +990,7 @@ async fn binding_case(directory: &Path, fail: Option<&str>, expected: &Phases) {
         "discover",
         "discovered",
     ];
-    assert_eq!(*paused.log.borrow(), asked);
+    assert_eq!(*paused.log.entries.borrow(), asked);
     assert_eq!(
         error.is_some(),
         expected.error.is_some(),
@@ -932,7 +1020,7 @@ async fn binding_case(directory: &Path, fail: Option<&str>, expected: &Phases) {
 }
 
 /// Requests shutdown through a context created while `created` streams, while `requested`
-/// streams, after recording `before`, and checks whether the handler itself started it.
+/// streams, after recording `before`, and checks that the handler schedules shutdown.
 async fn shutdown_case(
     directory: &Path,
     (created, requested, before): (bool, bool, bool),
@@ -970,8 +1058,8 @@ async fn shutdown_case(
     assert_eq!(world.mode.shutdown_requested.get(), expected.requested);
     assert_eq!(
         started.get(),
-        usize::from(expected.calls == ["shutdown"]),
-        "the handler starts shutdown only while idle"
+        expected.calls.len() + usize::from(requested),
+        "the handler schedules shutdown, waiting for settlement while active"
     );
     request(&runner().create_context());
     assert!(world.runtime.drain_futures().is_empty());
@@ -1257,6 +1345,71 @@ fn capability_shortcut(
     })
 }
 
+/// What a shortcut's context reports about its turn signal and its queued messages.
+fn abort_state(context: &maestro_app::ExtensionContext) -> Result<Value, maestro_app::EventError> {
+    Ok(json!({
+        "signal": context.signal()?.is_some(),
+        "pending": context.has_pending_messages()?,
+    }))
+}
+
+/// A `ctrl+q` shortcut that records the context's state before and after aborting.
+fn aborting_shortcut(log: &Rc<RefCell<Vec<Value>>>) -> ExtensionShortcut<Local> {
+    let log = Rc::clone(log);
+    ctrl_q(move |context| {
+        log.borrow_mut().push(abort_state(&context)?);
+        context.abort()?;
+        log.borrow_mut().push(abort_state(&context)?);
+        Ok(())
+    })
+}
+
+#[test]
+fn shortcut_abort_observes_the_signal_and_restores_pending_messages() {
+    isolated(
+        "shortcut_abort_observes_the_signal_and_restores_pending_messages",
+        async |directory| {
+            let world = Setup {
+                extension: Some(idle()),
+                ..Setup::default()
+            }
+            .build(directory);
+            let log = Rc::new(RefCell::new(Vec::new()));
+            let session = world.mode.runtime_host.session();
+            register_shortcut(
+                &session.resource_loader().get_extensions(),
+                aborting_shortcut(&log),
+            );
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            super::with_held_response(&world, async |held| {
+                session.steer("queued", &[]).unwrap();
+                world.mode.editor.handle_input("\u{11}");
+                assert!(world.runtime.drain_futures().is_empty());
+                assert!(
+                    held.signal.is_aborted(),
+                    "the abort reaches the running turn"
+                );
+                assert_eq!(
+                    world.mode.editor.get_text(),
+                    "queued",
+                    "the abort puts the queued message back"
+                );
+            })
+            .await;
+            assert_eq!(
+                *log.borrow(),
+                [
+                    json!({"signal": true, "pending": true}),
+                    json!({"signal": true, "pending": false}),
+                ],
+                "the context sees the running signal and loses its queue to the editor"
+            );
+            assert!(world.runtime.drain_futures().is_empty());
+        },
+    );
+}
+
 #[test]
 fn shortcut_context_exposes_current_runner_capabilities() {
     isolated(
@@ -1285,12 +1438,7 @@ fn shortcut_context_exposes_current_runner_capabilities() {
             world.runtime.settle().unwrap();
             world.mode.editor.handle_input("\x11");
             world.runtime.settle().unwrap();
-            for _ in 0..10_000 {
-                if log.borrow().len() == 2 {
-                    break;
-                }
-                tokio::task::yield_now().await;
-            }
+            assert!(admitted(&world.runtime).await.is_empty());
             assert!(world.runtime.drain_futures().is_empty());
             let cwd = session.session_manager().borrow().get_cwd().to_owned();
             let usage = session.get_context_usage().unwrap().is_some();
@@ -1601,6 +1749,78 @@ fn real_session_replacement_rebinds_shortcuts_before_continuation() {
             for generation in 1..=2 {
                 replace_once(&world, generation, &log).await;
             }
+        },
+    );
+}
+
+/// Requests shutdown twice during compaction, then waits for the supplied release.
+fn compaction_shutdown(
+    entered: Rc<tokio::sync::Notify>,
+    release: Rc<tokio::sync::Notify>,
+) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let (waiting, releasing) = (Rc::clone(&entered), Rc::clone(&release));
+        let registered = api
+            .on::<maestro_app::SessionBeforeCompactEvent, maestro_app::SessionBeforeCompactResult>(
+                "session_before_compact".into(),
+                Rc::new(move |_, context| {
+                    let (waiting, releasing) = (Rc::clone(&waiting), Rc::clone(&releasing));
+                    Box::pin(async move {
+                        context.shutdown()?;
+                        context.shutdown()?;
+                        waiting.notify_one();
+                        releasing.notified().await;
+                        Ok(Some(maestro_app::SessionBeforeCompactResult {
+                            cancel: maestro_app::Presence::Present(true),
+                            compaction: maestro_app::Presence::Missing,
+                        }))
+                    })
+                }),
+            );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// A shutdown requested after agent end waits for compaction and starts at run settlement.
+#[test]
+fn shutdown_requested_during_compaction_runs_once_at_settle() {
+    isolated(
+        "shutdown_requested_during_compaction_runs_once_at_settle",
+        async |directory| {
+            let entered = Rc::new(tokio::sync::Notify::new());
+            let release = Rc::new(tokio::sync::Notify::new());
+            let effects = Rc::new(super::lifecycle::Effects::default());
+            let world = Setup {
+                extension: Some(compaction_shutdown(
+                    Rc::clone(&entered),
+                    Rc::clone(&release),
+                )),
+                lifecycle: effects.clone(),
+                ..Setup::default()
+            }
+            .build(directory);
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            let session = world.host.session();
+            session.model().write().unwrap().context_window = 1_000.0;
+            let receive = super::held_response(&world);
+            let prompted = Rc::clone(&session);
+            let run = tokio::task::spawn_local(async move {
+                prompted
+                    .prompt("one", maestro_app::PromptOptions::default())
+                    .await
+            });
+            let held = receive.await.unwrap();
+            let message = super::answer();
+            message.write().unwrap().usage.input = 2_000.0;
+            message.write().unwrap().usage.total_tokens = maestro_app::Presence::Present(2_000.0);
+            held.stream.end(Some(message));
+            entered.notified().await;
+            assert_eq!(exits(&effects), 0);
+            release.notify_one();
+            run.await.unwrap().unwrap();
+            assert!(world.runtime.drain_futures().is_empty());
+            assert_eq!(exits(&effects), 1);
         },
     );
 }

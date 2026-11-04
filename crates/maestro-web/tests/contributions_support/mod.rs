@@ -13,6 +13,9 @@ use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Document, Element, HtmlElement, Node};
 
+/// Browser observations read by the contribution exports.
+pub(crate) mod page;
+
 /// Supplying package of every fixture contribution, as the resource loader names it.
 pub(crate) const PACKAGE: &str = "./package";
 
@@ -89,38 +92,18 @@ pub(crate) async fn fetch_text(url: &str) -> String {
 pub(crate) async fn contributions() -> Vec<BrowserContribution> {
     serde_json::from_str(&fetch_text(&format!("{}contributions.json", base())).await).unwrap()
 }
-/// The browser observation helpers, imported through the page's own module import.
-pub(crate) async fn page_module(import_module: &js_sys::Function) -> JsValue {
-    let url = wasm_bindgen::link_to!(module = "/tests/contributions_support/page.js");
-    settle(import_module.call1(&JsValue::NULL, &url.into()).unwrap())
-        .await
-        .unwrap()
-}
-/// Call a helper export and await its result.
-pub(crate) async fn call(module: &JsValue, name: &str, args: &js_sys::Array) -> JsValue {
-    let function: js_sys::Function = js_sys::Reflect::get(module, &name.into())
-        .unwrap()
-        .dyn_into()
-        .unwrap();
-    settle(function.apply(&JsValue::NULL, args).unwrap())
-        .await
-        .unwrap()
-}
 /// Wait, by mutation signals, until `ready` holds below `target`.
-pub(crate) async fn until(module: &JsValue, target: &Node, ready: impl Fn() -> bool) {
+pub(crate) async fn until(target: &Node, ready: impl Fn() -> bool) {
     while !ready() {
-        call(module, "changed", &js_sys::Array::of1(target)).await;
+        page::changed(target).await;
     }
 }
 /// A meter reading the UTF-16 code units that changes below `target` published since its
 /// previous reading, outside elements matching a nonempty `skip` selector.
-pub(crate) async fn published(module: &JsValue, target: &Node, skip: &str) -> impl Fn() -> f64 {
-    let measure = call(module, "written", &js_sys::Array::of1(&skip.into())).await;
-    let take: js_sys::Function = call(module, "recorder", &js_sys::Array::of2(target, &measure))
-        .await
-        .dyn_into()
-        .unwrap();
-    move || take.call0(&JsValue::NULL).unwrap().as_f64().unwrap()
+pub(crate) fn published(target: &Node, skip: &str) -> impl Fn() -> usize {
+    let recorder = page::Recorder::new(target);
+    let skip = skip.to_owned();
+    move || page::written(&recorder.take(), &skip)
 }
 /// Call a driver binding the harness exposes on the page.
 pub(crate) async fn driver(name: &str, argument: &str) -> JsValue {
@@ -195,6 +178,16 @@ pub(crate) fn computed(element: &Element, property: &str) -> String {
         .get_property_value(property)
         .unwrap()
 }
+/// Whether a computed `box-shadow` paints a surface: a nonzero offset, blur or spread.
+pub(crate) fn shadow_paints(shadow: &str) -> bool {
+    let lengths = shadow
+        .rsplit_once(')')
+        .map_or(shadow, |(_, lengths)| lengths);
+    lengths
+        .split_whitespace()
+        .filter_map(|length| length.trim_end_matches("px").parse::<f64>().ok())
+        .any(|length| length != 0.0)
+}
 
 /// Outcome of a stubbed clipboard write.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -210,7 +203,7 @@ pub(crate) enum Clipboard {
 pub(crate) struct Recorded {
     /// Texts written so far.
     texts: Rc<RefCell<Vec<String>>>,
-    /// Settlements of deferred writes, oldest last.
+    /// Settlements of deferred writes, newest last.
     settlements: Rc<RefCell<Vec<js_sys::Function>>>,
     /// The installed write, which stays reachable while this recorder lives.
     _write: Closure<dyn Fn(String) -> js_sys::Promise>,
@@ -244,7 +237,7 @@ impl Recorded {
     pub(crate) fn texts(&self) -> Vec<String> {
         self.texts.borrow().clone()
     }
-    /// Settle the oldest deferred write.
+    /// Settle the newest deferred write.
     pub(crate) fn settle(&self) {
         let next = self.settlements.borrow_mut().pop();
         if let Some(resolve) = next {
@@ -252,17 +245,9 @@ impl Recorded {
         }
     }
 }
-/// Wait for `count` animation frames.
-pub(crate) async fn frames(page: &JsValue, count: u32) {
-    call(page, "frames", &js_sys::Array::of1(&JsValue::from(count))).await;
-}
-/// The selected text and whether `root` holds the selection.
-pub(crate) async fn selection(page: &JsValue, root: &Element) -> (String, bool) {
-    let pair = js_sys::Array::from(&call(page, "selection", &js_sys::Array::of1(root)).await);
-    (
-        pair.get(0).as_string().unwrap(),
-        pair.get(1).as_bool().unwrap(),
-    )
+/// Wait for one frame that aligns to the next paint, then `count` more frames.
+pub(crate) async fn frames(count: u32) {
+    page::frames(count).await;
 }
 
 /// One required descendant, reporting the missing selector.

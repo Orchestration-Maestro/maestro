@@ -11,6 +11,9 @@ use std::{
     rc::Rc,
 };
 use wasm_bindgen::{JsCast as _, prelude::*};
+
+/// One native failure injected at a selected presentation phase.
+pub mod presentation_fault;
 /// Evaluate a document observation.
 /// # Panics
 /// Panics when the evaluation throws.
@@ -212,25 +215,7 @@ impl View {
         output
     }
 }
-/// A complete pointer activation.
-#[must_use]
-pub fn click(pos: egui::Pos2) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: true,
-            modifiers: egui::Modifiers::NONE,
-        },
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: false,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
-}
+pub use crate::support::pointer::click;
 
 /// Require one actual document observation.
 /// # Panics

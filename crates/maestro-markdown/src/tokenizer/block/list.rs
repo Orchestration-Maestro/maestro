@@ -82,6 +82,15 @@ pub(crate) struct ListState {
 }
 
 impl ListState {
+    /// Charge the source and settled output this list keeps alive while it stays open.
+    #[cfg(test)]
+    pub(crate) fn retained(&mut self, retained: &mut crate::tests::Retained) {
+        for item in &mut self.completed {
+            item.retained(retained);
+        }
+        self.item.retained(retained);
+    }
+
     /// Complete the trailing item and admit the next marker's first line.
     fn begin(&mut self, line: &ScopeSource, next: &Marker, options: MarkedOptions) {
         let previous = std::mem::replace(&mut self.item, ItemLines::new(line, next, options));
@@ -101,10 +110,7 @@ impl ListState {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| {
             let mut retained = crate::tests::Retained::default();
-            for item in &self.completed {
-                item.retained(&mut retained);
-            }
-            self.item.retained(&mut retained);
+            self.retained(&mut retained);
             work.frame_bytes = work.frame_bytes.max(retained.bytes);
         });
         let following = self.completed.len();
@@ -115,7 +121,8 @@ impl ListState {
             loose |= item.blank_end() || blank_separator(&output);
             outputs.push(output);
         }
-        let output = self.item.child.finish(task(self.item.body()).1);
+        let task = task(self.item.body()).1;
+        let output = self.item.child.finish(task);
         loose |= blank_separator(&output);
         outputs.push(output);
         (outputs, loose)
@@ -132,7 +139,7 @@ enum ItemSlot<'a> {
 
 impl ItemSlot<'_> {
     /// Borrow the dedented semantic body this item's child admits.
-    fn body(&self) -> &Segmented {
+    fn body(&mut self) -> &Segmented {
         match self {
             Self::Open(item) => item.body(),
             Self::Stopped(item) => item.body(),
@@ -392,7 +399,7 @@ impl ListFrame {
         let Some(state) = self.state.as_deref_mut() else {
             return;
         };
-        let Some(node) = wrapper(&state.item) else {
+        let Some(node) = wrapper(&mut state.item) else {
             self.phase = ListPhase::Reject;
             return;
         };
@@ -434,12 +441,16 @@ impl ListFrame {
                 consumed: end,
                 node,
                 list: Some(state),
+                #[cfg(test)]
+                settled: 0,
             }),
             ListTarget::Resumed => Step::Done(Done::Resumed {
                 used: raw,
                 node,
                 rest: self.source.select(end..self.source.len()),
                 list: Some(state),
+                #[cfg(test)]
+                settled: 0,
             }),
         }
     }
@@ -490,7 +501,7 @@ fn operand(source: &Segmented, end: Option<usize>) -> (Segmented, usize) {
 }
 
 /// Publish an item's provisional wrapper over its recognized raw.
-fn wrapper(item: &ItemLines) -> Option<Node> {
+fn wrapper(item: &mut ItemLines) -> Option<Node> {
     let raw = item.raw();
     Some(Node {
         authored: raw.mapped(),

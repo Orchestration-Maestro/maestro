@@ -3,7 +3,7 @@
 //! Dynamic provider retention and catalog replay.
 use crate::dynamic;
 use crate::support;
-use maestro_catalog::{ModelRegistry, ProviderConfigInput};
+use maestro_catalog::{ModelRegistry, ProviderCallbacks, ProviderConfigInput};
 use maestro_models::SharedHandle;
 use std::sync::{Arc, RwLock};
 
@@ -92,11 +92,42 @@ fn display_name_precedence_keeps_present_empty_names() {
     assert_eq!(registry.get_provider_display_name("unlisted"), "Registered");
 }
 
+/// Register the peer instance's same-name account entry, bundled-protocol override and
+/// own protocol, each under its own ownership identity.
+fn register_peer_entries() -> ModelRegistry {
+    let second = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+    second
+        .register_provider(
+            "shared",
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
+                base_url: Some("https://second.invalid/v1".into()),
+                callbacks: ProviderCallbacks {
+                    oauth: Some(dynamic::oauth("Peer account")),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })),
+        )
+        .unwrap();
+    let override_config = SharedHandle::new(RwLock::new(ProviderConfigInput {
+        api: Some("openai-completions".into()),
+        base_url: Some("https://override.invalid".into()),
+        ..Default::default()
+    }));
+    dynamic::callback(&override_config, "peer-override");
+    second
+        .register_provider("override", override_config)
+        .unwrap();
+    let own_protocol = dynamic::config(&["peer"]);
+    own_protocol.write().unwrap().api = Some("peer-api".into());
+    dynamic::callback(&own_protocol, "peer-own");
+    second.register_provider("peer-own", own_protocol).unwrap();
+    second
+}
+
 #[test]
-fn construction_preserves_global_registries_but_refresh_resets_other_instances() {
-    if dynamic::isolated(
-        "construction_preserves_global_registries_but_refresh_resets_other_instances",
-    ) {
+fn refresh_and_removal_keep_another_instances_registrations() {
+    if dynamic::isolated("refresh_and_removal_keep_another_instances_registrations") {
         return;
     }
     let first = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
@@ -109,18 +140,89 @@ fn construction_preserves_global_registries_but_refresh_resets_other_instances()
     }
     dynamic::callback(&config, "first");
     first.register_provider("p", config).unwrap();
-    let second = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
-    assert!(maestro_models::get_api_provider("instance-api").is_some());
-    assert!(maestro_models::get_oauth_provider("p").is_some());
-    assert_eq!(second.get_provider_display_name("p"), "Dynamic OAuth");
-    second.refresh().unwrap();
-    assert!(maestro_models::get_api_provider("instance-api").is_none());
-    assert!(maestro_models::get_oauth_provider("p").is_none());
-    assert_eq!(first.get_provider_display_name("p"), "P");
-    assert_eq!(second.get_provider_display_name("p"), "p");
+    first
+        .register_provider(
+            "shared",
+            SharedHandle::new(RwLock::new(ProviderConfigInput {
+                base_url: Some("https://first.invalid/v1".into()),
+                ..Default::default()
+            })),
+        )
+        .unwrap();
+    register_peer_entries();
+    let peer_account = maestro_models::get_oauth_provider("shared").unwrap();
+    let peer_override = maestro_models::get_api_provider("openai-completions").unwrap();
+    let peer_own = maestro_models::get_api_provider("peer-api").unwrap();
+    let shadow = dynamic::config(&["shadow"]);
+    shadow.write().unwrap().api = Some("peer-api".into());
+    dynamic::callback(&shadow, "first-shadow");
+    first.register_provider("shadow", shadow).unwrap();
+    assert_eq!(peer_account.name(), "Peer account");
     first.refresh().unwrap();
+    assert_eq!(first.get_provider_display_name("p"), "P");
     assert_eq!(dynamic::failure(&first, "p", "m"), "first");
-    assert!(maestro_models::get_oauth_provider("p").is_some());
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_account,
+        &maestro_models::get_oauth_provider("shared").unwrap()
+    ));
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_override.stream,
+        &maestro_models::get_api_provider("openai-completions")
+            .unwrap()
+            .stream
+    ));
+    // This registry's own retained shadow asserts itself again over the peer's protocol.
+    assert_eq!(dynamic::failure(&first, "shadow", "shadow"), "first-shadow");
+    first.unregister_provider("shadow").unwrap();
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_own.stream,
+        &maestro_models::get_api_provider("peer-api").unwrap().stream
+    ));
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_account,
+        &maestro_models::get_oauth_provider("shared").unwrap()
+    ));
+    first.unregister_provider("shared").unwrap();
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &peer_account,
+        &maestro_models::get_oauth_provider("shared").unwrap()
+    ));
+}
+
+#[test]
+fn refresh_and_removal_leave_no_stale_shadow_copies() {
+    if dynamic::isolated("refresh_and_removal_leave_no_stale_shadow_copies") {
+        return;
+    }
+    let mut registries = Vec::new();
+    for owner in ["first", "second", "third"] {
+        let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
+        let config = dynamic::config(&[owner]);
+        config.write().unwrap().api = Some("stale-shadow".into());
+        dynamic::callback(&config, owner);
+        registry.register_provider(owner, config).unwrap();
+        registries.push(registry);
+    }
+    let witness = registries[2]
+        .find("third", "third")
+        .unwrap()
+        .read()
+        .unwrap()
+        .clone();
+    // The last registration owns the protocol.
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("third"));
+    // Each refresh re-asserts its own registration without leaving a stale copy behind.
+    registries[0].refresh().unwrap();
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("first"));
+    registries[1].refresh().unwrap();
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("second"));
+    registries[0].unregister_provider("first").unwrap();
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("second"));
+    registries[2].unregister_provider("third").unwrap();
+    assert_eq!(dynamic::live_failure(&witness).as_deref(), Some("second"));
+    // A removal must not resurrect registrations from a source that already left.
+    registries[1].unregister_provider("second").unwrap();
+    assert!(dynamic::live_failure(&witness).is_none());
 }
 
 #[test]
@@ -207,7 +309,12 @@ fn registered_oauth_label_precedes_current_global_provider() {
         );
     }
     registry.unregister_provider("p").unwrap();
-    assert_eq!(registry.get_provider_display_name("p"), "p");
+    // The removal keeps the globally installed registration that displaced this one.
+    assert_eq!(
+        maestro_models::get_oauth_provider("p").unwrap().name(),
+        "Other Instance"
+    );
+    assert_eq!(registry.get_provider_display_name("p"), "Other Instance");
 }
 
 #[test]
@@ -769,4 +876,35 @@ fn failed_same_handle_registration_preserves_prior_alias_edits() {
     registry.refresh().unwrap();
     assert_eq!(registry.get_provider_display_name("p"), "alias edit");
     assert!(registry.find("p", "m").is_some());
+}
+
+#[test]
+fn model_overrides_apply_to_registered_provider_models() {
+    if dynamic::isolated("model_overrides_apply_to_registered_provider_models") {
+        return;
+    }
+    let text = support::Text(Arc::new(std::sync::Mutex::new(Some(
+        r#"{"providers":{"p":{"modelOverrides":{"m":{"name":"Overridden","contextWindow":4242,"headers":{"x-model-override":"enabled"}}}}}}"#.into(),
+    ))));
+    let registry = support::text_registry("models-input", &text, crate::support::values());
+    registry
+        .register_provider("p", dynamic::config(&["m", "other"]))
+        .unwrap();
+    for _ in 0..2 {
+        let model = registry.find("p", "m").unwrap();
+        assert_eq!(model.read().unwrap().name, "Overridden");
+        assert!((model.read().unwrap().context_window - 4242.0).abs() < f64::EPSILON);
+        request_support::success(
+            request_support::run(registry.get_api_key_and_headers(&model)),
+            Some("configured"),
+            &[("x-model-override", "enabled")],
+        );
+        let other = registry.find("p", "other").unwrap();
+        request_support::success(
+            request_support::run(registry.get_api_key_and_headers(&other)),
+            Some("configured"),
+            &[],
+        );
+        registry.refresh().unwrap();
+    }
 }

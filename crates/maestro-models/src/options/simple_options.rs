@@ -1,8 +1,9 @@
 #![doc = include_str!("../../../../docs/model-options.md")]
 use std::borrow::Cow;
 
+use super::context_estimate::estimate_context_tokens;
 use crate::{
-    CacheRetention, Model, ModelThinkingLevel, ProviderExecution, SimpleStreamOptions,
+    CacheRetention, Context, Model, ModelThinkingLevel, ProviderExecution, SimpleStreamOptions,
     StreamOptions, ThinkingBudgets, ThinkingLevel, get_env_api_key,
 };
 
@@ -16,30 +17,59 @@ pub(crate) fn resolve_api_key<'a>(
         .or_else(|| get_env_api_key(provider).map(Cow::Owned))
 }
 
+/// Tokens kept free below the context window when the output budget is fitted to it.
+const CONTEXT_SAFETY_TOKENS: f64 = 4096.0;
+/// The smallest output budget a fitted request asks for.
+const MIN_MAX_TOKENS: f64 = 1.0;
+/// Output tokens a thinking budget always leaves for the answer.
+const MIN_ANSWER_TOKENS: f64 = 1024.0;
+
+/// Fit an output limit to the room the context leaves in the model's window.
+///
+/// The room is the window less the estimated context tokens and 4,096 safety tokens, never
+/// below one token. A limit already below the room is kept; a model with no window keeps the
+/// limit, raised to one token. A NaN limit stays NaN, so the request owner still sees it.
+fn clamp_max_tokens_to_context(model: &Model, context: &Context, max_tokens: f64) -> f64 {
+    if max_tokens.is_nan() {
+        return max_tokens;
+    }
+    if model.context_window <= 0.0 {
+        return max_tokens.max(MIN_MAX_TOKENS);
+    }
+    let room = model.context_window - estimate_context_tokens(context) - CONTEXT_SAFETY_TOKENS;
+    max_tokens.min(room.max(MIN_MAX_TOKENS))
+}
+
 /// Copy common settings without invoking retained hooks.
 ///
-/// Missing token limits use the positive model limit capped at 32,000.
-/// A separately supplied nonempty key overrides the copied key without trimming.
+/// Missing token limits use the positive model limit. Every limit, supplied or defaulted, is
+/// fitted to the room the model's context window leaves after the system prompt, tools and
+/// messages. A separately supplied nonempty key overrides the copied key without trimming.
 #[must_use]
 pub fn build_base_options(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions>,
     api_key: Option<&str>,
 ) -> StreamOptions {
-    build_base_options_for(model, options, api_key)
+    build_base_options_for(model, context, options, api_key)
 }
 
 /// Copy family-correct common options without invoking or transferring hooks.
+///
+/// The token limit follows [`build_base_options`].
 #[must_use]
 pub fn build_base_options_for<E: ProviderExecution>(
     model: &Model,
+    context: &Context,
     options: Option<&SimpleStreamOptions<E>>,
     api_key: Option<&str>,
 ) -> StreamOptions<E> {
     let mut common = options.map_or_else(StreamOptions::default, |options| options.common.clone());
-    if common.max_tokens.is_none() && model.max_tokens > 0.0 {
-        common.max_tokens = Some(model.max_tokens.min(32_000.0));
-    }
+    common.max_tokens = common
+        .max_tokens
+        .or_else(|| (model.max_tokens > 0.0).then_some(model.max_tokens))
+        .map(|max_tokens| clamp_max_tokens_to_context(model, context, max_tokens));
     if let Some(key) = api_key.filter(|key| !key.is_empty()) {
         common.api_key = Some(key.to_owned());
     }
@@ -53,13 +83,6 @@ pub fn clamp_reasoning(effort: Option<ThinkingLevel>) -> Option<ThinkingLevel> {
         Some(ThinkingLevel::Xhigh) => Some(ThinkingLevel::High),
         other => other,
     }
-}
-
-/// The token base thinking budgets are added to: absent, zero and NaN limits count as zero.
-pub(crate) fn token_base(max_tokens: Option<f64>) -> f64 {
-    max_tokens
-        .filter(|n| *n != 0.0 && !n.is_nan())
-        .unwrap_or(0.0)
 }
 
 /// The budget of a level: the caller's slot when set (zero included), otherwise 1,024, 2,048,
@@ -84,6 +107,7 @@ pub struct AdjustedMaxTokens {
 
 /// Add a per-level thinking budget, capped by the model's token limit.
 ///
+/// Without a base limit the combined limit is the model's, and the budget fits inside it.
 /// Defaults are 1,024, 2,048, 8,192 and 16,384 for minimal through high.
 /// Extra-high uses the high slot. Missing custom slots retain their defaults.
 /// When the capped limit is no larger than the budget, reserve 1,024 output
@@ -91,26 +115,57 @@ pub struct AdjustedMaxTokens {
 /// produces a NaN combined limit.
 #[must_use]
 pub fn adjust_max_tokens_for_thinking(
-    base_max_tokens: f64,
+    base_max_tokens: Option<f64>,
     model_max_tokens: f64,
     reasoning_level: ThinkingLevel,
     custom_budgets: Option<&ThinkingBudgets>,
 ) -> AdjustedMaxTokens {
     let budget = thinking_budget(reasoning_level, custom_budgets);
-    let combined = base_max_tokens + budget;
+    let combined = base_max_tokens.map_or(model_max_tokens, |base| base + budget);
     let max_tokens = if combined.is_nan() || model_max_tokens.is_nan() {
         f64::NAN
     } else {
         combined.min(model_max_tokens)
     };
     let thinking_budget = if max_tokens <= budget {
-        (max_tokens - 1024.0).max(0.0)
+        (max_tokens - MIN_ANSWER_TOKENS).max(0.0)
     } else {
         budget
     };
     AdjustedMaxTokens {
         max_tokens,
         thinking_budget,
+    }
+}
+
+/// Fit a thinking budget and its combined limit to the model and to the room the context leaves.
+///
+/// The limit is [`adjust_max_tokens_for_thinking`]'s, fitted to the context window as
+/// [`build_base_options`] fits a limit, and the budget never takes the last 1,024 tokens of it.
+/// A NaN base limit counts as no limit; a NaN budget stays NaN.
+pub(crate) fn fit_thinking(
+    model: &Model,
+    context: &Context,
+    base_max_tokens: Option<f64>,
+    reasoning_level: ThinkingLevel,
+    custom_budgets: Option<&ThinkingBudgets>,
+) -> AdjustedMaxTokens {
+    let adjusted = adjust_max_tokens_for_thinking(
+        base_max_tokens.filter(|base| !base.is_nan()),
+        model.max_tokens,
+        reasoning_level,
+        custom_budgets,
+    );
+    let max_tokens = clamp_max_tokens_to_context(model, context, adjusted.max_tokens);
+    AdjustedMaxTokens {
+        max_tokens,
+        thinking_budget: if adjusted.thinking_budget.is_nan() {
+            adjusted.thinking_budget
+        } else {
+            adjusted
+                .thinking_budget
+                .min((max_tokens - MIN_ANSWER_TOKENS).max(0.0))
+        },
     }
 }
 

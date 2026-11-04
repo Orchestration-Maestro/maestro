@@ -18,13 +18,6 @@ mod hotkeys;
 mod info;
 mod lifecycle;
 mod models;
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "Only executable installation is shared."
-)]
-#[path = "../../../maestro-app/tests/support/native.rs"]
-mod native;
 mod navigation;
 mod notices;
 mod progress;
@@ -43,11 +36,11 @@ mod typed;
 
 use crate::components::thinking_selector::thinking_text;
 use crate::interactive_mode::bash::component_address;
+use crate::platform_keys;
 use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
-// The controlled host, disposable directory and palettes are compiled once in the library tests.
+// The controlled host and palettes are compiled once in the library tests.
 use crate::components::session_selector::list::tests::session_picker::{
-    manual_runtime::ManualRuntime, native_child as child, published,
-    recording_terminal::RecordingTerminal,
+    manual_runtime::ManualRuntime, published, recording_terminal::RecordingTerminal,
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
@@ -64,7 +57,7 @@ use maestro_app::{
     load_extension_from_factory, strip_ansi,
 };
 use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
-use maestro_test_process::TestProcess;
+use maestro_test_process::{IsolatedSetup, TestProcess};
 use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
@@ -78,6 +71,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
     error::Error,
+    ffi::OsStr,
     future::Future,
     io,
     path::Path,
@@ -103,8 +97,8 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
         on_tasks(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
-    let scratch = child::Scratch::new();
-    let directory = scratch.0.path();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let directory = scratch.path();
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
     let output = TestProcess::current(test)
@@ -124,24 +118,49 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
 }
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
-/// so the constructor reads its key bindings from there rather than the developer's.
+/// so the constructor reads its key bindings from there rather than the developer's. The
+/// child is offline and its binary directory supplies both search programs, so an
+/// ordinary startup witness neither downloads a program nor runs a host one.
 fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
-    isolated_case(test, "child", &[], body);
+    isolated_case(
+        test,
+        "child",
+        &[(OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1"))],
+        async |directory| {
+            controlled_search_programs(directory);
+            body(directory).await;
+        },
+    );
+}
+
+/// Installs stub `fd` and `rg` in the binary directory, which is searched before the
+/// command path.
+fn controlled_search_programs(directory: &Path) {
+    let bin = directory.join("bin");
+    for name in ["fd", "rg"] {
+        install_output(&bin, name, b"", 0);
+    }
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
 /// directory, with no inherited environment apart from the command path and `envs`, so
 /// no developer credential reaches it. The child's temporary directory is that root's
 /// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
-/// Wayland one. The file-size signal is ignored, so a write over a lowered limit fails
-/// instead of ending the child.
+/// Wayland one. The file-size signal keeps the child alive, so a write over a lowered
+/// limit fails instead of ending the child. A prepared native fixture stays available to it.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
-    envs: &[(&str, &str)],
+    envs: &[(&OsStr, &OsStr)],
     body: impl AsyncFnOnce(&Path),
 ) {
-    if let Some(output) = isolated_output(test, case, envs, "trap '' XFSZ", body) {
+    if let Some(output) = isolated_output(
+        test,
+        case,
+        envs,
+        IsolatedSetup::new().file_size_continues(),
+        body,
+    ) {
         assert!(
             output.status.success(),
             "child probe failed: {}",
@@ -151,25 +170,26 @@ pub(super) fn isolated_case(
 }
 
 /// Runs `body` as `case` of `test` in the child [`isolated_case`] describes, after `setup`
-/// runs in the child's shell, and returns that child's output to the parent; the child
-/// itself returns nothing.
+/// is applied at the child's entry, and returns that child's output to the parent; the
+/// child itself returns nothing.
 pub(super) fn isolated_output(
     test: &str,
     case: &str,
-    envs: &[(&str, &str)],
-    setup: &str,
+    envs: &[(&OsStr, &OsStr)],
+    setup: IsolatedSetup,
     body: impl AsyncFnOnce(&Path),
 ) -> Option<std::process::Output> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
+        let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
             on_tasks(body(Path::new(&directory)));
         }
         return None;
     }
-    let scratch = child::Scratch::new();
-    let root = scratch.0.path();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let root = scratch.path();
     for name in ["bin", "tmp"] {
         std::fs::create_dir(root.join(name)).unwrap();
     }
@@ -178,17 +198,24 @@ pub(super) fn isolated_output(
         root.join("bin").display(),
         std::env::var("PATH").unwrap_or_default()
     );
-    let mut all = vec![
-        (ENV_AGENT_DIR.as_str(), root.to_str().unwrap()),
-        ("PATH", &path),
-        ("WAYLAND_DISPLAY", "maestro-test"),
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE");
+    let mut all: Vec<(&OsStr, &OsStr)> = vec![
+        (OsStr::new(ENV_AGENT_DIR.as_str()), root.as_os_str()),
+        (OsStr::new("PATH"), OsStr::new(&path)),
+        (OsStr::new("WAYLAND_DISPLAY"), OsStr::new("maestro-test")),
     ];
-    all.extend_from_slice(envs);
+    // The cleared child installs the controlled programs from the prepared artifact.
+    all.extend(
+        artifact
+            .iter()
+            .map(|artifact| (OsStr::new("MAESTRO_NATIVE_FIXTURE"), artifact.as_os_str())),
+    );
+    all.extend(envs.iter().copied());
     let output = TestProcess::current(test)
         .unwrap()
         .env_clear()
         .case(case)
-        .shell_setup("/bin/bash", setup)
+        .setup(setup)
         .temp_dir(root.join("tmp"))
         .nocapture()
         .single_threaded()
@@ -429,12 +456,12 @@ impl ResourceLoader<Local> for ForwardingLoader {
 
 /// The dark palette the loader registers.
 pub(super) fn dark() -> Rc<Theme> {
-    published::named(0, Some("dark"))
+    published::named(0, Some("dark")).unwrap()
 }
 
 /// The light palette the loader registers, in other colours.
 pub(super) fn light() -> Rc<Theme> {
-    published::named(100, Some("light"))
+    published::named(100, Some("light")).unwrap()
 }
 
 /// One mode over a recording terminal, a controlled host and the loader's themes.
@@ -772,6 +799,8 @@ pub(super) struct Case {
     input: serde_json::Value,
     /// The recorded observation.
     expected: serde_json::Value,
+    /// Complete macOS layout when its key names differ.
+    expected_macos: Option<serde_json::Value>,
 }
 
 /// The recorded operations.
@@ -872,7 +901,11 @@ pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
         .map(|case| {
             (
                 serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
+                serde_json::from_value(platform_keys::for_this_platform(
+                    case.expected,
+                    case.expected_macos,
+                ))
+                .unwrap(),
             )
         })
         .collect();
@@ -1349,44 +1382,78 @@ pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
 }
 
-/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
-///
-/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
-/// caller runs it: such work, like a running shell command's output, can end only after the
-/// caller's later steps.
-pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+/// Takes the work `runtime` holds and returns what the last input handed over; work handed
+/// over earlier is spawned beside the caller, so a [`driving`] task runs it: such work, like
+/// a running shell command's output, can end only after the caller's later steps.
+fn take_admitted(runtime: &ManualRuntime) -> maestro_tui::tui::LocalFuture {
     let mut work = runtime.take_futures();
     let command = work.pop().expect("the input handed over its work");
     for earlier in work {
         maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
     }
-    command.await.err().into_iter().collect()
+    command
 }
 
-/// Waits until `path` exists, yielding so the work that creates it runs.
-pub(super) async fn until_exists(path: &Path) {
-    for _ in 0..10_000 {
-        if path.exists() {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!("{} appeared", path.display());
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    take_admitted(runtime).await.err().into_iter().collect()
 }
 
-/// Waits until no shell row is producing output and the transcript holds `rows` children.
-pub(super) async fn until_complete(world: &World, rows: usize) {
-    for _ in 0..10_000 {
-        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
-            return;
-        }
-        tokio::task::yield_now().await;
+/// A submitted shell command running beside the caller, whose own completion ends a wait.
+pub(super) type StartedShell = tokio::task::JoinHandle<Vec<Box<dyn Error>>>;
+
+/// Submits `text` and runs the shell work it admitted beside the caller, so a later step
+/// waits for that command's own end.
+pub(super) fn start_shell(world: &World, text: &str) -> StartedShell {
+    submit(&world.mode, text);
+    let command = take_admitted(&world.runtime);
+    tokio::task::spawn_local(async move { command.await.err().into_iter().collect() })
+}
+
+/// Waits for a started shell command to settle and returns the failures it reported.
+pub(super) async fn settle_shell(command: StartedShell) -> Vec<Box<dyn Error>> {
+    command.await.expect("the shell command finishes")
+}
+
+/// One piece of work the terminal host holds, run as a test-owned task.
+pub(super) type StartedWork = tokio::task::JoinHandle<Result<(), Box<dyn Error>>>;
+
+/// Runs the work the terminal host holds as tasks beside the caller, so a case can wait
+/// between two steps on the work that work hands over.
+pub(super) fn start_host_work(world: &World) -> Vec<StartedWork> {
+    world
+        .runtime
+        .take_futures()
+        .into_iter()
+        .map(tokio::task::spawn_local)
+        .collect()
+}
+
+/// Waits for every started piece of work to finish and returns the failures it reported.
+pub(super) async fn finish_host_work(work: Vec<StartedWork>) -> Vec<Box<dyn Error>> {
+    let mut errors = Vec::new();
+    for task in work {
+        let outcome = task.await.expect("the host's work finishes");
+        errors.extend(outcome.err());
     }
-    panic!(
-        "the shell command completed: active={} rows={}",
-        active(world).is_some(),
-        world.mode.chat_container.children().borrow().len()
-    );
+    errors
+}
+
+/// Awaits the work the terminal host holds, including the work that work hands over, and
+/// returns the failures that work reported.
+pub(super) async fn settle_host(world: &World) -> Vec<Box<dyn Error>> {
+    let mut errors = Vec::new();
+    loop {
+        let work = world.runtime.take_futures();
+        if work.is_empty() {
+            return errors;
+        }
+        let (outcomes, driven) = driving(world, futures_util::future::join_all(work)).await;
+        errors.extend(driven);
+        for outcome in outcomes {
+            errors.extend(outcome.err());
+        }
+    }
 }
 
 /// The shell row that is still producing output, when one is attached.
@@ -1394,13 +1461,79 @@ pub(super) fn active(world: &World) -> Option<Rc<BashExecutionComponent>> {
     world.mode.active_shell.borrow().clone()
 }
 
-/// Writes an executable shell script answering every command with `body`.
-pub(super) fn scripted(directory: &Path, name: &str, body: &str) -> String {
-    use std::os::unix::fs::PermissionsExt;
+/// Installs the prepared native fixture as the executable `name` in `directory`, playing the
+/// `family` scenario `scenario`.
+pub(super) fn install(
+    directory: &Path,
+    name: &str,
+    family: &str,
+    scenario: &serde_json::Value,
+) -> std::path::PathBuf {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    std::fs::create_dir_all(directory).unwrap();
     let path = directory.join(name);
-    std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-    path.to_str().unwrap().to_owned()
+    maestro_test_process::install_executable(Path::new(&artifact), &path)
+        .expect("the fixture installs");
+    record(&path, family, scenario);
+    path
+}
+
+/// Replaces the scenario the installed program `path` plays.
+pub(super) fn record(path: &Path, family: &str, scenario: &serde_json::Value) {
+    let mut sibling = path.as_os_str().to_owned();
+    sibling.push(".fixture");
+    std::fs::write(sibling, format!("{family}\n{scenario}")).unwrap();
+}
+
+/// Installs a program in `directory` that prints `stdout` and ends with `code`.
+pub(super) fn install_output(
+    directory: &Path,
+    name: &str,
+    stdout: &[u8],
+    code: u8,
+) -> std::path::PathBuf {
+    let scenario =
+        serde_json::json!({"scenario": "output", "stdout": stdout, "stderr": [], "code": code});
+    install(directory, name, "command", &scenario)
+}
+
+/// Installs an executable shell answering every command with the effects in `steps`.
+pub(super) fn scripted(directory: &Path, name: &str, steps: &serde_json::Value) -> String {
+    let scenario = serde_json::json!({"scenario": "shell", "steps": steps});
+    install(directory, name, "chat", &scenario)
+        .to_str()
+        .unwrap()
+        .to_owned()
+}
+
+/// Installs an executable shell that prints `text` for every command.
+pub(super) fn printing(directory: &Path, name: &str, text: &str) -> String {
+    scripted(directory, name, &serde_json::json!([{"print": text}]))
+}
+
+/// Listens at `path`, so a shell step holding there waits until its gate closes: dropping the
+/// returned listener resets a connection still queued, and dropping the connection a caller
+/// took through [`held_at`] ends the same wait at the command's read.
+pub(super) fn gate(path: &Path) -> std::os::unix::net::UnixListener {
+    // A gate of an earlier case in the same directory leaves its socket file behind.
+    drop(std::fs::remove_file(path));
+    std::os::unix::net::UnixListener::bind(path).unwrap()
+}
+
+/// Waits for a shell command to reach the gate `listener`, which it reports by connecting, and
+/// returns the connection that holds it; dropping the connection releases the command. The
+/// accept runs on a blocking thread, because this crate's Tokio features carry no asynchronous
+/// socket listener.
+pub(super) async fn held_at(
+    listener: std::os::unix::net::UnixListener,
+) -> std::os::unix::net::UnixStream {
+    let accepted = tokio::task::spawn_blocking(move || listener.accept());
+    let (stream, _) = accepted
+        .await
+        .expect("the accepting thread finishes")
+        .expect("the command reaches its gate");
+    stream
 }
 
 /// A response the controlled provider left open.
@@ -1524,8 +1657,17 @@ pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
 
 /// A started mode whose shell prints an output-only marker for the command it runs.
 pub(super) async fn echoing_shell(directory: &Path) -> World {
-    let script = scripted(directory, "echoing", "printf 'printed %s\\n' \"$2\"");
+    let script = echoing_script(directory);
     bash::shelling(directory, &script).await
+}
+
+/// Installs a shell that prints `printed <command>` for every command.
+pub(super) fn echoing_script(directory: &Path) -> String {
+    scripted(
+        directory,
+        "echoing",
+        &serde_json::json!([{"print-command": {"before": "printed ", "after": "\n"}}]),
+    )
 }
 
 /// Submits `count` shell commands, each with its own text, while the response streams,
@@ -1691,7 +1833,7 @@ fn watching(directory: &Path, watched: &Rc<Watched>) -> World {
     std::fs::write(custom.join("watched.json"), "{}").unwrap();
     Setup {
         configure: Box::new(|settings| settings.set_theme("watched".to_owned())),
-        themes: vec![published::named(1, Some("watched"))],
+        themes: vec![published::named(1, Some("watched")).unwrap()],
         directories: Some(maestro_theme::ThemeDirectories {
             themes_dir: String::new(),
             custom_themes_dir: custom.to_str().unwrap().to_owned(),
@@ -1770,12 +1912,12 @@ fn fatal_runtime_error_ends_the_process_with_failure_status() {
         }
         return;
     }
-    let scratch = child::Scratch::new();
+    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
     let output = TestProcess::current(test)
         .unwrap()
         .case("fatal")
-        .current_dir(scratch.0.path())
-        .env(&*ENV_AGENT_DIR, scratch.0.path())
+        .current_dir(scratch.path())
+        .env(&*ENV_AGENT_DIR, scratch.path())
         .nocapture()
         .output()
         .unwrap();

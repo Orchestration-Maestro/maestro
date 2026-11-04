@@ -134,6 +134,11 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
         + ?Sized;
     /// Unregisters a provider.
     type UnregisterProvider: Fn(String) -> Result<(), EventError> + ?Sized;
+    /// Factory-time operations on application-owned settings and packages.
+    type HostOperation: Fn(crate::host_operations::HostOperation) -> Self::Future<'static, Result<Value, String>>
+        + ?Sized;
+    /// Constructs a failed operation in this execution family.
+    fn failed_host_operation(error: String) -> Self::Future<'static, Result<Value, String>>;
     /// The operations of a runtime no runner has bound yet.
     fn unbound_actions() -> ExtensionActions<Self>;
     /// Command invocation callback.
@@ -189,6 +194,10 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
 macro_rules! family {
     ($mode:ty, [$($bound:tt)*]) => {
         impl ExtensionExecution for $mode {
+            type HostOperation = dyn Fn(crate::host_operations::HostOperation) -> Self::Future<'static, Result<Value, String>> $($bound)*;
+            fn failed_host_operation(error: String) -> Self::Future<'static, Result<Value, String>> {
+                Box::pin(async { Err(error) })
+            }
             type RegisteredDefinition=dyn super::registration::tools::RetainedDefinition $($bound)*;
             type HandlerRegistration=Box<dyn std::any::Any $($bound)*>;
             type Handler<V,R>=dyn for<'a> Fn(&'a mut V,ExtensionContext)-><Local as Execution>::Future<'a,Result<Option<R>,EventError>> $($bound)*;

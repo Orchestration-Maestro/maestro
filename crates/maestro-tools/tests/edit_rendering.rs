@@ -50,7 +50,7 @@ impl Row {
                 "/definition-decoy".into(),
                 EditToolOptions::default(),
             ),
-            env: Env::with(Rc::new(palette(0)), Rc::new(NoLanguages)),
+            env: Env::with(Rc::new(palette(0)), Rc::new(NoLanguages)).unwrap(),
             dir,
             state: Rc::new(RefCell::new(EditRenderState::default())),
             invalidations: Rc::new(Cell::new(0)),
@@ -64,7 +64,7 @@ impl Row {
     ) -> ToolRenderContext<'a, EditRenderState> {
         let setup = Setup::from(
             &json!({"readme":"/docs/README.md", "bindings":[], "cwd":self.dir.text(), "argsComplete":true}),
-        );
+        ).unwrap();
         let mut ctx = context(args, &setup, &self.env, last);
         ctx.state = Rc::clone(&self.state);
         let count = Rc::clone(&self.invalidations);

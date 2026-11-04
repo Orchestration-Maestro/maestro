@@ -129,9 +129,10 @@ translate instructions written for another environment.
 
 ### Packages and selection
 
-The shipped [development skills](packages/maestro-skills.md) are one collection,
-not the skill format itself. Follow that page to load a local checkout. To author
-a package, use [package discovery](packages.md#conventional-resource-discovery): package content goes
+The [development skills](packages/maestro-skills.md) are one collection, not the
+skill format itself; they live in the catalog repository, maestro-manifests.
+Follow that page to load a checkout of it. To author a package, use
+[package discovery](packages.md#conventional-resource-discovery): package content goes
 in `skills/`, or a `maestro.skills` list selects its paths. For example:
 
 ```json
@@ -231,7 +232,7 @@ working directory does not change to the skill directory automatically.
 
 | Field | Guidance and current behavior |
 | --- | --- |
-| `name` | Use 1 to 64 lowercase ASCII letters, digits or hyphens, matching the containing directory. No leading, trailing or repeated hyphens. A missing, null or empty name falls back to the directory basename. |
+| `name` | Use 1 to 64 lowercase ASCII letters, digits or hyphens. A name that differs from the containing directory is accepted. No leading, trailing or repeated hyphens. A missing, null or empty name falls back to the directory basename. |
 | `description` | Required nonblank string, at most 1024 characters for warning-free loading. Say what the skill does and when to choose it. |
 | `disable-model-invocation` | Optional; only boolean `true` omits it from the model's advertised skill list. Defaults to `false`. |
 | `license` | Optional author metadata, such as `MIT` or a bundled license path; the loader does not enforce it. |
@@ -252,7 +253,7 @@ what the model sees before it reads the procedure.
 
 Missing or whitespace-only descriptions omit a skill. Invalid YAML, or a
 nonstring name or description, also prevents loading and produces a diagnostic.
-Name spelling, directory-name mismatch and excessive name or description length
+Name spelling and excessive name or description length
 produce warnings but retain the skill. Fix warnings rather than depending on
 that leniency. [Frontmatter parsing](resources/frontmatter.md) explains accepted
 YAML and parser failures.

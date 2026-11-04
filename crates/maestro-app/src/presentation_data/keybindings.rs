@@ -1,4 +1,9 @@
 //! Application action defaults extending the terminal toolkit definitions.
+#[cfg(not(target_arch = "wasm32"))]
+mod reset;
+#[cfg(not(target_arch = "wasm32"))]
+pub use reset::{KeybindingsReset, reset_multiplexer_keybindings};
+
 use maestro_tui::KeybindingsManager as TuiKeybindingsManager;
 /// Toolkit key identifiers and ordered configuration records.
 pub use maestro_tui::{KeyId, Keybinding, KeybindingsConfig};

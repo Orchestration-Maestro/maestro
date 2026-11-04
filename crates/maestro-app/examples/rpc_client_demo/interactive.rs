@@ -138,31 +138,10 @@ pub fn report(result: Result<(), RpcClientError>, stderr: &mut dyn Write) {
 #[cfg(unix)]
 mod tests {
     use super::*;
-    use crate::rpc_peer::{Peer, events, next_of};
+    use crate::rpc_peer::{Peer, Scenario, events, next_of};
     use crate::support::session_harness::on_task_set;
     use serde_json::json;
     use tokio::sync::mpsc;
-
-    /// Answers the flow's commands and records each in its diagnostic text. A prompt of
-    /// `hold` runs until a steering message or an abort arrives.
-    const SESSION: &str = r"
-state = json.loads(os.environ['PEER_STATE'])
-turn = [{'type': 'message_update', 'assistantMessageEvent': {'type': 'text_delta', 'delta': 'Hi there'}},
-        {'type': 'message_update', 'assistantMessageEvent': {'type': 'toolcall_delta', 'delta': 'skipped'}},
-        {'type': 'message_update', 'assistantMessageEvent': {'type': 'thinking_delta', 'delta': ' (thinking)'}},
-        {'type': 'tool_execution_start', 'toolName': 'read'},
-        {'type': 'tool_execution_end', 'result': {'content': [{'type': 'text', 'text': 'ok'}]}},
-        {'type': 'turn_end'}, {'type': 'agent_end', 'messages': []}]
-signal.signal(signal.SIGTERM, lambda *_: (os.write(2, b'terminated\n'), os._exit(0)))
-for line in commands():
-    command = json.loads(line)
-    os.write(2, (json.dumps(command) + '\n').encode())
-    kind = command['type']
-    respond(command, state if kind == 'get_state' else MISSING)
-    if kind == 'prompt' and command['message'] == 'hold': emit({'type': 'agent_start'})
-    elif kind == 'prompt': [emit(record) for record in turn]
-    elif kind in ('steer', 'abort'): emit({'type': 'agent_end', 'messages': []})
-";
 
     /// A session state with `model`.
     fn state(model: Option<Value>) -> Value {
@@ -219,7 +198,7 @@ for line in commands():
     impl Flow {
         /// Starts the flow on a client of `peer` whose session state is `state`.
         fn start(peer: &Peer, state: &Value) -> Self {
-            let mut options = peer.options(SESSION);
+            let mut options = peer.options(Scenario::Session);
             options.env.insert("PEER_STATE".into(), state.to_string());
             let client = Rc::new(RpcClient::new(options));
             let (lines, input) = mpsc::unbounded_channel();
@@ -364,13 +343,7 @@ for line in commands():
     fn illustration_idle_interrupt_requests_termination_before_teardown() {
         let peer = Peer::new();
         let marker = peer.scratch.join("marker");
-        let script = r"
-mark = lambda text: os.write(os.open(os.environ['PEER_MARKER'], os.O_WRONLY | os.O_CREAT), text)
-signal.signal(signal.SIGTERM, lambda *_: (mark(b'terminated'), os._exit(0)))
-for line in commands(): respond(json.loads(line), json.loads(os.environ['PEER_STATE']))
-mark(b'input closed')
-";
-        let mut options = peer.options(script);
+        let mut options = peer.options(Scenario::IdleInterrupt);
         options.env.insert("PEER_MARKER".into(), marker.clone());
         options
             .env
@@ -393,11 +366,14 @@ mark(b'input closed')
             result.unwrap();
         });
         // The task set is gone, as it is once the example's entry returns.
+        let mut completed = std::io::BufReader::new(peer.control());
         let mut ended = String::new();
-        while ended.is_empty() {
-            std::thread::yield_now();
-            ended = std::fs::read_to_string(&marker).unwrap_or_default();
-        }
+        std::io::BufRead::read_line(&mut completed, &mut ended).unwrap();
+        assert_eq!(ended, "terminated\n");
+        ended.clear();
+        std::io::BufRead::read_line(&mut completed, &mut ended).unwrap();
+        assert_eq!(ended, "input closed\n");
+        let ended = std::fs::read_to_string(&marker).unwrap();
         assert_eq!(ended, "terminated");
     }
 
@@ -418,7 +394,7 @@ mark(b'input closed')
     fn illustration_reports_top_level_error_without_extra_diagnostics() {
         let peer = Peer::new();
         on_task_set(|_| async {
-            let mut options = peer.options(SESSION);
+            let mut options = peer.options(Scenario::Session);
             options.cli_path = Some(peer.scratch.join("missing"));
             let (_lines, input) = mpsc::unbounded_channel();
             let (_interrupt, interrupts) = mpsc::unbounded_channel();

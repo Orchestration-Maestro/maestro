@@ -67,9 +67,9 @@ search prints its own line.
 `input::session_picker::select_session` present a supplied component in a frame
 writer: focus moves before the first frame, and everything a presentation
 started stops with it, whether it closes, is cancelled or fails. The
-configuration presentation starts a theme watch and stops it; the session
-presentation has no theme and stops only the writer. The explicit-exit
-notification ends the process after those effects.
+configuration presentation starts a theme watch only for a custom theme and stops
+any watch it starts; the session presentation has no theme and stops only the
+writer. The explicit-exit notification ends the process after those effects.
 `input::selector::SelectorHost::native` supplies the native terminal frame
 writer. Before it presents, the session selector loads the configured
 keybindings and installs that manager, so the search field and the list dispatch
@@ -159,7 +159,11 @@ before every project, and selects the operation the arguments name: an unsaved,
 forked, opened, resumed, continued or new session. An explicit fork copies the
 matched session into the current project without asking, wherever it was found;
 a session argument of another project is returned for confirmation instead of
-being opened in place. A missing session keeps the argument its message quotes.
+being opened in place. A refused `--session` file, whether selected by path or a
+local identifier match, prints `Error: <reason>` to standard error in red (plain
+text when colour is off) and exits with status 1. For a nonempty file without a
+valid session, the reason is `Session file is not a valid maestro session: <path>`.
+A missing session keeps the argument its message quotes.
 
 `options` selects the model from the authored pattern before the scoped
 default, the effort from the explicit level before the model shorthand and the

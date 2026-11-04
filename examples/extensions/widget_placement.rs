@@ -1,4 +1,5 @@
 //! A startup extension that places text widgets above and below the editor.
+// maestro-component: MAESTRO_WIDGET_PLACEMENT_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -9,14 +10,14 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionWidgetOptions, WidgetPlacement,
+    ExtensionWidgetOptions, HookFuture, WidgetPlacement,
 };
 
 /// Requests both widgets for one session start, or neither when the host has no UI.
 fn session_start(
     _event: &mut ExtensionEvent,
     context: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         if !context.has_ui()? {
             return Ok(None);

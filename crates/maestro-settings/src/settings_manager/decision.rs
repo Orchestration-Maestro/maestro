@@ -40,6 +40,22 @@ pub enum DecisionRequest<'a> {
     },
     /// A requested thinking level before capability clamping.
     ThinkingLevel(&'a str),
+    /// A requested active-tool set, or one candidate during automatic registry refresh.
+    Tools(&'a [String]),
+    /// Explicit acquisition of a package source.
+    PackageInstall {
+        /// The authored package source, including its requested pin.
+        source: &'a str,
+        /// The selected raw configuration scope.
+        scope: SettingsScope,
+    },
+    /// Explicit removal of a package source.
+    PackageRemove {
+        /// The authored package source.
+        source: &'a str,
+        /// The selected raw configuration scope.
+        scope: SettingsScope,
+    },
     /// A one-level merge into the runtime preference view.
     RuntimeOverrides(&'a Settings),
 }
@@ -72,6 +88,12 @@ impl SettingsManager {
         self.decider = Some(decider);
         self.rebuild();
         Ok(())
+    }
+
+    /// Whether explicit operations must preflight with the registered publisher.
+    #[must_use]
+    pub fn has_decider(&self) -> bool {
+        self.decider.is_some()
     }
 
     /// Asks the publisher without changing any settings or acquiring storage locks.
@@ -119,15 +141,45 @@ impl SettingsManager {
 }
 
 /// An admitted preference edit whose effects may follow other owner effects.
-/// Only the preparing manager should apply it, before another explicit operation.
+/// Only the preparing manager should apply it.
 pub struct PreparedSettingsEdit {
     /// The scope checked before the operation started.
     scope: SettingsScope,
     /// The exact edits already admitted by the publisher and base locks.
     changes: Vec<super::Change>,
+    /// Typed numeric results retained outside JSON.
+    numeric: Option<(&'static str, bool)>,
 }
 
 impl PreparedSettingsEdit {
+    /// Supplies the recomputed list for the already-admitted delta.
+    ///
+    /// # Errors
+    /// Returns an error unless exactly one admitted edit has an array value and
+    /// retains its scope and key.
+    pub fn with_recomputed_list(
+        mut self,
+        scope: SettingsScope,
+        path: &[&str],
+        entries: Vec<Value>,
+    ) -> Result<Self, String> {
+        let [change] = self.changes.as_slice() else {
+            return Err("Recomputed list requires one admitted list edit".into());
+        };
+        let admitted = change.requested();
+        if self.scope != scope
+            || change.components() != path
+            || !matches!(admitted.value, Some(Value::Array(_)))
+        {
+            return Err("Recomputed list must retain its admitted key and scope".into());
+        }
+        self.changes = vec![super::Change::from_requested(SettingsChange {
+            path: admitted.path,
+            value: Some(Value::Array(entries)),
+        })];
+        Ok(self)
+    }
+
     /// Splits admitted edits so an owner can retain its existing effect order.
     #[must_use]
     pub fn split_at(mut self, index: usize) -> (Self, Self) {
@@ -135,6 +187,7 @@ impl PreparedSettingsEdit {
         let remaining = Self {
             scope: self.scope,
             changes,
+            numeric: self.numeric,
         };
         (self, remaining)
     }
@@ -153,6 +206,15 @@ impl SettingsManager {
         changes: Vec<SettingsChange>,
     ) -> Result<PreparedSettingsEdit, String> {
         self.decide(request)?;
+        self.prepare_changes(scope, changes)
+    }
+
+    /// Checks literal paths and captures their values without deciding again.
+    fn prepare_changes(
+        &self,
+        scope: SettingsScope,
+        changes: Vec<SettingsChange>,
+    ) -> Result<PreparedSettingsEdit, String> {
         if changes.iter().any(|change| change.path.is_empty()) {
             return Err("Settings edit path cannot be empty".into());
         }
@@ -161,13 +223,74 @@ impl SettingsManager {
             .map(super::Change::from_requested)
             .collect();
         self.check_changes(scope, &changes)?;
-        Ok(PreparedSettingsEdit { scope, changes })
+        Ok(PreparedSettingsEdit {
+            scope,
+            changes,
+            numeric: None,
+        })
     }
 
     /// Publishes a prepared edit at its owner's original save position, without deciding twice.
     pub fn apply_prepared_edit(&mut self, edit: PreparedSettingsEdit) {
+        if let Some((key, nan)) = edit.numeric
+            && edit
+                .changes
+                .iter()
+                .any(|change| change.components() == [key])
+        {
+            match key {
+                "editorPaddingX" => self.accepted_nan.editor_padding_x = nan,
+                "autocompleteMaxVisible" => self.accepted_nan.autocomplete_max_visible = nan,
+                _ => {}
+            }
+        }
         if !edit.changes.is_empty() {
             self.edit_accepted(edit.scope, edit.changes);
         }
+    }
+}
+
+/// A preference value prepared without changing settings or consulting policy.
+pub struct SettingsEdit {
+    /// Exact JSON edits offered to the publisher.
+    changes: Vec<SettingsChange>,
+    /// Optional typed numeric result that JSON cannot represent.
+    numeric: Option<(&'static str, bool)>,
+}
+
+impl SettingsEdit {
+    /// Prepares one value at a literal, nonempty settings path.
+    #[must_use]
+    pub fn new(path: &[&str], value: Value) -> Self {
+        Self {
+            changes: vec![SettingsChange {
+                path: path.iter().map(|part| (*part).into()).collect(),
+                value: Some(value),
+            }],
+            numeric: None,
+        }
+    }
+
+    /// Retains a typed result alongside its JSON value.
+    pub(super) fn numeric(mut self, key: &'static str, nan: bool) -> Self {
+        self.numeric = Some((key, nan));
+        self
+    }
+}
+
+impl SettingsManager {
+    /// Admits the exact prepared preferences before their owner's first effect.
+    ///
+    /// # Errors
+    /// Returns a publisher refusal or locked-path error without publishing the edit.
+    pub fn admit_settings_edit(&self, edit: SettingsEdit) -> Result<PreparedSettingsEdit, String> {
+        let scope = SettingsScope::Global;
+        self.decide(&DecisionRequest::SettingsEdit {
+            scope,
+            changes: &edit.changes,
+        })?;
+        let mut prepared = self.prepare_changes(scope, edit.changes)?;
+        prepared.numeric = edit.numeric;
+        Ok(prepared)
     }
 }

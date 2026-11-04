@@ -5,6 +5,7 @@
 //! and underscores, then registers `Echo <name>`, which echoes its message behind `[<name>] `.
 //! A name is admitted once per factory instance, so a repeated spelling only reports that the
 //! tool is already registered.
+// maestro-component: MAESTRO_DYNAMIC_TOOLS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -155,7 +156,9 @@ pub fn dynamic_tools_extension(api: ExtensionAPI) -> ExtensionFuture<'static, ()
             "session_start",
             Rc::new(move |_, ctx| {
                 Box::pin(std::future::ready(
-                    session_start(&event_api, &event_names, &ctx).map(|()| None),
+                    session_start(&event_api, &event_names, &ctx)
+                        .map(|()| None)
+                        .map_err(Into::into),
                 ))
             }),
         )?;

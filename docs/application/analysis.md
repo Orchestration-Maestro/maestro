@@ -3,7 +3,8 @@
 Four developer reports read the journals Maestro already writes under the home
 session root. Two print totals for one project, one writes transcript files with
 an optional analysis run, and one writes an interactive tool report. They are
-checkout-run example programs: they read recorded journals and write nothing
+checkout-run developer programs (sources in `crates/maestro-app/scripts/`): they
+read recorded journals and write nothing
 except their own output. No background collection or telemetry is involved, and
 the programs make no network request of their own. Two things reach the network
 beyond them: the child runs `--analyze` starts use the configured model provider,
@@ -92,12 +93,14 @@ Wrappers are packed into `session-transcripts-NNN.txt` files up to 100,000 UTF-1
 units, separated by a blank line. A wrapper larger than that goes to its own
 numbered file and is reported as oversized.
 
-`--analyze` runs one child per written file and then one aggregating child in
-the output directory, with the `read` and `write` tools only. Each child receives
+`--analyze` runs one child per written file, then one aggregating child in the
+output directory once at least one summary file exists, both with the `read` and
+`write` tools only. A run that finds no summary file prints
+`No summary files created. Nothing to aggregate.` and stops. Each child receives
 the paths of any existing instruction files, the transcript or summary paths and
-the line count, and its JSON event stream is rendered as text. Analysis outcomes
-are reported but do not change the command's successful exit; a rejected
-operation is printed and the command still exits zero.
+the line count. Its JSON event stream is rendered as text. Analysis outcomes are
+reported but do not change the command's successful exit; a rejected operation
+is printed and the command still exits zero.
 
 ## Tool report
 
@@ -133,12 +136,14 @@ any other request outside the script's own loopback origin fails the run.
 
 ## Reading the journals
 
-Every report reads each selected journal once and aggregates it in one pass. Cost
-and transcript parsing remove outer whitespace from the whole file before
-splitting lines, while usage and tool parsing keep the authored lines so a
-leading byte-order mark reaches the parser and the line is counted as malformed.
-Blank lines are skipped, never counted as malformed, and entries of another type
-or role are ignored rather than rejected.
+Cost, usage and tool parsing read each selected journal once and aggregate it in
+that pass. The transcript report reads each journal once to write its transcript
+files, then reads those files again for the analysis run. Cost and transcript
+parsing remove outer whitespace from the whole file before splitting lines, while
+usage and tool parsing keep the authored lines so a leading byte-order mark
+reaches the parser and the line is counted as malformed. Blank lines are skipped,
+never counted as malformed, and entries of another type or role are ignored rather
+than rejected.
 
 ## Timestamps
 

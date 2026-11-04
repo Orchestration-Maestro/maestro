@@ -28,7 +28,7 @@ impl ModelRegistry {
         provider: &str,
         config: &SharedHandle<RwLock<ProviderConfigInput>>,
     ) -> Option<OAuthProviderHandle> {
-        install_operations(provider, config);
+        install_operations(self, provider, config);
         {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
@@ -88,6 +88,8 @@ impl ModelRegistry {
         let removed = retired.is_some();
         drop(retired);
         if removed {
+            maestro_models::unregister_api_providers(&self.provider_source(provider_name));
+            self.retire_own_account(provider_name);
             self.refresh()?;
         }
         Ok(())
@@ -100,8 +102,8 @@ impl ModelRegistry {
     ) {
         let existing = {
             let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
-            if let Some((_, existing)) = state.registered_providers.get(provider) {
-                SharedHandle::clone(existing)
+            if let Some(existing) = state.registered_providers.get_mut(provider) {
+                SharedHandle::clone(&existing.1)
             } else {
                 let ordinal = state.next_provider;
                 state.next_provider += 1;
@@ -139,7 +141,17 @@ impl ModelRegistry {
     }
 }
 /// Install retained account/callback handles without guards over registry retirement.
-fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfigInput>>) {
+fn install_operations(
+    registry: &ModelRegistry,
+    provider: &str,
+    config: &SharedHandle<RwLock<ProviderConfigInput>>,
+) {
+    let mut state = registry
+        .state
+        .write()
+        .unwrap_or_else(PoisonError::into_inner);
+    state.orphan_installs.push(provider.to_owned());
+    drop(state);
     let oauth = config
         .read()
         .unwrap_or_else(PoisonError::into_inner)
@@ -147,10 +159,17 @@ fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfi
         .oauth
         .clone();
     if let Some(inner) = oauth {
-        register_oauth_provider(SharedHandle::new(RegisteredOAuth {
+        let entry: maestro_models::OAuthProviderHandle = SharedHandle::new(RegisteredOAuth {
             id: provider.into(),
             inner,
-        }));
+        });
+        register_oauth_provider(SharedHandle::clone(&entry));
+        registry
+            .state
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .installed_account
+            .insert(provider.to_owned(), entry);
     }
     let callback = {
         let config = config.read().unwrap_or_else(PoisonError::into_inner);
@@ -169,7 +188,7 @@ fn install_operations(provider: &str, config: &SharedHandle<RwLock<ProviderConfi
                 stream: owner.clone(),
                 stream_simple: owner,
             },
-            Some(format!("provider:{provider}")),
+            Some(registry.provider_source(provider)),
         );
     }
 }
@@ -244,16 +263,30 @@ impl CatalogState {
             .collect();
         for definition in definitions {
             let identity = (provider.into(), definition.id.clone());
-            if let Some(headers) = super::composition::ordered(definition.headers.clone())
-                .filter(|headers| !headers.is_empty())
+            let overridden = self
+                .model_overrides
+                .get(provider)
+                .and_then(|overrides| overrides.get(&definition.id))
+                .cloned();
+            let mut headers = definition.headers.clone();
+            if let Some(extra) = overridden
+                .as_ref()
+                .and_then(|fields| fields.headers.clone())
+            {
+                headers.get_or_insert_default().extend(extra);
+            }
+            if let Some(headers) =
+                super::composition::ordered(headers).filter(|headers| !headers.is_empty())
             {
                 self.model_headers.insert(identity, headers);
             } else {
                 self.model_headers.remove(&identity);
             }
-            models.push(Arc::new(RwLock::new(descriptor(
-                definition, provider, config,
-            ))));
+            let mut model = descriptor(definition, provider, config);
+            if let Some(fields) = overridden {
+                super::composition::apply(&mut model, fields);
+            }
+            models.push(Arc::new(RwLock::new(model)));
         }
         self.models = Arc::new(RwLock::new(models));
     }

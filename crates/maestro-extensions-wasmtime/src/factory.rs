@@ -1,5 +1,6 @@
 //! Artifact initialization uses the existing native factory and its original facade.
 use crate::{
+    engine::process_engine,
     guest_calls::{Call, Callbacks},
     lifecycle::{self, replies::Replies},
     local_resources::Pump,
@@ -8,7 +9,7 @@ use maestro_extensions::{ExtensionFactory, ExtensionWidgets, Local};
 use std::{rc::Rc, sync::Arc};
 use tokio::sync::mpsc;
 use wasmtime::{
-    Cache, Config, Engine, Store,
+    Store,
     component::{Component, Linker},
 };
 
@@ -54,7 +55,7 @@ pub fn artifact_factory_with_stdout(
         path,
         widgets,
         installation,
-        Some(crate::wasi::Output::new(stdout, terminal)),
+        Some(crate::Stdout::new(stdout, terminal)),
         None,
     )
 }
@@ -64,14 +65,17 @@ pub fn artifact_factory_with_stdout(
 ///
 /// The application supplies installation facts and the operations' original local executor.
 /// Construction performs no native launch or request; guest calls select their effects.
+/// Supplied stdout is retained beside native effects for initialization and callbacks.
+/// With no supplied writer, stdout stays inherited.
 #[must_use]
 pub fn artifact_factory_with_io(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
     installation: Installation,
     io: Rc<dyn maestro_extensions::native_io::NativeIo>,
+    stdout: Option<crate::Stdout>,
 ) -> ExtensionFactory<Local> {
-    factory(path, widgets, installation, None, Some(io))
+    factory(path, widgets, installation, stdout, Some(io))
 }
 
 /// Retains the original supplied widgets, output and native effects for each independently
@@ -80,7 +84,7 @@ fn factory(
     path: String,
     widgets: Rc<dyn ExtensionWidgets>,
     installation: Installation,
-    output: Option<crate::wasi::Output>,
+    output: Option<crate::Stdout>,
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
 ) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
@@ -149,11 +153,8 @@ async fn execute(
     calls: mpsc::WeakUnboundedSender<Call>,
     replies: &Replies,
 ) -> wasmtime::Result<()> {
-    let mut config = Config::new();
-    config.wasm_component_model_async(true);
-    // The user cache is optional; unavailable storage must not prevent loading.
-    config.cache(Cache::from_file(None).ok());
-    let engine = Engine::new(&config)?;
+    // The engine is shared; each instance still owns its worker, store and compiled code.
+    let engine = process_engine()?;
     let component = Component::from_file(&engine, path)?;
     let mut linker = Linker::new(&engine);
     lifecycle::link(&mut linker)?;

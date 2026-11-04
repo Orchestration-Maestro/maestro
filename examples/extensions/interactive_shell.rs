@@ -8,7 +8,7 @@
 use maestro_extensions_wasm::{
     BashResult, Container, CustomFactoryOutcome, ExtensionAPI, ExtensionComponent,
     ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    Presence, TUI, UserBashEventResult,
+    HookFuture, Presence, TUI, UserBashEventResult,
 };
 use std::rc::Rc;
 
@@ -135,7 +135,7 @@ fn on_event(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
     api: ExtensionAPI,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::UserBash(event) = event else {
             return Ok(None);

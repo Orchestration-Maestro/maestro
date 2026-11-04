@@ -3,12 +3,13 @@ use super::InteractiveMode;
 use crate::components::tree_selector::{
     FilterMode, TreeSelectorCallbacks, TreeSelectorComponent, TreeSelectorOptions,
 };
+use crate::interactive_mode::status_indicator::StatusKind;
 use maestro_app::{
     DiagnosticErrorInfo, EventError, NavigateTreeOptions, NavigateTreeResult, Presence,
     ReadonlySessionManager, TreeFilterMode, is_whitespace_scalar,
 };
 use maestro_theme::ThemeColor;
-use maestro_tui::{Loader, Spacer};
+use maestro_tui::Spacer;
 use std::{error::Error, rc::Rc};
 
 impl InteractiveMode {
@@ -167,23 +168,25 @@ impl InteractiveMode {
             return self.show_tree_selector(Some(id));
         };
         let original_escape = self.editor.on_escape();
-        let loader = (options.summarize == Some(true)).then(|| self.summary_loader());
+        let summarizing = options.summarize == Some(true);
+        if summarizing {
+            self.show_summary_indicator();
+        }
         let navigated = self
             .runtime_host
             .session()
             .navigate_tree(&id, options)
             .await;
         let reported = self.tree_navigated(id, navigated);
-        if let Some(loader) = loader {
-            loader.stop();
-            self.status_container.clear();
+        if summarizing {
+            self.clear_status_indicator(Some(StatusKind::BranchSummary));
         }
         self.editor.set_on_escape(original_escape);
         reported
     }
 
-    /// Makes the interrupt key abort the branch summary and shows its loader.
-    fn summary_loader(&self) -> Loader {
+    /// Makes the interrupt key abort the branch summary and shows its status indicator.
+    fn show_summary_indicator(&self) {
         let host = Rc::clone(&self.runtime_host);
         self.editor
             .set_on_escape(Some(Rc::new(move || host.session().abort_branch_summary())));
@@ -193,9 +196,8 @@ impl InteractiveMode {
             maestro_app::key_text("app.interrupt")
         );
         let loader = self.progress_loader(Some(label), ThemeColor::Accent);
-        self.status_container.add_child(Rc::new(loader.clone()));
+        self.show_status_indicator(StatusKind::BranchSummary, loader, None);
         self.ui.request_render(false);
-        loader
     }
 
     /// Reports the navigation's distinct outcomes.

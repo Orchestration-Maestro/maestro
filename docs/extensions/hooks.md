@@ -25,7 +25,15 @@ Dedicated routes preserve their own outcomes:
 - Input hooks chain transforms and stop on `Handled`. Missing or null replacement
   images retain the current images; an explicit list, even empty or equal, marks
   image replacement. `Continue` preserves mutable image edits without declaring a
-  transform. Text changed and restored can finish as `Continue`.
+  transform. Text changed and restored can finish as `Continue`. The event carries
+  `streamingBehavior` (`steer` or `followUp`) only when the input arrives while a
+  response streams and the caller chose a delivery; idle input carries none.
+
+An extension's `abort` goes to the abort handler the host bound with the session's
+extensions. The interactive mode binds one that does what the interrupt key does: it moves
+every queued message back into the editor exactly as typed, then stops the running turn,
+whether or not a tool confirmation is open. Without a bound handler, the session aborts its
+own run.
 
 Tool-call hooks retain the last nonblocking result and stop on an explicit block.
 Their errors propagate unchanged, without error-listener delivery. Edited arguments
@@ -36,8 +44,15 @@ path, without normalization.
 
 Other callback failures are delivered to the runner's error listeners and dispatch
 continues. A listener failure propagates and stops dispatch. Native mutable operand
-edits are not rolled back on callback failure. Authored diagnostic stacks survive;
-engine stack text is not manufactured. A changed-role replacement reports exactly
+edits are not rolled back on callback failure, so an edit made before a separately
+failed decision still reaches the handlers after it.
+
+A [component hook](guest.md#events-and-results) returns `HookResult`, which fails
+with the shared diagnostic fields; a native callback reports the message and stack
+of the `DiagnosticErrorInfo` it keeps. Either way the runner reports the event it
+was invoked for, the extension path and the supplied message and stack; a stack
+the author did not supply stays absent, and engine stack text is never
+manufactured. A changed-role replacement reports exactly
 `message_end handlers must return a message with the same role`.
 
 Artifact discovery and loading are not supplied by this hook runner. They are a

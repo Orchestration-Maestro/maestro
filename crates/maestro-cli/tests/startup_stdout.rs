@@ -7,7 +7,27 @@ use maestro_test_process::selection;
 use serde_json::json;
 use std::cell::RefCell;
 use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+
+/// The two install lines the controlled package command reports.
+const CHATTER: &str = "changed 1 package in 471ms\nfound 0 vulnerabilities\n";
+
+/// Install the prepared native fixture as the configured package command.
+fn package_command(directory: &Path, artifact: &Path) -> PathBuf {
+    let path = directory.join("controlled-npm");
+    maestro_test_process::install_executable(artifact, &path).expect("install starts");
+    let mut record = path.as_os_str().to_owned();
+    record.push(".fixture");
+    let scenario = json!({
+        "scenario": "output",
+        "stdout": CHATTER.as_bytes(),
+        "stderr": [],
+        "code": 0
+    });
+    std::fs::write(record, format!("command\n{scenario}")).expect("the record is writable");
+    path
+}
 
 /// Ordinary output routed through the application's standard output owner.
 struct Routed;
@@ -25,19 +45,22 @@ impl Write for Routed {
 
 /// Run `args` over a configured, not yet installed package and check both process streams.
 fn protocol_help(name: &str, args: &'static [&'static str]) {
+    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
     if selection().is_child() {
         let local = Rc::new(tokio::task::LocalSet::new());
         let runtime = crate::support::startup::runtime();
+        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let npm = package_command(directory.path(), Path::new(&artifact));
         runtime.block_on(local.run_until(async {
             let mut e = Entry::new();
             e.out = Rc::new(RefCell::new(Routed));
             e.err = Rc::new(RefCell::new(io::stderr()));
-            let chatter = "echo 'changed 1 package in 471ms'; echo 'found 0 vulnerabilities'";
             e.settings(
                 None,
                 Some(json!({
                     "packages": ["npm:fake-package"],
-                    "npmCommand": ["/bin/sh", "-c", chatter],
+                    "npmCommand": [npm.to_str().expect("the controlled command path is text")],
                 })),
             );
             assert_eq!(
@@ -49,6 +72,7 @@ fn protocol_help(name: &str, args: &'static [&'static str]) {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let output = crate::support::missing_cwd::command(name, "protocol", root.path())
+        .env("MAESTRO_NATIVE_FIXTURE", artifact)
         .quiet()
         .nocapture()
         .output()

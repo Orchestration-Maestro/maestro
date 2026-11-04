@@ -1,22 +1,25 @@
 //! Model selection, model scopes and the subscription notice through the mode's installed
 //! callbacks, its registered keys, the real panels and an in-memory catalog.
-use super::actions::{install, run_action, shows};
+#[path = "../../../tests/support/refusing_provider.rs"]
+mod refusing_provider;
+use super::actions::{run_action, shows};
 use super::transcript::assistant;
 use super::typed::{poll, recalled, submit, waiting};
-use super::{Setup, World, isolated, started};
+use super::{Setup, World, install, isolated, started};
 use crate::ModelSelectorComponent;
 use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_app::{
-    AuthCredential, BoxFuture, DiagnosticErrorInfo, ExtensionFactory, Fetch, Local, Model,
-    ModelCost, ModelInput, ModelSelectEvent, OAuthCallbacks, OAuthCredentials, OAuthError,
-    OAuthProviderInterface, ProviderConfigInput, ProviderModelInput, ReadonlyFooterDataProvider,
-    ScopedModel, SessionManager, Settings, SettingsListEntry, SettingsManager, SharedHandle,
-    ThinkingLevel, WarningSettings,
+    AuthCredential, DiagnosticErrorInfo, ExtensionFactory, Local, Model, ModelCost, ModelInput,
+    ModelSelectEvent, OAuthCredentials, OAuthError, ProviderConfigInput, ProviderModelInput,
+    ReadonlyFooterDataProvider, ScopedModel, SessionManager, Settings, SettingsListEntry,
+    SettingsManager, SharedHandle, ThinkingLevel, WarningSettings,
 };
 use maestro_test_process::TestProcess;
 use maestro_tui::{Component, Input, Text, tui::InputHandler};
+use refusing_provider::RefusingProvider;
 use serde::{Deserialize, de::DeserializeOwned};
+use serde_json::json;
 use std::{
     any::Any,
     cell::RefCell,
@@ -85,11 +88,15 @@ pub(super) fn register_configured(
         .collect()
 }
 
-/// The current session model's `provider/id`.
-pub(super) fn current(world: &World) -> String {
-    let model = world.host.session().model();
+/// A descriptor's `provider/id`.
+fn id_of(model: &Arc<RwLock<Model>>) -> String {
     let model = model.read().unwrap();
     format!("{}/{}", model.provider, model.id)
+}
+
+/// The current session model's `provider/id`.
+pub(super) fn current(world: &World) -> String {
+    id_of(&world.host.session().model())
 }
 
 /// The components the editor container holds.
@@ -117,15 +124,13 @@ pub(super) fn editor_focused(world: &World) -> bool {
     focused
 }
 
-/// The model panel the editor container shows, if it shows one.
-fn model_panel(world: &World) -> Option<Rc<ModelSelectorComponent>> {
+/// The one component the editor container shows, when it is a `T`.
+fn shown_panel<T: Component + 'static>(world: &World) -> Option<Rc<T>> {
     let shown = shown(world);
     let [panel] = shown.as_slice() else {
         return None;
     };
-    (Rc::clone(panel) as Rc<dyn Any>)
-        .downcast::<ModelSelectorComponent>()
-        .ok()
+    (Rc::clone(panel) as Rc<dyn Any>).downcast::<T>().ok()
 }
 
 /// One recorded effect, its name first.
@@ -314,16 +319,19 @@ fn selector_factory_failure_keeps_the_editor() {
     );
 }
 
-/// Checks the recorded final notice, a status or an error, against the transcript and the
-/// border, and returns whether the selection succeeded.
+/// Checks the recorded final notice against the transcript and the border, and returns
+/// whether the selection succeeded. A status records the text it shows; an error records
+/// its kind alone, because the mode words its own failures.
 fn final_notice(world: &World, notice: &Event) -> bool {
     let border = world.mode.editor.render(80).swap_remove(0);
-    let [kind, text] = notice.as_slice() else {
+    let [kind, details @ ..] = notice.as_slice() else {
         panic!("a final notice");
     };
-    let text = text.as_str().unwrap();
     if kind == "status" {
-        assert!(shows(&world.mode.chat_container, text));
+        let [text] = details else {
+            panic!("a status text");
+        };
+        assert!(shows(&world.mode.chat_container, text.as_str().unwrap()));
         assert_ne!(border, "─".repeat(80));
         return true;
     }
@@ -354,8 +362,8 @@ struct PanelSelected {
     defaults: [String; 2],
     /// The selection's effects, the final notice last.
     events: Vec<Event>,
-    /// The session scope afterwards.
-    scope: Vec<String>,
+    /// The session scope afterwards, by `provider/id` and level.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
     /// The available provider count, unchanged.
     count: Option<f64>,
     /// Whether the subscription notice was shown.
@@ -368,7 +376,7 @@ const SELECT_KEY: &str = "\x0c";
 /// Opens the model panel through its key and waits for it to show.
 fn open_panel(world: &World, key: &str) -> Rc<ModelSelectorComponent> {
     world.terminal.send_input(key);
-    model_panel(world).expect("the model panel is shown")
+    shown_panel::<ModelSelectorComponent>(world).expect("the model panel is shown")
 }
 
 #[test]
@@ -404,16 +412,13 @@ fn model_selector_selection_restores_editor_before_its_notice() {
                 assert!(shows_only(&world, &editor(&world)));
                 assert_eq!(final_state.children, ["editor"]);
                 assert!(editor_focused(&world));
-                let session = world.host.session();
                 let selected = if final_notice(&world, expected.events.last().unwrap()) {
                     expected.defaults.join("/")
                 } else {
                     previous
                 };
                 assert_eq!(current(&world), selected);
-                assert!(expected.scope.is_empty() && session.scoped_models().is_empty());
-                assert_eq!(expected.count, None);
-                assert!(!expected.shown);
+                settled(&world, &expected.scope, expected.count, expected.shown);
             }
         },
     );
@@ -433,8 +438,8 @@ struct PanelCancel {
 struct PanelCancelled {
     /// The effects of cancelling.
     events: Vec<Event>,
-    /// The session scope afterwards.
-    scope: Vec<String>,
+    /// The session scope afterwards, by `provider/id` and level.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
     /// The available provider count, unchanged.
     count: Option<f64>,
     /// Whether the subscription notice was shown.
@@ -468,9 +473,7 @@ fn model_selector_cancel_restores_editor_and_requests_a_frame() {
                 session.settings_manager().borrow().get_default_model(),
                 None
             );
-            assert!(expected.scope.is_empty() && session.scoped_models().is_empty());
-            assert_eq!(expected.count, None);
-            assert!(!expected.shown);
+            settled(&world, &expected.scope, expected.count, expected.shown);
         },
     );
 }
@@ -491,8 +494,8 @@ struct SelectActionEffects {
     action: String,
     /// The effects: the panel opened.
     events: Vec<Event>,
-    /// The session scope afterwards.
-    scope: Vec<String>,
+    /// The session scope afterwards, by `provider/id` and level.
+    scope: Vec<(String, Option<ThinkingLevel>)>,
     /// The available provider count, unchanged.
     count: Option<f64>,
     /// Whether the subscription notice was shown.
@@ -509,10 +512,13 @@ fn model_select_action_uses_the_registered_binding() {
             )
             .swap_remove(0);
             assert_eq!(input.op, "model-select-action");
-            assert_eq!(expected.events, [["opened"]]);
-            assert!(expected.scope.is_empty() && expected.count.is_none() && !expected.shown);
             let world = started(directory).await;
-            open_panel(&world, SELECT_KEY);
+            world.terminal.send_input(SELECT_KEY);
+            assert_eq!(
+                named(&expected.events, "opened").next().is_some(),
+                shown_panel::<ModelSelectorComponent>(&world).is_some()
+            );
+            settled(&world, &expected.scope, expected.count, expected.shown);
             std::fs::write(
                 directory.join("keybindings.json"),
                 format!(r#"{{"{}": "ctrl+y"}}"#, expected.action),
@@ -520,7 +526,7 @@ fn model_select_action_uses_the_registered_binding() {
             .unwrap();
             let world = started(directory).await;
             world.terminal.send_input(SELECT_KEY);
-            assert!(model_panel(&world).is_none());
+            assert!(shown_panel::<ModelSelectorComponent>(&world).is_none());
             open_panel(&world, "\x19");
         },
     );
@@ -578,7 +584,7 @@ async fn scope_callbacks_release_the_mode(directory: &Path) {
     let world = started(directory).await;
     catalog(&world);
     world.mode.show_models_selector().unwrap();
-    let panel = scope_panel(&world).unwrap();
+    let panel = shown_panel::<ScopedModelsSelectorComponent>(&world).unwrap();
     let World {
         mode,
         runtime,
@@ -649,26 +655,23 @@ fn scope_of(world: &World) -> Vec<(String, Option<ThinkingLevel>)> {
         .collect()
 }
 
-/// A descriptor's `provider/id`.
-fn id_of(model: &Arc<RwLock<Model>>) -> String {
-    let model = model.read().unwrap();
-    format!("{}/{}", model.provider, model.id)
-}
-
-/// Checks the scope, the provider count when recorded, and the notice flag.
-fn settled(world: &World, outcome: &Outcome) {
-    assert_eq!(scope_of(world), outcome.scope);
-    if let Some(count) = outcome.count {
+/// Checks the scope, the provider count when recorded, and the notice flag against the
+/// mode's state.
+fn settled(
+    world: &World,
+    scope: &[(String, Option<ThinkingLevel>)],
+    count: Option<f64>,
+    shown: bool,
+) {
+    assert_eq!(scope_of(world), scope);
+    if let Some(count) = count {
         let provider = &world.mode.footer_data_provider;
         assert_eq!(
             provider.get_available_provider_count().to_bits(),
             count.to_bits()
         );
     }
-    assert_eq!(
-        world.mode.anthropic_subscription_warning_shown.get(),
-        outcome.shown
-    );
+    assert_eq!(world.mode.anthropic_subscription_warning_shown.get(), shown);
 }
 
 /// The recorded events named `name`, without their names.
@@ -685,8 +688,7 @@ fn named<'a>(
 /// The width the long subscription notice fits on one row at.
 const NOTICE_WIDTH: usize = 400;
 
-/// Checks the recorded subscription notices, and the recorded key lookups when `lookups`
-/// counts them; reading stored credentials has no observable effect and is not compared.
+/// Checks the recorded subscription notices and the recorded key lookups.
 fn notices(world: &World, outcome: &Outcome, lookups: Option<usize>) {
     if let Some(lookups) = lookups {
         assert_eq!(lookups, named(&outcome.events, "key").count());
@@ -697,7 +699,7 @@ fn notices(world: &World, outcome: &Outcome, lookups: Option<usize>) {
     for warning in warnings {
         assert!(rows.contains(&format!("Warning: {}", warning[0].as_str().unwrap())));
     }
-    settled(world, outcome);
+    settled(world, &outcome.scope, outcome.count, outcome.shown);
 }
 
 /// The subscription provider's catalog model.
@@ -737,12 +739,13 @@ fn key_command(
 ) {
     let name = format!("lookup{case}");
     if !directory.join("bin").join(&name).exists() {
-        let output = key.map_or("exit 1".to_owned(), |key| format!("printf '%s' '{key}'"));
-        let log = lookup_log(directory, case);
+        let answer = key.map_or(json!({"exit": 1}), |key| json!({"print": key}));
+        let steps = json!([{"log": lookup_log(directory, case)}, answer]);
         install(
-            directory,
+            &directory.join("bin"),
             &name,
-            &format!("#!/bin/sh\necho >> '{}'\n{output}\n", log.display()),
+            "chat",
+            &json!({"scenario": "shell", "steps": steps}),
         );
     }
     let credential = serde_json::json!({"type": "api_key", "key": format!("!{name}")});
@@ -1047,45 +1050,6 @@ fn model_cycle_reuses_the_subscription_warning_owner() {
     });
 }
 
-/// A catalog provider whose stored sign-in makes every catalog refresh fail.
-struct RefusingCatalog;
-
-impl OAuthProviderInterface for RefusingCatalog {
-    fn id(&self) -> &'static str {
-        "refusing"
-    }
-    fn name(&self) -> &'static str {
-        "Refusing"
-    }
-    fn login(
-        &self,
-        _: OAuthCallbacks,
-        _: Option<Fetch>,
-    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
-        Box::pin(std::future::ready(Err(refused())))
-    }
-    fn refresh_token(
-        &self,
-        _: OAuthCredentials,
-        _: Option<Fetch>,
-    ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
-        Box::pin(std::future::ready(Err(refused())))
-    }
-    fn get_api_key<'a>(
-        &self,
-        credentials: &'a OAuthCredentials,
-    ) -> Result<std::borrow::Cow<'a, str>, OAuthError> {
-        Ok(std::borrow::Cow::Borrowed(&credentials.access))
-    }
-    fn modify_models<'m>(
-        &self,
-        _: &'m [Model],
-        _: &OAuthCredentials,
-    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, OAuthError>> {
-        Some(Err(refused()))
-    }
-}
-
 /// The refusing provider's failure.
 fn refused() -> OAuthError {
     DiagnosticErrorInfo::error("refresh refused").into()
@@ -1102,7 +1066,9 @@ pub(super) fn refuse_refresh(world: &World) {
                 base_url: Some("https://example.invalid".into()),
                 api: Some("openai-completions".into()),
                 callbacks: maestro_app::ProviderCallbacks {
-                    oauth: Some(SharedHandle::new(RefusingCatalog)),
+                    oauth: Some(SharedHandle::new(RefusingProvider::new(
+                        "refusing", "Refusing", refused,
+                    ))),
                     ..Default::default()
                 },
                 models: Some(vec![model_input("refused")]),
@@ -1172,7 +1138,7 @@ struct Candidates {
     ids: Option<Vec<String>>,
     /// The failure.
     error: Option<String>,
-    /// The catalog reads: a refresh and the available models.
+    /// The catalog reads: at most one refresh.
     events: Vec<Event>,
 }
 
@@ -1272,7 +1238,7 @@ fn provider_count_deduplicates_providers_without_reordering_candidates() {
                 panic!("one provider count");
             };
             assert_eq!(count[0].as_f64(), expected.count);
-            settled(&world, &expected);
+            settled(&world, &expected.scope, expected.count, expected.shown);
             assert_eq!(provider_badge(&world), expected.count > Some(1.0));
             let candidates = world.mode.get_model_candidates().unwrap();
             if !input.scope.is_empty() {
@@ -1296,7 +1262,7 @@ fn model_command(world: &World, search: Option<String>) {
 /// panel and its search.
 fn command_outcome(world: &World, outcome: &Outcome) {
     if let Some([search]) = named(&outcome.events, "selector-search").next() {
-        let panel = model_panel(world).expect("the model panel is shown");
+        let panel = shown_panel::<ModelSelectorComponent>(world).expect("the model panel is shown");
         assert_eq!(
             panel.get_search_input().get_value(),
             search.as_str().unwrap_or_default()
@@ -1313,7 +1279,7 @@ fn command_outcome(world: &World, outcome: &Outcome) {
         assert!(shows(&world.mode.chat_container, status.as_str().unwrap()));
         assert!(shows_only(world, &editor(world)));
     }
-    settled(world, outcome);
+    settled(world, &outcome.scope, outcome.count, outcome.shown);
 }
 
 /// The term the recording searches over `scope`: its repeated reference, or else `alpha`.
@@ -1372,8 +1338,9 @@ struct FailureOutcome {
     selected: Option<String>,
     /// The recorded effects, the error last.
     events: Vec<Event>,
-    /// The session scope afterwards.
-    scope: Vec<(String, Option<ThinkingLevel>)>,
+    /// The session scope afterwards, when recorded.
+    #[serde(default)]
+    scope: Option<Vec<(String, Option<ThinkingLevel>)>>,
     /// The footer's provider count, when it was set.
     count: Option<f64>,
     /// Whether the subscription notice was shown.
@@ -1403,6 +1370,8 @@ fn model_selection_failure_reports_without_success_effects() {
             let footer = world.mode.footer.render(80);
             match input.op.as_str() {
                 "model-command-failed" => {
+                    // A refusal needs an unauthenticated candidate, which only a scope
+                    // supplies: the catalog lists authenticated models only.
                     scope(&world, &[("a/alpha".to_owned(), None)]);
                     let session = world.host.session();
                     session.model_registry().unregister_provider("a").unwrap();
@@ -1412,12 +1381,15 @@ fn model_selection_failure_reports_without_success_effects() {
                 }
                 _ => panic!("a recorded failure"),
             }
+            let retained = scope_of(&world);
             model_command(&world, Some("alpha".into()));
-            let [kind, _] = expected.events.last().unwrap().as_slice() else {
+            let [kind, ..] = expected.events.last().unwrap().as_slice() else {
                 panic!("a final error");
             };
-            assert_eq!(kind, "error");
-            assert!(shows(&world.mode.chat_container, "Error: "));
+            assert_eq!(
+                kind == "error",
+                shows(&world.mode.chat_container, "Error: ")
+            );
             assert!(!shows(&world.mode.chat_container, "Model: "));
             assert_eq!(world.mode.editor.render(80)[0], "─".repeat(80));
             let selected = (expected.selected.clone()).map_or(previous, |id| format!("a/{id}"));
@@ -1425,23 +1397,12 @@ fn model_selection_failure_reports_without_success_effects() {
             if expected.selected.is_none() {
                 assert_eq!(world.mode.footer.render(80), footer);
             }
-            // A refusal needs an unauthenticated candidate, which only a scope supplies:
-            // the catalog lists authenticated models only.
-            let refused_scope = input.op == "model-command-failed";
-            assert!(expected.scope.is_empty());
-            let scope = if refused_scope {
-                vec![("a/alpha".to_owned(), None)]
-            } else {
-                expected.scope
-            };
+            // A case that records no scope checks the refusal keeps the one it started with.
             settled(
                 &world,
-                &Outcome {
-                    events: expected.events,
-                    scope,
-                    count: expected.count,
-                    shown: expected.shown,
-                },
+                expected.scope.as_deref().unwrap_or(&retained),
+                expected.count,
+                expected.shown,
             );
         }
     });
@@ -1556,7 +1517,7 @@ fn submission(world: &World, text: &str, outcome: &Outcome) {
     };
     assert_eq!(world.mode.editor.get_text(), cleared.as_str().unwrap());
     if named(&outcome.events, "scope-command").next().is_some() {
-        assert!(scope_panel(world).is_some());
+        assert!(shown_panel::<ScopedModelsSelectorComponent>(world).is_some());
         return;
     }
     let [search] = named(&outcome.events, "model-command").next().unwrap() else {
@@ -1568,7 +1529,10 @@ fn submission(world: &World, text: &str, outcome: &Outcome) {
             &format!("Model: {search}")
         )),
         None => assert_eq!(
-            model_panel(world).unwrap().get_search_input().get_value(),
+            shown_panel::<ModelSelectorComponent>(world)
+                .unwrap()
+                .get_search_input()
+                .get_value(),
             ""
         ),
     }
@@ -1583,7 +1547,7 @@ fn model_commands_use_the_shared_whitespace_and_exact_tokens() {
             let world = started(directory).await;
             catalog(&world);
             submission(&world, &input.text, &expected);
-            settled(&world, &expected);
+            settled(&world, &expected.scope, expected.count, expected.shown);
         }
     });
 }
@@ -1601,7 +1565,7 @@ fn model_commands_leave_waiter_and_history_untouched() {
                 assert!(poll(&mut waiting).is_none());
             }
             assert!(shows(&world.mode.chat_container, "Model: alpha"));
-            assert!(scope_panel(&world).is_some());
+            assert!(shown_panel::<ScopedModelsSelectorComponent>(&world).is_some());
             world.mode.editor_container.clear();
             world
                 .mode
@@ -1670,26 +1634,22 @@ fn warning_lifetime_survives_rebinding_but_not_another_mode() {
     );
 }
 
-/// The scope panel the editor container shows, if it shows one.
-fn scope_panel(world: &World) -> Option<Rc<ScopedModelsSelectorComponent>> {
-    let shown = shown(world);
-    let [panel] = shown.as_slice() else {
-        return None;
-    };
-    (Rc::clone(panel) as Rc<dyn Any>)
-        .downcast::<ScopedModelsSelectorComponent>()
-        .ok()
+/// The model patterns `entries` holds.
+fn patterns(entries: Vec<SettingsListEntry>) -> Vec<String> {
+    entries
+        .into_iter()
+        .map(|entry| match entry {
+            SettingsListEntry::String(pattern) => pattern,
+            SettingsListEntry::Unknown(value) => panic!("a saved pattern is text, not {value}"),
+        })
+        .collect()
 }
 
 /// The saved model patterns, absent when the setting is unset.
 fn saved_patterns(world: &World) -> Option<Vec<String>> {
     let session = world.host.session();
     let entries = session.settings_manager().borrow().get_enabled_models()?;
-    let patterns = entries.into_iter().map(|entry| match entry {
-        SettingsListEntry::String(pattern) => pattern,
-        SettingsListEntry::Unknown(value) => panic!("a saved pattern is text, not {value}"),
-    });
-    Some(patterns.collect())
+    Some(patterns(entries))
 }
 
 /// Saves the scope panel's selection with its key and returns what it saved: the
@@ -1743,18 +1703,6 @@ struct Opened {
     shown: bool,
 }
 
-impl Opened {
-    /// The common observations.
-    fn outcome(&self) -> Outcome {
-        Outcome {
-            events: self.events.clone(),
-            scope: self.scope.clone(),
-            count: self.count,
-            shown: self.shown,
-        }
-    }
-}
-
 /// Prepares the catalog, scope and settings of a recorded opening.
 fn scope_source(world: &World, choice: &str, scope_after: &[(String, Option<ThinkingLevel>)]) {
     if choice != "empty-catalog" {
@@ -1782,13 +1730,16 @@ fn opened(world: &World, result: Result<(), Box<dyn std::error::Error>>, expecte
         (Err(error), Some(message)) => assert_eq!(&error.to_string(), message),
         (result, _) => panic!("the recorded opening outcome, not {result:?}"),
     }
-    assert_eq!(scope_panel(world).is_some(), expected.installed);
+    assert_eq!(
+        shown_panel::<ScopedModelsSelectorComponent>(world).is_some(),
+        expected.installed
+    );
     let status = named(&expected.events, "status").next();
     assert_eq!(
         shows(&world.mode.chat_container, "No models available"),
         status.is_some()
     );
-    settled(world, &expected.outcome());
+    settled(world, &expected.scope, expected.count, expected.shown);
     if expected.installed {
         assert!(saved_patterns(world).is_none_or(|patterns| patterns != ["z/tail", "a/alpha"]));
         assert_eq!(saved_by_panel(world), expected.enabled);
@@ -1913,7 +1864,7 @@ fn scope_changes_apply_live_without_saving_and_refresh_the_footer() {
                 named(&expected.events, "render").count() > 0
             );
             assert!(saved_patterns(&world).is_none());
-            settled(&world, &expected);
+            settled(&world, &expected.scope, expected.count, expected.shown);
         }
     });
 }
@@ -1954,16 +1905,11 @@ fn scope_save_preserves_order_and_distinguishes_none_from_all() {
                 &world.mode.chat_container,
                 "Model selection saved to settings"
             ));
-            assert!(scope_panel(&world).is_some(), "saving keeps the panel open");
-            settled(
-                &world,
-                &Outcome {
-                    events: expected.events,
-                    scope: expected.scope,
-                    count: expected.count,
-                    shown: expected.shown,
-                },
+            assert!(
+                shown_panel::<ScopedModelsSelectorComponent>(&world).is_some(),
+                "saving keeps the panel open"
             );
+            settled(&world, &expected.scope, expected.count, expected.shown);
         }
     });
 }
@@ -1990,7 +1936,7 @@ fn scope_cancel_keeps_live_edits_without_saving() {
         assert_eq!(world.runtime.pending() > 0, cancelled.render);
         assert!(editor_focused(&world));
         assert!(saved_patterns(&world).is_none());
-        settled(&world, &expected);
+        settled(&world, &expected.scope, expected.count, expected.shown);
     });
 }
 
@@ -2021,15 +1967,7 @@ async fn reopened_patterns(directory: &Path, world: &World) -> Option<Vec<String
     flushed.await;
     let root = directory.to_str().unwrap();
     let reopened = SettingsManager::create(root, root, root);
-    reopened.get_enabled_models().map(|entries| {
-        entries
-            .into_iter()
-            .map(|entry| match entry {
-                SettingsListEntry::String(pattern) => pattern,
-                SettingsListEntry::Unknown(value) => panic!("a saved pattern is text, not {value}"),
-            })
-            .collect()
-    })
+    reopened.get_enabled_models().map(patterns)
 }
 
 #[test]
@@ -2043,7 +1981,7 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
                 SettingsManager::create(root, root, root);
             let ids: Vec<_> = catalog(&world).iter().map(id_of).collect();
             submit_held(&world, "/scoped-models");
-            assert!(scope_panel(&world).is_some());
+            assert!(shown_panel::<ScopedModelsSelectorComponent>(&world).is_some());
             for key in ["\r", "\x1b[B", "\r"] {
                 world.terminal.send_input(key);
             }
@@ -2076,7 +2014,7 @@ fn scope_resolution_warnings_reach_standard_error() {
             catalog(&world);
             enabled_models_setting(&world, serde_json::json!(["missing/none", "a/alpha:bogus"]));
             submit_held(&world, "/scoped-models");
-            assert!(scope_panel(&world).is_some());
+            assert!(shown_panel::<ScopedModelsSelectorComponent>(&world).is_some());
         });
     }
     let lines = [

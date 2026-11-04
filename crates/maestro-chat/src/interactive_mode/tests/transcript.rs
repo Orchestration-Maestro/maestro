@@ -9,6 +9,7 @@ use maestro_app::{
     ExtensionContext, ExtensionFactory, Local, MessageRenderOptions, NativeAgentMessage, Presence,
     ToolRenderResult, ToolRenderResultLike, UserContent, is_whitespace_scalar,
 };
+use maestro_models::test_support::zero_usage;
 use maestro_theme::{ColorMode, ColorValue, LiveTheme, Theme, ThemeBg, ThemeColor, ThemeOptions};
 use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Component, Container, EditorComponent, MarkdownTheme, Spacer, Text};
@@ -762,16 +763,10 @@ fn transcript_status_reuses_only_the_adjacent_owned_pair() {
     });
 }
 
-/// The usage record of every recorded assistant message.
-fn usage() -> Value {
-    json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
-        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}})
-}
-
 /// A stored assistant record with `content`, its stop reason and an optional error.
 pub(super) fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
     let mut record = json!({"role": "assistant", "content": content, "api": "controlled",
-        "provider": "controlled", "model": "controlled", "usage": usage(),
+        "provider": "controlled", "model": "controlled", "usage": zero_usage(),
         "stopReason": stop, "timestamp": 0});
     if let Some(error) = error {
         record["errorMessage"] = json!(error);
@@ -1592,6 +1587,46 @@ fn transcript_recorded_assistant_keeps_the_existing_paint_owner() {
                 released.upgrade().is_none(),
                 "the recorded source is released"
             );
+        }
+    });
+}
+
+#[test]
+fn transcript_length_stop_shows_the_incomplete_response_error() {
+    let test = "transcript_length_stop_shows_the_incomplete_response_error";
+    isolated(test, async |directory| {
+        let world = recorded(directory, Setup::default());
+        let truncated_call = json!([{"type": "text", "text": "PARTIAL"}, call("1", "read")]);
+        for content in [json!([{"type": "text", "text": "PARTIAL"}]), truncated_call] {
+            let record = Rc::new(assistant(&content, "length", None));
+            let AgentMessage::Assistant(live) = message((*record).clone()) else {
+                panic!("an assistant record");
+            };
+            let rows = [
+                crate::AssistantMessageComponent::from_record(
+                    record,
+                    crate::AssistantMessageOptions::default(),
+                    world.themes.theme(),
+                    world.mode.get_markdown_theme_with_settings(),
+                    world.mode.tool_environment.terminal_image.clone(),
+                ),
+                crate::AssistantMessageComponent::new(
+                    Some(live),
+                    crate::AssistantMessageOptions::default(),
+                    world.themes.theme(),
+                    world.mode.get_markdown_theme_with_settings(),
+                    world.mode.tool_environment.terminal_image.clone(),
+                ),
+            ];
+            for row in &rows {
+                let rendered = row.render(200).join("\n");
+                assert!(
+                    rendered.contains(
+                        "Error: Model stopped because it reached the maximum output token limit. The response may be incomplete."
+                    ),
+                    "{content}: {rendered}"
+                );
+            }
         }
     });
 }

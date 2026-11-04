@@ -2889,11 +2889,11 @@
     "test": "extension_argument_callback_receives_the_typed_prefix",
     "input": {
       "op": "extension-argument",
-      "query": "value",
+      "query": "typed",
       "outcome": "none"
     },
     "expected": {
-      "called": "value",
+      "called": "typed",
       "suggestions": null
     }
   },

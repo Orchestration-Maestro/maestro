@@ -31,7 +31,6 @@ pub enum ConsoleVariant {
     Error,
 }
 /// Complete native update operands, excluding presentation-only changes.
-#[derive(PartialEq, Eq)]
 struct Prepared {
     /// Literal preformatted text.
     content: String,
@@ -41,6 +40,35 @@ struct Prepared {
     label: String,
     /// Copy feedback participates in actual console updates.
     copied: bool,
+}
+/// The borrowed operands one frame supplies, compared before any owned snapshot.
+struct Supplied<'a> {
+    /// Literal preformatted text.
+    content: &'a str,
+    /// Selected text role.
+    variant: ConsoleVariant,
+    /// Localized native header text.
+    label: &'a str,
+    /// Copy feedback state.
+    copied: bool,
+}
+impl Prepared {
+    /// Whether this published snapshot already holds `supplied`.
+    fn matches(&self, supplied: &Supplied<'_>) -> bool {
+        self.content == supplied.content
+            && self.variant == supplied.variant
+            && self.label == supplied.label
+            && self.copied == supplied.copied
+    }
+    /// The owned snapshot of `supplied`, built only for a changed frame.
+    fn owned(supplied: &Supplied<'_>) -> Self {
+        Self {
+            content: supplied.content.to_owned(),
+            variant: supplied.variant,
+            label: supplied.label.to_owned(),
+            copied: supplied.copied,
+        }
+    }
 }
 /// Console body and its independent retained platform lifetime.
 ///
@@ -131,12 +159,18 @@ impl ConsoleBlock {
         copy.title = i18n.text("Copy output")?;
         copy.show_text = true;
         copy.text.clone_from(&self.content);
-        let next = Rc::new(Prepared {
-            content: self.content.clone(),
+        let label = i18n.text("console")?;
+        let supplied = Supplied {
+            content: &self.content,
             variant: self.variant,
-            label: i18n.text("console")?,
+            label: &label,
             copied: copy.copied(),
-        });
+        };
+        let next = self
+            .prepared
+            .as_ref()
+            .is_none_or(|old| !old.matches(&supplied))
+            .then(|| Rc::new(Prepared::owned(&supplied)));
         let size = copy.size(ui, i18n)?;
         let layout = self.publish(ui, next, (copy.id, size), (presentation, modal))?;
         let controls = code_block::controls(ui, &layout, [copy], (i18n, presentation))?;
@@ -150,13 +184,14 @@ impl ConsoleBlock {
     fn publish(
         &mut self,
         ui: &mut egui::Ui,
-        next: Rc<Prepared>,
+        next: Option<Rc<Prepared>>,
         control: (egui::Id, egui::Vec2),
         (presentation, modal): (&maestro_theme::BrandPresentation<'_>, Option<egui::Id>),
     ) -> Result<attachment_content::reading::controlled::ControlledLayout, ReadingUiError> {
-        let changed = self.prepared.as_ref().is_none_or(|old| **old != *next);
         let mounted = Rc::default();
-        let candidate = changed.then(|| browser::content(&next, &mounted, control.0));
+        let candidate = next
+            .as_ref()
+            .map(|next| browser::content(next, &mounted, control.0));
         let reading = candidate
             .as_ref()
             .or(self.reading.as_ref())
@@ -178,7 +213,7 @@ impl ConsoleBlock {
             presentation,
         }
         .draw(ui)?;
-        if let Some(reading) = candidate {
+        if let (Some(reading), Some(next)) = (candidate, next) {
             self.reading = Some(reading);
             self.prepared = Some(next);
             self.mounted = mounted;

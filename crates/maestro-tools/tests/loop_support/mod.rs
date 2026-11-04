@@ -2,10 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-#[path = "../../../maestro-agent/tests/support/controlled_loop.rs"]
-mod controlled_loop;
 use crate::read_support::model;
 pub use controlled_loop::{responses, user};
+use maestro_agent::test_support::controlled_loop;
 use maestro_agent::{
     AgentContext, AgentEvent, AgentLoopConfig, AgentLoopOptions, AgentMessage, AgentTool,
     run_agent_loop,

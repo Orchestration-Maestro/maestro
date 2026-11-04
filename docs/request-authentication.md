@@ -8,6 +8,11 @@ supplying an adapter's API key. Configured credentials are not a successful logi
 or a prediction of request success. Neither helper makes network requests, reads
 credential contents or validates a login.
 
+Stored request-key selection and configured-auth status reread the credential file,
+so a key another process stores or removes reaches the next request or status read.
+See [stored credentials](credentials.md#stored-credentials) for acquisition waits
+and the accepted-record fallback when a reread fails.
+
 ## Environment credentials
 
 `find_env_keys(provider)` returns all populated, nonempty API-key variable names
@@ -17,8 +22,11 @@ trimmed or cached: empty values are absent, but `"0"`, spaces, tabs and Unicode
 whitespace are retained unchanged. Provider names match exactly and are
 case-sensitive. Ambient configuration never appears in `find_env_keys`.
 
-Anthropic checks `ANTHROPIC_OAUTH_TOKEN` before `ANTHROPIC_API_KEY`. GitHub Copilot
-checks `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, then `GITHUB_TOKEN`. Fireworks checks
+Anthropic checks `ANTHROPIC_OAUTH_TOKEN` before `ANTHROPIC_API_KEY`. An API-key
+request sends `x-api-key` alone: `ANTHROPIC_AUTH_TOKEN` is never read, on the default
+endpoint or on a compatible one. GitHub Copilot
+checks only `COPILOT_GITHUB_TOKEN`; the generic `GH_TOKEN` and `GITHUB_TOKEN`
+belong to other tools and never count as Copilot credentials. Fireworks checks
 `FIREWORKS_API_KEY`. OAuth token variables can supply keys.
 
 ## Ambient configuration

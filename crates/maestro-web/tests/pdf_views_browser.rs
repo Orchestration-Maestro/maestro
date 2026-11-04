@@ -3,7 +3,7 @@
 use crate::support;
 use maestro_web::browser::attachment_content::*;
 use num_traits::ToPrimitive as _;
-use wasm_bindgen::{JsCast as _, prelude::*};
+use wasm_bindgen::prelude::*;
 /// Original complete fixture bytes.
 fn bytes(multi: bool) -> &'static [u8] {
     if multi {
@@ -18,7 +18,7 @@ pub(crate) fn encoded(multi: bool) -> String {
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
 use crate::reading_browser_support;
-use reading_browser_support::{View, check, click, js, run};
+use reading_browser_support::{View, check, click, js, presentation_fault::PresentationFault, run};
 /// All native pages retain original order, raster dimensions and bounded geometry.
 #[wasm_bindgen]
 pub fn pdf_native_pages_keep_order_geometry_and_separators() {
@@ -349,16 +349,9 @@ fn presentation_phase(
             let _ = js("document.querySelector('pre').parentElement.remove()");
         }
     }
-    let install = js_sys::Function::new_with_args(
-        "phase",
-        include_str!("reading_browser_support/presentation_fault.js"),
-    );
-    let fault = install.call1(&JsValue::NULL, &phase.into())?;
+    let fault = PresentationFault::install(phase);
     let result = native_text(host, id, TextView::Presentation, p);
-    assert!(
-        stop_presentation_fault(&fault)?,
-        "phase not reached: {phase}"
-    );
+    assert!(fault.stop(), "phase not reached: {phase}");
     let Err(error) = result else {
         return Err("expected reached native failure".into());
     };
@@ -381,27 +374,15 @@ fn presentation_phase(
     Ok(())
 }
 
-/// Restore every patched browser method before inspecting the returned error.
-fn stop_presentation_fault(fault: &JsValue) -> Result<bool, JsValue> {
-    let stop = js_sys::Reflect::get(fault, &"stop".into())?.dyn_into::<js_sys::Function>()?;
-    stop.call0(fault)?
-        .as_bool()
-        .ok_or_else(|| JsValue::from_str("missing native fault observation"))
-}
-
 /// The adjacent plain-text branch must not inherit the presentation-only retag.
 fn ordinary_content_neighbor(
     host: &BrowserAttachmentHost,
     id: egui::Id,
     p: &maestro_theme::BrandPresentation<'_>,
 ) -> Result<(), JsValue> {
-    let install = js_sys::Function::new_with_args(
-        "phase",
-        include_str!("reading_browser_support/presentation_fault.js"),
-    );
-    let fault = install.call1(&JsValue::NULL, &"content".into())?;
+    let fault = PresentationFault::install("content");
     let result = native_text(host, id, TextView::Plain, p);
-    assert!(stop_presentation_fault(&fault)?);
+    assert!(fault.stop());
     let Err(error) = result else {
         return Err("expected ordinary-text native failure".into());
     };

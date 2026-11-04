@@ -1,5 +1,5 @@
 //! Block hints are independent of later inline acceptance.
-use super::{Delimited, WORK, Work, hinted_blocks};
+use super::{Delimited, WORK, Work, grows_at_most_linearly, hinted_blocks};
 
 #[test]
 fn block_hints_clip_before_inline_operands() {
@@ -85,4 +85,95 @@ fn block_hint_work_grows_with_equations_and_urls() {
             );
         }
     }
+}
+
+#[test]
+fn code_held_angles_leave_a_later_quote_marker_alone() {
+    for (source, expected) in [
+        (
+            "Compare `a<b`.\n\n> note\n",
+            &["paragraph Compare `a<b`.", "gap", "quote > note"][..],
+        ),
+        (
+            "```\n<a\n```\n\n> note\n",
+            &["code ```\n<a\n```", "gap", "quote > note"][..],
+        ),
+        (
+            "See `x\n\n<b\n\n> note `y\n",
+            &[
+                "paragraph See `x",
+                "gap",
+                "paragraph <b",
+                "gap",
+                "paragraph > note `y",
+            ][..],
+        ),
+    ] {
+        let document = crate::parse_with_options(
+            source.to_owned(),
+            crate::MarkedOptions::Browser { escape_html: true },
+        );
+        let shapes: Vec<String> = document
+            .nodes
+            .iter()
+            .map(|node| {
+                let kind = match &node.kind {
+                    crate::Kind::Paragraph(_) => "paragraph",
+                    crate::Kind::Quote(..) => "quote",
+                    crate::Kind::CodeBlock(..) => "code",
+                    crate::Kind::Gap => "gap",
+                    _ => "other",
+                };
+                let text = node.authored.to_owned_string();
+                let text = text.trim_end();
+                if text.is_empty() {
+                    kind.to_owned()
+                } else {
+                    format!("{kind} {text}")
+                }
+            })
+            .collect();
+        assert_eq!(shapes, expected, "{source:?}");
+    }
+}
+
+#[test]
+fn clipped_escaped_angle_keeps_its_closing_angle_literal() {
+    let source = "<https://example.test/$$x$$>";
+    let escaped = crate::MarkedOptions::Browser { escape_html: true };
+    assert_eq!(
+        hinted_blocks(source, escaped, Delimited("$$", "$$")),
+        ["<https://example.test/", "block $$x$$", ">"]
+    );
+    assert_eq!(
+        hinted_blocks(
+            source,
+            crate::MarkedOptions::Browser { escape_html: false },
+            Delimited("$$", "$$"),
+        ),
+        ["<https://example.test/", "block $$x$$"]
+    );
+}
+
+#[test]
+fn hinted_paragraph_reads_escaped_quote_marker_lines_once() {
+    let counts = [32, 64, 128].map(|count| {
+        let lines = "> c <d\n".repeat(count);
+        let source = format!("a <b\n{lines}$$x$$");
+        WORK.with_borrow_mut(|work| *work = Work::default());
+        let blocks = hinted_blocks(
+            &source,
+            crate::MarkedOptions::Browser { escape_html: true },
+            Delimited("$$", "$$"),
+        );
+        assert_eq!(
+            blocks,
+            [
+                format!("a <b\n{}", lines.trim_end()),
+                "block $$x$$".to_owned()
+            ]
+        );
+        WORK.with_borrow(|work| work.paragraph_bytes)
+    });
+    assert!(grows_at_most_linearly(counts), "{counts:?}");
 }

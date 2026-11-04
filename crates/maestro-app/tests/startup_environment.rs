@@ -1,7 +1,7 @@
 //! Startup offline and version-skip selections reaching the hosted-service gates.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::resource_fixtures::{Root, module_loader, with_isolated_home};
+use crate::resource_fixtures::{Root, module_loader, with_environment, with_isolated_home};
 use crate::service_observations as services;
 use crate::support::session_harness::on_task_set;
 use maestro_app::configuration::telemetry::{
@@ -295,12 +295,23 @@ fn report_with_skip_flag() -> usize {
 fn package_tree(base: &str, name: &str) -> (Root, std::path::PathBuf) {
     let root = Root::new(base, name);
     let marker = std::path::PathBuf::from(&root.path).join("acquired");
+    let command = crate::native::command(
+        std::path::Path::new(&root.path),
+        "acquire",
+        &json!({
+            "scenario": "output",
+            "stdout": [],
+            "stderr": [],
+            "code": 0,
+            "append": {"path": marker, "cwd": false, "bytes": b"acquired"}
+        }),
+    );
     std::fs::create_dir_all(format!("{}/.maestro", root.project())).unwrap();
     std::fs::write(
         format!("{}/.maestro/settings.json", root.project()),
         json!({
             "packages": ["npm:missing@1.0.0"],
-            "npmCommand": ["/bin/sh", "-c", format!("printf acquired >> {}", marker.display())],
+            "npmCommand": [command.display().to_string()],
         })
         .to_string(),
     )
@@ -410,6 +421,10 @@ async fn session_search(services: &Rc<AgentSessionServices<Local>>) -> [String; 
     search_failures(&session_from(services).await).await
 }
 
+/// An explicitly empty `PATH`, so no search program installed on the host answers either
+/// tool's lookup and the expected failures stay the same on every host.
+const NO_SEARCH_PROGRAMS: [(&str, &str); 1] = [("PATH", "")];
+
 /// A session whose search selection is offline admits no program: both tools fail before
 /// running one, and no staging entry or program appears in the binary directory.
 fn assert_search_offline(services: &AgentSessionServices<Local>, failures: &[String; 2]) {
@@ -426,27 +441,35 @@ fn assert_search_offline(services: &AgentSessionServices<Local>, failures: &[Str
 
 #[test]
 fn session_startup_selection_reaches_find_and_grep() {
-    with_isolated_home("session_startup_selection_reaches_find_and_grep", |base| {
-        let (root, marker) = package_tree(base, "session");
-        on_task_set(|local| async move {
-            let services = services_for(&root, &local, Some(true), Some(false)).await;
-            assert!(
-                !marker.exists(),
-                "the search selection must not change packages"
-            );
-            assert_eq!(services.offline, Some(false));
-            assert_no_search_program(&services);
-        });
-    });
-    with_isolated_home("session_startup_selection_reaches_find_and_grep", |base| {
-        let (root, marker) = package_tree(base, "session-online");
-        on_task_set(|local| async move {
-            let services = services_for(&root, &local, None, Some(true)).await;
-            assert!(marker.exists(), "the package selection stays independent");
-            assert_eq!(services.offline, Some(true));
-            assert_search_offline(&services, &session_search(&services).await);
-        });
-    });
+    with_environment(
+        "session_startup_selection_reaches_find_and_grep",
+        &NO_SEARCH_PROGRAMS,
+        |base| {
+            let (root, marker) = package_tree(base, "session");
+            on_task_set(|local| async move {
+                let services = services_for(&root, &local, Some(true), Some(false)).await;
+                assert!(
+                    !marker.exists(),
+                    "the search selection must not change packages"
+                );
+                assert_eq!(services.offline, Some(false));
+                assert_no_search_program(&services);
+            });
+        },
+    );
+    with_environment(
+        "session_startup_selection_reaches_find_and_grep",
+        &NO_SEARCH_PROGRAMS,
+        |base| {
+            let (root, marker) = package_tree(base, "session-online");
+            on_task_set(|local| async move {
+                let services = services_for(&root, &local, None, Some(true)).await;
+                assert!(marker.exists(), "the package selection stays independent");
+                assert_eq!(services.offline, Some(true));
+                assert_search_offline(&services, &session_search(&services).await);
+            });
+        },
+    );
 }
 
 /// A missing search program stays absent with no staging entry, because no download started.
@@ -471,19 +494,23 @@ fn assert_no_search_program(services: &AgentSessionServices<Local>) {
 /// separate service keeps its own.
 #[test]
 fn startup_selection_survives_service_replacement() {
-    with_isolated_home("startup_selection_survives_service_replacement", |base| {
-        let (root, marker) = package_tree(base, "replace");
-        on_task_set(|local| async move {
-            let selected = services_for(&root, &local, Some(true), Some(true)).await;
-            assert!(!marker.exists());
-            assert_search_offline(&selected, &session_search(&selected).await);
-            assert_search_offline(&selected, &session_search(&selected).await);
-            let online = services_for(&root, &local, None, Some(false)).await;
-            assert_eq!(online.offline, Some(false));
-            assert!(
-                marker.exists(),
-                "a separate service keeps its own selection"
-            );
-        });
-    });
+    with_environment(
+        "startup_selection_survives_service_replacement",
+        &NO_SEARCH_PROGRAMS,
+        |base| {
+            let (root, marker) = package_tree(base, "replace");
+            on_task_set(|local| async move {
+                let selected = services_for(&root, &local, Some(true), Some(true)).await;
+                assert!(!marker.exists());
+                assert_search_offline(&selected, &session_search(&selected).await);
+                assert_search_offline(&selected, &session_search(&selected).await);
+                let online = services_for(&root, &local, None, Some(false)).await;
+                assert_eq!(online.offline, Some(false));
+                assert!(
+                    marker.exists(),
+                    "a separate service keeps its own selection"
+                );
+            });
+        },
+    );
 }

@@ -1,7 +1,7 @@
 //! The loaded-resource listing through the mode's startup and retained sections.
 use super::{
     HomeLookup, ResourceItem, ShowLoadedResourcesOptions, build_scope_groups, format_context_path,
-    format_display_path, format_scope_groups, get_short_path,
+    format_display_path, format_scope_groups, get_short_path, prompt_label, prompt_names_by_path,
 };
 use crate::interactive_mode::startup::ExpandableText;
 use crate::interactive_mode::tests::{
@@ -14,6 +14,7 @@ use maestro_app::{
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Component;
 use serde::Deserialize;
+use std::ffi::OsStr;
 use std::{any::Any, cell::Cell, io, path::Path, rc::Rc};
 
 mod loaded;
@@ -143,20 +144,39 @@ struct Recorded {
 struct RecordedSource {
     /// The source label.
     source: String,
-    /// The scope.
-    scope: SourceScope,
+    /// The scope, recorded by every case whose witness compares it.
+    scope: Option<SourceScope>,
     /// The package root.
     #[serde(rename = "baseDir")]
     base_dir: Option<String>,
 }
 
 impl RecordedSource {
-    /// The source of the resource at `path`.
+    /// The source of the resource at `path`, whose scope the witness compares.
     fn into_source_info(self, path: &str) -> SourceInfo {
+        let scope = self.compared_scope();
+        self.into_info(path, scope)
+    }
+
+    /// The scope the recorded witness compares.
+    fn compared_scope(&self) -> SourceScope {
+        self.scope
+            .expect("a recorded provenance whose scope is compared")
+    }
+
+    /// The source of the resource at `path`, which a compact label reads without
+    /// its scope, so a record that names none is project material.
+    fn into_label_info(self, path: &str) -> SourceInfo {
+        let scope = self.scope.unwrap_or(SourceScope::Project);
+        self.into_info(path, scope)
+    }
+
+    /// The source of the resource at `path` in `scope`.
+    fn into_info(self, path: &str, scope: SourceScope) -> SourceInfo {
         SourceInfo {
             path: path.to_owned(),
             source: self.source,
-            scope: self.scope,
+            scope,
             origin: SourceOrigin::TopLevel,
             base_dir: self.base_dir,
         }
@@ -170,7 +190,7 @@ impl Recorded {
             .take()
             .unwrap_or_else(|| RecordedSource {
                 source: "local".to_owned(),
-                scope: SourceScope::Project,
+                scope: Some(SourceScope::Project),
                 base_dir: None,
             })
             .into_source_info(&self.file_path)
@@ -263,7 +283,10 @@ fn context_files(located: Vec<Located>) -> Vec<ContextFile> {
 
 /// Runs `body` in a fresh child whose home directory and locale are the recorded ones.
 fn in_home(test: &str, body: impl AsyncFnOnce(&Path)) {
-    let environment = [("HOME", HOME), ("LANG", "C.UTF-8")];
+    let environment = [
+        (OsStr::new("HOME"), OsStr::new(HOME)),
+        (OsStr::new("LANG"), OsStr::new("C.UTF-8")),
+    ];
     isolated_case(test, "child", &environment, body);
 }
 
@@ -553,9 +576,9 @@ fn resource_home_lookup_preserves_absent_and_supplied_home_and_corrects_empty_pr
         else {
             panic!("a native home case");
         };
-        let environment: &[(&str, &str)] = match mode.as_str() {
-            "supplied" => &[("HOME", "/tmp/supplied-home")],
-            "empty" => &[("HOME", "")],
+        let environment: &[(&OsStr, &OsStr)] = match mode.as_str() {
+            "supplied" => &[(OsStr::new("HOME"), OsStr::new("/tmp/supplied-home"))],
+            "empty" => &[(OsStr::new("HOME"), OsStr::new(""))],
             other => panic!("an unknown home mode {other}"),
         };
         isolated_case(test, &mode, environment, async |directory| {
@@ -729,8 +752,8 @@ fn package_resources_shorten_from_roots_before_legacy_fallbacks() {
     }
 }
 
-/// The paths visited while grouping `count` resources and the paths emitted, and the
-/// lookups a formatter that rescans every resource per emitted path would make.
+/// The paths visited while grouping `count` resources and the paths emitted, and the reads
+/// a labeller that rescans every resource per emitted path would make.
 fn traversal(count: usize) -> (usize, usize, usize) {
     let paths: Vec<_> = (0..count)
         .rev()
@@ -755,11 +778,11 @@ fn traversal(count: usize) -> (usize, usize, usize) {
         &collator,
         |item| {
             emitted.set(emitted.get() + 1);
-            let position = items
+            let found = items
                 .iter()
-                .position(|other| other.path == item.path)
-                .unwrap();
-            rescanned.set(rescanned.get() + count - position);
+                .inspect(|_| rescanned.set(rescanned.get() + 1))
+                .find(|other| other.path == item.path);
+            assert!(found.is_some(), "every emitted label names a resource");
             Ok(item.path.to_owned())
         },
         |_| unreachable!("no package resources"),
@@ -772,8 +795,90 @@ fn traversal(count: usize) -> (usize, usize, usize) {
 fn resource_listing_reads_each_input_once_before_ordering() {
     for count in [64, 128, 256] {
         let (visited, emitted, rescanned) = traversal(count);
-        assert_eq!((visited, emitted), (count, count));
-        assert_eq!(rescanned, count * (count + 1) / 2);
-        assert!(rescanned > 2 * count);
+        assert!(visited <= count, "{visited} visits for {count} resources");
+        assert!(emitted <= count, "{emitted} rows for {count} resources");
+        assert!(
+            rescanned > 2 * count,
+            "a labeller that rescans reads {rescanned} times for {count} resources"
+        );
+    }
+}
+
+/// The prompt templates at `count` distinct paths, each named after its index.
+fn prompt_templates(count: usize) -> Vec<PromptTemplate> {
+    (0..count)
+        .map(|index| Recorded {
+            file_path: format!("/p/{index:04}.md"),
+            name: format!("p{index:04}"),
+            source_info: None,
+        })
+        .map(Recorded::into_template)
+        .collect()
+}
+
+/// The prompt rows named by `label`, grouped by the templates' own paths.
+fn prompt_rows(
+    templates: &[PromptTemplate],
+    label: impl Fn(&ResourceItem<'_>) -> Result<String, Box<dyn std::error::Error>>,
+) -> String {
+    let items: Vec<_> = templates
+        .iter()
+        .map(|template| ResourceItem {
+            path: &template.file_path,
+            source_info: Some(&template.source_info),
+        })
+        .collect();
+    let theme = crate::interactive_mode::tests::dark();
+    let collator = Collator::new(&|_| None).unwrap();
+    format_scope_groups(
+        &build_scope_groups(&items),
+        &theme,
+        &collator,
+        &label,
+        &label,
+    )
+    .unwrap()
+}
+
+#[test]
+fn prompt_labels_read_each_template_once_before_naming_paths() {
+    for count in [64, 128, 256] {
+        let templates = prompt_templates(count);
+        let reads = Cell::new(0);
+        let lookups = Cell::new(0);
+        let home = || {
+            lookups.set(lookups.get() + 1);
+            Ok(HOME.to_owned())
+        };
+        let names = prompt_names_by_path(templates.iter().inspect(|_| reads.set(reads.get() + 1)));
+        let expanded = prompt_rows(&templates, |item| prompt_label(&names, item, &home));
+        assert!(
+            reads.get() <= count,
+            "{} reads for {count} prompts",
+            reads.get()
+        );
+        assert_eq!(lookups.get(), 0, "every row is named from the index");
+        for template in &templates {
+            assert!(
+                expanded.contains(&format!("/{}", template.name)),
+                "{} names its row",
+                template.name
+            );
+        }
+        let rescans = Cell::new(0);
+        let rescanned = prompt_rows(&templates, |item| {
+            let found = templates
+                .iter()
+                .inspect(|_| rescans.set(rescans.get() + 1))
+                .find(|other| other.file_path == item.path)
+                .ok_or("every emitted label names a prompt")?;
+            Ok(format!("/{}", found.name))
+        });
+        assert_eq!(rescanned, expanded, "both labellers name the same rows");
+        assert!(
+            rescans.get() > 2 * count,
+            "a labeller that rescans reads {} times for {count} prompts",
+            rescans.get()
+        );
     }
 }

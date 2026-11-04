@@ -1,13 +1,12 @@
 use std::path::Path;
 
 use ra_ap_rustc_lexer::TokenKind;
-use syn::{spanned::Spanned, visit::Visit};
+use syn::spanned::Spanned;
 
 use crate::generated;
 use crate::graph::UNIFIER;
 use crate::source::{
-    Member, Source, cfg_test, exclude_test_item, impl_item_attributes, item_attributes,
-    read_manifest, test_layout, trait_item_attributes,
+    Member, Source, cfg_test, covered, item_attributes, read_manifest, test_layout,
 };
 
 /// Verify protected lint settings and production source size for every member.
@@ -37,8 +36,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     if generated::catalog_source(member, source) || test_layout(path, &member.directory) {
         return Ok(());
     }
-    let contents = &source.contents;
-    let lines = production_lines(contents, source.syntax.as_ref());
+    let lines = production_lines(source);
     if lines > 500 {
         return Err(format!(
             "{}: {lines} production lines exceeds 500",
@@ -49,13 +47,13 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
 }
 
 /// Count lines with non-whitespace characters outside documentation tokens and test-only spans.
-fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
-    let mut exclusions = TestLines::default();
-    if let Some(syntax) = syntax {
-        exclusions.visit_file(syntax);
-    }
-    exclusions.spans.extend(documentation_spans(contents));
-    let end = syntax
+fn production_lines(source: &Source) -> usize {
+    let contents = &source.contents;
+    let testing = source.test_spans();
+    let documentation = documentation_spans(source);
+    let end = source
+        .syntax
+        .as_ref()
         .and_then(|syntax| syntax.items.last())
         .filter(|item| cfg_test(item_attributes(item)))
         .map_or(contents.lines().count(), |item| item.span().end().line);
@@ -67,37 +65,19 @@ fn production_lines(contents: &str, syntax: Option<&syn::File>) -> usize {
             // Span columns and text columns both count Unicode characters.
             text.chars().enumerate().any(|(column, character)| {
                 !character.is_whitespace()
-                    && !exclusions
-                        .spans
-                        .iter()
-                        .any(|span| span.contains(&(line + 1, column)))
+                    && !covered(testing, (line + 1, column))
+                    && !covered(&documentation, (line + 1, column))
             })
         })
         .count()
 }
 
-/// Locates documentation tokens in the Unicode coordinates used by syntax spans.
-fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
+/// Locates documentation tokens, in source order, in the Unicode coordinates used by syntax spans.
+fn documentation_spans(source: &Source) -> Vec<std::ops::Range<(usize, usize)>> {
     let mut spans = Vec::new();
-    let mut tokens = crate::source::tokens(contents).peekable();
-    let mut position = (
-        1,
-        tokens
-            .peek()
-            .map_or(0, |(_, range)| contents[..range.start].chars().count()),
-    );
-    for (kind, range) in tokens {
-        let offset = range.start;
-        let end = range.end;
-        let next = contents[offset..end]
-            .chars()
-            .fold(position, |(line, column), character| {
-                if character == '\n' {
-                    (line + 1, 0)
-                } else {
-                    (line, column + 1)
-                }
-            });
+    let mut position = (1, 0);
+    let mut counted = 0;
+    for (kind, range) in &source.tokens {
         if matches!(
             kind,
             TokenKind::LineComment { doc_style: Some(_) }
@@ -106,50 +86,24 @@ fn documentation_spans(contents: &str) -> Vec<std::ops::Range<(usize, usize)>> {
                     ..
                 }
         ) {
-            spans.push(position..next);
+            let start = advance(position, &source.contents[counted..range.start]);
+            position = advance(start, &source.contents[range.clone()]);
+            counted = range.end;
+            spans.push(start..position);
         }
-        position = next;
     }
     spans
 }
 
-#[derive(Default)]
-/// Source spans excluded from the production line count.
-struct TestLines {
-    /// Half-open character ranges occupied by test-only syntax or documentation tokens.
-    spans: Vec<std::ops::Range<(usize, usize)>>,
-}
-
-impl<'ast> Visit<'ast> for TestLines {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        exclude_test_item!(self, item, item_attributes(item), visit_item);
-    }
-
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        exclude_test_item!(self, item, impl_item_attributes(item), visit_impl_item);
-    }
-
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        exclude_test_item!(self, item, trait_item_attributes(item), visit_trait_item);
-    }
-
-    fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
-        let attributes = match item {
-            syn::ForeignItem::Fn(item) => &item.attrs,
-            syn::ForeignItem::Static(item) => &item.attrs,
-            syn::ForeignItem::Type(item) => &item.attrs,
-            syn::ForeignItem::Macro(item) => &item.attrs,
-            _ => return,
-        };
-        exclude_test_item!(self, item, attributes, visit_foreign_item);
-    }
-}
-
-/// Convert a syntax span into comparable line and character coordinates.
-fn span_positions(span: proc_macro2::Span) -> std::ops::Range<(usize, usize)> {
-    let start = span.start();
-    let end = span.end();
-    (start.line, start.column)..(end.line, end.column)
+/// Advance a line and Unicode column position across text.
+fn advance(position: (usize, usize), text: &str) -> (usize, usize) {
+    text.chars().fold(position, |(line, column), character| {
+        if character == '\n' {
+            (line + 1, 0)
+        } else {
+            (line, column + 1)
+        }
+    })
 }
 
 /// Require each crate to enable workspace lint inheritance.
@@ -292,3 +246,6 @@ fn json_precision_missing(
         .unwrap_or(alias);
     package == "serde_json" && (!inherited || !has_json_precision(identity))
 }
+
+#[cfg(test)]
+mod tests;

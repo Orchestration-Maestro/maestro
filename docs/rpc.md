@@ -29,6 +29,11 @@ once that attempt failed. It disconnects if the response is dropped before any a
 says nothing about whether the peer read the line. After a write fails, the connection admits
 no further lines, so no frame follows a partial one.
 
+`JsonlLineReader::new` decodes invalid UTF-8 with replacement characters and reads a final
+line without its LF. `JsonlLineReader::strict` reads only LF-terminated lines, decodes each as
+strict UTF-8 and fails a line whose bytes before its LF exceed its limit, a CR included, as
+soon as they arrive; the first failure ends the input. The daemon socket reads this way.
+
 When the input of a connection without a session ends, the workspace operations still waiting
 are dropped and get no response. Responses already queued are still written, and a write that
 fails after the connection ended becomes its result. Commands still running when the runner
@@ -72,7 +77,10 @@ and `agent_end`, not just the successful response. It leaves stderr separate and
 checks the child's exit status. Use plain prompt text: an extension slash
 command handled without a run does not produce `agent_end`. The example does
 not track automatic retries or overflow recovery after the first run. Use the
-[typed Rust client](client.md) for reusable subprocess operations.
+[typed Rust client](client.md) for reusable subprocess operations. The
+[SDK example index](../examples/sdk/README.md#check-the-example) gives the command
+that runs the example's checks; those checks are Rust tests whose peers are native
+Rust programs, so only the example itself runs under Python 3.
 
 ## Framing
 
@@ -102,8 +110,11 @@ not hold back a fast one, so responses can arrive out of order. Match them by `i
 A record that is not valid JSON, not an object, or has no string `type` is answered with
 an uncorrelated failure. Invalid JSON uses the command `parse` and the message
 `Failed to parse command: ` followed by the decoder's message. An unknown `type` answers
-`Unknown command: <type>` without the supplied `id`. A known command with a missing or
-wrongly typed field keeps its `id` and command and answers the decoder's message. The
+`Unknown command: <type>` without the supplied `id`. A known session command with a
+missing or wrongly typed field keeps its `id` and command and answers the decoder's
+message. A known workspace command with such a field answers in the workspace envelope,
+with an empty `id`, its command, the code `invalid_request` and `invalid request: `
+followed by the decoder's message. Unknown members of a valid command are ignored. The
 connection keeps serving after each of these.
 
 ### Session commands
@@ -654,7 +665,9 @@ remains available to extensions, but theme selection answers
 The connection ends when the input ends, when an extension requests shutdown, or on SIGTERM
 or SIGHUP. At the end of input the server stops streaming events, starts disposing the
 session and answers a final line without its LF; the process exits 0. A shutdown an
-extension requests takes effect after the next command's response. The first signal kills
+extension requests takes effect when the active run settles, including its retry
+waits and compaction, or after the next command's response. A command reply during
+an active run leaves the request waiting for settlement. The first signal kills
 the shell commands still running, disposes the session and exits with 143 or 129. Once
 shutdown has started, a second signal kills the process by that signal; once the session
 is disposing, the end of input exits 0 at once. A failed read, or a failed write of any

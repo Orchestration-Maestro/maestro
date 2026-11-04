@@ -7,6 +7,9 @@ mod auto_commit_on_exit_example;
 mod bash_spawn_hook_example;
 mod border_status_editor_example;
 mod built_in_tool_renderer;
+mod callback_lifetimes;
+mod callback_ordering;
+mod callback_results;
 mod canonical_api;
 mod canonical_callbacks;
 mod canonical_commands;
@@ -17,9 +20,12 @@ mod canonical_ui;
 mod canonical_widgets;
 mod compilation_cache;
 mod completion_providers;
+mod component_callbacks;
 mod component_events;
 mod component_loading;
+
 mod components;
+mod context_bridge;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
@@ -28,6 +34,8 @@ mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
 mod handoff_example;
+mod hook_diagnostics;
+mod inline_bash_example;
 mod interactive_shell_example;
 mod lifetimes;
 mod listener_prefixes;
@@ -60,18 +68,16 @@ mod example_process;
 #[path = "../../maestro-extensions/tests/support/model.rs"]
 mod model_support;
 
-#[path = "../../maestro-extensions/tests/support/command_operations.rs"]
-mod context_actions;
+/// The shared silent command operations the adapter's witnesses bind.
+mod context_actions {
+    pub use maestro_extensions::test_support::silent_command_operations;
+}
 
-#[path = "../../maestro-test-terminal/src/manual_runtime.rs"]
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-mod manual_runtime;
+use maestro_tui::test_support::manual_runtime;
 
 mod authored_stream_lifetimes;
 mod authored_streams;
-#[path = "../../maestro-test-terminal/src/recording_terminal.rs"]
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-mod recording_terminal;
+use maestro_tui::test_support::recording_terminal;
 
 mod model_streams;
 

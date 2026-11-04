@@ -10,6 +10,8 @@ pub struct Case {
     pub name: String,
     pub input: Input,
     pub expected: Vec<Vec<String>>,
+    /// Complete macOS layout when its key names differ.
+    pub expected_macos: Option<Vec<Vec<String>>>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]

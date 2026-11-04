@@ -1385,49 +1385,58 @@ fn native_launch(test: &str) {
         "leading-dash",
         "unlink-error",
     ] {
-        let dir = native_child::Scratch::new();
-        std::fs::create_dir(dir.0.path().join("bin")).unwrap();
+        let dir = maestro_test_directory::Scratch::new().unwrap();
+        std::fs::create_dir(dir.path().join("bin")).unwrap();
         let name = if mode == "leading-dash" {
             "-session.jsonl"
         } else {
             "session.jsonl"
         };
         if mode == "unlink-error" {
-            std::fs::create_dir(dir.0.path().join(name)).unwrap();
+            std::fs::create_dir(dir.path().join(name)).unwrap();
         } else {
             std::fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(dir.0.path().join(name))
+                .open(dir.path().join(name))
                 .unwrap();
         }
+        let path = dir.path().join("bin").to_string_lossy().into_owned();
+        let log = dir.path().join("argv").to_string_lossy().into_owned();
         if mode != "unavailable" {
-            let status = std::process::Command::new("/usr/bin/install")
-                .args(["-m", "0700"])
-                .arg(
-                    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                        .join("tests/fixtures/session-trash.sh"),
-                )
-                .arg(dir.0.path().join("bin/trash"))
-                .status()
+            let entry = dir.path().join("bin/trash");
+            let mut record = entry.as_os_str().to_os_string();
+            record.push(".fixture");
+            let outcome = trash_record(mode, &log);
+            std::fs::write(record, format!("trash\n{outcome}")).unwrap();
+            let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+                .expect("nextest native-fixture setup supplies the prepared artifact");
+            maestro_test_process::install_executable(std::path::Path::new(&artifact), &entry)
                 .unwrap();
-            assert!(status.success());
         }
-        let path = dir.join("bin");
-        let log = dir.join("argv");
         let lines = native_child::probe(
             maestro_test_process::TestProcess::named(test)
                 .unwrap()
                 .case(mode),
-            dir.0.path(),
-            &[
-                ("SESSION_TRASH_OUTCOME", mode),
-                ("PATH", &path),
-                ("MAESTRO_TRASH_LOG", &log),
-            ],
+            dir.path(),
+            &[("PATH", &path), ("MAESTRO_TRASH_LOG", &log)],
             &[],
-        );
+        )
+        .expect("child starts");
         assert_eq!(lines, ["native qualified"]);
+    }
+}
+
+/// The finite trash outcome each native mode observes.
+#[cfg(target_os = "linux")]
+fn trash_record(mode: &str, log: &str) -> serde_json::Value {
+    match mode {
+        "leading-dash" => serde_json::json!({"log": log}),
+        "removed-nonzero" => serde_json::json!({"remove": true, "code": 1}),
+        "zero" => serde_json::json!({}),
+        _ => {
+            serde_json::json!({"stderr": b"trash native failure\nsecond line\n".as_slice(), "code": 1})
+        }
     }
 }
 

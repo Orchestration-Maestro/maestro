@@ -29,24 +29,25 @@ use rustix::termios::{Winsize, tcsetwinsize};
 use tokio::runtime::{Builder, Runtime};
 use tokio::task::LocalSet;
 
-/// Marks the child copy of a test, which runs the scenario instead of spawning itself.
-const CHILD_MARKER: &str = "MAESTRO_TERMINAL_TEST_CHILD";
-
-/// Names which scenario of a test the child copy runs.
-const CASE_MARKER: &str = "MAESTRO_TERMINAL_TEST_CASE";
-
 /// Variables a scenario sees only when it sets them.
 const SCENARIO_VARIABLES: [&str; 4] = ["COLUMNS", "LINES", "MAESTRO_TUI_WRITE_LOG", "TZ"];
 
-/// The bytes a terminal writes when it starts: bracketed paste on, then the keyboard query.
-pub const START_BYTES: &str = "\x1b[?2004h\x1b[?u";
+/// The bytes a terminal writes when it starts: bracketed paste on, the keyboard flags
+/// requested, then the keyboard and device-attribute queries.
+pub const START_BYTES: &str = "\x1b[?2004h\x1b[>7u\x1b[?u\x1b[c";
+
+/// The bytes a started terminal writes when it stops with no progress shown: bracketed paste
+/// off, then the keyboard flags popped.
+pub const STOP_BYTES: &str = "\x1b[?2004l\x1b[<u";
 
 /// Runs scenario number `case` of `test` in a child copy of the calling test and fails the
 /// test when the child fails. Inside the child it runs `scenario` only when it is the case
 /// the parent chose. `environment` is passed to the child on top of a clean slate.
 pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario: impl FnOnce()) {
-    if is_child() {
-        if std::env::var(CASE_MARKER).is_ok_and(|chosen| chosen == case.to_string()) {
+    let selection = maestro_test_process::selection();
+    let chosen = case.to_string();
+    if selection.is_child() {
+        if selection.case() == Some(chosen.as_str()) {
             scenario();
         }
         return;
@@ -58,8 +59,7 @@ pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario:
     let output = process
         .nocapture()
         .single_threaded()
-        .env(CHILD_MARKER, "1")
-        .env(CASE_MARKER, case.to_string())
+        .case(chosen)
         .envs(environment.iter().copied())
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -76,7 +76,7 @@ pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario:
 
 /// Whether this process is the child copy of a test.
 pub fn is_child() -> bool {
-    std::env::var_os(CHILD_MARKER).is_some()
+    maestro_test_process::selection().is_child()
 }
 
 /// Names the calling test from a marker function declared inside it. A first argument

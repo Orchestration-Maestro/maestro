@@ -119,7 +119,7 @@ fn check_presentation(pack: &BrandPack, mode: BrandMode, id: &str) {
 /// All prefixes of a custom document loaded in both color modes.
 #[cfg(test)]
 fn custom_prefixes() -> Vec<String> {
-    let document = custom_json("custom", "#123456").to_string();
+    let document = custom_json("custom", "#123456").unwrap().to_string();
     [ColorMode::Truecolor, ColorMode::Color256]
         .into_iter()
         .flat_map(|mode| {
@@ -225,7 +225,7 @@ fn brand_pack_preserves_terminal_defaults_and_custom_themes() {
     let state = state(&scratch);
     scratch.write(
         "custom/filemine.json",
-        &custom_json("filemine", "#123456").to_string(),
+        &custom_json("filemine", "#123456").unwrap().to_string(),
     );
     let source = package_source();
     let registered = package_theme(&source);

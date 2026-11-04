@@ -81,6 +81,8 @@ pub struct Attempt {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// An explicitly supplied response from the original host operation owner.
+    pub host_operation_result: Option<Result<serde_json::Value, String>>,
     /// Controlled native waits while a custom view script drives independent tails.
     pub tick_clock: Option<super::custom_ticks::Clock>,
     /// Supplied native byte resources and exact operand observations.
@@ -117,6 +119,8 @@ pub struct Observed {
     pub dropped: Vec<u32>,
     /// Resources handed to the extension that it has not dropped.
     pub live: usize,
+    /// Table keys of identities the extension handed to the host, which the host drops itself.
+    pub handed_over: Vec<u32>,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
     /// Tool registrations the guest attempted, admitted or not, in attempt order.

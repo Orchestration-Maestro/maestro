@@ -23,5 +23,11 @@ path = "tests/integration.rs"
 workspace = true
 
 [dev-dependencies]
+maestro-markdown = { path = ".", features = ["test-support"] }
 serde.workspace = true
 serde_json.workspace = true
+
+[features]
+test-support = []
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

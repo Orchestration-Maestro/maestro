@@ -1,10 +1,12 @@
 //! Artifact-console bodies retain literal ordered rows and independent controls.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, call, computed, container, driver, frames, host, page_module, published,
-    rgb, select, selection, text, until, view,
+    Clipboard, Recorded, computed, container, driver, frames, host, published, rgb, select, text,
+    until, view,
 };
-use crate::native_artifact_console_support::{cases, factory, localized, native};
+use crate::native_artifact_console_support::{
+    Probe, cases, deduplicated, localized, native_string, operand, rescan,
+};
 use maestro_web::{
     browser::sandbox_value::BrowserSandboxValue,
     dom::{DomContent as _, DomRoot, DomView},
@@ -29,10 +31,9 @@ fn click(root: &DomRoot, selector: &str) {
 }
 /// Summary localization, literal positional rows and independent initialization.
 #[wasm_bindgen]
-pub async fn artifact_console_dom_summaries_and_literal_lines(import_module: js_sys::Function) {
+pub fn artifact_console_dom_summaries_and_literal_lines(import_module: &js_sys::Function) {
     let view = view();
-    let _host = host(&view, &import_module);
-    let _page = page_module(&import_module).await;
+    let _host = host(&view, import_module);
     let console = Console::new();
     let neighbour = Console::default();
     let root = console.mount(&view).unwrap();
@@ -103,9 +104,7 @@ fn assert_summaries(view: &maestro_web::dom::DomView) {
 pub async fn artifact_console_dom_preserves_raw_value_domains(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     let clipboard = Recorded::install(Clipboard::Accept);
-    let factory = factory(&import_module).await;
     let parent = container();
     let console = Console::new();
     let root = console.mount(&view).unwrap();
@@ -118,7 +117,7 @@ pub async fn artifact_console_dom_preserves_raw_value_domains(import_module: js_
         Some("Copy logs")
     );
     for case in cases().values {
-        let (operand, expected, copied) = prepare(&factory, &case);
+        let (operand, expected, copied) = prepare(&case);
         *console.logs.borrow_mut() = vec![log(operand), log("later usable line")];
         console.update(&root, &view).unwrap();
         let rows = select(&root.node, ".maestro-artifact-logs");
@@ -150,46 +149,28 @@ pub async fn artifact_console_dom_preserves_raw_value_domains(import_module: js_
         );
         let before = clipboard.texts().len();
         copy.unwrap().unchecked_ref::<HtmlElement>().click();
-        frames(&page, 1).await;
+        frames(1).await;
         assert_eq!(
             &clipboard.texts()[before..],
             &[format!("{copied}\n[log] later usable line")]
         );
     }
-    assert_error_operands(&console, &root, &view, &page, &clipboard).await;
-    growth(&console, &root, &view, &page, &factory).await;
+    assert_error_operands(&console, &root, &view, &clipboard).await;
+    growth(&console, &root, &view).await;
     parent.remove();
 }
 
 /// Construct a native operand and its separately recorded paint/copy observations.
-fn prepare(
-    factory: &JsValue,
-    case: &crate::native_artifact_console_support::Value,
-) -> (JsValue, String, String) {
-    let operand = js_sys::JSON::parse(&case.operand.to_string()).unwrap();
-    let operand = native(
-        factory,
-        "operand",
-        &js_sys::Array::of2(&JsValue::from_str(&case.kind), &operand),
-    );
+fn prepare(case: &crate::native_artifact_console_support::Value) -> (JsValue, String, String) {
+    let operand = operand(&case.kind, &case.operand);
     if case.kind == "negative-zero" {
         assert!(js_sys::Object::is(&operand, &JsValue::from_f64(-0.0)));
     }
     if case.kind == "shared-array" {
-        assert_ne!(
-            native(factory, "deduplicated", &js_sys::Array::of1(&operand))
-                .as_string()
-                .unwrap(),
-            "abab"
-        );
+        assert_ne!(deduplicated(&operand), "abab");
     }
     let paint = if case.kind == "date" {
-        format!(
-            "[log] {}",
-            native(factory, "nativeString", &js_sys::Array::of1(&operand))
-                .as_string()
-                .unwrap()
-        )
+        format!("[log] {}", native_string(&operand))
     } else {
         case.paint.clone().unwrap()
     };
@@ -213,12 +194,11 @@ fn place(view: &DomView, console: &Console) -> (Element, DomRoot) {
 pub async fn artifact_console_dom_expansion_copy_and_follow(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     following_and_geometry(&view);
-    current_controller_and_copy(&view, &page).await;
+    current_controller_and_copy(&view).await;
     forms_and_keyboard(&view).await;
-    painted_roles(&view, &page).await;
-    release_and_sibling(&view, &page).await;
+    painted_roles(&view).await;
+    release_and_sibling(&view).await;
 }
 /// An overflowing viewport follows every enabled update and scales in root-relative units.
 fn following_and_geometry(view: &DomView) {
@@ -275,7 +255,7 @@ fn following_and_geometry(view: &DomView) {
     parent.remove();
 }
 /// A later controller replaces collection, localization and actions without replacing the summary.
-async fn current_controller_and_copy(view: &DomView, page: &JsValue) {
+async fn current_controller_and_copy(view: &DomView) {
     let first = Console::new();
     let (parent, root) = place(view, &first);
     click(&root, ".maestro-artifact-summary");
@@ -312,28 +292,26 @@ async fn current_controller_and_copy(view: &DomView, page: &JsValue) {
         Some("Automatisches Scrollen deaktiviert")
     );
     let rows = select(&root.node, ".maestro-artifact-logs");
-    call(
-        page,
-        "select",
-        &js_sys::Array::of1(&rows.first_child().unwrap()),
-    )
-    .await;
-    let selected = selection(page, &rows).await;
+    crate::contributions_support::page::select_children(&rows.first_child().unwrap());
+    let selected = crate::contributions_support::page::selection(&rows);
     summary.unchecked_ref::<HtmlElement>().focus().unwrap();
     later.update(&root, &german).unwrap();
-    assert_eq!(selection(page, &rows).await, selected);
+    assert_eq!(
+        crate::contributions_support::page::selection(&rows),
+        selected
+    );
     assert_eq!(view.document.active_element(), Some(summary));
-    assert_copy_feedback(page, &root, "[error] new <&> 雪\n[log] tail").await;
+    assert_copy_feedback(&root, "[error] new <&> 雪\n[log] tail").await;
     later.logs.borrow_mut().clear();
     later.update(&root, &german).unwrap();
     let clipboard = Recorded::install(Clipboard::Accept);
     click(&root, "copy-button button");
-    frames(page, 1).await;
+    frames(1).await;
     assert_eq!(clipboard.texts(), [""]);
     parent.remove();
 }
 /// The actual copy consumer uses icon-only feedback for the shared two-second interval.
-async fn assert_copy_feedback(page: &JsValue, root: &DomRoot, expected: &str) {
+async fn assert_copy_feedback(root: &DomRoot, expected: &str) {
     let clipboard = Recorded::install(Clipboard::Accept);
     let copy = select(&root.node, "copy-button");
     assert_eq!(
@@ -342,7 +320,7 @@ async fn assert_copy_feedback(page: &JsValue, root: &DomRoot, expected: &str) {
     );
     let started = js_sys::Date::now();
     click(root, "copy-button button");
-    until(page, &copy, || {
+    until(&copy, || {
         copy.query_selector("path[d='M20 6 9 17l-5-5']")
             .unwrap()
             .is_some()
@@ -350,10 +328,7 @@ async fn assert_copy_feedback(page: &JsValue, root: &DomRoot, expected: &str) {
     .await;
     assert_eq!(clipboard.texts(), [expected]);
     assert!(text(&copy).is_empty());
-    until(page, &copy, || {
-        copy.query_selector("rect").unwrap().is_some()
-    })
-    .await;
+    until(&copy, || copy.query_selector("rect").unwrap().is_some()).await;
     assert!(
         js_sys::Date::now() - started >= 2000.0,
         "artifact feedback must not use the shorter tool-output policy"
@@ -397,7 +372,7 @@ async fn forms_and_keyboard(view: &DomView) {
     parent.remove();
 }
 /// Both modes paint semantic row roles and finished hover/focus controls.
-async fn painted_roles(view: &DomView, page: &JsValue) {
+async fn painted_roles(view: &DomView) {
     for mode in [
         maestro_theme::BrandMode::Dark,
         maestro_theme::BrandMode::Light,
@@ -425,12 +400,12 @@ async fn painted_roles(view: &DomView, page: &JsValue) {
             .set_property("background-color", presentation.colors["background"])
             .unwrap();
         click(&root, ".maestro-artifact-summary");
-        assert_console_roles(&root, view, mode, page).await;
+        assert_console_roles(&root, view, mode).await;
         parent.remove();
     }
 }
 /// Releasing a root drops its controller aliases and retires pending copy work without a sibling effect.
-async fn release_and_sibling(view: &DomView, page: &JsValue) {
+async fn release_and_sibling(view: &DomView) {
     let console = Console::new();
     console.logs.borrow_mut().push(log("retired"));
     let weak = Rc::downgrade(&console.logs);
@@ -439,7 +414,7 @@ async fn release_and_sibling(view: &DomView, page: &JsValue) {
     let copy = select(&root.node, "copy-button");
     let deferred = Recorded::install(Clipboard::Defer);
     click(&root, "copy-button button");
-    frames(page, 1).await;
+    frames(1).await;
     assert_eq!(deferred.texts(), ["[log] retired"]);
     let sibling = Console::new();
     let sibling_root = sibling.mount(view).unwrap();
@@ -449,7 +424,7 @@ async fn release_and_sibling(view: &DomView, page: &JsValue) {
     assert!(weak.upgrade().is_none());
     assert!(!copy.is_connected());
     deferred.settle();
-    frames(page, 1).await;
+    frames(1).await;
     assert!(
         copy.query_selector("rect").unwrap().is_some(),
         "retired copy completion must not publish feedback"
@@ -483,7 +458,6 @@ async fn assert_error_operands(
     console: &Console,
     root: &DomRoot,
     view: &DomView,
-    page: &JsValue,
     clipboard: &Recorded,
 ) {
     for (operand, paint, copied) in [
@@ -511,24 +485,17 @@ async fn assert_error_operands(
         );
         let before = clipboard.texts().len();
         click(root, "copy-button button");
-        frames(page, 1).await;
+        frames(1).await;
         assert_eq!(&clipboard.texts()[before..], &[copied]);
     }
 }
 /// Native producer work remains linear while test-side rescan and global-dedup controls fail the bound/result.
-async fn growth(
-    console: &Console,
-    root: &DomRoot,
-    view: &DomView,
-    page: &JsValue,
-    factory: &JsValue,
-) {
+async fn growth(console: &Console, root: &DomRoot, view: &DomView) {
     let clipboard = Recorded::install(Clipboard::Accept);
     for case in cases().costs {
-        let probe = native(factory, "probe", &js_sys::Array::of1(&case.count.into()));
-        let scalars =
-            js_sys::Array::from(&js_sys::Reflect::get(&probe, &"scalars".into()).unwrap());
-        *console.logs.borrow_mut() = scalars
+        let probe = Probe::new(case.count);
+        *console.logs.borrow_mut() = probe
+            .scalars
             .iter()
             .enumerate()
             .map(|(i, value)| LogEntry {
@@ -543,12 +510,10 @@ async fn growth(
         console.update(root, view).unwrap();
         let before = clipboard.texts().len();
         click(root, "copy-button button");
-        frames(page, 1).await;
+        frames(1).await;
         assert_eq!(&clipboard.texts()[before..], &[case.formatted]);
-        let stats = js_sys::Array::from(&native(factory, "stats", &js_sys::Array::of1(&probe)));
-        assert!(stats.get(1).as_f64().unwrap() <= f64::from(2 * case.count));
-        let iterable = js_sys::Reflect::get(&probe, &"iterable".into()).unwrap();
-        *console.logs.borrow_mut() = vec![log(iterable)];
+        assert!(probe.stats().1 <= 2 * case.count);
+        *console.logs.borrow_mut() = vec![log(probe.iterable.clone())];
         console.update(root, view).unwrap();
         assert_eq!(
             select(&root.node, ".maestro-artifact-logs")
@@ -556,31 +521,20 @@ async fn growth(
                 .inner_text(),
             format!("[log] {}", "x".repeat(case.count as usize))
         );
-        let stats = js_sys::Array::from(&native(factory, "stats", &js_sys::Array::of1(&probe)));
-        assert!(stats.get(0).as_f64().unwrap() <= f64::from(2 * case.count));
-        assert!(
-            native(factory, "rescan", &js_sys::Array::of1(&case.count.into()))
-                .as_f64()
-                .unwrap()
-                > f64::from(2 * case.count)
-        );
+        assert!(probe.stats().0 <= 2 * case.count);
+        assert!(rescan(case.count) > 2 * case.count);
     }
-    append_work(view, factory);
-    arrival_bytes(view, page).await;
+    append_work(view);
+    arrival_bytes(view);
     reentrant_history(view, &clipboard);
 }
 
 /// Native row paint and finished control transitions use the selected mode's roles.
-async fn assert_console_roles(
-    root: &DomRoot,
-    view: &DomView,
-    mode: maestro_theme::BrandMode,
-    page: &JsValue,
-) {
+async fn assert_console_roles(root: &DomRoot, view: &DomView, mode: maestro_theme::BrandMode) {
     let presentation = view.pack.presentation(mode).unwrap();
     let summary = select(&root.node, ".maestro-artifact-summary");
     driver("driverPointer", "[0,0,false]").await;
-    call(page, "finish", &js_sys::Array::of1(&summary)).await;
+    crate::contributions_support::page::finish(&summary);
     assert_eq!(
         computed(&summary, "color"),
         rgb(presentation.colors["muted"])
@@ -602,15 +556,10 @@ async fn assert_console_roles(
         presentation.css_properties()["--maestro-type-mono-font"]
     );
 
-    console_interaction_roles(root, view, mode, page).await;
+    console_interaction_roles(root, view, mode).await;
 }
 /// Real pointer hits and keyboard focus paint the current control state.
-async fn console_interaction_roles(
-    root: &DomRoot,
-    view: &DomView,
-    mode: maestro_theme::BrandMode,
-    page: &JsValue,
-) {
+async fn console_interaction_roles(root: &DomRoot, view: &DomView, mode: maestro_theme::BrandMode) {
     let presentation = view.pack.presentation(mode).unwrap();
     let summary = select(&root.node, ".maestro-artifact-summary");
     let rect = summary.get_bounding_client_rect();
@@ -623,7 +572,7 @@ async fn console_interaction_roles(
         ),
     )
     .await;
-    call(page, "finish", &js_sys::Array::of1(&summary)).await;
+    crate::contributions_support::page::finish(&summary);
     assert_eq!(
         computed(&summary, "color"),
         rgb(presentation.colors["text"])
@@ -704,7 +653,7 @@ fn assert_disclosure(root: &DomRoot, expanded: bool) {
 
 /// Appending converts each new native value at most once, for its row, and never an old one;
 /// copying converts only when activated.
-fn append_work(view: &DomView, factory: &wasm_bindgen::JsValue) {
+fn append_work(view: &DomView) {
     let mut bounded = true;
     for expanded in [false, true] {
         for count in [16, 32, 64] {
@@ -713,26 +662,13 @@ fn append_work(view: &DomView, factory: &wasm_bindgen::JsValue) {
             if expanded {
                 click(&root, ".maestro-artifact-summary");
             }
-            let probe = js_sys::Reflect::get(factory, &"probe".into())
-                .unwrap()
-                .unchecked_into::<js_sys::Function>()
-                .call1(&wasm_bindgen::JsValue::UNDEFINED, &count.into())
-                .unwrap();
-            let scalars = js_sys::Reflect::get(&probe, &"scalars".into())
-                .unwrap()
-                .unchecked_into::<js_sys::Array>();
-            for value in scalars.iter() {
+            let probe = Probe::new(count);
+            for value in probe.scalars.iter() {
                 console.logs.borrow_mut().push(log(value));
                 console.append(&root, view).unwrap();
             }
-            let stats = js_sys::Reflect::get(factory, &"stats".into())
-                .unwrap()
-                .unchecked_into::<js_sys::Function>()
-                .call1(&wasm_bindgen::JsValue::UNDEFINED, &probe)
-                .unwrap()
-                .unchecked_into::<js_sys::Array>();
-            let reads = stats.get(1).as_f64().unwrap();
-            bounded &= reads <= if expanded { f64::from(count) } else { 0.0 };
+            let reads = probe.stats().1;
+            bounded &= reads <= if expanded { count } else { 0 };
             parent.remove();
         }
     }
@@ -741,7 +677,7 @@ fn append_work(view: &DomView, factory: &wasm_bindgen::JsValue) {
 
 /// One arrival publishes the same bytes however long the history, while a deliberately wrong
 /// producer republishing the whole history on each arrival grows with it.
-async fn arrival_bytes(view: &DomView, page: &JsValue) {
+fn arrival_bytes(view: &DomView) {
     let mut arrival = Vec::new();
     let mut control = Vec::new();
     for count in [16, 32, 64] {
@@ -752,11 +688,11 @@ async fn arrival_bytes(view: &DomView, page: &JsValue) {
             console.logs.borrow_mut().push(log("x"));
             console.append(&root, view).unwrap();
         }
-        let take = published(page, &root.node, "").await;
+        let take = published(&root.node, "");
         console.logs.borrow_mut().push(log("x"));
         console.append(&root, view).unwrap();
         arrival.push(take());
-        control.push(history_copy(page, count).await);
+        control.push(history_copy(count));
         parent.remove();
     }
     web_sys::console::log_1(
@@ -773,11 +709,11 @@ async fn arrival_bytes(view: &DomView, page: &JsValue) {
 }
 /// Bytes the next arrival publishes after `count` lines when every arrival rewrites one
 /// attribute with the whole history.
-async fn history_copy(page: &JsValue, count: usize) -> f64 {
+fn history_copy(count: usize) -> usize {
     let copy = container();
     let history = vec!["[log] x"; count].join("\n");
     copy.set_attribute("text", &history).unwrap();
-    let take = published(page, &copy, "").await;
+    let take = published(&copy, "");
     copy.set_attribute("text", &format!("{history}\n[log] x"))
         .unwrap();
     let bytes = take();

@@ -2,6 +2,7 @@
 
 use std::time::Instant;
 
+use crate::terminal::state::{AgentMetadataReport, SessionStartReport};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::layout::PaneId;
 use tokio::sync::mpsc;
@@ -68,6 +69,29 @@ pub enum AppEvent {
         /// Validated session identity.
         session_ref: Option<crate::agent_resume::AgentSessionRef>,
     },
+    /// Agent session identity was reported without state authority.
+    AgentSessionReported {
+        /// Pane receiving the report.
+        pane_id: PaneId,
+        /// Supplied identity, freshness and lifecycle-start provenance.
+        report: SessionStartReport,
+    },
+    /// Display-only agent metadata was reported for a pane.
+    HookMetadataReported {
+        /// Pane receiving the report.
+        pane_id: PaneId,
+        /// Canonical presentation update with its clear, guard and lifetime controls.
+        report: Box<AgentMetadataReport>,
+    },
+    /// Integration authority was explicitly cleared for a pane.
+    HookAuthorityCleared {
+        /// Pane receiving the clear.
+        pane_id: PaneId,
+        /// Integration provenance whose authority is cleared, or any when absent.
+        source: Option<String>,
+        /// Source-local sequence.
+        seq: Option<u64>,
+    },
     /// Integration ownership released back to the shell.
     HookAgentReleased {
         /// Pane receiving the release.
@@ -111,6 +135,13 @@ pub enum AppEvent {
         process_exited: bool,
         /// Time of the screen observation.
         observed_at: Instant,
+    },
+    /// A background refresh of repository status finished.
+    GitStatusRefreshed {
+        /// One observation for each workspace the refresh covered.
+        results: Vec<maestro_workspace::workspace::WorkspaceGitStatus>,
+        /// Cache entries to retain, keyed by repository.
+        cache_updates: Vec<(std::path::PathBuf, crate::git::status::GitStatusCacheEntry)>,
     },
 }
 

@@ -42,7 +42,9 @@ async fn loaded(root: &Path) -> Rc<ExtensionRunner<Local>> {
 /// Sources an isolated profile before the command, preserves cwd/environment and replaces the marker.
 #[test]
 fn bash_spawn_hook_sources_profile_and_preserves_native_execution() {
-    if std::env::var_os("MAESTRO_BASH_HOOK_CHILD").is_none() {
+    /// The case that repeats the hook example in a cleared child.
+    const CHILD: &str = "cleared";
+    if maestro_test_process::selection().case() != Some(CHILD) {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         std::fs::create_dir(scratch.path().join("session")).unwrap();
         std::fs::write(
@@ -56,9 +58,10 @@ fn bash_spawn_hook_sources_profile_and_preserves_native_execution() {
         )
         .unwrap()
         .env_clear()
+        .case(CHILD)
         .env("PATH", "/usr/bin:/bin")
         .env("HOME", scratch.path())
-        .env("MAESTRO_BASH_HOOK_CHILD", "1")
+        .envs(maestro_test_process::user_cache_home().map(|path| ("XDG_CACHE_HOME", path)))
         .env("MAESTRO_BASH_SPAWN_HOOK_COMPONENT", component)
         .env("MAESTRO_SPAWN_HOOK", "old-value")
         .env("KEPT", "inherited-value")

@@ -102,13 +102,6 @@ fn prepare(
 mod tests;
 
 /// Call-owned immutable default content.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    allow(
-        dead_code,
-        reason = "native targets prepare records only the browser mounts"
-    )
-)]
 pub(in crate::tools) struct DefaultContent {
     /// Status selected before formatting input.
     state: ToolHeaderState,
@@ -150,3 +143,6 @@ impl DefaultRenderer {
         }
     }
 }
+/// Rendered-value projections for native tests.
+#[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]
+pub(in crate::tools) mod view;

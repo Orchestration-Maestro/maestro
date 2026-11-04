@@ -5,6 +5,7 @@ use crate::manual_runtime;
 use crate::model_selector_support;
 use crate::published;
 use crate::recording_terminal;
+use crate::refusing_provider::RefusingProvider;
 use crate::runtime_spy;
 use crate::selector_failure_support;
 #[cfg(not(target_arch = "wasm32"))]
@@ -42,7 +43,8 @@ fn isolate(name: &str) -> bool {
                 .unwrap()
                 .case("*"),
             &environment,
-        );
+        )
+        .unwrap();
         return true;
     }
     false
@@ -176,7 +178,7 @@ impl Fixture {
     fn new(query: &mut Query) -> Self {
         assert!(!query.current_shared || !query.scoped.is_empty());
         bindings::replace_toolkit(&query.bindings);
-        let (theme, live) = published::published(&colors(0));
+        let (theme, live) = published::published(&colors(0)).unwrap();
         let (registry, reads) = registry(query);
         let runtime = manual_runtime::ManualRuntime::new();
         let tui = TUI::new(
@@ -610,7 +612,7 @@ fn retained_search_input_confirms_after_outer_release() {
 
 /// Real decoding diagnostics remain visible through the picker constructor.
 fn malformed_notice() {
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     let runtime = manual_runtime::ManualRuntime::new();
     let tui = TUI::new(
         recording_terminal::RecordingTerminal::new(120, 24).handle(),
@@ -689,7 +691,7 @@ fn failing_registry(
             "maestro-unconfigured",
             SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
                 callbacks: maestro_app::ProviderCallbacks {
-                    oauth: Some(SharedHandle::new(RejectingModels)),
+                    oauth: Some(refusing()),
                     ..Default::default()
                 },
                 models: Some(vec![
@@ -735,7 +737,7 @@ fn failed_picker_options(input: &mut selector_failure_support::Input) -> ModelSe
     } else {
         Vec::new()
     };
-    let (_, theme) = published::published(&colors(0));
+    let (_, theme) = published::published(&colors(0)).unwrap();
     ModelSelectorOptions {
         current_model: None,
         scoped_models: scoped,
@@ -800,43 +802,12 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
 }
 
 /// Provider whose stored credentials reject a catalog transformation.
-struct RejectingModels;
-impl maestro_app::OAuthProviderInterface for RejectingModels {
-    fn id(&self) -> &'static str {
-        "maestro-refresh-failure"
-    }
-    fn name(&self) -> &'static str {
-        "Controlled refresh"
-    }
-    fn login(
-        &self,
-        _: maestro_app::OAuthCallbacks,
-        _: Option<maestro_app::Fetch>,
-    ) -> maestro_app::BoxFuture<Result<maestro_app::OAuthCredentials, maestro_app::OAuthError>>
-    {
-        Box::pin(async { Err(selector_failure_support::errors::failure()) })
-    }
-    fn refresh_token(
-        &self,
-        _: maestro_app::OAuthCredentials,
-        _: Option<maestro_app::Fetch>,
-    ) -> maestro_app::BoxFuture<Result<maestro_app::OAuthCredentials, maestro_app::OAuthError>>
-    {
-        Box::pin(async { Err(selector_failure_support::errors::failure()) })
-    }
-    fn get_api_key<'a>(
-        &self,
-        credentials: &'a maestro_app::OAuthCredentials,
-    ) -> Result<std::borrow::Cow<'a, str>, maestro_app::OAuthError> {
-        Ok(std::borrow::Cow::Borrowed(&credentials.access))
-    }
-    fn modify_models<'m>(
-        &self,
-        _: &'m [Model],
-        _: &maestro_app::OAuthCredentials,
-    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, maestro_app::OAuthError>> {
-        Some(Err(selector_failure_support::errors::failure()))
-    }
+fn refusing() -> SharedHandle<RefusingProvider> {
+    SharedHandle::new(RefusingProvider::new(
+        "maestro-refresh-failure",
+        "Controlled refresh",
+        selector_failure_support::errors::failure,
+    ))
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
 fn rejecting_registry() -> maestro_app::ModelRegistry {
@@ -852,7 +823,7 @@ fn rejecting_registry() -> maestro_app::ModelRegistry {
             "maestro-refresh-failure",
             SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
                 callbacks: maestro_app::ProviderCallbacks {
-                    oauth: Some(SharedHandle::new(RejectingModels)),
+                    oauth: Some(refusing()),
                     ..Default::default()
                 },
                 models: Some(vec![
@@ -899,7 +870,7 @@ fn picker_refresh_failure_is_not_availability_notice() {
             TerminalImage::default(),
             None,
         );
-        let (_, theme) = published::published(&colors(0));
+        let (_, theme) = published::published(&colors(0)).unwrap();
         let result = ModelSelectorComponent::new(
             &tui,
             Observations::new().settings,
@@ -920,7 +891,7 @@ fn picker_refresh_failure_is_not_availability_notice() {
         let maestro_app::CatalogError::OAuth(error) = error else {
             panic!("original error")
         };
-        let actual = serde_json::json!({"branch":"error", "error":selector_failure_support::errors::error_value(error), "events":*runtime.events.borrow(), "calls":[]});
+        let actual = serde_json::json!({"branch":"error", "error":selector_failure_support::errors::error_value(error).unwrap(), "events":*runtime.events.borrow(), "calls":[]});
         assert!(actual == case.expected, "recorded refresh error boundary");
     }
 }

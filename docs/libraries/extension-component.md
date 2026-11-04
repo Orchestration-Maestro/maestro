@@ -1,5 +1,11 @@
 # Extension component bindings
 
+The custom message-provider example uses workspace-inherited `httpdate =1.0.3`
+(MIT OR Apache-2.0) as a portable development dependency to read HTTP-date retry
+hints in WASI components. The guest library does not depend on the parser.
+Controlled transport tests cover numeric and dated hints, invalid hints and the
+fallback backoff. HTTP attempts and waits use the existing host operations.
+
 The shipped `custom_footer` example uses the workspace's `ryu-js =1.0.3`
 (Apache-2.0) as a development dependency to format token counts and dollar costs.
 For example, 1,250 tokens display as `1.3k`, and a cost of `$0.0625` displays as
@@ -29,5 +35,10 @@ allowlist names its repository.
 The runtime and native test host enable `cache` to reuse compiled bytes through
 Wasmtime's safe, content-keyed user cache. Cache setup, read or write failures
 fall back to compilation. Each load keeps its own Store. The Git build includes
-the host executable's modification time in cache keys, so separate host binaries
-do not share entries, but isolated test processes of the same binary do.
+the host executable's modification time in cache keys. The test setup aligns
+executable timestamps before warming every exported component, so separate test
+binaries reuse compatible entries.
+
+The runtime and native test host enable `gc` and `gc-drc` for WebAssembly
+exceptions. This lets separately built C engines return stack-unwinding failures
+through their component interface without poisoning the instance.

@@ -41,6 +41,8 @@ pub(crate) struct Lexer<'a, E> {
     pub(crate) definitions: HashMap<String, Definition>,
     /// Inline source provenance captured during block recognition.
     pub(crate) scopes: HashMap<ScopeKey, ScopeSource>,
+    /// Authored angle spans the escaped browser policy displays literally.
+    escaped_spans: Vec<Range<usize>>,
 }
 impl<'a, E> Lexer<'a, E> {
     /// Parse owned source without borrowing the caller's buffer.
@@ -51,6 +53,13 @@ impl<'a, E> Lexer<'a, E> {
     ) -> Result<Document, E> {
         #[cfg(test)]
         crate::tests::WORK.with_borrow_mut(|work| work.reference_indexes += 1);
+        let escaped_spans = if options == (MarkedOptions::Browser { escape_html: true }) {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.escaped_bytes += source.len());
+            tokenizer::escaped_spans(&source)
+        } else {
+            Vec::new()
+        };
         let mut lexer = Self {
             tokenizer,
             error: None,
@@ -61,6 +70,7 @@ impl<'a, E> Lexer<'a, E> {
             options,
             definitions: HashMap::new(),
             scopes: HashMap::new(),
+            escaped_spans,
         };
         let mut nodes = lexer.blocks(ScopeSource::identity(&source));
         if let Some(error) = lexer.error {
@@ -134,6 +144,14 @@ impl<'a, E> Lexer<'a, E> {
         }
     }
 
+    /// Whether the escaped browser policy displays the angle at this operand offset as
+    /// text, so a closing angle never opens a container.
+    pub(super) fn is_escaped_closer(&self, source: &Segmented, offset: usize) -> bool {
+        source.native(&(offset..offset + 1)).is_some_and(|native| {
+            tokenizer::is_escaped_span_close(&self.escaped_spans, native.start)
+        })
+    }
+
     /// Recognize the container a dispatch step admits through its own frame.
     fn container(&mut self, source: &Segmented) -> Option<Pending> {
         self.quote_entry(source)
@@ -174,7 +192,8 @@ impl<'a, E> Lexer<'a, E> {
     ) -> Option<(usize, Node)> {
         let recognized = match item.filter(|_| !self.top) {
             Some(item) => {
-                let (heading, undecided) = item.attempt(source);
+                let (heading, undecided) =
+                    item.attempt(source, &|offset| self.is_escaped_closer(source, offset));
                 self.undecided |= undecided;
                 // Item text is one line per attempt, so no paragraph end is read here.
                 rules::paragraph::Recognized {
@@ -203,8 +222,10 @@ impl<'a, E> Lexer<'a, E> {
             let end = if limit == source.len() {
                 recognized.paragraph?
             } else {
-                rules::paragraph::Recognizer::new(self.options)
-                    .finish(&source.select(0..limit))
+                let clipped = source.select(0..limit);
+                let escaped = |offset| self.is_escaped_closer(&clipped, offset);
+                rules::paragraph::Recognizer::new(self.options, &escaped)
+                    .finish(&clipped)
                     .paragraph?
             };
             (end, 0..end, Kind::Paragraph(Vec::new()))
@@ -229,13 +250,15 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Answer the running operand with a fresh paragraph recognizer.
     fn recognize(&mut self, source: &Segmented) -> rules::paragraph::Recognized {
-        let mut recognizer = rules::paragraph::Recognizer::new(self.options);
+        let escaped = |offset| self.is_escaped_closer(source, offset);
+        let mut recognizer = rules::paragraph::Recognizer::new(self.options, &escaped);
         let undecided = matches!(
             recognizer.extend(source),
             rules::paragraph::Verdict::NeedMore
         );
+        let result = recognizer.finish(source);
         self.undecided |= undecided;
-        recognizer.finish(source)
+        result
     }
 
     /// Select a table only when header and delimiter column counts agree.

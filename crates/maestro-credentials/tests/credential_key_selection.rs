@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests {
     use crate::oauth_support::{ControlledProvider, Unregister};
-    use crate::support::{CASE_ENV, SERIAL, block_on, is_child, run_isolated};
+    use crate::support::{SERIAL, block_on, is_child, run_isolated, selected_case};
     use maestro_credentials::{
         AuthStorage, AuthStorageBackend, ConfigValueOperations, InMemoryAuthStorageBackend,
         ProcessConfigValueOperations, clear_config_value_cache,
@@ -139,7 +139,7 @@ mod tests {
             .map(|programs| format!("{programs}\\Git\\bin\\bash.exe"));
         let mut environment = variables.to_vec();
         environment.extend(bash.as_deref().map(|bash| (GIT_BASH, bash)));
-        run_isolated(test, &environment);
+        run_isolated(test, "*", &environment);
     }
 
     /// Native helper execution; Windows runs helpers in the configured Git Bash.
@@ -180,14 +180,15 @@ mod tests {
     #[test]
     fn stored_helper_cache_spans_stores_and_clear() {
         if is_child() {
-            let expected = std::env::var(CASE_ENV).unwrap();
+            let expected = selected_case();
             let key = block_on(key_of(&storing("K3_ENV"), &Operations::default()));
             return assert_eq!(key, Some(expected));
         }
         for value in ["one", "two"] {
             run_isolated(
                 "credential_key_selection::tests::stored_helper_cache_spans_stores_and_clear",
-                &[("K3_ENV", value), (CASE_ENV, value)],
+                value,
+                &[("K3_ENV", value)],
             );
         }
         let _serial = SERIAL.lock().unwrap();
@@ -292,11 +293,6 @@ mod tests {
         });
     }
 
-    /// Name of the child scenario, empty in the parent.
-    fn scenario() -> String {
-        std::env::var(CASE_ENV).unwrap_or_default()
-    }
-
     /// Storage with a fallback resolver returning `fallback`.
     fn with_fallback(storage: AuthStorage, fallback: &'static str) -> AuthStorage {
         storage.set_fallback_resolver(move |_| Ok(Some(fallback.to_owned())));
@@ -325,7 +321,7 @@ mod tests {
 
     /// Check one environment scenario inside its child process.
     async fn environment_scenario() {
-        let populated = scenario() == "populated";
+        let populated = selected_case() == "populated";
         let expected = |ambient_free: Option<&str>| {
             populated
                 .then(|| "env-key".to_owned())
@@ -354,11 +350,10 @@ mod tests {
             ("empty", vec![("OPENAI_API_KEY", "")]),
             ("absent", vec![]),
         ] {
-            let mut envs = variables;
-            envs.push((CASE_ENV, name));
             run_isolated(
                 "credential_key_selection::tests::environment_precedes_optional_fallback",
-                &envs,
+                name,
+                &variables,
             );
         }
         let record = r#"{"type":"oauth","refresh":"r","access":"a","expires":4102444800000}"#;
@@ -418,13 +413,15 @@ mod tests {
         if !is_child() {
             return run_isolated(
                 "credential_key_selection::tests::fallback_keys_and_presence_keep_result_domains",
+                "*",
                 &[],
             );
         }
         block_on(crate::fallback_support::replay(
             "fallback_keys_and_presence_keep_result_domains",
-            &scenario(),
-        ));
+            &selected_case(),
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -437,15 +434,17 @@ mod tests {
             ] {
                 run_isolated(
                     "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
-                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
+                    scenario,
+                    &[("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
         block_on(crate::fallback_support::replay(
             "earlier_sources_skip_failing_fallback",
-            &scenario(),
-        ));
+            &selected_case(),
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -453,12 +452,14 @@ mod tests {
         if !is_child() {
             return run_isolated(
                 "credential_key_selection::tests::fallback_option_false_avoids_callback",
+                "*",
                 &[],
             );
         }
         block_on(crate::fallback_support::replay(
             "fallback_option_false_avoids_callback",
-            &scenario(),
-        ));
+            &selected_case(),
+        ))
+        .unwrap();
     }
 }

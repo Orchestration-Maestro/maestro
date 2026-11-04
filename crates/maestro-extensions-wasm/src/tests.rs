@@ -39,6 +39,8 @@ mod authored_streams;
 mod background;
 mod basic_ui;
 mod build;
+mod build_cargo;
+mod build_warm;
 mod bus_callbacks;
 pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
@@ -51,6 +53,7 @@ mod documents;
 mod event_transport;
 mod event_values;
 mod example_support;
+mod example_trim;
 mod exec_records;
 pub(crate) mod file_trigger_path;
 mod finite_records;
@@ -93,6 +96,8 @@ mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
 pub(crate) mod schema_host;
+mod search_tool_resolution;
+mod search_tools;
 mod selection_events;
 mod session_actions;
 mod session_corpus;
@@ -469,7 +474,9 @@ fn assert_typed_event_export(contract: &Contract) {
         contract.event_results,
         [concat!(
             "result<record {event: result<option<string>, string>, ",
-            "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<callback>>}, string>"
+            "decision: variant {returned(result<option<string>, string>), failed(record {name: option<string>, ",
+            "message: string, stack: option<string>, code: option<variant {text(string), number(f64)}>})}, ",
+            "operations: option<own<callback>>}, string>"
         )],
         "the event export answers with independent event, decision and operations channels or a refusal"
     );
@@ -571,7 +578,7 @@ fn assert_catalog_imports(contract: &Contract) {
                 "result<option<record {tokens: option<f64>, context-window: f64, percent: option<f64>}>, string>"
             ],
             vec![
-                "result<variant {ok(record {api-key: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
+                "result<variant {ok(record {api-key: option<string>, base-url: option<string>, headers: option<list<tuple<string, string>>>}), error(string)}, string>"
             ],
         ]
     );
@@ -641,6 +648,7 @@ fn assert_async_imports(contract: &Contract) {
             "[method]writable.end",
             "[method]writable.write",
             "call",
+            "call-host-operation",
             "event-emit",
             "fetch",
             "get-all-tools",
@@ -1233,3 +1241,5 @@ mod native_helpers;
 mod custom_ticks;
 
 mod snake_frames;
+
+mod package_boundary;

@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use maestro_tools::TruncationBy;
 use maestro_tools::output::output_accumulator::{OutputAccumulator, OutputAccumulatorOptions};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -124,7 +125,7 @@ fn artifact(path: Option<String>, expected: Option<String>, prefix: &str) {
             id.bytes()
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         );
-        let root = std::env::temp_dir();
+        let root = maestro_test_directory::temporary_root();
         assert_eq!(
             path,
             maestro_path::join(&[root.to_str().unwrap(), &format!("{prefix}-{id}.log")])
@@ -336,7 +337,7 @@ fn artifact_names_keep_prefix_and_suffix() {
 
 /// Prefix below a parent that cannot exist beneath a regular file.
 fn missing_parent() -> (std::path::PathBuf, String) {
-    let path = std::env::temp_dir().join(format!(
+    let path = maestro_test_directory::temporary_root().join(format!(
         "maestro-parent-{}-{:?}",
         std::process::id(),
         std::thread::current().id()
@@ -384,6 +385,8 @@ fn artifact_creation_failure_is_returned() {
         max_lines: Some(0),
         ..options()
     });
+    assert!(snapshot.snapshot(true).is_ok());
+    assert!(snapshot.append(b"x").is_err());
     assert!(snapshot.snapshot(true).is_err());
     std::fs::remove_file(parent).unwrap();
 }
@@ -431,4 +434,28 @@ fn append_after_artifact_close_preserves_state_and_bytes() {
     }
     assert_eq!(std::fs::read(path).unwrap(), b"abc");
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn rolling_trim_keeps_the_tail_of_an_oversized_line_ending_in_a_newline() {
+    let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
+        max_bytes: Some(16),
+        ..Default::default()
+    });
+    for _ in 0..100 {
+        output.append(&[b'x'; 1000]).unwrap();
+    }
+    output.append(b"\n").unwrap();
+    let snapshot = output.snapshot(false).unwrap();
+    assert_eq!(snapshot.content, "x".repeat(16));
+    let truncation = &snapshot.truncation;
+    assert_eq!(
+        (truncation.total_bytes, truncation.total_lines),
+        (100_001, 1)
+    );
+    assert_eq!((truncation.output_bytes, truncation.output_lines), (16, 1));
+    assert!(truncation.truncated && truncation.last_line_partial);
+    assert!(matches!(truncation.truncated_by, Some(TruncationBy::Bytes)));
+    output.close_temp_file().unwrap();
+    std::fs::remove_file(snapshot.full_output_path.unwrap()).unwrap();
 }

@@ -2,12 +2,12 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::agent_shell_support;
-use crate::process_support;
 use crate::read_support;
 use crate::runtime;
 
 use crate::runtime::run;
 use agent_shell_support::{Immediate, result_value};
+use futures_util::FutureExt;
 use maestro_tools::{BashExecResult, BashSpawnContext, BashToolOptions, create_bash_tool};
 use read_support::{Fixture, Scratch};
 use serde_json::json;
@@ -199,7 +199,7 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
         .unwrap()
         .as_str()
         .unwrap();
-    assert!(text.contains("[Showing lines 1002-3001 of 3001. Full output: <artifact>]"));
+    assert!(text.contains("[Showing lines 1001-3000 of 3000. Full output: <artifact>]"));
     if status == 7 {
         assert!(text.ends_with("\n\nCommand exited with code 7"));
     }
@@ -324,7 +324,8 @@ fn bash_tool_finishes_after_inherited_pipe_grace() {
             }
         };
         let (mut root, _) = listener.accept().await.unwrap();
-        let mut holder = read_support::pipe_holder(pid).await;
+        let holder = read_support::grace_holder(dir.path(), pid);
+        let mut holder = read_support::pipe_holder(&holder).await;
         root.write_all(b"exit\n").await.unwrap();
         let result = execution.await.unwrap();
         assert_eq!(
@@ -361,7 +362,7 @@ impl maestro_tools::BashOperations for ArtifactPending {
     > {
         Box::pin(async move {
             (options.on_data)(&vec![b'A'; 51201]);
-            std::fs::create_dir(std::env::temp_dir()).unwrap();
+            std::fs::create_dir(maestro_test_directory::temporary_root()).unwrap();
             (options.on_data)(b"ignored after failure");
             self.release.notified().await;
             self.settled
@@ -412,9 +413,7 @@ fn bash_artifact_creation_failure_is_reported() {
             None,
         ));
         assert!(
-            process_support::poll_once(&mut execution.as_mut())
-                .await
-                .is_pending(),
+            execution.as_mut().now_or_never().is_none(),
             "artifact failure must not drop the pending operation"
         );
         assert!(!settled.load(std::sync::atomic::Ordering::SeqCst));

@@ -2,7 +2,6 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use super::{DownloadExpectation, Row, browser::Card, file_subset, fixture};
 use crate::contributions_support::{host, select, text, view};
-use js_sys::Array;
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::{Element, HtmlElement};
 
@@ -97,7 +96,7 @@ async fn check_file(
 pub async fn records(import: &js_sys::Function, rows: Vec<Row>) {
     let view = view();
     let _elements = host(&view, import);
-    let downloads = crate::session_download_browser::Fixture::import(import).await;
+    let downloads = crate::session_download_browser::Fixture::default();
     for row in rows {
         let card = Card::new(view.clone(), &row);
         let expected = &row.expected.as_ref().unwrap().attachments;
@@ -126,13 +125,7 @@ pub fn all_files() -> Vec<Row> {
 pub async fn malformed(import: &js_sys::Function) {
     let view = view();
     let _elements = host(&view, import);
-    let downloads = crate::session_download_browser::Fixture::import(import).await;
-    let native = crate::browser_fixture_support::FixtureModule::import(
-        import,
-        &wasm_bindgen::link_to!(module = "/tests/native_attachment_support.js"),
-    )
-    .await
-    .unwrap();
+    let downloads = crate::session_download_browser::Fixture::default();
     let row = file_subset(&[7, 8, 9, 11]);
     let card = Card::new(view, &row);
     for (index, file) in row
@@ -145,22 +138,20 @@ pub async fn malformed(import: &js_sys::Function) {
     {
         let overlay = open(&card, index);
         downloads.begin("success");
-        native.call("beginErrors", &Array::new()).unwrap();
+        let errors = crate::browser_fixture_support::Errors::begin();
         select(&overlay, "[data-download]")
             .unchecked_ref::<HtmlElement>()
             .click();
         let decoded = bytes(&file.content);
-        native
-            .call(
-                "finishErrors",
-                &Array::of1(&u32::from(decoded.is_err()).into()),
-            )
-            .unwrap();
-        let finish = match decoded {
-            Ok(bytes) => downloads.finish(&bytes, &file.mime_type, &file.file_name, true),
+        errors.finish(usize::from(decoded.is_err()));
+        match decoded {
+            Ok(bytes) => {
+                downloads
+                    .finish(&bytes, &file.mime_type, &file.file_name, true)
+                    .await;
+            }
             Err(_) => downloads.finish_none(),
-        };
-        wasm_bindgen_futures::JsFuture::from(finish).await.unwrap();
+        }
         close(&overlay);
     }
 }
@@ -168,7 +159,7 @@ pub async fn malformed(import: &js_sys::Function) {
 pub async fn changed_file_keeps_opened_original(import: &js_sys::Function) {
     let view = view();
     let _elements = host(&view, import);
-    let downloads = crate::session_download_browser::Fixture::import(import).await;
+    let downloads = crate::session_download_browser::Fixture::default();
     let mut row = file_subset(&[1]);
     let mut card = Card::new(view, &row);
     let original = open(&card, 0);

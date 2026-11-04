@@ -37,8 +37,8 @@ pub fn document_field_policy_keeps_missing_null_falsy_and_composites(import: &js
     cards::rows(import, |r| r.group == "domains");
 }
 #[wasm_bindgen]
-pub async fn document_disclosures_keep_mounted_children_and_transitions(import: &js_sys::Function) {
-    crate::document_card_support::lifecycle::transitions(import).await;
+pub fn document_disclosures_keep_mounted_children_and_transitions(import: &js_sys::Function) {
+    crate::document_card_support::lifecycle::transitions(import);
 }
 
 #[wasm_bindgen]
@@ -47,8 +47,8 @@ pub fn document_card_branches_reset_only_replaced_subtrees(import: &js_sys::Func
     crate::document_card_support::lifecycle::renderer_switch(import);
 }
 #[wasm_bindgen]
-pub async fn document_cards_keep_independent_rows_and_release_surfaces(import: &js_sys::Function) {
-    crate::document_card_support::lifecycle::independent(import).await;
+pub fn document_cards_keep_independent_rows_and_release_surfaces(import: &js_sys::Function) {
+    crate::document_card_support::lifecycle::independent(import);
 }
 #[wasm_bindgen]
 pub fn returned_file_tiles_open_independent_overlays_while_collapsed(import: &js_sys::Function) {

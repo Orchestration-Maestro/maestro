@@ -24,10 +24,13 @@ fn at(root: &Scratch, relative: &str) -> String {
     root.path().join(relative).to_string_lossy().into_owned()
 }
 
-/// A native manager running the given shell script as its package command.
-fn manager_running(script: &str, root: &Scratch) -> DefaultPackageManager<NativePackageOperations> {
+/// A native manager running the installed stand-in `command` as its package command.
+fn manager_running(
+    command: &Path,
+    root: &Scratch,
+) -> DefaultPackageManager<NativePackageOperations> {
     let settings = SettingsManager::in_memory(Settings(
-        json!({"npmCommand": ["/bin/sh", "-c", script]})
+        json!({"npmCommand": [command.to_string_lossy()]})
             .as_object()
             .cloned()
             .unwrap(),
@@ -68,38 +71,69 @@ fn parallel_scratch_directories_are_all_created_and_distinct() {
 fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
     let root = Scratch::new().unwrap();
     let runtime = runtime();
-    let install = |script: &str| {
-        let manager = manager_running(script, &root);
-        runtime.block_on(manager.install("npm:x", None))
+    let install = |name: &str, record: &serde_json::Value| {
+        let command = crate::native_support::command(root.path(), name, record);
+        let manager = manager_running(&command, &root);
+        let result = runtime.block_on(manager.install("npm:x", None));
+        (command, result)
     };
-    install("exit 0 #").unwrap();
+    let (_, applied) = install("applied", &crate::native_support::output(b"", b"", 0));
+    applied.unwrap();
+    let (coded, failed) = install("coded", &crate::native_support::output(b"", b"", 3));
     assert_eq!(
-        install("exit 3 #").unwrap_err().to_string(),
-        "/bin/sh -c exit 3 # install -g x failed with code 3"
+        failed.unwrap_err().to_string(),
+        format!(
+            "{} install -g x failed with code 3",
+            coded.to_string_lossy()
+        )
+    );
+    let (killed, ended) = install(
+        "killed",
+        &json!({"scenario": "output", "stdout": [], "stderr": [], "code": 0, "signal": "SIGKILL"}),
     );
     assert_eq!(
-        install("kill -9 $$ #").unwrap_err().to_string(),
-        "/bin/sh -c kill -9 $$ # install -g x failed with code null"
+        ended.unwrap_err().to_string(),
+        format!(
+            "{} install -g x failed with code null",
+            killed.to_string_lossy()
+        )
     );
+    streams_settle_at_child_exit(&root);
+}
 
-    let (held, done) = (at(&root, "held.fifo"), at(&root, "done.fifo"));
+/// Install settles at child exit while a descendant still holds the inherited streams.
+fn streams_settle_at_child_exit(root: &Scratch) {
+    let (held, done) = (at(root, "held.fifo"), at(root, "done.fifo"));
     for fifo in [&held, &done] {
         assert!(Command::new("mkfifo").arg(fifo).status().unwrap().success());
     }
-    let script = format!(
-        r#"HELD='{held}'; DONE='{done}'; export HELD DONE; ( cat < "$HELD" > /dev/null; echo done > "$DONE" ) & exit 0 #"#
+    let descendant = crate::native_support::command(
+        root.path(),
+        "hold",
+        &json!({
+            "scenario": "hold",
+            "permit": held,
+            "stdout": [],
+            "stderr": [],
+            "append": {"path": done, "cwd": false, "bytes": b"done\n"}
+        }),
+    );
+    let holder = crate::native_support::command(
+        root.path(),
+        "holder",
+        &json!({"scenario": "holder", "stdout": [], "stderr": [], "descendant": descendant}),
     );
     let (finished, outcome) = std::sync::mpsc::channel();
     let mut text = String::new();
     let completion = std::thread::scope(|scope| {
         scope.spawn(|| {
-            let manager = manager_running(&script, &root);
+            let manager = manager_running(&holder, root);
             let result = self::runtime().block_on(manager.install("npm:x", None));
             finished.send(result.is_ok()).unwrap();
         });
         let verdict = outcome.recv();
-        // Release the background holder after observing install completion, then drain it.
-        drop(std::fs::OpenOptions::new().write(true).open(&held).unwrap());
+        // Release the descendant after observing install completion, then drain it.
+        std::fs::write(&held, b"go\n").unwrap();
         std::fs::File::open(&done)
             .unwrap()
             .read_to_string(&mut text)
@@ -109,16 +143,16 @@ fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
     assert_eq!(
         completion,
         Ok(true),
-        "install must settle at child exit while a background process holds its streams"
+        "install must settle at child exit while a descendant process holds its streams"
     );
     assert_eq!(text, "done\n");
 }
 
-/// Marks the child process of the stdio test and carries the scratch directory.
-const STDIO_CHILD: &str = "MAESTRO_STDIO_CHILD";
-/// The shell script run by each launch of the stdio test.
-const STDIO_SCRIPT: &str =
-    r#"printf '<%s>' "$@"; echo out-$0; echo err-$0 >&2; read -r line; echo "stdin:$line"; pwd -P"#;
+/// The case that repeats a scenario in a child.
+const CHILD: &str = "native";
+
+/// Variable carrying the scratch directory a child fixture works in.
+const STDIO_ROOT: &str = "MAESTRO_STDIO_ROOT";
 
 /// Runs the three launches of the stdio test inside the child process.
 fn stdio_launches(root: &Path, supplied: bool) {
@@ -132,8 +166,9 @@ fn stdio_launches(root: &Path, supplied: bool) {
     });
     let runtime = runtime();
     let launch = |name: &str, cwd: Option<&str>| {
-        let args = ["-c", STDIO_SCRIPT, name, "x  y", "z"].map(str::to_owned);
-        let code = runtime.block_on(operations.run_command("/bin/sh", &args, cwd));
+        let command = root.join("bin").join(name).to_string_lossy().into_owned();
+        let args = ["x  y", "z"].map(str::to_owned);
+        let code = runtime.block_on(operations.run_command(&command, &args, cwd));
         assert_eq!(code.unwrap(), Some(0));
     };
     launch("A", None);
@@ -153,13 +188,20 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
 
 /// Drives the same native stream routes through either admission constructor.
 fn stdio_scenario(test: &str, supplied: bool) {
-    if let Some(root) = std::env::var_os(STDIO_CHILD) {
-        stdio_launches(Path::new(&root), supplied);
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        stdio_launches(Path::new(&std::env::var_os(STDIO_ROOT).unwrap()), supplied);
         return;
     }
     let root = Scratch::new().unwrap();
     for directory in ["ambient", "target"] {
         std::fs::create_dir(at(&root, directory)).unwrap();
+    }
+    for name in ["A", "B", "C"] {
+        crate::native_support::command(
+            &root.path().join("bin"),
+            name,
+            &json!({"scenario": "stdio"}),
+        );
     }
     std::fs::write(at(&root, "input"), "line1\nline2\nline3\n").unwrap();
     let (out, err) = (at(&root, "out"), at(&root, "err"));
@@ -172,7 +214,8 @@ fn stdio_scenario(test: &str, supplied: bool) {
     let status = TestProcess::current(test)
         .unwrap()
         .nocapture()
-        .env(STDIO_CHILD, root.path())
+        .case(CHILD)
+        .env(STDIO_ROOT, root.path())
         .current_dir(at(&root, "ambient"))
         .stdin(std::fs::File::open(at(&root, "input")).unwrap())
         .stderr(std::fs::File::create(&err).unwrap())
@@ -204,8 +247,8 @@ fn stdio_scenario(test: &str, supplied: bool) {
     assert!(!out.contains("out-B"));
 }
 
-/// Marks the child process of the repository test and carries the scratch directory.
-const REPOSITORY_CHILD: &str = "MAESTRO_REPOSITORY_CHILD";
+/// Variable carrying the scratch directory a child fixture works in.
+const REPOSITORY_ROOT: &str = "MAESTRO_REPOSITORY_ROOT";
 /// The source whose clone address the child's Git configuration rewrites to a local path.
 const REPOSITORY_SOURCE: &str = "https://example.test/team/repo@v1";
 
@@ -274,8 +317,8 @@ fn repository_scenario(root: &Path) {
 
 #[test]
 fn native_local_repository_installs_checks_out_and_removes() {
-    if let Some(root) = std::env::var_os(REPOSITORY_CHILD) {
-        repository_scenario(Path::new(&root));
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        repository_scenario(Path::new(&std::env::var_os(REPOSITORY_ROOT).unwrap()));
         return;
     }
     let root = Scratch::new().unwrap();
@@ -294,7 +337,8 @@ fn native_local_repository_installs_checks_out_and_removes() {
         "native_local_repository_installs_checks_out_and_removes",
     )
     .unwrap()
-    .env(REPOSITORY_CHILD, root.path())
+    .case(CHILD)
+    .env(REPOSITORY_ROOT, root.path())
     .env("GIT_CONFIG_GLOBAL", "/dev/null")
     .env("GIT_CONFIG_SYSTEM", "/dev/null")
     .env("GIT_CONFIG_COUNT", "1")
@@ -316,16 +360,26 @@ fn native_commands_preserve_spawn_failures_and_signal_status() {
     let missing =
         runtime.block_on(operations.run_command("/nonexistent/maestro-binary", &[], None));
     assert_eq!(missing.unwrap_err().kind(), std::io::ErrorKind::NotFound);
-    let sh = |script: &str| ["-c", script].map(str::to_owned);
+    let root = Scratch::new().unwrap();
+    let stand_in = |name: &str, record: serde_json::Value| {
+        crate::native_support::command(root.path(), name, &record)
+            .to_string_lossy()
+            .into_owned()
+    };
+    let coded = stand_in("coded", crate::native_support::output(b"", b"", 7));
     assert_eq!(
         runtime
-            .block_on(operations.run_command("/bin/sh", &sh("exit 7"), None))
+            .block_on(operations.run_command(&coded, &[], None))
             .unwrap(),
         Some(7)
     );
+    let killed = stand_in(
+        "killed",
+        json!({"scenario": "output", "stdout": [], "stderr": [], "code": 0, "signal": "SIGKILL"}),
+    );
     assert_eq!(
         runtime
-            .block_on(operations.run_command("/bin/sh", &sh("kill -9 $$"), None))
+            .block_on(operations.run_command(&killed, &[], None))
             .unwrap(),
         None
     );
@@ -437,10 +491,16 @@ fn assert_supplied_capture_routes() {
         denied.spawn(Box::pin(async {})).unwrap_err().raw_os_error(),
         Some(13)
     );
+    let root = Scratch::new().unwrap();
     let output = denied
         .run_command_sync(
-            "/bin/sh",
-            &["-c".into(), "printf sync; printf err >&2; exit 7".into()],
+            &crate::native_support::command(
+                root.path(),
+                "sync",
+                &crate::native_support::output(b"sync", b"err", 7),
+            )
+            .to_string_lossy(),
+            &[],
         )
         .unwrap();
     assert_eq!(
@@ -451,17 +511,19 @@ fn assert_supplied_capture_routes() {
         ),
         (Some(7), "sync", "err")
     );
-    let root = Scratch::new().unwrap();
     let cwd = root.path().to_str().unwrap();
+    let stand_in = crate::native_support::command(
+        root.path(),
+        "report",
+        &json!({
+            "scenario": "report",
+            "fields": [{"variable": "MAESTRO_CAPTURE_VALUE"}, {"operand": 0}, "working-directory"]
+        }),
+    );
     let output = runtime()
         .block_on(denied.run_command_capture(
-            "/bin/sh",
-            &[
-                "-c".into(),
-                "printf '%s|%s|' \"$MAESTRO_CAPTURE_VALUE\" \"$1\"; pwd -P".into(),
-                "sh".into(),
-                "literal argument".into(),
-            ],
+            &stand_in.to_string_lossy(),
+            &["literal argument".into()],
             maestro_packages::CommandCaptureOptions {
                 cwd: Some(cwd),
                 timeout: None,

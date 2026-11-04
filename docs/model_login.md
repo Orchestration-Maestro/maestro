@@ -17,6 +17,10 @@ that identifier, so replacing or withdrawing a provider implementation between
 the question and the login is visible. Implementation:
 `crates/maestro-cli/src/model_login/cli.rs`.
 
+An Anthropic login listens for the browser's redirect on local port 53692. When
+another program holds that port, the login uses a free local port and names it in the
+redirect address, so sign-in still finishes; see the [account flows](models/oauth.md).
+
 The help examples name `maestro-model-account`. The standalone executable and
 the terminal console it runs on belong to the command-line startup frontend.
 
@@ -44,7 +48,16 @@ member. The entry is the account tag followed by the supplied credential
 members, with two-space JSON and no final newline, and a supplied `type` member
 takes the tag's slot. A valid array or scalar root is refused with the owner's
 file-shape error and left untouched, so a login cannot silently drop stored
-credentials. Errors keep the `Error:` line and exit status one.
+credentials. The file is stored through the credentials crate's `write_auth_file`
+([credentials](credentials.md)): it is written in place under the shared recoverable
+publication, so a write cut short is completed by the next coordinated writer, and it is
+readable only by its owner on Unix. Errors keep the `Error:` line and exit status one.
 
 This is not the session credential store: the command only reads and writes the
 standalone account file at that caller-relative path, and offers no path option.
+
+## Interactive sign-in
+
+The interactive mode signs in through `LoginDialogComponent`, described with the
+[selectors](chat/selectors.md#sign-in-dialog). A submitted prompt keeps its row,
+frozen as `> value`, and every later prompt starts with an empty input.

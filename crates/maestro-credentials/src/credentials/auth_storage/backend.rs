@@ -41,6 +41,22 @@ pub type AsyncLockUpdate<'a> =
 
 /// Raw credential text guarded by the adapter's exclusion.
 pub trait AuthStorageBackend: ThreadBound {
+    /// Read stored text under exclusion, waiting as the adapter's asynchronous acquisition waits.
+    ///
+    /// The default captures the text through [`Self::with_lock`] without writing it.
+    /// File adapters block the calling thread on the scheduled acquisition.
+    ///
+    /// # Errors
+    /// Returns the adapter's acquisition, read or release failure.
+    fn read_waiting(&self) -> Result<Option<String>, AuthStorageError> {
+        let mut seen = None;
+        self.with_lock(&mut |current| {
+            seen = current.map(str::to_owned);
+            Ok(None)
+        })?;
+        Ok(seen)
+    }
+
     /// Run `update` once with the current text, then store its replacement.
     ///
     /// `None` means nothing has been stored. Acquisition and read failures
@@ -69,11 +85,17 @@ pub trait AuthStorageBackend: ThreadBound {
     ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>>;
 }
 
-/// Text held in memory; `update` runs on an owned copy with nothing locked.
+/// Text held in memory.
+///
+/// A synchronous `update` runs on an owned copy with nothing locked, so it may reenter the
+/// backend. Awaited callbacks take turns: each reads a copy of the text after the previous one
+/// stored its replacement, so an awaited callback must not reenter `with_lock_async`.
 #[derive(Debug, Default)]
 pub struct InMemoryAuthStorageBackend {
     /// Current text; `None` until first stored.
     value: Mutex<Option<String>>,
+    /// Held across one awaited callback, so awaited read-modify-write steps cannot overlap.
+    turn: tokio::sync::Mutex<()>,
 }
 
 impl InMemoryAuthStorageBackend {
@@ -81,6 +103,7 @@ impl InMemoryAuthStorageBackend {
     pub(super) fn seeded(text: String) -> Self {
         Self {
             value: Mutex::new(Some(text)),
+            turn: tokio::sync::Mutex::default(),
         }
     }
 }
@@ -106,6 +129,7 @@ impl AuthStorageBackend for InMemoryAuthStorageBackend {
         update: AsyncLockUpdate<'a>,
     ) -> AuthStorageFuture<'a, Result<(), AuthStorageError>> {
         Box::pin(async move {
+            let _turn = self.turn.lock().await;
             let current = self
                 .value
                 .lock()
@@ -120,7 +144,7 @@ impl AuthStorageBackend for InMemoryAuthStorageBackend {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use file::FileAuthStorageBackend;
+pub use file::{FileAuthStorageBackend, write_auth_file};
 
 /// Native credential file adapter.
 #[cfg(not(target_arch = "wasm32"))]

@@ -146,6 +146,11 @@ the optional supplied numeric status and the optional artifact path, without too
 The signal is sampled after final output callbacks: an aborted signal selects cancellation
 and no status; nonzero status alone is not an error.
 
+Direct execution and the agent tool count a terminating LF as the end of the last
+line, not as another empty line. With 3,000 LF-terminated lines within the byte
+limit and the default 2,000-line tail limit, the selected text contains lines
+1001 through 3000. The artifact retains the untruncated output, including the final LF.
+
 An ordinary operation error returns unchanged without finalizing pending text or creating
 a line-only artifact. The first processing failure stops output updates and returns after
 the operation settles. Owned writers are flushed and closed; no durability is promised.
@@ -204,7 +209,11 @@ expanded results show the complete body. Hidden rows add a clipped hint using th
 bindings and colors when drawn, falling back to plain text if its theme becomes unavailable.
 
 Nonempty artifact paths and active truncation add an independent warning after the
-body. Execution-started calls capture the initial clock; results display `Elapsed`
+body. A final result whose details report a truncation and a nonempty artifact path
+drops the footer the tool appended to its text, so the path appears once: when the
+trimmed text ends with `]`, the part from its last blank line before `[`, or the
+whole text when it starts with `[`, is cut if it names the path, and the rest is
+trimmed at the end. Partial results keep their text. Execution-started calls capture the initial clock; results display `Elapsed`
 while partial and `Took` otherwise, with one decimal second. Final or error results
 freeze the first end time and cancel refresh. A partial error keeps the `Elapsed`
 label. Historical results without a start show no clock. A later partial result
@@ -252,7 +261,7 @@ or progress ordering. Store operations with the family's shared pointer:
 `E::Shared<<E as BashExecution>::Operations>` uses `Rc` for local operations and
 `Arc` with `Send + Sync` bounds for threaded operations.
 `BashExecOptions` borrows the selected raw callable; both native operation
-implementations share one driver. The process leaf's
+implementations share one driver. The process owner's
 `wait_for_child_process_with_sink` accepts a mandatory borrowed sink without
 `Send`, sharing capture, descriptor delivery and termination with the existing
 `wait_for_child_process` interface. Its default `None` calls remain inferable.

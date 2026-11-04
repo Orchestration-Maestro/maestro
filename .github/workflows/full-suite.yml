@@ -1,0 +1,13 @@
+name: Full suite after landing
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  suite:
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@b664d8fac5bc97049cb9fcfbfe720f285bb534ec # v0.19.15

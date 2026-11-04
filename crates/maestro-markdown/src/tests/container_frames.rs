@@ -256,11 +256,11 @@ fn container_paragraph_lookahead_keeps_later_setext() {
             first_leaf(&control.nodes),
             ("text", "alpha\nbeta".to_owned())
         );
-        let matched = crate::rules::paragraph::Recognizer::new(options).finish(prefix);
+        let matched = crate::rules::paragraph::Recognizer::new(options, &|_| false).finish(prefix);
         assert!(matched.paragraph.unwrap() < prefix.len());
         assert!(matched.heading.is_none());
         assert!(
-            crate::rules::paragraph::Recognizer::new(options)
+            crate::rules::paragraph::Recognizer::new(options, &|_| false)
                 .finish(full)
                 .heading
                 .is_some()
@@ -685,6 +685,7 @@ pub(super) fn container_work(work: &super::Work) -> usize {
         + work.table_bytes
         + work.fence_bytes
         + work.html_bytes
+        + work.escaped_bytes
         + work.code_bytes
         + work.framing_bytes
         + work.source_bytes
@@ -718,7 +719,6 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
 
 /// Charge every allocation reachable from a parsed document once, not overlapping view lengths.
 fn retained_document(document: &crate::Document) -> super::Retained {
-    use std::mem::size_of;
     let mut retained = super::Retained::default();
     retained.bytes += document.source.capacity()
         + document.scopes.capacity()
@@ -726,32 +726,7 @@ fn retained_document(document: &crate::Document) -> super::Retained {
     for scope in document.scopes.values() {
         scope.retained(&mut retained);
     }
-    let mut pending = vec![&document.nodes];
-    while let Some(nodes) = pending.pop() {
-        retained.bytes += nodes.capacity() * size_of::<Node>();
-        for node in nodes {
-            retained.nodes += 1;
-            node.authored.retained(&mut retained);
-            match &node.kind {
-                Kind::Quote(children, body) => {
-                    body.retained(&mut retained);
-                    pending.push(children);
-                }
-                Kind::Paragraph(children)
-                | Kind::Inline(children)
-                | Kind::List(_, children)
-                | Kind::Item(children) => pending.push(children),
-                Kind::Text(text) => {
-                    retained.bytes += text.authored.capacity() + text.decoded.capacity();
-                }
-                Kind::CodeBlock(body, language) => {
-                    retained.bytes +=
-                        body.capacity() + language.as_ref().map_or(0, String::capacity);
-                }
-                _ => {}
-            }
-        }
-    }
+    super::settled(&document.nodes, &mut retained);
     retained
 }
 
@@ -824,6 +799,48 @@ fn resumed_list_retained_storage_grows_linearly() {
         for (previous, next) in pair[0].iter().zip(pair[1]) {
             assert!(next <= 3 * previous, "{samples:?}");
         }
+    }
+}
+
+/// Largest list state a complete parse of `source` kept alive before releasing it.
+fn measured_frame(source: &str) -> usize {
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = crate::parse(source.to_owned());
+    assert!(!document.nodes.is_empty());
+    super::WORK.with_borrow(|work| work.frame_bytes)
+}
+
+#[test]
+fn nested_item_frame_charges_its_settled_child() {
+    let flat = measured_frame("- a\n  b");
+    let nested = measured_frame("- a\n  - b");
+    // Both items hold the same authored bytes, so only the child the item admitted and the
+    // list state it adopted separate the two frames.
+    assert!(nested > flat + flat / 4, "flat={flat} nested={nested}");
+}
+
+#[test]
+fn item_frame_charges_a_quotes_settled_descendants() {
+    let plain = measured_frame("- > a\n  > b");
+    let nested = measured_frame("- > a\n  > - b");
+    // The quoted list inside the item adds its state and its item's nodes to the frame.
+    assert!(nested > plain + plain / 4, "plain={plain} nested={nested}");
+}
+
+#[test]
+fn quote_resumed_nested_list_frame_charges_each_allocation_once() {
+    // A blank line closes the nested level, so the next marker resumes the list it left.
+    let source = |n: usize| "> - a\n".to_owned() + &">   - b\n> \n>   c\n> \n".repeat(n);
+    let sizes = [32, 64, 128];
+    let frame = sizes.map(|n| measured_frame(&source(n)));
+    let payload = sizes.map(|n| retained_document(&crate::parse(source(n))).bytes);
+    for (frame, payload) in frame.iter().zip(payload) {
+        assert!(*frame <= 2 * payload, "frame={frame:?} payload={payload:?}");
+        // A frame below nine tenths of the payload it publishes lost a charge it still holds.
+        assert!(
+            *frame * 10 >= payload * 9,
+            "undercounted frame={frame:?} payload={payload:?}"
+        );
     }
 }
 

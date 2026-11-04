@@ -1,4 +1,5 @@
 //! A startup extension that requests a custom working text and indicator.
+// maestro-component: MAESTRO_WORKING_MESSAGE_TEST_COMPONENT
 #![cfg(any(test, target_arch = "wasm32"))]
 #![forbid(
     clippy::pedantic,
@@ -10,7 +11,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    WorkingIndicatorOptions,
+    HookFuture, WorkingIndicatorOptions,
 };
 
 /// The working text this extension displays, with its colour and reset.
@@ -23,7 +24,7 @@ const CUSTOM_INDICATOR: &str = "\x1b[38;2;155;86;63m●\x1b[39m";
 fn session_start(
     _event: &mut ExtensionEvent,
     context: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ui = context.ui()?;
         ui.set_working_message(Some(CUSTOM_MESSAGE))?;

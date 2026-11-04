@@ -3,7 +3,7 @@ use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, PresentedSelector,
 };
 use maestro_chat::components::{
-    config_selector::{ConfigSelectorComponent, ConfigSelectorOptions},
+    config_selector::{self, ConfigSelectorComponent},
     extension_selector::{ExtensionSelectorComponent, ExtensionSelectorOptions},
     session_selector::{SessionSelectorComponent, SessionSelectorOptions},
 };
@@ -52,7 +52,7 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
             let component = Rc::new(ConfigSelectorComponent::new(
                 request.resolved_paths,
                 request.settings_manager,
-                ConfigSelectorOptions {
+                config_selector::ComponentOptions {
                     cwd: request.cwd,
                     agent_dir: request.agent_dir,
                     theme: palette.clone(),
@@ -128,6 +128,7 @@ pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSession
                     timeout: None,
                     runtime: runtime.clone(),
                     theme: palette.clone(),
+                    on_toggle_tools_expanded: None,
                 },
             )
             .map_err(io::Error::other)?,

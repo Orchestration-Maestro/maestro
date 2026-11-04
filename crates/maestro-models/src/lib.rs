@@ -23,8 +23,9 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
-    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, ESTIMATED_IMAGE_CHARS, adjust_max_tokens_for_thinking, build_base_options,
+    build_base_options_for, clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
+    tokens_for_chars, utf16_units,
 };
 /// Conversation adaptation for the destination model.
 mod projection;
@@ -43,8 +44,11 @@ pub use providers::chat::openai_completions::{
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
+#[cfg(not(target_arch = "wasm32"))]
+pub use providers::http::configure_http_dispatcher;
 pub use providers::http::{
     Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
+    unit_random,
 };
 pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
@@ -79,7 +83,7 @@ pub use records::session_resources::{
 };
 pub use records::stream::{
     complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
-    stream_simple, stream_simple_for,
+    stream_simple, stream_simple_for, stream_simple_via_for,
 };
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;
@@ -116,6 +120,13 @@ pub use providers::response_sessions::openai_codex_responses::{
 };
 
 pub use providers::json_text::compact_json;
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub use maestro_request::test_support;
+
+#[cfg(test)]
+extern crate self as maestro_models;
 
 #[cfg(test)]
 pub mod tests;

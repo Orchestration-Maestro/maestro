@@ -2,7 +2,7 @@
 use super::records::{Frame, Scopes};
 use maestro_app::{ResolvedPaths, SettingsManager};
 use maestro_chat::components::config_selector::{
-    ConfigSelectorCallbacks, ConfigSelectorComponent, ConfigSelectorOptions, ResourceItem,
+    ComponentOptions, ConfigSelectorCallbacks, ConfigSelectorComponent, ResourceItem,
 };
 use maestro_theme::{Collator, ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
 use maestro_tui::{Component, tui::ChildArray};
@@ -85,8 +85,8 @@ pub(super) struct Harness {
 impl Harness {
     /// Uses the recorder's ambient cwd, deliberately separate from selected dirs.
     pub fn new(resolved: ResolvedPaths, scopes: &Scopes, dirs: (&str, &str), bold: bool) -> Self {
-        let (_, theme) = crate::published::published(&colors(0));
-        let options = ConfigSelectorOptions {
+        let (_, theme) = crate::published::published(&colors(0)).unwrap();
+        let options = ComponentOptions {
             cwd: dirs.0.into(),
             agent_dir: dirs.1.into(),
             theme,
@@ -99,7 +99,7 @@ impl Harness {
     pub fn build(
         resolved: ResolvedPaths,
         scopes: &Scopes,
-        mut options: ConfigSelectorOptions,
+        mut options: ComponentOptions,
         bold: bool,
     ) -> Self {
         let scratch = crate::scratch::Scratch::new().unwrap();
@@ -118,7 +118,7 @@ impl Harness {
             &user.to_string_lossy(),
             ".maestro",
         )));
-        let (publication, theme) = crate::published::published(&colors(0));
+        let (publication, theme) = crate::published::published(&colors(0)).unwrap();
         let styles = Rc::new(Cell::new(bold));
         let policy = styles.clone();
         options.theme = theme;

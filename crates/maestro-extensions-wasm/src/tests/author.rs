@@ -9,9 +9,10 @@ use std::rc::Rc;
 use maestro_extensions_wasm::{
     AbortListener, AbortSignal, CommandOptions, CompactionResult, ExtensionAPI,
     ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, ExtensionHandler, ExtensionResult, InputEventResult, InputTransform,
-    NewSessionCommandData, NewSessionCommandOptions, Presence, SessionBeforeCompactEvent,
-    SessionBeforeCompactResult, SessionEvent, SignalPort, Subscription, SubscriptionPort,
+    ExtensionFuture, ExtensionHandler, ExtensionResult, HookResult, InputEventResult,
+    InputTransform, NewSessionCommandData, NewSessionCommandOptions, Presence,
+    SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionEvent, SignalPort, Subscription,
+    SubscriptionPort,
 };
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
@@ -189,7 +190,7 @@ fn register_trim(api: &ExtensionAPI) -> Result<(), String> {
                 };
                 input.text = input.text.trim().to_owned();
                 if input.text.is_empty() {
-                    return Err("nothing is left of the input after trimming".to_owned());
+                    return Err("nothing is left of the input after trimming".into());
                 }
                 Ok(None)
             })
@@ -211,7 +212,7 @@ fn register_note(api: &ExtensionAPI) -> Result<(), String> {
                 compact.preparation.previous_summary =
                     Presence::Present(format!("noted {tokens} tokens"));
                 if compact.signal.aborted() {
-                    return Err("compaction aborted after the note".to_owned());
+                    return Err("compaction aborted after the note".into());
                 }
                 Ok(None)
             })
@@ -487,13 +488,13 @@ impl Probe {
         self,
         event: &mut ExtensionEvent,
         ctx: ExtensionContext,
-    ) -> ExtensionResult<Option<ExtensionEventResult>> {
+    ) -> HookResult<Option<ExtensionEventResult>> {
         self.api.append_entry("entered", None)?;
         let directive: Directive = serde_json::from_str(&ctx.cwd()?)
             .map_err(|error| format!("unreadable directive: {error}"))?;
         self.keep(&directive.retain, event, &ctx);
         if matches!(directive.session_action, Some(SessionAction::Summary)) {
-            return summarize(event).map(Some);
+            return summarize(event).map(Some).map_err(Into::into);
         }
         if let Some(bits) = directive.number_bits.as_deref() {
             write_number(event, bits, directive.number_field.as_deref())?;
@@ -535,8 +536,10 @@ impl Probe {
         }
         match directive.ending {
             Ending::Silently => Ok(None),
-            Ending::Returns { family, value } => reply(&family, value).map(Some),
-            Ending::Fails(message) => Err(message),
+            Ending::Returns { family, value } => {
+                reply(&family, value).map(Some).map_err(Into::into)
+            }
+            Ending::Fails(message) => Err(message.into()),
         }
     }
 

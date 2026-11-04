@@ -1,4 +1,5 @@
 //! A todo tool whose result snapshots follow the active session branch.
+// maestro-component: MAESTRO_TODO_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -180,7 +181,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 event,
                 Rc::new(move |_, ctx| {
                     let result = restore(&ctx, &state);
-                    Box::pin(std::future::ready(result.map(|()| None)))
+                    Box::pin(std::future::ready(
+                        result.map(|()| None).map_err(Into::into),
+                    ))
                 }),
             )?;
         }

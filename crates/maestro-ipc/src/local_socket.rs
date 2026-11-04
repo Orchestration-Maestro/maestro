@@ -15,6 +15,16 @@ pub type LocalListener = interprocess::local_socket::Listener;
 pub type LocalStream = interprocess::local_socket::Stream;
 /// The library's stream operations, including its native send and receive timeouts.
 pub use interprocess::local_socket::traits::Stream as LocalStreamExt;
+/// The owned listener of the library's Tokio adapter.
+pub type AsyncLocalListener = interprocess::local_socket::tokio::Listener;
+/// The owned duplex stream of the library's Tokio adapter.
+pub type AsyncLocalStream = interprocess::local_socket::tokio::Stream;
+/// The receiving half of an [`AsyncLocalStream`].
+pub type AsyncRecvHalf = interprocess::local_socket::tokio::RecvHalf;
+/// The sending half of an [`AsyncLocalStream`].
+pub type AsyncSendHalf = interprocess::local_socket::tokio::SendHalf;
+/// The library's Tokio listener operations, including accepting a connection.
+pub use interprocess::local_socket::traits::tokio::Listener as AsyncLocalListenerExt;
 
 /// The observed device and inode of a socket file.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -39,8 +49,14 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// An expired deadline still permits one nonblocking attempt, so probes can distinguish
 /// an absent endpoint from a full accept queue without extending the caller's budget.
 ///
+/// A full accept queue reaches the caller as the platform reports it. Linux fails the attempt
+/// with would-block, so the call retries until the deadline and then times out. Apple kernels
+/// refuse the connection at once, exactly as they do for a socket file with no listener, so
+/// there saturation shows as connection-refused, never as a timeout.
+///
 /// # Errors
-/// Returns path or connection errors, or timed-out while the accept queue stays full.
+/// Returns path or connection errors, or timed-out while the accept queue stays full on Linux;
+/// Apple kernels return connection-refused instead.
 pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
     let address = SocketAddrUnix::new(path)?;
     let fd = nonblocking_local_socket()?;
@@ -73,11 +89,31 @@ fn nonblocking_local_socket() -> io::Result<std::os::fd::OwnedFd> {
 /// # Errors
 /// Returns a path-conversion or binding error.
 pub fn bind_local_listener(path: &Path) -> io::Result<LocalListener> {
+    listener_options(path)?.create_sync()
+}
+
+/// Bind for the Tokio adapter without unlinking a name when the listener is dropped. Runs
+/// inside a Tokio runtime.
+///
+/// # Errors
+/// Returns a path-conversion or binding error.
+pub fn bind_async_local_listener(path: &Path) -> io::Result<AsyncLocalListener> {
+    listener_options(path)?.create_tokio()
+}
+
+/// The options naming `path` that keep the name when the listener is dropped.
+fn listener_options(path: &Path) -> io::Result<interprocess::local_socket::ListenerOptions<'_>> {
     use interprocess::local_socket::{GenericFilePath, ListenerOptions, prelude::*};
-    ListenerOptions::new()
+    Ok(ListenerOptions::new()
         .name(path.to_fs_name::<GenericFilePath>()?)
-        .reclaim_name(false)
-        .create_sync()
+        .reclaim_name(false))
+}
+
+/// Split a stream into its receiving and sending halves, each owned on its own.
+#[must_use]
+pub fn split_async_stream(stream: AsyncLocalStream) -> (AsyncRecvHalf, AsyncSendHalf) {
+    use interprocess::local_socket::traits::tokio::Stream as _;
+    stream.split()
 }
 
 /// Create parents and remove a stale socket, rejecting an active listener.

@@ -1,5 +1,7 @@
 //! Retained artifact panels using application-owned filename policy.
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod artifact_pill;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod artifacts_tool_renderer;
 #[cfg(target_arch = "wasm32")]
 pub mod console;
@@ -336,6 +338,7 @@ mod retained;
 pub(crate) mod panel;
 pub use maestro_app::browser::tools::artifacts::{Artifact, ArtifactsParams};
 
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use artifacts_tool_renderer::ArtifactsToolRenderer;
 #[cfg(target_arch = "wasm32")]
 pub use html_artifact::HtmlArtifact;

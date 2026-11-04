@@ -43,26 +43,49 @@ pub fn stop_session(selection: &Selection) -> Result<SessionInfo, String> {
 /// Sends the stop request and waits for both selected sockets within one deadline.
 fn stop_with_timeout(selection: &Selection, timeout: Duration) -> Result<(), String> {
     let deadline = Instant::now() + timeout;
-    let label = format!(
+    request_stop(selection, deadline)?;
+    await_shutdown(selection, deadline, timeout)
+}
+
+/// The name that diagnostics use for the selected daemon.
+fn daemon_label(selection: &Selection) -> String {
+    format!(
         "daemon {}",
         selection.paths.name().unwrap_or(DEFAULT_SESSION_NAME)
-    );
+    )
+}
+
+/// Connects to the API socket and sends the stop request, surfacing a refusal or an
+/// undecodable reply.
+fn request_stop(selection: &Selection, deadline: Instant) -> Result<(), String> {
     let api = Path::new(&selection.api_socket_path);
     match connect_local_stream_until(api, deadline) {
         Ok(stream) => {
             if let Some(response) = send_stop_request(stream, deadline)? {
                 response.result.map_err(|error| error.message)?;
             }
+            Ok(())
         }
-        Err(error) if connection_back_pressure(&error) => {}
-        Err(error) => {
-            return Err(format!(
-                "{label} is not running or cannot be reached at {}: {error}",
-                api.display()
-            ));
-        }
+        Err(error) if connection_back_pressure(&error) => Ok(()),
+        Err(error) => Err(format!(
+            "{} is not running or cannot be reached at {}: {error}",
+            daemon_label(selection),
+            api.display()
+        )),
     }
-    let endpoints = [api, selection.client_socket_path.as_path()];
+}
+
+/// Waits until both selected sockets are unreachable or `deadline` passes; `timeout` is the
+/// budget the diagnostic reports.
+fn await_shutdown(
+    selection: &Selection,
+    deadline: Instant,
+    timeout: Duration,
+) -> Result<(), String> {
+    let endpoints = [
+        Path::new(&selection.api_socket_path),
+        selection.client_socket_path.as_path(),
+    ];
     if wait_until_stopped_until(&endpoints, deadline) {
         return Ok(());
     }
@@ -72,7 +95,8 @@ fn stop_with_timeout(selection: &Selection, timeout: Duration) -> Result<(), Str
         .map(|path| path.display().to_string())
         .collect();
     Err(format!(
-        "{label} did not stop within {}ms; sockets are still reachable at {}",
+        "{} did not stop within {}ms; sockets are still reachable at {}",
+        daemon_label(selection),
         timeout.as_millis(),
         reachable.join(", ")
     ))
@@ -122,12 +146,14 @@ fn read_stop_reply(stream: &mut LocalStream, deadline: Instant) -> io::Result<Op
         let Some(timeout) = socket_timeout_until(deadline) else {
             return Ok(None);
         };
-        if let Err(error) = stream.set_recv_timeout(Some(timeout)) {
-            return if stop_timeout_error_allows_wait(&error) {
-                Ok(None)
-            } else {
-                Err(error)
-            };
+        let rearm = stream.set_recv_timeout(Some(timeout));
+        match rearm {
+            Ok(()) => {}
+            // A deadline the Unix kernel refuses once the peer disconnected marks a fully
+            // shut down socket, whose queued reply cannot block the direct reads below.
+            Err(error) if cfg!(unix) && error.kind() == io::ErrorKind::InvalidInput => {}
+            Err(error) if stop_timeout_error_allows_wait(&error) => return Ok(None),
+            Err(error) => return Err(error),
         }
         let mut bytes = [0; 1024];
         let read = stream.read(&mut bytes)?;

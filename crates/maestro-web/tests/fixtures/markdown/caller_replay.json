@@ -3704,11 +3704,11 @@
     "content": "<https://example.test/$$x$$>",
     "escape_html": true,
     "thinking": false,
-    "html": "<p>&lt;<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/\">https://example.test/</a></p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><blockquote>\n</blockquote>\n",
+    "html": "<p>&lt;<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/\">https://example.test/</a></p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><p>&gt;</p>\n",
     "tree": null,
     "original_reference": "<p>&lt;<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/\">https://example.test/</a></p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><p>&gt;</p>\n",
-    "ruling": "Terminal angle quote recognition is tracked separately in #2002, after #1906.",
-    "target_source": "Pinned block-hint admission with the existing terminal-angle quote result"
+    "ruling": null,
+    "target_source": "unmodified reference"
   },
   {
     "id": "export-link-javascript",

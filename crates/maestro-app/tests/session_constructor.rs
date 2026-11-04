@@ -378,7 +378,7 @@ fn binds_partial_ui_bindings_without_clearing_others() {
         h.session.bind_extensions(errors).await.unwrap();
         let commands = ExtensionBindings {
             command_context_actions: Some(maestro_extensions::ExtensionCommandContextActions::new(
-                crate::command_operations::silent(),
+                maestro_extensions::test_support::silent_command_operations(),
             )),
             ..ExtensionBindings::default()
         };
@@ -826,5 +826,29 @@ fn extension_session_name_reaches_the_retained_session_and_listener() {
             .map(|event| event["name"].clone())
             .collect();
         assert_eq!(names, [json!("from extension")]);
+    });
+}
+
+/// An abort handler alone is not a host binding for reload notifications or resources.
+#[test]
+fn reload_with_only_abort_binding_skips_start_and_discovery() {
+    on_task_set(|_| async {
+        let seen = Seen::default();
+        let h = alpha_session(&seen, None).await;
+        h.session
+            .bind_extensions(ExtensionBindings {
+                abort_handler: Some(Rc::new(|| {})),
+                ..ExtensionBindings::default()
+            })
+            .await
+            .unwrap();
+        seen.borrow_mut().clear();
+        let extended = h.extended.borrow().len();
+        h.session.reload().await.unwrap();
+        assert_eq!(
+            *seen.borrow(),
+            [json!({"event": "session_shutdown", "reason": "reload"})]
+        );
+        assert_eq!(h.extended.borrow().len(), extended);
     });
 }

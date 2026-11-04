@@ -3,6 +3,7 @@
 use crate::DiagnosticErrorInfo;
 use crate::providers::base64_text::FORGIVING;
 use crate::providers::json_text::{member, raw_json};
+use crate::providers::openai_prompt_cache::prompt_cache_key;
 use base64::Engine as _;
 
 /// Read the account claim without signature verification.
@@ -23,7 +24,7 @@ pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorI
 }
 
 use super::{OpenAICodexResponsesOptions, OpenAICodexTextVerbosity};
-use crate::arguments::json_parse::whitespace;
+use crate::arguments::json_parse::is_blank;
 use crate::providers::responses::openai_responses_shared::{
     ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions,
     messages::{convert_responses_messages, convert_responses_tools},
@@ -166,7 +167,7 @@ fn build_request_body<E: crate::ProviderExecution>(
                 .unwrap_or(OpenAICodexTextVerbosity::Low),
         },
         include: ["reasoning.encrypted_content"],
-        prompt_cache_key: options.common.session_id.as_deref(),
+        prompt_cache_key: options.common.session_id.as_deref().map(prompt_cache_key),
         tool_choice: "auto",
         parallel_tool_calls: true,
         temperature: options.common.temperature,
@@ -226,7 +227,7 @@ pub(crate) async fn prepare_request<E: crate::ProviderExecution>(
 
 /// Resolve an authored base path without rewriting its nonempty whitespace or URL suffixes.
 pub(super) fn resolve_codex_url(base: &str) -> String {
-    let base = if base.trim_matches(whitespace).is_empty() {
+    let base = if is_blank(base) {
         "https://chatgpt.com/backend-api"
     } else {
         base

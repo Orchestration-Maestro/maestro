@@ -15,6 +15,19 @@ use std::{
 /// A real application adapter whose output consumer supplies one selected failure.
 struct FailedIo(Rc<dyn NativeIo>);
 impl NativeIo for FailedIo {
+    fn save_file(&self, path: String, bytes: Vec<u8>, mode: u32) -> IoFuture<'_, Option<String>> {
+        self.0.save_file(path, bytes, mode)
+    }
+    fn file_mode(&self, path: &str) -> Result<u32, String> {
+        self.0.file_mode(path)
+    }
+    fn set_file_mode(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.set_file_mode(path, mode)
+    }
+    fn create_dir(&self, path: &str, mode: u32) -> Result<(), String> {
+        self.0.create_dir(path, mode)
+    }
+
     fn watch(
         &self,
         path: String,
@@ -109,11 +122,8 @@ impl maestro_app::ConfigValueOperations for NoCommands {
     }
 }
 
-/// Loads each component with the failing native capability in place of the real one.
-fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestro_app::Local> {
-    let io: Rc<dyn NativeIo> = Rc::new(FailedIo(
-        maestro_app::extension_native_io::extension_native_io(local),
-    ));
+/// Loads each component with the supplied native capability.
+fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local> {
     Rc::new(move |path: &str| {
         Box::pin(std::future::ready(Ok(Some(
             maestro_extensions_wasmtime::artifact_factory_with_io(
@@ -124,13 +134,18 @@ fn loader(local: &Rc<tokio::task::LocalSet>) -> maestro_app::ModuleLoader<maestr
                     agent_dir: "/controlled-agent".into(),
                 },
                 Rc::clone(&io),
+                None,
             ),
         ))))
     })
 }
 
 /// Creates the normal embedding session with an explicitly swapped native capability.
-async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_app::AgentSession> {
+pub(crate) async fn session(
+    root: &Root,
+    local: &Rc<tokio::task::LocalSet>,
+    io: Rc<dyn NativeIo>,
+) -> Rc<maestro_app::AgentSession> {
     root.models("http://127.0.0.1:1/v1");
     let auth = Arc::new(maestro_app::AuthStorage::in_memory(
         maestro_app::AuthStorageData::default(),
@@ -144,10 +159,8 @@ async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_a
         .unwrap(),
     );
     let model = registry.find("startup", "controlled").unwrap();
-    let mut resources = maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(
-        Rc::clone(local),
-        loader(local),
-    );
+    let mut resources =
+        maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(Rc::clone(local), loader(io));
     resources
         .additional_extension_paths
         .push(std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap());
@@ -182,7 +195,7 @@ async fn session(root: &Root, local: &Rc<tokio::task::LocalSet>) -> Rc<maestro_a
 }
 
 /// Reads the guest's own recorded reply without installing another user-interface host.
-async fn answer(session: &Rc<maestro_app::AgentSession>, data: Value) -> Value {
+pub(super) async fn answer(session: &Rc<maestro_app::AgentSession>, data: Value) -> Value {
     session
         .prompt(
             &format!("/native-child {data}"),
@@ -210,8 +223,10 @@ fn native_child_read_failure_follows_the_real_prefix() {
         .unwrap();
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime,async {
-        let session = session(&root,&local).await;
-        let reply = answer(&session,json!({"op":"spawn","command":"python3","args":["-c","import os; os.write(1,b'\\x00\\xff\\x01')"],"env":[],"stdio":["ignore","pipe","ignore"]})).await;
+        let io = Rc::new(FailedIo(maestro_app::extension_native_io::extension_native_io(&local)));
+        let session = session(&root,&local,io).await;
+        let producer = crate::support::native::install(&root.path("bin"),"output","command",&json!({"scenario":"output","stdout":[0,255,1],"stderr":[],"code":0}));
+        let reply = answer(&session,json!({"op":"spawn","command":producer,"args":[],"env":[],"stdio":["ignore","pipe","ignore"]})).await;
         assert!(reply["value"].as_u64().unwrap() > 0);
         let mut prefix = Vec::new();
         while prefix.len() < 3 {

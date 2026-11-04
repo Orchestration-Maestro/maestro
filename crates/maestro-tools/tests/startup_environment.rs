@@ -12,22 +12,32 @@ use std::{
     },
 };
 
-/// The truth table both offline readers share: environment text, and whether it selects
-/// offline.
+/// The offline flag's truth table: every environment text the flag rule
+/// distinguishes, and whether it selects offline.
 const TRUTH: &[(Option<&str>, bool)] = &[
     (None, false),
     (Some(""), false),
     (Some("0"), false),
     (Some("false"), false),
+    (Some("2"), false),
+    (Some("on"), false),
+    (Some("y"), false),
     (Some("1"), true),
     (Some("true"), true),
     (Some("TRUE"), true),
+    (Some("TrUe"), true),
     (Some("yes"), true),
     (Some("YeS"), true),
     (Some(" "), false),
     (Some("\u{feff}false"), false),
+    (Some("\u{feff}true"), false),
+    (Some("true\u{85}"), false),
+    (Some("\u{85}true"), false),
+    (Some("ye\u{17f}"), false),
+    (Some("\u{ff54}rue"), false),
     (Some(" yes"), false),
     (Some("true "), false),
+    (Some("yes "), false),
 ];
 
 /// An explicit selection contradicting an ambient flag value, and whether the missing
@@ -37,20 +47,12 @@ const OVERRIDES: [(Option<bool>, &str, bool); 2] =
 
 /// Places an executable program probe at `root/name` through a child process.
 fn program(root: &Path, name: &str) {
-    let source = root.join(format!("{name}.source"));
-    std::fs::write(
-        &source,
-        "#!/bin/sh\n[ \"$#\" = 1 ] && [ \"$1\" = --version ] || exit 99\nexit 0\n",
-    )
-    .unwrap();
-    assert!(
-        std::process::Command::new("install")
-            .args(["-m", "0700"])
-            .arg(&source)
-            .arg(root.join(name))
-            .status()
-            .unwrap()
-            .success()
+    crate::find_support::alias(
+        root,
+        name,
+        &serde_json::json!({
+            "scenario":"probe", "log":null, "name":name, "stdout":[], "code":0
+        }),
     );
 }
 

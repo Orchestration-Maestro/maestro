@@ -11,6 +11,7 @@ use http_body_util::BodyExt;
 use super::super::{Auth, Settings, WireRequest, bridge, transport};
 use crate::providers::cloud::amazon_bedrock::proxy::Environment;
 use crate::tests::loopback;
+use url::Url;
 
 #[test]
 fn pac_bridge_scopes_globals_by_protocol_across_timeouts() {
@@ -70,7 +71,7 @@ fn pac_bridge_scopes_globals_by_protocol_across_timeouts() {
     });
 }
 
-/// A captured environment stays owned by one bridge while sender settings change.
+/// The bridge uses the settings' chosen proxy while sender timeouts change.
 async fn consume(source: &str, protocols: &[&str]) {
     let env = Environment(
         [
@@ -85,14 +86,11 @@ async fn consume(source: &str, protocols: &[&str]) {
         profile: None,
         auth: Auth::Placeholder,
         http1: true,
-        proxy: true,
+        proxy: env
+            .proxy_for(&Url::parse("http://destination.invalid:8081/credentials").unwrap())
+            .unwrap(),
     };
-    let http = bridge(
-        None,
-        transport(&settings, env),
-        None,
-        Arc::new(Mutex::new(None)),
-    );
+    let http = bridge(None, transport(&settings), None, Arc::new(Mutex::new(None)));
     let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
     for (index, protocol) in protocols.iter().enumerate() {
         let settings = HttpConnectorSettings::builder()
@@ -125,7 +123,9 @@ async fn consume(source: &str, protocols: &[&str]) {
 #[test]
 fn pac_bridge_uses_captured_environment_at_later_consumption() {
     const TEST: &str = "providers::cloud::amazon_bedrock::client::tests::pac::pac_bridge_uses_captured_environment_at_later_consumption";
-    if std::env::var_os("MAESTRO_CAPTURE_CHILD").is_some() {
+    /// The case that repeats the bridge in a cleared child.
+    const CHILD: &str = "cleared";
+    if maestro_test_process::selection().case() == Some(CHILD) {
         crate::tests::runtime::run(async {
             for bypass in [false, true] {
                 captured_environment(bypass).await;
@@ -136,7 +136,7 @@ fn pac_bridge_uses_captured_environment_at_later_consumption() {
     let output = maestro_test_process::TestProcess::current(TEST)
         .unwrap()
         .env_clear()
-        .env("MAESTRO_CAPTURE_CHILD", "1")
+        .case(CHILD)
         .env("HTTP_PROXY", "pac+data:,invalid ! script")
         .env("HTTPS_PROXY", "pac+data:,invalid ! script")
         .output()
@@ -203,24 +203,20 @@ async fn captured_environment(bypass: bool) {
     );
 }
 
-/// Compare retained and ambient routing through the same native SDK connector.
+/// Compare settings' proxy choices from captured and ambient environments through the SDK connector.
 async fn check_environment(captured: Environment, uri: &str) {
-    let settings = Settings {
-        endpoint: None,
-        region: None,
-        profile: None,
-        auth: Auth::Placeholder,
-        http1: true,
-        proxy: true,
-    };
     let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
     for (env, retained) in [(Environment::capture(), false), (captured, true)] {
-        let http = bridge(
-            None,
-            transport(&settings, env),
-            None,
-            Arc::new(Mutex::new(None)),
-        );
+        let chosen = env.proxy_for(&Url::parse(uri).unwrap()).unwrap();
+        let settings = Settings {
+            endpoint: None,
+            region: None,
+            profile: None,
+            auth: Auth::Placeholder,
+            http1: true,
+            proxy: chosen,
+        };
+        let http = bridge(None, transport(&settings), None, Arc::new(Mutex::new(None)));
         let connector = http.http_connector(&HttpConnectorSettings::builder().build(), &components);
         let mut request = WireRequest::new(SdkBody::empty());
         request.set_uri(uri).unwrap();

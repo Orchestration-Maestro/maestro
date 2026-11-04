@@ -142,6 +142,7 @@ impl Input {
             .and_then(|node| node.dyn_into().map_err(Into::into))
             .map_err(|error| host_error(&error))?;
         let error = element(document, "span", "maestro-input-error")?;
+        error.set_id(&unique_id("maestro-input-error"));
         append(&root, &field)?;
         let shared = Rc::new(RefCell::new(InputProps::default()));
         let listeners = listeners(&field, &shared)?;
@@ -177,13 +178,8 @@ impl Input {
         self.root
             .set_class_name(&classes("maestro-field", &props.class_name));
         self.show_label(&props.label, marker.as_deref())?;
+        self.show_error(&props.error)?;
         attributes(&self.field, &props)?;
-        set_text_if_changed(&self.error, &props.error);
-        if props.error.is_empty() {
-            self.error.remove();
-        } else if self.error.parent_node().is_none() {
-            append(&self.root, &self.error)?;
-        }
         let previous = self.props.replace(props);
         drop(previous);
         Ok(())
@@ -229,6 +225,23 @@ impl Input {
         }
         self.field
             .set_attribute("aria-labelledby", &self.label.id())
+            .map_err(|error| host_error(&error).into())
+    }
+    /// Describe the field with its error text, or clear both when no error is supplied.
+    fn show_error(&self, text: &str) -> Result<(), ToolUiError> {
+        set_text_if_changed(&self.error, text);
+        if text.is_empty() {
+            self.error.remove();
+            return self
+                .field
+                .remove_attribute("aria-describedby")
+                .map_err(|error| host_error(&error).into());
+        }
+        if self.error.parent_node().is_none() {
+            append(&self.root, &self.error)?;
+        }
+        self.field
+            .set_attribute("aria-describedby", &self.error.id())
             .map_err(|error| host_error(&error).into())
     }
 }

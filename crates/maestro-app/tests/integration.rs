@@ -1,13 +1,23 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_session_auto_compaction_queue_checks;
+mod agent_session_bash_persistence_checks;
+mod agent_session_branch_summary_checks;
 mod agent_session_branching_checks;
+mod agent_session_compaction_checks;
+mod agent_session_compaction_suite_checks;
 mod agent_session_concurrent_checks;
+mod agent_session_custom_message_checks;
+mod agent_session_input_checks;
 mod agent_session_model_extension_checks;
+mod agent_session_next_turn_checks;
 mod agent_session_prompt_checks;
 mod agent_session_queue_checks;
+mod agent_session_reload_checks;
 mod agent_session_retry_checks;
 mod agent_session_retry_events_checks;
+mod agent_session_run_checks;
 mod agent_session_runtime_checks;
 mod agent_session_runtime_events_checks;
 mod agent_session_stats_checks;
@@ -48,11 +58,10 @@ mod clipboard_platform;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/clipboard_status.rs"]
 mod clipboard_status;
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "support/command_operations.rs"]
-mod command_operations;
+mod compaction_extensions_checks;
 mod configuration_paths;
 mod context_discovery;
+mod context_usage_estimates;
 mod daemon_connection;
 #[cfg(unix)]
 #[path = "support/default_configuration.rs"]
@@ -78,6 +87,7 @@ mod docx_tables;
 mod docx_values;
 mod docx_xml;
 mod extension_context_exports;
+mod extension_native_io;
 mod extension_ui;
 mod extension_ui_exports;
 #[path = "docx_support/font_resources.rs"]
@@ -197,6 +207,7 @@ mod support {
     pub mod attachments;
     pub mod browser_records;
     pub mod browser_storage_records;
+    pub mod compaction;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_attachments;
     #[cfg(not(target_arch = "wasm32"))]
@@ -220,6 +231,11 @@ mod support {
     pub mod spreadsheet_native;
 }
 mod theme_selection;
+mod tools_bash_checks;
+mod tools_edit_checks;
+mod tools_read_checks;
+mod tools_search_checks;
+mod tools_write_checks;
 mod tree_cancel_compacting_checks;
 mod tree_interface;
 mod tree_traversal_checks;
@@ -237,3 +253,5 @@ mod artifact_presentation_support;
 mod executable_schemas;
 
 mod session_decisions;
+
+mod host_operations;

@@ -108,7 +108,7 @@ pub type ExtensionEventResult = maestro_request::extension_events::unions::Exten
     BeforeProviderRequestEventResult,
 >;
 use super::context::ExtensionContext;
-use super::extension_result::ExtensionFuture;
+use super::extension_result::HookFuture;
 use std::rc::Rc;
 
 pub use maestro_entry::session_manager::ForkPosition;
@@ -117,7 +117,7 @@ pub type ExtensionHandler = Rc<
     dyn for<'a> Fn(
         &'a mut ExtensionEvent,
         ExtensionContext,
-    ) -> ExtensionFuture<'a, Option<ExtensionEventResult>>,
+    ) -> HookFuture<'a, Option<ExtensionEventResult>>,
 >;
 
 use crate::{

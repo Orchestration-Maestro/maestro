@@ -1,6 +1,6 @@
 //! Retained input, flat-entry navigation and replaceable notifications.
 use super::{
-    ConfigSelectorOptions, ResourceItem, ResourceToggle,
+    ComponentOptions, ResourceItem, ResourceToggle,
     groups::{ResourceGroup, ResourceSubgroup},
 };
 use maestro_app::SettingsManager;
@@ -36,7 +36,7 @@ pub struct ResourceList {
     /// Scope persistence owner.
     pub(super) settings: Rc<RefCell<SettingsManager>>,
     /// Supplied ambient effects.
-    pub(super) options: Rc<ConfigSelectorOptions>,
+    pub(super) options: Rc<ComponentOptions>,
     /// Forwarding search focus.
     focus: FocusFlag,
     /// Cancellation slot.
@@ -51,7 +51,7 @@ impl ResourceList {
     pub(super) fn new(
         groups: Vec<ResourceGroup>,
         settings: Rc<RefCell<SettingsManager>>,
-        options: Rc<ConfigSelectorOptions>,
+        options: Rc<ComponentOptions>,
     ) -> Self {
         let search = Rc::new(Input::new());
         let focus = FocusFlag::forwarding(search.clone());
