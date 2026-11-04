@@ -10,8 +10,9 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Value, json};
+use serde_json::json;
 
+use super::author::binding_config::bindings_json as config;
 use super::observed::Observed;
 use crate::{
     KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
@@ -249,23 +250,5 @@ pub fn hint(
     match description {
         Some(description) => format!("<dim>{text}<muted> {description}"),
         None => text,
-    }
-}
-
-/// The JSON form of bindings.
-pub fn config(config: &KeybindingsConfig) -> Value {
-    json!(
-        config
-            .iter()
-            .map(|(id, keys)| json!([id, keys.as_ref().map(keys_json)]))
-            .collect::<Vec<_>>()
-    )
-}
-
-/// The JSON form of keys.
-pub fn keys_json(keys: &KeybindingKeys) -> Value {
-    match keys {
-        KeybindingKeys::Single(key) => json!(key),
-        KeybindingKeys::Multiple(keys) => json!(keys),
     }
 }

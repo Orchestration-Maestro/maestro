@@ -7,19 +7,25 @@
 use maestro_extensions_wasm::{
     AbortSignal, CallbackEmitter, Component, ComponentDisposer, ComponentFactory, ComponentView,
     ExtensionAPI, ExtensionComponent, ExtensionContext, ExtensionResult, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, FlagOptions, FlagType, FooterData, FooterFactory, NotificationType,
-    Subscription, TerminalInputResult, ThemeSelection, ThemeSetResult, WidgetPlacement,
-    WorkingIndicatorOptions,
+    ExtensionWidgetOptions, FlagOptions, FlagType, FooterData, FooterFactory, KeybindingKeys,
+    KeybindingsConfig, NotificationType, Subscription, TerminalInputResult, ThemeSelection,
+    ThemeSetResult, WidgetPlacement, WorkingIndicatorOptions,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+#[path = "../binding_config.rs"]
+mod binding_config;
+#[path = "../binding_json.rs"]
+mod binding_json;
 #[path = "../../../src/tests/custom_author.rs"]
 mod custom_author;
 #[path = "../../../src/tests/custom_overlay_author.rs"]
 mod custom_overlay_author;
 #[path = "../../../src/tests/editor_factory_author.rs"]
 mod editor_factory_author;
+#[path = "../editor_text.rs"]
+mod editor_text;
 #[path = "../../../src/tests/factory_component_author.rs"]
 mod factory_component_author;
 #[path = "../../../src/tests/focus_author.rs"]
@@ -226,14 +232,12 @@ struct FooterView {
     footer: FooterData,
 }
 
+#[path = "../footer_view.rs"]
+mod footer_view;
+
 impl ComponentView for FooterView {
     fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
-        let branch = self.footer.get_git_branch()?;
-        let statuses = self.footer.get_extension_statuses()?;
-        let providers = self.footer.get_available_provider_count()?;
-        Ok(vec![
-            json!([self.label, branch, statuses, providers]).to_string(),
-        ])
+        footer_view::render(&self.label, &self.footer)
     }
     fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         Ok(())

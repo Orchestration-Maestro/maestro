@@ -16,6 +16,7 @@ use super::ui_host::Nested;
 use super::widget_host::{self, Build, CODE, Change, Child, Paint, Part, ROLES};
 use super::widget_lists::{self, Call, Event, List, Setting};
 use crate::bindings::host_side::maestro::extension::host;
+use crate::component_adapter::keybinding_bindings;
 
 /// Host type of one widget, by key.
 pub struct WidgetResource(pub u32);
@@ -895,20 +896,17 @@ fn keys(keys: host::KeybindingKeys) -> crate::KeybindingKeys {
     }
 }
 
+/// Bindings from their wire form.
+pub(super) fn config(config: WireConfig) -> crate::KeybindingsConfig {
+    keybinding_bindings(config, keys)
+}
+
 /// The wire form of keys.
 fn wire_keys(keys: crate::KeybindingKeys) -> host::KeybindingKeys {
     match keys {
         crate::KeybindingKeys::Single(key) => host::KeybindingKeys::Single(key),
         crate::KeybindingKeys::Multiple(keys) => host::KeybindingKeys::Multiple(keys),
     }
-}
-
-/// Bindings from their wire form.
-pub(super) fn config(config: WireConfig) -> crate::KeybindingsConfig {
-    config
-        .into_iter()
-        .map(|(id, bound)| (id, bound.map(keys)))
-        .collect()
 }
 
 /// The wire form of bindings.

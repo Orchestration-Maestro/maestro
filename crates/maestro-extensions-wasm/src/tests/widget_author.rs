@@ -963,23 +963,8 @@ fn bindings(value: Option<Value>) -> ExtensionResult<KeybindingsConfig> {
         .collect()
 }
 
-/// The script form of keys.
-fn keys_json(keys: &KeybindingKeys) -> Value {
-    match keys {
-        KeybindingKeys::Single(key) => json!(key),
-        KeybindingKeys::Multiple(keys) => json!(keys),
-    }
-}
-
-/// The script form of bindings.
-pub(super) fn bindings_json(config: &KeybindingsConfig) -> Value {
-    json!(
-        config
-            .iter()
-            .map(|(id, keys)| json!([id, keys.as_ref().map(keys_json)]))
-            .collect::<Vec<_>>()
-    )
-}
+pub(super) use super::binding_config::bindings_json;
+use super::binding_json::keys_json;
 
 /// A kept keybindings manager from its source.
 fn manager_of(step: Step) -> ExtensionResult<(String, KeybindingsManager)> {

@@ -76,13 +76,6 @@ fn host(column: u64) -> Result<Harness, String> {
 fn entry(value: &Value) -> Value {
     json!({"type":"custom","id":"save","parentId":null,"timestamp":"2026-01-01T00:00:00Z","customType":"space-invaders-save","data":value})
 }
-/// Supplies all session entries rather than a branch projection.
-fn history(host: &mut Harness, entries: &Value) {
-    host.observed().readers.control(
-        &json!({"bind":{"replies":[{"method":"getEntries","args":[],"value":entries}]}})
-            .to_string(),
-    );
-}
 /// Calls only the command the built component registered.
 fn command(host: &mut Harness) -> Result<(), String> {
     let key = host.observed().callback("command invaders")?;
@@ -99,7 +92,7 @@ fn saves(host: &mut Harness) -> Vec<Value> {
 }
 /// Runs a literal input/frame/tick script under the shared custom-view driver.
 fn run(host: &mut Harness, case: &Value) -> Result<(), String> {
-    history(host, &json!([entry(&case["start"])]));
+    super::example_support::history(host, &json!([entry(&case["start"])]));
     let frames: Vec<Vec<String>> = serde_json::from_value(case["frames"].clone()).unwrap();
     for frame in &frames {
         frame_helpers(host.observed(), frame);
@@ -228,7 +221,7 @@ fn space_invaders_component_runs_registered_command_and_restores_latest_save() -
         ),
         (json!([]), &corpus["frames"]["initial"], "q"),
     ] {
-        history(&mut host, &entries);
+        super::example_support::history(&mut host, &entries);
         let frame: Vec<String> = serde_json::from_value(frame.clone()).unwrap();
         frame_helpers(host.observed(), &frame);
         host.observed().ui.custom_script = Some(Script {
@@ -266,7 +259,7 @@ fn space_invaders_rows_fit_narrow_terminal_widths() -> Result<(), String> {
                 json!([raw.trim_end(), columns, "", false])
             )] = json!(fitted);
         }
-        history(&mut host, &json!([entry(&script("resume")["start"])]));
+        super::example_support::history(&mut host, &json!([entry(&script("resume")["start"])]));
         host.observed().ui.custom_script = Some(Script {
             width: None,
             input_errors: BTreeMap::new(),
@@ -291,7 +284,7 @@ fn space_invaders_rejected_save_keeps_input_usable() -> Result<(), String> {
     for rejected in ["\x1b", "q"] {
         for retry in ["\x1b", "q"] {
             let mut host = host(0)?;
-            history(&mut host, &json!([]));
+            super::example_support::history(&mut host, &json!([]));
             frame_helpers(host.observed(), &frame);
             host.observed().actions.entry_error = Some("session append refused".into());
             host.observed().ui.custom_script = Some(Script {

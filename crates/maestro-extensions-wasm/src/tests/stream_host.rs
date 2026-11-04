@@ -46,14 +46,33 @@ impl host::HostEventStreamWithStore<State> for Imports {
         stream: Resource<Stream>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Result<Option<Resource<Value>>, String>>>
     {
-        std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
+        unused(a, Unused::Stream(stream))
     }
     fn result(
         a: &Accessor<State, Self>,
         stream: Resource<Stream>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Result<Resource<Value>, String>>> {
-        std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
+        unused(a, Unused::Stream(stream))
     }
+}
+
+/// A retained resource no author-only component can construct.
+enum Unused {
+    /// An event stream resource.
+    Stream(Resource<Stream>),
+    /// An assistant stream resource.
+    Assistant(Resource<Assistant>),
+}
+
+/// Yields the rejection of an operation on a resource the author-only host never admits.
+fn unused<V>(
+    accessor: &Accessor<State, Imports>,
+    resource: Unused,
+) -> impl std::future::Future<Output = wasmtime::Result<Result<V, String>>> {
+    std::future::ready(accessor.with(|mut access| match resource {
+        Unused::Stream(stream) => match *access.get().table.get(&stream)? {},
+        Unused::Assistant(assistant) => match *access.get().table.get(&assistant)? {},
+    }))
 }
 
 /// Model invocation is exercised only by the real native adapter.
@@ -82,13 +101,13 @@ impl host::HostAssistantStreamWithStore<State> for Imports {
         a: &Accessor<State, Self>,
         stream: Resource<Assistant>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Result<Option<String>, String>>> {
-        std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
+        unused(a, Unused::Assistant(stream))
     }
     fn result(
         a: &Accessor<State, Self>,
         stream: Resource<Assistant>,
     ) -> impl std::future::Future<Output = wasmtime::Result<Result<String, String>>> {
-        std::future::ready(a.with(|mut access| match *access.get().table.get(&stream)? {}))
+        unused(a, Unused::Assistant(stream))
     }
 }
 

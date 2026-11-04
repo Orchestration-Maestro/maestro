@@ -60,13 +60,8 @@ pub fn manager(input: &Value) -> KeybindingsManager {
     };
     KeybindingsManager::new(definitions, config(&input["user"]))
 }
-/// Renders a typed observation for comparison with the recorded corpus.
-pub fn key_value(keys: KeybindingKeys) -> Value {
-    match keys {
-        KeybindingKeys::Single(key) => json!(key),
-        KeybindingKeys::Multiple(keys) => json!(keys),
-    }
-}
+#[path = "../../../maestro-extensions-wasm/tests/support/binding_json.rs"]
+mod binding_json;
 /// Observes the manager through the corpus-selected public queries.
 pub fn observe(manager: &KeybindingsManager, expected: &Value) -> Value {
     let keys: Vec<_> = expected["keys"]
@@ -85,7 +80,7 @@ pub fn observe(manager: &KeybindingsManager, expected: &Value) -> Value {
         .map(|pair| {
             let id = pair[0].as_str().unwrap();
             let definition = manager.get_definition(id).map(|d| {
-                let mut value = json!({"defaultKeys": key_value(d.default_keys)});
+                let mut value = json!({"defaultKeys": binding_json::keys_json(&d.default_keys)});
                 if let Some(description) = d.description {
                     value["description"] = json!(description);
                 }
@@ -97,7 +92,7 @@ pub fn observe(manager: &KeybindingsManager, expected: &Value) -> Value {
     let pairs = |config: KeybindingsConfig| {
         config
             .into_iter()
-            .map(|(id, keys)| json!([id, keys.map(key_value)]))
+            .map(|(id, keys)| json!([id, keys.map(|keys| binding_json::keys_json(&keys))]))
             .collect::<Vec<_>>()
     };
     let conflicts: Vec<_> = manager

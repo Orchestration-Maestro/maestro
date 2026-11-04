@@ -4,6 +4,7 @@ use super::super::super::{
     renderer_host::{Call, Reply},
 };
 use super::Host;
+use super::super::super::example_support::Adapter;
 use serde_json::{Value, json};
 
 impl Host {
@@ -17,8 +18,8 @@ impl Host {
     ) -> Result<String, String> {
         let key = self.observe(|o| o.callback(&format!("render-{slot} todo")))?;
         let info = json!({"toolCallId":"paint","cwd":"/work","args":args,"expanded":expanded});
-        let lines = match self {
-            Self::Controlled(host, exports) => {
+        let lines = match &mut self.0 {
+            Adapter::Controlled(host, exports) => {
                 use crate::bindings::maestro::extension::host as wire;
                 let render = wire::ToolRender {
                     slot: if slot == "call" {
@@ -60,7 +61,7 @@ impl Host {
                 };
                 lines
             }
-            Self::Component(host) => render_component(host, key, slot, &info, result.as_ref())?,
+            Adapter::Component(host) => render_component(host, key, slot, &info, result.as_ref())?,
         };
         assert_eq!(lines.len(), 1);
         let text = lines[0]
