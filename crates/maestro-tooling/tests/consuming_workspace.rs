@@ -164,6 +164,24 @@ fn installed_tool_serves_the_workspace_it_starts_in() {
     assert!(region(root).contains("name = \"local\""));
 }
 
+/// A command that reads a workspace reports a directory outside every workspace, instead of
+/// reading the tree it was built from.
+#[test]
+fn installed_tool_refuses_a_directory_outside_every_workspace() {
+    let scratch = Scratch::new().unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
+        .args(["example-index", "--check"])
+        .current_dir(scratch.path())
+        .env_remove("CARGO_MANIFEST_DIR")
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success(), "{:?}", output.status);
+    let error = String::from_utf8_lossy(&output.stderr);
+    assert!(error.contains("Cargo.toml"), "{error}");
+}
+
 /// The staged name of the command the executable setup exports.
 const EXECUTABLE: &str = "maestro";
 /// The digest of a file with no bytes, which the empty fixture files below have.

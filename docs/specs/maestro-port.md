@@ -368,7 +368,7 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 | `crates/maestro-tui-crossterm/examples/` | terminal development programs |
 | `crates/maestro-app/examples/*_report.rs`, `count_prompt_tokens.rs` | cost, usage, tool, transcript and prompt-token reports |
 
-**What users see.** Nothing changes for users. An installation ships `examples/` in its package directory, beside the README and the documentation. `get_examples_path` resolves it, and the default system prompt names it. Documentation links examples by relative path. The links resolve in an installation and in a set-up source checkout.
+**What users see.** Nothing moves in their installation: `examples/` ships in its package directory, beside the README and the documentation. `get_examples_path` resolves it, and the default system prompt names it. Documentation links examples by relative path. The links resolve in an installation and in a set-up source checkout.
 
 ```text
 examples/
@@ -404,7 +404,7 @@ The SDK examples, the RPC client demo, the browser chat example and the other-la
 - the RPC clients run against Maestro's native test peers;
 - the browser chat example runs in the pinned browser job.
 
-Tests are black-box. They use Maestro's public crates and programs and the same recorded corpora, never the guest crate's private test host. An assertion with no public-host equivalent is listed and agreed before it is dropped.
+Tests are black-box. They use Maestro's public crates and programs and the same recorded corpora, never the guest crate's private test host. Name every assertion with no public-host equivalent, and agree it before dropping it.
 
 **Test preparation.** maestro-packages runs Maestro's development tool at the locked commit. `development prepare-test-setup` builds the example components and installs the executable and the native test child once per CI run. Nextest setups then export their paths: `MAESTRO_<NAME>_COMPONENT`, `MAESTRO_EXECUTABLE`, `MAESTRO_NATIVE_FIXTURE` and `MAESTRO_GUIDE_COMPONENT`. The tool works in the workspace it runs in:
 

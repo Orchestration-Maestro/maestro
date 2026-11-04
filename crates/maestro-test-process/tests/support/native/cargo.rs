@@ -128,7 +128,11 @@ fn install(args: &[OsString]) -> io::Result<()> {
         "{}",
         words.join(" ")
     )?;
-    let binary = root.join("bin").join(name);
+    let binary = root.join("bin").join(format!(
+        "{}{}",
+        name.to_string_lossy(),
+        std::env::consts::EXE_SUFFIX
+    ));
     std::fs::create_dir_all(
         binary
             .parent()
