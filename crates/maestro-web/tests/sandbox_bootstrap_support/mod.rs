@@ -1,5 +1,6 @@
 //! Prototype bootstrap documents, policies and isolated-frame observations.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::browser_fixture_support::{construct, object};
 use crate::contributions_support::fetch_text;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use js_sys::{Function, Object, Promise, Reflect, Uint8Array};
@@ -305,6 +306,50 @@ pub(crate) async fn observe(html: &str, options: Mount<'_>) -> (serde_json::Valu
     let state = mounted.inspect().await;
     mounted.remove();
     (state, mounted.staged)
+}
+
+/// Mount a bootstrap at the page origin, where its `attribute` is `value`, beside a sibling
+/// frame; once it sends `signal`, check it ignores a load from the sibling and writes one
+/// from its parent.
+pub(crate) async fn loads_only_from_parent(attribute: &str, value: &str, signal: &str) {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let body = document.body().unwrap();
+    let sibling: HtmlIFrameElement = document.create_element("iframe").unwrap().unchecked_into();
+    body.append_child(&sibling).unwrap();
+    let frame: HtmlIFrameElement = document.create_element("iframe").unwrap().unchecked_into();
+    frame.set_attribute(attribute, value).unwrap();
+    let announced = message(&window, &frame, signal, None);
+    body.append_child(&frame).unwrap();
+    announced.await.unwrap();
+    let foreign = sibling.content_window().unwrap();
+    assert!(!writes_load(&frame, &foreign), "load from a sibling window");
+    assert!(writes_load(&frame, &window), "load from the parent window");
+    frame.remove();
+    sibling.remove();
+}
+
+/// Deliver a load message from `source` to the frame and report whether it wrote the code.
+fn writes_load(frame: &HtmlIFrameElement, source: &Window) -> bool {
+    let data =
+        js_sys::JSON::parse(r#"{"type":"sandbox-load","code":"<p id=\"written\"></p>"}"#).unwrap();
+    let event = construct(
+        "MessageEvent",
+        &[
+            &"message".into(),
+            &object(&[("data", &data), ("source", source.as_ref())]),
+        ],
+    );
+    frame
+        .content_window()
+        .unwrap()
+        .dispatch_event(event.unchecked_ref())
+        .unwrap();
+    frame
+        .content_document()
+        .unwrap()
+        .get_element_by_id("written")
+        .is_some()
 }
 
 impl Mounted {

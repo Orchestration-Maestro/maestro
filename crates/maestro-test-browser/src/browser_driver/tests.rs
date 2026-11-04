@@ -139,8 +139,8 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
             .map(|(family, names)| (*family, names.len()))
             .collect::<Vec<_>>(),
         [
-            ("execution", 26),
-            ("loading", 57),
+            ("execution", 27),
+            ("loading", 58),
             ("contributions", 194),
             ("canvas", 69)
         ]
