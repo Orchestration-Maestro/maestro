@@ -870,7 +870,8 @@ path, source freshness and digest, and exports an explicit absolute path for loc
 filtered and archive-remapped runs. Tests never compile or discover a fallback.
 See [Rust test children](test-processes.md) for the complete contract.
 Its native helpers also provide loopback servers, completed child probes,
-executable installation and child-build toolchain selection.
+executable installation, child-build toolchain selection and the caller-owned local
+executor its witnesses drive native futures on.
 
 On Unix the owner applies each isolated child's typed native setup at that child's
 entry: a file creation umask, a process-count limit, a nonterminating file-size

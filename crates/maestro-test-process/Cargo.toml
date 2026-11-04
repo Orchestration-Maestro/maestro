@@ -19,6 +19,7 @@ path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["rt"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["std", "fs", "stdio", "process"] }

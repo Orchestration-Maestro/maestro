@@ -2,9 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_models::{
-    AssistantContent, Message, Model, ModelCost, ModelInput, ToolCall, transform_messages,
-};
+use maestro_models::test_support::target_model;
+use maestro_models::{AssistantContent, Message, ToolCall, transform_messages};
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_test_directory::Scratch;
@@ -44,25 +43,6 @@ fn assistant(arguments: &Value) -> Value {
     })
 }
 
-/// A target model for the projection step.
-fn model() -> Model {
-    Model {
-        id: "target".into(),
-        name: "Target".into(),
-        api: "anthropic-messages".into(),
-        provider: "target-provider".into(),
-        base_url: "https://example.invalid".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec![ModelInput::Text],
-        cost: ModelCost::default(),
-        context_window: 1000.0,
-        max_tokens: 100.0,
-        headers: None,
-        compat: None,
-    }
-}
-
 /// The single call of one assistant message, when it has one.
 fn projected_call(message: &Message) -> Option<&ToolCall> {
     let Message::Assistant(assistant) = message else {
@@ -100,7 +80,7 @@ fn session_history_replays_each_tool_argument_root() {
         assert_eq!(call.arguments, arguments);
         assert_eq!(call.thought_signature.as_deref(), Some("signature"));
     }
-    let projected = transform_messages(&messages, &model(), None);
+    let projected = transform_messages(&messages, &target_model(), None);
     let projected = calls(&projected);
     assert_eq!(projected.len(), roots().len());
     for (call, arguments) in projected.iter().zip(roots()) {

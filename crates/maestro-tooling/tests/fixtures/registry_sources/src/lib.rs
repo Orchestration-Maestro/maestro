@@ -6,4 +6,5 @@ use serde as _;
 use serde_json as _;
 use sha2 as _;
 use signal_hook as _;
+use tokio as _;
 use toml as _;

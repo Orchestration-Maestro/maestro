@@ -41,13 +41,7 @@ pub fn isolated(test: &str) -> bool {
 }
 
 /// Runs native process futures on their caller-owned local executor.
-pub fn run(action: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
-}
+pub use maestro_test_process::executor::run;
 
 /// Installs the prepared native fixture as the program `name` in `directory` and records the
 /// `family` scenario it plays; returns the program's path.

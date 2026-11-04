@@ -6,6 +6,7 @@ mod producer;
 use maestro_extensions::{
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, types::ProviderActions,
 };
+use maestro_extensions_wasmtime::test_support::Releases;
 use maestro_models::{ApiProvider, Cancellation, register_api_provider, unregister_api_providers};
 use serde_json::{Value, json};
 use std::{
@@ -13,29 +14,9 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
-use tokio::sync::{Notify, mpsc};
+use tokio::sync::mpsc;
 
 use crate::model_registered::pending;
-
-/// Effects from real guest callback and destructor calls into application actions.
-#[derive(Default)]
-struct Trace {
-    /// Every distinct call or capture release.
-    labels: RefCell<Vec<String>>,
-    /// Acknowledges native effects without elapsed-time assumptions.
-    changed: Notify,
-}
-impl Trace {
-    /// Wait for actual destruction acknowledgments and reject duplicates or foreign releases.
-    async fn expect(&self, expected: &[&str]) {
-        while self.labels.borrow().len() < expected.len() {
-            self.changed.notified().await;
-        }
-        let mut actual = self.labels.borrow().clone();
-        actual.sort();
-        assert_eq!(actual, expected);
-    }
-}
 
 #[test]
 fn returned_stream_retains_hooks_and_cancellation() {
@@ -68,7 +49,7 @@ pub(super) async fn retained(simple: bool, object_drop: Option<&'static str>) {
         reporter,
     );
     let (owner, runner, events) = super::retained_components::loaded_on(bus.for_extension()).await;
-    let trace = Rc::new(Trace::default());
+    let trace = Rc::new(Releases::default());
     let signal = Cancellation::new();
     bind(&runner, &trace, signal.clone());
     let invocation = start(&owner, &runner, &mut incoming, (simple, object_drop)).await;
@@ -97,7 +78,7 @@ pub(super) async fn retained(simple: bool, object_drop: Option<&'static str>) {
 /// Repeated final owners and every capture release are observed through the retained component.
 async fn observe_releases(
     runner: &ExtensionRunner<Local>,
-    trace: &Trace,
+    trace: &Releases,
     object_drop: Option<&str>,
 ) {
     let output = observe(runner, "observe first").await;
@@ -152,7 +133,7 @@ async fn start(
 }
 
 /// Bind one original signal and observe through independently retained native contexts.
-fn bind(runner: &ExtensionRunner<Local>, trace: &Rc<Trace>, signal: Cancellation) {
+fn bind(runner: &ExtensionRunner<Local>, trace: &Rc<Releases>, signal: Cancellation) {
     let observed = trace.clone();
     runner
         .bind_core(
@@ -160,8 +141,7 @@ fn bind(runner: &ExtensionRunner<Local>, trace: &Rc<Trace>, signal: Cancellation
             ExtensionContextActions {
                 compact: Rc::new(move |options| {
                     let label = options.unwrap().custom_instructions.unwrap();
-                    observed.labels.borrow_mut().push(label);
-                    observed.changed.notify_one();
+                    observed.record(label);
                     Ok(())
                 }),
                 get_signal: Rc::new(move || Ok(Some(signal.clone()))),
