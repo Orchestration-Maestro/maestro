@@ -245,10 +245,10 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 57 loading exports, 194 contribution exports and 38 canvas
+26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
 exports. Packaging also builds the two runtime-module fixtures, each from its own
-manifest and lock with its own binding glue, into a copy of the fixture package. It builds the
-prototype sandbox runtime the same way, with classic-script glue
+manifest and lock with its own binding glue, into a copy of the fixture package.
+It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
 records what they measure. Contribution
@@ -259,7 +259,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 315/315` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 346/346` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -375,9 +375,11 @@ completion is the render signal, so no test here waits on a clock. The native
 report test holds the fixture byte-for-byte, so a template change has to move
 both.
 
-The canvas family covers the session-header, reading, PDF, Markdown and SVG
-artifact, expandable-output, session-link and session-download exports. Five of
-them compile but do not run: each also awaits the screenshot observation
+The canvas family covers every export that reads the page's `#canvas`: the
+session-header, reading, PDF, Markdown and SVG artifact, artifact panel,
+spreadsheet, text and image, generic file, tool renderer, offline tool card,
+expandable-output, session-link and session-download exports. Eight of them
+compile but do not run: each also awaits the screenshot observation
 (`readingPaint`), which the driver does not supply yet.
 [The screenshot test issue](https://github.com/Orchestration-Maestro/maestro/issues/2613)
 tracks it:
@@ -387,10 +389,12 @@ tracks it:
 - `reading_frame_neighbors_keep_existing_paint`
 - `export_rendering_uses_the_selected_brand_roles`
 - `copy_link_native_slot_composition_preserves_reading_selection`
+- `generic_guidance_is_literal_selectable_and_localized`
+- `tool_card_image_and_diff_layout_uses_native_content`
+- `tool_cards_use_selected_brand_roles_without_changing_custom_html`
 
 The driver's inventory test fails when an export in those source files is in
-neither the canvas family nor this list. Offline tool cards are not executed; they
-still depend on the canvas renderer. Transcript execution is tracked separately
+neither the canvas family nor this list. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
