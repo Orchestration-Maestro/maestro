@@ -1334,6 +1334,18 @@ tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
 
+The instrumented child-toolchain probe is an example target of `maestro-tooling`,
+which the test compiles into the run's own target directory and profile:
+
+```sh
+cargo rustc --example child_toolchain_probe -- -C instrument-coverage
+```
+
+It keeps the run's coverage flags and compiler wrapper, so Cargo matches the
+artifact keys of the dependencies the run already built and compiles one file. A
+standalone manifest dropped those flags and rebuilt the dependency closure, whose
+artifact keys then matched nothing the run had built.
+
 A fixture that resolves registry crates reads one offline source configuration.
 The nextest setup `nextest-setup fixture-sources` vendors the crates
 named by `fixtures/registry_sources/Cargo.toml`, at the versions the workspace
