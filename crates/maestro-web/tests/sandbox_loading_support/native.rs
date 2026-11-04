@@ -381,10 +381,7 @@ async fn completions(name: &str, module: &str, window: &JsValue, output: &JsValu
     let projected = js_sys::JSON::parse(&stringify(&completions).unwrap()).unwrap();
     if name.starts_with("repl_error") {
         let last = get(&js_sys::Array::from(&projected).at(-1), "0");
-        assert!(
-            get(&get(&last, "stack"), "length").as_f64() > Some(0.),
-            "{name} native stack"
-        );
+        assert!(has_stack(&last), "{name} native stack");
         set(&last, "stack", &"<native stack>".into());
     }
     equal(
@@ -393,6 +390,13 @@ async fn completions(name: &str, module: &str, window: &JsValue, output: &JsValu
         &format!("{name} completions"),
     );
     equal(&logs, &get(output, "logs"), &format!("{name} diagnostics"));
+}
+
+/// Whether an error carries a nonempty native stack.
+fn has_stack(error: &JsValue) -> bool {
+    get(error, "stack")
+        .as_string()
+        .is_some_and(|stack| !stack.is_empty())
 }
 
 /// The page's own text of a value, as `String(value)` gives it.
@@ -503,21 +507,22 @@ fn completion_callbacks(
 ) -> [Callback; 2] {
     let (first_events, first_mode) = (events.clone(), mode.to_owned());
     let (gate, started) = (gate.clone(), started.clone());
+    // Like an async callback, each records its call before its first wait.
     let first = Closure::<dyn Fn(JsValue) -> js_sys::Promise>::new(move |ok: JsValue| {
-        let (events, mode) = (first_events.clone(), first_mode.clone());
-        let (gate, started) = (gate.clone(), started.clone());
-        wasm_bindgen_futures::future_to_promise(async move {
-            events.push(&js_sys::Array::of2(&"first".into(), &ok));
-            if mode == "reject" {
-                return Err(js_sys::Error::new("callback failure").into());
+        first_events.push(&js_sys::Array::of2(&"first".into(), &ok));
+        match first_mode.as_str() {
+            "reject" => js_sys::Promise::reject(&js_sys::Error::new("callback failure")),
+            "gated" => {
+                started.call0(&JsValue::UNDEFINED).unwrap();
+                let (events, gate) = (first_events.clone(), gate.clone());
+                wasm_bindgen_futures::future_to_promise(async move {
+                    settle(gate.into()).await?;
+                    events.push(&js_sys::Array::of2(&"settled".into(), &ok));
+                    Ok(JsValue::UNDEFINED)
+                })
             }
-            if mode == "gated" {
-                started.call0(&JsValue::UNDEFINED)?;
-                settle(gate.into()).await?;
-                events.push(&js_sys::Array::of2(&"settled".into(), &ok));
-            }
-            Ok(JsValue::UNDEFINED)
-        })
+            _ => js_sys::Promise::resolve(&JsValue::UNDEFINED),
+        }
     });
     let second_events = events.clone();
     let second = Closure::<dyn Fn(JsValue) -> js_sys::Promise>::new(move |ok: JsValue| {
@@ -541,10 +546,7 @@ fn completion_recorders(
     let complete = Closure::<dyn Fn(JsValue, JsValue) -> js_sys::Promise>::new(
         move |error: JsValue, value: JsValue| {
             let message = if error.is_truthy() {
-                assert!(
-                    get(&get(&error, "stack"), "length").as_f64() > Some(0.),
-                    "native stack"
-                );
+                assert!(has_stack(&error), "native stack");
                 get(&error, "message")
             } else {
                 JsValue::NULL
