@@ -10,7 +10,8 @@ use tokio::process::Command;
 
 #[test]
 fn sync_capture_keeps_raw_stdout_status_and_closed_input() {
-    let directory = std::env::temp_dir().canonicalize().unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let directory = owned.path();
     for code in [0, 7] {
         let mut command = async_command(
             child_programs::capture_probe,
@@ -19,7 +20,7 @@ fn sync_capture_keeps_raw_stdout_status_and_closed_input() {
         command
             .args(["literal $HOME;|", "", "literal $HOME;|"])
             .env("MAESTRO_CAPTURE", "chosen")
-            .current_dir(&directory);
+            .current_dir(directory);
         let output = spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
@@ -102,10 +103,14 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
 fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     use maestro_process::SpawnSyncError;
     use std::{error::Error, io};
-    let missing = std::env::temp_dir().join(format!("maestro-missing-{}", std::process::id()));
+    let missing = maestro_test_directory::temporary_root()
+        .join(format!("maestro-missing-{}", std::process::id()));
     for (path, kind) in [
         (missing, io::ErrorKind::NotFound),
-        (std::env::temp_dir(), io::ErrorKind::PermissionDenied),
+        (
+            maestro_test_directory::temporary_root(),
+            io::ErrorKind::PermissionDenied,
+        ),
     ] {
         let native = std::process::Command::new(&path).spawn().unwrap_err();
         let error = spawn_sync(

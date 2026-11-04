@@ -12,7 +12,8 @@ use std::{
 /// Sequence shared by all callers in this process.
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
-/// The platform temporary directory, for tests that observe it without owning it.
+/// The platform temporary directory, for tests that observe it or name a single file in it
+/// without owning the directory.
 #[must_use]
 pub fn temporary_root() -> PathBuf {
     std::env::temp_dir()

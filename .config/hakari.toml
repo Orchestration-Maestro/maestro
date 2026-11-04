@@ -16,6 +16,8 @@ platforms = [
 # unifier lists no wasmtime packages; the test host may build its own copies
 # of shared dependencies.
 [traversal-excludes]
+# Browser qualification never contributes features to native development tools.
+workspace-members = ["maestro-test-browser"]
 # Keep test-only default fonts out of production feature unification.
 third-party = [
     { name = "egui" },

@@ -72,7 +72,7 @@ fn child_toolchain_uses_declared_pin() {
 /// Observe unsanitized default and override failures before using fixture setup.
 fn assert_incomplete_default() {
     let default = Command::new("rustup")
-        .current_dir(std::env::temp_dir())
+        .current_dir(maestro_test_directory::temporary_root())
         .env_remove("RUSTUP_TOOLCHAIN")
         .args(["show", "active-toolchain"])
         .output()
@@ -85,7 +85,9 @@ fn assert_incomplete_default() {
     );
     for selector in [None, Some("incomplete")] {
         let mut compiler = Command::new("rustc");
-        compiler.current_dir(std::env::temp_dir()).arg("--version");
+        compiler
+            .current_dir(maestro_test_directory::temporary_root())
+            .arg("--version");
         compiler.env_remove("RUSTUP_TOOLCHAIN");
         if let Some(selector) = selector {
             compiler.env("RUSTUP_TOOLCHAIN", selector);
@@ -220,7 +222,7 @@ fn child_toolchain_preserves_parent_profile_destination() {
     let output = TestProcess::current("child_toolchain_preserves_parent_profile_destination")
         .unwrap()
         .nocapture()
-        .current_dir(std::env::temp_dir())
+        .current_dir(maestro_test_directory::temporary_root())
         .env(PROBE, "1")
         .env("LLVM_PROFILE_FILE", "parent-%p.profraw")
         .env("RUSTFLAGS", "-C instrument-coverage")

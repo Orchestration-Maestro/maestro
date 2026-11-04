@@ -312,6 +312,8 @@ Server rendering/hydration; another application framework; a new package manager
 
 Development commands (offline test launcher, source launchers, commit hook, asset copying, browser smoke check) live in `maestro-tooling`, which is never shipped, has wiring-only binaries and exposes its library to integration tests.
 
+`maestro-test-browser` owns pinned-browser export and report qualification. This dedicated, unpublished native test crate depends on `maestro-tooling` for preparation, asset copying and locked metadata, with the optional `maestro-path` utility edge. Its test-only browser stack never enters `maestro-tooling` or the development binary. Hakari excludes this member from traversal so browser-only features never enter the native unifier. `just browser-test` invokes its wiring-only binary and single integration target. Its native development dependency on `maestro-test-directory` owns disposable test roots; no product crate depends on this browser qualification owner.
+
 Browser-author preparation and check/build/watch dispatch share that library's command operation. The editable fixture is an independent workspace with its own reviewed adjacent lock and no native path dependencies or build script. A locked native `maestro-theme` example exports presentation files and authored/canonical pack/mark directory observations; the fixture includes those files through `MAESTRO_BROWSER_INPUTS`. Tooling prepares route-specific inputs and absolute-path Trunk JSON configuration under `target/maestro-browser/.author/{library,example,debug}/`, outside replaceable distributions. Trunk alone watches and serves; its pre-build hook repeats the same locked native export. Authored hooks keep their authored working directory, arguments, platform overrides, inherited environment and failure status through the existing development command. Authored watch and ignore paths resolve against that directory. Startup watch roots retain authored roots and include the fixture, default identity and observed pack/mark directories; the generated preparation tree is ignored, and selecting dependencies outside the watched roots requires restarting.
 
 Root preparation, direct fixture checks and Trunk compilation use locked Cargo. Only Trunk's `CARGO` environment points to a wiring-only tooling adapter that adds `--locked` to metadata while preserving literal arguments, diagnostics and exit status; other invocations pass through. Bootstrap the native exporter and adapter from source using the root lock, with artifact locations obtained from locked metadata. Authored source, manifests, locks, identity and borrowed Cargo configuration are never rewritten by preparation or builds. Explicit check formatting alone may format authored Rust. Writes are restricted to Cargo outputs/caches, route preparation and selected distributions; preview needs no author tools and clean removes only the selected distribution.
@@ -379,6 +381,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json`, `maestro-resources` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-directory` | own disposable native test directories | — | 0 |
+| `maestro-test-browser` | qualify browser exports | `maestro-tooling` | 0 |
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
 | `maestro-test-process` | run controlled native test children | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
@@ -717,7 +720,7 @@ workspace member may declare it only as a non-optional normal dependency under
 It never satisfies a required or exact direct dependency and never changes a
 member's layer. The crate is the sole exception to member `serde_json` inheritance;
 the workspace precision declaration and lint inheritance still apply to it.
-Never hand-edit its generated manifest section.
+Never hand-edit its generated manifest section. Hakari excludes `maestro-test-browser` from traversal and managed dependency insertion, keeping its browser-only features out of this crate.
 
 The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
@@ -845,8 +848,8 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-extensions-wasm`, `maestro-extensions-wasmtime`,
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
-`maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-conventions`,
-`maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
+`maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-browser`,
+`maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
@@ -995,7 +998,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 **Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`

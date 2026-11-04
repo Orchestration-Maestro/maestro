@@ -436,7 +436,8 @@ fn digest(bytes: &[u8]) -> String {
 }
 
 /// Lowercase hexadecimal text for `bytes`.
-pub(crate) fn hex(bytes: &[u8]) -> String {
+#[must_use]
+pub fn hex(bytes: &[u8]) -> String {
     bytes.iter().fold(String::new(), |mut text, byte| {
         let _ = write!(text, "{byte:02x}");
         text
