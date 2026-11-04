@@ -84,8 +84,7 @@ impl Placement {
             .iter()
             .position(|known| JsValue::from(known.clone()) == *element);
         let style = *name == "style";
-        if style && index.is_some_and(|index| text == self.styles[index].as_deref()) {
-            let index = index.unwrap_or_default();
+        if let Some(index) = index.filter(|&index| style && text == self.styles[index].as_deref()) {
             self.restored.borrow_mut().push(index);
             let first = self.cleanup && !self.cleanup_fired.get() && index == 0;
             if first && !self.kind.contains("axis") {
@@ -105,7 +104,7 @@ impl Placement {
     }
 }
 
-/// Placement operations that fail once at the selected target, restored when stopped.
+/// Placement operations that fail once at the selected target, restored when stopped or dropped.
 pub(crate) struct PlacementFault {
     /// The shared observation state.
     placement: Rc<Placement>,
@@ -141,13 +140,20 @@ impl PlacementFault {
     }
 
     /// Restore every page operation and return what the fault observed.
-    pub(crate) fn stop(mut self) -> Evidence {
+    pub(crate) fn stop(self) -> Evidence {
+        let placement = Rc::clone(&self.placement);
+        drop(self);
+        Evidence {
+            restored: placement.restored.take(),
+            offsets: placement.offsets.take(),
+        }
+    }
+}
+
+impl Drop for PlacementFault {
+    fn drop(&mut self) {
         while let Some(patch) = self.patches.pop() {
             drop(patch);
-        }
-        Evidence {
-            restored: self.placement.restored.take(),
-            offsets: self.placement.offsets.take(),
         }
     }
 }

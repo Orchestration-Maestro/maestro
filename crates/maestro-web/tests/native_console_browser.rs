@@ -261,7 +261,7 @@ fn assert_localized_update(
     (root, block): (&Element, &ConsoleBlock),
     german_cases: &German,
 ) {
-    let _ = crate::contributions_support::page::select_children(&parts(root).0);
+    crate::contributions_support::page::select_children(&parts(root).0);
     mounted.replace_view(block, german(view));
     assert_eq!(text(&header_label(root)), german_cases.label);
     assert_eq!(

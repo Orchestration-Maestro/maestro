@@ -30,7 +30,10 @@ impl Patch {
         let apply = Closure::<Hook>::new(hook);
         let handler = object(&[("apply", apply.as_ref())]);
         let proxy = js_sys::Proxy::new(original.unchecked_ref(), &handler);
-        js_sys::Reflect::set(&target, &key, &proxy).unwrap();
+        assert!(
+            js_sys::Reflect::set(&target, &key, &proxy).unwrap(),
+            "the page refused the {name} replacement"
+        );
         Self {
             target,
             key,

@@ -307,9 +307,9 @@ module, not from JavaScript modules. The `browser_fixture_support::Patch` guard
 replaces one page property and restores its own previous definition when dropped.
 It has four forms: a method (through a proxy whose `apply` trap hands the Rust hook
 the original function, the receiver and the arguments), a getter, an accessor or a
-value. Test-owned observers, such as the
-contribution page's mutation recorders, selections, animation seeks and frame
-intervals, call the page's own objects through `js_sys` and `web_sys`. Sources the
+value. Test-owned observers, such as the contribution page's mutation recorders,
+selections, animation seeks and frame intervals, call the page's own objects
+through `js_sys` and `web_sys`. Sources the
 product runs inside an isolated frame stand in for model or user content, so they
 stay JavaScript or HTML files beside their tests:
 
