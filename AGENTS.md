@@ -81,11 +81,16 @@ Under `crates/*/src`, `#![cfg(test)]` files must be named `tests.rs` or be below
 `tests` directory. Modules named `tests` require `#[cfg(test)]`, every
 `#[cfg(test)]` module must be named `tests`, and test modules cannot use `#[path]`.
 These layout conventions support production line counting.
-Conventions reject exact duplicate production function bodies of at least 30
-interior tokens, ignoring only whitespace and comments. Parsed test scopes, test
-layouts and the existing generated catalog/binding sources are excluded; macro
-expansions and unparsed fragments are not checked, and compound configurations
-are not evaluated. There are no suppressions or baseline. See
+Conventions compare test code with the duplicate check in fixture workspaces:
+token-identical authored test bodies in `tests/` files and inline `#[cfg(test)]`
+modules are reported the same way production copies are, and only the existing
+generated catalog/binding sources stay excluded. The workspace check keeps its
+production-only scope until the remaining test-support copies move to their
+owners: `.github/ci.toml`'s `[conventions] duplicate_test_bodies = false` holds
+the scope, and removing it turns authored test bodies into workspace candidates.
+The rule keeps its 30-interior-token threshold, ignores only whitespace and
+comments, does not check macro expansions or unparsed fragments, and does not
+evaluate compound configurations. There are no suppressions or baseline. See
 [quality checks](docs/architecture.md#quality-checks) for matching and diagnostics.
 Duplicate assertions are a review judgement.
 Conventions reject a platform temporary directory that test code in a migrated

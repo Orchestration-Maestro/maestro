@@ -9,7 +9,7 @@ use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
-    schema::{ErrorBody, ResponseResult, SplitDirection},
+    schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection},
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use maestro_workspace::{
@@ -17,7 +17,7 @@ use maestro_workspace::{
     terminal_id::TerminalId,
     workspace::WorktreeSpaceMembership,
 };
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::{sync::Arc, time::Instant};
 
 /// Daemon owner with a deterministic identity clock.
@@ -150,6 +150,14 @@ pub fn root_pane(app: &TestApp, workspace: usize) -> PaneId {
     app.state.topology.workspaces[workspace].tabs[0].root_pane
 }
 
+/// A daemon with one workspace whose first tab holds a pane on the left and one on the right.
+pub fn pair() -> (TestApp, PaneId, PaneId) {
+    let mut app = daemon_with_workspaces(&["/one"]);
+    let left = root_pane(&app, 0);
+    let right = split_pane(&mut app, 0, left, SplitDirection::Right);
+    (app, left, right)
+}
+
 /// Paths below an agent directory nothing reads or writes.
 pub fn untouched_paths() -> DaemonPaths {
     DaemonPaths::new("/nonexistent-maestro-agent-dir", None).unwrap()
@@ -167,6 +175,20 @@ pub fn command(wire: Value) -> RpcCommand {
 }
 
 /// Answers the wire-form `command` through the daemon's handler.
+/// Answers `wire`, which must succeed with the plain acknowledgement.
+pub fn accepted(app: &mut TestApp, wire: Value) {
+    let text = wire.to_string();
+    assert_eq!(request(app, wire), Ok(ResponseResult::Ok {}), "{text}");
+}
+
+/// The pane record `pane.get` returns for the pane the workspace owns.
+pub fn pane_record(app: &mut TestApp, pane: &str) -> PaneInfo {
+    match request(app, json!({"type": "pane.get", "pane_id": pane})) {
+        Ok(ResponseResult::PaneInfo { pane }) => pane,
+        other => panic!("expected a pane: {other:?}"),
+    }
+}
+
 pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     block_on(answer(app, wire))
 }

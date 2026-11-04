@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use ra_ap_rustc_lexer::TokenKind;
 use syn::{spanned::Spanned, visit::Visit};
 
+use std::path::Path;
+
 use crate::source::{Member, Source, cfg_test, inherit_test_context, test_layout};
 
 /// Exact lexical identity, with nested delimiters represented by interned children.
@@ -102,7 +104,7 @@ impl<'a> Tokens<'a> {
     }
 }
 
-/// Collect eligible function bodies using the source owner's parsed test context.
+/// Collect parsed function bodies for the workspace-wide identity index.
 struct Bodies<'a> {
     /// Source path used in diagnostics.
     source: &'a Source,
@@ -110,16 +112,18 @@ struct Bodies<'a> {
     blocks: HashMap<usize, (usize, usize)>,
     /// All eligible authored locations, grouped by exact token identity and count.
     sites: &'a mut HashMap<usize, (usize, Vec<String>)>,
+    /// Whether test-owned bodies join the comparison while the workspace still scopes out test code.
+    include_tests: bool,
     /// Inherited explicit test configuration.
     testing: bool,
 }
 
 impl Bodies<'_> {
-    /// Retain a production function's source location once it reaches the threshold.
+    /// Retain a function's source location once it reaches the threshold.
     fn body(&mut self, signature: &syn::Signature, block: &syn::Block) {
-        if !self.testing
-            && let Some(&(id, count)) = self.blocks.get(&block.span().byte_range().start)
+        if let Some(&(id, count)) = self.blocks.get(&block.span().byte_range().start)
             && count >= 30
+            && (self.include_tests || !self.testing)
         {
             self.sites
                 .entry(id)
@@ -157,8 +161,33 @@ impl<'ast> Visit<'ast> for Bodies<'_> {
     }
 }
 
-/// Reject every exact duplicate group in parsed, hand-written production sources.
-pub(crate) fn check(members: &[Member]) -> Result<(), String> {
+/// Whether the workspace's settings keep test bodies out of the real-workspace rule.
+///
+/// Fixture workspaces carry no settings table, so their authored test code is always
+/// compared; the delivery switch lives in the repository settings the checker already
+/// reads for routed test inputs.
+pub(crate) fn test_bodies_enabled(root: &Path) -> Result<bool, String> {
+    let path = root.join(".github/ci.toml");
+    let table = match std::fs::read_to_string(&path) {
+        Ok(text) => text
+            .parse::<toml::Table>()
+            .map(Some)
+            .map_err(|error| format!("{}: {error}", path.display()))?,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => Err(format!("{}: {error}", path.display()))?,
+    };
+    Ok(table
+        .and_then(|table| {
+            table
+                .get("conventions")
+                .and_then(|conventions| conventions.get("duplicate_test_bodies"))
+                .and_then(toml::Value::as_bool)
+        })
+        .unwrap_or(true))
+}
+
+/// Reject every exact duplicate group in parsed, hand-written sources.
+pub(crate) fn check(members: &[Member], test_bodies_enabled: bool) -> Result<(), String> {
     let mut tokens = Tokens::default();
     let mut sites = HashMap::new();
     for member in members {
@@ -166,8 +195,8 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             let Some(syntax) = &source.syntax else {
                 continue;
             };
-            if test_layout(&source.path, &member.directory)
-                || cfg_test(&syntax.attrs)
+            if (!test_bodies_enabled
+                && (test_layout(&source.path, &member.directory) || cfg_test(&syntax.attrs)))
                 || crate::generated::catalog_source(member, source)
                 || crate::generated::bindings_source(member, source)
             {
@@ -177,6 +206,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 source,
                 blocks: tokens.blocks(&source.contents),
                 sites: &mut sites,
+                include_tests: test_bodies_enabled,
                 testing: false,
             }
             .visit_file(syntax);

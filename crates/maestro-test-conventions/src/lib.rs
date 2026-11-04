@@ -86,11 +86,16 @@ mod time_limits;
 /// workspace feature; test feature unification can hide missing normal precision.
 /// The unifier's own direct `serde_json` entries are exempt from member inheritance.
 ///
-/// Token-identical production function bodies with at least 30 interior tokens
-/// are rejected, with every file/signature-line site reported. Only whitespace
-/// and comments are ignored. Parsed test scopes, test layouts and the existing
-/// generated catalog/binding sources are excluded. Macros are not expanded and
-/// unparsed fragments add no candidates; no suppression or baseline is supported.
+/// Token-identical function bodies with at least 30 interior tokens are
+/// reported with every file/signature-line site. Production code and authored
+/// test code in `tests/` files and inline `#[cfg(test)]` modules share one
+/// identity: a fixture workspace reports copies in any of them, and only the
+/// existing generated catalog/binding sources stay excluded. The workspace check
+/// scopes out test code through the repository settings while the remaining
+/// test-support copies move to their owners; `.github/ci.toml`'s
+/// `conventions.duplicate_test_bodies` turns that scope on. Only whitespace and
+/// comments are ignored, macros are not expanded, unparsed fragments add no
+/// candidates, and no suppression or baseline is supported.
 ///
 /// The shipped extension example tests decode a document member and release every
 /// registration through the example support module, whose release also asserts the
@@ -136,7 +141,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     repetition::check(&members)?;
     quality::check(root, &members)?;
     time_limits::check(&members)?;
-    duplicates::check(&members)?;
+    duplicates::check(&members, duplicates::test_bodies_enabled(root)?)?;
     example_helpers::check(&members)?;
     temp_directories::check(&members)?;
     test_input_routes::check(root, &members)

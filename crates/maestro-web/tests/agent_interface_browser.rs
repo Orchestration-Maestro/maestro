@@ -395,8 +395,7 @@ async fn proxied(interface: &AgentInterface, first: &Rc<BrowserSession>) {
 
 /// A user entry saying `text`.
 fn said(text: &str) -> AgentMessage<Browser> {
-    serde_json::from_value(serde_json::json!({"role": "user", "content": text, "timestamp": 1}))
-        .unwrap()
+    crate::support::agent_records::user_entry(text)
 }
 /// An assistant entry with usage.
 fn answered() -> AgentMessage<Browser> {

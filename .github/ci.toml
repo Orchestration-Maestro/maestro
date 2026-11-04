@@ -38,3 +38,9 @@ license_exceptions = [
   # OD-185: test-only egui default fonts
   { package = "epaint_default_fonts", version = "0.36.2", licenses = ["MIT", "OFL-1.1", "Ubuntu-font-1.0"] },
 ]
+
+# Delivered checker scopes. The workspace duplicate check keeps authored test bodies out
+# while the remaining test-support copies move to their owners; the scanner already
+# compares them in fixture workspaces. Enabling the scope removes this key.
+[conventions]
+duplicate_test_bodies = false

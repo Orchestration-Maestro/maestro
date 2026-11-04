@@ -7,6 +7,7 @@
 #![cfg(test)]
 #![cfg(windows)]
 
+use crate::windows_support::drive;
 use std::cell::Cell;
 use std::fs::OpenOptions;
 use std::future::Future;
@@ -20,7 +21,6 @@ use crossterm_winapi::{Console, ConsoleMode, Handle, HandleType, ScreenBuffer, W
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
 use maestro_tui_crossterm::terminal::wait_for_input;
-use tokio::runtime::Builder;
 use tokio::task::LocalSet;
 
 /// The input modes raw mode turns off.
@@ -65,13 +65,6 @@ fn mode(kind: HandleType) -> u32 {
     ConsoleMode::from(Handle::new(kind).unwrap())
         .mode()
         .unwrap()
-}
-
-/// Runs `scenario` on a current-thread runtime with a real clock and a local set.
-fn drive<F: Future<Output = ()>>(scenario: impl FnOnce(Rc<LocalSet>) -> F) {
-    let runtime = Builder::new_current_thread().enable_all().build().unwrap();
-    let local = Rc::new(LocalSet::new());
-    runtime.block_on(local.run_until(scenario(Rc::clone(&local))));
 }
 
 /// Waits on the real clock until `done` holds.

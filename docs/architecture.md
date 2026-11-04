@@ -345,16 +345,21 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
-Conventions reject token-identical production function bodies with at least 30
-interior tokens, including free functions, methods, trait defaults and nested
-functions. Whitespace and comments are ignored; token spelling, literal contents
-and delimiter kinds are preserved. Each diagnostic lists the token count and all
+Conventions compare token-identical function bodies with at least 30 interior
+tokens, including free functions, methods, trait defaults and nested functions,
+across production code and authored test code: a fixture workspace reports copies
+inside `tests/` files and inline `#[cfg(test)]` modules the same way as production
+copies. Whitespace and comments are ignored; token spelling, literal contents and
+delimiter kinds are preserved. Each diagnostic lists the token count and all
 native file paths with one-based signature lines, including same-line sites.
-Parsed `cfg(test)` scopes, test file layouts, the generated model catalog and the
-exact generated guest binding file are excluded. Macro definitions are not
-expanded, but authored invocation tokens inside functions are compared.
-Unparsed fragments produce no candidates; compound configurations are not
-evaluated. There is no baseline, allowlist or suppression attribute.
+Only the generated model catalog and the exact generated guest binding file stay
+excluded. The workspace check keeps its production-only scope while the remaining
+test-support copies move to their owners: the `[conventions]
+duplicate_test_bodies = false` key in `.github/ci.toml` holds that scope, and
+removing it turns authored test bodies into workspace candidates. Macro
+definitions are not expanded, but authored invocation tokens inside functions
+are compared. Unparsed fragments produce no candidates; compound configurations
+are not evaluated. There is no baseline, allowlist or suppression attribute.
 
 The shipped extension example tests share their document decoding and
 registration release in `src/tests/example_support.rs`. That release also asserts

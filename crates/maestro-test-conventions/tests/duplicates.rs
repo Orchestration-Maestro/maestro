@@ -56,14 +56,27 @@ fn copied(body: &str) -> String {
     format!("fn first() {{{body}}}\nfn second() {{{body}}}")
 }
 
+/// Spell the same source through the ordinary, test-file and inline-test layouts.
+fn layouts(source: &str) -> Vec<(&'static str, String)> {
+    vec![
+        ("src/lib.rs", source.to_owned()),
+        ("tests/case.rs", source.to_owned()),
+        (
+            "src/lib.rs",
+            format!("#[cfg(test)]\nmod tests {{\n{source}}}\n"),
+        ),
+    ]
+}
+
 #[test]
 fn threshold_counts_only_interior_tokens() {
     for n in [0, 1, 29, 30, 31] {
-        let source = copied(&";".repeat(n));
-        let result = check(&[member("maestro-settings", &[("src/lib.rs", source)])]);
-        assert_eq!(result.is_err(), n >= 30, "{n}");
-        if n >= 30 {
-            assert!(result.unwrap_err().contains(&format!("({n} tokens)")));
+        for (path, source) in layouts(&copied(&";".repeat(n))) {
+            let result = check(&[member("maestro-settings", &[(path, source)])]);
+            assert_eq!(result.is_err(), n >= 30, "{n} {path}");
+            if n >= 30 {
+                assert!(result.unwrap_err().contains(&format!("({n} tokens)")));
+            }
         }
     }
 }
@@ -73,25 +86,59 @@ fn whitespace_and_comments_preserve_body_identity() {
     let a = "foo(value);".repeat(6);
     let b = "foo /* outer /* inner */ outer */ ( value ) ; // tail\n".repeat(6);
     let source = format!("fn first() {{{a}}}\nfn second() {{{b}}}");
-    assert!(check(&[member("maestro-settings", &[("src/lib.rs", source)])]).is_err());
+    for (path, source) in layouts(&source) {
+        assert!(
+            check(&[member("maestro-settings", &[(path, source)])]).is_err(),
+            "{path}"
+        );
+    }
 }
+
+/// Spellings whose kinds differ from the original's: identifier, name, raw name, number
+/// literal, delimiter, questionable literal, raw literal and byte literal variants.
+const SPOKEN_KINDS: [&str; 11] = [
+    "bar(value);",
+    "foo(other);",
+    "foo(r#value);",
+    "foo(1);",
+    "foo[ value ];",
+    "foo{value};",
+    "foo(value)?;",
+    "foo(\"// text\");",
+    "foo(\"/* text */\");",
+    "foo(b\"a\");",
+    "foo(r#\"a\"#);",
+];
+
+/// The same spellings with one extended pair the layout loop adds.
+const EXTENDED_KINDS: [&str; 13] = [
+    "bar(value);",
+    "foo(other);",
+    "foo(r#value);",
+    "foo(1);",
+    "foo[ value ];",
+    "foo{value};",
+    "foo(value)?;",
+    "foo(\"// text\");",
+    "foo(\"/* text */\");",
+    "foo(b\"a\");",
+    "foo(r#\"a\"#);",
+    "foo(1u8);",
+    "foo((1));",
+];
 
 #[test]
 fn token_spelling_and_delimiters_remain_distinct() {
+    ordinary_unequal_pairs_stay_accepted();
+    laid_out_unequal_pairs_stay_accepted();
+    unequal_literal_arguments_stay_accepted();
+    lookalike_literals_stay_duplicates();
+}
+
+/// Every changed spelling keeps its identical original accepted in ordinary source.
+fn ordinary_unequal_pairs_stay_accepted() {
     let original = "foo(value);".repeat(6);
-    for change in [
-        "bar(value);",
-        "foo(other);",
-        "foo(r#value);",
-        "foo(1);",
-        "foo[ value ];",
-        "foo{value};",
-        "foo(value)?;",
-        "foo(\"// text\");",
-        "foo(\"/* text */\");",
-        "foo(b\"a\");",
-        "foo(r#\"a\"#);",
-    ] {
+    for change in SPOKEN_KINDS {
         let source = format!(
             "fn first() {{{original}}}\nfn second() {{{}}}",
             change.repeat(6)
@@ -101,7 +148,44 @@ fn token_spelling_and_delimiters_remain_distinct() {
             "{change}"
         );
     }
-    for (a, b) in [
+}
+
+/// The same unequal pairs stay accepted, one workspace per layout, when the only
+/// spelling places them in test code. Each pair gets its own argument name, so no
+/// body of one pair equals any body of another pair inside one workspace.
+fn laid_out_unequal_pairs_stay_accepted() {
+    for inline in [false, true] {
+        let source: String = EXTENDED_KINDS
+            .iter()
+            .enumerate()
+            .map(|(index, change)| {
+                let name = format!("tag{index}");
+                let original = "foo(tagX);".repeat(6).replace("tagX", &name);
+                let spelled = change.repeat(6).replace("value", &name);
+                format!(
+                    "fn pair_{index}_first() {{{original}}}\nfn pair_{index}_second() {{{spelled}}}\n"
+                )
+            })
+            .collect::<Vec<_>>()
+            .concat();
+        let (path, source) = if inline {
+            (
+                "src/lib.rs",
+                format!("#[cfg(test)]\nmod tests {{\n{source}}}\n"),
+            )
+        } else {
+            ("tests/case.rs", source)
+        };
+        assert!(
+            check(&[member("maestro-settings", &[(path, source)])]).is_ok(),
+            "unequal pairs stay accepted in {path}"
+        );
+    }
+}
+
+/// Literal spellings that differ between the two argument pairs stay accepted.
+fn unequal_literal_arguments_stay_accepted() {
+    for (index, (a, b)) in [
         ("1", "2"),
         ("1u8", "1"),
         ("1_000", "1000"),
@@ -112,9 +196,12 @@ fn token_spelling_and_delimiters_remain_distinct() {
         ("b\"a\"", "b\"b\""),
         ("b\"// x\"", "b\"//x\""),
         ("'é'", "'x'"),
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let source = format!(
-            "fn first() {{{}}} fn second() {{{}}}",
+            "fn field_{index}_first() {{{}}} fn field_{index}_second() {{{}}}",
             format!("foo({a});").repeat(6),
             format!("foo({b});").repeat(6)
         );
@@ -123,8 +210,21 @@ fn token_spelling_and_delimiters_remain_distinct() {
             "{a}/{b}"
         );
     }
+}
+
+/// Identical copies carrying comment-like literal text stay duplicates in every layout.
+fn lookalike_literals_stay_duplicates() {
     let source = copied(&"foo(\"// text\");foo(r#\"/* text */\"#);foo('é');foo(1u8);".repeat(2));
     assert!(check(&[member("maestro-settings", &[("src/lib.rs", source)])]).is_err());
+    for (path, source) in layouts(&copied(
+        &"foo(\"// text\");foo(r#\"a\"#);foo('é');foo(1u8);".repeat(2),
+    )) {
+        let error = check(&[member("maestro-settings", &[(path, source)])]).unwrap_err();
+        assert!(
+            error.starts_with("exact duplicate body") && error.contains(path),
+            "{path} {error}"
+        );
+    }
 }
 
 #[test]
@@ -132,6 +232,11 @@ fn signatures_and_bindings_do_not_exempt_exact_bodies() {
     let body = "foo(value);".repeat(6);
     let source = format!(
         "mod a {{ fn foo() {{}} fn first() {{{body}}} }} mod b {{ fn foo(_:u8) {{}} pub fn second<T>(_: T) {{{body}}} }}"
+    );
+    let error = check(&[member("maestro-settings", &[("src/lib.rs", source)])]).unwrap_err();
+    assert!(error.contains("30 tokens"));
+    let source = format!(
+        "#[cfg(test)] fn first() {{{body}}} #[cfg(test)] pub fn second<T>(_: T) {{{body}}}"
     );
     let error = check(&[member("maestro-settings", &[("src/lib.rs", source)])]).unwrap_err();
     assert!(error.contains("30 tokens"));
@@ -179,12 +284,207 @@ fn free_associated_default_and_nested_bodies_are_checked() {
                 .replace('/', std::path::MAIN_SEPARATOR_STR)
         )
     );
+    let body = "let _ = 1;".repeat(6);
+    let source = format!(
+        "#[cfg(test)]\nmod tests {{\nfn free() {{{body}}}\nstruct X;\nimpl X {{\n fn method() {{{body}}}\n}}\ntrait T {{\n fn declaration();\n fn defaulted() {{{body}}}\n}}\nfn outer() {{\n fn nested() {{{body}}}\n}}\n}}"
+    );
+    let error = check(&[member("maestro-settings", &[("src/lib.rs", source)])]).unwrap_err();
+    let owned = [3, 6, 10, 13].map(|line| format!("crates/maestro-settings/src/lib.rs:{line}"));
+    assert_eq!(
+        error,
+        format!(
+            "exact duplicate body (30 tokens): {}",
+            owned.join(", ").replace('/', std::path::MAIN_SEPARATOR_STR)
+        )
+    );
 }
 
 #[test]
-fn parsed_test_scopes_do_not_hide_production_neighbours() {
+fn copied_test_helper_fails_until_callers_delegate() {
+    let body = "let _ = 1;".repeat(6);
+    // One seed puts the shared owner beside a copy in a test file.
+    let error = check(&[member(
+        "maestro-settings",
+        &[
+            ("src/lib.rs", format!("pub fn shared() {{{body}}}")),
+            ("tests/case.rs", format!("pub fn imitation() {{{body}}}")),
+        ],
+    )])
+    .unwrap_err();
+    assert_eq!(
+        error,
+        "exact duplicate body (30 tokens): crates/maestro-settings/src/lib.rs:1, crates/maestro-settings/tests/case.rs:1"
+            .replace('/', std::path::MAIN_SEPARATOR_STR)
+    );
+    assert_eq!(
+        check(&[member(
+            "maestro-settings",
+            &[
+                ("src/lib.rs", format!("pub fn shared() {{{body}}}")),
+                ("tests/case.rs", "pub fn imitation() { shared(); }".into()),
+            ],
+        )]),
+        Ok(())
+    );
+    // One seed puts the shared owner beside a copy in an inline test module.
+    let seeded = format!(
+        "pub fn shared() {{{body}}}\n#[cfg(test)]\nmod tests {{\npub fn imitation() {{{body}}}\n}}"
+    );
+    let error = check(&[member("maestro-settings", &[("src/lib.rs", seeded)])]).unwrap_err();
+    assert_eq!(
+        error,
+        "exact duplicate body (30 tokens): crates/maestro-settings/src/lib.rs:1, crates/maestro-settings/src/lib.rs:4"
+            .replace('/', std::path::MAIN_SEPARATOR_STR)
+    );
+    let delegated = format!(
+        "pub fn shared() {{{body}}}\n#[cfg(test)]\nmod tests {{\npub fn imitation() {{ shared(); }}\n}}"
+    );
+    assert_eq!(
+        check(&[member("maestro-settings", &[("src/lib.rs", delegated)])]),
+        Ok(())
+    );
+}
+
+#[test]
+fn test_bodies_compare_across_workspace_packages() {
+    let body = "let _ = 1;".repeat(6);
+    let error = check(&[
+        member(
+            "maestro-json",
+            &[("tests/case.rs", format!("pub fn imitation() {{{body}}}"))],
+        ),
+        member(
+            "maestro-settings",
+            &[("tests/case.rs", format!("pub fn imitation() {{{body}}}"))],
+        ),
+    ])
+    .unwrap_err();
+    assert!(
+        error.starts_with("exact duplicate body (30 tokens): "),
+        "{error}"
+    );
+    assert!(error.contains(&support::native_path_text(
+        "crates/maestro-json/tests/case.rs:1"
+    )));
+    assert!(error.contains(&support::native_path_text(
+        "crates/maestro-settings/tests/case.rs:1"
+    )));
+    // One changed body plus a shared owner with delegating callers stays accepted.
+    assert_eq!(
+        check(&[
+            member(
+                "maestro-json",
+                &[
+                    ("src/lib.rs", format!("pub fn shared() {{{body}}}")),
+                    ("tests/case.rs", "pub fn user() { shared(); }".into()),
+                ],
+            ),
+            member(
+                "maestro-settings",
+                &[("src/others.rs", "pub fn unrelated() { let _ = 2; }".into())],
+            ),
+        ]),
+        Ok(())
+    );
+}
+
+#[test]
+fn test_and_production_bodies_share_one_identity_index() {
+    production_beside_test_file();
+    production_beside_inline_test_code();
+    support_beside_another_package_test();
+}
+
+/// Ordinary production code beside a package's test file.
+fn production_beside_test_file() {
+    let body = "let _ = 1;".repeat(6);
+    let error = check(&[
+        member(
+            "maestro-json",
+            &[("src/lib.rs", format!("pub fn pinned() {{{body}}}"))],
+        ),
+        member(
+            "maestro-models",
+            &[("tests/case.rs", format!("pub fn reproduction() {{{body}}}"))],
+        ),
+    ])
+    .unwrap_err();
+    assert!(
+        error.starts_with("exact duplicate body (30 tokens): "),
+        "{error}"
+    );
+    assert!(error.contains(&support::native_path_text(
+        "crates/maestro-json/src/lib.rs:1"
+    )));
+    assert!(error.contains(&support::native_path_text(
+        "crates/maestro-models/tests/case.rs:1"
+    )));
+}
+
+/// Ordinary production code beside inline test code, with the packages reversed.
+fn production_beside_inline_test_code() {
+    let body = "let _ = 1;".repeat(6);
+    let error = check(&[
+        member(
+            "maestro-json",
+            &[(
+                "src/own.rs",
+                format!("#[cfg(test)]\npub fn gated() {{{body}}}"),
+            )],
+        ),
+        member(
+            "maestro-models",
+            &[("src/ordinary.rs", format!("pub fn common() {{{body}}}"))],
+        ),
+    ])
+    .unwrap_err();
+    assert!(
+        error.starts_with("exact duplicate body (30 tokens): "),
+        "{error}"
+    );
+    assert!(error.contains(&support::native_path_text(
+        "crates/maestro-json/src/own.rs:2"
+    )));
+    assert!(error.contains(&support::native_path_text(
+        "crates/maestro-models/src/ordinary.rs:1"
+    )));
+}
+
+/// A test-support library beside another package's test, then reversed.
+fn support_beside_another_package_test() {
+    let body = "let _ = 1;".repeat(6);
+    for (support_member, test_member) in [
+        ("maestro-test-fixtures", "maestro-models"),
+        ("maestro-models", "maestro-test-fixtures"),
+    ] {
+        let error = check(&[
+            member(
+                support_member,
+                &[("src/lib.rs", format!("pub fn helper() {{{body}}}"))],
+            ),
+            member(
+                test_member,
+                &[("tests/case.rs", format!("pub fn reproduction() {{{body}}}"))],
+            ),
+        ])
+        .unwrap_err();
+        assert!(
+            error.starts_with("exact duplicate body (30 tokens): "),
+            "{error}"
+        );
+        assert!(error.contains(&support::native_path_text(&format!(
+            "crates/{support_member}/src/lib.rs:1"
+        ))));
+        assert!(error.contains(&support::native_path_text(&format!(
+            "crates/{test_member}/tests/case.rs:1"
+        ))));
+    }
+}
+
+#[test]
+fn parsed_test_scopes_are_checked_without_hiding_neighbours() {
     let body = "foo(value);".repeat(6);
-    let exclusions = [
+    let scopes = [
         format!("#[cfg(test)] fn hidden() {{{body}}}"),
         format!("#[cfg(test)] mod tests {{ fn hidden() {{{body}}} }}"),
         format!("#[cfg(test)] impl X {{ fn hidden() {{{body}}} }}"),
@@ -194,22 +494,20 @@ fn parsed_test_scopes_do_not_hide_production_neighbours() {
         format!("impl X {{ #[cfg(test)] const C: () = {{ fn hidden() {{{body}}} }}; }}"),
         format!("trait T {{ #[cfg(test)] const C: () = {{ fn hidden() {{{body}}} }}; }}"),
     ];
-    for excluded in exclusions {
-        let source = format!("fn visible() {{{body}}} {excluded}");
+    for scope in scopes {
+        let source = format!("fn visible() {{{body}}} {scope}");
         assert!(
             check(&[member(
                 "maestro-settings",
                 &[("src/lib.rs", source.clone())]
             )])
-            .is_ok()
+            .is_err(),
+            "the test-owned copy is checked beside production syntax: {scope}"
         );
-        let with_neighbour = format!("{source} fn neighbour() {{{body}}}");
+        let following = format!("{scope} fn neighbour() {{{body}}}");
         assert!(
-            check(&[member(
-                "maestro-settings",
-                &[("src/lib.rs", with_neighbour)]
-            )])
-            .is_err()
+            check(&[member("maestro-settings", &[("src/lib.rs", following)])]).is_err(),
+            "an ordinary neighbour after a test-owned item stays checked: {scope}"
         );
     }
     let source = format!(
@@ -219,24 +517,31 @@ fn parsed_test_scopes_do_not_hide_production_neighbours() {
 }
 
 #[test]
-fn test_layout_and_file_attributes_are_excluded() {
+fn test_layout_and_file_attributes_are_checked() {
     let body = copied(&";".repeat(30));
     for path in ["src/tests.rs", "src/tests/case.rs", "tests/case.rs"] {
-        assert!(check(&[member("maestro-settings", &[(path, body.clone())])]).is_ok());
+        let result = check(&[member("maestro-settings", &[(path, body.clone())])]);
+        assert!(
+            result.unwrap_err().starts_with("exact duplicate body"),
+            "{path}"
+        );
     }
     assert!(
         check(&[member(
             "maestro-settings",
             &[("examples/test.rs", format!("#![cfg(test)]\n{body}"))]
         )])
-        .is_ok()
+        .unwrap_err()
+        .starts_with("exact duplicate body"),
+        "a file-level test attribute stays parsed"
     );
     assert!(
         check(&[member(
             "maestro-settings",
             &[("examples/example.rs", body.clone())]
         )])
-        .is_err()
+        .unwrap_err()
+        .starts_with("exact duplicate body")
     );
     assert!(
         check(&[member(
@@ -246,7 +551,9 @@ fn test_layout_and_file_attributes_are_excluded() {
                 format!("#[cfg(any(test, feature = \"x\"))]\n{body}")
             )]
         )])
-        .is_err()
+        .unwrap_err()
+        .starts_with("exact duplicate body"),
+        "compound configurations stay parsed"
     );
 }
 
@@ -258,6 +565,14 @@ fn generated_exclusions_keep_exact_owner_and_path() {
         ("maestro-extensions-wasm", "src/bindings.rs"),
     ] {
         assert!(check(&[member(name, &[(path, body.clone())])]).is_ok());
+    }
+    // A generated owner stays excluded while its bodies carry test attributes.
+    for (name, path) in [
+        ("maestro-models", "src/catalog/models_generated/records.rs"),
+        ("maestro-extensions-wasm", "src/bindings.rs"),
+    ] {
+        let body = format!("#[cfg(test)]\n{body}");
+        assert!(check(&[member(name, &[(path, body)])]).is_ok());
     }
     for (name, path) in [
         ("maestro-settings", "src/bindings.rs"),
@@ -291,20 +606,44 @@ fn generated_exclusions_keep_exact_owner_and_path() {
 #[test]
 fn macro_definitions_are_not_expanded_but_invocation_bodies_are_checked() {
     let body = "foo(value);".repeat(6);
-    let source = format!(
-        "fn visible() {{{body}}} macro_rules! emitted {{ () => {{ fn hidden() {{{body}}} }} }} emitted!();"
-    );
-    assert!(check(&[member("maestro-settings", &[("src/lib.rs", source)])]).is_ok());
-    let source = copied(&"invoke!({value});".repeat(6));
-    assert!(check(&[member("maestro-settings", &[("src/lib.rs", source)])]).is_err());
+    for path in ["src/lib.rs", "tests/case.rs"] {
+        let source = format!(
+            "fn visible() {{{body}}} macro_rules! emitted {{ () => {{ fn hidden() {{{body}}} }} }} emitted!();"
+        );
+        assert!(
+            check(&[member("maestro-settings", &[(path, source)])]).is_ok(),
+            "{path}"
+        );
+        let source = copied(&"invoke!({value});".repeat(6));
+        assert!(
+            check(&[member("maestro-settings", &[(path, source)])]).is_err(),
+            "{path}"
+        );
+    }
 }
 
 #[test]
 fn unparsed_fragments_do_not_create_function_candidates() {
-    let source = format!("{{ {} }}", copied(&";".repeat(30)));
-    let m = member("maestro-settings", &[("src/fragment.rs", source)]);
-    assert!(syn::parse_file(&m.files[0].1).is_err());
-    assert!(check(&[m]).is_ok());
+    let ordinary_source = format!("{{ {} }}", copied(&";".repeat(30)));
+    let ordinary = member(
+        "maestro-settings",
+        &[("src/fragment.rs", ordinary_source.clone())],
+    );
+    assert!(syn::parse_file(&ordinary.files[0].1).is_err());
+    assert!(check(&[ordinary]).is_ok());
+    let owned = member(
+        "maestro-settings",
+        &[("tests/case.rs", ordinary_source.clone())],
+    );
+    assert!(check(&[owned]).is_ok());
+    let both = member(
+        "maestro-settings",
+        &[
+            ("tests/case.rs", ordinary_source.clone()),
+            ("src/fragment.rs", ordinary_source),
+        ],
+    );
+    assert!(check(&[both]).is_ok());
 }
 
 #[test]
@@ -318,6 +657,7 @@ fn diagnostics_include_every_site() {
                 "src/a.rs",
                 format!("fn second() {{{body}}} fn third() {{{body}}}"),
             ),
+            ("tests/case.rs", format!("fn fifth() {{{body}}}")),
         ],
     );
     let b = member(
@@ -325,7 +665,7 @@ fn diagnostics_include_every_site() {
         &[("src/lib.rs", format!("fn fourth() {{{body}}}"))],
     );
     let extra = member("maestro-lock", &[("src/lib.rs", copied(&";".repeat(31)))]);
-    let expected = "exact duplicate body (30 tokens): crates/maestro-json/src/lib.rs:1, crates/maestro-settings/src/a.rs:1, crates/maestro-settings/src/a.rs:1, crates/maestro-settings/src/b.rs:2\nexact duplicate body (31 tokens): crates/maestro-lock/src/lib.rs:1, crates/maestro-lock/src/lib.rs:2";
+    let expected = "exact duplicate body (30 tokens): crates/maestro-json/src/lib.rs:1, crates/maestro-settings/src/a.rs:1, crates/maestro-settings/src/a.rs:1, crates/maestro-settings/src/b.rs:2, crates/maestro-settings/tests/case.rs:1\nexact duplicate body (31 tokens): crates/maestro-lock/src/lib.rs:1, crates/maestro-lock/src/lib.rs:2";
     assert_eq!(
         check(&[a, b, extra]),
         Err(expected.replace('/', std::path::MAIN_SEPARATOR_STR))
@@ -336,20 +676,33 @@ fn diagnostics_include_every_site() {
 fn normalized_sources_keep_duplicate_locations() {
     let workspace = support::Workspace::new();
     workspace.foundation(&["maestro-settings"]);
-    let path = workspace
+    let ordinary = workspace
         .root
         .path()
         .join(support::native_path("crates/maestro-settings/src/lib.rs"));
+    let owned = workspace
+        .root
+        .path()
+        .join(support::native_path("crates/maestro-settings/src/tests.rs"));
     let body = "let _ = 1;".repeat(6);
     std::fs::write(
-        &path,
+        &ordinary,
         format!("\u{feff}//! Header.\r\nfn first() {{{body}}}\r\nfn second() {{{body}}}\r\n"),
     )
     .unwrap();
+    std::fs::write(
+        &owned,
+        format!(
+            "\u{feff}//! Suite.\r\n#[cfg(test)]\r\nmod tests {{\r\npub fn first() {{{body}}}\r\npub fn second() {{{body}}}\r\n}}\r\n"
+        ),
+    )
+    .unwrap();
     let expected = format!(
-        "exact duplicate body (30 tokens): {}:2, {}:3",
-        path.display(),
-        path.display()
+        "exact duplicate body (30 tokens): {}:2, {}:3, {}:4, {}:5",
+        ordinary.display(),
+        ordinary.display(),
+        owned.display(),
+        owned.display()
     );
     assert_eq!(check_workspace(workspace.root.path()), Err(expected));
 }
@@ -374,6 +727,21 @@ fn shebang_sources_keep_duplicate_coordinates_and_shared_owner_control() {
             Ok(())
         );
     }
+    let body = "let _ = 1;".repeat(6);
+    let source = format!("#!/usr/bin/env rustx\n{}", copied(&body));
+    let error = check(&[member("maestro-settings", &[("tests/case.rs", source)])]).unwrap_err();
+    assert_eq!(
+        error,
+        "exact duplicate body (30 tokens): crates/maestro-settings/tests/case.rs:2, crates/maestro-settings/tests/case.rs:3"
+            .replace('/', std::path::MAIN_SEPARATOR_STR)
+    );
+    let source = format!(
+        "#!/usr/bin/env rustx\nfn owner() {{{body}}} fn first() {{owner();}} fn second() {{owner();}}"
+    );
+    assert_eq!(
+        check(&[member("maestro-settings", &[("tests/case.rs", source)])]),
+        Ok(())
+    );
 }
 
 #[test]

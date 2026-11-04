@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(windows)]
 
+use crate::windows_support::drive;
 use std::cell::RefCell;
 use std::future::Future;
 use std::io::{self, BufRead, BufReader, Read, Write};
@@ -15,8 +16,6 @@ use maestro_test_process::TestProcess;
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
 use maestro_tui_crossterm::terminal::wait_for_input;
-use tokio::runtime::Builder;
-use tokio::task::LocalSet;
 
 /// Marks the copy whose standard input is the pipe under test.
 const ROLE: &str = "MAESTRO_TERMINAL_TEST_PIPE";
@@ -67,13 +66,6 @@ fn with_pipe(test: &str, bytes: &[u8], eof: bool, scenario: impl FnOnce()) {
             Ok(())
         })
         .unwrap();
-}
-
-/// Drives the terminal on a caller-owned local runtime.
-fn drive<F: Future<Output = ()>>(scenario: impl FnOnce(Rc<LocalSet>) -> F) {
-    let runtime = Builder::new_current_thread().enable_all().build().unwrap();
-    let local = Rc::new(LocalSet::new());
-    runtime.block_on(local.run_until(scenario(Rc::clone(&local))));
 }
 
 /// Starts input collection on an existing terminal.

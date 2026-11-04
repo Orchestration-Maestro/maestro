@@ -3,30 +3,25 @@
 //! Each program is an ignored test that only a parent test selects. Its arguments are
 //! variables, and it ends through `std::process::exit` so no harness epilogue follows its
 //! output. The harness writes the start bytes to standard output before the program runs.
-use maestro_test_process::TestProcess;
 use maestro_test_process::child::{
-    Stream, announce, close_streams, connect, leave, port, read_input, receive, variable,
-    write_stderr, write_stdout,
+    Stream, announce, close_streams, connect, hex_variable, leave, port, read_input, receive,
+    test_child_command, variable, write_stderr, write_stdout,
 };
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Command, Stdio};
 
-/// The command that runs `program` with `variables` added to its environment.
+/// The command the owner builds for the checked child `program` with `variables` added.
 pub(crate) fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command {
-    TestProcess::child(program)
-        .unwrap()
-        .envs(variables.iter().copied())
-        .command()
-        .unwrap()
+    test_child_command(program, variables).unwrap()
 }
 
-/// [`command`] as the asynchronous command the owner takes.
+/// [`command`](children::command) as the asynchronous command the owner takes.
 pub(crate) fn async_command(
     program: impl Fn(),
     variables: &[(&str, &str)],
 ) -> tokio::process::Command {
-    command(program, variables).into()
+    test_child_command(program, variables).unwrap().into()
 }
 
 /// A connection to the port variable `name` names on this host.
@@ -41,7 +36,7 @@ fn connect_to(name: &str) -> TcpStream {
 fn spawn_linked_child(program: impl Fn(), variables: &[(&str, &str)]) -> u32 {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port().to_string();
-    let mut command = command(program, variables);
+    let mut command = test_child_command(program, variables).unwrap();
     command
         .env("CHILD_LINK_PORT", &port)
         .stdin(Stdio::inherit());
@@ -133,21 +128,13 @@ pub(crate) fn inherited_output_descendant() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub(crate) fn output_writer() {
-    write_stderr(&hex_field("CHILD_ERR")).unwrap();
-    write_stdout(&hex_field("CHILD_OUT")).unwrap();
+    write_stderr(&hex_variable("CHILD_ERR").unwrap()).unwrap();
+    write_stdout(&hex_variable("CHILD_OUT").unwrap()).unwrap();
     if let Ok(number) = variable("CHILD_SIGNAL") {
         signal_hook::low_level::raise(number.parse().unwrap()).unwrap();
         hold_forever()
     }
     leave(variable("CHILD_EXIT").map_or(0, |code| code.parse().unwrap()))
-}
-
-/// The bytes the hex field `name` holds, empty when the variable is unset.
-fn hex_field(name: &str) -> Vec<u8> {
-    let text = std::env::var(name).unwrap_or_default();
-    (0..text.len() / 2)
-        .map(|at| u8::from_str_radix(&text[at * 2..at * 2 + 2], 16).unwrap())
-        .collect()
 }
 
 /// Writes to standard output until it is killed.
