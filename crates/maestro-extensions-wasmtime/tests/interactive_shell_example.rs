@@ -98,15 +98,17 @@ fn interactive_shell_headless_detection() {
 
 /// Isolates environment configuration without changing another test's process state.
 fn isolated(name: &str, environment: &[(&str, &str)]) -> bool {
-    if std::env::var_os("MAESTRO_INTERACTIVE_CHILD").is_some() {
+    /// The case that repeats a test with the supplied environment in a cleared child.
+    const CHILD: &str = "isolated";
+    if maestro_test_process::selection().case() == Some(CHILD) {
         return false;
     }
     let component = std::env::var("MAESTRO_INTERACTIVE_SHELL_COMPONENT").unwrap();
     let mut child = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .env_clear()
+        .case(CHILD)
         .env("PATH", "/usr/bin:/bin")
-        .env("MAESTRO_INTERACTIVE_CHILD", "1")
         .env("MAESTRO_INTERACTIVE_SHELL_COMPONENT", component);
     for (key, value) in environment {
         child = child.env(key, value);
@@ -387,7 +389,7 @@ const SHELL_CASES: [ShellCase; 6] = [
 /// Covers inherited descriptors, cwd, force removal, statuses and restoration after failure.
 #[test]
 fn interactive_shell_restores_terminal_and_returns_child_status() {
-    if std::env::var_os("MAESTRO_INTERACTIVE_CHILD").is_none() {
+    if maestro_test_process::selection().case() != Some("isolated") {
         for env in [
             &[][..],
             &[("SHELL", "")][..],

@@ -621,12 +621,11 @@ fn local_remove_has_no_filesystem_or_command_effect() {
     assert_eq!(phases[1], (Phase::Complete, None));
 }
 
-/// Marks the child process of the offline-policy test.
-const OFFLINE_CHILD: &str = "MAESTRO_ACQUISITION_OFFLINE_CHILD";
-
 #[test]
 fn explicit_install_does_not_obey_offline_resolution_policy() {
-    if std::env::var_os(OFFLINE_CHILD).is_some() {
+    /// The case that repeats the install with the offline policy supplied.
+    const CHILD: &str = "offline";
+    if maestro_test_process::selection().case() == Some(CHILD) {
         let fixture = Fixture::new(&json!({}));
         block_on(fixture.manager.install("npm:pkg", None)).unwrap();
         assert_eq!(fixture.calls(), [call("npm", &["install", "-g", "pkg"])]);
@@ -636,7 +635,7 @@ fn explicit_install_does_not_obey_offline_resolution_policy() {
         "explicit_install_does_not_obey_offline_resolution_policy",
     )
     .unwrap()
-    .env(OFFLINE_CHILD, "1")
+    .case(CHILD)
     .env("MAESTRO_OFFLINE", "yes")
     .output()
     .unwrap();

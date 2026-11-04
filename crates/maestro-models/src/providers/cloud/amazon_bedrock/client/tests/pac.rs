@@ -123,7 +123,9 @@ async fn consume(source: &str, protocols: &[&str]) {
 #[test]
 fn pac_bridge_uses_captured_environment_at_later_consumption() {
     const TEST: &str = "providers::cloud::amazon_bedrock::client::tests::pac::pac_bridge_uses_captured_environment_at_later_consumption";
-    if std::env::var_os("MAESTRO_CAPTURE_CHILD").is_some() {
+    /// The case that repeats the bridge in a cleared child.
+    const CHILD: &str = "cleared";
+    if maestro_test_process::selection().case() == Some(CHILD) {
         crate::tests::runtime::run(async {
             for bypass in [false, true] {
                 captured_environment(bypass).await;
@@ -134,7 +136,7 @@ fn pac_bridge_uses_captured_environment_at_later_consumption() {
     let output = maestro_test_process::TestProcess::current(TEST)
         .unwrap()
         .env_clear()
-        .env("MAESTRO_CAPTURE_CHILD", "1")
+        .case(CHILD)
         .env("HTTP_PROXY", "pac+data:,invalid ! script")
         .env("HTTPS_PROXY", "pac+data:,invalid ! script")
         .output()

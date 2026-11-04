@@ -245,12 +245,15 @@ fn pane_custom_commands_keep_the_plain_command_flag() {
     }
 }
 
+/// Variable carrying the scratch directory a child fixture works in.
+#[cfg(windows)]
+const LAUNCH_PATH_ROOT: &str = "MAESTRO_LAUNCH_PATH_ROOT";
+
 #[test]
 #[cfg(windows)]
 fn launch_resolves_effective_child_path_and_extensions() {
-    const CHILD: &str = "MAESTRO_LAUNCH_PATH_CHILD";
-    if let Some(directory) = std::env::var_os(CHILD) {
-        assert_launch_environment(&PathBuf::from(directory));
+    if let Some(directory) = std::env::var_os(LAUNCH_PATH_ROOT) {
+        assert_launch_environment(Path::new(&directory));
         return;
     }
     let owned = maestro_test_directory::Scratch::new().unwrap();
@@ -268,7 +271,8 @@ fn launch_resolves_effective_child_path_and_extensions() {
         "launch_resolves_effective_child_path_and_extensions",
     )
     .unwrap()
-    .env(CHILD, directory)
+    .case("native")
+    .env(LAUNCH_PATH_ROOT, directory)
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")
     .output()

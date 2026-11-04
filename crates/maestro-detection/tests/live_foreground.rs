@@ -10,7 +10,7 @@ use std::{
     process::{Command, Output},
 };
 
-/// The controlled program the checked setup entry runs, named by `MAESTRO_DETECTION_CHILD`.
+/// The controlled program the checked setup entry runs, selected by its child case.
 ///
 /// The direct case replaces itself with the sleep program, which is the whole of its
 /// former shell payload. The other cases read their terminal input before replacing
@@ -18,20 +18,21 @@ use std::{
 /// behaviour they observe.
 #[test]
 fn setup_entry() {
-    let Ok(child) = std::env::var("MAESTRO_DETECTION_CHILD") else {
+    let selection = maestro_test_process::selection();
+    if !selection.is_child() {
         return;
-    };
-    let command = match child.as_str() {
-        "replacement" => shell("read -r command; eval \"$command\""),
-        "wrapper" => shell(
+    }
+    let command = if selection.runs_case("replacement") {
+        shell("read -r command; eval \"$command\"")
+    } else if selection.runs_case("wrapper") {
+        shell(
             "exec -a codex /bin/sleep infinity & member=$!; read -r stop; \
              kill \"$member\"; wait \"$member\"; exit 0",
-        ),
-        _ => {
-            let mut sleep = Command::new("/bin/sleep");
-            sleep.arg("infinity");
-            sleep
-        }
+        )
+    } else {
+        let mut sleep = Command::new("/bin/sleep");
+        sleep.arg("infinity");
+        sleep
     };
     let _ = pty::setup_and_exec(command);
     std::process::exit(1);
@@ -58,7 +59,7 @@ fn capture_job(child: &str, input: &[u8], release: &[u8], argv0: &str) -> Foregr
                 args: harness.iter().map(Into::into).collect(),
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![(
-                    "MAESTRO_DETECTION_CHILD".into(),
+                    maestro_test_process::CASE.into(),
                     Some(child.into()),
                 )]),
             };

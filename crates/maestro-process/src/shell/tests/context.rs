@@ -21,11 +21,13 @@ fn launch_honors_current_directory_search_policy() {
     );
 }
 
+/// Variable carrying the scratch directory a child fixture works in.
+const LAUNCH_CONTEXT_ROOT: &str = "MAESTRO_LAUNCH_CONTEXT_ROOT";
+
 /// Reuses the same executable fixtures in a checked child with a chosen parent directory.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
-    const CHILD: &str = "MAESTRO_LAUNCH_CONTEXT_CHILD";
-    if let Some(root) = std::env::var_os(CHILD) {
-        run(&PathBuf::from(root));
+    if let Some(root) = std::env::var_os(LAUNCH_CONTEXT_ROOT) {
+        run(Path::new(&root));
         return;
     }
     let owned = maestro_test_directory::Scratch::new().unwrap();
@@ -40,7 +42,8 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .env(CHILD, root)
+        .case("native")
+        .env(LAUNCH_CONTEXT_ROOT, root)
         .env("PATHEXT", ".CMD")
         .env("PATH", root.join("parent").join("tools"))
         .env_remove("NoDefaultCurrentDirectoryInExePath")

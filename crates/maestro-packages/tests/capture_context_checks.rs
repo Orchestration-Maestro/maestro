@@ -23,10 +23,12 @@ fn capture_honors_current_directory_search_policy() {
     );
 }
 
+/// Variable carrying the scratch directory a child fixture works in.
+const CONTEXT_ROOT: &str = "MAESTRO_PACKAGE_CONTEXT_ROOT";
+
 /// Runs either operation witness with the same native wrapper fixtures.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
-    const CHILD: &str = "MAESTRO_PACKAGE_CONTEXT_CHILD";
-    if let Some(root) = std::env::var_os(CHILD) {
+    if let Some(root) = std::env::var_os(CONTEXT_ROOT) {
         run(Path::new(&root));
         return;
     }
@@ -49,7 +51,8 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .env(CHILD, scratch.path())
+        .case("native")
+        .env(CONTEXT_ROOT, scratch.path())
         .env_remove("NoDefaultCurrentDirectoryInExePath")
         .current_dir(scratch.path().join(parent))
         .output()

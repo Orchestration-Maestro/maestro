@@ -91,7 +91,7 @@ pub fn run_isolated(test: &str, envs: &[(&str, &str)]) {
 }
 
 /// Environment name carrying the selected case into a child test.
-pub const CASE_ENV: &str = "MAESTRO_CASE";
+pub use maestro_test_process::CASE as CASE_ENV;
 
 /// Stored API key credential.
 pub fn api_key(key: &str) -> AuthCredential {

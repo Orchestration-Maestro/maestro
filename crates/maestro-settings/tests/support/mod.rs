@@ -248,12 +248,11 @@ pub fn assert_number(actual: f64, expected: f64) {
     );
 }
 
-/// Environment variable that marks a re-run of the test binary as a child.
-const CHILD_MARKER: &str = "MAESTRO_SETTINGS_TEST_CHILD";
-
 /// The case a child process was started for; `None` in the parent test run.
 pub fn child_case() -> Option<String> {
-    std::env::var(CHILD_MARKER).ok()
+    maestro_test_process::selection()
+        .case()
+        .map(ToOwned::to_owned)
 }
 
 /// Builds a command that re-runs one test of this binary as a child for `case`.
@@ -263,7 +262,7 @@ pub fn child_command(test: &str, case: &str) -> TestProcess {
         .nocapture()
         .quiet()
         .single_threaded()
-        .env(CHILD_MARKER, case)
+        .case(case)
 }
 
 /// The line a child printed with [`report`], parsed as JSON.

@@ -23,12 +23,14 @@ enum Phase {
 #[test]
 fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
     const TEST: &str = "providers::http::client::tests::pac::tls::pac_proxy_tls_and_destination_tls_keep_failure_phases";
-    if let Ok(trust) = std::env::var("MAESTRO_PAC_TLS_CHILD") {
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        let trusted = selection.runs_case("trusted");
         crate::tests::runtime::run(async {
             for phase in [Phase::Forward, Phase::Tunnel, Phase::Direct, Phase::Socks] {
-                failure(phase, trust == "trusted").await;
+                failure(phase, trusted).await;
             }
-            if trust == "trusted" {
+            if trusted {
                 success(false).await;
                 success(true).await;
                 connect_failure().await;
@@ -53,7 +55,7 @@ fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
         let process = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .env_clear()
-            .env("MAESTRO_PAC_TLS_CHILD", trust);
+            .case(trust);
         let process = if trust == "trusted" {
             process.env(
                 "SSL_CERT_FILE",

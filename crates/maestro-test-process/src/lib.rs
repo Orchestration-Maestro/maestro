@@ -11,6 +11,10 @@
 //! share one cleared child per distinct environment through [`run_per_environment`]. A child
 //! that replaces `HOME` keeps this process's Linux user cache through [`user_cache_home`].
 //!
+//! This crate alone spells the variable that carries a case into its child, [`CASE`]. A caller
+//! selects the role with [`TestProcess::case`] and reads it back through [`selection`], and
+//! passes any fixture data the child needs in its own variable.
+//!
 //! An isolated child that needs its own file creation mode, process-count limit, file-size
 //! handling or session names those effects with [`IsolatedSetup`] on the builder and applies
 //! them at its entry through [`IsolatedSetup::apply_requested`].
@@ -41,7 +45,7 @@ pub use alone::run_alone;
 pub use cache::user_cache_home;
 #[cfg(windows)]
 pub use console::on_console;
-pub use environment::{CaseSelection, local_zone_follows_tz, run_per_environment, selection};
+pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
 pub use executable::{install_command, install_executable};
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};

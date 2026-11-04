@@ -4,10 +4,12 @@
 
 use maestro_packages::{CommandCaptureOptions, NativePackageOperations, PackageOperations};
 
+/// Variable carrying the scratch directory a child fixture works in.
+const PATH_ROOT: &str = "MAESTRO_CAPTURE_PATH_ROOT";
+
 #[test]
 fn capture_resolves_override_path_before_parent_decoys() {
-    const CHILD: &str = "MAESTRO_CAPTURE_PATH_CHILD";
-    if let Some(directory) = std::env::var_os(CHILD) {
+    if let Some(directory) = std::env::var_os(PATH_ROOT) {
         let chosen = std::path::PathBuf::from(directory).join("chosen");
         let path = chosen.to_str().unwrap();
         let local = std::rc::Rc::new(tokio::task::LocalSet::new());
@@ -47,7 +49,8 @@ fn capture_resolves_override_path_before_parent_decoys() {
         "capture_resolves_override_path_before_parent_decoys",
     )
     .unwrap()
-    .env(CHILD, scratch.path())
+    .case("native")
+    .env(PATH_ROOT, scratch.path())
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")
     .output()

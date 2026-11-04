@@ -34,7 +34,6 @@ fn variables<'a>(marker: &'a str, value: Option<&'a str>) -> BTreeMap<&'a str, &
 
 #[test]
 fn equal_environments_share_one_cleared_child() {
-    assert_selection_owner();
     let test = "equal_environments_share_one_cleared_child";
     let path = marker(test);
     let marker = path.to_str().unwrap();
@@ -106,12 +105,39 @@ fn a_failed_child_reports_its_group_and_streams() {
 }
 
 #[test]
+fn a_passing_child_reports_the_premise_it_skipped_a_case_for() {
+    /// What the group child states before it leaves its only case out.
+    const PREMISE: &str = "premise not met: this host keeps no such record";
+    let test = "a_passing_child_reports_the_premise_it_skipped_a_case_for";
+    if maestro_test_process::selection().is_child() {
+        let selected =
+            run_per_environment(test, ["skipped"], |_| BTreeMap::<&str, &str>::new()).unwrap();
+        if selected.is_some() {
+            eprintln!("{PREMISE}");
+        }
+        return;
+    }
+    let output = TestProcess::current(test)
+        .unwrap()
+        .case("*")
+        .nocapture()
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains(PREMISE),
+        "a passing group child's premise never reached the caller: {output:?}"
+    );
+}
+
+#[test]
 fn an_unknown_group_is_refused() {
     let test = "an_unknown_group_is_refused";
     if std::env::var_os("MTP_CASE_PROBE").is_some() {
         let selection = maestro_test_process::selection();
         let wildcard = std::env::var("MTP_CASE_PROBE").unwrap() == "wildcard";
         assert!(selection.is_child());
+        assert_eq!(selection.case(), (!wildcard).then_some("selected"));
         assert!(selection.runs_case("selected"));
         assert_eq!(selection.runs_case("different"), wildcard);
         assert_eq!(selection.runs_group(test), wildcard);
@@ -184,63 +210,25 @@ fn cleared_children_open_sockets() {
     assert!(output.status.success(), "{output:?}");
 }
 
-/// Selection transport names that callers must never read or write.
-const SELECTION_VARIABLES: &[&str] = &[
-    "MAESTRO_CHILD_CASE",
-    "MAESTRO_TEST_GROUP",
-    "MAESTRO_ARTIFACT_CHILD",
-    "MAESTRO_AUTH_CASE",
-    "MAESTRO_AUTH_CHILD",
-    "MAESTRO_BINDING_CHILD",
-    "MAESTRO_BROWSER_CHILD",
-    "MAESTRO_CACHE_CHILD",
-    "MAESTRO_CLIPBOARD_CHILD",
-    "MAESTRO_COMPLETION_HOME_CHILD",
-    "MAESTRO_CONFIGURATION_CHILD",
-    "MAESTRO_CONFIG_CHILD",
-    "MAESTRO_CONTEXT_DATE_CHILD",
-    "MAESTRO_CONVERSION_TIME_CHILD",
-    "MAESTRO_COUNT_ENTRY_CHILD",
-    "MAESTRO_DATE_CHILD",
-    "MAESTRO_DEFAULT_CASE",
-    "MAESTRO_DIRECTORY_CHILD",
-    "MAESTRO_DISPLAY_CHILD",
-    "MAESTRO_DYNAMIC_CHILD",
-    "MAESTRO_EDITOR_CHILD",
-    "MAESTRO_ENV_CHILD",
-    "MAESTRO_EXTRACTION_CHILD",
-    "MAESTRO_HISTORY_CWD_CHILD",
-    "MAESTRO_HISTORY_UTC_CHILD",
-    "MAESTRO_INHERITED_STDOUT_CHILD",
-    "MAESTRO_KEYS_CHILD",
-    "MAESTRO_LINK_COLLISION_CHILD",
-    "MAESTRO_LOCALE_CASE",
-    "MAESTRO_METADATA_CHILD",
-    "MAESTRO_OUTPUT_PROBE",
-    "MAESTRO_PACKAGE_CASE",
-    "MAESTRO_RAW_FAILURE_CHILD",
-    "MAESTRO_READ_CHILD",
-    "MAESTRO_REMOVED_CWD_CHILD",
-    "MAESTRO_REQUEST_CASE",
-    "MAESTRO_RESOURCE_DIRECTORY_CHILD",
-    "MAESTRO_RESPONSE_STDERR_CHILD",
-    "MAESTRO_SELECTOR_KEYS_CHILD",
-    "MAESTRO_SERVICE_CASE",
-    "MAESTRO_SERVICE_PROBE",
-    "MAESTRO_SHELL_SEQUENCE_CHILD",
-    "MAESTRO_CAPTURE_STAGE",
-    "MAESTRO_NATIVE_MODE",
-    "MAESTRO_PROFILE_STAGE",
-    "MAESTRO_NATIVE_STAGE",
-];
+/// Every child-selection name starts after an opening quote with this prefix.
+const QUOTED_PREFIX: &[u8] = b"\"MAESTRO_";
 
-/// Selection variables belong to the process owner, not its callers.
-fn assert_selection_owner() {
+/// The suffixes that make a quoted name a child-selection scheme.
+const SCHEME_SUFFIXES: [&[u8]; 2] = [b"_CHILD", b"_CASE"];
+
+/// A quoted child-selection scheme belongs to the process owner, not to its callers.
+///
+/// The guard reports every quoted name that starts with `MAESTRO_` and ends with `_CHILD`
+/// or `_CASE`, in any file under `crates/` outside this crate, whatever its type and
+/// whether the name sits in an expression or behind a `const`.
+#[test]
+fn selection_schemes_belong_to_the_process_owner() {
     let crates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
         .to_owned();
     let mut pending = vec![crates];
+    let mut reported = Vec::new();
     while let Some(path) = pending.pop() {
         for entry in std::fs::read_dir(path).unwrap() {
             let path = entry.unwrap().path();
@@ -249,18 +237,59 @@ fn assert_selection_owner() {
             }
             if path.is_dir() {
                 pending.push(path);
-            } else if path.extension().is_some_and(|extension| extension == "rs") {
-                let source = std::fs::read_to_string(&path).unwrap();
-                assert!(
-                    !SELECTION_VARIABLES
-                        .iter()
-                        .any(|marker| source.contains(marker)),
-                    "{} reads or writes the private child-selection protocol",
-                    path.display()
-                );
+                continue;
+            }
+            let source = std::fs::read(&path).unwrap();
+            for (line, name) in scheme_literals(&source) {
+                reported.push(format!("{}:{line} names {name}", path.display()));
             }
         }
     }
+    reported.sort();
+    assert!(
+        reported.is_empty(),
+        "{} sites read or write the private child-selection protocol:\n{}",
+        reported.len(),
+        reported.join("\n")
+    );
+}
+
+/// The line and name of every quoted child-selection scheme in `source`.
+fn scheme_literals(source: &[u8]) -> Vec<(usize, String)> {
+    let mut literals = Vec::new();
+    let mut cursor = 0;
+    while cursor < source.len() {
+        let from = cursor;
+        let Some(found) = source[from..]
+            .windows(QUOTED_PREFIX.len())
+            .position(|window| window == QUOTED_PREFIX)
+        else {
+            break;
+        };
+        let start = from + found + 1;
+        let length = source[start..]
+            .iter()
+            .take_while(|byte| name_byte(**byte))
+            .count();
+        let end = start + length;
+        let name = &source[start..end];
+        if source.get(end) == Some(&b'"') && is_scheme(name) {
+            let line = source[..start].split(|byte| *byte == b'\n').count();
+            literals.push((line, String::from_utf8_lossy(name).into_owned()));
+        }
+        cursor = end.max(start);
+    }
+    literals
+}
+
+/// Whether `byte` may continue a variable name.
+fn name_byte(byte: u8) -> bool {
+    byte.is_ascii_uppercase() || byte.is_ascii_digit() || byte == b'_'
+}
+
+/// Whether `name` is a child-selection scheme.
+fn is_scheme(name: &[u8]) -> bool {
+    SCHEME_SUFFIXES.iter().any(|suffix| name.ends_with(suffix))
 }
 
 /// Parent and grouped-child roles dispatch groups without dispatching named cases.
