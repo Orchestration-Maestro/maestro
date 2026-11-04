@@ -72,9 +72,9 @@ fn pins(workflows: &Path, name: &str) -> Vec<String> {
 /// The workflow name each file in the workflow directory declares.
 fn declared(workflows: &Path) -> Vec<(String, String)> {
     let mut names = Vec::new();
-    for entry in std::fs::read_dir(workflows).unwrap() {
-        let path = entry.unwrap().path();
-        let text = std::fs::read_to_string(&path).unwrap();
+    for entry in std::fs::read_dir(workflows).expect("the workflow directory reads") {
+        let path = entry.expect("the workflow entry reads").path();
+        let text = std::fs::read_to_string(&path).expect("the workflow file reads");
         if let Some(name) = text.lines().find_map(|line| line.strip_prefix("name: ")) {
             names.push((path.display().to_string(), name.trim().to_owned()));
         }
@@ -90,9 +90,19 @@ fn the_guards_listener_judges_completed_runs_at_the_callers_pin() {
     let workflows = repository.join(".github/workflows");
     let listener = std::fs::read_to_string(workflows.join("ci-guards.yml"))
         .expect("the speed guards listener exists");
+    let suite = pins(&workflows, "full-suite.yml");
+    let landing = pins(&workflows, "post-landing.yml");
     for revision in pins(&workflows, "ci-guards.yml") {
-        assert_eq!(pins(&workflows, "full-suite.yml"), [revision.as_str()]);
-        assert_eq!(pins(&workflows, "post-landing.yml"), [revision.as_str()]);
+        assert_eq!(
+            suite,
+            [revision.as_str()],
+            "the suite caller pins this release"
+        );
+        assert_eq!(
+            landing,
+            [revision.as_str()],
+            "the landing caller pins it too"
+        );
     }
     assert_eq!(
         items(value_of(&listener, "types:")),
@@ -106,7 +116,7 @@ fn the_guards_listener_judges_completed_runs_at_the_callers_pin() {
     for (file, name) in declared(&workflows) {
         assert!(
             !watched.contains(&name),
-            "{file} runs reusable jobs, whose names carry the calling job's prefix"
+            "the listener watches {name}, which {file} declares"
         );
     }
     assert!(
@@ -117,10 +127,18 @@ fn the_guards_listener_judges_completed_runs_at_the_callers_pin() {
         listener.lines().any(|line| line.trim() == "pull_request:"),
         "pull requests run the test-time exception check"
     );
-    let declaration = std::fs::read_to_string(repository.join(".github/ci.toml")).unwrap();
-    let privileged = declaration.lines().next().unwrap();
+    let declaration: toml::Table = std::fs::read_to_string(repository.join(".github/ci.toml"))
+        .expect("the repository declares its CI settings")
+        .parse()
+        .expect("the CI settings read as TOML");
+    let privileged = declaration
+        .get("privileged_trigger_workflows")
+        .and_then(toml::Value::as_array)
+        .expect("the CI settings declare the privileged trigger workflows");
     assert!(
-        privileged.contains("\".github/workflows/ci-guards.yml\""),
-        "the trigger audit ignores this listener"
+        privileged
+            .iter()
+            .any(|file| file.as_str() == Some(".github/workflows/ci-guards.yml")),
+        "the trigger audit exempts this listener"
     );
 }

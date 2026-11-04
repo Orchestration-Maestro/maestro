@@ -2,8 +2,8 @@ name: CI speed guards
 
 on:
   workflow_run:
-    # The guards read the shared workflow's job names exactly, which merge-group runs keep. A reusable
-    # caller prefixes every job with the calling job, so those runs wait for the guards to read the prefix.
+    # The guards compare the shared workflow's job names exactly, and a reusable caller prefixes every
+    # job with the calling job's name, so merge-group runs are the ones this listener watches.
     workflows: [Rust CI]
     types: [completed]
   pull_request:
