@@ -1251,6 +1251,7 @@ fn handler_registration_and_removal_match_supported_signals() {
 fn retained_rebind_releases_the_ended_run() {
     on_task_set(async {
         let recorder = recorder();
+        // Only the JSON stream writes event records, so JSON mode is the release witness.
         assert_eq!(run(&recorder, json(&["hold"])).await, Ok(0));
         let rebind = recorder.rebind.borrow().clone().expect("a kept rebind");
         let bindings = recorder.count("bind");
@@ -1309,7 +1310,7 @@ fn raw_output_uses_application_guard() {
 }
 
 #[test]
-fn prompt_and_text_traversals_stay_linear() {
+fn every_prompt_and_text_block_reaches_the_run_once() {
     on_task_set(async {
         for size in [8, 16, 32] {
             let prompts_recorder = recorder();
