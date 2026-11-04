@@ -12,7 +12,7 @@ use std::{
     },
 };
 
-/// The truth table both offline readers share: every environment text the flag rule
+/// The offline flag's truth table: every environment text the flag rule
 /// distinguishes, and whether it selects offline.
 const TRUTH: &[(Option<&str>, bool)] = &[
     (None, false),
