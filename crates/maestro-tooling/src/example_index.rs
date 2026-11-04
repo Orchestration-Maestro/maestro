@@ -118,7 +118,7 @@ fn summary(path: &Path) -> io::Result<String> {
     Ok(result)
 }
 
-/// Find the shipped examples and the crate's own component examples, in name order.
+/// Find the shipped examples and the crate's own fixture components, in name order.
 ///
 /// A shipped example is a top-level source file or a directory with its own `main.rs`.
 fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {

@@ -205,7 +205,7 @@ access checks or remote I/O while keeping its behavior:
 3. Register that definition. For rendering-only changes, wrap only the desired
    renderer and forward its supplied context, theme and previous component.
 
-The [native-definition registration example](../../crates/maestro-extensions-wasm/tests/support/context_bridge/builtin_registered.rs)
+The [native-definition registration fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/builtin_registered.rs)
 wraps edit execution with progress while keeping native matching and queueing.
 [Native operations](guest_operations.md#wrap-and-register-a-read-definition)
 explains renderer delegation: the opaque `native_row` is required by a native

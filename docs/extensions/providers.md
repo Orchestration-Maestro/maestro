@@ -236,11 +236,11 @@ To select that bundled protocol per request, name its identifier through
 [`stream_simple_via`](guest_streams.md#invoking-registered-models); callers and
 final messages keep the model's API identity.
 
-Use the [model callback example](../../crates/maestro-extensions-wasm/tests/support/context_bridge/model_registered.rs)
+Use the [model callback fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/model_registered.rs)
 for registration and dispatch, the
-[assistant event example](../../crates/maestro-extensions-wasm/tests/support/context_bridge/assistant_streams.rs)
+[assistant event fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/assistant_streams.rs)
 for every event variant, and the
-[stream lifetime example](../../crates/maestro-extensions-wasm/tests/support/context_bridge/stream_lifetimes.rs)
+[stream lifetime fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/stream_lifetimes.rs)
 for independently owned producers. These are executable component fixtures, not
 standalone provider packages.
 
