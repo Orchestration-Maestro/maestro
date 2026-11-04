@@ -12,22 +12,29 @@ use std::{
     },
 };
 
-/// The truth table both offline readers share: environment text, and whether it selects
-/// offline.
+/// The truth table both offline readers share: every environment text the flag rule
+/// distinguishes, and whether it selects offline.
 const TRUTH: &[(Option<&str>, bool)] = &[
     (None, false),
     (Some(""), false),
     (Some("0"), false),
     (Some("false"), false),
+    (Some("2"), false),
     (Some("1"), true),
     (Some("true"), true),
     (Some("TRUE"), true),
+    (Some("TrUe"), true),
     (Some("yes"), true),
     (Some("YeS"), true),
     (Some(" "), false),
     (Some("\u{feff}false"), false),
+    (Some("\u{feff}true"), false),
+    (Some("true\u{85}"), false),
+    (Some("ye\u{17f}"), false),
+    (Some("\u{ff54}rue"), false),
     (Some(" yes"), false),
     (Some("true "), false),
+    (Some("yes "), false),
 ];
 
 /// An explicit selection contradicting an ambient flag value, and whether the missing
