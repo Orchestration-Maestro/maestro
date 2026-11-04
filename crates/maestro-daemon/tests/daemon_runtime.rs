@@ -704,8 +704,9 @@ fn isolated_home(
     test: &str,
     prepare: impl FnOnce(&maestro_test_directory::Scratch) -> Option<std::path::PathBuf>,
 ) -> Option<std::path::PathBuf> {
-    const CHILD: &str = "MAESTRO_DAEMON_HOME_CHILD";
-    if std::env::var_os(CHILD).is_some() {
+    /// The case that repeats this test with a prepared home directory.
+    const CHILD: &str = "prepared-home";
+    if maestro_test_process::selection().case() == Some(CHILD) {
         return std::env::var_os("HOME").map(std::path::PathBuf::from);
     }
     let owner = maestro_test_directory::Scratch::new().unwrap();
@@ -713,7 +714,7 @@ fn isolated_home(
     let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env("HOME", &home)
-        .env(CHILD, "1")
+        .case(CHILD)
         .output()
         .unwrap();
     assert!(

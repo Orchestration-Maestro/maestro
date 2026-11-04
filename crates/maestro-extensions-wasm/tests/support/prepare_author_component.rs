@@ -21,6 +21,10 @@ mod build;
 #[path = "../../src/tests/search_tools.rs"]
 mod search_tools;
 
+/// The fixture components of the component crate, relative to that crate.
+#[cfg(not(target_arch = "wasm32"))]
+const FIXTURES: &str = "tests/support";
+
 // The preparation module below reaches source discovery through this import, and so does the
 // listing of component names.
 #[cfg(not(target_arch = "wasm32"))]
@@ -39,7 +43,6 @@ fn main() {}
 fn main() -> Result<(), String> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
     match arguments.as_slice() {
-        [] => prepare(),
         [argument] if argument == "--cache-directory" => {
             let cache = wasmtime::Cache::from_file(None).map_err(|error| error.to_string())?;
             println!(
@@ -48,23 +51,61 @@ fn main() -> Result<(), String> {
             );
             Ok(())
         }
-        _ => Err("unknown component preparation arguments".into()),
+        [root, component, fixed] => prepare(root, component, fixed),
+        _ => Err(
+            "usage: prepare_author_component <workspace> <component crate> <fixed \
+                  components>"
+                .into(),
+        ),
     }
+}
+
+/// The fixed components whose packages the workspace holds, from the names preparation passes.
+///
+/// # Errors
+///
+/// Returns a name that is not one of the fixed component targets.
+#[cfg(not(target_arch = "wasm32"))]
+fn fixed_components(names: &std::ffi::OsStr) -> Result<Vec<components::Fixed>, String> {
+    let names = names
+        .to_str()
+        .ok_or("the fixed component names are not UTF-8")?;
+    names
+        .split(',')
+        .filter(|name| !name.is_empty())
+        .map(|name| {
+            components::FIXED_COMPONENTS
+                .iter()
+                .find(|(target, _, _)| *target == name)
+                .copied()
+                .ok_or_else(|| format!("unknown fixed component {name}"))
+        })
+        .collect()
 }
 
 /// Builds the components, warms their cache and writes their paths to nextest's environment file.
 #[cfg(not(target_arch = "wasm32"))]
-fn prepare() -> Result<(), String> {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let folders = [
-        root.join("tests/support"),
-        root.join("../../examples/extensions"),
-    ];
-    let mut names: Vec<String> = components::FIXED_COMPONENTS
+fn prepare(
+    workspace: &std::ffi::OsStr,
+    component: &std::ffi::OsStr,
+    fixed: &std::ffi::OsStr,
+) -> Result<(), String> {
+    let workspace = std::path::Path::new(workspace);
+    let root = std::path::Path::new(component);
+    let fixed = fixed_components(fixed)?;
+    let shipped = workspace.join("examples/extensions");
+    let folders: Vec<std::path::PathBuf> = [
+        Some(root.join(FIXTURES)),
+        shipped.is_dir().then_some(shipped),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    let mut names: Vec<String> = fixed
         .iter()
         .map(|(name, _, _)| (*name).to_owned())
         .collect();
-    components::visit(&folders, |name, _| {
+    components::visit(&folders, &fixed, |name, _| {
         names.push(name.to_owned());
         Ok(())
     })
@@ -72,16 +113,16 @@ fn prepare() -> Result<(), String> {
     let targets: Vec<&str> = names.iter().map(String::as_str).collect();
     let built = build::cargo::example_components(root, &targets)?;
     // Source discovery visits the markers in the order that produced the names above.
-    let Some((fixed, marked)) = built.split_at_checked(components::FIXED_COMPONENTS.len()) else {
+    let Some((supplied, marked)) = built.split_at_checked(fixed.len()) else {
         return Err("the build returned fewer components than requested".to_owned());
     };
-    let mut entries = search_tool_entries()?;
-    for ((_, _, variable), path) in components::FIXED_COMPONENTS.iter().zip(fixed) {
+    let mut entries = search_tool_entries(workspace)?;
+    for ((_, _, variable), path) in fixed.iter().zip(supplied) {
         writeln!(entries, "{variable}={}", path.display()).map_err(|error| error.to_string())?;
     }
     let mut marked = marked.iter();
     entries.push_str(
-        &example_files::prepare(&folders, |_, _| {
+        &example_files::prepare(&folders, &fixed, |_, _| {
             marked
                 .next()
                 .cloned()
@@ -98,12 +139,21 @@ fn prepare() -> Result<(), String> {
 
 /// Names the pinned `rg` and `fd` executables the native search tests copy.
 ///
+/// The pins belong to the workspace's own tool configuration, so a workspace without them has
+/// no search tests to serve and exports nothing.
+///
 /// # Errors
 ///
 /// Returns an error if a pin cannot be read or the search PATH holds no executable at that pin.
 #[cfg(not(target_arch = "wasm32"))]
-fn search_tool_entries() -> Result<String, String> {
-    let config = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mise.toml");
+fn search_tool_entries(workspace: &std::path::Path) -> Result<String, String> {
+    let config = workspace.join("mise.toml");
+    if !config.is_file() {
+        return Ok(String::new());
+    }
+    let config = config
+        .to_str()
+        .ok_or("the tool configuration path is not UTF-8")?;
     let rg_pin = mise_output(&["config", "get", "--file", config, "tools.ripgrep"])?;
     let fd_pin = mise_output(&["config", "get", "--file", config, "tools.fd"])?;
     let search = std::env::var_os("PATH").ok_or_else(|| "PATH is not set".to_owned())?;

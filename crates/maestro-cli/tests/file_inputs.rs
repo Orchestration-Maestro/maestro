@@ -10,9 +10,6 @@ use maestro_test_directory::Scratch;
 use std::cell::RefCell;
 use std::io;
 
-/// Environment variable naming the recorded case a child process replays.
-const FIXTURE_CASE: &str = "MAESTRO_CLI_FIXTURE_CASE";
-
 /// Copy the recorded file corpus into a disposable directory.
 fn scratch() -> Scratch {
     let scratch = Scratch::new().unwrap();
@@ -337,7 +334,9 @@ fn read_path_variants_reach_the_existing_path_owner() {
 
 #[test]
 fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
-    if std::env::var_os(FIXTURE_CASE).is_some() || std::env::var_os(FIXTURE_REFUSAL).is_some() {
+    if maestro_test_process::selection().case().is_some()
+        || std::env::var_os(FIXTURE_REFUSAL).is_some()
+    {
         fatal_child();
     }
     for case in ["files-195", "files-196"] {
@@ -346,7 +345,7 @@ fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
             "file_failure_phases_keep_their_diagnostics_and_exit_status",
         )
         .unwrap()
-        .env(FIXTURE_CASE, case)
+        .case(case)
         .current_dir(scratch.path())
         .nocapture()
         .output()
@@ -367,7 +366,9 @@ fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
 
 #[test]
 fn a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status() {
-    if std::env::var_os(FIXTURE_CASE).is_some() || std::env::var_os(FIXTURE_REFUSAL).is_some() {
+    if maestro_test_process::selection().case().is_some()
+        || std::env::var_os(FIXTURE_REFUSAL).is_some()
+    {
         fatal_child();
     }
     let scratch = scratch();
@@ -430,7 +431,7 @@ fn fatal_child() {
             prepared.is_ok()
         );
     }
-    let case = std::env::var(FIXTURE_CASE).unwrap();
+    let case = maestro_test_process::selection().case().unwrap().to_owned();
     let recorded = support::case_by_title("files", &case);
     let styles = recorded.input["styles_enabled"].as_bool().unwrap();
     let files = file_names(&recorded);

@@ -84,6 +84,8 @@ pub(super) enum Record {
     Announce {
         /// A program, relative to the working directory, that prints `example`.
         rebuilt: Option<String>,
+        /// The real Cargo that answers the workspace resolution the operands ask for.
+        cargo: Option<String>,
     },
 }
 
@@ -119,7 +121,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
         } => call_log(path, prefixes, refuse, args),
         Record::Artifacts { names } => artifacts(names, args),
         Record::ConsumerCargo { cargo } => consumer_cargo(Path::new(cargo), args),
-        Record::Announce { rebuilt } => announce(rebuilt.as_deref(), args),
+        Record::Announce { rebuilt, cargo } => announce(rebuilt.as_deref(), cargo.as_deref(), args),
     }
 }
 
@@ -243,13 +245,34 @@ fn consumer_cargo(cargo: &Path, args: &[OsString]) -> io::Result<()> {
 }
 
 /// Print the call; where a program is named, replace it with one that prints `example`.
-fn announce(rebuilt: Option<&str>, args: &[OsString]) -> io::Result<()> {
+fn announce(rebuilt: Option<&str>, cargo: Option<&str>, args: &[OsString]) -> io::Result<()> {
+    if let Some(cargo) = cargo
+        && args.first().is_some_and(|arg| arg == "metadata")
+    {
+        return resolve(Path::new(cargo), args);
+    }
     write_stdout(format!("cargo {}\n", operands(args)).as_bytes())?;
     let Some(path) = rebuilt else {
         return Ok(());
     };
     super::install(Path::new(path))?;
     std::fs::write(format!("{path}.fixture"), "echo\nexample\n")
+}
+
+/// Answer a workspace resolution with the real Cargo, leaving its streams to the caller.
+fn resolve(cargo: &Path, args: &[OsString]) -> io::Result<()> {
+    let mut command = Command::new(cargo);
+    command.args(args);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        Err(command.exec())
+    }
+    #[cfg(not(unix))]
+    {
+        let status = command.status()?;
+        leave(status.code().unwrap_or(1));
+    }
 }
 
 /// Append `text` and a newline, creating the log when it is absent.

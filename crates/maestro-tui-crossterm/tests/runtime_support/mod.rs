@@ -9,8 +9,8 @@ use maestro_test_process::TestProcess;
 use tokio::runtime::Builder;
 use tokio::task::LocalSet;
 
-/// Marks the child copy of a test, which runs its scenario instead of spawning itself.
-pub const CHILD_MARKER: &str = "MAESTRO_RUNTIME_TEST_CHILD";
+/// The case that repeats the named test as a child of the calling process.
+const RERUN: &str = "rerun";
 
 /// Drives `body` on a fresh local set inside a current-thread runtime with the time driver.
 ///
@@ -32,7 +32,7 @@ pub fn run_set<Fut: Future<Output = ()>>(paused: bool, body: impl FnOnce(Rc<Loca
 /// standard output may hold only the test harness's own lines.
 pub fn rerun(test: &str, setup: impl FnOnce(TestProcess) -> TestProcess) -> Output {
     let process = TestProcess::current(test).expect("running test identity");
-    let process = setup(process.nocapture().env(CHILD_MARKER, "1"));
+    let process = setup(process.nocapture().case(RERUN));
     let name = process.name().to_owned();
     let output = process.output().expect("child process starts the test");
     assert!(
@@ -57,5 +57,5 @@ pub fn rerun(test: &str, setup: impl FnOnce(TestProcess) -> TestProcess) -> Outp
 
 /// Whether this process is the child copy of a test.
 pub fn is_child() -> bool {
-    std::env::var_os(CHILD_MARKER).is_some()
+    maestro_test_process::selection().is_child()
 }

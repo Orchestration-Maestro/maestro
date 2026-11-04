@@ -17,7 +17,9 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 /// `Ok(None)` in the calling process once every child passed; the test then returns.
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
-/// other than the environment keep one child each.
+/// other than the environment keep one child each. A passing child's standard error is
+/// repeated here, such as the premise that left one of its cases out; its standard output
+/// stays hidden.
 ///
 /// # Errors
 ///
@@ -62,6 +64,7 @@ where
             )
             .with_streams(&output.stdout, &output.stderr));
         }
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
     }
     Ok(None)
 }
@@ -91,6 +94,18 @@ impl CaseSelection {
     #[must_use]
     pub fn is_child(&self) -> bool {
         !matches!(self.kind, SelectionKind::Parent)
+    }
+
+    /// The case identifier this process was launched with, which a test reads to pick its
+    /// stage. Fixture data a stage needs travels in its own variable.
+    ///
+    /// Reports `None` in the parent, in a wildcard child and in an environment group.
+    #[must_use]
+    pub fn case(&self) -> Option<&str> {
+        match &self.kind {
+            SelectionKind::Case(selected) => Some(selected),
+            SelectionKind::Parent | SelectionKind::All | SelectionKind::Group(_) => None,
+        }
     }
 
     /// Whether this process runs the supplied case identifier.
@@ -146,4 +161,7 @@ pub fn selection() -> CaseSelection {
 }
 
 /// Variable that carries a single case identifier into its child.
-pub(crate) const CASE: &str = "MAESTRO_CHILD_CASE";
+///
+/// A caller that hands a child its environment instead of launching it through
+/// [`TestProcess`] names this variable and passes the case identifier as its value.
+pub const CASE: &str = "MAESTRO_CHILD_CASE";

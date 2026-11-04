@@ -11,13 +11,22 @@ use super::inputs::Inputs;
 use super::plan::closure_directories;
 use super::{SHARED_INPUTS, at, copy, digest, remove_directory, verify};
 use crate::nextest_setup::browser_graph;
+use crate::workspace::{GUIDE, Workspace};
 
-/// The two cross-target outputs exported to their native test consumers.
-const VARIABLES: [&str; 2] = ["MAESTRO_BROWSER_IMPORT_CHECK", "MAESTRO_GUIDE_COMPONENT"];
+/// The browser import witness exported to its native test consumer.
+const BROWSER: &str = "MAESTRO_BROWSER_IMPORT_CHECK";
+/// The independent author's guide component exported to its native test consumer.
+const GUIDE_COMPONENT: &str = "MAESTRO_GUIDE_COMPONENT";
 /// The build-check receipt within the existing preparation bundle.
 const RECEIPT: &str = "cargo-checks.json";
-/// The independent author's manifest and lock inputs.
-const GUIDE: &str = "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension";
+/// The crate whose example is the browser import witness.
+const MODELS: &str = "maestro-models";
+/// The example that witnesses the browser import.
+const BROWSER_EXAMPLE: &str = "browser_import_check";
+/// The crate that supplies the guest SDK to the independent author's guide.
+const GUEST: &str = "maestro-extensions-wasm";
+/// The shipped extension the independent author's guide builds.
+const GUIDE_SOURCE: &str = "examples/extensions/hello.rs";
 
 /// Source fingerprints and staged bytes of the two real Cargo builds.
 #[derive(Serialize, Deserialize)]
@@ -39,55 +48,41 @@ pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String
         serde_json::from_slice(&std::fs::read(&path).map_err(|error| at(&path, error))?)
             .map_err(|error| at(&path, error))?;
     record.inputs.verify(checkout, &output)?;
-    if record.files.len() != VARIABLES.len() {
-        return Err(at(&output, "incomplete prepared Cargo checks"));
-    }
-    VARIABLES
-        .into_iter()
-        .map(|variable| {
-            let expected = record
-                .files
-                .get(variable)
-                .ok_or_else(|| at(&output, format!("missing prepared Cargo check {variable}")))?;
+    record
+        .files
+        .iter()
+        .map(|(variable, expected)| {
             let path = output.join(format!("{variable}.wasm"));
             verify(&path, expected)?;
-            Ok((variable.to_owned(), path))
+            Ok((variable.clone(), path))
         })
         .collect()
 }
 
-/// Reuse current outputs or perform both locked builds once in repository setup.
+/// Reuse current outputs or perform the locked builds once in repository setup.
+///
+/// A check whose package or input this workspace does not hold is skipped, so a workspace
+/// that builds on Maestro prepares the checks it has and no others.
 pub(crate) fn prepare(
     cargo: &Path,
     checkout: &Path,
+    workspace: &Workspace,
     output: &Path,
     target: &Path,
 ) -> io::Result<Vec<(String, PathBuf)>> {
     if let Ok(paths) = prepared(checkout, output) {
         return Ok(paths);
     }
-    let inputs = inputs(cargo, checkout)?;
-    let project = target.join("guide-project");
-    project_files(checkout, &project)?;
-    let mut browser = command(cargo, checkout, target);
-    browser.args([
-        "--target",
-        "wasm32-unknown-unknown",
-        "-p",
-        "maestro-models",
-        "--example",
-        "browser_import_check",
-        "--profile",
-        "dev",
-    ]);
-    let mut guide = command(cargo, &project, target);
-    guide.args(["--target", "wasm32-wasip2", "--lib", "--profile", "release"]);
-    let browser = build(browser, "browser_import_check")?;
-    let guide = build(guide, "hello_extension")?;
+    let inputs = inputs(workspace)?;
+    let checks = checks(cargo, checkout, workspace, target)?;
+    let built = checks
+        .into_iter()
+        .map(|(variable, command, name)| Ok((variable, build(command, name)?)))
+        .collect::<io::Result<Vec<_>>>()?;
     inputs.verify(checkout, output)?;
     std::fs::create_dir_all(output)?;
     let mut files = BTreeMap::new();
-    for (variable, source) in VARIABLES.into_iter().zip([browser, guide]) {
+    for (variable, source) in built {
         let staged = output.join(format!("{variable}.wasm"));
         copy(&source, &staged)?;
         files.insert(variable.to_owned(), digest(&std::fs::read(staged)?));
@@ -97,35 +92,76 @@ pub(crate) fn prepare(
     prepared(checkout, output)
 }
 
+/// The builds this workspace runs, as each export name, its command and its artifact name.
+fn checks(
+    cargo: &Path,
+    checkout: &Path,
+    workspace: &Workspace,
+    target: &Path,
+) -> io::Result<Vec<(&'static str, Command, &'static str)>> {
+    let mut checks = Vec::new();
+    if workspace.member(MODELS).is_some() {
+        let mut browser = command(cargo, checkout, target);
+        browser.args([
+            "--target",
+            "wasm32-unknown-unknown",
+            "-p",
+            MODELS,
+            "--example",
+            BROWSER_EXAMPLE,
+            "--profile",
+            "dev",
+        ]);
+        checks.push((BROWSER, browser, BROWSER_EXAMPLE));
+    }
+    if let (Some(guide), Some(guest)) = (workspace.guide(), workspace.package(GUEST)?) {
+        let project = target.join("guide-project");
+        project_files(checkout, &project, &guide, &guest)?;
+        let mut author = command(cargo, &project, target);
+        author.args(["--target", "wasm32-wasip2", "--lib", "--profile", "release"]);
+        checks.push((GUIDE_COMPONENT, author, "hello_extension"));
+    }
+    Ok(checks)
+}
+
 /// Fingerprint the checked package closures and the independent guide's authored inputs.
-fn inputs(cargo: &Path, checkout: &Path) -> io::Result<Inputs> {
-    let metadata = crate::locked_metadata(cargo, checkout)?;
-    let mut paths = closure_directories(&metadata, &["maestro-models", "maestro-extensions-wasm"])?;
+fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
+    let named = workspace.holds(&[MODELS, GUEST]);
+    let mut paths = if named.is_empty() {
+        BTreeSet::new()
+    } else {
+        closure_directories(workspace.metadata(), &named)?
+    };
     paths.extend(
         SHARED_INPUTS
             .into_iter()
-            .chain(["Cargo.lock", GUIDE, "examples/extensions/hello.rs"])
+            .chain(["Cargo.lock"])
             .map(str::to_owned),
     );
-    Inputs::new(checkout, paths, BTreeSet::new())
+    if let Some(guide) = workspace.guide() {
+        paths.insert(format!("{}/{GUIDE}", workspace.relative(&guide)?));
+        paths.insert(GUIDE_SOURCE.to_owned());
+    }
+    Inputs::new(workspace.root(), paths, BTreeSet::new())
 }
 
 /// Create a clean independent author project from the checked manifest, lock and shipped source.
-fn project_files(checkout: &Path, root: &Path) -> io::Result<()> {
+fn project_files(checkout: &Path, root: &Path, guide: &Path, guest: &Path) -> io::Result<()> {
     remove_directory(root)?;
     std::fs::create_dir_all(root.join("src"))?;
-    let manifest = std::fs::read_to_string(checkout.join(GUIDE).join("Cargo.toml.in"))?;
+    let fixture = guide.join(GUIDE);
+    let manifest = std::fs::read_to_string(fixture.join("Cargo.toml.in"))?;
     let manifest = manifest.replace(
         "\"../maestro/crates/maestro-extensions-wasm\"",
-        &serde_json::to_string(&checkout.join("crates/maestro-extensions-wasm"))?,
+        &serde_json::to_string(guest)?,
     );
     std::fs::write(root.join("Cargo.toml"), manifest)?;
     for (source, destination) in [
-        (format!("{GUIDE}/Cargo.lock"), "Cargo.lock"),
-        ("examples/extensions/hello.rs".to_owned(), "src/lib.rs"),
-        ("rust-toolchain.toml".to_owned(), "rust-toolchain.toml"),
+        (fixture.join("Cargo.lock"), "Cargo.lock"),
+        (checkout.join(GUIDE_SOURCE), "src/lib.rs"),
+        (checkout.join("rust-toolchain.toml"), "rust-toolchain.toml"),
     ] {
-        copy(&checkout.join(source), &root.join(destination))?;
+        copy(&source, &root.join(destination))?;
     }
     Ok(())
 }
