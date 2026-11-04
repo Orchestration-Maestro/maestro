@@ -9,9 +9,10 @@ The seven input types are text, email, password, number, URL, telephone and
 search; small, medium (default) and large sizes select the field height. The
 browser owns editing, validation, selection and autocomplete. A non-empty label
 names the field through `aria-labelledby`; a required labelled field appends the
-localized required marker. A non-empty error shows below the field and marks it
-`aria-invalid`. Empty identifiers, names, placeholders and numeric bounds leave
-their attributes out.
+localized required marker. A non-empty error shows below the field, marks it
+`aria-invalid` and describes it through `aria-describedby`; clearing the error
+removes both attributes. Empty identifiers, names, placeholders and numeric
+bounds leave their attributes out.
 
 `update(view, props)` changes the field in place. It keeps native edits while the
 supplied value stays the same and assigns a changed supplied value. The input,
