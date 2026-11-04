@@ -36,12 +36,12 @@ fn paragraph_windows_keep_multiline_lookahead_and_unicode() {
         MarkedOptions::Export,
     ] {
         let heading = compare!(
-            rules::paragraph::Recognizer::new(options),
+            rules::paragraph::Recognizer::new(options, &|_| false),
             "é😀\nsecond\n---\n\nnext"
         );
         assert_eq!(heading.heading.unwrap().content, 0..13);
         compare!(
-            rules::paragraph::Recognizer::new(options),
+            rules::paragraph::Recognizer::new(options, &|_| false),
             "é😀\nhead | tail\n--- | ---\nvalue\n"
         );
     }
@@ -125,7 +125,7 @@ fn retained_window_framing_and_copies_grow_linearly() {
     let work = [32, 64, 128].map(|n| {
         crate::tests::WORK.with_borrow_mut(|work| *work = crate::tests::Work::default());
         let mut source = Segmented::from(ScopeSource::identity(""));
-        let mut recognizer = rules::paragraph::Recognizer::new(MarkedOptions::Terminal);
+        let mut recognizer = rules::paragraph::Recognizer::new(MarkedOptions::Terminal, &|_| false);
         for _ in 0..n {
             source.append(&ScopeSource::identity("é😀 line\n").into());
             recognizer.extend(&source);

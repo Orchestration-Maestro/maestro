@@ -192,7 +192,8 @@ impl<'a, E> Lexer<'a, E> {
     ) -> Option<(usize, Node)> {
         let recognized = match item.filter(|_| !self.top) {
             Some(item) => {
-                let (heading, undecided) = item.attempt(source);
+                let (heading, undecided) =
+                    item.attempt(source, &|offset| self.is_escaped_closer(source, offset));
                 self.undecided |= undecided;
                 // Item text is one line per attempt, so no paragraph end is read here.
                 rules::paragraph::Recognized {
@@ -221,8 +222,10 @@ impl<'a, E> Lexer<'a, E> {
             let end = if limit == source.len() {
                 recognized.paragraph?
             } else {
-                rules::paragraph::Recognizer::new(self.options)
-                    .finish(&source.select(0..limit))
+                let clipped = source.select(0..limit);
+                let escaped = |offset| self.is_escaped_closer(&clipped, offset);
+                rules::paragraph::Recognizer::new(self.options, &escaped)
+                    .finish(&clipped)
                     .paragraph?
             };
             (end, 0..end, Kind::Paragraph(Vec::new()))
@@ -247,13 +250,15 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Answer the running operand with a fresh paragraph recognizer.
     fn recognize(&mut self, source: &Segmented) -> rules::paragraph::Recognized {
-        let mut recognizer = rules::paragraph::Recognizer::new(self.options);
+        let escaped = |offset| self.is_escaped_closer(source, offset);
+        let mut recognizer = rules::paragraph::Recognizer::new(self.options, &escaped);
         let undecided = matches!(
             recognizer.extend(source),
             rules::paragraph::Verdict::NeedMore
         );
+        let result = recognizer.finish(source);
         self.undecided |= undecided;
-        recognizer.finish(source)
+        result
     }
 
     /// Select a table only when header and delimiter column counts agree.

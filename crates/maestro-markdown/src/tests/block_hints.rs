@@ -1,5 +1,5 @@
 //! Block hints are independent of later inline acceptance.
-use super::{Delimited, WORK, Work, hinted_blocks};
+use super::{Delimited, WORK, Work, grows_at_most_linearly, hinted_blocks};
 
 #[test]
 fn block_hints_clip_before_inline_operands() {
@@ -153,4 +153,27 @@ fn clipped_escaped_angle_keeps_its_closing_angle_literal() {
         ),
         ["<https://example.test/", "block $$x$$"]
     );
+}
+
+#[test]
+fn hinted_paragraph_reads_escaped_quote_marker_lines_once() {
+    let counts = [32, 64, 128].map(|count| {
+        let lines = "> c <d\n".repeat(count);
+        let source = format!("a <b\n{lines}$$x$$");
+        WORK.with_borrow_mut(|work| *work = Work::default());
+        let blocks = hinted_blocks(
+            &source,
+            crate::MarkedOptions::Browser { escape_html: true },
+            Delimited("$$", "$$"),
+        );
+        assert_eq!(
+            blocks,
+            [
+                format!("a <b\n{}", lines.trim_end()),
+                "block $$x$$".to_owned()
+            ]
+        );
+        WORK.with_borrow(|work| work.paragraph_bytes)
+    });
+    assert!(grows_at_most_linearly(counts), "{counts:?}");
 }

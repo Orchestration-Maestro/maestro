@@ -146,9 +146,13 @@ holds one line of characters and a fence closes at the next three backticks, so
 a stray backtick leaves the blocks after it to the ordinary literal-angle
 policy. The block grammar then reads both delimiters as text, so a caller block
 hint inside a span cannot turn its closing angle into a quote marker; the
-remainder stays a paragraph. A marker outside every span keeps its usual
-meaning, and the unescaped browser, terminal, export and documentation grammars
-read no such projection.
+remainder stays a paragraph. A span's closing angle that starts a later line
+neither ends the paragraph nor breaks a setext heading's text, at the top level
+or inside a list item, so `a <b` followed by `> quote` is one paragraph. Other
+rules still read that line, so a table header and its delimiter row there end
+the paragraph. A marker outside every span keeps its usual meaning, and the
+unescaped browser, terminal, export and documentation grammars read no such
+projection.
 
 `InlineScope::text()` retains authored container padding. `content_range()`
 selects the semantic child extent in that source, so renderers can re-enter the
