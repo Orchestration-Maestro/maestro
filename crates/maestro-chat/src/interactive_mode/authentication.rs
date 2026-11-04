@@ -13,7 +13,7 @@ mod callbacks;
 mod completion;
 mod dialogs;
 mod login;
-mod providers;
+pub(super) mod providers;
 
 pub use providers::is_api_key_login_provider;
 

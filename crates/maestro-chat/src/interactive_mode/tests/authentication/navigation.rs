@@ -483,6 +483,7 @@ fn authentication_lists_use_bounded_linear_traversals() {
     isolated(
         "authentication_lists_use_bounded_linear_traversals",
         async |directory| {
+            let mut counted = Vec::new();
             for scale in [16, 32, 64] {
                 let world = started_with(directory, None).await;
                 let ids: Vec<String> = (0..scale).map(|index| format!("model{index}")).collect();
@@ -490,13 +491,51 @@ fn authentication_lists_use_bounded_linear_traversals() {
                 for provider in ["p1", "p2"] {
                     register(&world, provider, &borrowed);
                 }
-                let offered = offered(&world, Some(AuthType::ApiKey), &["p1", "p2"]);
-                assert_eq!(
-                    offered.len(),
-                    2,
-                    "one row per provider at {scale} models each"
-                );
+                let session = world.host.session();
+                let registry = session.model_registry();
+                let providers: Vec<String> = registry
+                    .get_all()
+                    .read()
+                    .unwrap()
+                    .iter()
+                    .map(|model| model.read().unwrap().provider.clone())
+                    .collect();
+                let borrowed: Vec<&str> = providers.iter().map(String::as_str).collect();
+                let visits = std::cell::Cell::new(0);
+                let offered: Vec<_> =
+                    super::super::super::authentication::providers::api_key_login_options(
+                        borrowed
+                            .iter()
+                            .copied()
+                            .inspect(|_| visits.set(visits.get() + 1)),
+                        &std::collections::HashSet::new(),
+                        registry,
+                    )
+                    .map(|option| option.id)
+                    .filter(|id| ["p1", "p2"].contains(&id.as_str()))
+                    .collect();
+                assert_eq!(offered, ["p1", "p2"], "one row per provider at {scale}");
+                assert!(visits.get() <= borrowed.len(), "one pass at {scale}");
+                assert!(super::super::notices::rescanning_visits(&borrowed) > borrowed.len());
+                counted.push((borrowed.len(), visits.get()));
             }
+            let [
+                (small, visited_small),
+                (middle, visited_middle),
+                (large, visited_large),
+            ] = counted[..]
+            else {
+                panic!("three scales");
+            };
+            assert_eq!((middle - small, large - middle), (2 * 16, 4 * 16));
+            assert_eq!(
+                (
+                    visited_middle - visited_small,
+                    visited_large - visited_middle
+                ),
+                (middle - small, large - middle),
+                "the work grows with the catalog, one visit per model"
+            );
         },
     );
 }

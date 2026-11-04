@@ -250,7 +250,8 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
         Some("original".into()),
         EditorOptions::default(),
     );
-    let path = std::env::temp_dir().join("maestro-extension-editor-1767323045006.md");
+    let path =
+        maestro_test_directory::temporary_root().join("maestro-extension-editor-1767323045006.md");
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -270,7 +271,7 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
     {
         use std::os::unix::fs::PermissionsExt;
         use std::os::unix::fs::symlink;
-        let target = std::env::temp_dir().join("unrelated-target");
+        let target = maestro_test_directory::temporary_root().join("unrelated-target");
         std::fs::write(&target, b"unrelated target bytes").unwrap();
         symlink(&target, &path).unwrap();
         let result = host.dialog.handle_input("\x07");
@@ -289,7 +290,8 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
         install_inspector();
         host.spy.clock.set_environment("VISUAL", "inspect-mode");
         host.dialog.handle_input("\x07").unwrap();
-        let copied = std::fs::metadata(std::env::temp_dir().join("mode")).unwrap();
+        let copied =
+            std::fs::metadata(maestro_test_directory::temporary_root().join("mode")).unwrap();
         assert_eq!(copied.permissions().mode() & 0o7777, 0o600);
         assert!(!path.exists());
     }
@@ -544,7 +546,12 @@ fn editor_dialog_observes_live_bindings_but_captures_help() {
 /// Installs a controlled Unix editor from the prepared native artifact.
 #[cfg(unix)]
 fn install(name: &str, record: &Value) {
-    crate::native_alias::install(&std::env::temp_dir(), name, "editor", record);
+    crate::native_alias::install(
+        &maestro_test_directory::temporary_root(),
+        name,
+        "editor",
+        record,
+    );
 }
 /// Installs a controlled Unix editor that records its launch, then writes `content`.
 #[cfg(unix)]
@@ -554,7 +561,7 @@ fn install_editor(name: &str, content: &[u8], status: i32) {
 /// Builds the controlled edit effects and records actual argv plus original bytes.
 #[cfg(unix)]
 fn edit_record(content: &[u8], status: i32) -> Value {
-    let root = std::env::temp_dir();
+    let root = maestro_test_directory::temporary_root();
     serde_json::json!({
         "argv": root.join("argv"),
         "before": root.join("before"),
@@ -960,7 +967,7 @@ fn external_group(name: &str) {
         return;
     }
     for (index, (input, expected)) in cases::<OpsInput, Frames>(name).into_iter().enumerate() {
-        let _ = std::fs::remove_file(std::env::temp_dir().join("argv"));
+        let _ = std::fs::remove_file(maestro_test_directory::temporary_root().join("argv"));
         let command = input.visual.clone();
         maestro_tui::set_keybindings(manager());
         assert!(input.global.is_empty() && input.app.is_empty());
@@ -1032,7 +1039,7 @@ fn assert_arguments(command: &str) {
         "ed\t-x" => Some(("ed\t-x", &[])),
         _ => panic!("unexpected split-table row"),
     };
-    let observed = std::fs::read(std::env::temp_dir().join("argv")).ok();
+    let observed = std::fs::read(maestro_test_directory::temporary_root().join("argv")).ok();
     assert_eq!(observed.is_some(), expected.is_some());
     if let Some((executable, arguments)) = expected {
         let observed = observed.unwrap();
@@ -1049,7 +1056,8 @@ fn assert_arguments(command: &str) {
         assert_eq!(&fields[1..fields.len() - 1], arguments);
         assert_eq!(
             std::path::Path::new(fields.last().unwrap()),
-            std::env::temp_dir().join("maestro-extension-editor-1767323045006.md")
+            maestro_test_directory::temporary_root()
+                .join("maestro-extension-editor-1767323045006.md")
         );
         assert!(!std::path::Path::new(fields.last().unwrap()).exists());
     }
@@ -1089,7 +1097,7 @@ struct FaultExpected {
 fn install_inspector() {
     install(
         "inspect-mode",
-        &serde_json::json!({"copy": std::env::temp_dir().join("mode"), "code": 1}),
+        &serde_json::json!({"copy": maestro_test_directory::temporary_root().join("mode"), "code": 1}),
     );
 }
 /// Installs the editor that reaches the fault's own file effect.
@@ -1120,7 +1128,7 @@ fn external_editor_finally_cleans_and_restarts_after_io_failures() {
         return;
     }
     maestro_tui::set_keybindings(manager());
-    let root = std::env::temp_dir();
+    let root = maestro_test_directory::temporary_root();
     // A privileged run ignores the write and unlink faults, so it has nothing to check.
     if maestro_test_directory::deny(&root, 0o500)
         .unwrap()
@@ -1221,7 +1229,7 @@ struct NativeExpected {
 #[cfg(target_os = "linux")]
 fn inherited_descriptors(expected: bool) {
     use std::os::unix::fs::MetadataExt;
-    let root = std::env::temp_dir();
+    let root = maestro_test_directory::temporary_root();
     let observed = std::fs::read_to_string(root.join("descriptors")).unwrap();
     let actual: Vec<_> = (0..3)
         .map(|fd| {
@@ -1266,7 +1274,7 @@ fn external_editor_native_command_roundtrip_and_cleanup() {
 #[cfg(target_os = "linux")]
 fn native_case(input: NativeInput, expected: NativeExpected) {
     assert_eq!(input.mode, "native");
-    let root = std::env::temp_dir();
+    let root = maestro_test_directory::temporary_root();
     let path = root.join("maestro-extension-editor-1767323045006.md");
     for file in ["argv", "before", "descriptors"] {
         let _ = std::fs::remove_file(root.join(file));
@@ -1374,7 +1382,7 @@ fn external_editor_windows_uses_shell_while_unix_executes_directly() {
                 .map(|event| vec![event.into()]),
         );
         snapshot(&host, &expected);
-        let argv = std::fs::read(std::env::temp_dir().join("argv")).unwrap();
+        let argv = std::fs::read(maestro_test_directory::temporary_root().join("argv")).unwrap();
         let fields: Vec<_> = argv
             .strip_suffix(&[0])
             .unwrap()
@@ -1389,7 +1397,7 @@ fn external_editor_windows_uses_shell_while_unix_executes_directly() {
 #[cfg(unix)]
 fn selected_executable(index: usize) {
     let executable = [None, None, Some("fallback"), Some("chosen"), None][index];
-    let observed = std::fs::read(std::env::temp_dir().join("argv")).ok();
+    let observed = std::fs::read(maestro_test_directory::temporary_root().join("argv")).ok();
     assert_eq!(observed.is_some(), executable.is_some());
     if let Some(executable) = executable {
         assert_eq!(
@@ -1425,7 +1433,8 @@ fn native_record(scenario: &str) -> Value {
         _ => 0,
     };
     let mut record = edit_record(content, status);
-    record["descriptors"] = serde_json::json!(std::env::temp_dir().join("descriptors"));
+    record["descriptors"] =
+        serde_json::json!(maestro_test_directory::temporary_root().join("descriptors"));
     match scenario {
         "missing_read" => record["remove"] = serde_json::json!(true),
         "cleanup_directory" => record["directory"] = serde_json::json!(true),
@@ -1482,7 +1491,7 @@ fn external_editor_passes_environment_operand_to_native_child() {
     host.dialog.handle_input("\x07").unwrap();
     assert_eq!(text(&host.dialog), "changed\n");
     assert!(
-        !std::env::temp_dir()
+        !maestro_test_directory::temporary_root()
             .join("maestro-extension-editor-1767323045006.md")
             .exists()
     );

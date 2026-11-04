@@ -331,6 +331,12 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         "//! Credential configs.\n\n#[test]\nfn values_read_the_platform_directory() {\n    let value = std::env::temp_dir().to_string_lossy().into_owned();\n    assert!(!value.is_empty());\n}\n",
         &[5],
     ),
+    (
+        "maestro-chat",
+        "tests/extension_editor.rs",
+        "//! Extension editor fixtures.\n\n#[test]\nfn the_editor_reads_its_handoff_file() {\n    let path = std::env::temp_dir().join(\"maestro-extension-editor.md\");\n    std::fs::write(&path, b\"draft\").unwrap();\n}\n",
+        &[5],
+    ),
 ];
 
 #[test]

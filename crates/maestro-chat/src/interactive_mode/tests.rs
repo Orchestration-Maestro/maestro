@@ -89,7 +89,9 @@ pub(super) static ENV_PACKAGE_DIR: LazyLock<String> =
 pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive_startup.json");
 
 /// Runs `body` in a fresh single-test child whose working directory is a disposable root
-/// and whose package directory is `package` inside it, returning its standard error.
+/// and whose package directory is `package` inside it, returning its standard error. The
+/// child never inherits the runner's offline or telemetry choice, so the reporting
+/// requests it makes depend only on its own settings.
 pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path)) -> Vec<u8> {
     if maestro_test_process::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
@@ -107,6 +109,8 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
         .nocapture()
         .single_threaded()
         .current_dir(directory)
+        .env_remove("MAESTRO_OFFLINE")
+        .env_remove("MAESTRO_TELEMETRY")
         .envs([
             (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
             (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
@@ -231,7 +235,8 @@ type ReloadOperation = Box<dyn Fn() -> Pin<Box<dyn Future<Output = io::Result<()
 
 /// A resource loader that forwards to the default one, answering supplied themes, skills,
 /// successive prompt templates, context files and loaded extensions, and changing the
-/// configured theme while its themes are read.
+/// configured theme while its themes are read. Once the session extends its resources,
+/// the default loader, which loaded the discovered paths, answers the skills and themes.
 pub(super) struct ForwardingLoader {
     /// The default loader every other getter forwards to.
     inner: Rc<dyn ResourceLoader<Local>>,
@@ -251,6 +256,8 @@ pub(super) struct ForwardingLoader {
     pub(super) calls: RefCell<Vec<&'static str>>,
     /// A controlled reload operation, when supplied by a witness.
     pub(super) on_reload: RefCell<Option<ReloadOperation>>,
+    /// Whether the session handed the default loader the paths its extensions discovered.
+    extended: Cell<bool>,
 }
 
 /// The diagnostics a loader reports beside its skills, prompt templates and themes.
@@ -331,6 +338,7 @@ impl ForwardingLoader {
                 .or_else(|| loaded.then(|| Rc::new(load(paths, errors, &commands)))),
             calls: RefCell::default(),
             on_reload: RefCell::default(),
+            extended: Cell::new(false),
         }
     }
 }
@@ -408,6 +416,9 @@ impl ResourceLoader<Local> for ForwardingLoader {
     }
     fn get_skills(&self) -> Rc<LoadSkillsResult> {
         self.calls.borrow_mut().push("skills");
+        if self.extended.get() {
+            return self.inner.get_skills();
+        }
         Rc::clone(&self.skills)
     }
     fn get_prompts(&self) -> Rc<LoadPromptsResult> {
@@ -427,6 +438,9 @@ impl ResourceLoader<Local> for ForwardingLoader {
         if let Some((settings, name)) = self.select.borrow_mut().take() {
             settings.borrow_mut().set_theme(name);
         }
+        if self.extended.get() {
+            return self.inner.get_themes();
+        }
         Rc::clone(&self.themes)
     }
     fn get_contributions(&self) -> Rc<LoadContributionsResult> {
@@ -443,7 +457,9 @@ impl ResourceLoader<Local> for ForwardingLoader {
         self.inner.get_append_system_prompt()
     }
     fn extend_resources(&self, paths: ResourceExtensionPaths) -> io::Result<()> {
-        self.inner.extend_resources(paths)
+        self.inner.extend_resources(paths)?;
+        self.extended.set(true);
+        Ok(())
     }
     fn reload(&self) -> Pin<Box<dyn Future<Output = io::Result<()>> + '_>> {
         self.calls.borrow_mut().push("reload");
