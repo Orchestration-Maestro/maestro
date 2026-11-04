@@ -1,7 +1,8 @@
 //! Compiled factory calls reach the original owners before session binding.
 use maestro_app::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, Local, ResourceLoader,
-    ResourceLoaderOptions, SettingsManager, create_event_bus_for,
+    ResourceLoaderOptions, SettingsManager, configuration::config::CONFIG_DIR_NAME,
+    create_event_bus_for,
 };
 use maestro_test_process::{TestProcess, selection};
 use serde_json::{Value, json};
@@ -70,14 +71,11 @@ fn compiled_factory_resolves_acquires_and_restores_packages() {
     let root = crate::support::Root::new();
     let user_settings = json!({"packages": ["./empty"]});
     write_settings(&root, &user_settings, &json!({}));
-    let empty = root.path("agent/empty");
+    let empty = root.path("agent").join("empty");
     std::fs::create_dir(&empty).unwrap();
     std::fs::write(empty.join("package.json"), r#"{"maestro":{}}"#).unwrap();
-    let user = root.path("agent/git/example.test/team/repo");
-    let project = root.path(&format!(
-        "project/{}/git/example.test/team/repo",
-        maestro_app::configuration::config::CONFIG_DIR_NAME
-    ));
+    let user = git_fixture::repository(&root.path("agent"));
+    let project = git_fixture::repository(&root.path("project").join(CONFIG_DIR_NAME));
     let user_pin = git_fixture::pinned_repository(&user);
     let project_pin = git_fixture::pinned_repository(&project);
     let head = git_fixture::git(&user, &["rev-parse", "HEAD"]);
@@ -106,7 +104,7 @@ fn compiled_factory_resolves_acquires_and_restores_packages() {
         "pinned"
     );
     assert!(!user.join("untracked").exists());
-    let written = std::fs::read_to_string(root.path("agent/settings.json")).unwrap();
+    let written = std::fs::read_to_string(root.path("agent").join("settings.json")).unwrap();
     assert_eq!(
         serde_json::from_str::<Value>(&written).unwrap(),
         user_settings
@@ -135,11 +133,11 @@ fn observe_once(root: &crate::support::Root) -> Vec<Value> {
 
 /// Seeds both actual settings files without merging their documents.
 fn write_settings(root: &crate::support::Root, global: &Value, project: &Value) {
-    std::fs::write(root.path("agent/settings.json"), global.to_string()).unwrap();
-    let path = root.path(&format!(
-        "project/{}/settings.json",
-        maestro_app::configuration::config::CONFIG_DIR_NAME
-    ));
+    std::fs::write(root.path("agent").join("settings.json"), global.to_string()).unwrap();
+    let path = root
+        .path("project")
+        .join(CONFIG_DIR_NAME)
+        .join("settings.json");
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(path, project.to_string()).unwrap();
 }
@@ -179,7 +177,7 @@ fn recorded_options(
     let settings = Rc::new(RefCell::new(SettingsManager::create(
         &cwd,
         &agent_dir,
-        maestro_app::configuration::config::CONFIG_DIR_NAME,
+        CONFIG_DIR_NAME,
     )));
     let mut resources =
         ResourceLoaderOptions::<Local>::new(local, Rc::new(|_| Box::pin(async { Ok(None) })));
@@ -293,7 +291,7 @@ fn sdk_options(
 
 /// An empty package visible only through the SDK's original in-memory settings.
 fn sdk_package(root: &crate::support::Root) -> Value {
-    let empty = root.path("agent/empty");
+    let empty = root.path("agent").join("empty");
     std::fs::create_dir(&empty).unwrap();
     std::fs::write(empty.join("package.json"), r#"{"maestro":{}}"#).unwrap();
     json!([{"source": "./empty", "identity": format!("local:{}", empty.display()), "scope": "user", "installedPath": empty}])
