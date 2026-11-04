@@ -362,7 +362,7 @@ impl maestro_tools::BashOperations for ArtifactPending {
     > {
         Box::pin(async move {
             (options.on_data)(&vec![b'A'; 51201]);
-            std::fs::create_dir(std::env::temp_dir()).unwrap();
+            std::fs::create_dir(maestro_test_directory::temporary_root()).unwrap();
             (options.on_data)(b"ignored after failure");
             self.release.notified().await;
             self.settled
