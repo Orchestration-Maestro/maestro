@@ -171,7 +171,7 @@ fn end_process(pid: &str) -> io::Result<()> {
 /// A fresh named pipe in the temporary directory.
 fn fifo(label: &str) -> PathBuf {
     static NEXT: AtomicU32 = AtomicU32::new(0);
-    let path = std::env::temp_dir().join(format!(
+    let path = maestro_test_directory::temporary_root().join(format!(
         "maestro-{label}-{}-{}",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)

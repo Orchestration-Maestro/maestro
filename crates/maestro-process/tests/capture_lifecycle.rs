@@ -114,7 +114,8 @@ async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChi
 
 #[test]
 fn captured_process_keeps_native_command_and_raw_streams() {
-    let dir = std::env::temp_dir().canonicalize().unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let dir = owned.path();
     for (mode, stderr) in [
         (OutputMode::Capture, Some(300_006)),
         (OutputMode::Discard, None),
@@ -122,7 +123,7 @@ fn captured_process_keeps_native_command_and_raw_streams() {
         let mut command = async_command(child_programs::raw_stream_writer, &[]);
         command
             .arg("arg value")
-            .current_dir(&dir)
+            .current_dir(dir)
             .env("PROBE", "set");
         let output = runtime().block_on(async {
             let mut child = CapturedChild::spawn(&mut command).unwrap();

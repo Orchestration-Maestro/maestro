@@ -87,7 +87,7 @@ impl File {
     pub fn new(bytes: &[u8]) -> Self {
         use std::io::Write;
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
+        let path = maestro_test_directory::temporary_root().join(format!(
             "maestro-catalog-{}-{}.json",
             std::process::id(),
             NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)

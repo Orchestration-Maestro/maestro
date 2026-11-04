@@ -78,7 +78,7 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         ];
         return crate::subprocess::run_child(process.case("*"), &environment).unwrap();
     }
-    let marker = std::env::temp_dir().join(format!(
+    let marker = maestro_test_directory::temporary_root().join(format!(
         "maestro-catalog-auth-marker-{}",
         std::process::id()
     ));
