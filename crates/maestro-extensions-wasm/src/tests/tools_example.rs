@@ -1,6 +1,6 @@
 //! The shipped tool selector exercised through its registered callbacks on both adapters.
-use super::{controlled::Controlled, host::Harness, observed::Observed};
-use crate::component_adapter::{Capabilities, Exports};
+use super::{example_support::Adapter, host::Harness, observed::Observed};
+use crate::component_adapter::Capabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::{Value, json};
 
@@ -16,26 +16,21 @@ impl Extension for Tools {
 }
 
 /// Both existing adapters, serving the same registered callbacks.
-enum Host {
-    /// In-process author adapter.
-    Controlled(Controlled, Exports<Controlled>),
-    /// Built component adapter.
-    Component(Box<Harness>),
-}
+struct Host(Adapter);
 impl Host {
     /// Starts the shipped factory on the selected adapter.
     fn new(component: bool) -> Result<Self, String> {
         if component {
             let path = super::build::example_component("tools")?;
-            Ok(Self::Component(Box::new(
+            Ok(Self(Adapter::Component(Box::new(
                 super::block_on(Harness::start(&path)).map_err(|e| e.to_string())?,
-            )))
+            ))))
         } else {
             let (host, exports) = super::block_on(super::example_support::start::<Tools>())?;
             crate::component_adapter::install(std::rc::Rc::new(crate::component_adapter::Builder(
                 host.clone(),
             )));
-            Ok(Self::Controlled(host, exports))
+            Ok(Self(Adapter::Controlled(host, exports)))
         }
     }
     /// Supplies inventory, active selection and current-branch entries independently.
@@ -52,10 +47,7 @@ impl Host {
     }
     /// Mutates or reads observations without retaining a borrow across guest calls.
     fn observe<T>(&mut self, f: impl FnOnce(&mut Observed) -> T) -> T {
-        match self {
-            Self::Controlled(host, _) => f(&mut host.observe()),
-            Self::Component(host) => f(host.observed()),
-        }
+        self.0.observe(f)
     }
     /// Runs a registered session event through the public adapter.
     fn event(&mut self, name: &str) -> Result<(), String> {
@@ -65,15 +57,15 @@ impl Host {
         } else {
             json!({"type":name,"newLeafId":"leaf","oldLeafId":"old"})
         };
-        match self {
-            Self::Controlled(host, exports) => {
+        match &mut self.0 {
+            Adapter::Controlled(host, exports) => {
                 let caps = Capabilities {
                     ctx: host.context("/work"),
                     signal: None,
                 };
                 super::block_on(exports.invoke_event(key, event.to_string(), caps))?;
             }
-            Self::Component(host) => {
+            Adapter::Component(host) => {
                 let caps = super::host_family::guest::Capabilities {
                     ctx: host.ordinary("/work").map_err(|e| e.to_string())?,
                     signal: None,
@@ -148,13 +140,13 @@ impl Host {
     /// Opens the registered selector with terminal input supplied to the existing driver.
     fn command(&mut self) -> Result<(), String> {
         let key = self.observe(|o| o.callback("command tools"))?;
-        match self {
-            Self::Controlled(host, exports) => super::block_on(exports.invoke_command(
+        match &mut self.0 {
+            Adapter::Controlled(host, exports) => super::block_on(exports.invoke_command(
                 key,
                 "ignored arguments".into(),
                 host.command_context("/work"),
             )),
-            Self::Component(host) => super::example_support::invoke_command_on_component(
+            Adapter::Component(host) => super::example_support::invoke_command_on_component(
                 host,
                 key,
                 "ignored arguments",
@@ -189,7 +181,7 @@ impl Host {
 
 impl Drop for Host {
     fn drop(&mut self) {
-        let Self::Controlled(host, _) = self else {
+        let Adapter::Controlled(host, _) = &mut self.0 else {
             return;
         };
         super::example_support::release_all(

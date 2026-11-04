@@ -44,13 +44,7 @@ impl Host {
     }
     /// Notification messages and severities in their arrival order.
     fn notifications(&mut self) -> Vec<Value> {
-        self.observe(|o| {
-            super::ui_host::receipts(&o.transcript)
-                .into_iter()
-                .filter(|r| r.method == "notify")
-                .map(|r| r.operands)
-                .collect()
-        })
+        self.observe(|o| super::ui_host::notifications(o))
     }
 }
 #[test]

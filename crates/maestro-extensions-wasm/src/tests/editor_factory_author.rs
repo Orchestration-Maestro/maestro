@@ -43,9 +43,7 @@ impl EditorComponent for Plain {
         Ok(self.text.borrow().clone())
     }
     fn set_text(&self, text: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
-        self.text.replace(text.to_owned());
-        let handler = self.change.borrow().clone();
-        handler.map_or(Ok(()), |handler| handler(text, emitter))
+        super::editor_text::replace(&self.text, &self.change, text, emitter)
     }
     fn handle_input(&self, data: &str, emitter: CallbackEmitter<'_>) -> ExtensionResult<()> {
         let text = self.text.borrow().clone();

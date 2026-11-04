@@ -219,14 +219,12 @@ struct FooterView {
     _capture: Capture,
 }
 
+#[path = "../../tests/support/harness/footer_view.rs"]
+mod footer_view;
+
 impl ComponentView for FooterView {
     fn render(&self, _: u32, _: CallbackEmitter<'_>) -> ExtensionResult<Vec<String>> {
-        let branch = self.footer.get_git_branch()?;
-        let statuses = self.footer.get_extension_statuses()?;
-        let providers = self.footer.get_available_provider_count()?;
-        Ok(vec![
-            json!([self.label, branch, statuses, providers]).to_string(),
-        ])
+        footer_view::render(&self.label, &self.footer)
     }
     fn invalidate(&self, _: CallbackEmitter<'_>) -> ExtensionResult<()> {
         Ok(())

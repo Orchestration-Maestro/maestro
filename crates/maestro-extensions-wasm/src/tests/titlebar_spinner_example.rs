@@ -8,7 +8,6 @@
 use std::task::{Context, Poll, Waker};
 
 use serde_json::{Value, json};
-use tokio::sync::oneshot;
 
 use super::controlled::Controlled;
 use super::example_support::start;
@@ -108,13 +107,6 @@ fn titles(observed: &Observed) -> Vec<String> {
         .collect()
 }
 
-/// Holds exactly the next native wait and exposes its entry and cancellation.
-fn hold(observed: &mut Observed) -> (oneshot::Receiver<()>, oneshot::Sender<()>) {
-    let (gate, entered, open) = super::observed::gate();
-    observed.hold_next_idle(gate);
-    (entered, open)
-}
-
 /// Polls once without a watchdog or a wall-clock dependency.
 fn poll(tail: &mut ExtensionFuture<'static, ()>) -> Poll<Result<(), String>> {
     tail.as_mut().poll(&mut Context::from_waker(Waker::noop()))
@@ -125,7 +117,7 @@ fn poll(tail: &mut ExtensionFuture<'static, ()>) -> Poll<Result<(), String>> {
 fn titlebar_spinner_cadence_and_live_title() -> Result<(), String> {
     let driver = Driver::new()?;
     driver.name(Some("named 雪"));
-    let (entered, mut open) = hold(&mut driver.host.observe());
+    let (entered, mut open) = super::observed::hold(&mut driver.host.observe());
     driver.event("agent_start", "/work/project/")?;
     assert_eq!(
         titles(&driver.host.observed()),
@@ -144,7 +136,7 @@ fn titlebar_spinner_cadence_and_live_title() -> Result<(), String> {
         if index == 2 {
             driver.name(Some(""));
         }
-        let (entered, next) = hold(&mut driver.host.observe());
+        let (entered, next) = super::observed::hold(&mut driver.host.observe());
         open.send(()).unwrap();
         assert!(poll(&mut tail).is_pending());
         super::block_on(entered).unwrap();
@@ -182,7 +174,7 @@ fn titlebar_spinner_cadence_and_live_title() -> Result<(), String> {
 fn titlebar_spinner_lifecycle_cancels_pending_waits() -> Result<(), String> {
     let driver = Driver::new()?;
     for ending in ["agent_start", "agent_end", "session_shutdown"] {
-        let (entered, open) = hold(&mut driver.host.observe());
+        let (entered, open) = super::observed::hold(&mut driver.host.observe());
         driver.event("agent_start", r"C:\work\project\")?;
         let mut tail = driver.tail();
         assert!(poll(&mut tail).is_pending());
@@ -196,11 +188,11 @@ fn titlebar_spinner_lifecycle_cancels_pending_waits() -> Result<(), String> {
             "Maestro - after - project"
         );
         if ending == "agent_start" {
-            let (entered, open) = hold(&mut driver.host.observe());
+            let (entered, open) = super::observed::hold(&mut driver.host.observe());
             let mut restarted = driver.tail();
             assert!(poll(&mut restarted).is_pending());
             super::block_on(entered).unwrap();
-            let (entered, pending) = hold(&mut driver.host.observe());
+            let (entered, pending) = super::observed::hold(&mut driver.host.observe());
             open.send(()).unwrap();
             assert!(poll(&mut restarted).is_pending());
             super::block_on(entered).unwrap();
@@ -332,13 +324,13 @@ fn component_lifecycle(harness: &mut super::host::Harness, ending: &str) -> wasm
     let exports = harness.exports.clone();
     super::block_on(harness.store.run_concurrent(async |accessor| {
         component_event(accessor, &exports, start, "agent_start", context).await?;
-        let (entered, open) = accessor.with(|mut a| hold(&mut a.get().observed));
+        let (entered, open) = accessor.with(|mut a| super::observed::hold(&mut a.get().observed));
         accessor.with(|mut a| assert_eq!(titles(&a.get().observed), ["Maestro - project"]));
         let key = accessor.with(|mut a| *a.get().observed.bus.tails.last().unwrap());
         let tail = exports.call_invoke_tail(accessor, super::host::borrow(key));
         let control = async {
             entered.await.unwrap();
-            let (entered, pending) = accessor.with(|mut a| hold(&mut a.get().observed));
+            let (entered, pending) = accessor.with(|mut a| super::observed::hold(&mut a.get().observed));
             open.send(()).unwrap();
             entered.await.unwrap();
             accessor.with(|mut a| {

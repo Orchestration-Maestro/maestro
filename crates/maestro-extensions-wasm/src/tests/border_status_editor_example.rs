@@ -16,7 +16,7 @@ use super::controlled::Controlled;
 use super::observed::Observed;
 use super::renderer_host::{Call, Reply};
 use super::theme_host::{Palette, Reply as Answer};
-use crate::component_adapter::{Capabilities, Exports, release};
+use crate::component_adapter::{Exports, release};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 #[path = "../../../../examples/extensions/border_status_editor.rs"]
@@ -85,30 +85,12 @@ impl Driver {
 
     /// Delivers one lifecycle event and checks the handler returned no result.
     fn event(&self, name: &str) -> Result<(), String> {
-        let key = self.host.observed().callback(&format!("event {name}"))?;
-        let event = super::documents::document(name).to_string();
-        let outcome = super::block_on(self.exports.invoke_event(
-            key,
-            event,
-            Capabilities {
-                ctx: self.host.context("/work"),
-                signal: None,
-            },
-        ))?;
-        let answer = super::documents::Answer::of(super::guest_family::delivery(outcome))?;
-        match answer.ended {
-            super::documents::Ended::Returned(None) => Ok(()),
-            super::documents::Ended::Failed(error) => Err(error),
-            other @ super::documents::Ended::Returned(_) => {
-                Err(format!("unexpected event answer: {other:?}"))
-            }
-        }
+        super::example_support::event(&self.host, &self.exports, name)
     }
 
     /// The most recently announced host-owned work.
     fn tail(&self) -> ExtensionFuture<'static, ()> {
-        let key = *self.host.observed().bus.tails.last().expect("announced");
-        Box::pin(Exports::<Controlled>::invoke_tail(key))
+        super::example_support::announced(&self.host)
     }
 
     /// The top border the shown editor renders 40 columns wide.
@@ -133,7 +115,7 @@ impl Driver {
 
     /// Starts working and waits until the first 80 ms wait holds.
     fn start(&self) -> Result<(ExtensionFuture<'static, ()>, oneshot::Sender<()>), String> {
-        let (entered, open) = hold(&mut self.host.observe());
+        let (entered, open) = super::observed::hold(&mut self.host.observe());
         self.event("agent_start")?;
         let mut tail = self.tail();
         assert!(poll(&mut tail).is_pending());
@@ -147,7 +129,7 @@ impl Driver {
         tail: &mut ExtensionFuture<'static, ()>,
         open: oneshot::Sender<()>,
     ) -> oneshot::Sender<()> {
-        let (entered, next) = hold(&mut self.host.observe());
+        let (entered, next) = super::observed::hold(&mut self.host.observe());
         open.send(()).unwrap();
         assert!(poll(tail).is_pending());
         super::block_on(entered).unwrap();
@@ -175,13 +157,6 @@ impl Drop for Driver {
         names.extend(std::iter::repeat_n("bus tail".to_owned(), tails));
         super::example_support::release_all(&self.host, &names);
     }
-}
-
-/// Holds exactly the next native wait and exposes its entry and release.
-fn hold(observed: &mut Observed) -> (oneshot::Receiver<()>, oneshot::Sender<()>) {
-    let (gate, entered, open) = super::observed::gate();
-    observed.hold_next_idle(gate);
-    (entered, open)
 }
 
 /// Polls once without a watchdog or a wall-clock dependency.

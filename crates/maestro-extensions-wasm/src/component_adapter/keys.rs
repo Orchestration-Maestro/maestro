@@ -10,8 +10,8 @@ use std::rc::Rc;
 use super::widget_imports::{KeyHint, KeybindingsAnswer, KeybindingsRequest, WidgetImports};
 use super::widgets::{Builder, host_style};
 use crate::{
-    EditorTheme, ExtensionResult, KeybindingConflict, KeybindingDefinition, KeybindingsConfig,
-    KeybindingsManager, KeybindingsPort, SelectListTheme,
+    EditorTheme, ExtensionResult, KeybindingConflict, KeybindingDefinition, KeybindingKeys,
+    KeybindingsConfig, KeybindingsManager, KeybindingsPort, SelectListTheme,
 };
 
 /// A host keybindings manager kept by its facade.
@@ -130,4 +130,15 @@ impl<I: WidgetImports> Builder<I> {
     pub(super) fn hint(&self, hint: KeyHint<'_>) -> ExtensionResult<String> {
         self.0.key_hint(hint)
     }
+}
+
+/// Bindings from their wire form, converting each binding's keys with `keys`.
+pub(crate) fn bindings<W>(
+    config: Vec<(String, Option<W>)>,
+    keys: impl Fn(W) -> KeybindingKeys,
+) -> KeybindingsConfig {
+    config
+        .into_iter()
+        .map(|(id, bound)| (id, bound.map(&keys)))
+        .collect()
 }

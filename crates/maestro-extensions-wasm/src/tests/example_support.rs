@@ -6,14 +6,33 @@
 )]
 
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use super::controlled::Controlled;
 use super::host::Harness;
 use super::host_family::guest::{ToolCapabilities, ToolInvocation};
 use super::observed::Observed;
-use crate::component_adapter::{Exports, release};
+use crate::ExtensionFuture;
+use crate::component_adapter::{Capabilities, Exports, release};
 use crate::loader::Extension;
+
+/// The controlled adapter and the built component, serving the same supplied observations.
+pub enum Adapter {
+    /// Native execution of the unchanged factory on the controlled adapter.
+    Controlled(Controlled, Exports<Controlled>),
+    /// The built component.
+    Component(Box<Harness>),
+}
+
+impl Adapter {
+    /// Mutates or reads observations without holding a borrow across callbacks.
+    pub fn observe<T>(&mut self, f: impl FnOnce(&mut Observed) -> T) -> T {
+        match self {
+            Self::Controlled(host, _) => f(&mut host.observe()),
+            Self::Component(host) => f(host.observed()),
+        }
+    }
+}
 
 /// Starts a shipped factory on a fresh controlled host.
 pub async fn start<E: Extension>() -> Result<(Controlled, Exports<Controlled>), String> {
@@ -115,6 +134,52 @@ pub fn registered_metadata(text: &str) -> Value {
 /// Parses the caller-visible result without re-decoding its structured details.
 pub fn result_value(encoded: &str) -> Value {
     serde_json::from_str(encoded).unwrap()
+}
+
+/// Delivers one lifecycle event through its registered handler and returns the handler's
+/// failure, if any.
+pub fn event(host: &Controlled, exports: &Exports<Controlled>, name: &str) -> Result<(), String> {
+    let key = host.observed().callback(&format!("event {name}"))?;
+    let event = super::documents::document(name).to_string();
+    let outcome = super::block_on(exports.invoke_event(
+        key,
+        event,
+        Capabilities {
+            ctx: host.context("/work"),
+            signal: None,
+        },
+    ))?;
+    let answer = super::documents::Answer::of(super::guest_family::delivery(outcome))?;
+    match answer.ended {
+        super::documents::Ended::Returned(None) => Ok(()),
+        super::documents::Ended::Failed(error) => Err(error),
+        other @ super::documents::Ended::Returned(_) => {
+            Err(format!("unexpected event answer: {other:?}"))
+        }
+    }
+}
+
+/// The most recently announced host-owned work of a controlled factory.
+pub fn announced(host: &Controlled) -> ExtensionFuture<'static, ()> {
+    let key = *host.observed().bus.tails.last().expect("announced");
+    Box::pin(Exports::<Controlled>::invoke_tail(key))
+}
+
+/// Supplies all session entries rather than a branch projection.
+pub fn history(host: &mut Harness, entries: &Value) {
+    host.observed().readers.control(
+        &json!({"bind":{"replies":[{"method":"getEntries","args":[],"value":entries}]}})
+            .to_string(),
+    );
+}
+
+/// Releases every registration a built component host received and checks none stay live.
+pub fn release_component(harness: &mut Harness, names: &[&str]) {
+    for name in names {
+        let key = harness.callback(name).expect("a registration");
+        super::block_on(harness.release(key)).expect("a released registration");
+    }
+    assert_eq!(harness.store.data().observed.live, 0);
 }
 
 /// Releases list handlers and every registration in arrival order, asserting the host admitted

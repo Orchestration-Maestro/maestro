@@ -686,6 +686,15 @@ pub fn receipts(lines: &[String]) -> Vec<Receipt> {
     receipts_on("ui", lines)
 }
 
+/// The notification messages a host received and their exact severities.
+pub fn notifications(observed: &Observed) -> Vec<Value> {
+    receipts(&observed.transcript)
+        .into_iter()
+        .filter(|r| r.method == "notify")
+        .map(|r| r.operands)
+        .collect()
+}
+
 impl State {
     /// Removes every widget under `key` from both placements, queues each component for
     /// release and returns the disposals the guest runs first.
