@@ -786,6 +786,10 @@ fn escaped_angle_span_keeps_its_quote_marker_lines_as_text() {
 }
 
 /// Block kinds with their trimmed authored text, nesting containers in brackets.
+///
+/// Authored text shows where each block starts and ends in the source, which is
+/// what paragraph interruption decides. `observations::nodes` compares decoded
+/// inline children instead, so it would also assert the inline grammar's escaping.
 fn block_shapes(nodes: &[Node]) -> Vec<String> {
     nodes
         .iter()

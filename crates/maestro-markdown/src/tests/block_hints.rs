@@ -1,5 +1,5 @@
 //! Block hints are independent of later inline acceptance.
-use super::{Delimited, WORK, Work, hinted_blocks};
+use super::{Delimited, WORK, Work, grows_at_most_linearly, hinted_blocks};
 
 #[test]
 fn block_hints_clip_before_inline_operands() {
@@ -175,5 +175,5 @@ fn hinted_paragraph_reads_escaped_quote_marker_lines_once() {
         );
         WORK.with_borrow(|work| work.paragraph_bytes)
     });
-    assert!(super::grows_at_most_linearly(counts), "{counts:?}");
+    assert!(grows_at_most_linearly(counts), "{counts:?}");
 }
