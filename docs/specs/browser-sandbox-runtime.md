@@ -210,7 +210,7 @@ The staging path initializes the same module asynchronously in a document that h
 
 ### Startup lifecycle and completion
 
-The loader installs in one synchronous task. Removal therefore lands only between tasks: before the host reads readiness, after it replies, while a srcdoc frame loads its served glue, or after the document is written. The witnesses remove the frame at each of those points.
+The loader installs in one synchronous task. Removal therefore lands only between tasks: before the host reads readiness, after it replies, in a srcdoc frame after the head script runs and before the loader, or after the document is written. The witnesses remove the frame at each of those points.
 
 | Row | Observation |
 | --- | --- |
@@ -218,7 +218,7 @@ The loader installs in one synchronous task. Removal therefore lands only betwee
 | Frame registrations (`bootstrap_startup_leaves_no_frame_registrations`) | The frame records every `addEventListener`, `setTimeout`, `setInterval`, `requestAnimationFrame`, `requestIdleCallback`, `queueMicrotask` and `MutationObserver.observe` call from before the glue until after the loader. A started loader makes none and leaves no scaffold. A loader refused with `CompileError` because the policy lacks `'wasm-unsafe-eval'` makes none either and installs nothing; its configuration block and carrier stay inert |
 | Whole-source completion (`bootstrap_completion_follows_trailing_source`) | A supplied provider installs `complete`. The appended `if (window.complete) window.complete();` runs after the head and body scripts and after a script placed after `</html>`, and before a module script |
 | Removal during startup (`bootstrap_removal_during_startup_settles_once`) | Through the retained frame owner, at the four points above. Each removal, repeated, releases the owner's and the shared router's message registrations and the frame. The next ordinary load completes |
-| Host registrations (`bootstrap_outcomes_release_host_registrations`) | A started loader and one refused with `CompileError` on an invalid module each leave the host holding exactly its two message registrations. Removal releases both with the frame. The loader adds no closure, timer or hidden parent on the host side; hidden parents belong to execution, which it does not change |
+| Host registrations (`bootstrap_outcomes_release_host_registrations`) | A started loader and one refused with `CompileError` on an invalid module each leave the host holding exactly its two message registrations. Removal releases both with the frame. The loader adds no message registration on the host side |
 | One-shot handshake (`bootstrap_url_handshake_settles_once`) | On the supplied URL path, the writer page writes the loader document after readiness. The written document then replays readiness and an error. The test sends readiness again from the current frame, and an error from the replaced frame while the next load waits. The host sends each document once, and no error reaches a consumer |
 
 ### Public API and callers

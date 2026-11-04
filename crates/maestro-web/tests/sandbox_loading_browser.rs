@@ -508,6 +508,7 @@ pub async fn bootstrap_removal_during_startup_settles_once() {
     fixture.begin();
     let sandbox = adapter();
     // Before the host reads readiness, after it replies, before the served glue and after writing.
+    // For `url-pending` the fixture arms before loading, so its listener runs ahead of the host's.
     for (phase, signal) in [
         ("url-pending", "sandbox-ready"),
         ("url-replied", "sandbox-ready"),
@@ -560,14 +561,14 @@ pub async fn bootstrap_outcomes_release_host_registrations() {
     fixture.begin();
     let sandbox = adapter();
     for (wasm, outcome) in [
-        (bundle.wasm.clone(), [Some("function"), None]),
-        (vec![0], [Some("undefined"), Some("CompileError")]),
+        (&bundle.wasm[..], [Some("function"), None]),
+        (&[0][..], [Some("undefined"), Some("CompileError")]),
     ] {
         fixture.arm("loaded");
         sandbox
             .load_content(
                 "outcome",
-                &loader_document(REFUSAL, Bundle::served(&wasm), LOADED),
+                &loader_document(REFUSAL, Bundle::served(wasm), LOADED),
                 vec![],
                 vec![],
             )
