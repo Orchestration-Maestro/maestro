@@ -219,13 +219,7 @@ fn show_assistant(
     element.remove();
 }
 
-/// Descendants of `root` matching `selector`, in document order.
-fn all(root: &Element, selector: &str) -> Vec<Element> {
-    let nodes = root.query_selector_all(selector).unwrap();
-    (0..nodes.length())
-        .map(|index| nodes.item(index).unwrap().unchecked_into())
-        .collect()
-}
+use crate::support::dom::all;
 
 /// Text of every match of `selector` under `root`.
 fn texts(root: &Element, selector: &str) -> Vec<String> {

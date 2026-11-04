@@ -1,14 +1,14 @@
 //! Pane topology commands through the daemon's handler: reads, focus and neighbours.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, failure, request, root_pane,
-    split_pane, with_live_daemon,
+    TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request,
+    root_pane, with_live_daemon,
 };
 use maestro_daemon::app::state::Mode;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{
     AgentStatus, ErrorBody, PaneDirection, PaneFocusDirectionReason, PaneInfo, PaneLayoutSnapshot,
-    ResponseResult, SplitDirection,
+    ResponseResult,
 };
 use maestro_workspace::layout::PaneId;
 use serde_json::{Value, json};
@@ -37,14 +37,6 @@ fn layout_of(result: Result<ResponseResult, ErrorBody>) -> PaneLayoutSnapshot {
         Ok(ResponseResult::PaneLayout { layout }) => layout,
         other => panic!("expected a pane layout: {other:?}"),
     }
-}
-
-/// One workspace whose first tab holds a pane on the left and one on the right.
-fn pair() -> (TestApp, PaneId, PaneId) {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&app, 0);
-    let right = split_pane(&mut app, 0, left, SplitDirection::Right);
-    (app, left, right)
 }
 
 /// The public handle of a pane in the workspace at `workspace`.

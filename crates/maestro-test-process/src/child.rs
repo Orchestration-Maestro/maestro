@@ -7,7 +7,7 @@ use std::fmt;
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::num::ParseIntError;
-use std::process::{Child, Output};
+use std::process::{Child, Command, Output};
 use std::thread::JoinHandle;
 
 use crate::HARNESS_START;
@@ -97,6 +97,34 @@ pub fn port(name: &str) -> Result<u16, VariableError> {
             name: name.to_owned(),
             source,
         })
+}
+
+/// The containing [`Command`] that runs the ignored child `test` with `variables`
+/// added to its environment.
+///
+/// # Errors
+///
+/// Fails when the item has no module-qualified path or the child cannot be prepared.
+pub fn test_child_command<F: Fn()>(
+    test: F,
+    variables: &[(&str, &str)],
+) -> Result<Command, crate::TestProcessError> {
+    crate::TestProcess::child(test)?
+        .envs(variables.iter().copied())
+        .command()
+}
+
+/// The bytes the hex-encoded environment variable `name` carries, empty when unset.
+///
+/// # Errors
+///
+/// Fails when the variable holds text that is not two hexadecimal digits per byte. A
+/// trailing character with no pair is dropped.
+pub fn hex_variable(name: &str) -> Result<Vec<u8>, ParseIntError> {
+    let text = std::env::var(name).unwrap_or_default();
+    (0..text.len() / 2)
+        .map(|at| u8::from_str_radix(&text[at * 2..at * 2 + 2], 16))
+        .collect()
 }
 
 /// One of the three standard descriptors of a process.

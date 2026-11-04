@@ -1,7 +1,7 @@
 //! Pane zoom through the daemon's handler: modes, focus changes and no-ops.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, daemon_with_workspaces, event_names, events_after, failure, request, root_pane,
+    TestApp, daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
     split_pane,
 };
 use maestro_daemon::app::state::{CopyModeState, Mode};
@@ -9,7 +9,6 @@ use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
     ErrorBody, PaneZoomReason, PaneZoomResult, ResponseResult, SplitDirection,
 };
-use maestro_workspace::layout::PaneId;
 use serde_json::json;
 
 /// The zoom record a zoom result holds.
@@ -18,14 +17,6 @@ fn zoom_of(result: Result<ResponseResult, ErrorBody>) -> PaneZoomResult {
         Ok(ResponseResult::PaneZoom { zoom }) => zoom,
         other => panic!("expected a zoom result: {other:?}"),
     }
-}
-
-/// A one-workspace daemon whose first tab holds a pane on the left and one on the right.
-fn pair() -> (TestApp, PaneId, PaneId) {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&app, 0);
-    let right = split_pane(&mut app, 0, left, SplitDirection::Right);
-    (app, left, right)
 }
 
 /// The layout carried by the last published event.

@@ -25,13 +25,7 @@ fn find(root: &Element, selector: &str) -> Element {
         .unwrap()
         .unwrap_or_else(|| panic!("missing {selector}"))
 }
-/// Every matching descendant in order.
-fn all(root: &Element, selector: &str) -> Vec<Element> {
-    let nodes = root.query_selector_all(selector).unwrap();
-    (0..nodes.length())
-        .map(|index| nodes.item(index).unwrap().unchecked_into())
-        .collect()
-}
+use crate::support::dom::all;
 /// Click `element` as the page would.
 fn click(element: &Element) {
     element.unchecked_ref::<HtmlElement>().click();
