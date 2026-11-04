@@ -257,7 +257,8 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
         "pub fn value() -> u32 { 7 }\n",
     )
     .unwrap();
-    let binary = compile_toolchain_probe(&fixture);
+    let binary = prepared_probe();
+    generate_private_lock(fixture.root.path());
     let home = fixture.root.path().join("cargo-home");
     fs::remove_dir_all(&home).unwrap();
     let profile = fixture.root.path().join("parent.profraw");
@@ -306,40 +307,11 @@ fn generate_private_lock(root: &Path) {
     );
 }
 
-/// Compile an instrumented parent from the workspace's own resolution.
-fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
-    generate_private_lock(fixture.root.path());
-    let native = Path::new(env!("CARGO_BIN_EXE_development"))
-        .parent()
-        .unwrap();
-    let profile = native.file_name().unwrap().to_str().unwrap();
-    let profile = if profile == "debug" { "dev" } else { profile };
-    // Inherited runner flags keep the example's dependencies identical to the build's own units,
-    // so this compiles one file instead of a second copy of the closure.
-    let compile = Command::new(env!("CARGO"))
-        .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .args([
-            "rustc",
-            "--locked",
-            "--profile",
-            profile,
-            "--example",
-            "child_toolchain_probe",
-            "--target-dir",
-        ])
-        .arg(native.parent().unwrap())
-        .args(["--", "-C", "instrument-coverage"])
-        .output()
-        .unwrap();
-    assert!(
-        compile.status.success(),
-        "{}",
-        String::from_utf8_lossy(&compile.stderr)
-    );
-    native.join("examples").join(format!(
-        "child_toolchain_probe{}",
-        std::env::consts::EXE_SUFFIX
-    ))
+/// Take the instrumented parent that repository preparation stages.
+fn prepared_probe() -> PathBuf {
+    std::env::var_os("MAESTRO_CHILD_TOOLCHAIN_PROBE")
+        .map(PathBuf::from)
+        .expect("nextest native-fixture setup supplies the prepared probe")
 }
 
 /// Inspect actual parent counters after the instrumented process exits normally.

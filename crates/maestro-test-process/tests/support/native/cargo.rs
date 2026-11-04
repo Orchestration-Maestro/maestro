@@ -39,12 +39,14 @@ impl Record {
     }
 }
 
-/// The two example builds this fixture supports.
+/// The example builds this fixture supports.
 enum Example {
     /// The shared setup example whose declaration the caller supplies.
     Author,
     /// The single raw native fixture itself.
     Native,
+    /// The instrumented parent the toolchain counter test launches.
+    Probe,
 }
 
 /// A build parsed before any directory or log is written.
@@ -72,6 +74,7 @@ impl Build {
         let example = match option(args, "--example")?.to_str() {
             Some("native_fixture") => Example::Native,
             Some("prepare_author_component") => Example::Author,
+            Some("child_toolchain_probe") => Example::Probe,
             _ => return Err(io::Error::other("unknown preparation example")),
         };
         Ok(Self {
@@ -102,7 +105,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
         Some("clippy") => Ok(()),
         Some("install") => install(args),
         Some("build") if args.iter().any(|arg| arg == "--target") => build_wasm(args),
-        Some(operation @ ("build" | "run")) => {
+        Some(operation @ ("build" | "run" | "rustc")) => {
             build(record, &Build::parse(args)?, operation == "run")
         }
         _ => Err(io::Error::other("unknown fixture Cargo operation")),
@@ -142,7 +145,7 @@ fn install(args: &[OsString]) -> io::Result<()> {
     executable(&binary)
 }
 
-/// Stage an existing fixture, counting author and native builds independently.
+/// Stage an existing fixture, counting author, native and probe builds independently.
 fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
     let (name, source, log) = match build.example {
         Example::Author => (
@@ -151,6 +154,11 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
             "builds",
         ),
         Example::Native => ("native_fixture", std::env::current_exe()?, "native-builds"),
+        Example::Probe => (
+            "child_toolchain_probe",
+            std::env::current_exe()?,
+            "probe-builds",
+        ),
     };
     let declaration = if matches!(build.example, Example::Author) {
         let text = std::fs::read_to_string(&record.template)?;
@@ -181,8 +189,8 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
             .open(log)?,
         "build"
     )?;
-    if matches!(build.example, Example::Native) {
-        let message = serde_json::json!({"reason": "compiler-artifact", "target": {"name": "native_fixture"}, "executable": path});
+    if !matches!(build.example, Example::Author) {
+        let message = serde_json::json!({"reason": "compiler-artifact", "target": {"name": name}, "executable": path});
         write_stdout(&serde_json::to_vec(&message)?)?;
         write_stdout(b"\n")?;
     }
