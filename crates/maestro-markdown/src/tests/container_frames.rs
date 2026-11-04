@@ -814,7 +814,6 @@ fn measured_frame(source: &str) -> usize {
 fn nested_item_frame_charges_its_settled_child() {
     let flat = measured_frame("- a\n  b");
     let nested = measured_frame("- a\n  - b");
-    eprintln!("flat={flat} nested={nested}");
     // Both items hold the same authored bytes, so only the child the item admitted and the
     // list state it adopted separate the two frames.
     assert!(nested > flat + flat / 4, "flat={flat} nested={nested}");
@@ -824,7 +823,6 @@ fn nested_item_frame_charges_its_settled_child() {
 fn item_frame_charges_a_quotes_settled_descendants() {
     let plain = measured_frame("- > a\n  > b");
     let nested = measured_frame("- > a\n  > - b");
-    eprintln!("plain={plain} nested={nested}");
     // The quoted list inside the item adds its state and its item's nodes to the frame.
     assert!(nested > plain + plain / 4, "plain={plain} nested={nested}");
 }
@@ -836,10 +834,9 @@ fn quote_resumed_nested_list_frame_charges_each_allocation_once() {
     let sizes = [32, 64, 128];
     let frame = sizes.map(|n| measured_frame(&source(n)));
     let payload = sizes.map(|n| retained_document(&crate::parse(source(n))).bytes);
-    eprintln!("32/64/128 frame={frame:?} retained payload={payload:?}");
     for (frame, payload) in frame.iter().zip(payload) {
         assert!(*frame <= 2 * payload, "frame={frame:?} payload={payload:?}");
-        // A frame that keeps less than the payload it publishes lost a charge it still holds.
+        // A frame below nine tenths of the payload it publishes lost a charge it still holds.
         assert!(
             *frame * 10 >= payload * 9,
             "undercounted frame={frame:?} payload={payload:?}"
