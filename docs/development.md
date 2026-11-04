@@ -251,13 +251,13 @@ inventory before invoking assertions, then checks each family in pairs:
 exports. Both exports of a pair run at once, each in a fresh page of its own
 driver, and the pair settles before the next starts. A failing export closes its
 own page and the run continues; the browser and the server close once every
-family has run. Two drivers connect to the one launched browser, so
-each export keeps its own connection, disposable browser context, page lifecycle
-and policy-error accounting. Each export records its diagnostics on its own
-driver, so completion logs within a pair can arrive out of order, and an odd
-last export runs alone. Packaging also builds the two runtime-module fixtures, each from its
-own manifest and lock with its own binding glue, into a copy of the fixture
-package.
+family has run. Two drivers connect to the one launched browser, and each keeps
+one connection, which its exports share across pairs. Every export still gets
+its own disposable browser context, page lifecycle and policy-error accounting.
+Each driver records its exports' diagnostics, so completion logs within a pair
+can arrive out of order, and an odd last export runs alone. Packaging also
+builds the two runtime-module fixtures, each from its own manifest and lock with
+its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)

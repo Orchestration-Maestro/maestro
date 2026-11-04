@@ -1,7 +1,8 @@
 //! Browser export qualification with the supplied pinned Chromium.
 //!
 //! The development command owns preparation and cleanup. Browser operations use one
-//! low-level library connection, with default-world bindings routed by renderer session.
+//! low-level library connection per driver, with default-world bindings routed by
+//! renderer session.
 
 use connection::Dispatcher;
 use inputs::{ExpectedError, Inventory};
@@ -392,31 +393,26 @@ async fn run_cases<S>(
     for (family, names) in families {
         let mut passed = 0;
         for pair in names.chunks(2) {
-            let outcomes = match pair {
-                [one, two] => {
-                    log(&mut *first, &format!("START {family} {one}"));
-                    log(&mut *second, &format!("START {family} {two}"));
-                    let (left, right) = futures_util::future::join(
-                        case(&mut *first, family, one),
-                        case(&mut *second, family, two),
-                    )
-                    .await;
-                    [Some(left), Some(right)]
-                }
-                [one] => {
-                    log(&mut *first, &format!("START {family} {one}"));
-                    [Some(case(&mut *first, family, one).await), None]
-                }
-                _ => [None, None],
-            };
-            let settled = pair
-                .iter()
-                .zip(outcomes)
-                .filter_map(|(name, outcome)| outcome.map(|outcome| (name, outcome)));
-            for (slot, (name, outcome)) in [&mut *first, &mut *second].into_iter().zip(settled) {
-                let failure = settle(slot, log, family, name, outcome);
-                passed += usize::from(failure.is_none());
-                failures.extend(failure);
+            let one = &pair[0];
+            log(&mut *first, &format!("START {family} {one}"));
+            if let Some(two) = pair.get(1) {
+                log(&mut *second, &format!("START {family} {two}"));
+                let (left, right) = futures_util::future::join(
+                    case(&mut *first, family, one),
+                    case(&mut *second, family, two),
+                )
+                .await;
+                let failed = settle(&mut *first, log, family, one, left);
+                passed += usize::from(failed.is_none());
+                failures.extend(failed);
+                let failed = settle(&mut *second, log, family, two, right);
+                passed += usize::from(failed.is_none());
+                failures.extend(failed);
+            } else {
+                let outcome = case(&mut *first, family, one).await;
+                let failed = settle(&mut *first, log, family, one, outcome);
+                passed += usize::from(failed.is_none());
+                failures.extend(failed);
             }
         }
         log(

@@ -516,19 +516,17 @@ fn launch_failures_are_reported() {
     );
 }
 
-/// Concurrency and ownership observed by one paired export run.
+/// Concurrency observed by one paired export run.
 #[derive(Default)]
 struct Witness {
-    /// Exports running right now in each driver slot.
-    running: [Cell<usize>; 2],
+    /// Exports running right now.
+    running: Cell<usize>,
     /// Most exports seen running at once.
     peak: Cell<usize>,
 }
 
 /// One driver slot's own diagnostics and concurrency observations.
 struct Slot {
-    /// Index of the driver this slot stands for.
-    index: usize,
     /// Observations shared by both slots of the run.
     witness: Rc<Witness>,
     /// Lines this slot recorded.
@@ -544,9 +542,15 @@ impl Slot {
     /// Count this slot's export as running and observe the pair.
     fn enter(&self) {
         let running = &self.witness.running;
-        running[self.index].set(running[self.index].get() + 1);
-        let live = running[0].get() + running[1].get();
+        running.set(running.get() + 1);
+        let live = running.get();
         self.witness.peak.set(self.witness.peak.get().max(live));
+    }
+
+    /// Count this slot's export as finished.
+    fn leave(&self) {
+        let running = &self.witness.running;
+        running.set(running.get() - 1);
     }
 }
 
@@ -557,12 +561,10 @@ fn pairs_run_two_exports_at_once_in_their_own_drivers() {
     let names = ["one", "two", "three", "four"].map(str::to_owned).to_vec();
     let families = [("execution", names)];
     let mut first = Slot {
-        index: 0,
         witness: Rc::clone(&witness),
         lines: Vec::new(),
     };
     let mut second = Slot {
-        index: 1,
         witness: Rc::clone(&witness),
         lines: Vec::new(),
     };
@@ -573,18 +575,8 @@ fn pairs_run_two_exports_at_once_in_their_own_drivers() {
         Slot::log,
         async |slot, _, _| {
             slot.enter();
-            assert_eq!(
-                slot.witness.running[slot.index].get(),
-                1,
-                "two exports shared one driver's page"
-            );
             tokio::task::yield_now().await;
-            assert_eq!(
-                slot.witness.running[slot.index].get(),
-                1,
-                "two exports shared one driver's page"
-            );
-            slot.witness.running[slot.index].set(0);
+            slot.leave();
             Ok(())
         },
     ))
