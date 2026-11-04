@@ -54,8 +54,8 @@ const BASE: &str = "TEST_PREPARE_BASE";
 const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 /// The packages the browser graph is built from.
 const BROWSER_PACKAGES: [&str; 2] = ["maestro-web", "maestro-tooling"];
-/// The directory of the package's examples, which each component hashes for itself.
-const COMPONENT_EXAMPLES: &str = "crates/maestro-extensions-wasm/examples";
+/// The directory of the package's fixture components, which each component hashes for itself.
+const COMPONENT_EXAMPLES: &str = "crates/maestro-extensions-wasm/tests/support";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
 /// the Cargo configuration.
 const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"];

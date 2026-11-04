@@ -20,13 +20,15 @@ const MANIFEST: [&str; 2] = ["# example-index:start", "# example-index:end"];
 const CRATE: &str = "crates/maestro-extensions-wasm";
 /// The crate's native preparation program, the one crate example that is not a component.
 const PREPARATION: &str = "prepare_author_component";
+/// The crate's fixture components, relative to the crate.
+const FIXTURES: &str = "tests/support";
 
 /// One example target of the component crate.
 struct Target {
     /// Cargo target name.
     name: String,
-    /// Manifest path of a shipped example; crate examples use Cargo's default location.
-    path: Option<String>,
+    /// Manifest path of the target's source, relative to the crate.
+    path: String,
 }
 
 /// Refresh the generated regions and guide lock, or check them without changing files.
@@ -35,7 +37,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         return Err(io::Error::other("usage: example-index [--check]"));
     }
     let folder = checkout.join("examples/extensions");
-    let local = checkout.join(CRATE).join("examples");
+    let local = checkout.join(CRATE).join(FIXTURES);
     let targets = targets(&folder, &local)?;
     let regions = [
         (folder.join("README.md"), README, table(&folder)?),
@@ -134,7 +136,7 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
         if folder.join(&source).is_file() {
             targets.push(Target {
                 name: example_files::target_name(folder, &folder.join(&source))?,
-                path: Some(format!("../../examples/extensions/{source}")),
+                path: format!("../../examples/extensions/{source}"),
             });
         }
     }
@@ -145,7 +147,7 @@ fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
             Some(stem) if stem != PREPARATION && entry.file_type()?.is_file() => {
                 targets.push(Target {
                     name: example_files::target_name(local, &entry.path())?,
-                    path: None,
+                    path: format!("{FIXTURES}/{file}"),
                 });
             }
             _ => {}
@@ -167,14 +169,9 @@ fn manifest(targets: &[Target]) -> String {
     let tables: Vec<String> = targets
         .iter()
         .map(|target| {
-            let path = target
-                .path
-                .as_ref()
-                .map(|path| format!("path = \"{path}\"\n"))
-                .unwrap_or_default();
             format!(
-                "[[example]]\nname = \"{}\"\n{path}crate-type = [\"cdylib\"]\n",
-                target.name
+                "[[example]]\nname = \"{}\"\npath = \"{}\"\ncrate-type = [\"cdylib\"]\n",
+                target.name, target.path
             )
         })
         .collect();

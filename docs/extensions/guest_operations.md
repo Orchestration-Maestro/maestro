@@ -53,7 +53,7 @@ fn register_read(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
 }
 ```
 
-The [compiled registration example](../../crates/maestro-extensions-wasm/examples/context_bridge/builtin_registered.rs)
+The [compiled registration example](../../crates/maestro-extensions-wasm/tests/support/context_bridge/builtin_registered.rs)
 replaces edit operations, wraps `execute` to report progress, and registers the
 retained definition. It also selects the same definition from
 `create_all_tool_definitions`. The production-host tests invoke preparation,
@@ -246,7 +246,7 @@ sanitization before recording and painting them. Direct `exec` calls still recei
 raw bytes. Supplying the same operations to `BashToolOptions` retains the native
 tool's truncation, artifact and status formatting.
 
-The executable [local shell author example](../../crates/maestro-extensions-wasm/examples/local_shell_component.rs)
+The executable [local shell author example](../../crates/maestro-extensions-wasm/tests/support/local_shell_component.rs)
 shows direct execution and interactive interception through the same facade.
 
 ## Replace search observations

@@ -3488,7 +3488,7 @@ fn maestro_hook_staged_clippy_warning_blocks_after_restaging() {
 /// The files the test build's author preparation is checked against.
 #[cfg(unix)]
 const AUTHOR_SETUP_SOURCES: [&str; 8] = [
-    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
     "crates/maestro-extensions-wasm/src/tests/build.rs",
     "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
     "crates/maestro-tooling/src/example_files.rs",
@@ -3584,7 +3584,7 @@ fn example_builds_on_library(
         &root.join("Cargo.lock"),
         std::time::Duration::from_secs(3600),
     );
-    let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
+    let information = "prepare_author_component: crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs\n";
     let copy = profile.join("examples/prepare_author_component-1");
     fs::write(&copy, "copy\n").unwrap();
     fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
@@ -4102,7 +4102,7 @@ fn example_index_discovers_independent_additions() {
 /// Write a checkout with stale generated regions and an untouched preparation program.
 fn example_checkout(root: &Path) {
     let folder = root.join("examples/extensions");
-    let local = root.join("crates/maestro-extensions-wasm/examples");
+    let local = root.join("crates/maestro-extensions-wasm/tests/support");
     let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
     fs::create_dir_all(&fixture).unwrap();
     fs::write(
@@ -4147,7 +4147,9 @@ fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::Exit
 fn example_index_renders_targets() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let folder = root.path().join("examples/extensions");
-    let local = root.path().join("crates/maestro-extensions-wasm/examples");
+    let local = root
+        .path()
+        .join("crates/maestro-extensions-wasm/tests/support");
     example_checkout(root.path());
     fs::create_dir_all(folder.join("with-deps")).unwrap();
     fs::create_dir_all(folder.join("zebra")).unwrap();
@@ -4182,7 +4184,7 @@ fn example_index_renders_targets() {
     );
     assert_eq!(
         rendered.0,
-        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\npath = \"tests/support/bridge.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\npath = \"tests/support/plain.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
     );
     assert_eq!(
         rendered.1,

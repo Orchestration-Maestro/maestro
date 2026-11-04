@@ -699,6 +699,16 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
     );
     write("tests/helper.rs", FORBID);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    std::fs::create_dir(root.join("tests/support")).unwrap();
+    write("tests/support/component.rs", "");
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains(&support::native_path_text("tests/support/component.rs"))
+            && error.contains("must forbid"),
+        "{error}"
+    );
+    write("tests/support/component.rs", FORBID);
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// Whether `entry` is the `serde_json` map `remove` disallow entry.
