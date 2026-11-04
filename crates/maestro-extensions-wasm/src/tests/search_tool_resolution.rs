@@ -108,14 +108,26 @@ fn pinned_search_rejects_non_utf8_output() {
 #[cfg(unix)]
 #[test]
 fn pinned_search_rejects_non_utf8_path() {
+    use super::search_tools::executable_text;
     use std::os::unix::ffi::OsStrExt;
     let root = Scratch::new().unwrap();
     let directory = root.path().join(OsStr::from_bytes(b"invalid-\xff"));
-    std::fs::create_dir(&directory).unwrap();
-    fixture(&directory, b"fd 1.2.3", 0).unwrap();
-    assert!(
-        pinned_search_tool("fd", "fd", "1.2.3", directory.as_os_str())
-            .unwrap_err()
-            .starts_with("fd: executable path is not UTF-8:")
-    );
+    let executable = directory.join(format!("fd{}", std::env::consts::EXE_SUFFIX));
+    let rejection = format!("fd: executable path is not UTF-8: {}", executable.display());
+
+    assert_eq!(executable_text("fd", &executable), Err(rejection.clone()));
+
+    // A volume that refuses the byte spelling cannot hold the fixture, so the resolved path
+    // reaches the same rejection without one.
+    if root
+        .keeps_distinct(&[OsStr::from_bytes(b"invalid-\xff")])
+        .unwrap()
+    {
+        std::fs::create_dir(&directory).unwrap();
+        fixture(&directory, b"fd 1.2.3", 0).unwrap();
+        assert_eq!(
+            pinned_search_tool("fd", "fd", "1.2.3", directory.as_os_str()),
+            Err(rejection)
+        );
+    }
 }
