@@ -112,8 +112,8 @@ fn executed_step(directory: &Path, log: &Path, operands_log: &Path) -> SelfUpdat
             "executed-step",
             &json!({
                 "scenario": "output",
-                "stdout": [],
-                "stderr": [],
+                "stdout": b"inherited-stdout\n".to_vec(),
+                "stderr": b"inherited-stderr\n".to_vec(),
                 "code": 0,
                 "append": {
                     "path": log,
@@ -129,6 +129,38 @@ fn executed_step(directory: &Path, log: &Path, operands_log: &Path) -> SelfUpdat
 
 #[test]
 fn inherited_steps_run_authored_operands_with_the_parent_environment() {
+    if maestro_test_process::selection().is_child() {
+        inherited_steps_run_authored_operands_child();
+        return;
+    }
+    let output = maestro_test_process::TestProcess::current(
+        "inherited_steps_run_authored_operands_with_the_parent_environment",
+    )
+    .expect("the checked child runs")
+    .nocapture()
+    .case("*")
+    .output()
+    .expect("the checked child finishes");
+    assert!(
+        output.status.success(),
+        "the child body failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let frames = [
+        (&output.stdout, &b"inherited-stdout\n"[..]),
+        (&output.stderr, &b"inherited-stderr\n"[..]),
+    ];
+    for (stream, frame) in frames {
+        assert_eq!(
+            stream.windows(frame.len()).filter(|w| *w == frame).count(),
+            1,
+            "the step's inherited stream reaches the checked child"
+        );
+    }
+}
+
+/// The parent environment and the inherited streams, as the step's stand-in reports them.
+fn inherited_steps_run_authored_operands_child() {
     let scratch = crate::child::Scratch::new();
     let root = scratch.join("");
     let directory = Path::new(&root);
