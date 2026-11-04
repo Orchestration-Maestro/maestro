@@ -12,8 +12,8 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 ///
 /// `environment` gives the variables a case runs with. Cases with equal variables share
 /// one child, which inherits nothing else from this process except the coverage profile
-/// path, the Windows system root and the temporary directory, which a case's own
-/// variables may replace. Returns
+/// path, the compiled-code cache home the run's setup exports, the Windows system root and
+/// the temporary directory, which a case's own variables may replace. Returns
 /// `Ok(None)` in the calling process once every child passed; the test then returns.
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
