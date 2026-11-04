@@ -855,12 +855,12 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
-declares it only when it uses it, with the launcher as its one exception.
+declares it only when it uses it. The checked child launcher is the one
+exception to that development form: it declares the owner as a native normal
+dependency, and its launcher code reads `temporary_root`. Every other caller
+declares the development edge.
 Aliases follow the same rules. Build,
 optional, unqualified, browser and foreign-target declarations are rejected.
-The checked child launcher declares the owner as a native normal dependency,
-whose launcher code reads `temporary_root`; every other caller declares the
-development edge.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
