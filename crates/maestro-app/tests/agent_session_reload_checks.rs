@@ -60,6 +60,9 @@ fn reload_keeps_another_sessions_registered_provider() {
 
 /// Several sessions live in one process: every session reloads, and each one keeps its own
 /// registered provider while the others reload.
+///
+/// The two-session check reloads one session while the other stays idle; here every session
+/// reloads before any prompt, so one reload that reset the shared map would cost every answer.
 #[test]
 fn reloads_across_sessions_keep_each_others_registered_providers() {
     on_task_set(|_| async {
