@@ -100,7 +100,8 @@ impl Accumulated {
         self.value.truncate(end);
     }
 
-    /// Charge the unique source this accumulated value keeps alive.
+    /// Charge the unique source this accumulated value keeps alive, joining the
+    /// pieces it is still admitting once.
     #[cfg(test)]
     fn retained(&mut self, retained: &mut crate::tests::Retained) {
         self.value().retained(retained);
@@ -294,6 +295,7 @@ impl ItemLines {
         for line in &self.suffix {
             line.retained(retained);
         }
+        self.child.retained(retained);
     }
 
     /// Keep only what publication and a caller replay read from a stopped item.
@@ -375,8 +377,9 @@ impl CompletedItem {
 
     /// Charge the unique source this item keeps alive until its list publishes.
     #[cfg(test)]
-    pub(super) fn retained(&self, retained: &mut crate::tests::Retained) {
+    pub(super) fn retained(&mut self, retained: &mut crate::tests::Retained) {
         self.body.retained(retained);
+        self.child.retained(retained);
     }
 }
 

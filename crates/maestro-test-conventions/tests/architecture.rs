@@ -1645,13 +1645,7 @@ fn forbidden_edge_in_supplied_declared_metadata_is_reported() {
         .clone();
     edge["name"] = json!("maestro-settings");
     edge["path"] = json!(workspace.root.path().join("crates/maestro-settings"));
-    let mut patched = declared.clone();
-    patched["packages"]
-        .as_array_mut()
-        .unwrap()
-        .iter_mut()
-        .find(|package| package["name"] == "maestro-agent")
-        .unwrap()["dependencies"] = json!([edge]);
+    let patched = support::with_dependency(&declared, "maestro-agent", &edge);
 
     assert_eq!(
         check_declared_graph(workspace.root.path(), &patched),
@@ -1692,12 +1686,6 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
         package["dependencies"] = json!([]);
     }
     for &(from, targets) in support::policy::POLICY {
-        let index = declared["packages"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .position(|package| package["name"] == from)
-            .unwrap();
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !excluded.contains(&from);
             let support_edge = support::policy::test_support_callers(to).is_some();
@@ -1725,9 +1713,8 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
             } else {
                 format!("forbidden production dependency: {from} -> {to}")
             };
-            declared["packages"][index]["dependencies"] = json!([dependency]);
-            let result = check_declared_graph(root, &declared);
-            declared["packages"][index]["dependencies"] = json!([]);
+            let document = support::with_dependency(&declared, from, &dependency);
+            let result = check_declared_graph(root, &document);
             assert!(
                 matches!(&result, Err(error) if error.contains(&expected)),
                 "{from} -> {to}: {result:?}"

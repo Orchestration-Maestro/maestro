@@ -203,3 +203,71 @@ fn list_publication_reports_a_slot_that_is_not_an_item() {
     items[0].kind = crate::Kind::Gap;
     output.complete();
 }
+
+#[test]
+fn a_released_list_state_charges_what_it_holds_again() {
+    let mut output = pending_list("- a\n- b\n");
+    let mut state = output.take_list().expect("the pending list history");
+    let mut charges = crate::tests::Charges::default();
+    charges.adopt(Some(&mut state));
+    let once = charges.bytes();
+    for _ in 0..2 {
+        charges.release_adopted();
+        assert_eq!(charges.bytes(), 0, "a released adoption keeps no payload");
+        charges.adopt(Some(&mut state));
+        assert_eq!(
+            charges.bytes(),
+            once,
+            "a released list state charges what it holds again"
+        );
+    }
+}
+
+/// A quote node over its own raw source, with no children.
+fn quote() -> (crate::source::Segmented, crate::Node) {
+    let raw: crate::source::Segmented = ScopeSource::identity("> a\n").into();
+    let node = crate::Node {
+        authored: raw.mapped(),
+        range: 0..4,
+        kind: crate::Kind::Quote(Vec::new(), crate::MappedText::default()),
+    };
+    (raw, node)
+}
+
+#[test]
+fn a_popped_quote_releases_every_charge_it_took() {
+    let mut output = pending_list("para\n");
+    let before = output.settled();
+    let (raw, node) = quote();
+    output.push_container(raw.clone(), node, None);
+    output.charge_settled(512);
+    let held = output.settled();
+    let popped = output.pop_node().expect("the trailing quote");
+    assert_eq!(output.settled(), before, "a popped quote keeps no charge");
+    output.push_container(raw, popped, None);
+    output.charge_settled(512);
+    assert_eq!(
+        output.settled(),
+        held,
+        "a quote pushed again is charged in full"
+    );
+}
+
+#[test]
+fn a_restored_output_keeps_the_charges_of_the_nodes_it_keeps() {
+    let mut output = pending_list("para\n");
+    let (raw, node) = quote();
+    output.push_container(raw, node, None);
+    output.charge_settled(512);
+    let kept = output.settled();
+    let mark = super::Mark::new(&output, true);
+    let gap = ScopeSource::identity("\n");
+    let gap = gap.view(0..1);
+    output.push(&gap, 1, gap.node(0..1, crate::Kind::Gap));
+    assert_eq!(output.restore(mark).len(), 1, "the gap after the mark");
+    assert_eq!(
+        output.settled(),
+        kept,
+        "a restored output keeps its quote's charges"
+    );
+}

@@ -6,19 +6,12 @@ use maestro_extensions::{
     Cancellation, CompactOptions, EventBus, ExtensionActions, ExtensionContextActions,
     ExtensionExecution, ExtensionRunner, Local, create_event_bus_for, types::ProviderActions,
 };
+use maestro_test_process::executor::run;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
 /// Observable order shared by native and guest participants.
 type Trace = Rc<RefCell<Vec<String>>>;
-
-/// Runs one witness on a single-threaded local executor.
-fn run(witness: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, witness);
-}
 
 /// A bus whose listener errors join the trace, so a rejected nested call is visible there.
 fn bus(trace: &Trace) -> EventBus<Local> {

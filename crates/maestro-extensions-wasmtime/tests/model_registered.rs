@@ -3,6 +3,7 @@
 mod affinity;
 mod oauth;
 mod retention;
+use maestro_extensions_wasmtime::test_support::gate;
 use maestro_models::*;
 use serde_json::{Value, json};
 use std::{rc::Rc, sync::Arc};
@@ -207,15 +208,6 @@ fn options(
         })),
         ..Default::default()
     }
-}
-/// One native completion channel proves the callback has actually been entered and awaited.
-async fn gate(
-    entered: &mpsc::UnboundedSender<(&'static str, oneshot::Sender<()>)>,
-    phase: &'static str,
-) {
-    let (resume, done) = oneshot::channel();
-    entered.send((phase, resume)).unwrap();
-    done.await.unwrap();
 }
 /// Native event and result observations remain independent and pending at either original hook.
 pub(super) fn pending(stream: &AssistantMessageEventStream) {

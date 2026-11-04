@@ -121,7 +121,9 @@ Native path assertions use the host's separators. Build expected paths from
 individual components with `std::path`, or state Windows and Unix literals
 explicitly. Keep expectations independent of the production path formatter;
 leave authored path inputs unchanged. A passing Linux run does not qualify a
-Windows assertion: run it on native Windows too.
+Windows assertion: run it on native Windows too. Shared fixtures build an
+installed location once, in their support module, so every test that names it
+uses the same native path.
 
 Compile every declared browser crate's test and example targets without running them:
 
@@ -2558,11 +2560,13 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, request (usage), agent, extension,
-Markdown and package helpers live in their type owners. Native loopback servers,
-child probes and toolchain selection live in `maestro-test-process`. Fallible
-helpers return their errors to the test caller; fixed-output callbacks retain
-immediate assertions.
+and terminal helpers. Theme, tool, credential, request (usage, target models and
+authored schemas), agent, extension, Markdown and package helpers live in their
+type owners. The extension engine's `test_support` module owns the callback gate
+and the release receipts its host witnesses await. Native loopback servers, child
+probes, toolchain selection and the caller-owned local executor live in
+`maestro-test-process`. Fallible helpers return their errors to the test caller;
+fixed-output callbacks retain immediate assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.

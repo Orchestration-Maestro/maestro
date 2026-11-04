@@ -172,9 +172,9 @@ fn local_factory_resolves_empty_packages_with_project_precedence() {
         json!({"packages":["https://example.test/team/repo@v1", "./empty"]}),
         json!({"packages":[{"source":"https://example.test/team/repo@v2", "extensions":[]}]}),
     );
-    let project = std::path::Path::new(&probe.cwd)
-        .join(maestro_app::configuration::config::CONFIG_DIR_NAME)
-        .join("git/example.test/team/repo");
+    let project = git_command::repository(
+        &std::path::Path::new(&probe.cwd).join(maestro_app::configuration::config::CONFIG_DIR_NAME),
+    );
     let empty = std::path::Path::new(&probe.agent_dir).join("empty");
     for path in [&project, &empty] {
         std::fs::create_dir_all(path).unwrap();
@@ -194,9 +194,9 @@ fn local_factory_resolves_empty_packages_with_project_precedence() {
 fn local_factory_resolves_explicit_sources_in_their_selected_scope_only() {
     let probe = Probe::new(json!({"packages":["./empty"]}), json!({"unknown": false}));
     let before = probe.settings.borrow().get_project_settings();
-    let target = std::path::Path::new(&probe.cwd)
-        .join(maestro_app::configuration::config::CONFIG_DIR_NAME)
-        .join("git/example.test/team/repo");
+    let target = git_command::repository(
+        &std::path::Path::new(&probe.cwd).join(maestro_app::configuration::config::CONFIG_DIR_NAME),
+    );
     std::fs::create_dir_all(&target).unwrap();
     std::fs::write(target.join("package.json"), r#"{"maestro":{}}"#).unwrap();
     let source = "https://example.test/team/repo@v1".to_owned();
@@ -229,7 +229,7 @@ fn factory_acquisition_selects_exact_pin_and_scope_without_editing_settings() {
         ),
         (OperationScope::Project, project),
     ] {
-        let target = root.join("git/example.test/team/repo");
+        let target = git_command::repository(&root);
         let pin = git_command::pinned_repository(&target);
         let result = probe.run(vec![HostOperation::Acquire(
             "https://example.test/team/repo@pin".into(),
@@ -248,7 +248,7 @@ fn factory_acquisition_selects_exact_pin_and_scope_without_editing_settings() {
 #[test]
 fn factory_integrity_restores_dirty_and_moved_pins_and_retains_native_failures() {
     let probe = Probe::new(json!({"untouched": null}), json!({}));
-    let target = std::path::Path::new(&probe.agent_dir).join("git/example.test/team/repo");
+    let target = git_command::repository(std::path::Path::new(&probe.agent_dir));
     let pin = git_command::pinned_repository(&target);
     let before = probe.settings.borrow().get_global_settings();
     for revision in ["pin", "main"] {

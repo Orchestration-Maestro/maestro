@@ -1,5 +1,5 @@
 //! Overlapping returned model resources release only their own operation scopes.
-use super::{Trace, bind, observe, producer};
+use super::{Releases, bind, observe, producer};
 use maestro_extensions::{ExtensionRunner, Local};
 use maestro_models::{ApiProvider, Cancellation, register_api_provider, unregister_api_providers};
 use serde_json::json;
@@ -41,7 +41,7 @@ async fn overlap(simple: bool) {
         reporter,
     );
     let (owner, runner, events) = crate::retained_components::loaded_on(bus.for_extension()).await;
-    let trace = Rc::new(Trace::default());
+    let trace = Rc::new(Releases::default());
     let signals = [Cancellation::new(), Cancellation::new()];
     let [first, second] = prepare(&runner, &trace, &signals, simple, &mut incoming).await;
     trace.expect(&[]).await;
@@ -57,7 +57,7 @@ async fn overlap(simple: bool) {
 /// Exercise early observer drops and a surviving alias before releasing both returned resources.
 async fn prepare(
     runner: &ExtensionRunner<Local>,
-    trace: &Rc<Trace>,
+    trace: &Rc<Releases>,
     signals: &[Cancellation; 2],
     simple: bool,
     incoming: &mut mpsc::UnboundedReceiver<producer::Invocation>,
@@ -82,7 +82,7 @@ async fn prepare(
 async fn release_scopes(
     invocations: [producer::Invocation; 2],
     signals: &[Cancellation; 2],
-    trace: &Rc<Trace>,
+    trace: &Rc<Releases>,
     teardown: &mut oneshot::Receiver<()>,
 ) {
     let [first, second] = invocations;
@@ -125,7 +125,7 @@ async fn release_scopes(
 /// The same initiating handler starts distinct calls with their original arbitrary signals.
 async fn begin(
     runner: &ExtensionRunner<Local>,
-    trace: &Rc<Trace>,
+    trace: &Rc<Releases>,
     signal: &Cancellation,
     case: (bool, &str),
 ) -> String {

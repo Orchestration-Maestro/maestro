@@ -6,25 +6,8 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use crate::support;
 use maestro_agent::{AgentTool, AgentToolResult, run_agent_loop_continue};
-use maestro_models::{AssistantContent, ParameterSchema, SchemaKind, Tool, ToolCall};
-
-/// A schema declaring one authored and one plain member.
-fn mixed_schema() -> ParameterSchema {
-    ParameterSchema::authored(
-        serde_json::json!({
-            "type": "object",
-            "required": ["authored", "plain"],
-            "properties": {
-                "authored": {"type": "string"},
-                "plain": {"type": "string"},
-            },
-        }),
-        [
-            (String::new(), SchemaKind::Object),
-            ("/properties/authored".to_owned(), SchemaKind::String),
-        ],
-    )
-}
+use maestro_models::test_support::mixed_schema;
+use maestro_models::{AssistantContent, Tool, ToolCall};
 
 /// Drive one loop turn and return the arguments execution received.
 async fn route(with_preparation: bool) -> Vec<serde_json::Value> {
