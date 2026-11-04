@@ -4517,6 +4517,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-realpath"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "maestro-path",
+]
+
+[[package]]
 name = "maestro-request"
 version = "0.1.0"
 dependencies = [
