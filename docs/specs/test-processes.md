@@ -38,6 +38,8 @@ Confidence: **proven requirement**, authorized by #3768. The native fixture, `in
 
 The existing owner retains checked selection, eligibility, startup proof, environment edits, stream operations and reaping. It also owns one harness-free native fixture example target and the installation operation callers need. The target's entry point only dispatches private, cohesive fixture families. The sole integration program remains `tests/integration.rs`.
 
+One selection scheme carries a test's child role. `TestProcess::case` writes the role into the child, and `selection()` reads the role and the identifier back; fixture data a stage needs travels in its own variable. The owner spells that variable once, and its guard rejects any other quoted `MAESTRO_*_CHILD` or `MAESTRO_*_CASE` name under `crates/`, in a file of any type, listing every site it found.
+
 No new crate, product resolver, alternate launcher, relay supervisor, runtime compiler or script evaluator is introduced. The fixture target has no dependency back into product owners. Host-side tooling stages an artifact; it does not gain a normal library dependency on test-process.
 
 ### S02: direct native execution

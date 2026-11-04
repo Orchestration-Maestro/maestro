@@ -2269,11 +2269,13 @@ unchanged. `spawn` reads only the prologue from a piped standard output and repl
 it, preserving ready lines and acknowledgements. A test that depends on closing
 a live pipe end must first call `run_alone(test)` and return when it returns
 `true`: the transaction then runs in a fresh process with no sibling tests that
-could fork and inherit its pipe ends. `status` replays captured streams afterwards and is not a
-live route. `status_with_stdout` requires an empty regular file with its cursor at
-zero, sends standard output there and checks the prefix through that same open
-file. Nonempty files or nonzero cursors are rejected before launch, including
-append-mode files containing earlier output. `output_with` hands the final
+could fork and inherit its pipe ends. A passing isolated run repeats what its body
+wrote to standard error, such as the premise that left a case out. `status`
+replays captured streams afterwards and is not a live route. `status_with_stdout`
+requires an empty regular file with its cursor at zero, sends standard output
+there and checks the prefix through that same open file. Nonempty files or nonzero
+cursors are rejected before launch, including append-mode files containing earlier
+output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
 descriptor or setup setting. `setup` (Unix) carries an `IsolatedSetup` request.
 The child applies its effects in a fixed order: umask, new session, nonterminating
@@ -2311,23 +2313,31 @@ environment)`. It groups the cases by the variables `environment` returns and
 reruns the test once per group, in a child that holds exactly those variables
 after `env_clear()`, plus the parent's temporary directory unless the case sets
 one. In the parent, `run_per_environment` returns `None` once every child
-passes; in a child it returns that group's cases in their original order, and the
-test checks them. Cases that share variables therefore share one child and one
-fixture parse, so don't spawn a child per case yourself. A case that needs a fresh
-process for other state, such as a process-wide counter or files created per
-case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set a
+passes, and repeats each passing child's standard error as it goes, so a case that
+left one out keeps its reason. A run shows those lines when it asks for child
+output, as `--nocapture` does, or when the test fails. In a child it returns that
+group's cases in their original order, and the test checks them. Cases that share
+variables therefore share one child and one fixture parse, so don't spawn a child
+per case yourself. A case that needs a fresh process for other state, such as a
+process-wide counter or files created per case, keeps its own child. Use
+`TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
-which only Linux reads, so it reuses the setup's compiled code instead of compiling the component again.
+which only Linux reads, so it reuses the setup's compiled code instead of
+compiling the component again.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
 selected for that id. `selection.runs_group(test)` accepts the parent, wildcard
 children and environment-group children of that test. Case children do not run
 groups, and group children do not run individually selected cases.
-Use case identifiers for suite roles and nested stages; keep fixture data separate
-from selection, and call `env_clear()` before `case(id)` when clearing is needed.
+Use case identifiers for suite roles and nested stages, read the selected one with
+`selection.case()`, keep fixture data in its own variable, and call `env_clear()`
+before `case(id)` when clearing is needed. The owner spells that selection variable
+once. A quoted `MAESTRO_*_CHILD` or `MAESTRO_*_CASE` name anywhere else under
+`crates/`, in a file of any type and whether it sits in an expression or behind a
+`const`, fails the owner's own guard and names every site it found.
 
 A test that denies access through mode bits calls
 `maestro_test_directory::deny(path, mode)` and skips the denial when it returns
