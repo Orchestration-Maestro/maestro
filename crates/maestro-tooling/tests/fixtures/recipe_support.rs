@@ -310,11 +310,15 @@ pub fn transcript() -> fs::File {
         .unwrap()
 }
 
-/// Write a phase or child-output record before the test can block again.
+/// Write a phase or child-output record before the test can block again, prefixed with
+/// the seconds since this process's first record.
 pub fn record(message: impl std::fmt::Display) {
     use std::io::Write;
+    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    let elapsed = START.get_or_init(std::time::Instant::now).elapsed();
     let mut file = transcript();
-    file.write_all(format!("{message}\n").as_bytes()).unwrap();
+    file.write_all(format!("{:>8.3}s {message}\n", elapsed.as_secs_f64()).as_bytes())
+        .unwrap();
 }
 
 /// Join a capture reader between phase records, so a blocked join is visible.

@@ -108,7 +108,7 @@ fn configured_environment_is_read_on_each_call() {
     let Some(values) = maestro_test_process::run_per_environment(
         std::thread::current().name().unwrap(),
         values,
-        |value| value.map(|value| ("ENV", value)).into_iter().collect(),
+        |value| std::collections::BTreeMap::from([("ENV", *value)]),
     )
     .unwrap() else {
         return;

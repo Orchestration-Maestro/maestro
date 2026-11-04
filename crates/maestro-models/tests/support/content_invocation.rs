@@ -438,7 +438,7 @@ pub fn assert_rows(test: &str) -> TestResult {
             ("GOOGLE_VERTEX_BASE_URL", &row.input.env_vertex_base),
         ]
         .into_iter()
-        .filter_map(|(key, value)| Some((key, value.clone()?)))
+        .filter_map(|(key, value)| Some((key, Some(value.clone()?))))
         .collect::<std::collections::BTreeMap<_, _>>()
     })?;
     group.into_iter().flatten().try_for_each(check)

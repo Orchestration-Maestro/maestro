@@ -9,7 +9,9 @@
 //! checks eligibility only; its caller proves startup through its own transport. A test that closes a pipe end
 //! while a child is live runs alone through [`run_alone`]. Cases that read process variables
 //! share one cleared child per distinct environment through [`run_per_environment`]. A child
-//! that replaces `HOME` keeps this process's Linux user cache through [`user_cache_home`].
+//! that replaces `HOME` keeps this process's Linux user cache through [`user_cache_home`], and a
+//! cleared child keeps the cache home the run's setup exported, so neither recompiles the
+//! components the run prepared.
 //!
 //! This crate alone spells the variable that carries a case into its child, [`CASE`]. A caller
 //! selects the role with [`TestProcess::case`] and reads it back through [`selection`], and
