@@ -8,7 +8,7 @@ use std::process::{Command, ExitCode};
 /// Encode bytes as lowercase hexadecimal.
 pub use test_setup::hex;
 
-/// Capture browser compilation diagnostics.
+/// Compile the browser compile witnesses and capture their diagnostics.
 pub mod check_browser_build;
 /// Copy prepared application assets.
 pub mod copy_assets;
@@ -126,7 +126,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             args,
             run_source::Mode::Windows,
         )),
-        Some("check-browser-smoke") => browser_build(cargo, checkout),
+        Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
             copy_assets::copy(
@@ -200,33 +200,6 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         &mut format,
         &mut conventions,
         active.then_some(&mut smoke),
-    )
-}
-
-/// Compile the delivered browser import witness and capture its diagnostics.
-fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    if !checkout
-        .join("crates/maestro-models/tests/support/browser_import_check.rs")
-        .is_file()
-    {
-        return Err(io::Error::other(
-            "browser_import_check entry is not delivered",
-        ));
-    }
-    let mut child = Command::new(cargo);
-    child.current_dir(checkout).args([
-        "build",
-        "--locked",
-        "-p",
-        "maestro-models",
-        "--example",
-        "browser_import_check",
-        "--target",
-        "wasm32-unknown-unknown",
-    ]);
-    check_browser_build::run(
-        &mut child,
-        &std::env::temp_dir().join("maestro-browser-smoke-errors.log"),
     )
 }
 

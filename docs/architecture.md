@@ -455,6 +455,14 @@ The current shared wasm job builds these roots; it does not yet run this lint
 command. The [shared wasm-lint rollout](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/73)
 tracks that separate extension. Native strict checks remain unchanged.
 
+A browser compile witness is an example target whose body only compiles for the
+browser target, so native Clippy never reads it. Every witness the workspace keeps
+is listed with its owning package and source in `maestro-tooling`'s browser smoke
+command, which compiles each one for `wasm32-unknown-unknown` and stops at the
+first failure. The commit hook runs it when a staged crate owns a witness, and
+`just check` runs it for the workspace. The shared wasm job builds library roots
+only, so this command is what reports a witness that stopped compiling.
+
 ## Commands and failure evidence
 
 Run `just check`, `just test` and `just ci` with pinned tools. `just check` includes

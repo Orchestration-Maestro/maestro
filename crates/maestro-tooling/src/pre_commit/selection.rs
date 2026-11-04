@@ -25,11 +25,13 @@ impl Scope {
         &self.names
     }
 
-    /// Whether a staged crate owns a browser entry guarded by the smoke check.
+    /// Whether a staged crate owns a browser compile witness.
     pub(super) fn reaches_browser(&self) -> bool {
-        self.names
-            .iter()
-            .any(|name| matches!(name.as_str(), "maestro-models" | "maestro-web"))
+        self.names.iter().any(|name| {
+            crate::check_browser_build::WITNESSES
+                .iter()
+                .any(|(package, ..)| package == name)
+        })
     }
 }
 
