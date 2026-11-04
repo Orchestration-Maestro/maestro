@@ -1252,8 +1252,12 @@ fn startup_checks_snapshot_packages_before_input_hooks() {
             settings.borrow().get_project_settings().0["packages"],
             serde_json::json!(["npm:after"])
         );
-        let ((), errors) = super::driving(&world, until_notice(&world, "- before")).await;
-        assert!(errors.is_empty());
+        finish_captures(capture_tasks(&world)).await;
+        let rows = world.mode.chat_container.render(120).join("\n");
+        assert!(
+            rows.contains("- before"),
+            "the snapshot's package row: {rows}"
+        );
         drop(run);
         settings
             .borrow_mut()
@@ -1276,19 +1280,6 @@ fn startup_checks_snapshot_packages_before_input_hooks() {
         assert!(errors.is_empty());
         assert_eq!(result, ["after"]);
     });
-}
-
-/// Waits for a producer's visible transcript result while the shared task driver runs.
-async fn until_notice(world: &World, text: &str) {
-    while !world
-        .mode
-        .chat_container
-        .render(120)
-        .iter()
-        .any(|row| row.contains(text))
-    {
-        tokio::task::yield_now().await;
-    }
 }
 
 /// One joined peer for native readiness and independently released queries.
@@ -1393,10 +1384,11 @@ impl NativeGates {
     }
 }
 
+/// One admitted native capture, run as a test-owned task.
+type CaptureTask = tokio::task::JoinHandle<Result<(), Box<dyn std::error::Error>>>;
+
 /// Runs every admitted native capture as a joined test-owned task.
-fn capture_tasks(
-    world: &World,
-) -> Vec<tokio::task::JoinHandle<Result<(), Box<dyn std::error::Error>>>> {
+fn capture_tasks(world: &World) -> Vec<CaptureTask> {
     world
         .runtime
         .take_futures()
@@ -1406,9 +1398,7 @@ fn capture_tasks(
 }
 
 /// Joins all actual native capture work before dropping fixture descriptors.
-async fn finish_captures(
-    tasks: Vec<tokio::task::JoinHandle<Result<(), Box<dyn std::error::Error>>>>,
-) {
+async fn finish_captures(tasks: Vec<CaptureTask>) {
     for task in tasks {
         task.await.unwrap().unwrap();
     }
@@ -1676,14 +1666,15 @@ async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: 
         expected.push("https://service.invalid/api/latest-version".into());
     }
     assert_eq!(*requests.lock().unwrap(), expected);
-    let ((), errors) = super::driving(&world, async {
-        if online {
-            until_notice(&world, "- before").await;
-        }
-        until_notice(&world, "tmux extended-keys is off.").await;
-    })
-    .await;
-    assert!(errors.is_empty());
+    finish_captures(capture_tasks(&world)).await;
+    let rows = world.mode.chat_container.render(120).join("\n");
+    if online {
+        assert!(rows.contains("- before"), "{rows}");
+    }
+    assert!(
+        rows.contains("tmux extended-keys is off."),
+        "the tmux notice is shown: {rows}"
+    );
     assert_eq!(root.join("npm-observed").exists(), online);
     drop(run);
 }
@@ -1751,7 +1742,7 @@ async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
         *requests.lock().unwrap(),
         ["https://service.invalid/api/latest-version"]
     );
-    let tasks = capture_tasks(&world);
+    let mut tasks: Tasks = capture_tasks(&world).into_iter().map(Box::pin).collect();
     gates.ready(root).await;
     let mut previous = world.mode.chat_container.render(120).len();
     for producer in order {
@@ -1765,15 +1756,38 @@ async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
             "- before",
             "tmux extended-keys is off.",
         ][producer];
-        until_notice(&world, text).await;
+        until_shown(&world, text, &mut tasks).await;
         let rows = world.mode.chat_container.render(120);
         let current = &rows[previous..];
-        assert!(current.iter().any(|row| row.contains(text)));
+        assert!(current.iter().any(|row| row.contains(text)), "{text}");
         previous = rows.len();
     }
-    finish_captures(tasks).await;
+    for task in tasks {
+        task.await.unwrap().unwrap();
+    }
     gates.finish();
     drop(run);
+}
+
+/// The unfinished tasks the started producers run, in the order they were handed over.
+type Tasks = Vec<std::pin::Pin<Box<CaptureTask>>>;
+
+/// Awaits the producers' finished tasks until `text` is shown, so a wait ends on the task
+/// that ends it and fails once every task has ended without the row.
+async fn until_shown(world: &World, text: &str, tasks: &mut Tasks) {
+    while !world
+        .mode
+        .chat_container
+        .render(120)
+        .iter()
+        .any(|row| row.contains(text))
+    {
+        assert!(!tasks.is_empty(), "a producer shows {text}");
+        let (finished, _, rest) = futures_util::future::select_all(std::mem::take(tasks)).await;
+        *tasks = rest;
+        finished.unwrap().unwrap();
+        super::settle_host(world).await;
+    }
 }
 
 /// Builds the actual configured sources and modes used by completion permutations.

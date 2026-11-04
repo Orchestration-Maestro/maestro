@@ -1415,15 +1415,45 @@ pub(super) async fn settle_shell(command: StartedShell) -> Vec<Box<dyn Error>> {
     command.await.expect("the shell command finishes")
 }
 
-/// Waits until `path` exists, yielding so the work that creates it runs.
-pub(super) async fn until_exists(path: &Path) {
-    for _ in 0..10_000 {
-        if path.exists() {
-            return;
-        }
-        tokio::task::yield_now().await;
+/// One piece of work the terminal host holds, run as a test-owned task.
+pub(super) type StartedWork = tokio::task::JoinHandle<Result<(), Box<dyn Error>>>;
+
+/// Runs the work the terminal host holds as tasks beside the caller, so a case can wait
+/// between two steps on the work that work hands over.
+pub(super) fn start_host_work(world: &World) -> Vec<StartedWork> {
+    world
+        .runtime
+        .take_futures()
+        .into_iter()
+        .map(tokio::task::spawn_local)
+        .collect()
+}
+
+/// Waits for every started piece of work to finish and returns the failures it reported.
+pub(super) async fn finish_host_work(work: Vec<StartedWork>) -> Vec<Box<dyn Error>> {
+    let mut errors = Vec::new();
+    for task in work {
+        let outcome = task.await.expect("the host's work finishes");
+        errors.extend(outcome.err());
     }
-    panic!("{} appeared", path.display());
+    errors
+}
+
+/// Awaits the work the terminal host holds, including the work that work hands over, and
+/// returns the failures that work reported.
+pub(super) async fn settle_host(world: &World) -> Vec<Box<dyn Error>> {
+    let mut errors = Vec::new();
+    loop {
+        let work = world.runtime.take_futures();
+        if work.is_empty() {
+            return errors;
+        }
+        let (outcomes, driven) = driving(world, futures_util::future::join_all(work)).await;
+        errors.extend(driven);
+        for outcome in outcomes {
+            errors.extend(outcome.err());
+        }
+    }
 }
 
 /// The shell row that is still producing output, when one is attached.
