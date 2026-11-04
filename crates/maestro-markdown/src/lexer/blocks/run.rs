@@ -72,6 +72,12 @@ enum Fallback {
 }
 
 impl BlockRun {
+    /// Charge the payload a closed level's settled output retained.
+    #[cfg(test)]
+    pub(crate) fn charge_settled(&mut self, bytes: usize) {
+        self.output.charge_settled(bytes);
+    }
+
     /// Start one admission level over an operand and its retained output.
     fn new(
         source: Segmented,

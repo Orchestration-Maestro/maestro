@@ -815,12 +815,31 @@ fn nested_item_frame_charges_its_settled_child() {
     let flat = measured_frame("- a\n  b");
     let nested = measured_frame("- a\n  - b");
     eprintln!("flat={flat} nested={nested}");
-    // Both items hold nine authored bytes, so a frame that charged only the open item's
-    // own source stayed under two kilobytes for either input. The settled child adds its
-    // node record, its scope map and its latest operand.
-    assert!(flat > 2_400, "flat={flat}");
-    // The nested list's own item state is charged before that list publishes.
-    assert!(nested > flat + 384, "flat={flat} nested={nested}");
+    // Both items hold the same authored bytes, so only the child the item admitted and the
+    // list state it adopted separate the two frames.
+    assert!(nested > flat + flat / 4, "flat={flat} nested={nested}");
+}
+
+#[test]
+fn item_frame_charges_a_quotes_settled_descendants() {
+    let plain = measured_frame("- > a\n  > b");
+    let nested = measured_frame("- > a\n  > - b");
+    eprintln!("plain={plain} nested={nested}");
+    // The quoted list inside the item adds its state and its item's nodes to the frame.
+    assert!(nested > plain + plain / 4, "plain={plain} nested={nested}");
+}
+
+#[test]
+fn quote_resumed_nested_list_frame_charges_each_allocation_once() {
+    // A blank line closes the nested level, so the next marker resumes the list it left.
+    let source = |n: usize| "> - a\n".to_owned() + &">   - b\n> \n>   c\n> \n".repeat(n);
+    let sizes = [32, 64, 128];
+    let frame = sizes.map(|n| measured_frame(&source(n)));
+    let payload = sizes.map(|n| retained_document(&crate::parse(source(n))).bytes);
+    eprintln!("32/64/128 frame={frame:?} retained payload={payload:?}");
+    for (frame, payload) in frame.iter().zip(payload) {
+        assert!(*frame <= 2 * payload, "frame={frame:?} payload={payload:?}");
+    }
 }
 
 #[test]

@@ -109,6 +109,8 @@ pub(crate) struct Work {
     pub(crate) joined_bytes: usize,
     /// Largest unique source payload a list state kept alive until its release.
     pub(crate) frame_bytes: usize,
+    /// Payload the settled output of the level a caller just finished charged.
+    pub(crate) closed_settled: usize,
     /// Last reentry's mapped end before preserving already consumed chunks.
     pub(crate) reentry_end: usize,
     /// Recognized consumption before the last container reentry.

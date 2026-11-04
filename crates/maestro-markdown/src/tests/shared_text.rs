@@ -2,10 +2,10 @@
 use crate::{Kind, MappedText, Node, parse};
 use std::{collections::HashSet, mem::size_of, mem::size_of_val, sync::Arc};
 
-/// Unique live allocation payloads, excluding allocator headers and hash control bytes.
+/// Unique allocation payloads one output charged, excluding allocator headers and hash control bytes.
 #[derive(Default)]
 pub(crate) struct Retained {
-    /// Allocation addresses already charged while the complete document stays live.
+    /// Allocation addresses this output already charged.
     seen: HashSet<usize>,
     /// Shared allocation payloads plus independently owned native capacities.
     pub(crate) bytes: usize,
@@ -36,10 +36,10 @@ impl Retained {
 }
 
 /// Charge the allocations one settled node owns, returning the children it holds.
-pub(crate) fn settled_node<'a>(node: &'a Node, retained: &mut Retained) -> Option<&'a Vec<Node>> {
+pub(crate) fn settled_node<'a>(node: &'a Node, retained: &mut Retained) -> Option<&'a [Node]> {
     retained.nodes += 1;
     node.authored.retained(retained);
-    match &node.kind {
+    let children = match &node.kind {
         Kind::Quote(children, body) => {
             body.retained(retained);
             Some(children)
@@ -57,18 +57,44 @@ pub(crate) fn settled_node<'a>(node: &'a Node, retained: &mut Retained) -> Optio
             None
         }
         _ => None,
-    }
+    };
+    let children = children?;
+    retained.bytes += children.capacity() * size_of::<Node>();
+    Some(children)
 }
 
 /// Charge every allocation a settled block tree keeps alive, once per allocation.
 pub(crate) fn settled(nodes: &Vec<Node>, retained: &mut Retained) {
     retained.bytes += nodes.capacity() * size_of::<Node>();
-    let mut pending = vec![nodes];
+    let mut pending = vec![nodes.as_slice()];
     while let Some(nodes) = pending.pop() {
         for node in nodes {
             pending.extend(settled_node(node, retained));
         }
     }
+}
+#[test]
+fn settled_charges_each_child_vector_capacity() {
+    let gap = || Node {
+        kind: Kind::Gap,
+        authored: MappedText::default(),
+        range: 0..0,
+    };
+    let charge = |children: Vec<Node>| {
+        let nodes = vec![Node {
+            kind: Kind::Paragraph(children),
+            authored: MappedText::default(),
+            range: 0..0,
+        }];
+        let mut retained = Retained::default();
+        settled(&nodes, &mut retained);
+        assert_eq!(retained.nodes, 2);
+        retained.bytes
+    };
+    let mut loose = vec![gap(), gap()];
+    loose.pop();
+    assert_eq!(loose.capacity(), 2);
+    assert_eq!(charge(loose) - charge(vec![gap()]), size_of::<Node>());
 }
 
 #[test]

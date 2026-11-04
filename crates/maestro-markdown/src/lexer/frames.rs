@@ -103,6 +103,9 @@ pub(crate) struct Quote {
     top: bool,
     /// Next action of this level.
     phase: QuotePhase,
+    /// Payload this level's settled output charged before its node reaches the level above.
+    #[cfg(test)]
+    settled: usize,
 }
 
 /// Retained quote invocation state across nested block admission.
@@ -166,6 +169,17 @@ impl Frame {
         }
     }
 
+    /// Charge the payload a closed quote level's output retained to the level above.
+    #[cfg(test)]
+    fn charge_settled(&mut self, bytes: usize) {
+        match self {
+            Self::Document(run) | Self::Run(run) => run.charge_settled(bytes),
+            Self::Quote(quote) => quote.frame.output.charge_settled(bytes),
+            // A quote level is admitted only by a block or quote level, never by a list.
+            Self::List(_) => {}
+        }
+    }
+
     /// Continue after the level this frame suspended for completed.
     fn resumed<E>(&mut self, done: Done, lexer: &mut Lexer<'_, E>) -> Option<Frame> {
         match self {
@@ -184,6 +198,8 @@ impl Quote {
             target: QuoteTarget::Container(entry.raw),
             top,
             phase: QuotePhase::Chunk,
+            #[cfg(test)]
+            settled: 0,
         }
     }
 
@@ -194,6 +210,8 @@ impl Quote {
             target: QuoteTarget::Nested,
             top,
             phase: QuotePhase::Chunk,
+            #[cfg(test)]
+            settled: 0,
         }
     }
 
@@ -327,6 +345,10 @@ impl Quote {
         let raw = self.frame.source.select(0..consumed);
         let range = raw.native(&(0..raw.len()))?;
         let children = lexer.finish_blocks(std::mem::take(&mut self.frame.output));
+        #[cfg(test)]
+        {
+            self.settled = crate::tests::WORK.with_borrow(|work| work.closed_settled);
+        }
         Some(Node {
             authored: raw.mapped(),
             range,
@@ -468,6 +490,11 @@ fn publish_resume(
 
 /// Hand one completed level's result to the level that suspended for it.
 fn deliver<E>(frames: &mut Vec<Frame>, done: Done, lexer: &mut Lexer<'_, E>) {
+    #[cfg(test)]
+    if let (Some(Frame::Quote(quote)), Some(parent)) = (frames.pop(), frames.last_mut()) {
+        parent.charge_settled(quote.settled);
+    }
+    #[cfg(not(test))]
     frames.pop();
     let resumed = frames
         .last_mut()

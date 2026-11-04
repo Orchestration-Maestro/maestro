@@ -45,6 +45,9 @@ pub(crate) struct BlockTokens {
     /// Payload the published nodes and the adopted list state charged this output.
     #[cfg(test)]
     settled: Box<crate::tests::Retained>,
+    /// Part of `settled` the adopted list state charged, released when that list publishes.
+    #[cfg(test)]
+    adopted: usize,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -106,7 +109,7 @@ impl BlockTokens {
         self.tail =
             Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
         #[cfg(test)]
-        crate::tests::settled_node(&node, &mut self.settled);
+        self.charge(&node);
         self.nodes.push(node);
     }
 
@@ -122,19 +125,55 @@ impl BlockTokens {
         #[cfg(test)]
         let mut list = list;
         #[cfg(test)]
-        {
-            let mut adopted = crate::tests::Retained::default();
-            if let Some(state) = list.as_deref_mut() {
-                state.retained(&mut adopted);
-            }
-            self.settled.bytes += adopted.bytes;
-        }
+        self.adopt(list.as_deref_mut());
         self.list = list;
+    }
+
+    /// Charge a published node and the child slots it already holds.
+    ///
+    /// A quote's settled children are charged by this output as they are pushed and hand
+    /// their charge to the level that publishes them, so nothing below the slot is walked.
+    #[cfg(test)]
+    fn charge(&mut self, node: &Node) {
+        crate::tests::settled_node(node, &mut self.settled);
+    }
+
+    /// Charge the payload a closed level's settled output retained.
+    #[cfg(test)]
+    pub(crate) fn charge_settled(&mut self, bytes: usize) {
+        self.settled.bytes += bytes;
+    }
+
+    /// Payload this output's published nodes and adopted list state charged.
+    #[cfg(test)]
+    fn settled(&self) -> usize {
+        self.settled.bytes
+    }
+
+    /// Charge the list state this output adopts until its list publishes.
+    #[cfg(test)]
+    fn adopt(&mut self, list: Option<&mut ListState>) {
+        let Some(state) = list else {
+            return;
+        };
+        let before = self.settled.bytes;
+        state.retained(&mut self.settled);
+        self.adopted = self.settled.bytes - before;
     }
 
     /// Take the trailing list's item history for publication.
     pub(super) fn take_list(&mut self) -> Option<Box<ListState>> {
-        self.list.take()
+        let list = self.list.take();
+        #[cfg(test)]
+        self.release();
+        list
+    }
+
+    /// Release the charge the published list state held.
+    #[cfg(test)]
+    fn release(&mut self) {
+        self.settled.bytes -= self.adopted;
+        self.adopted = 0;
     }
 
     /// Drop contributions admitted after `mark`, returning the removed nodes, and restore the
@@ -142,6 +181,8 @@ impl BlockTokens {
     pub(super) fn restore(&mut self, mark: Mark) -> Vec<Node> {
         let removed: Vec<_> = self.nodes.drain(mark.nodes..).collect();
         if !removed.is_empty() {
+            #[cfg(test)]
+            self.release();
             self.list = None;
         }
         for node in &removed {
@@ -232,6 +273,8 @@ impl<E> Lexer<'_, E> {
     /// Publish completed block output and materialize each inline operand once.
     pub(super) fn finish_blocks(&mut self, mut output: BlockTokens) -> Vec<Node> {
         output.complete();
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.closed_settled = output.settled());
         self.scopes.extend(
             output
                 .scopes
