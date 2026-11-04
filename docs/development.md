@@ -431,7 +431,9 @@ the declaration check and the Chromium job run. The workflow file is read from
 one queue: a newer one replaces a queued proof and never cancels a running one.
 This repository keeps the default concurrency key the caller contract requires, so
 a proof joins the shared `main` group and names its artifacts `root`. A proof
-restores the compile cache but never publishes it.
+restores the compile cache but never publishes it. Its call grants
+`actions: write` only because GitHub checks the shared pruning jobs against the
+grant when the run starts; those jobs skip on a dispatch.
 
 The job saves the recipe's output as `browser-test.log` in the artifact
 `browser-test-root-<attempt>`, whether the recipe passes or fails:
@@ -2396,10 +2398,14 @@ even when the merge queue selected fewer crates. Later pushes do not cancel
 or replace queued landing runs. This is separate from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the
-shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller, the reporter caller and the guards caller pin
-the released shared CI commit that the organization rulesets require. Each pin
+groups. The suite job grants `actions: write`. After each shared job that saves
+a cache, a pruning job deletes the entries that save replaced, so the cache
+keeps one entry per prefix instead of filling its 10 GiB limit. Those pruning
+jobs are the only ones that take write access, and they run no repository code.
+GitHub checks every called job's permissions when the run starts, so a caller
+that grants less makes the run fail to start. The suite caller, the reporter
+caller and the guards caller pin the released shared CI commit that the
+organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 
