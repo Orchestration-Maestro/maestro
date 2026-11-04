@@ -3,6 +3,8 @@
 use std::path::Path;
 
 use cargo_metadata::Metadata;
+use serde::Deserialize;
+use serde_json::Value;
 
 /// Declaration ownership and extension interface checks.
 mod boundaries;
@@ -158,6 +160,8 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
 ///
 /// Returns a human-readable diagnostic on malformed metadata or a violated
 /// declared boundary.
-pub fn check_declared_graph(root: &Path, declared: &Metadata) -> Result<(), String> {
-    graph::declared_graph(root, declared).map(|_| ())
+pub fn check_declared_graph(root: &Path, declared: &Value) -> Result<(), String> {
+    let declared = Metadata::deserialize(declared)
+        .map_err(|error| format!("invalid cargo metadata: {error}"))?;
+    graph::declared_graph(root, &declared).map(|_| ())
 }
