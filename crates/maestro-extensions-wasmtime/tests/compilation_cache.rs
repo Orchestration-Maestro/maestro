@@ -111,7 +111,6 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
         "crates/maestro-tooling/src/example_files.rs",
         "crates/maestro-tooling/src/example_files/components.rs",
         "crates/maestro-tooling/src/example_files/preparation.rs",
-        "crates/maestro-extensions-wasm/Cargo.toml",
         "Cargo.lock",
     ] {
         let path = root.join(source);

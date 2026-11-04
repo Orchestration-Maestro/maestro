@@ -152,7 +152,6 @@ fn installed_tool_serves_the_workspace_it_starts_in() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
         .arg("example-index")
         .current_dir(&nested)
-        .env_remove("CARGO_MANIFEST_DIR")
         .output()
         .unwrap();
 
