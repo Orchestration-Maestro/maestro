@@ -4,7 +4,6 @@
 
 use crate::windows_support::drive;
 use std::cell::RefCell;
-use std::future::Future;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::pin::pin;
 use std::process::{Command, Stdio};

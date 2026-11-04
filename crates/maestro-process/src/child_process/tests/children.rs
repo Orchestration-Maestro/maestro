@@ -16,12 +16,12 @@ pub(crate) fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command
     test_child_command(program, variables).unwrap()
 }
 
-/// [`command`](children::command) as the asynchronous command the owner takes.
+/// [`command`](super::children::command) as the asynchronous command the owner takes.
 pub(crate) fn async_command(
     program: impl Fn(),
     variables: &[(&str, &str)],
 ) -> tokio::process::Command {
-    test_child_command(program, variables).unwrap().into()
+    command(program, variables).into()
 }
 
 /// A connection to the port variable `name` names on this host.
@@ -36,7 +36,7 @@ fn connect_to(name: &str) -> TcpStream {
 fn spawn_linked_child(program: impl Fn(), variables: &[(&str, &str)]) -> u32 {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port().to_string();
-    let mut command = test_child_command(program, variables).unwrap();
+    let mut command = command(program, variables);
     command
         .env("CHILD_LINK_PORT", &port)
         .stdin(Stdio::inherit());

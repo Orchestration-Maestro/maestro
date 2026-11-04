@@ -174,7 +174,6 @@ pub fn command(wire: Value) -> RpcCommand {
     serde_json::from_value(wire).unwrap_or_else(|error| panic!("{text}: {error}"))
 }
 
-/// Answers the wire-form `command` through the daemon's handler.
 /// Answers `wire`, which must succeed with the plain acknowledgement.
 pub fn accepted(app: &mut TestApp, wire: Value) {
     let text = wire.to_string();
@@ -189,6 +188,7 @@ pub fn pane_record(app: &mut TestApp, pane: &str) -> PaneInfo {
     }
 }
 
+/// Answers the wire-form `command` through the daemon's handler.
 pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
     block_on(answer(app, wire))
 }

@@ -83,7 +83,10 @@ The binary composition root, conventions checker, terminal scenario harness,
 checked test-process owner, disposable test-directory owner, test tracing owner,
 portable fixture owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
-Repository tooling (`maestro-tooling`) is development-only, never shipped and has
+Browser qualification (`maestro-test-browser`) is dedicated, unpublished and
+depends on tooling for preparation. Hakari excludes its test-only browser stack
+from traversal. Repository tooling (`maestro-tooling`) is development-only, never
+shipped and has
 no internal dependencies apart from the optional utility and the native-only
 feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
@@ -345,21 +348,16 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
-Conventions compare token-identical function bodies with at least 30 interior
-tokens, including free functions, methods, trait defaults and nested functions,
-across production code and authored test code: a fixture workspace reports copies
-inside `tests/` files and inline `#[cfg(test)]` modules the same way as production
-copies. Whitespace and comments are ignored; token spelling, literal contents and
-delimiter kinds are preserved. Each diagnostic lists the token count and all
+Conventions reject token-identical production function bodies with at least 30
+interior tokens, including free functions, methods, trait defaults and nested
+functions. Whitespace and comments are ignored; token spelling, literal contents
+and delimiter kinds are preserved. Each diagnostic lists the token count and all
 native file paths with one-based signature lines, including same-line sites.
-Only the generated model catalog and the exact generated guest binding file stay
-excluded. The workspace check keeps its production-only scope while the remaining
-test-support copies move to their owners: the `[conventions]
-duplicate_test_bodies = false` key in `.github/ci.toml` holds that scope, and
-removing it turns authored test bodies into workspace candidates. Macro
-definitions are not expanded, but authored invocation tokens inside functions
-are compared. Unparsed fragments produce no candidates; compound configurations
-are not evaluated. There is no baseline, allowlist or suppression attribute.
+Parsed `cfg(test)` scopes, test file layouts, the generated model catalog and the
+exact generated guest binding file are excluded. Macro definitions are not
+expanded, but authored invocation tokens inside functions are compared.
+Unparsed fragments produce no candidates; compound configurations are not
+evaluated. There is no baseline, allowlist or suppression attribute.
 
 The shipped extension example tests share their document decoding and
 registration release in `src/tests/example_support.rs`. That release also asserts
@@ -457,6 +455,14 @@ The current shared wasm job builds these roots; it does not yet run this lint
 command. The [shared wasm-lint rollout](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/73)
 tracks that separate extension. Native strict checks remain unchanged.
 
+A browser compile witness is an example target whose body only compiles for the
+browser target, so native Clippy never reads it. Every witness the workspace keeps
+is listed with its owning package and source in `maestro-tooling`'s browser smoke
+command, which compiles each one for `wasm32-unknown-unknown` and stops at the
+first failure. The commit hook runs it when a staged crate owns a witness, and
+`just check` runs it for the workspace. The shared wasm job builds library roots
+only, so this command is what reports a witness that stopped compiling.
+
 ## Commands and failure evidence
 
 Run `just check`, `just test` and `just ci` with pinned tools. `just check` includes
@@ -504,6 +510,13 @@ disabled configurations and source fragments. Comments, larger fixture strings,
 byte strings and C strings are not selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
+
+The same source owner checks parsed `ignore` attributes. Ignored tests name
+either their controlled-child owner or the pinned Chromium job. The Chromium
+reason belongs only to `maestro-test-browser/tests/browser.rs`, where every test
+must carry it and the integration root must register that module. Comments and
+fixture strings are not attributes; syntax fragments without a parsed file are
+not checked for ignore ownership.
 
 Every crate builds its integration tests as one program from
 `tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line

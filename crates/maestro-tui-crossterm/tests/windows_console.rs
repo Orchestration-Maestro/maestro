@@ -10,7 +10,6 @@
 use crate::windows_support::drive;
 use std::cell::Cell;
 use std::fs::OpenOptions;
-use std::future::Future;
 use std::pin::pin;
 use std::process::Stdio;
 use std::rc::Rc;

@@ -7,8 +7,7 @@ use std::fmt;
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::num::ParseIntError;
-use std::process::Command;
-use std::process::{Child, Output};
+use std::process::{Child, Command, Output};
 use std::thread::JoinHandle;
 
 use crate::HARNESS_START;
