@@ -211,14 +211,16 @@ fn a_released_list_state_charges_what_it_holds_again() {
     let mut charges = crate::tests::Charges::default();
     charges.adopt(Some(&mut state));
     let once = charges.bytes();
-    charges.release_adopted();
-    assert_eq!(charges.bytes(), 0, "a released adoption keeps no payload");
-    charges.adopt(Some(&mut state));
-    let again = charges.bytes();
-    assert!(
-        again * 2 >= once,
-        "a released list state charges what it holds again: {again} against {once}"
-    );
+    for _ in 0..2 {
+        charges.release_adopted();
+        assert_eq!(charges.bytes(), 0, "a released adoption keeps no payload");
+        charges.adopt(Some(&mut state));
+        assert_eq!(
+            charges.bytes(),
+            once,
+            "a released list state charges what it holds again"
+        );
+    }
 }
 
 /// A quote node over its own raw source, with no children.
