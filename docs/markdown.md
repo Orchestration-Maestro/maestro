@@ -93,12 +93,15 @@ current end, or whose following content sits on the item's unterminated last
 line. Open indented code continues from the line it reached. A caller block
 tokenizer reads the whole remaining item, so when one is present every
 resumption admits the item again. Item text answers the setext underline
-question from one classification per line, and from the resume offset when a
-caller token stopped inside a line, instead of re-reading the rest of the item,
-so a long item costs its own length. Semantic text can change spelling or be
-empty without erasing raw consumption. Code continuations reuse one
-indentation-removal operation; definitions continuing paragraph or item text
-stay literal instead of entering the reference index.
+question by classifying only the lines its answer needs, starting from the
+resume offset when a caller token stopped inside a line, so a settled answer
+costs the item's prefix rather than its whole body. An item's semantic body and
+raw spelling join the pieces they admitted once, when a reader asks for the whole
+value. Semantic text can change spelling or be empty without erasing raw
+consumption.
+Code continuations reuse one indentation-removal operation; definitions
+continuing paragraph or item text stay literal instead of entering the reference
+index.
 
 Quote and list nesting runs on retained frames, not on native recursion: one frame
 stack drives quote chunks, list items and their block admission, so every deeper
@@ -115,6 +118,9 @@ worklists.
 Depth costs work: each level reads its own operand again, so the cost grows with
 the square of the nesting depth. A single line of 1,000 quotes parses in about a
 second in a development build, 2,000 in about four, and 4,000 in about fifteen.
+Item admission keeps the constant small: the stop rules are consulted only where
+their alternatives can begin, and neither an item's classification nor its joined
+body grows with the levels above it.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and
