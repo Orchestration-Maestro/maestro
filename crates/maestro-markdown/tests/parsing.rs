@@ -752,3 +752,62 @@ fn first_text(node: &Node) -> String {
         .find(|text| !text.is_empty())
         .unwrap_or_default()
 }
+
+#[test]
+fn escaped_angle_span_keeps_its_quote_marker_lines_as_text() {
+    let escaped = maestro_markdown::MarkedOptions::Browser { escape_html: true };
+    for (source, expected) in [
+        ("a <b\n> quote\n", &["paragraph a <b\n> quote"][..]),
+        ("a <b\n> c\n---\n", &["heading a <b\n> c\n---"][..]),
+        (
+            "- a <b\n  > c\n  ---\n",
+            &["list [item [heading a <b\n> c\n---]]"][..],
+        ),
+        ("- a <b\n> c\n", &["list [item [inline a <b\n> c]]"][..]),
+        (
+            "a <b\n> c | d\n--- | ---\n",
+            &["paragraph a <b", "table > c | d\n--- | ---"][..],
+        ),
+    ] {
+        let document = maestro_markdown::parse_with_options(source.into(), escaped);
+        assert_eq!(block_shapes(&document.nodes), expected, "{source:?}");
+    }
+    for options in link_grammars()
+        .into_iter()
+        .filter(|options| *options != escaped)
+    {
+        let document = maestro_markdown::parse_with_options("a <b\n> quote\n".into(), options);
+        assert_eq!(
+            block_shapes(&document.nodes),
+            ["paragraph a <b", "quote [paragraph quote]"],
+            "{options:?}"
+        );
+    }
+}
+
+/// Block kinds with their trimmed authored text, nesting containers in brackets.
+///
+/// Authored text shows where each block starts and ends in the source, which is
+/// what paragraph interruption decides. `observations::nodes` compares decoded
+/// inline children instead, so it would also assert the inline grammar's escaping.
+fn block_shapes(nodes: &[Node]) -> Vec<String> {
+    nodes
+        .iter()
+        .map(|node| {
+            let (kind, children) = match &node.kind {
+                Kind::Paragraph(_) => ("paragraph", None),
+                Kind::Heading(..) => ("heading", None),
+                Kind::Inline(_) => ("inline", None),
+                Kind::Table(_) => ("table", None),
+                Kind::Quote(children, _) => ("quote", Some(children)),
+                Kind::List(_, children) => ("list", Some(children)),
+                Kind::Item(children) => ("item", Some(children)),
+                _ => ("other", None),
+            };
+            match children {
+                Some(children) => format!("{kind} [{}]", block_shapes(children).join(", ")),
+                None => format!("{kind} {}", node.authored.to_owned_string().trim_end()),
+            }
+        })
+        .collect()
+}

@@ -8,7 +8,7 @@ use crate::{
 #[test]
 fn paragraph_chunks_wait_for_later_setext_without_revisiting_lines() {
     let source = format!("{}===\n\nnext", "alpha\nbeta\n".repeat(64));
-    let mut recognizer = Recognizer::new(MarkedOptions::Terminal);
+    let mut recognizer = Recognizer::new(MarkedOptions::Terminal, &|_| false);
     for end in 1..=source.len() {
         let _ = recognizer.extend(&source[..end]);
     }
@@ -21,7 +21,7 @@ fn paragraph_chunks_wait_for_later_setext_without_revisiting_lines() {
     assert_eq!(heading.level, 1);
     assert_eq!(&source[heading.consumed..], "next");
     assert_eq!(result.paragraph, Some("alpha\nbeta\n".repeat(64).len() + 3));
-    let mut control = Recognizer::new(MarkedOptions::Terminal);
+    let mut control = Recognizer::new(MarkedOptions::Terminal, &|_| false);
     let control = control.finish("alpha\nbeta\n\n===\n");
     assert!(control.heading.is_none());
     assert_eq!(control.paragraph, Some(10));
@@ -120,7 +120,7 @@ fn fresh(
     options: MarkedOptions,
     operand: &str,
 ) -> (Option<crate::rules::paragraph::Heading>, bool) {
-    let mut recognizer = Recognizer::new(options);
+    let mut recognizer = Recognizer::new(options, &|_| false);
     let undecided = matches!(
         recognizer.extend(operand),
         crate::rules::paragraph::Verdict::NeedMore
@@ -147,7 +147,7 @@ fn compare_retained(options: MarkedOptions, operand: &str, offsets: &[usize]) {
     let mut text = crate::rules::paragraph::ItemText::new(options);
     for start in offsets {
         let suffix = Segmented::from(ScopeSource::identity(&operand[*start..]));
-        let observed = text.attempt(&suffix);
+        let observed = text.attempt(&suffix, &|_| false);
         let expected = fresh(options, &operand[*start..]);
         assert_eq!(observed, expected, "{options:?} at {start} of {operand:?}");
     }

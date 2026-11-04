@@ -3,16 +3,14 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::edit_render_support::for_this_platform;
+use futures_util::FutureExt;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use maestro_tools::{WriteOperations, WriteToolInput};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
-    future::Future,
-    pin::Pin,
     sync::{Arc, Mutex},
-    task::{Context, Poll, Waker},
 };
 use tokio::sync::oneshot;
 
@@ -110,16 +108,11 @@ pub fn single_expected(test: &str) -> Value {
     row.expected
 }
 
-/// Poll `future` once with a waker that does nothing, so progress happens only when the test says.
-pub fn poll_once<T>(future: &mut BoxFuture<T>) -> Poll<T> {
-    Pin::new(future).poll(&mut Context::from_waker(Waker::noop()))
-}
-
 /// Poll `future` once and return its output, failing if it is still pending.
 pub fn ready<T>(future: &mut BoxFuture<T>) -> T {
-    match poll_once(future) {
-        Poll::Ready(value) => value,
-        Poll::Pending => panic!("future is still pending"),
+    match future.now_or_never() {
+        Some(value) => value,
+        None => panic!("future is still pending"),
     }
 }
 

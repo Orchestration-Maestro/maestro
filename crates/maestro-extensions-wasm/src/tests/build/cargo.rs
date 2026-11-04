@@ -145,7 +145,7 @@ fn prepared_component(directory: &Path, name: &str) -> Result<Option<PathBuf>, S
     let mut path = None;
     components::visit(
         &[
-            directory.join("examples"),
+            directory.join("tests/support"),
             directory.join("../../examples/extensions"),
         ],
         |target, variable| {

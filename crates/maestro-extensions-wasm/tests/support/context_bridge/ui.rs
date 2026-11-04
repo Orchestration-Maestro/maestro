@@ -14,25 +14,25 @@ use maestro_extensions_wasm::{
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-#[path = "../../src/tests/custom_author.rs"]
+#[path = "../../../src/tests/custom_author.rs"]
 mod custom_author;
-#[path = "../../src/tests/custom_overlay_author.rs"]
+#[path = "../../../src/tests/custom_overlay_author.rs"]
 mod custom_overlay_author;
-#[path = "../../src/tests/editor_factory_author.rs"]
+#[path = "../../../src/tests/editor_factory_author.rs"]
 mod editor_factory_author;
-#[path = "../../src/tests/factory_component_author.rs"]
+#[path = "../../../src/tests/factory_component_author.rs"]
 mod factory_component_author;
-#[path = "../../src/tests/focus_author.rs"]
+#[path = "../../../src/tests/focus_author.rs"]
 mod focus_author;
-#[path = "../../src/tests/overlay_author.rs"]
+#[path = "../../../src/tests/overlay_author.rs"]
 mod overlay_author;
-#[path = "../../src/tests/stacked_provider_author.rs"]
+#[path = "../../../src/tests/stacked_provider_author.rs"]
 mod stacked_provider_author;
-#[path = "../../src/tests/tui_author.rs"]
+#[path = "../../../src/tests/tui_author.rs"]
 mod tui_author;
-#[path = "../../src/tests/widget_author.rs"]
+#[path = "../../../src/tests/widget_author.rs"]
 mod widget_author;
-#[path = "../../src/tests/writer_author.rs"]
+#[path = "../../../src/tests/writer_author.rs"]
 pub(super) mod writer_author;
 /// Supplies distinguishable operands, then separately exercises host defaults and clearing.
 pub(super) fn observe(

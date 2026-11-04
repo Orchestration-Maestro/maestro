@@ -142,5 +142,3 @@ async fn dispatch(
 }
 
 fn require_send_sync<T: Send + Sync>() {}
-
-pub mod command_operations;

@@ -2,8 +2,8 @@
 //! reach its event callbacks.
 #![cfg(unix)]
 use crate::rpc_peer::{Peer, Scenario, events, next_of, release as release_peer};
-use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::on_task_set;
+use futures_util::FutureExt;
 use maestro_app::{Presence, RpcClient, RpcClientError};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -441,9 +441,9 @@ fn pending_calls_ignore_null_and_malformed_lines_before_a_matching_reply() {
         let client = started(&peer, Scenario::Malformed, &json!({})).await;
         let mut events = events(&client);
         let mut state = pin!(client.get_state());
-        assert!(poll_once(state.as_mut()).is_pending());
+        assert!(state.as_mut().now_or_never().is_none());
         assert_eq!(events.recv().await.unwrap(), json!({"type": "barrier"}));
-        assert!(poll_once(state.as_mut()).is_pending());
+        assert!(state.as_mut().now_or_never().is_none());
         let (state, abort) = tokio::join!(state, client.abort());
         assert_eq!(state.unwrap().session_id, "s");
         abort.unwrap();

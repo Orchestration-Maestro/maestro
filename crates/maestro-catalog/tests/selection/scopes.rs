@@ -274,7 +274,7 @@ fn run(
     observed: &mut Observed,
 ) -> Vec<(Handle, Option<ModelThinkingLevel>)> {
     let input = &case.input;
-    let marker = std::env::temp_dir().join(format!(
+    let marker = maestro_test_directory::temporary_root().join(format!(
         "maestro-catalog-marker-{}-{}",
         std::process::id(),
         case.id
