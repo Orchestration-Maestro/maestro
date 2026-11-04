@@ -1,6 +1,6 @@
 //! Retained paragraph and setext progress over a caller's growing source prefix.
 mod item_text;
-use crate::{MarkedOptions, source::Segmented};
+use crate::MarkedOptions;
 pub(crate) use item_text::ItemText;
 use regress::Regex;
 use std::{borrow::Cow, collections::VecDeque, ops::Range, sync::LazyLock};
@@ -249,24 +249,6 @@ impl<'a> Recognizer<'a> {
         self.setext_open =
             !(empty_line || matches(self.grammar.setext.as_ref(), window) || carriage(text));
     }
-}
-
-/// End of the physical line starting at `local`, including its terminator.
-pub(super) fn physical_line_end(source: &Segmented, local: usize) -> Option<usize> {
-    if local >= source.len() {
-        return None;
-    }
-    let mut scanned = local;
-    for chunk in source.chunks_in(local..source.len()) {
-        let taken = chunk.find('\n').map_or(chunk.len(), |offset| offset + 1);
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += taken);
-        if taken <= chunk.len() && chunk.as_bytes().get(taken - 1) == Some(&b'\n') {
-            return Some(scanned + taken);
-        }
-        scanned += chunk.len();
-    }
-    Some(source.len())
 }
 
 /// A line's grammar operand as the caller displays it, starting at operand offset `start`.

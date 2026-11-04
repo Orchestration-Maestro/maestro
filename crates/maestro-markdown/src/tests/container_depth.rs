@@ -397,3 +397,25 @@ fn deep_quote_resolution_completes_on_a_reduced_stack() {
     });
     assert_eq!(measured, (2_000, 2_000));
 }
+
+/// Work one fresh parse of a single list item holding `paragraphs` blank-separated
+/// paragraphs charges, with the authored size of the document.
+fn item_paragraph_charge(paragraphs: usize, charge: fn(&super::Work) -> usize) -> (usize, usize) {
+    let source = format!("- a\n{}", "\n  a\n".repeat(paragraphs - 1));
+    let bytes = source.len();
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = parse_with_options(source, MarkedOptions::Terminal);
+    assert_eq!(shape(&document), (2, 3 * paragraphs + 1));
+    (super::WORK.with_borrow(charge), bytes)
+}
+
+#[test]
+fn item_stop_seeks_stay_proportional_to_the_item() {
+    let measured =
+        [50, 200].map(|paragraphs| item_paragraph_charge(paragraphs, |work| work.item_seeks));
+    eprintln!("item stop seeks for authored bytes: {measured:?}");
+    assert!(
+        stays_proportional(measured),
+        "item stop seeks per authored byte {measured:?}"
+    );
+}

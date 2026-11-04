@@ -1,6 +1,10 @@
 //! Setext lookahead over item text admitted one line at a time.
 use super::{Grammar, Heading, blank, carriage, displayed, matches, selected, underline};
-use crate::{MarkedOptions, rules::lines::Input, source::Segmented};
+use crate::{
+    MarkedOptions,
+    rules::lines::{Input, line_end},
+    source::Segmented,
+};
 use std::ops::Range;
 
 /// How one physical line affects a search that a later line can close.
@@ -23,6 +27,19 @@ enum Ending {
     Terminated,
     /// The operand ends inside the line.
     Unterminated,
+}
+
+/// First entry of an ascending list that `before` does not place before the seek.
+///
+/// A partition point answers `before` a logarithmic number of times, so an attempt that
+/// asks again about a list it has grown does not rescan the entries it passed.
+fn seek(items: &[usize], mut before: impl FnMut(usize) -> bool) -> Option<usize> {
+    let at = items.partition_point(|item| {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.item_seeks += 1);
+        before(*item)
+    });
+    items.get(at).copied()
 }
 
 /// One classified line of an operand admitted line by line.
@@ -168,12 +185,10 @@ impl ItemText {
         setext: usize,
     ) -> Option<usize> {
         loop {
-            if let Some(found) = self
-                .underlines
-                .iter()
-                .copied()
-                .find(|index| self.lines[*index].range.start > origin + 1)
-            {
+            let found = seek(&self.underlines, |index| {
+                self.lines[index].range.start <= origin + 1
+            });
+            if let Some(found) = found {
                 return Some(found);
             }
             if setext != usize::MAX && self.lines.len() > setext {
@@ -227,12 +242,11 @@ impl ItemText {
     /// First line at or after `index` that closes one search.
     fn stop(&mut self, remainder: &Remainder<'_>, index: usize, search: Search) -> usize {
         loop {
-            let found = match search {
-                Search::Setext => self.setext_stops.iter().copied(),
-                Search::Paragraph => self.paragraph_stops.iter().copied(),
-            }
-            .find(|line| *line >= index);
-            if let Some(found) = found {
+            let stops = match search {
+                Search::Setext => &self.setext_stops,
+                Search::Paragraph => &self.paragraph_stops,
+            };
+            if let Some(found) = seek(stops, |line| line < index) {
                 return found;
             }
             if !self.advance(remainder) {
@@ -309,10 +323,11 @@ impl ItemText {
         // Classification never trails the caller's consumed prefix, so the remaining line
         // bytes are always inside the supplied suffix.
         let local = self.framing.saturating_sub(start);
-        let Some(end) = super::physical_line_end(source, local) else {
+        if local >= source.len() {
             return false;
-        };
-        let lookahead = super::physical_line_end(source, end).unwrap_or(end);
+        }
+        let end = line_end(source, local).unwrap_or(source.len());
+        let lookahead = line_end(source, end).unwrap_or(end);
         let line = self.line(source, local..end, lookahead, remainder.escaped);
         let position = self.lines.len();
         if line.setext != Stop::Open {
