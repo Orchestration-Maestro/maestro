@@ -1011,6 +1011,42 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
     );
 }
 
+/// A failing real-browser regression run still runs the export inventory, so one run reports
+/// every case, and the command keeps the first failure's status.
+#[test]
+fn browser_test_runs_every_selection_after_a_failure() {
+    drive();
+    let fixture = Fixture::new();
+    for (failing, code) in [("none", 0), ("nextest", 17), ("run", 17)] {
+        let receipt = fixture.root.path().join("receipt/invocations");
+        if receipt.exists() {
+            fs::remove_file(&receipt).unwrap();
+        }
+        let output = fixture
+            .invoke(
+                "browser_test_runs_every_selection_after_a_failure",
+                "browser-test",
+                &[],
+            )
+            .env("MAESTRO_FAIL_PHASE", failing)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(code), "{failing}");
+        assert_eq!(
+            invocations(&fixture),
+            [
+                "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
+                "run|--quiet|--locked|-p|maestro-test-browser|--",
+            ],
+            "{failing}"
+        );
+        assert_eq!(
+            fixture.receipt("cwd"),
+            fixture.root.path().as_os_str().as_encoded_bytes()
+        );
+    }
+}
+
 #[test]
 fn maestro_source_launchers_clear_the_same_credentials() {
     drive();

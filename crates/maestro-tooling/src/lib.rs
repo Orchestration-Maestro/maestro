@@ -127,6 +127,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             run_source::Mode::Windows,
         )),
         Some("check-browser-smoke") => browser_build(cargo, checkout),
+        Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
             copy_assets::copy(
@@ -228,6 +229,40 @@ fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         &mut child,
         &std::env::temp_dir().join("maestro-browser-smoke-errors.log"),
     )
+}
+
+/// Run the real-browser regressions and the export inventory, each after any failure of the
+/// other, so one run reports every case; the first failure's status is the command's.
+fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
+    let mut regressions = Command::new(cargo);
+    regressions.current_dir(checkout).args([
+        "nextest",
+        "run",
+        "--locked",
+        "-p",
+        "maestro-test-browser",
+        "--run-ignored",
+        "only",
+        "--no-fail-fast",
+        "-E",
+        "test(/^browser::/)",
+    ]);
+    let mut inventory = Command::new(cargo);
+    inventory.current_dir(checkout).args([
+        "run",
+        "--quiet",
+        "--locked",
+        "-p",
+        "maestro-test-browser",
+        "--",
+    ]);
+    let regressed = regressions.status()?;
+    let inventoried = inventory.status()?;
+    Ok(exit_code(if regressed.success() {
+        inventoried
+    } else {
+        regressed
+    }))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

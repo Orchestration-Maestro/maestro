@@ -82,6 +82,25 @@ fn declared(workflows: &Path) -> Vec<(String, String)> {
     names
 }
 
+/// A manual browser proof runs only the Chromium job, on the named ref, at the release the full
+/// suite runs, so a red and green pair proves the code the merge queue will test.
+#[test]
+fn the_browser_proof_runs_the_suites_release_on_the_named_ref() {
+    let workflows = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows");
+    assert_eq!(
+        pins(&workflows, "browser-proof.yml"),
+        pins(&workflows, "full-suite.yml"),
+        "the proof pins the suite's release"
+    );
+    let proof = std::fs::read_to_string(workflows.join("browser-proof.yml"))
+        .expect("the browser proof caller exists");
+    assert_eq!(value_of(&proof, "browser-only:").trim(), "true");
+    assert_eq!(
+        value_of(&proof, "checkout-ref:").trim(),
+        "${{ inputs.ref }}"
+    );
+}
+
 /// Every caller pins one released commit, and the guards listener judges the runs whose job names
 /// the pinned guards compare exactly.
 #[test]
