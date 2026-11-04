@@ -2189,22 +2189,30 @@ the default branch.
 
 ## CI speed guards
 
-`CI speed guards` hands each finished run to the shared guards: the completed
-merge-group run of `Rust CI` and the completed default-branch push of
-`Full suite after landing`, with that run's id. Both are judged because only a
-default-branch push saves the compile snapshots every other run restores. The
-guards hold time per unit of work against a ratchet, the compile-cache hit rate,
-the test selection share, shard balance, tests over 30 seconds and the pinned
-required checks; each one fails a check or files one issue per cause, and a
-breach that persists adds to that issue rather than filing another.
+`CI speed guards` hands each finished merge-group run of `Rust CI` to the shared
+guards, with that run's id. The guards hold time per unit of work against a
+ratchet, the compile-cache hit rate, the test selection share, shard balance,
+tests over 30 seconds and the pinned required checks; each one fails a check or
+files one issue per cause, and a breach that persists adds to that issue rather
+than filing another. A cold compile cache shows in the merge group first: its
+archive build reports the hit rate against the floor.
+
+A default-branch push is not judged yet. The only workflow that runs the suite on
+a push is `Full suite after landing`, which calls it through one reusable job, so
+its checks are named `suite / Caller declaration` and so on. The guards compare
+the pinned names exactly, so every landing would report all pinned checks as
+missing and open an issue for it. Until the shared guards read that prefix
+([issue 354](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/354)),
+this caller stops at the merge groups.
 
 On pull requests the same caller passes no run id, so only the shared test-time
 exception check runs. It fails when a nextest override allows more than the hang
 limit and the comment above it names no open issue. The caller reads Actions runs
-and contents, and writes issues with the automatic job token. It is declared in
-`privileged_trigger_workflows` beside the reporter, so the trigger audit exempts
-only these two files. Like the reporter, it becomes active after it lands on the
-default branch.
+and contents, and writes issues with the automatic job token; GitHub reads a
+called workflow's own permissions when the run loads, so one caller job covers
+both events. It is declared in `privileged_trigger_workflows` beside the
+reporter, so the trigger audit exempts only these two files. Like the reporter,
+it becomes active after it lands on the default branch.
 
 ## Fuzzing
 
