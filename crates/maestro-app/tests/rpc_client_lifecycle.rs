@@ -1,8 +1,8 @@
 //! Launching, observing and stopping the RPC client's child.
 #![cfg(unix)]
 use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
-use crate::support::rpc_connection::poll_once;
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
+use futures_util::FutureExt;
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
 use maestro_process::child_process::process_exists;
 use serde_json::{Value, json};
@@ -10,7 +10,6 @@ use std::{
     io::{BufRead, Read},
     path::Path,
     pin::pin,
-    task::Poll,
     time::Duration,
 };
 
@@ -212,16 +211,16 @@ fn startup_observes_the_hundred_millisecond_boundary() {
         let (release, hold) = hold_clock();
         let mut events = events(&client);
         let mut start = pin!(client.start());
-        assert!(poll_once(start.as_mut()).is_pending());
+        assert!(start.as_mut().now_or_never().is_none());
         next_of(&mut events, "peer_ready").await;
         while client.get_stderr().is_empty() {
             tokio::task::yield_now().await;
         }
         assert_eq!(client.get_stderr(), "booting\n");
         tokio::time::advance(Duration::from_millis(99)).await;
-        assert!(poll_once(start.as_mut()).is_pending());
+        assert!(start.as_mut().now_or_never().is_none());
         tokio::time::advance(Duration::from_millis(1)).await;
-        assert!(matches!(poll_once(start.as_mut()), Poll::Ready(Ok(()))));
+        assert!(matches!(start.as_mut().now_or_never(), Some(Ok(()))));
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
@@ -319,11 +318,11 @@ fn delivering_child() {
             tokio::task::yield_now().await;
         }
         let mut stop = pin!(client.stop());
-        assert!(poll_once(stop.as_mut()).is_pending());
+        assert!(stop.as_mut().now_or_never().is_none());
         while process_exists(pid) {
             tokio::task::yield_now().await;
         }
-        if poll_once(stop.as_mut()).is_ready() {
+        if stop.as_mut().now_or_never().is_some() {
             println!("VERDICT stopped");
         } else {
             println!("VERDICT waiting");
@@ -415,7 +414,7 @@ fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
         next_of(&mut events, "tick").await;
         let started = std::time::Instant::now();
         let mut stop = pin!(client.stop());
-        assert!(poll_once(stop.as_mut()).is_pending());
+        assert!(stop.as_mut().now_or_never().is_none());
         while events.try_recv().is_ok() {}
         stop.await.unwrap();
         assert!(
@@ -436,12 +435,12 @@ fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
         .unwrap();
         let (release, hold) = hold_clock();
         let mut stop = pin!(client.stop());
-        assert!(poll_once(stop.as_mut()).is_pending());
+        assert!(stop.as_mut().now_or_never().is_none());
         while !client.get_stderr().contains("terminating") {
             tokio::task::yield_now().await;
         }
         tokio::time::advance(Duration::from_millis(999)).await;
-        assert!(poll_once(stop.as_mut()).is_pending());
+        assert!(stop.as_mut().now_or_never().is_none());
         assert!(process_exists(pid));
         tokio::time::advance(Duration::from_millis(1)).await;
         stop.await.unwrap();
@@ -469,7 +468,7 @@ fn restart_keeps_ids_stderr_and_registered_listeners() {
             "{\"type\":\"abort\",\"id\":\"req_1\"}\n"
         );
         let mut pending = pin!(client.get_state());
-        assert!(poll_once(pending.as_mut()).is_pending());
+        assert!(pending.as_mut().now_or_never().is_none());
         next_of(&mut events, "wire_capture").await;
         client.stop().await.unwrap();
         assert!(matches!(pending.await, Err(RpcClientError::Stopped)));

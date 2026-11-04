@@ -138,13 +138,14 @@ fn browser_smoke_follows_staged_consumers() {
         "Cargo.toml",
         "crates/shared/src/lib.rs",
         "crates/g/src/lib.rs",
+        "crates/maestro-web/src/lib.rs",
     ] {
         assert!(
             !select_paths(&metadata, &[path]).reaches_browser(),
             "{path}"
         );
     }
-    for name in ["maestro-models", "maestro-web"] {
+    for name in ["maestro-catalog", "maestro-models"] {
         let selected = select_paths(&metadata, &[&format!("crates/{name}/src/lib.rs")]);
         assert_eq!(names(&selected), [name]);
         assert!(selected.reaches_browser());

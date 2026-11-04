@@ -10,7 +10,7 @@
 )]
 
 #[cfg(target_arch = "wasm32")]
-#[path = "../src/tests/hook_author.rs"]
+#[path = "../../src/tests/hook_author.rs"]
 mod hook_author;
 
 #[cfg(target_arch = "wasm32")]

@@ -72,7 +72,7 @@ fn child_toolchain_uses_declared_pin() {
 /// Observe unsanitized default and override failures before using fixture setup.
 fn assert_incomplete_default() {
     let default = Command::new("rustup")
-        .current_dir(std::env::temp_dir())
+        .current_dir(maestro_test_directory::temporary_root())
         .env_remove("RUSTUP_TOOLCHAIN")
         .args(["show", "active-toolchain"])
         .output()
@@ -85,7 +85,9 @@ fn assert_incomplete_default() {
     );
     for selector in [None, Some("incomplete")] {
         let mut compiler = Command::new("rustc");
-        compiler.current_dir(std::env::temp_dir()).arg("--version");
+        compiler
+            .current_dir(maestro_test_directory::temporary_root())
+            .arg("--version");
         compiler.env_remove("RUSTUP_TOOLCHAIN");
         if let Some(selector) = selector {
             compiler.env("RUSTUP_TOOLCHAIN", selector);
@@ -220,7 +222,7 @@ fn child_toolchain_preserves_parent_profile_destination() {
     let output = TestProcess::current("child_toolchain_preserves_parent_profile_destination")
         .unwrap()
         .nocapture()
-        .current_dir(std::env::temp_dir())
+        .current_dir(maestro_test_directory::temporary_root())
         .env(PROBE, "1")
         .env("LLVM_PROFILE_FILE", "parent-%p.profraw")
         .env("RUSTFLAGS", "-C instrument-coverage")
@@ -413,6 +415,9 @@ fn assert_profile_counters(profile: &Path) {
 }
 
 /// Controlled tool recording its arguments, environment and phases.
+///
+/// `MAESTRO_FAIL_PHASE` lists `phase` or `phase=status` entries: each listed phase the tool
+/// reaches exits with its status, or 17.
 const FIXTURE_CHILD: &str = r#"
 use std::{env, fs, io::Write, path::PathBuf};
 fn main() {
@@ -449,7 +454,13 @@ fn main() {
         use std::io::Write;
         let mut log = fs::OpenOptions::new().create(true).append(true).open(root.join("phases")).unwrap();
         writeln!(log, "{phase}").unwrap();
-        if env::var("MAESTRO_FAIL_PHASE").ok().as_deref() == Some(&phase) { std::process::exit(17); }
+        if let Ok(failures) = env::var("MAESTRO_FAIL_PHASE") {
+            let failed = failures.split(',').find_map(|entry| {
+                let (name, code) = entry.split_once('=').unwrap_or((entry, "17"));
+                (name == phase).then_some(code)
+            });
+            if let Some(code) = failed { std::process::exit(code.parse().unwrap_or(17)); }
+        }
     }
     if env::args().nth(1).as_deref() == Some("clippy") {
         if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
@@ -465,7 +476,6 @@ fn main() {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
-    if let Some(path) = env::var_os("MAESTRO_ARTIFACT") { fs::write(path, "compiled artifact").unwrap(); }
     if let Some(path) = env::var_os("MAESTRO_BLOCK_RESTORE") { fs::create_dir_all(PathBuf::from(path).join("auth.json.bak")).unwrap(); }
     if let Ok(message) = env::var("MAESTRO_DIAGNOSTIC") { eprint!("{message}"); }
     std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
@@ -641,13 +651,12 @@ fn drive() {
         tooling::run(&args, Path::new(&cargo), Path::new(&root))
     };
     match result {
-        Ok(code) => std::process::exit(if code == std::process::ExitCode::SUCCESS {
-            0
-        } else if code == std::process::ExitCode::from(17) {
-            17
-        } else {
-            1
-        }),
+        // Forward the development command's own status, since a test distinguishes its failures.
+        Ok(code) => std::process::exit(
+            (0..=u8::MAX)
+                .find(|status| code == std::process::ExitCode::from(*status))
+                .map_or(1, i32::from),
+        ),
         Err(error) => {
             eprintln!("{error}");
             std::process::exit(1);
@@ -1009,6 +1018,47 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
         fixture.receipt("cwd"),
         fixture.root.path().as_os_str().as_encoded_bytes()
     );
+}
+
+/// A failing real-browser regression run still runs the export inventory, so one run reports
+/// every case, and the command keeps the first failure's status.
+#[test]
+fn browser_test_runs_every_selection_after_a_failure() {
+    drive();
+    let fixture = Fixture::new();
+    for (failing, code) in [
+        ("none", 0),
+        ("nextest", 17),
+        ("run=18", 18),
+        ("nextest=17,run=18", 17),
+    ] {
+        let receipt = fixture.root.path().join("receipt/invocations");
+        if receipt.exists() {
+            fs::remove_file(&receipt).unwrap();
+        }
+        let output = fixture
+            .invoke(
+                "browser_test_runs_every_selection_after_a_failure",
+                "browser-test",
+                &[],
+            )
+            .env("MAESTRO_FAIL_PHASE", failing)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(code), "{failing}");
+        assert_eq!(
+            invocations(&fixture),
+            [
+                "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
+                "run|--quiet|--locked|-p|maestro-test-browser|--",
+            ],
+            "{failing}"
+        );
+        assert_eq!(
+            fixture.receipt("cwd"),
+            fixture.root.path().as_os_str().as_encoded_bytes()
+        );
+    }
 }
 
 #[test]
@@ -2072,76 +2122,80 @@ fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
     );
 }
 
-const BROWSER_BUILD_ARGS: [&str; 8] = [
-    "build",
-    "--locked",
-    "-p",
-    "maestro-models",
-    "--example",
-    "browser_import_check",
-    "--target",
-    "wasm32-unknown-unknown",
-];
+/// Write the browser compile witnesses' sources into the fixture checkout.
+fn write_browser_witnesses(root: &Path) {
+    for source in [
+        "crates/maestro-catalog/tests/support/browser_catalog_check.rs",
+        "crates/maestro-models/tests/support/bedrock_browser.rs",
+        "crates/maestro-models/tests/support/browser_import_check.rs",
+        "crates/maestro-models/tests/support/cloud_content_browser.rs",
+    ] {
+        let path = root.join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, "controlled build input").unwrap();
+    }
+}
+
+/// The controlled tool's browser witness invocations, in order.
+fn witness_invocations() -> Vec<String> {
+    [
+        ("maestro-catalog", "browser_catalog_check"),
+        ("maestro-models", "bedrock_browser_witness"),
+        ("maestro-models", "browser_import_check"),
+        ("maestro-models", "cloud_content_browser_witness"),
+    ]
+    .into_iter()
+    .map(|(package, example)| {
+        format!("check|--locked|--target|wasm32-unknown-unknown|-p|{package}|--example|{example}")
+    })
+    .collect()
+}
+
+/// Run the browser smoke command in the fixture checkout.
+fn run_browser_smoke(fixture: &Fixture, test: &str) -> TestProcess {
+    fixture
+        .invoke(test, "check-browser-smoke", &[])
+        .temp_dir(fixture.root.path())
+}
 
 #[test]
 fn maestro_browser_build_records_diagnostics_without_noise() {
     drive();
+    let test = "maestro_browser_build_records_diagnostics_without_noise";
     let fixture = Fixture::new();
-    let output = fixture
-        .invoke(
-            "maestro_browser_build_records_diagnostics_without_noise",
-            "check-browser-smoke",
-            &[],
-        )
+    let output = run_browser_smoke(&fixture, test).output().unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        output.stderr,
+        b"browser_catalog_check entry is not delivered\n"
+    );
+    write_browser_witnesses(fixture.root.path());
+    let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
+    let output = run_browser_smoke(&fixture, test).output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(invocations(&fixture), witness_invocations());
+    assert!(output.stderr.is_empty());
+    assert!(!log.exists());
+
+    let fixture = Fixture::new();
+    write_browser_witnesses(fixture.root.path());
+    let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
+    let output = run_browser_smoke(&fixture, test)
+        .env("MAESTRO_CHILD_EXIT", "17")
+        .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         output.stderr,
-        b"browser_import_check entry is not delivered\n"
+        format!("Browser smoke check failed. See {}\n", log.display()).as_bytes()
     );
-    let entry = fixture
-        .root
-        .path()
-        .join("crates/maestro-models/tests/support/browser_import_check.rs");
-    fs::create_dir_all(entry.parent().unwrap()).unwrap();
-    fs::write(entry, "controlled build input").unwrap();
-    let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
-    let artifact = fixture.root.path().join("artifact.wasm");
-    for exit in ["0", "17"] {
-        let output = fixture
-            .invoke(
-                "maestro_browser_build_records_diagnostics_without_noise",
-                "check-browser-smoke",
-                &[],
-            )
-            .temp_dir(fixture.root.path())
-            .env("MAESTRO_CHILD_EXIT", exit)
-            .env("MAESTRO_ARTIFACT", &artifact)
-            .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
-            .output()
-            .unwrap();
-        assert_eq!(output.status.success(), exit == "0");
-        assert_eq!(
-            fixture.arguments(),
-            BROWSER_BUILD_ARGS.map(|arg| arg.as_bytes().to_vec())
-        );
-        if exit == "0" {
-            assert!(output.stderr.is_empty());
-            assert!(!log.exists());
-            assert_eq!(fs::read(&artifact).unwrap(), b"compiled artifact");
-        } else {
-            assert_eq!(
-                output.stderr,
-                format!("Browser smoke check failed. See {}\n", log.display()).as_bytes()
-            );
-            assert_eq!(
-                fs::read(&log).unwrap(),
-                b"fixture.rs:4: compilation failed\n"
-            );
-        }
-        assert!(!stdout(&output).contains("compilation failed"));
-    }
+    assert_eq!(
+        fs::read(&log).unwrap(),
+        b"fixture.rs:4: compilation failed\n"
+    );
+    assert_eq!(invocations(&fixture), witness_invocations()[..1]);
+    assert!(!stdout(&output).contains("compilation failed"));
 }
 
 fn git(root: &Path, args: &[&str]) -> Output {
@@ -3054,6 +3108,7 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
     drive();
     for (paths, active, expected) in [
         (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
+        (vec!["crates/maestro-catalog/src/lib.rs"], true, 1),
         (vec!["crates/shared/src/lib.rs"], true, 0),
         (vec!["Cargo.toml"], true, 0),
         (vec!["crates/alone/src/lib.rs"], true, 0),
@@ -3146,12 +3201,7 @@ fn maestro_source_announces_non_executable_cargo() {
 fn maestro_browser_missing_tool_logs_smoke_failure() {
     drive();
     let fixture = Fixture::new();
-    let entry = fixture
-        .root
-        .path()
-        .join("crates/maestro-models/tests/support/browser_import_check.rs");
-    fs::create_dir_all(entry.parent().unwrap()).unwrap();
-    fs::write(entry, "fixture").unwrap();
+    write_browser_witnesses(fixture.root.path());
     fs::remove_file(&fixture.child).unwrap();
     let output = fixture
         .invoke(
@@ -3488,7 +3538,7 @@ fn maestro_hook_staged_clippy_warning_blocks_after_restaging() {
 /// The files the test build's author preparation is checked against.
 #[cfg(unix)]
 const AUTHOR_SETUP_SOURCES: [&str; 8] = [
-    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
     "crates/maestro-extensions-wasm/src/tests/build.rs",
     "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
     "crates/maestro-tooling/src/example_files.rs",
@@ -3584,7 +3634,7 @@ fn example_builds_on_library(
         &root.join("Cargo.lock"),
         std::time::Duration::from_secs(3600),
     );
-    let information = "prepare_author_component: crates/maestro-extensions-wasm/examples/prepare_author_component.rs\n";
+    let information = "prepare_author_component: crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs\n";
     let copy = profile.join("examples/prepare_author_component-1");
     fs::write(&copy, "copy\n").unwrap();
     fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
@@ -4102,7 +4152,7 @@ fn example_index_discovers_independent_additions() {
 /// Write a checkout with stale generated regions and an untouched preparation program.
 fn example_checkout(root: &Path) {
     let folder = root.join("examples/extensions");
-    let local = root.join("crates/maestro-extensions-wasm/examples");
+    let local = root.join("crates/maestro-extensions-wasm/tests/support");
     let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
     fs::create_dir_all(&fixture).unwrap();
     fs::write(
@@ -4147,7 +4197,9 @@ fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::Exit
 fn example_index_renders_targets() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let folder = root.path().join("examples/extensions");
-    let local = root.path().join("crates/maestro-extensions-wasm/examples");
+    let local = root
+        .path()
+        .join("crates/maestro-extensions-wasm/tests/support");
     example_checkout(root.path());
     fs::create_dir_all(folder.join("with-deps")).unwrap();
     fs::create_dir_all(folder.join("zebra")).unwrap();
@@ -4182,7 +4234,7 @@ fn example_index_renders_targets() {
     );
     assert_eq!(
         rendered.0,
-        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\npath = \"tests/support/bridge.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\npath = \"tests/support/plain.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
     );
     assert_eq!(
         rendered.1,

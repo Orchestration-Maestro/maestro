@@ -6,7 +6,7 @@
 )]
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::{Value, json};
-#[path = "../../examples/helper_capabilities.rs"]
+#[path = "../../tests/support/helper_capabilities.rs"]
 mod author;
 /// The unchanged compiled author factory, selected against controlled imports.
 struct Helpers;

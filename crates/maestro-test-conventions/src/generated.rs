@@ -169,16 +169,18 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
     }
 }
 
-/// Whether a file starts a lint scope: a top-level module or a crate root of the guest's tests
-/// and examples. Files below a module inherit its levels.
+/// Whether a file starts a lint scope: a top-level module, a test crate root or a fixture
+/// component under the guest's `tests/support`. Files below a module inherit its levels.
 fn crate_or_module_root(relative: &Path) -> bool {
     let parts: Vec<_> = relative
         .components()
         .map(|part| part.as_os_str().to_string_lossy())
         .collect();
     match parts.as_slice() {
-        [dir, _] => matches!(dir.as_ref(), "src" | "tests" | "examples"),
-        [dir, _, file] => dir == "src" && file == "mod.rs",
+        [dir, _] => matches!(dir.as_ref(), "src" | "tests"),
+        [dir, folder, file] => {
+            (dir == "src" && file == "mod.rs") || (dir == "tests" && folder == "support")
+        }
         _ => false,
     }
 }

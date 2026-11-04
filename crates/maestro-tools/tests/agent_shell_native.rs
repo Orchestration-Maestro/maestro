@@ -2,12 +2,12 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::agent_shell_support;
-use crate::process_support;
 use crate::read_support;
 use crate::runtime;
 
 use crate::runtime::run;
 use agent_shell_support::{Immediate, result_value};
+use futures_util::FutureExt;
 use maestro_tools::{BashExecResult, BashSpawnContext, BashToolOptions, create_bash_tool};
 use read_support::{Fixture, Scratch};
 use serde_json::json;
@@ -413,9 +413,7 @@ fn bash_artifact_creation_failure_is_reported() {
             None,
         ));
         assert!(
-            process_support::poll_once(&mut execution.as_mut())
-                .await
-                .is_pending(),
+            execution.as_mut().now_or_never().is_none(),
             "artifact failure must not drop the pending operation"
         );
         assert!(!settled.load(std::sync::atomic::Ordering::SeqCst));

@@ -37,8 +37,8 @@ hook skips formatting and Clippy. The full conventions suite runs only for stage
 paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
 runs it as `just test-conventions`, which prepares the native fixture the probes
 install and then runs the suite with nextest.
-Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
-the browser entry is present, guarding targets outside native Clippy.
+Browser smoke runs when the browser entry is present and a staged crate owns a
+browser compile witness, guarding targets outside native Clippy.
 
 For changed crates, run `just _check -p <package>` with repeated `-p` arguments
 for multiple crates. `_check` verifies feature unification, runs native Clippy
@@ -146,6 +146,12 @@ Lint each changed browser crate separately, including all test and example targe
 `clippy --all-targets -D warnings` also rejects unused native-only helpers that
 `check --tests` leaves as warnings.
 
+A browser compile witness, an example target whose body only compiles for the
+browser target, is not covered by native Clippy. `just check-browser-smoke`
+compiles every witness for `wasm32-unknown-unknown` and stops at the first
+failure, printing the path of the diagnostics log. The commit hook runs the same
+command when a staged crate owns a witness.
+
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
 `test-support` development dependencies must all be available on browser targets.
@@ -206,8 +212,10 @@ tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
 printed.
-The real-browser cases run with `--no-fail-fast`, so one Chromium run reports every
-failing case.
+One run reports every real-browser case. The command runs the driver's own
+`browser::` regressions with `--no-fail-fast`, then the export inventory and the
+report painting, even when a regression fails. It exits with the first failing
+step's status.
 
 The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
@@ -295,10 +303,11 @@ error. Script arguments in the browser fixtures are JSON-encoded before evaluati
 so quotes in embedded document scripts remain data in the containing page.
 
 Browser tests install their page hooks and observers from Rust inside the test
-module, not from JavaScript modules. The `browser_fixture_support::Patch` guard replaces one page property and restores its
-own previous definition when dropped. It has four forms: a method (through a proxy
-whose `apply` trap hands the Rust hook the original function, the receiver and the
-arguments), a getter, an accessor or a value. Test-owned observers, such as the
+module, not from JavaScript modules. The `browser_fixture_support::Patch` guard
+replaces one page property and restores its own previous definition when dropped.
+It has four forms: a method (through a proxy whose `apply` trap hands the Rust hook
+the original function, the receiver and the arguments), a getter, an accessor or a
+value. Test-owned observers, such as the
 contribution page's mutation recorders, selections, animation seeks and frame
 intervals, call the page's own objects through `js_sys` and `web_sys`. Sources the
 product runs inside an isolated frame stand in for model or user content, so they
@@ -369,11 +378,55 @@ in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
 `browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]`.
-The job runs when the existing package selection includes a requested package,
-when a nonempty request changes, or for merge groups and main pushes; advisory-only
-runs skip it. Native package selection and the coverage floor stay unchanged.
-See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.15.0/docs/caller-checks.md#chromium-browser-tests).
+The job runs for merge groups and main pushes, and a manual `Browser proof`
+dispatch runs it on a named ref; pull requests and advisory-only runs skip it.
+Native package selection and the coverage floor stay unchanged.
+See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
+
+### Prove a browser test on a branch
+
+Run the Chromium job on any branch, tag or commit, without the merge queue:
+
+```sh
+gh workflow run browser-proof.yml --ref main -f ref=<branch>
+gh run list --workflow browser-proof.yml --event workflow_dispatch --limit 5
+```
+
+`.github/workflows/browser-proof.yml` calls the shared workflow at the release the
+full suite pins, with `browser-only: true` and the `ref` input as the checkout. Only
+the declaration check and the Chromium job run. The workflow file is read from
+`main`; the test code and the `browser-test` recipe come from `ref`. Dispatches share
+one queue: a newer one replaces a queued proof and never cancels a running one.
+This repository keeps the default concurrency key the caller contract requires, so
+a proof joins the shared `main` group and names its artifacts `root`. A proof
+restores the compile cache but never publishes it.
+
+The job saves the recipe's output as `browser-test.log` in the artifact
+`browser-test-root-<attempt>`, whether the recipe passes or fails:
+
+```sh
+gh run download <run-id> --name browser-test-root-1 --dir proof/red
+```
+
+To prove a test red and then green:
+
+1. Push a branch that breaks one assertion of the test. Keep the test registered and
+   its selection unchanged. Note the commit SHA and the test's name.
+2. Dispatch the proof for that branch. The run must fail at that assertion, not in
+   setup or compilation, and still report every other case: the export inventory
+   ends with its `COMPLETE` count.
+3. Restore the assertion on the branch under review and dispatch again. The run must
+   pass.
+4. Save the two `browser-test.log` files as `<test>-red.log` and
+   `<test>-green.log`, with both run URLs, both source SHAs and the shared release.
+5. Delete the throwaway branch.
+
+Use this before a pull request joins the merge queue, whenever its change touches a
+browser test or the code one exercises: pull requests skip the Chromium job, and a
+failure found in the queue costs a full queue cycle.
+See the [manual browser proofs](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#manual-browser-red-and-green-proofs)
+in the shared caller contract.
 
 ## Extension guide lock
 
@@ -2411,11 +2464,11 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, request (usage), agent, Markdown
-and package helpers live in their type owners. Native loopback servers, child
-probes and toolchain selection live in `maestro-test-process`. Fallible helpers
-return their errors to the test caller; fixed-output callbacks retain immediate
-assertions.
+and terminal helpers. Theme, tool, credential, request (usage), agent, extension,
+Markdown and package helpers live in their type owners. Native loopback servers,
+child probes and toolchain selection live in `maestro-test-process`. Fallible
+helpers return their errors to the test caller; fixed-output callbacks retain
+immediate assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.

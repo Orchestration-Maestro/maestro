@@ -1,8 +1,7 @@
 //! The shell row's lifecycle, acknowledged through the real caller's phases.
-use super::{
-    Answer, Interception, World, active, intercepting_world, painted, poll_once, printing, recorded,
-};
+use super::{Answer, Interception, World, active, intercepting_world, painted, printing, recorded};
 use crate::{BashExecutionComponent, interactive_mode::tests::isolated};
+use futures_util::FutureExt;
 use maestro_app::{BashError, BashExecOptions, BashExecResult, BashOperations};
 use maestro_tui::tui::LocalFuture;
 use std::{
@@ -134,7 +133,7 @@ impl Running {
         let mut caller = caller;
         let spawned = world.runtime.futures();
         assert!(
-            poll_once(&mut caller).is_none(),
+            caller.as_mut().now_or_never().is_none(),
             "the caller waits for its command"
         );
         let mut futures = world.runtime.take_futures();
@@ -165,7 +164,7 @@ impl Running {
             "the held receiver paints nothing: {held}"
         );
         assert!(
-            poll_once(&mut self.receiver).is_none(),
+            self.receiver.as_mut().now_or_never().is_none(),
             "the receiver waits for the delivery to end"
         );
         let started = painted(&self.row);
@@ -199,7 +198,7 @@ impl Running {
     /// Waits for the drain, which must end before the caller completes.
     pub(super) async fn drained(&mut self) {
         assert!(
-            poll_once(&mut self.caller).is_none(),
+            self.caller.as_mut().now_or_never().is_none(),
             "caller must await drain, not complete"
         );
         assert!(
@@ -221,7 +220,10 @@ impl Running {
     /// Checks the caller completes after the drain and gives up its row claim.
     pub(super) fn completed(&mut self) {
         assert!(
-            poll_once(&mut self.caller).is_some_and(|outcome| outcome.is_ok()),
+            self.caller
+                .as_mut()
+                .now_or_never()
+                .is_some_and(|outcome| outcome.is_ok()),
             "the caller completes after the drain"
         );
         let completed = painted(&self.row);

@@ -3,9 +3,10 @@
 #![cfg(unix)]
 use crate::{process_support, read_support, runtime};
 
+use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{ExecOptions, ExecResult, exec_command};
-use process_support::{complete, forward, poll_once, poll_through, polled_to_completion};
+use process_support::{complete, forward, poll_through, polled_to_completion};
 use read_support::Scratch;
 use serde_json::{Value, json};
 use std::future::Future;
@@ -297,7 +298,7 @@ fn exec_timeout_is_opt_in_and_released_after_completion() {
         };
         let exec = run(&waiting, &[], options);
         tokio::pin!(exec);
-        assert!(poll_once(&mut exec).await.is_pending(), "spawned");
+        assert!(exec.as_mut().now_or_never().is_none(), "spawned");
         let _socket = accept_ready(&listener);
         tokio::time::advance(timeout).await;
         // Keep native exit delivery from racing an automatically advanced escalation clock.
@@ -341,7 +342,7 @@ fn exec_terminates_on_abort_timeout_or_both() {
             let exec = run(&program, &[], options);
             tokio::pin!(exec);
             assert!(
-                poll_once(&mut exec).await.is_pending(),
+                exec.as_mut().now_or_never().is_none(),
                 "spawned and waiting"
             );
             let mut socket = accept_ready(&listener);
@@ -350,7 +351,7 @@ fn exec_terminates_on_abort_timeout_or_both() {
                     Trigger::Abort => signal.abort(),
                     Trigger::Timeout => tokio::time::advance(timeout).await,
                 }
-                assert!(poll_once(&mut exec).await.is_pending(), "{triggers:?}");
+                assert!(exec.as_mut().now_or_never().is_none(), "{triggers:?}");
             }
             read_signal_answer(&mut socket);
             std::io::Write::write_all(&mut socket, b"g").unwrap();
@@ -400,14 +401,14 @@ fn exec_kills_and_reaps_a_term_resistant_child_after_the_escalation_delay() {
         let exec = run(&program, &[], options);
         tokio::pin!(exec);
         assert!(
-            poll_once(&mut exec).await.is_pending(),
+            exec.as_mut().now_or_never().is_none(),
             "spawned and waiting"
         );
         let mut socket = accept_ready(&listener);
         signal.abort();
         let aborted = tokio::time::Instant::now();
         assert!(
-            poll_once(&mut exec).await.is_pending(),
+            exec.as_mut().now_or_never().is_none(),
             "terminated, not yet killed"
         );
         read_signal_answer(&mut socket);
@@ -526,13 +527,13 @@ fn exec_timeout_requests_termination_exactly_at_the_deadline() {
         let (_root, program) = payload(&json!({"scenario": "yielding", "port": port}));
         let exec = run(&program, &[], options);
         tokio::pin!(exec);
-        assert!(poll_once(&mut exec).await.is_pending(), "spawned");
+        assert!(exec.as_mut().now_or_never().is_none(), "spawned");
         let mut socket = accept_ready(&listener);
         tokio::time::advance(timeout.checked_sub(Duration::from_millis(1)).unwrap()).await;
-        assert!(poll_once(&mut exec).await.is_pending());
+        assert!(exec.as_mut().now_or_never().is_none());
         assert!(answers(&mut socket), "alive 1 ms before the deadline");
         tokio::time::advance(Duration::from_millis(1)).await;
-        assert!(poll_once(&mut exec).await.is_pending());
+        assert!(exec.as_mut().now_or_never().is_none());
         assert!(!answers(&mut socket), "terminated at the deadline");
         let result = exec.await;
         assert_eq!((result.code, result.killed), (0, true));

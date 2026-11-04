@@ -42,7 +42,7 @@ struct Link {
     /// Safe authored destination, absent for refused targets.
     href: Option<String>,
 }
-/// Read all seventeen document packages.
+/// Read all eighteen document packages.
 pub(crate) fn packages() -> Vec<Package> {
     serde_json::from_str(include_str!("fixtures/native_document_artifacts.json")).unwrap()
 }
@@ -80,7 +80,7 @@ pub fn docx_artifact_dom_uses_full_document_options(import_module: &js_sys::Func
 
 /// Native pages keep their document pixels, layout and safe authored links in either brand mode.
 #[wasm_bindgen]
-pub fn docx_artifact_dom_styles_and_safe_targets(import_module: &js_sys::Function) {
+pub async fn docx_artifact_dom_styles_and_safe_targets(import_module: &js_sys::Function) {
     use crate::contributions_support::host;
     let view = view();
     let _host = host(&view, import_module);
@@ -105,16 +105,26 @@ pub fn docx_artifact_dom_styles_and_safe_targets(import_module: &js_sys::Functio
                     .unwrap();
             }
             body().append_child(&viewport).unwrap();
+            let mut scrolled = 0;
             for case in packages() {
-                assert_page_geometry(&view, &viewport, &case, width);
+                scrolled += assert_page_geometry(&view, &viewport, &case, width).await;
             }
+            assert!(
+                width > 240 || scrolled > 0,
+                "a wide table scrolls in the narrow page"
+            );
             viewport.remove();
         }
     }
 }
 
-/// Observe one mounted package in the supplied bounded viewport.
-fn assert_page_geometry(view: &DomView, viewport: &Element, case: &Package, width: i32) {
+/// Observe one mounted package in the supplied bounded viewport and count its scrolled tables.
+async fn assert_page_geometry(
+    view: &DomView,
+    viewport: &Element,
+    case: &Package,
+    width: i32,
+) -> u32 {
     use crate::contributions_support::computed;
     let root = artifact(&case.content).mount(view).unwrap();
     viewport.append_child(&root.node).unwrap();
@@ -122,40 +132,141 @@ fn assert_page_geometry(view: &DomView, viewport: &Element, case: &Package, widt
     let sheet = select(node, "section.docx");
     assert_eq!(computed(&sheet, "background-color"), "rgb(255, 255, 255)");
     assert_eq!(computed(&sheet, "color"), "rgb(0, 0, 0)");
-    assert_eq!(computed(&sheet, "padding-top"), "32px");
-    assert_eq!(computed(&sheet, "box-shadow"), "none");
     assert!(
         (sheet.get_bounding_client_rect().width() - f64::from(width)).abs() < 1.0,
         "{}",
         case.name
     );
-    assert_eq!(computed(&sheet, "overflow-x"), "auto");
-    assert_contained_content(node, &sheet, case);
+    assert_painted_page(&sheet, case);
+    let scrolled = assert_contained_content(node, &sheet, (case, width)).await;
     let text = crate::contributions_support::page::select_children(&sheet);
     if case.text.iter().any(|text| !text.is_empty()) {
         assert!(!text.is_empty(), "{} selectable text", case.name);
     }
     viewport.remove_child(&root.node).unwrap();
+    scrolled
 }
 
-/// Wrapping text, wide tables and inline images stay within their document page.
-fn assert_contained_content(node: &Element, sheet: &Element, case: &Package) {
-    use crate::contributions_support::computed;
-    for selector in ["p", "span"] {
-        if let Some(text) = node.query_selector(selector).unwrap() {
-            assert_eq!(computed(&text, "overflow-wrap"), "break-word");
+/// The page paints its own padding around measured body text.
+///
+/// A header or footer paragraph sits at the document's header offset, which the artifact's own
+/// page padding replaces, so the padding surrounds the body text block rather than them.
+fn assert_painted_page(sheet: &Element, case: &Package) {
+    let page = sheet.get_bounding_client_rect();
+    assert!(page.height() > 0.0, "{} paints its page", case.name);
+    let text = sheet.query_selector("article p").unwrap();
+    assert!(text.is_some(), "{} paints its body paragraph", case.name);
+    let painted = text.unwrap().get_bounding_client_rect();
+    assert!(
+        painted.width() > 0.0 && painted.height() > 0.0,
+        "{} paints its text",
+        case.name
+    );
+    assert!(
+        painted.left() - page.left() >= 30.0 && painted.top() - page.top() >= 30.0,
+        "{}: the page paints its own padding around the body text",
+        case.name
+    );
+}
+
+/// Wrapped text, ready images and wide tables stay inside their painted page; returns the
+/// number of tables that scrolled.
+async fn assert_contained_content(
+    node: &Element,
+    sheet: &Element,
+    (case, width): (&Package, i32),
+) -> u32 {
+    let page_width = sheet.get_bounding_client_rect().width();
+    assert_wrapped_text(node, (page_width, case));
+    assert_ready_images(node, (page_width, case)).await;
+    assert_table_scrolling(node, (page_width, case, width))
+}
+
+/// Paragraphs and spans outside tables stay inside their painted page instead of overflowing
+/// it; table text sits inside its table's own horizontal scroll box.
+/// Inline spans report zero widths, so the observation is the paragraph's bounding box.
+fn assert_wrapped_text(node: &Element, (page_width, case): (f64, &Package)) {
+    for selector in ["p:not(table p)", "span:not(table span)"] {
+        let painted = node.query_selector_all(selector).unwrap();
+        for index in 0..painted.length() {
+            let element: HtmlElement = painted.item(index).unwrap().unchecked_into();
+            assert!(
+                element.get_bounding_client_rect().width() <= page_width + 1.0,
+                "{}: {selector} stays inside its page",
+                case.name
+            );
         }
     }
-    if case.images > 0 {
-        let image = select(node, "img");
+}
+
+/// Every inline image's own resource is decoded and paints at a nonzero size inside its page.
+async fn assert_ready_images(node: &Element, (page_width, case): (f64, &Package)) {
+    if case.images == 0 {
+        return;
+    }
+    let images = node.query_selector_all("img").unwrap();
+    for index in 0..images.length() {
+        let image: Element = images.item(index).unwrap().unchecked_into();
+        let decode: js_sys::Function = js_sys::Reflect::get(&image, &"decode".into())
+            .unwrap()
+            .unchecked_into();
+        let decoded = js_sys::Promise::from(decode.call0(&image).unwrap());
+        let decoded = wasm_bindgen_futures::JsFuture::from(decoded).await;
         assert!(
-            image.get_bounding_client_rect().width() <= sheet.get_bounding_client_rect().width()
+            decoded.is_ok(),
+            "{}: the image decodes ({decoded:?})",
+            case.name
+        );
+        let complete = js_sys::Reflect::get(&image, &"complete".into()).unwrap();
+        let width = js_sys::Reflect::get(&image, &"naturalWidth".into()).unwrap();
+        assert!(
+            complete.as_bool() == Some(true) && width.as_f64().unwrap_or(0.0) > 0.0,
+            "{}: the image resource is ready",
+            case.name
+        );
+        let painted = image.get_bounding_client_rect();
+        assert!(
+            painted.width() > 0.0 && painted.height() > 0.0,
+            "{}: the image paints at a nonzero size",
+            case.name
+        );
+        assert!(
+            painted.width() <= page_width + 1.0,
+            "{}: the image stays inside its page",
+            case.name
         );
     }
-    if case.tables > 0 {
-        assert_eq!(computed(&select(node, "table"), "display"), "block");
-        assert_eq!(computed(&select(node, "table"), "overflow-x"), "auto");
+}
+
+/// A table stays inside its page; in the narrow page, a table whose grid is wider than its box
+/// scrolls that grid horizontally. Returns the number of tables that scrolled.
+///
+/// Authored grid column widths are preferred widths, so a grid of short cells shrinks into the
+/// narrow page; only cells that cannot wrap make a grid wider than its box.
+fn assert_table_scrolling(node: &Element, (page_width, case, width): (f64, &Package, i32)) -> u32 {
+    let mut scrolled = 0;
+    if case.tables == 0 {
+        return scrolled;
     }
+    let tables = node.query_selector_all("table").unwrap();
+    for index in 0..tables.length() {
+        let table: HtmlElement = tables.item(index).unwrap().unchecked_into();
+        assert!(
+            table.get_bounding_client_rect().width() <= page_width + 1.0,
+            "{}: the table stays inside its page",
+            case.name
+        );
+        if width <= 240 && table.scroll_width() > table.client_width() {
+            table.set_scroll_left(table.scroll_width());
+            assert!(
+                table.scroll_left() > 0,
+                "{}: the wide table scrolls horizontally",
+                case.name
+            );
+            scrolled += 1;
+        }
+    }
+    scrolled
 }
 
 /// Decode and render failures remain independent of the original-byte header.

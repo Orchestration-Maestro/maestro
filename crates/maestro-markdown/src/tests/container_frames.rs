@@ -256,11 +256,11 @@ fn container_paragraph_lookahead_keeps_later_setext() {
             first_leaf(&control.nodes),
             ("text", "alpha\nbeta".to_owned())
         );
-        let matched = crate::rules::paragraph::Recognizer::new(options).finish(prefix);
+        let matched = crate::rules::paragraph::Recognizer::new(options, &|_| false).finish(prefix);
         assert!(matched.paragraph.unwrap() < prefix.len());
         assert!(matched.heading.is_none());
         assert!(
-            crate::rules::paragraph::Recognizer::new(options)
+            crate::rules::paragraph::Recognizer::new(options, &|_| false)
                 .finish(full)
                 .heading
                 .is_some()

@@ -8,8 +8,7 @@ mod tests {
     use crate::support::{TempDir, api_key, block_on, is_child, run_isolated};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
-        AuthStorageFuture, ConfigValueOperations, FileAuthStorageBackend,
-        InMemoryAuthStorageBackend, LockUpdate,
+        AuthStorageFuture, FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{
         BoxFuture, OAuthAuthInfo, OAuthCredentials, OAuthError, OAuthLoginCallbacks, OAuthPrompt,
@@ -17,15 +16,6 @@ mod tests {
     use serde_json::{Value, json};
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex, Weak};
-
-    /// Configuration operations that resolve no command.
-    struct NoOperations;
-
-    impl ConfigValueOperations for NoOperations {
-        fn execute(&self, _command: &str) -> Option<Vec<u8>> {
-            None
-        }
-    }
 
     /// Action run at a backend boundary.
     type Hook = Mutex<Option<Box<dyn Fn() + Send + Sync>>>;
@@ -201,7 +191,13 @@ mod tests {
 
     /// Request key for `provider` with the fallback enabled.
     async fn request(storage: &AuthStorage, provider: &str) -> Result<Option<String>, OAuthError> {
-        storage.get_api_key(provider, true, &NoOperations).await
+        storage
+            .get_api_key(
+                provider,
+                true,
+                &maestro_credentials::test_support::NoCommands,
+            )
+            .await
     }
 
     #[test]

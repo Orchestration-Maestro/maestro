@@ -14,11 +14,11 @@
 use std::fmt::Write as _;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../src/tests/build.rs"]
+#[path = "../../src/tests/build.rs"]
 mod build;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../src/tests/search_tools.rs"]
+#[path = "../../src/tests/search_tools.rs"]
 mod search_tools;
 
 // The preparation module below reaches source discovery through this import, and so does the
@@ -27,7 +27,7 @@ mod search_tools;
 use build::cargo::components;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-tooling/src/example_files/preparation.rs"]
+#[path = "../../../maestro-tooling/src/example_files/preparation.rs"]
 mod example_files;
 
 /// Preparation runs the native host, which a WebAssembly build does not have.
@@ -57,7 +57,7 @@ fn main() -> Result<(), String> {
 fn prepare() -> Result<(), String> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let folders = [
-        root.join("examples"),
+        root.join("tests/support"),
         root.join("../../examples/extensions"),
     ];
     let mut names: Vec<String> = components::FIXED_COMPONENTS

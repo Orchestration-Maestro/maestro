@@ -6,9 +6,9 @@ use maestro_extensions_wasm::{
 };
 use serde_json::json;
 
-#[path = "../../examples/context_bridge/credentials/state.rs"]
+#[path = "../../tests/support/context_bridge/credentials/state.rs"]
 mod credential_state;
-#[path = "../../examples/context_bridge/providers.rs"]
+#[path = "../../tests/support/context_bridge/providers.rs"]
 mod providers;
 
 /// Runs one named provider scenario.

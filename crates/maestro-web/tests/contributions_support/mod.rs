@@ -178,6 +178,16 @@ pub(crate) fn computed(element: &Element, property: &str) -> String {
         .get_property_value(property)
         .unwrap()
 }
+/// Whether a computed `box-shadow` paints a surface: a nonzero offset, blur or spread.
+pub(crate) fn shadow_paints(shadow: &str) -> bool {
+    let lengths = shadow
+        .rsplit_once(')')
+        .map_or(shadow, |(_, lengths)| lengths);
+    lengths
+        .split_whitespace()
+        .filter_map(|length| length.trim_end_matches("px").parse::<f64>().ok())
+        .any(|length| length != 0.0)
+}
 
 /// Outcome of a stubbed clipboard write.
 #[derive(Clone, Copy, PartialEq, Eq)]

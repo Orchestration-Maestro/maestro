@@ -18,8 +18,8 @@ Shared [model invocation options](guest_streams.md) keep native and guest data i
 mise exec -- just extension-author-component
 ```
 
-The recipe adds the `wasm32-wasip2` target and builds the example in
-`crates/maestro-extensions-wasm/examples/author_component.rs` as a component. An extension
+The recipe adds the `wasm32-wasip2` target and builds the fixture in
+`crates/maestro-extensions-wasm/tests/support/author_component.rs` as a component. An extension
 crate is a `cdylib` whose root names its factory:
 
 ```rust
@@ -33,7 +33,7 @@ fn factory(api: maestro_extensions_wasm::ExtensionAPI)
 ```
 
 The macro defines the exported entry point; the crate needs no raw bindings. A native build
-of the example links an empty library, so only the `wasm32` build produces a component.
+of the fixture links an empty library, so only the `wasm32` build produces a component.
 
 ## Register
 
@@ -539,7 +539,7 @@ usage whose two estimates are unknown.
 footer factories, themes, terminal input and dialogs, and lists each UI resource with
 its native counterpart.
 
-The component example's controlled compaction handler reads the supplied preparation
+The component fixture's controlled compaction handler reads the supplied preparation
 and branch entries, queries the session reader and catalog, and returns compaction
 content whose opaque details depend on those live query results. Summary formatting
 remains in its existing author helper.
