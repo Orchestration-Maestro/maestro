@@ -154,16 +154,14 @@ impl Runtime {
     }
 }
 
-/// Head script that reports the document has started, ahead of the loader.
-pub(crate) const STARTING: &str = "parent.postMessage({type:'bootstrap-starting'},'*')";
-
-/// Authored document carrying the loader with one attachment selection, then the `body` script.
-pub(crate) fn loader_document(boot: Boot, body: &str) -> String {
+/// Authored document carrying the `head` script, the loader with one attachment selection, then
+/// the `body` script.
+pub(crate) fn loader_document(head: &str, boot: Boot, body: &str) -> String {
     let id = "bootstrap-loader";
     let config =
         serde_json::json!({"sandboxId":id,"globals":{"attachments":[]},"runtime":["attachments"]});
     format!(
-        "<html><head><script>{STARTING}</script>{}</head><body><script>{body}</script></body></html>",
+        "<html><head><script>{head}</script>{}</head><body><script>{body}</script></body></html>",
         Runtime::new(boot, &config, id, &[]).markup
     )
 }

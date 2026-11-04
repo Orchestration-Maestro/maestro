@@ -500,6 +500,9 @@ fn writer(sandbox: &maestro_web::SandboxIframe, url: bool) {
     drop(sandbox.sandbox_url_provider.replace(provider));
 }
 
+/// Head script that reports the document has started, ahead of the loader.
+const STARTING: &str = "parent.postMessage({type:'bootstrap-starting'},'*')";
+
 /// Removal at each point of the bootstrap loader's startup settles the host once.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_removal_during_startup_settles_once() {
@@ -521,7 +524,7 @@ pub async fn bootstrap_removal_during_startup_settles_once() {
         } else {
             Bundle::served(&bundle.wasm)
         };
-        let html = loader_document(boot, "");
+        let html = loader_document(STARTING, boot, "");
         if phase == "url-pending" {
             fixture.arm(signal);
         }
@@ -546,8 +549,11 @@ pub async fn bootstrap_removal_during_startup_settles_once() {
     Fixture::finish();
 }
 
-/// Body script reporting whether the loader installed its helper.
-const LOADED: &str = "parent.postMessage({type:'loaded',first:typeof listAttachments},'*')";
+/// Head script recording the loader's uncaught error without reporting it.
+const REFUSAL: &str = "addEventListener('error',e=>{self.refused=e.error.name;e.preventDefault()})";
+/// Body script reporting the installed helper and any refusal.
+const LOADED: &str =
+    "parent.postMessage({type:'loaded',first:typeof listAttachments,refused:self.refused},'*')";
 
 /// Started and refused loader startups hold only the host's registrations and release them.
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -556,23 +562,28 @@ pub async fn bootstrap_outcomes_release_host_registrations() {
     let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
-    for (wasm, helper) in [(bundle.wasm.clone(), "function"), (vec![0], "undefined")] {
+    for (wasm, outcome) in [
+        (bundle.wasm.clone(), [Some("function"), None]),
+        (vec![0], [Some("undefined"), Some("CompileError")]),
+    ] {
         fixture.arm("loaded");
         sandbox
             .load_content(
                 "outcome",
-                &loader_document(Bundle::served(&wasm), LOADED),
+                &loader_document(REFUSAL, Bundle::served(&wasm), LOADED),
                 vec![],
                 vec![],
             )
             .unwrap();
         let loaded = fixture.waited().await;
-        assert_eq!(
-            js_sys::Reflect::get(&loaded, &"first".into())
+        let field = |key: &str| {
+            js_sys::Reflect::get(&loaded, &key.into())
                 .unwrap()
                 .as_string()
-                .as_deref(),
-            Some(helper)
+        };
+        assert_eq!(
+            [field("first"), field("refused")],
+            outcome.map(|value| value.map(str::to_owned))
         );
         fixture.closed(2);
         sandbox.remove().unwrap();
@@ -598,7 +609,7 @@ pub async fn bootstrap_url_handshake_settles_once() {
         sandbox
             .load_content(
                 &format!("handshake-{load}"),
-                &loader_document(bundle.inline(&bundle.wasm), REPLAY),
+                &loader_document("", bundle.inline(&bundle.wasm), REPLAY),
                 vec![],
                 vec![SharedHandle::new(Consumer(fixture.clone()))],
             )
