@@ -26,8 +26,10 @@ const LAUNCH_CONTEXT_ROOT: &str = "MAESTRO_LAUNCH_CONTEXT_ROOT";
 
 /// Reuses the same executable fixtures in a checked child with a chosen parent directory.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
-    if let Some(root) = std::env::var_os(LAUNCH_CONTEXT_ROOT) {
-        run(Path::new(&root));
+    /// The case that repeats the fixture comparison in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        run(Path::new(&std::env::var_os(LAUNCH_CONTEXT_ROOT).unwrap()));
         return;
     }
     let owned = maestro_test_directory::Scratch::new().unwrap();
@@ -42,7 +44,7 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .case("native")
+        .case(CHILD)
         .env(LAUNCH_CONTEXT_ROOT, root)
         .env("PATHEXT", ".CMD")
         .env("PATH", root.join("parent").join("tools"))

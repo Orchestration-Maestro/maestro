@@ -28,8 +28,10 @@ const CONTEXT_ROOT: &str = "MAESTRO_PACKAGE_CONTEXT_ROOT";
 
 /// Runs either operation witness with the same native wrapper fixtures.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
-    if let Some(root) = std::env::var_os(CONTEXT_ROOT) {
-        run(Path::new(&root));
+    /// The case that repeats the same fixtures in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        run(Path::new(&std::env::var_os(CONTEXT_ROOT).unwrap()));
         return;
     }
     let scratch = crate::scratch::Scratch::new().unwrap();
@@ -51,7 +53,7 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .case("native")
+        .case(CHILD)
         .env(CONTEXT_ROOT, scratch.path())
         .env_remove("NoDefaultCurrentDirectoryInExePath")
         .current_dir(scratch.path().join(parent))

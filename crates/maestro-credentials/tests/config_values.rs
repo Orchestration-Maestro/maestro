@@ -5,7 +5,7 @@ mod tests {
     use std::cell::RefCell;
     use std::sync::Mutex;
 
-    use crate::support::{CASE_ENV, SERIAL, is_child, run_isolated};
+    use crate::support::{SERIAL, is_child, run_isolated, selected_case};
     #[cfg(unix)]
     use crate::support::{TempDir, run_child};
     /// Controlled outputs and executed commands.
@@ -30,16 +30,17 @@ mod tests {
         if !is_child() {
             for (index, value) in KEY_VALUES.into_iter().enumerate() {
                 let index = index.to_string();
-                let mut envs = vec![(CASE_ENV, index.as_str())];
-                envs.extend(value.map(|value| ("KEY", value)));
+                let envs: Vec<(&str, &str)> =
+                    value.map(|value| ("KEY", value)).into_iter().collect();
                 run_isolated(
                     "config_values::tests::config_values_choose_exact_environment_or_literal",
+                    &index,
                     &envs,
                 );
             }
             return;
         }
-        let case = std::env::var(CASE_ENV).unwrap();
+        let case = selected_case();
         let value = KEY_VALUES[case.parse::<usize>().unwrap()].filter(|value| !value.is_empty());
         let operations = Operations::default();
         for resolve in [resolve_config_value, resolve_config_value_uncached] {
@@ -61,6 +62,7 @@ mod tests {
         if !is_child() {
             return run_isolated(
                 "config_values::tests::config_prefix_removes_only_one_bang",
+                "*",
                 &[("!!command", "wrong")],
             );
         }

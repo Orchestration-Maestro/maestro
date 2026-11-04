@@ -252,7 +252,10 @@ const LAUNCH_PATH_ROOT: &str = "MAESTRO_LAUNCH_PATH_ROOT";
 #[test]
 #[cfg(windows)]
 fn launch_resolves_effective_child_path_and_extensions() {
-    if let Some(directory) = std::env::var_os(LAUNCH_PATH_ROOT) {
+    /// The case that repeats the lookup overrides in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        let directory = std::env::var_os(LAUNCH_PATH_ROOT).unwrap();
         assert_launch_environment(Path::new(&directory));
         return;
     }
@@ -271,7 +274,7 @@ fn launch_resolves_effective_child_path_and_extensions() {
         "launch_resolves_effective_child_path_and_extensions",
     )
     .unwrap()
-    .case("native")
+    .case(CHILD)
     .env(LAUNCH_PATH_ROOT, directory)
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")

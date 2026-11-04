@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::support::{CASE_ENV, TempDir, api_key, is_child, memory_text, run_isolated};
+    use crate::support::{TempDir, api_key, is_child, memory_text, run_isolated, selected_case};
     use indexmap::IndexMap;
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
@@ -485,7 +485,7 @@ mod tests {
 
     #[test]
     fn environment_status_names_first_populated_key() {
-        let scenario = std::env::var(CASE_ENV).unwrap_or_default();
+        let scenario = selected_case();
         if is_child() {
             return environment_scenario(&scenario);
         }
@@ -498,11 +498,10 @@ mod tests {
             ("ambient", &[("AWS_PROFILE", "p")]),
         ];
         for (name, variables) in cases {
-            let mut envs = variables.to_vec();
-            envs.push((CASE_ENV, name));
             run_isolated(
                 "accepted_credentials::tests::environment_status_names_first_populated_key",
-                &envs,
+                name,
+                variables,
             );
         }
     }
@@ -650,14 +649,15 @@ mod tests {
             ] {
                 run_isolated(
                     "accepted_credentials::tests::fallback_status_keeps_result_domain",
-                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
+                    scenario,
+                    &[("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
         crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_keeps_result_domain",
-            &std::env::var(CASE_ENV).unwrap_or_default(),
+            &selected_case(),
         ))
         .unwrap();
     }
@@ -672,14 +672,15 @@ mod tests {
             ] {
                 run_isolated(
                     "accepted_credentials::tests::fallback_status_short_circuits_earlier_sources",
-                    &[(CASE_ENV, scenario), ("OPENAI_API_KEY", key)],
+                    scenario,
+                    &[("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
         crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_short_circuits_earlier_sources",
-            &std::env::var(CASE_ENV).unwrap_or_default(),
+            &selected_case(),
         ))
         .unwrap();
     }

@@ -185,8 +185,10 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
 
 /// Drives the same native stream routes through either admission constructor.
 fn stdio_scenario(test: &str, supplied: bool) {
-    if let Some(root) = std::env::var_os(STDIO_ROOT) {
-        stdio_launches(Path::new(&root), supplied);
+    /// The case that repeats the native stream routes in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        stdio_launches(Path::new(&std::env::var_os(STDIO_ROOT).unwrap()), supplied);
         return;
     }
     let root = Scratch::new().unwrap();
@@ -211,7 +213,7 @@ fn stdio_scenario(test: &str, supplied: bool) {
     let status = TestProcess::current(test)
         .unwrap()
         .nocapture()
-        .case("native")
+        .case(CHILD)
         .env(STDIO_ROOT, root.path())
         .current_dir(at(&root, "ambient"))
         .stdin(std::fs::File::open(at(&root, "input")).unwrap())
@@ -314,8 +316,10 @@ fn repository_scenario(root: &Path) {
 
 #[test]
 fn native_local_repository_installs_checks_out_and_removes() {
-    if let Some(root) = std::env::var_os(REPOSITORY_ROOT) {
-        repository_scenario(Path::new(&root));
+    /// The case that repeats the install and removal in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        repository_scenario(Path::new(&std::env::var_os(REPOSITORY_ROOT).unwrap()));
         return;
     }
     let root = Scratch::new().unwrap();
@@ -334,7 +338,7 @@ fn native_local_repository_installs_checks_out_and_removes() {
         "native_local_repository_installs_checks_out_and_removes",
     )
     .unwrap()
-    .case("native")
+    .case(CHILD)
     .env(REPOSITORY_ROOT, root.path())
     .env("GIT_CONFIG_GLOBAL", "/dev/null")
     .env("GIT_CONFIG_SYSTEM", "/dev/null")

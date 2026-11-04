@@ -9,7 +9,10 @@ const PATH_ROOT: &str = "MAESTRO_CAPTURE_PATH_ROOT";
 
 #[test]
 fn capture_resolves_override_path_before_parent_decoys() {
-    if let Some(directory) = std::env::var_os(PATH_ROOT) {
+    /// The case that repeats the lookup decoys in a child.
+    const CHILD: &str = "native";
+    if maestro_test_process::selection().case() == Some(CHILD) {
+        let directory = std::env::var_os(PATH_ROOT).unwrap();
         let chosen = std::path::PathBuf::from(directory).join("chosen");
         let path = chosen.to_str().unwrap();
         let local = std::rc::Rc::new(tokio::task::LocalSet::new());
@@ -49,7 +52,7 @@ fn capture_resolves_override_path_before_parent_decoys() {
         "capture_resolves_override_path_before_parent_decoys",
     )
     .unwrap()
-    .case("native")
+    .case(CHILD)
     .env(PATH_ROOT, scratch.path())
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")
