@@ -36,7 +36,7 @@ fn direct_spill_io_errors_are_returned() {
         missing_temp_child();
         return;
     }
-    let missing = std::env::temp_dir().join(format!(
+    let missing = maestro_test_directory::temporary_root().join(format!(
         "maestro-missing-{}",
         crate::output::output_accumulator::random_id().unwrap()
     ));

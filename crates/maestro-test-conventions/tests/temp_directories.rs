@@ -183,7 +183,7 @@ fn production_temporary_directory_is_accepted() {
 
 #[test]
 fn unmigrated_crate_keeps_its_own_directories_until_its_batch() {
-    check("maestro-tools", "tests/tooling.rs", SEEDED, &[]);
+    check("maestro-chat", "tests/session_picker.rs", SEEDED, &[]);
 }
 
 /// The detection helper that returned a platform directory it never created.
@@ -329,6 +329,18 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         "maestro-credentials",
         "tests/config_values.rs",
         "//! Credential configs.\n\n#[test]\nfn values_read_the_platform_directory() {\n    let value = std::env::temp_dir().to_string_lossy().into_owned();\n    assert!(!value.is_empty());\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-tools",
+        "tests/streamed_output.rs",
+        "//! Streamed output.\n\n#[test]\nfn spilled_output_lands_in_the_platform_directory() {\n    let root = std::env::temp_dir();\n    assert!(root.is_absolute());\n}\n",
+        &[5],
+    ),
+    (
+        "maestro-resources",
+        "tests/skill_discovery.rs",
+        "//! Skill discovery.\n\n#[test]\nfn discovery_runs_from_the_platform_directory() {\n    let cwd = std::env::temp_dir();\n    assert!(cwd.is_absolute());\n}\n",
         &[5],
     ),
 ];
