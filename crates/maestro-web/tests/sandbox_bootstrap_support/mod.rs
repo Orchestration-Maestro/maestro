@@ -395,7 +395,8 @@ fn message(
     kind: &str,
     reply: Option<&JsValue>,
 ) -> JsFuture {
-    let (frame, kind, reply) = (frame.clone(), kind.to_owned(), reply.cloned());
+    let reply = reply.map(|reply| (relay(window), reply.clone()));
+    let (frame, kind) = (frame.clone(), kind.to_owned());
     let window = window.clone();
     JsFuture::from(Promise::new(&mut |resolve, _| {
         let (frame, kind, reply, target) =
@@ -411,8 +412,8 @@ fn message(
             if !(current && matches) {
                 return;
             }
-            if let (Some(reply), Some(source)) = (&reply, source) {
-                source.post_message(reply, "*").unwrap();
+            if let (Some((relay, reply)), Some(source)) = (&reply, source) {
+                relay.call2(&JsValue::NULL, &source, reply).unwrap();
             } else {
                 resolve.call1(&JsValue::UNDEFINED, &data).unwrap();
             }
@@ -423,6 +424,18 @@ fn message(
         // The harness never removes this listener; it lives as long as the test page.
         listener.forget();
     }))
+}
+
+/// A function of `window`'s realm that posts to a frame, so the frame sees `window` as the
+/// sender, as it does when its host page replies.
+fn relay(window: &Window) -> Function {
+    let constructor: Function = Reflect::get(window, &"Function".into())
+        .unwrap()
+        .unchecked_into();
+    let arguments = js_sys::Array::of2(&"frame,data".into(), &"frame.postMessage(data,'*')".into());
+    Reflect::construct(&constructor, &arguments)
+        .unwrap()
+        .unchecked_into()
 }
 
 /// Create a same-origin host that declares the policy before any frame exists.

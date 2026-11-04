@@ -327,7 +327,9 @@ stay JavaScript or HTML files beside their tests:
   constructor.
 - `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
   probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
+  driver's served `/sandbox.html`, it writes a load message's code only when the
+  frame's parent sent it.
 - `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
   and authored documents the program witnesses prepare, plus the generated carrier
   bootstraps their policies admit by hash.
