@@ -1,5 +1,5 @@
 //! Default archive extraction security on Unix filesystems.
-use super::{Staging, archive};
+use super::archive;
 use std::{fs, io::Cursor, os::unix::fs::PermissionsExt, path::Path};
 
 /// Read all Unix permission bits, including privileged bits.
@@ -9,12 +9,8 @@ fn mode(path: &Path) -> u32 {
 
 #[test]
 fn zip_extraction_masks_privileged_mode_bits() {
-    let scratch = Staging::create(
-        maestro_test_directory::temporary_root().to_str().unwrap(),
-        "zip-modes",
-    )
-    .unwrap();
-    let root = Path::new(&scratch.path);
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
     let mut zip = zip::ZipArchive::new(Cursor::new(archive("privileged.zip"))).unwrap();
     zip.extract(root).unwrap();
     assert_eq!(mode(&root.join("payload")), 0o777);
@@ -26,12 +22,8 @@ fn zip_extraction_masks_privileged_mode_bits() {
 #[test]
 fn zip_extraction_confines_symlink_targets() {
     for fixture in ["outside-link.zip", "chained-link.zip", "inside-link.zip"] {
-        let scratch = Staging::create(
-            maestro_test_directory::temporary_root().to_str().unwrap(),
-            "zip-links",
-        )
-        .unwrap();
-        let root = Path::new(&scratch.path);
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path();
         let destination = root.join("extract");
         fs::create_dir(&destination).unwrap();
         let outside = root.join("outside");
