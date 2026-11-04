@@ -37,8 +37,8 @@ hook skips formatting and Clippy. The full conventions suite runs only for stage
 paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
 runs it as `just test-conventions`, which prepares the native fixture the probes
 install and then runs the suite with nextest.
-Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
-the browser entry is present, guarding targets outside native Clippy.
+Browser smoke runs when the browser entry is present and a staged crate owns a
+browser compile witness, guarding targets outside native Clippy.
 
 For changed crates, run `just _check -p <package>` with repeated `-p` arguments
 for multiple crates. `_check` verifies feature unification, runs native Clippy
@@ -145,6 +145,12 @@ Lint each changed browser crate separately, including all test and example targe
 
 `clippy --all-targets -D warnings` also rejects unused native-only helpers that
 `check --tests` leaves as warnings.
+
+A browser compile witness, an example target whose body only compiles for the
+browser target, is not covered by native Clippy. `just check-browser-smoke`
+compiles every witness for `wasm32-unknown-unknown` and stops at the first
+failure, printing the path of the diagnostics log. The commit hook runs the same
+command when a staged crate owns a witness.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
@@ -2427,11 +2433,11 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, request (usage), agent, Markdown
-and package helpers live in their type owners. Native loopback servers, child
-probes and toolchain selection live in `maestro-test-process`. Fallible helpers
-return their errors to the test caller; fixed-output callbacks retain immediate
-assertions.
+and terminal helpers. Theme, tool, credential, request (usage), agent, extension,
+Markdown and package helpers live in their type owners. Native loopback servers,
+child probes and toolchain selection live in `maestro-test-process`. Fallible
+helpers return their errors to the test caller; fixed-output callbacks retain
+immediate assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.

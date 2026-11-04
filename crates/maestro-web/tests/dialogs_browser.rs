@@ -371,7 +371,13 @@ async fn edits_survive_updates(view: &DomView, input: &Input, typed: &Typed) {
             .is_same_node(Some(field))
     );
     assert_eq!(field.get_attribute("aria-invalid").as_deref(), Some("true"));
-    assert_eq!(text(&find(input.root(), ".maestro-input-error")), "Wrong");
+    let described = find(input.root(), ".maestro-input-error");
+    assert_eq!(text(&described), "Wrong");
+    assert_eq!(
+        field.get_attribute("aria-describedby"),
+        Some(described.id()),
+        "the error text describes the field"
+    );
     type_text("?").await;
     assert_eq!(*typed.borrow(), ["first", "second"]);
     let replaced = InputProps {
@@ -422,6 +428,10 @@ fn native_properties(view: &DomView, input: &Input) {
     assert_eq!(field.type_(), "password");
     assert!(field.get_attribute("min").is_none());
     assert!(field.get_attribute("aria-invalid").is_none());
+    assert!(
+        field.get_attribute("aria-describedby").is_none(),
+        "a cleared error stops describing the field"
+    );
 }
 
 /// The text a settled prompt answer carries, or null.

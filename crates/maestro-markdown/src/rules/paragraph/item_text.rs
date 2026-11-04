@@ -1,5 +1,5 @@
 //! Setext lookahead over item text admitted one line at a time.
-use super::{Grammar, Heading, blank, carriage, matches, selected, underline};
+use super::{Grammar, Heading, blank, carriage, displayed, matches, selected, underline};
 use crate::{
     MarkedOptions,
     rules::lines::{Cursor, Input},
@@ -85,18 +85,23 @@ impl ItemText {
 
     /// Answer this attempt's heading and whether more input can change it.
     ///
-    /// `source` is the item text still unread, a suffix of the operand the first call saw.
-    pub(crate) fn attempt(&mut self, source: &Segmented) -> (Option<Heading>, bool) {
+    /// `source` is the item text still unread, a suffix of the operand the first call saw,
+    /// and `escaped` reports the closing angles the caller displays as text by its offsets.
+    pub(crate) fn attempt(
+        &mut self,
+        source: &Segmented,
+        escaped: &dyn Fn(usize) -> bool,
+    ) -> (Option<Heading>, bool) {
         let start = match self.extent {
             Some(extent) if extent >= source.len() => extent - source.len(),
             _ => {
-                self.classify(source);
+                self.classify(source, escaped);
                 self.extent = Some(source.len());
                 0
             }
         };
         let index = self.lines.partition_point(|line| line.range.start < start);
-        let partial = self.partial(source, start, index);
+        let partial = self.partial(source, start, index, escaped);
         let origin = if partial.is_some() {
             start
         } else {
@@ -130,14 +135,20 @@ impl ItemText {
     }
 
     /// Classify the rest of a line that a caller's token stopped inside.
-    fn partial(&self, source: &Segmented, start: usize, index: usize) -> Option<ItemLine> {
+    fn partial(
+        &self,
+        source: &Segmented,
+        start: usize,
+        index: usize,
+        escaped: &dyn Fn(usize) -> bool,
+    ) -> Option<ItemLine> {
         let line = self.lines.get(index.checked_sub(1)?)?;
         let rest = line.range.end.checked_sub(start).filter(|rest| *rest > 0)?;
         let end = self
             .lines
             .get(index)
             .map_or(rest, |next| next.range.end - start);
-        Some(self.line(source, 0..rest, end))
+        Some(self.line(source, 0..rest, end, escaped))
     }
 
     /// First underline this attempt can admit, which excludes its own first line.
@@ -215,7 +226,7 @@ impl ItemText {
     }
 
     /// Classify every line of the retained operand once.
-    fn classify(&mut self, source: &Segmented) {
+    fn classify(&mut self, source: &Segmented, escaped: &dyn Fn(usize) -> bool) {
         let mut cursor = Cursor::default();
         let mut ranges = Vec::new();
         while let Some(range) = cursor.next(source) {
@@ -227,7 +238,7 @@ impl ItemText {
         let mut lines = Vec::with_capacity(ranges.len());
         for (index, range) in ranges.iter().enumerate() {
             let end = ranges.get(index + 1).map_or(range.end, |next| next.end);
-            lines.push(self.line(source, range.clone(), end));
+            lines.push(self.line(source, range.clone(), end, escaped));
         }
         self.framed = lines
             .iter()
@@ -241,8 +252,14 @@ impl ItemText {
     }
 
     /// Classify one physical line with the shared per-line predicates.
-    fn line(&self, source: &Segmented, range: Range<usize>, end: usize) -> ItemLine {
-        let window = source.window(range.start..end);
+    fn line(
+        &self,
+        source: &Segmented,
+        range: Range<usize>,
+        end: usize,
+        escaped: &dyn Fn(usize) -> bool,
+    ) -> ItemLine {
+        let window = displayed(source.window(range.start..end), range.start, escaped);
         let text = source.window(range.clone());
         let text = text.as_ref();
         let found = underline(text).filter(|_| range.start > 1);
