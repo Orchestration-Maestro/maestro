@@ -62,7 +62,7 @@ fn windows_workspace_paths_use_the_selected_home() {
     let Some(cases) = maestro_test_process::run_per_environment(
         "paths::tests::windows_workspace_paths_use_the_selected_home",
         cases,
-        |(key, value)| std::collections::BTreeMap::from([(*key, *value)]),
+        |(key, value)| std::collections::BTreeMap::from([(*key, Some(*value))]),
     )
     .unwrap() else {
         return;

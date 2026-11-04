@@ -19,8 +19,8 @@ pub fn per_environment<C>(
     maestro_test_process::run_per_environment(test, cases, |case| {
         environment(case)
             .iter()
-            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
-            .collect::<BTreeMap<String, String>>()
+            .map(|(name, value)| ((*name).to_owned(), Some((*value).to_owned())))
+            .collect::<BTreeMap<String, Option<String>>>()
     })
     .unwrap()
 }

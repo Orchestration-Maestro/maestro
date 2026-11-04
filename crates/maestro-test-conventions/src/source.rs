@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 
 use cargo_metadata::Metadata;
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
-use syn::{spanned::Spanned, visit::Visit};
 
 /// Flattened Rust import trees.
 pub(crate) mod imports;
+/// The one syntax walk that gathers every check's findings for a parsed source.
+pub(crate) mod walk;
 
 /// Loaded workspace member with its Rust sources.
 pub(crate) struct Member {
@@ -29,8 +30,8 @@ pub(crate) struct Source {
     pub(crate) tokens: Vec<(TokenKind, Range<usize>)>,
     /// Parsed file syntax, absent for fragments or invalid source.
     pub(crate) syntax: Option<syn::File>,
-    /// Spans of test-gated items, searched on first use.
-    test_spans: OnceCell<Vec<Range<(usize, usize)>>>,
+    /// Findings of the shared syntax walk, gathered on first use.
+    walk: OnceCell<walk::Walk>,
 }
 
 impl Source {
@@ -49,17 +50,20 @@ impl Source {
             contents,
             tokens,
             syntax,
-            test_spans: OnceCell::new(),
+            walk: OnceCell::new(),
         }
     }
 
-    /// Disjoint spans of the parsed test-gated items in source order, searched once per source.
-    pub(crate) fn test_spans(&self) -> &[Range<(usize, usize)>] {
-        self.test_spans.get_or_init(|| {
-            let mut spans = test_spans(self.syntax.as_ref());
-            spans.sort_unstable_by_key(|span| span.start);
-            spans
-        })
+    /// Every check's findings for this source, from one syntax walk on first use.
+    ///
+    /// The member is the one that holds this source; it decides which checks the walk serves.
+    pub(crate) fn walk(&self, member: &Member) -> &walk::Walk {
+        self.walk.get_or_init(|| walk::walk(member, self))
+    }
+
+    /// Disjoint spans of the parsed test-gated items in source order.
+    pub(crate) fn test_spans(&self, member: &Member) -> &[Range<(usize, usize)>] {
+        &self.walk(member).test_spans
     }
 }
 
@@ -127,10 +131,10 @@ thread_local! {
     static SCANNED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// Lexer passes started on the current test thread.
     static LEXER_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
-    /// Test-gated span searches on the current test thread.
-    static TEST_SPAN_SEARCHES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// Located spans tested for a source position on the current test thread.
     pub(crate) static SPAN_TESTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Syntax walks of parsed sources on the current test thread.
+    static SYNTAX_WALKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Count line breaks in the supplied source slice.
@@ -249,81 +253,6 @@ macro_rules! associated_item_attributes {
 
 associated_item_attributes!(impl_item_attributes, ImplItem);
 associated_item_attributes!(trait_item_attributes, TraitItem);
-
-/// Record the item's span when it is gated by the test configuration, otherwise walk its children.
-macro_rules! exclude_test_item {
-    ($visitor:ident, $item:ident, $attributes:expr, $visit:ident) => {
-        if $crate::source::cfg_test($attributes) {
-            $visitor.spans.push(span_positions($item.span()));
-        } else {
-            syn::visit::$visit($visitor, $item);
-        }
-    };
-}
-
-/// Emit a visitor method that keeps inherited test ownership and also enables it when the item is gated by `cfg_test`.
-macro_rules! inherit_test_context {
-    ($visit:ident, $kind:ident, $attributes:ident) => {
-        fn $visit(&mut self, item: &'ast syn::$kind) {
-            let testing = self.testing;
-            self.testing |= $crate::source::cfg_test($crate::source::$attributes(item));
-            syn::visit::$visit(self, item);
-            self.testing = testing;
-        }
-    };
-}
-
-/// Locate parsed test-gated items without excluding neighboring production syntax.
-fn test_spans(syntax: Option<&syn::File>) -> Vec<Range<(usize, usize)>> {
-    #[cfg(test)]
-    TEST_SPAN_SEARCHES.set(TEST_SPAN_SEARCHES.get() + 1);
-    let mut testing = TestSpans::default();
-    if let Some(syntax) = syntax {
-        testing.visit_file(syntax);
-    }
-    testing.spans
-}
-
-#[derive(Default)]
-/// Source spans owned by test-gated items.
-struct TestSpans {
-    /// Half-open character ranges occupied by test-only syntax.
-    spans: Vec<Range<(usize, usize)>>,
-}
-
-impl<'ast> Visit<'ast> for TestSpans {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        exclude_test_item!(self, item, item_attributes(item), visit_item);
-    }
-
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        exclude_test_item!(self, item, impl_item_attributes(item), visit_impl_item);
-    }
-
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        exclude_test_item!(self, item, trait_item_attributes(item), visit_trait_item);
-    }
-
-    fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
-        let attributes = match item {
-            syn::ForeignItem::Fn(item) => &item.attrs,
-            syn::ForeignItem::Static(item) => &item.attrs,
-            syn::ForeignItem::Type(item) => &item.attrs,
-            syn::ForeignItem::Macro(item) => &item.attrs,
-            _ => return,
-        };
-        exclude_test_item!(self, item, attributes, visit_foreign_item);
-    }
-}
-
-/// Convert a syntax span into comparable line and character coordinates.
-fn span_positions(span: proc_macro2::Span) -> Range<(usize, usize)> {
-    let start = span.start();
-    let end = span.end();
-    (start.line, start.column)..(end.line, end.column)
-}
-
-pub(crate) use inherit_test_context;
 
 /// Read a Cargo manifest through the native TOML parser.
 pub(crate) fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {

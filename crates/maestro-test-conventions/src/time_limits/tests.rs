@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use super::{SPELLINGS, VISITED, check};
+use super::{SPELLINGS, check};
 use crate::source::{Member, Source};
 
 /// A module without test items, a module that declares its tests and that test module.
@@ -31,12 +31,11 @@ fn member() -> Member {
 }
 
 #[test]
-fn time_limit_checks_visit_and_spell_only_test_code() {
-    VISITED.set(0);
+fn time_limit_checks_spell_only_test_code() {
     SPELLINGS.set(0);
     assert_eq!(check(&[member()]), Ok(()));
-    let work = (VISITED.get(), SPELLINGS.get());
-    println!("visited sources, spellings: {work:?}");
-    // The module without test items is skipped, and only the test's own call is spelled.
-    assert_eq!(work, (2, 1));
+    let spellings = SPELLINGS.get();
+    println!("spellings: {spellings}");
+    // Only the test's own call is spelled.
+    assert_eq!(spellings, 1);
 }

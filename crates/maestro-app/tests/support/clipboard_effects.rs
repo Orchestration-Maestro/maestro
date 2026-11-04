@@ -246,9 +246,14 @@ pub fn run(name: &str) {
         .filter(|case| case.test == name)
         .collect();
     assert!(!cases.is_empty());
-    let selected =
-        maestro_test_process::run_per_environment(name, cases, |case| case.input.env.clone())
-            .unwrap();
+    let selected = maestro_test_process::run_per_environment(name, cases, |case| {
+        case.input
+            .env
+            .iter()
+            .map(|(key, value)| (key.clone(), Some(value.clone())))
+            .collect()
+    })
+    .unwrap();
     if let Some(cases) = selected {
         crate::support::run_io(replay(cases));
     }

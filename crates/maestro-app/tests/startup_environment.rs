@@ -148,12 +148,12 @@ fn startup_selection_skips_all_release_entrypoints() {
         AMBIENTS,
         |ambient| {
             let mut environment =
-                std::collections::BTreeMap::from([("HOME".to_owned(), home.clone())]);
+                std::collections::BTreeMap::from([("HOME".to_owned(), Some(home.clone()))]);
             environment.extend(
                 ambient
                     .env
                     .iter()
-                    .map(|(key, value)| ((*key).to_owned(), (*value).to_owned())),
+                    .map(|(key, value)| ((*key).to_owned(), Some((*value).to_owned()))),
             );
             environment
         },
