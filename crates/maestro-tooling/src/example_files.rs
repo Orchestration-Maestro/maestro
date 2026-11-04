@@ -5,6 +5,6 @@ mod components;
 /// Rendering over the source-owned component inventory.
 mod preparation;
 
-pub(crate) use components::{EXAMPLE_PACKAGE, FIXED_COMPONENTS, validate_variable};
-pub use components::{collect, target_name};
+pub(crate) use components::{EXAMPLE_PACKAGE, Fixed, validate_variable};
+pub use components::{FIXED_COMPONENTS, collect, target_name};
 pub use preparation::prepare;

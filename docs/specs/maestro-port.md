@@ -346,6 +346,80 @@ Define the caller-driven wasm32-unknown-unknown build gate in foundation tooling
 
 Shared-workflow changes require one separate issue and clone in maestro-rust-workflows. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Its initial real-tool and wasm-job release plus caller/ruleset re-pin precede foundation/models acceptance; the caller later supplies its real browser build and its own tag-triggered release workflow; the shared companion supplies only generic configurable checks. Keep the application lane out of that repository. Every mapped CI step needs observed evidence before final qualification; a plan or skipped job is not proof of delivered parity.
 
+### Examples repository
+
+Maestro's examples live in the package repository, maestro-packages, beside its community packages. This repository holds no example sources.
+
+**In scope.** Every user-facing example, in every language:
+
+- the extension examples and their usage pages;
+- the SDK examples, the Python RPC client, the terminal RPC client and the interactive RPC client demo;
+- the browser chat example;
+- the Python and TypeScript extension examples that maestro-packages already holds.
+
+**Out of scope.** Cargo example targets that serve tests or tooling stay with their crate. They are test infrastructure, not examples.
+
+| Directory | Role |
+|---|---|
+| `crates/maestro-test-process/tests/support/` | native test children |
+| `crates/maestro-extensions-wasm/tests/support/` | host-qualification fixture components and their preparation program |
+| `crates/maestro-models/scripts/`, `crates/maestro-models/tests/support/`, `crates/maestro-catalog/tests/support/` | catalog and fixture generators, browser smoke checks |
+| `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
+| `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
+| `crates/maestro-app/scripts/*_report.rs`, `count_prompt_tokens.rs` | cost, usage, tool, transcript and prompt-token reports |
+
+**What users see.** Nothing moves in their installation: `examples/` ships in its package directory, beside the README and the documentation. `get_examples_path` resolves it, and the default system prompt names it. Documentation links examples by relative path. The links resolve in an installation and in a set-up source checkout.
+
+```text
+examples/
+  README.md              index of every folder
+  extensions/            extension sources, each with a usage page
+  sdk/                   SDK examples, the Python RPC client, the interactive RPC client demo
+  rpc_extension_ui.rs    terminal RPC client
+  web/                   browser chat example
+  python/  typescript/   extensions in other languages
+```
+
+The SDK examples, the RPC client demo, the browser chat example and the other-language extensions join the shipped tree.
+
+**Ownership.** In maestro-packages, one crate per family builds and verifies its examples. Each crate registers its sources by relative `path` into `examples/`. Every source has exactly one copy, and the published tree is the directory itself.
+
+| Crate | Builds and verifies |
+|---|---|
+| `maestro-extension-examples` | extension examples, as WebAssembly components |
+| `maestro-sdk-examples` | SDK examples, the terminal RPC client and the RPC client demo |
+| `maestro-web-example` | the browser chat example |
+| `maestro-python-example`, `maestro-typescript-example` | the other-language extensions |
+
+**Dependency direction.**
+
+- maestro-packages depends on Maestro crates through git dependencies pinned to one exact commit (`rev`). Every crate both workspaces share uses Maestro's exact version.
+- Maestro has no crate, build, test or CI edge to maestro-packages. The one edge in that direction is release data: a Maestro release copies the `examples/` tree of the maestro-packages release with the same version into its bundle.
+- A source checkout fetches the tree with `just setup`, which runs `development examples`. Git ignores the fetched tree, and no Maestro test or CI step reads it. Without it, `copy-assets` fails because the tree is missing.
+
+**Qualification.** maestro-packages' shared CI builds every example and runs its tests:
+
+- extension examples load as components in Maestro's native host and in the executable;
+- SDK examples run in-process;
+- the RPC clients run against Maestro's native test peers;
+- the browser chat example runs in the pinned browser job.
+
+Tests are black-box. They use Maestro's public crates and programs and the same recorded corpora, never the guest crate's private test host. Name every assertion with no public-host equivalent, and agree it before dropping it.
+
+**Test preparation.** maestro-packages runs Maestro's development tool at the locked commit. `development prepare-test-setup` builds the example components and installs the executable and the native test child once per CI run. Nextest setups then export their paths: `MAESTRO_<NAME>_COMPONENT`, `MAESTRO_EXECUTABLE`, `MAESTRO_NATIVE_FIXTURE` and `MAESTRO_GUIDE_COMPONENT`. The tool works in the workspace it runs in:
+
+- the checkout is the workspace root of the working directory;
+- the component crate is the workspace member whose manifest holds the generated example region;
+- the shipped extension folder is `examples/extensions` at the workspace root, when present;
+- a program whose package is not a workspace member is installed from that package's locked git source and commit;
+- an input the workspace does not hold is absent, and the step that needs it is skipped while the steps that remain still run;
+- staging the released executable is skipped when the workspace holds that package as a member or neither holds nor locks it;
+- a workspace that neither holds nor locks an example program stops preparation with a message naming it.
+
+**Pin moves.** One maestro-packages change moves every Maestro `rev`, the lock and any shared exact version Maestro moved, and fixes what the move breaks. An example broken by a Maestro change fails at the pin move. Maestro keeps its own host-feature tests on its fixture components, so host regressions still fail in Maestro's CI.
+
+**Crate graph.** The removal deletes the development edge from `maestro-extensions-wasm` to `maestro-listing`, which only an example used. In maestro-packages, `maestro-extension-examples` depends on `maestro-listing` directly.
+
 ## Crates and delivery order
 
 The table declares the enforced domain graph. Its rows and the dependency

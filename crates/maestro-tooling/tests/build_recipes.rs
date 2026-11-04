@@ -898,10 +898,7 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         "fn main() -> std::process::ExitCode {",
         "fn main() -> std::process::ExitCode {\n    if std::env::args().any(|arg| arg == \"--rebuild-marker\") { println!(\"maestro-initial-binary\"); return std::process::ExitCode::SUCCESS; }",
     );
-    let contents = contents.replace(
-        "std::path::Path::new(env!(\"CARGO\"))",
-        "std::path::Path::new(\"bin/cargo\")",
-    );
+    let contents = contents.replace("Path::new(env!(\"CARGO\"))", "Path::new(\"bin/cargo\")");
     fs::write(main, contents).unwrap();
     let unifier = workspace.path().join("crates/maestro-dependencies");
     fs::create_dir_all(unifier.join("src")).unwrap();
