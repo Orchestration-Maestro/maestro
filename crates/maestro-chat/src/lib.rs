@@ -84,6 +84,8 @@ mod local_dispatch;
 pub use interactive_mode::{InteractiveMode, InteractiveModeOptions};
 
 #[cfg(not(target_arch = "wasm32"))]
+mod environment;
+#[cfg(not(target_arch = "wasm32"))]
 mod external_editor;
 mod whole_cell_width;
 

@@ -60,13 +60,11 @@ Tokio runtime with the time driver enabled.
   each source error written to standard error, each followed by a newline; the host then
   keeps running. A failure to write there releases the lock on standard error and then
   reaches the registered output-error handlers once.
-- `environment` returns the value as the platform holds it, with invalid text converted
-  lossily; it does not trim or interpret the value.
 - `log_context` reports the home directory (empty when the platform has none), the current
-  UTC time in milliseconds and a random lowercase hexadecimal nonce.
-- `append_log` and `write_log` act on the given path as the operating system resolves it.
-  Append creates the file but not its directory; write creates the directory and replaces the
-  file. Both return the operating system's errors.
+  UTC time in milliseconds and a random lowercase hexadecimal nonce. The writer builds its
+  diagnostic paths from it and writes the files itself, through the standard library, so
+  those errors are the operating system's. A redraw log is appended without creating its
+  directory; a crash report and a differential record create their directory first.
 
 Dropping the set drops the work still pending. The host's own tasks hold no handle to the
 host; callers release any strong handle their callbacks capture.

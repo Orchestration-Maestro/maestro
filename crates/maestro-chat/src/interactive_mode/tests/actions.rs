@@ -14,6 +14,7 @@ use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
+    ffi::OsStr,
     io,
     path::{Path, PathBuf},
     rc::Rc,
@@ -169,31 +170,32 @@ struct Lines {
 
 #[test]
 fn external_edit_without_configuration_warns_without_native_work() {
-    isolated(
-        "external_edit_without_configuration_warns_without_native_work",
-        async |directory| {
-            let (input, expected) = cases::<MissingEditor, Lines>(
-                "external_edit_without_configuration_warns_without_native_work",
-            )
-            .swap_remove(0);
+    const TEST: &str = "external_edit_without_configuration_warns_without_native_work";
+    for (case, configured) in [("unset", None), ("empty", Some(""))] {
+        let env: Vec<(&OsStr, &OsStr)> = configured
+            .map(|value| {
+                [
+                    (OsStr::new("VISUAL"), OsStr::new(value)),
+                    (OsStr::new("EDITOR"), OsStr::new(value)),
+                ]
+            })
+            .into_iter()
+            .flatten()
+            .collect();
+        super::isolated_case(TEST, case, &env, async |directory| {
+            let (input, expected) = cases::<MissingEditor, Lines>(TEST).swap_remove(0);
             assert_eq!(input.op, "external-missing");
-            for configured in [None, Some("")] {
-                let world = started(directory).await;
-                if let Some(value) = configured {
-                    world.runtime.set_environment("VISUAL", value);
-                    world.runtime.set_environment("EDITOR", value);
-                }
-                world.mode.editor.set_text("kept");
-                world.terminal.clear_writes();
-                run_action(&world, "app.editor.external");
-                let (rows, expected_rows) = notices(&world, &expected.lines);
-                assert_eq!(rows, expected_rows);
-                assert_eq!(world.mode.editor.get_text(), "kept");
-                assert_eq!(world.terminal.events(), ["start"]);
-                assert_eq!(temporary_names(), Vec::<String>::new());
-            }
-        },
-    );
+            let world = started(directory).await;
+            world.mode.editor.set_text("kept");
+            world.terminal.clear_writes();
+            run_action(&world, "app.editor.external");
+            let (rows, expected_rows) = notices(&world, &expected.lines);
+            assert_eq!(rows, expected_rows);
+            assert_eq!(world.mode.editor.get_text(), "kept");
+            assert_eq!(world.terminal.events(), ["start"]);
+            assert_eq!(temporary_names(), Vec::<String>::new());
+        });
+    }
 }
 
 /// One external edit of a large paste.
@@ -236,8 +238,10 @@ struct Handoff {
 
 #[test]
 fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
-    isolated(
+    super::isolated_case(
         "external_edit_uses_expanded_text_and_preserves_the_exit_contract",
+        "child",
+        &[(OsStr::new("VISUAL"), OsStr::new("editor --wait"))],
         async |directory| {
             use std::os::unix::fs::PermissionsExt;
             let bin = directory.join("bin");
@@ -247,9 +251,6 @@ fn external_edit_uses_expanded_text_and_preserves_the_exit_contract() {
             ) {
                 assert_eq!(input.op, "external");
                 let world = started(directory).await;
-                world
-                    .runtime
-                    .set_environment("VISUAL", &format!("{} --wait", editor.display()));
                 record(
                     &editor,
                     "editor",
@@ -505,16 +506,15 @@ pub(super) fn file_size_limit(soft: Option<u64>) -> Option<u64> {
 
 #[test]
 fn temporary_files_preserve_existing_entries_and_private_bytes() {
-    isolated(
+    super::isolated_case(
         "temporary_files_preserve_existing_entries_and_private_bytes",
+        "child",
+        &[(OsStr::new("VISUAL"), OsStr::new("editor"))],
         async |directory| {
             use std::os::unix::fs::{PermissionsExt, symlink};
             let bin = directory.join("bin");
-            let editor = install_editor(directory, "editor", &editing(&bin, "edited", 0));
+            install_editor(directory, "editor", &editing(&bin, "edited", 0));
             let world = started(directory).await;
-            world
-                .runtime
-                .set_environment("VISUAL", editor.to_str().unwrap());
             world.mode.editor.set_text("draft");
             let file = maestro_test_directory::temporary_root().join(EDIT_FILE);
             let target = directory.join("target");

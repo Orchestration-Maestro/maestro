@@ -3,23 +3,39 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+use maestro_test_directory::Scratch;
 use maestro_tui::{TUI, TerminalImage};
 
 use crate::support::components::Probe;
-use crate::support::manual_runtime::{FileEffect, ManualRuntime};
+use crate::support::manual_runtime::ManualRuntime;
 use crate::support::recording_terminal::RecordingTerminal;
 
 /// Width of the terminals in these scenarios.
 const COLUMNS: usize = 10;
-/// The home directory the controlled host reports.
-const HOME: &str = "/home/fixture";
+/// Directory that receives the records of every differential update.
+#[cfg(unix)]
+const RENDER_DIRECTORY: &str = "/tmp/tui";
 
 /// Where the writer keeps `name` below the home's agent directory, joined natively.
-fn agent_log(name: &str) -> PathBuf {
-    Path::new(HOME).join(".maestro").join("agent").join(name)
+fn agent_log(home: &Path, name: &str) -> PathBuf {
+    home.join(".maestro").join("agent").join(name)
 }
 
-/// A writer with the given environment drawing `lines` on a 10 by 3 terminal.
+/// The text the writer logged in `path`, or nothing when it wrote no file.
+fn log_text(path: &Path) -> String {
+    std::fs::read_to_string(path).unwrap_or_default()
+}
+
+/// Runs one diagnostics scenario in a child whose environment is exactly `environment`,
+/// with a disposable home the writer logs below.
+fn in_home(test: &str, environment: &[(&str, &str)], body: impl FnOnce(&Path)) {
+    crate::support::in_child(test, environment, || {
+        let scratch = Scratch::new().unwrap();
+        body(scratch.path());
+    });
+}
+
+/// A writer with `home` drawing `lines` on a 10 by 3 terminal.
 struct Rig {
     /// The writer under test.
     tui: TUI,
@@ -29,16 +45,16 @@ struct Rig {
     runtime: ManualRuntime,
     /// The only component.
     probe: Rc<Probe>,
+    /// The home directory the host reports.
+    home: PathBuf,
 }
 
 impl Rig {
     /// Creates the writer; nothing is drawn yet.
-    fn new(environment: &[(&str, &str)], lines: &[&str]) -> Self {
+    fn new(home: &Path, lines: &[&str]) -> Self {
+        std::fs::create_dir_all(home.join(".maestro").join("agent")).unwrap();
         let terminal = RecordingTerminal::new(COLUMNS, 3);
-        let runtime = ManualRuntime::new();
-        for (key, value) in environment {
-            runtime.set_environment(key, value);
-        }
+        let runtime = ManualRuntime::with_home(home.to_path_buf());
         let tui = TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -52,6 +68,7 @@ impl Rig {
             terminal,
             runtime,
             probe,
+            home: home.to_path_buf(),
         }
     }
 
@@ -61,6 +78,16 @@ impl Rig {
         self.probe.set_lines(&lines);
         self.tui.request_render(false);
         self.runtime.settle()
+    }
+
+    /// The text the writer appended to the redraw log so far.
+    fn redraw_log(&self) -> String {
+        log_text(&agent_log(&self.home, "maestro-debug.log"))
+    }
+
+    /// The crash report the writer logged, if any.
+    fn crash_log(&self) -> Option<String> {
+        std::fs::read_to_string(agent_log(&self.home, "maestro-crash.log")).ok()
     }
 }
 
@@ -85,9 +112,9 @@ fn show_lines(rig: &Rig, lines: &[&str]) {
     rig.probe.set_lines(&lines);
 }
 
-#[test]
-fn redraw_log_reasons_keep_exact_messages() {
-    let reasons = [
+/// Every recorded reason for a full redraw and what provokes it.
+fn redraw_reasons() -> [Reason; 6] {
+    [
         Reason {
             name: "first",
             change: |_| (),
@@ -127,118 +154,132 @@ fn redraw_log_reasons_keep_exact_messages() {
             redraws: 2,
             message: "firstChanged < viewportTop (0 < 2) (prev=5, new=5, height=3)",
         },
-    ];
-    for reason in reasons {
-        let rig = Rig::new(&[("MAESTRO_DEBUG_REDRAW", "1")], &FIVE);
-        if reason.name != "first" {
-            rig.show(&FIVE).unwrap();
-        }
-        let mark = rig.runtime.files().len();
-        (reason.change)(&rig);
-        rig.tui.request_render(false);
-        rig.runtime.settle().unwrap();
-        let logged = FileEffect::Append(
-            agent_log("maestro-debug.log"),
-            format!(
-                "[2026-01-02T03:04:05.006Z] fullRender: {}\n",
-                reason.message
-            ),
-        );
-        assert_eq!(rig.runtime.files()[mark..], [logged], "{}", reason.name);
-        assert_eq!(rig.tui.full_redraws(), reason.redraws, "{}", reason.name);
-    }
+    ]
 }
 
 #[test]
-fn differential_debug_file_keeps_order_and_json() {
-    let rig = Rig::new(&[("MAESTRO_TUI_DEBUG", "1")], &["old"]);
-    rig.show(&["old"]).unwrap();
-    let mark = rig.runtime.files().len();
-    rig.show(&["new"]).unwrap();
-    assert_eq!(
-        rig.terminal.writes(),
-        [
-            "\x1b[?2026hold\x1b[0m\x1b]8;;\x07\x1b[?2026l",
-            "\x1b[?25l",
-            "\x1b[?2026h\r\x1b[2Knew\x1b[0m\x1b]8;;\x07\x1b[?2026l",
-            "\x1b[?25l",
-        ]
-    );
-    let expected = "firstChanged: 0\nviewportTop: 0\ncursorRow: 0\nheight: 3\nlineDiff: 0\n\
-        hardwareCursorRow: 0\nrenderEnd: 0\nfinalCursorRow: 0\ncursorPos: null\n\
-        newLines.length: 1\npreviousLines.length: 1\n\n=== newLines ===\n[\n  \
-        \"new\\u001b[0m\\u001b]8;;\\u0007\"\n]\n\n=== previousLines ===\n[\n  \
-        \"old\\u001b[0m\\u001b]8;;\\u0007\"\n]\n\n=== buffer ===\n\
-        \"\\u001b[?2026h\\r\\u001b[2Knew\\u001b[0m\\u001b]8;;\\u0007\\u001b[?2026l\"";
-    assert_eq!(
-        rig.runtime.files()[mark..],
-        [FileEffect::Write(
-            PathBuf::from("/tmp/tui/render-1767323045006-i.log"),
-            expected.to_owned()
-        )]
+fn redraw_log_reasons_keep_exact_messages() {
+    in_home(
+        "redraw_log_reasons_keep_exact_messages",
+        &[("MAESTRO_DEBUG_REDRAW", "1")],
+        |home| {
+            for reason in redraw_reasons() {
+                let rig = Rig::new(home, &FIVE);
+                if reason.name != "first" {
+                    rig.show(&FIVE).unwrap();
+                }
+                let mark = rig.redraw_log().len();
+                (reason.change)(&rig);
+                rig.tui.request_render(false);
+                rig.runtime.settle().unwrap();
+                let logged = format!(
+                    "[2026-01-02T03:04:05.006Z] fullRender: {}\n",
+                    reason.message
+                );
+                assert_eq!(rig.redraw_log()[mark..], logged, "{}", reason.name);
+                assert_eq!(rig.tui.full_redraws(), reason.redraws, "{}", reason.name);
+            }
+        },
     );
 }
 
-/// The error text for an oversized line.
-fn overflow_message(row: usize, measured: usize) -> String {
+#[test]
+#[cfg(unix)]
+fn differential_debug_file_keeps_order_and_json() {
+    in_home(
+        "differential_debug_file_keeps_order_and_json",
+        &[("MAESTRO_TUI_DEBUG", "1")],
+        |home| {
+            let rig = Rig::new(home, &["old"]);
+            rig.show(&["old"]).unwrap();
+            rig.show(&["new"]).unwrap();
+            assert_eq!(
+                rig.terminal.writes(),
+                [
+                    "\x1b[?2026hold\x1b[0m\x1b]8;;\x07\x1b[?2026l",
+                    "\x1b[?25l",
+                    "\x1b[?2026h\r\x1b[2Knew\x1b[0m\x1b]8;;\x07\x1b[?2026l",
+                    "\x1b[?25l",
+                ]
+            );
+            let expected = "firstChanged: 0\nviewportTop: 0\ncursorRow: 0\nheight: 3\n\
+                lineDiff: 0\nhardwareCursorRow: 0\nrenderEnd: 0\nfinalCursorRow: 0\n\
+                cursorPos: null\nnewLines.length: 1\npreviousLines.length: 1\n\n\
+                === newLines ===\n[\n  \"new\\u001b[0m\\u001b]8;;\\u0007\"\n]\n\n\
+                === previousLines ===\n[\n  \"old\\u001b[0m\\u001b]8;;\\u0007\"\n]\n\n\
+                === buffer ===\n\"\\u001b[?2026h\\r\\u001b[2Knew\\u001b[0m\\u001b]8;;\\u0007\\u001b[?2026l\"";
+            let record = Path::new(RENDER_DIRECTORY).join("render-1767323045006-i.log");
+            let written = std::fs::read_to_string(&record).expect("the record is written");
+            let _ = std::fs::remove_file(&record);
+            let _ = std::fs::remove_dir(RENDER_DIRECTORY);
+            assert_eq!(written, expected);
+        },
+    );
+}
+
+/// The error text for an oversized line, below `home`.
+fn overflow_message(home: &Path, row: usize, measured: usize) -> String {
     format!(
         "Rendered line {row} exceeds terminal width ({measured} > {COLUMNS}).\n\n\
         This is likely caused by a custom TUI component not truncating its output.\n\
         Use visibleWidth() to measure and truncateToWidth() to truncate lines.\n\n\
         Debug log written to: {}",
-        agent_log("maestro-crash.log").display()
+        agent_log(home, "maestro-crash.log").display()
     )
 }
 
 /// The crash report for a frame of one oversized line.
-fn crash_report() -> FileEffect {
-    FileEffect::Write(
-        agent_log("maestro-crash.log"),
-        "Crash at 2026-01-02T03:04:05.006Z\nTerminal width: 10\nLine 0 visible width: 11\n\n\
-        === All rendered lines ===\n[0] (w=11) 01234567890\x1b[0m\x1b]8;;\x07\n"
-            .to_owned(),
-    )
-}
+const CRASH_REPORT: &str = "Crash at 2026-01-02T03:04:05.006Z\nTerminal width: 10\n\
+    Line 0 visible width: 11\n\n=== All rendered lines ===\n\
+    [0] (w=11) 01234567890\u{1b}[0m\u{1b}]8;;\u{7}\n";
 
 #[test]
 fn overflow_reports_lines_then_restores_terminal() {
-    let rig = Rig::new(&[], &["old"]);
-    rig.show(&["old"]).unwrap();
-    rig.terminal.clear_writes();
-    let error = rig.show(&["01234567890"]).unwrap_err();
-    assert_eq!(error.to_string(), overflow_message(0, 11));
-    assert_eq!(rig.terminal.writes(), ["\x1b[1B", "\r\n", "\x1b[?25h"]);
-    assert_eq!(rig.terminal.events().last(), Some(&"stop"));
-    assert_eq!(rig.runtime.files(), [crash_report()]);
+    in_home(
+        "overflow_reports_lines_then_restores_terminal",
+        &[],
+        |home| {
+            let rig = Rig::new(home, &["old"]);
+            rig.show(&["old"]).unwrap();
+            rig.terminal.clear_writes();
+            let error = rig.show(&["01234567890"]).unwrap_err();
+            assert_eq!(error.to_string(), overflow_message(home, 0, 11));
+            assert_eq!(rig.terminal.writes(), ["\x1b[1B", "\r\n", "\x1b[?25h"]);
+            assert_eq!(rig.terminal.events().last(), Some(&"stop"));
+            assert_eq!(rig.crash_log().as_deref(), Some(CRASH_REPORT));
+        },
+    );
 }
 
 #[test]
 fn first_frame_overflow_is_rejected() {
-    let rig = Rig::new(&[], &["01234567890"]);
-    rig.tui.start().unwrap();
-    rig.terminal.clear_writes();
-    let error = rig.runtime.settle().unwrap_err();
-    assert_eq!(error.to_string(), overflow_message(0, 11));
-    assert_eq!(
-        rig.terminal.writes(),
-        ["\x1b[?25h"],
-        "no oversized line is drawn"
-    );
-    assert_eq!(rig.runtime.files(), [crash_report()]);
+    in_home("first_frame_overflow_is_rejected", &[], |home| {
+        let rig = Rig::new(home, &["01234567890"]);
+        rig.tui.start().unwrap();
+        rig.terminal.clear_writes();
+        let error = rig.runtime.settle().unwrap_err();
+        assert_eq!(error.to_string(), overflow_message(home, 0, 11));
+        assert_eq!(
+            rig.terminal.writes(),
+            ["\x1b[?25h"],
+            "no oversized line is drawn"
+        );
+        assert_eq!(rig.crash_log().as_deref(), Some(CRASH_REPORT));
 
-    let rig = Rig::new(&[], &["old"]);
-    rig.show(&["old"]).unwrap();
-    rig.terminal.clear_writes();
-    rig.probe.set_lines(&["01234567890".to_owned()]);
-    rig.tui.request_render(true);
-    let error = rig.runtime.settle().unwrap_err();
-    assert_eq!(error.to_string(), overflow_message(0, 11));
-    assert_eq!(
-        rig.terminal.writes(),
-        ["\x1b[?25h"],
-        "no oversized line is drawn"
-    );
-    assert_eq!(rig.runtime.files(), [crash_report()]);
+        let rig = Rig::new(home, &["old"]);
+        rig.show(&["old"]).unwrap();
+        rig.terminal.clear_writes();
+        rig.probe.set_lines(&["01234567890".to_owned()]);
+        rig.tui.request_render(true);
+        let error = rig.runtime.settle().unwrap_err();
+        assert_eq!(error.to_string(), overflow_message(home, 0, 11));
+        assert_eq!(
+            rig.terminal.writes(),
+            ["\x1b[?25h"],
+            "no oversized line is drawn"
+        );
+        assert_eq!(rig.crash_log().as_deref(), Some(CRASH_REPORT));
+    });
 }
 
 #[test]
@@ -246,43 +287,54 @@ fn settings_description_rows_fit_the_frame_viewport() {
     use maestro_tui::components::settings_list::SettingsListOptions;
     use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme};
 
-    for width in [1, 2, 3, 4, 8] {
-        let terminal = RecordingTerminal::new(width, 20);
-        let runtime = ManualRuntime::new();
-        let tui = TUI::new(
-            terminal.handle(),
-            runtime.handle(),
-            TerminalImage::new(|_| None, || 1),
-            None,
-        );
-        let list = Rc::new(SettingsList::new(
-            vec![SettingItem {
-                id: "a".into(),
-                label: "A".into(),
-                current_value: "v".into(),
-                description: Some("a界".into()),
-                values: None,
-                submenu: None,
-            }],
-            1,
-            SettingsListTheme {
-                label: Rc::new(|text, _| text.into()),
-                value: Rc::new(|text, _| text.into()),
-                description: Rc::new(|text| format!("\x1b[31m{text}!\x1b[0m")),
-                cursor: "→ ".into(),
-                hint: Rc::new(str::to_owned),
-            },
-            (Rc::new(|_, _| true), Rc::new(|| {})),
-            SettingsListOptions::default(),
-        ));
-        let lines = list.render(width);
-        assert!(!lines[2].is_empty(), "description at width {width}");
-        tui.add_child(list);
-        tui.request_render(false);
-        runtime.settle().unwrap_or_else(|error| {
-            panic!("description must fit the frame at width {width}: {error}")
-        });
-        assert!(runtime.files().is_empty());
-        assert!(!terminal.writes().is_empty());
-    }
+    in_home(
+        "settings_description_rows_fit_the_frame_viewport",
+        &[],
+        |home| {
+            for width in [1, 2, 3, 4, 8] {
+                let terminal = RecordingTerminal::new(width, 20);
+                let runtime = ManualRuntime::with_home(home.to_path_buf());
+                let tui = TUI::new(
+                    terminal.handle(),
+                    runtime.handle(),
+                    TerminalImage::new(|_| None, || 1),
+                    None,
+                );
+                let list = Rc::new(SettingsList::new(
+                    vec![SettingItem {
+                        id: "a".into(),
+                        label: "A".into(),
+                        current_value: "v".into(),
+                        description: Some("a界".into()),
+                        values: None,
+                        submenu: None,
+                    }],
+                    1,
+                    SettingsListTheme {
+                        label: Rc::new(|text, _| text.into()),
+                        value: Rc::new(|text, _| text.into()),
+                        description: Rc::new(|text| format!("\x1b[31m{text}!\x1b[0m")),
+                        cursor: "→ ".into(),
+                        hint: Rc::new(str::to_owned),
+                    },
+                    (Rc::new(|_, _| true), Rc::new(|| {})),
+                    SettingsListOptions::default(),
+                ));
+                let lines = list.render(width);
+                assert!(!lines[2].is_empty(), "description at width {width}");
+                tui.add_child(list);
+                tui.request_render(false);
+                runtime.settle().unwrap_or_else(|error| {
+                    panic!("description must fit the frame at width {width}: {error}")
+                });
+                assert_eq!(
+                    std::fs::read_dir(home.join(".maestro").join("agent"))
+                        .map_or(0, Iterator::count),
+                    0,
+                    "no diagnostic file at width {width}"
+                );
+                assert!(!terminal.writes().is_empty());
+            }
+        },
+    );
 }

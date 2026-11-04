@@ -1,4 +1,5 @@
 //! Terminal scenarios compiled as one integration-test program.
+#![cfg(test)]
 
 use maestro_tui::test_support::input_support;
 #[allow(

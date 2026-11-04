@@ -87,9 +87,9 @@ impl TUI {
         images: TerminalImage,
         show_hardware_cursor: Option<bool>,
     ) -> Self {
-        let show_hardware_cursor = show_hardware_cursor
-            .unwrap_or_else(|| is_enabled(&*runtime, "MAESTRO_HARDWARE_CURSOR"));
-        let clear_on_shrink = is_enabled(&*runtime, "MAESTRO_CLEAR_ON_SHRINK");
+        let show_hardware_cursor =
+            show_hardware_cursor.unwrap_or_else(|| is_enabled("MAESTRO_HARDWARE_CURSOR"));
+        let clear_on_shrink = is_enabled("MAESTRO_CLEAR_ON_SHRINK");
         Self {
             shared: Rc::new(Shared {
                 terminal,

@@ -1,9 +1,9 @@
-//! Effects the frame writer asks of its host: time, deferred work, environment and files.
+//! Effects the frame writer asks of its host: time, deferred work and log context.
 
 use std::cell::RefCell;
 use std::future::Future;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
@@ -43,8 +43,8 @@ pub struct LogContext {
 
 /// The host of a frame writer.
 ///
-/// The writer decides what to draw and when; the host supplies the time, defers
-/// work, answers environment queries and performs the log file effects.
+/// The writer decides what to draw and when; the host supplies the time and defers
+/// work.
 pub trait TuiRuntime {
     /// Monotonic time since an arbitrary origin.
     fn now(&self) -> Duration;
@@ -59,25 +59,8 @@ pub trait TuiRuntime {
     /// prints it.
     fn spawn_local(&self, future: LocalFuture);
 
-    /// The value of an environment variable, if set.
-    fn environment(&self, key: &str) -> Option<String>;
-
     /// The current time, home directory and file name nonce for a diagnostic log.
     fn log_context(&self) -> LogContext;
-
-    /// Appends `contents` to the file at `path` without creating its directory.
-    ///
-    /// # Errors
-    ///
-    /// Returns the file-system error unchanged.
-    fn append_log(&self, path: &Path, contents: &str) -> io::Result<()>;
-
-    /// Replaces the file at `path` with `contents`, creating its directory first.
-    ///
-    /// # Errors
-    ///
-    /// Returns the file-system error unchanged.
-    fn write_log(&self, path: &Path, contents: &str) -> io::Result<()>;
 
     /// Registers `handler` for the failures of the host's own output; the returned operation
     /// removes it and does nothing when repeated.
@@ -87,7 +70,53 @@ pub trait TuiRuntime {
     }
 }
 
+/// The value of the environment variable `key`, substituting replacement characters for
+/// bytes that are not UTF-8.
+pub(super) fn environment(key: &str) -> Option<String> {
+    std::env::var_os(key).map(|value| value.to_string_lossy().into_owned())
+}
+
 /// Whether the environment variable `key` is exactly `1`.
-pub(super) fn is_enabled(runtime: &dyn TuiRuntime, key: &str) -> bool {
-    runtime.environment(key).as_deref() == Some("1")
+pub(super) fn is_enabled(key: &str) -> bool {
+    environment(key).as_deref() == Some("1")
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(unix)]
+    use std::os::unix::ffi::OsStrExt as _;
+
+    #[cfg(unix)]
+    use super::environment;
+
+    /// Variable the probe sets to a value that is not UTF-8.
+    #[cfg(unix)]
+    const PROBE: &str = "MAESTRO_TUI_ENVIRONMENT_PROBE";
+    /// Variable that marks the child this test re-runs itself in.
+    #[cfg(unix)]
+    const CHILD: &str = "MAESTRO_TUI_ENVIRONMENT_CHILD";
+
+    /// The reader keeps a value the platform cannot decode as text, with replacement
+    /// characters, instead of dropping it.
+    #[cfg(unix)]
+    #[test]
+    fn environment_decodes_non_utf8_values_with_replacement_characters() {
+        const TEST: &str = "environment_decodes_non_utf8_values_with_replacement_characters";
+        if std::env::var_os(CHILD).is_some() {
+            assert_eq!(environment(PROBE).as_deref(), Some("A\u{fffd}B"));
+            return;
+        }
+        let output = maestro_test_process::TestProcess::current(TEST)
+            .unwrap()
+            .env_clear()
+            .env(PROBE, std::ffi::OsStr::from_bytes(b"A\xffB"))
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 }

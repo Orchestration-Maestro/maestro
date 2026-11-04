@@ -4708,6 +4708,8 @@ name = "maestro-test-terminal"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-test-directory",
+ "maestro-test-process",
  "maestro-tui",
  "serde",
  "serde_json",

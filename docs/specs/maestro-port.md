@@ -887,8 +887,8 @@ non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-ipc`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
-`maestro-test-conventions`, `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`
-and `maestro-tui-crossterm`; a
+`maestro-test-conventions`, `maestro-test-terminal`, `maestro-theme`,
+`maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
 non-native declaration, no other consumer and no other `maestro-test-*` crate is
 admitted by this rule. The terminal scenario owner below states its own single
@@ -924,8 +924,9 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-ipc`, `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-settings`, `maestro-terminal`, `maestro-test-browser`,
-`maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
-`maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
+`maestro-test-conventions`, `maestro-test-process`, `maestro-test-terminal`,
+`maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`,
+`maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
 declares it only when it uses it. Aliases follow the same rules. Normal, build,
 optional, unqualified, browser and foreign-target declarations are rejected.
@@ -1016,8 +1017,10 @@ consumers; the utility is delivered before its first consumer.
 `maestro-test-terminal` is a dedicated, unpublished, native crate that drives the
 toolkit through its public interface. Its library reexports the recording terminal
 and manual runtime from `maestro-tui::test_support`; its integration tests own
-the virtual terminal and the written scenarios. It requires `maestro-tui` and
-nothing else from the workspace, and it is excluded from the foundation utility
+the virtual terminal and the written scenarios. It requires `maestro-tui` and, for
+the witnesses that read process variables or write files, the checked test-process
+and disposable-directory owners as non-optional native development dependencies. It
+declares no other workspace edge, and it is excluded from the foundation utility
 permission. Its only incoming edge is a non-optional native development
 dependency from
 `maestro-cli`, which presents the configuration and session selectors under

@@ -8,7 +8,6 @@ use std::error::Error;
 use std::fmt;
 use std::future::Future;
 use std::io;
-use std::path::Path;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
@@ -300,20 +299,8 @@ impl TuiRuntime for Watched {
         }));
     }
 
-    fn environment(&self, key: &str) -> Option<String> {
-        self.host.environment(key)
-    }
-
     fn log_context(&self) -> LogContext {
         self.host.log_context()
-    }
-
-    fn append_log(&self, path: &Path, contents: &str) -> io::Result<()> {
-        self.host.append_log(path, contents)
-    }
-
-    fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
-        self.host.write_log(path, contents)
     }
 
     fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
