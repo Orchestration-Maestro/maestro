@@ -3,7 +3,7 @@
 use super::*;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
-use std::fs;
+use std::{cell::Cell, fs, rc::Rc};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// The committed inventory used by the real browser qualification.
@@ -516,6 +516,94 @@ fn launch_failures_are_reported() {
     );
 }
 
+/// Concurrency observed by one paired export run.
+#[derive(Default)]
+struct Witness {
+    /// Exports running right now.
+    running: Cell<usize>,
+    /// Most exports seen running at once.
+    peak: Cell<usize>,
+}
+
+/// One driver slot's own diagnostics and concurrency observations.
+struct Slot {
+    /// Observations shared by both slots of the run.
+    witness: Rc<Witness>,
+    /// Lines this slot recorded.
+    lines: Vec<String>,
+}
+
+impl Slot {
+    /// Record one line in this slot's own diagnostics.
+    fn log(&mut self, text: &str) {
+        self.lines.push(text.to_owned());
+    }
+
+    /// Count this slot's export as running and observe the pair.
+    fn enter(&self) {
+        let running = &self.witness.running;
+        running.set(running.get() + 1);
+        let live = running.get();
+        self.witness.peak.set(self.witness.peak.get().max(live));
+    }
+
+    /// Count this slot's export as finished.
+    fn leave(&self) {
+        let running = &self.witness.running;
+        running.set(running.get() - 1);
+    }
+}
+
+/// Both exports of a pair run at once, each in its own driver's fresh page.
+#[test]
+fn pairs_run_two_exports_at_once_in_their_own_drivers() {
+    let witness = Rc::new(Witness::default());
+    let names = ["one", "two", "three", "four"].map(str::to_owned).to_vec();
+    let families = [("execution", names)];
+    let mut first = Slot {
+        witness: Rc::clone(&witness),
+        lines: Vec::new(),
+    };
+    let mut second = Slot {
+        witness: Rc::clone(&witness),
+        lines: Vec::new(),
+    };
+    block_on(run_cases(
+        &mut first,
+        &mut second,
+        &families,
+        Slot::log,
+        async |slot, _, _| {
+            slot.enter();
+            tokio::task::yield_now().await;
+            slot.leave();
+            Ok(())
+        },
+    ))
+    .unwrap();
+    assert_eq!(witness.peak.get(), 2, "the pair never ran together");
+    assert_eq!(
+        first.lines,
+        [
+            "START execution one",
+            "PASS execution one",
+            "START execution three",
+            "PASS execution three",
+            "FAMILY execution 4/4",
+            "COMPLETE 4/4",
+        ]
+    );
+    assert_eq!(
+        second.lines,
+        [
+            "START execution two",
+            "PASS execution two",
+            "START execution four",
+            "PASS execution four",
+        ]
+    );
+}
+
 /// A failing export neither stops the later exports nor hides in the final outcome.
 #[test]
 fn inventory_records_every_case_before_failing() {
@@ -523,9 +611,11 @@ fn inventory_records_every_case_before_failing() {
         ("execution", vec!["first".to_owned(), "broken".to_owned()]),
         ("loading", vec!["last".to_owned()]),
     ];
-    let mut lines = Vec::<String>::new();
+    let mut first = Vec::<String>::new();
+    let mut second = Vec::<String>::new();
     let error = block_on(run_cases(
-        &mut lines,
+        &mut first,
+        &mut second,
         &families,
         |lines, text| lines.push(text.to_owned()),
         async |_, _, name| {
@@ -539,17 +629,19 @@ fn inventory_records_every_case_before_failing() {
     .unwrap_err();
     assert_eq!(error.to_string(), "FAIL broken: export threw");
     assert_eq!(
-        lines,
+        first,
         [
             "START execution first",
             "PASS execution first",
-            "START execution broken",
-            "FAIL broken: export threw",
             "FAMILY execution 1/2",
             "START loading last",
             "PASS loading last",
             "FAMILY loading 1/1",
             "COMPLETE 2/3",
         ]
+    );
+    assert_eq!(
+        second,
+        ["START execution broken", "FAIL broken: export threw"]
     );
 }

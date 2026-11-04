@@ -246,10 +246,18 @@ and lock stay unchanged. Build outputs remain in Cargo's resolved target directo
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then awaits each export in a fresh page:
+inventory before invoking assertions, then checks each family in pairs:
 26 execution exports, 63 loading exports, 194 contribution exports and 69 canvas
-exports. Packaging also builds the two runtime-module fixtures, each from its own
-manifest and lock with its own binding glue, into a copy of the fixture package.
+exports. Both exports of a pair run at once, each in a fresh page of its own
+driver, and the pair settles before the next starts. A failing export closes its
+own page and the run continues; the browser and the server close once every
+family has run. Two drivers connect to the one launched browser, and each keeps
+one connection, which its exports share across pairs. Every export still gets
+its own disposable browser context, page lifecycle and policy-error accounting.
+Each driver records its exports' diagnostics, so completion logs within a pair
+can arrive out of order, and an odd last export runs alone. Packaging also
+builds the two runtime-module fixtures, each from its own manifest and lock with
+its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
