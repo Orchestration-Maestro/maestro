@@ -3,6 +3,14 @@
 mod commands;
 pub use commands::git;
 
+/// The installed location of the fixture repository under one scope root.
+pub fn repository(root: &std::path::Path) -> std::path::PathBuf {
+    root.join("git")
+        .join("example.test")
+        .join("team")
+        .join("repo")
+}
+
 /// Creates two commits with a pin at the first and a local-only origin.
 pub fn pinned_repository(path: &std::path::Path) -> String {
     std::fs::create_dir_all(path).unwrap();

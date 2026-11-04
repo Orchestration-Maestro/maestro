@@ -154,10 +154,14 @@ impl BlockRun {
                 consumed,
                 node,
                 list,
+                #[cfg(test)]
+                settled,
             } => {
                 let start = awaiting.cursor;
                 self.output
                     .push_container(self.source.select(start..start + consumed), node, list);
+                #[cfg(test)]
+                self.output.charge_settled(settled);
                 let rest = self.source.select(start..self.source.len());
                 self.admitted(lexer, &rest, (start, awaiting.mark), consumed);
                 None

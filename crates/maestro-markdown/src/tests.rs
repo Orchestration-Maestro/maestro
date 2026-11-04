@@ -20,7 +20,7 @@ mod segment_balance;
 mod shared_text;
 mod table_progress;
 
-pub(crate) use shared_text::Retained;
+pub(crate) use shared_text::{Charges, Retained, settled};
 
 /// Worker stack well below the main thread's, so depth cannot lean on it.
 pub(crate) const WORKER_STACK: usize = 2 * 1024 * 1024;
@@ -109,6 +109,8 @@ pub(crate) struct Work {
     pub(crate) joined_bytes: usize,
     /// Largest unique source payload a list state kept alive until its release.
     pub(crate) frame_bytes: usize,
+    /// Payload the settled output of the level a caller just finished charged.
+    pub(crate) closed_settled: usize,
     /// Last reentry's mapped end before preserving already consumed chunks.
     pub(crate) reentry_end: usize,
     /// Recognized consumption before the last container reentry.

@@ -4,18 +4,78 @@ use crate::support;
 
 use std::path::Path;
 
-use maestro_test_conventions::check_workspace;
+use maestro_test_conventions::{check_declared_graph, check_workspace};
 use support::{Workspace, source};
 
-const DECLARATIONS: &[(&str, &str)] = &[
-    ("dependencies", ""),
-    ("dependencies", ", optional = true"),
-    ("build-dependencies", ""),
-    ("dev-dependencies", ""),
-    ("target.'cfg(target_os = \"none\")'.dependencies", ""),
-    ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
-    ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
+/// One way a crate declares a dependency on an external library.
+struct Declaration {
+    /// The manifest table that spells the declaration.
+    table: &'static str,
+    /// Whether the declaration is optional.
+    optional: bool,
+    /// Cargo's record of the dependency kind; `None` is a normal dependency.
+    kind: Option<&'static str>,
+    /// Cargo's record of the target predicate; `None` applies on every target.
+    target: Option<&'static str>,
+}
+
+/// The predicate of the target-specific declaration tables.
+const NONE_TARGET: &str = "cfg(target_os = \"none\")";
+
+/// Every declaration spelling of an external library.
+const DECLARATIONS: &[Declaration] = &[
+    Declaration {
+        table: "dependencies",
+        optional: false,
+        kind: None,
+        target: None,
+    },
+    Declaration {
+        table: "dependencies",
+        optional: true,
+        kind: None,
+        target: None,
+    },
+    Declaration {
+        table: "build-dependencies",
+        optional: false,
+        kind: Some("build"),
+        target: None,
+    },
+    Declaration {
+        table: "dev-dependencies",
+        optional: false,
+        kind: Some("dev"),
+        target: None,
+    },
+    Declaration {
+        table: "target.'cfg(target_os = \"none\")'.dependencies",
+        optional: false,
+        kind: None,
+        target: Some(NONE_TARGET),
+    },
+    Declaration {
+        table: "target.'cfg(target_os = \"none\")'.build-dependencies",
+        optional: false,
+        kind: Some("build"),
+        target: Some(NONE_TARGET),
+    },
+    Declaration {
+        table: "target.'cfg(target_os = \"none\")'.dev-dependencies",
+        optional: false,
+        kind: Some("dev"),
+        target: Some(NONE_TARGET),
+    },
 ];
+
+/// The optional marker the manifest spelling writes after the library path.
+fn optional_marker(declaration: &Declaration) -> &'static str {
+    if declaration.optional {
+        ", optional = true"
+    } else {
+        ""
+    }
+}
 
 /// A duplicate interactive session setup outside its shared owner.
 const DUPLICATE_SETUP: &str = "fn f() { let value = AgentSessionConfig { agent: owner() }; }";
@@ -31,33 +91,60 @@ const DUPLICATE_SETUP_SPELLINGS: &[&str] = &[
     "fn f() { let x = r#AgentSessionConfig { agent: owner() }; }",
 ];
 
+/// The external libraries only the runtime adapter may declare.
+const RUNTIME_LIBRARIES: &[&str] = &[
+    "wasmtime",
+    "wasmtime-component-macro",
+    "wasmtime-wasi",
+    "wasmtime-wasi-http",
+];
+
+/// The outcome every library declaration by `owner` must report.
+fn runtime_expectation(owner: &str, library: &str) -> Result<(), String> {
+    if owner == "maestro-extensions-wasmtime" && library != "wasmtime-wasi-http" {
+        Ok(())
+    } else {
+        Err(format!(
+            "{owner}: forbidden runtime library dependency {library}"
+        ))
+    }
+}
+
+/// Check every declaration spelling of one library against the shared document.
+fn check_runtime_library(root: &Path, declared: &serde_json::Value, owner: &str, library: &str) {
+    let external = root.join("external");
+    for declaration in DECLARATIONS {
+        let document = declared_with(declared, owner, library, declaration, &external);
+        assert_eq!(
+            check_declared_graph(root, &document),
+            runtime_expectation(owner, library),
+            "{owner}: {library} in {}",
+            declaration.table
+        );
+    }
+}
+
 #[test]
 fn runtime_dependencies_stay_in_the_runtime_adapter() {
+    let workspace = Workspace::new();
+    let owners: Vec<&str> = support::policy::POLICY
+        .iter()
+        .map(|(owner, _)| *owner)
+        .collect();
+    workspace.foundation(&owners);
+    let declared = workspace.metadata();
+    workspace.external("wasmtime");
+    // The fixture declares no external library, so every diagnostic below comes from one case.
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for &(owner, _) in support::policy::POLICY {
-        let workspace = Workspace::new();
-        workspace.foundation(&[owner]);
-        let manifest = workspace
-            .root
-            .path()
-            .join(format!("crates/{owner}/Cargo.toml"));
-        let baseline = std::fs::read_to_string(&manifest).unwrap();
-        for library in [
-            "wasmtime",
-            "wasmtime-component-macro",
-            "wasmtime-wasi",
-            "wasmtime-wasi-http",
-        ] {
+        for &library in RUNTIME_LIBRARIES {
             // The guest's test-only host dependencies have their own test.
             if owner == "maestro-extensions-wasm" && matches!(library, "wasmtime" | "wasmtime-wasi")
             {
                 continue;
             }
-            workspace.external(library);
-            check_runtime_declarations(&workspace, owner, library, &manifest, &baseline);
+            check_runtime_library(workspace.root.path(), &declared, owner, library);
         }
-        // The restored manifest declares no external library, so one clean check covers all four.
-        std::fs::write(&manifest, &baseline).unwrap();
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     let workspace = Workspace::new();
     workspace.foundation(&["maestro", "maestro-extensions-wasmtime"]);
@@ -95,8 +182,16 @@ fn toolkit_excludes_framework_and_highlighting_dependencies() {
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-tui"]);
         workspace.external(library);
-        for (kind, extra) in DECLARATIONS {
-            workspace.member("maestro-tui", "maestro-tui", &format!("[{kind}]\nalias = {{ package = {library:?}, path = \"../../external\"{extra} }}"));
+        for declaration in DECLARATIONS {
+            let table = declaration.table;
+            let optional = optional_marker(declaration);
+            workspace.member(
+                "maestro-tui",
+                "maestro-tui",
+                &format!(
+                    "[{table}]\nalias = {{ package = {library:?}, path = \"../../external\"{optional} }}"
+                ),
+            );
             assert_eq!(
                 check_workspace(workspace.root.path()),
                 Err(format!(
@@ -610,33 +705,33 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
-fn check_runtime_declarations(
-    workspace: &Workspace,
+/// The declared document with `owner` also depending on the external `library`.
+fn declared_with(
+    declared: &serde_json::Value,
     owner: &str,
     library: &str,
-    manifest: &std::path::Path,
-    baseline: &str,
-) {
-    for (kind, extra) in DECLARATIONS {
-        let declaration =
-            format!("alias = {{ package = {library:?}, path = \"../../external\"{extra} }}\n");
-        // Existing normal dependencies share a table with the external alias.
-        let contents = if *kind == "dependencies" && baseline.contains("[dependencies]\n") {
-            baseline.replace(
-                "[dependencies]\n",
-                &format!("[dependencies]\n{declaration}"),
-            )
-        } else {
-            format!("{baseline}\n[{kind}]\n{declaration}")
-        };
-        std::fs::write(manifest, contents).unwrap();
-        if owner == "maestro-extensions-wasmtime" && library != "wasmtime-wasi-http" {
-            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-        } else {
-            let error = check_workspace(workspace.root.path()).unwrap_err();
-            assert!(error.contains(owner) && error.contains(library), "{error}");
-        }
-    }
+    declaration: &Declaration,
+    external: &Path,
+) -> serde_json::Value {
+    let mut edge = dependency_template(declared);
+    edge["name"] = serde_json::json!(library);
+    edge["path"] = serde_json::json!(external);
+    edge["rename"] = serde_json::json!("alias");
+    edge["kind"] = serde_json::json!(declaration.kind);
+    edge["optional"] = serde_json::json!(declaration.optional);
+    edge["target"] = serde_json::json!(declaration.target);
+    support::with_dependency(declared, owner, &edge)
+}
+
+/// Cargo's own record of a dependency edge, from the fixture's declared graph.
+fn dependency_template(declared: &serde_json::Value) -> serde_json::Value {
+    declared["packages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find_map(|package| package["dependencies"].as_array()?.first())
+        .cloned()
+        .expect("the fixture graph declares workspace edges")
 }
 
 const NONCANONICAL_WIT: &[(&str, &str)] = &[
@@ -1043,19 +1138,22 @@ fn guest_host_probe_keeps_engine_dependencies_test_only() {
             .path()
             .join("crates/maestro-extensions-wasm/Cargo.toml");
         let baseline = std::fs::read_to_string(&manifest).unwrap();
-        for (kind, extra) in DECLARATIONS {
-            let declaration =
-                format!("alias = {{ package = {library:?}, path = \"../../external\"{extra} }}\n");
-            std::fs::write(&manifest, format!("{baseline}\n[{kind}]\n{declaration}")).unwrap();
+        for declaration in DECLARATIONS {
+            let table = declaration.table;
+            let optional = optional_marker(declaration);
+            let declared = format!(
+                "alias = {{ package = {library:?}, path = \"../../external\"{optional} }}\n"
+            );
+            std::fs::write(&manifest, format!("{baseline}\n[{table}]\n{declared}")).unwrap();
             let outcome = check_workspace(workspace.root.path());
-            let test_only = kind.ends_with("dev-dependencies") && library != "wasmtime-wasi-http";
+            let test_only = table.ends_with("dev-dependencies") && library != "wasmtime-wasi-http";
             if test_only {
-                assert_eq!(outcome, Ok(()), "{library} in {kind}");
+                assert_eq!(outcome, Ok(()), "{library} in {table}");
             } else {
                 let error = outcome.unwrap_err();
                 assert!(
                     error.contains("maestro-extensions-wasm") && error.contains(library),
-                    "{library} in {kind}: {error}"
+                    "{library} in {table}: {error}"
                 );
             }
         }
