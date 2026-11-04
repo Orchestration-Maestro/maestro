@@ -1,6 +1,6 @@
 //! Prototype bootstrap documents, policies and isolated-frame observations.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::browser_fixture_support::{construct, object};
+use crate::browser_fixture_support::{construct, object, post_from};
 use crate::contributions_support::fetch_text;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use js_sys::{Function, Object, Promise, Reflect, Uint8Array};
@@ -395,11 +395,10 @@ fn message(
     kind: &str,
     reply: Option<&JsValue>,
 ) -> JsFuture {
-    let reply = reply.map(|reply| (relay(window), reply.clone()));
-    let (frame, kind) = (frame.clone(), kind.to_owned());
+    let (frame, kind, reply) = (frame.clone(), kind.to_owned(), reply.cloned());
     let window = window.clone();
     JsFuture::from(Promise::new(&mut |resolve, _| {
-        let (frame, kind, reply, target) =
+        let (frame, kind, reply, host) =
             (frame.clone(), kind.clone(), reply.clone(), window.clone());
         let listener = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
             let source = frame.content_window();
@@ -412,30 +411,19 @@ fn message(
             if !(current && matches) {
                 return;
             }
-            if let (Some((relay, reply)), Some(source)) = (&reply, source) {
-                relay.call2(&JsValue::NULL, &source, reply).unwrap();
+            if let (Some(reply), Some(source)) = (&reply, source) {
+                // A real host replies from its own realm, the frame's parent.
+                post_from(&host, &source, reply);
             } else {
                 resolve.call1(&JsValue::UNDEFINED, &data).unwrap();
             }
         });
-        target
+        window
             .add_event_listener_with_callback("message", listener.as_ref().unchecked_ref())
             .unwrap();
         // The harness never removes this listener; it lives as long as the test page.
         listener.forget();
     }))
-}
-
-/// A function of `window`'s realm that posts to a frame, so the frame sees `window` as the
-/// sender, as it does when its host page replies.
-fn relay(window: &Window) -> Function {
-    let constructor: Function = Reflect::get(window, &"Function".into())
-        .unwrap()
-        .unchecked_into();
-    let arguments = js_sys::Array::of2(&"frame,data".into(), &"frame.postMessage(data,'*')".into());
-    Reflect::construct(&constructor, &arguments)
-        .unwrap()
-        .unchecked_into()
 }
 
 /// Create a same-origin host that declares the policy before any frame exists.
