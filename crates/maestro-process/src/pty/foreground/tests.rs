@@ -436,7 +436,16 @@ fn assert_native_process_values() {
     let target = tree
         .path()
         .join(std::ffi::OsString::from_vec(b"cwd-\xff".to_vec()));
-    std::fs::create_dir(&target).unwrap();
+    // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation, where a
+    // native working directory cannot exist.
+    let created = std::fs::create_dir(&target);
+    #[cfg(not(target_os = "macos"))]
+    created.unwrap();
+    #[cfg(target_os = "macos")]
+    if let Err(error) = created {
+        assert_eq!(error.raw_os_error(), Some(92), "{error}");
+        return;
+    }
     let authored = tree.path().join("alias");
     std::os::unix::fs::symlink(&target, &authored).unwrap();
     let mut child = children::command(children::ready_then_drain, &[])

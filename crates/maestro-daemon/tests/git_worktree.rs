@@ -463,6 +463,16 @@ fn forced_remove_keeps_a_directory_linked_to_a_repository_whose_name_differs_by_
     let scratch = Scratch::new().unwrap();
     let linked = scratch.path().join(OsStr::from_bytes(b"repo-\xff"));
     let lookalike = scratch.path().join("repo-\u{fffd}");
+    // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation, where two
+    // names that differ by one byte cannot be two repositories.
+    let created = std::fs::create_dir(&linked);
+    #[cfg(not(target_os = "macos"))]
+    created.unwrap();
+    #[cfg(target_os = "macos")]
+    if let Err(error) = created {
+        assert_eq!(error.raw_os_error(), Some(92), "{error}");
+        return;
+    }
     init_repo_with_commit(&linked);
     init_repo_with_commit(&lookalike);
     let checkout = scratch.path().join("trees/leftover");
@@ -594,6 +604,16 @@ fn list_keeps_the_bytes_of_a_checkout_path_that_text_cannot_hold() {
     let checkout = scratch
         .path()
         .join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"trees-\xff"));
+    // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation, where a
+    // checkout path text cannot hold cannot exist.
+    let created = std::fs::create_dir(&checkout);
+    #[cfg(not(target_os = "macos"))]
+    created.unwrap();
+    #[cfg(target_os = "macos")]
+    if let Err(error) = created {
+        assert_eq!(error.raw_os_error(), Some(92), "{error}");
+        return;
+    }
     worktree::add(&repo, &checkout, "bytes", "HEAD").unwrap();
 
     let entries = worktree::list(&repo).unwrap();
