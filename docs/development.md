@@ -294,9 +294,8 @@ operations, including page creation, fail immediately with a connection-closed
 error. Script arguments in the browser fixtures are JSON-encoded before evaluation
 so quotes in embedded document scripts remain data in the containing page.
 
-Browser tests observe and fault the page from Rust inside the test module. Test code
-adds no JavaScript module and evaluates no script of its own to do it. The
-`browser_fixture_support::Patch` guard replaces one page property and restores its
+Browser tests install their page hooks and observers from Rust inside the test
+module, not from JavaScript modules. The `browser_fixture_support::Patch` guard replaces one page property and restores its
 own previous definition when dropped. It has four forms: a method (through a proxy
 whose `apply` trap hands the Rust hook the original function, the receiver and the
 arguments), a getter, an accessor or a value. Test-owned observers, such as the
@@ -316,6 +315,8 @@ stay JavaScript or HTML files beside their tests:
   bootstraps their policies admit by hash.
 
 Tests read these sources as text and hand them to the product unchanged.
+[The frame-side input issue](https://github.com/Orchestration-Maestro/maestro/issues/4134)
+tracks replacing them once the sandbox has a Rust runtime.
 `markdown_support/dom.js` is the remaining page-side script; it still installs
 the Markdown projection.
 
@@ -361,7 +362,9 @@ both.
 Canvas session-header tests and offline tool cards are not executed; the latter
 still depend on the canvas renderer. The reading, PDF, Markdown and SVG artifact,
 export, session-link and session-download exports also need the `#canvas` element
-that the driver's page does not provide, so they are compiled but not executed. Transcript execution is tracked separately
+that the driver's page does not provide, so they are compiled but not executed;
+[the canvas export issue](https://github.com/Orchestration-Maestro/maestro/issues/4133)
+tracks running them. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
