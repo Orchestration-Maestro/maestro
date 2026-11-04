@@ -179,6 +179,17 @@ fn clipped_escaped_angle_keeps_its_closing_angle_text() {
 }
 
 #[test]
+fn escaped_angle_span_keeps_its_quote_marker_line_in_the_paragraph() {
+    let html = prepare("a <b\n> quote", true).html;
+    assert_eq!(html, "<p>a &lt;b\n&gt; quote</p>\n");
+    let raw = prepare("a <b\n> quote", false).html;
+    assert!(
+        raw.ends_with("<blockquote>\n<p>quote</p>\n</blockquote>\n"),
+        "{raw}"
+    );
+}
+
+#[test]
 fn code_held_angles_keep_a_later_quote() {
     for source in ["Compare `a<b`.\n\n> note", "```\n<a\n```\n\n> note"] {
         let html = prepare(source, true).html;
