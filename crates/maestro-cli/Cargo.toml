@@ -35,5 +35,8 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 maestro-test-terminal.workspace = true
 
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true, features = ["process"] }
+
 [lints]
 workspace = true
