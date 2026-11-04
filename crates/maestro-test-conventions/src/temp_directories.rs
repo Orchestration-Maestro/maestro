@@ -22,6 +22,12 @@ const MIGRATED_CRATES: &[&str] = &[
     "maestro-process",
     "maestro-tooling",
     "maestro-tui-crossterm",
+    "maestro-ipc",
+    "maestro-lock",
+    "maestro-listing",
+    "maestro-tui",
+    "maestro-workspace",
+    "maestro-credentials",
 ];
 
 /// Spelling that names the platform temporary directory.
