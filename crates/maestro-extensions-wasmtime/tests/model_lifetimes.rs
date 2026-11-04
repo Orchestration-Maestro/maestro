@@ -141,8 +141,7 @@ fn bind(runner: &ExtensionRunner<Local>, trace: &Rc<Releases>, signal: Cancellat
             ExtensionContextActions {
                 compact: Rc::new(move |options| {
                     let label = options.unwrap().custom_instructions.unwrap();
-                    observed.labels.borrow_mut().push(label);
-                    observed.changed.notify_one();
+                    observed.record(label);
                     Ok(())
                 }),
                 get_signal: Rc::new(move || Ok(Some(signal.clone()))),

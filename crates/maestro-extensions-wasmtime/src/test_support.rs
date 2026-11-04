@@ -23,13 +23,19 @@ pub async fn gate(
 /// Release receipts a test awaits, without timers or scheduler assumptions.
 #[derive(Default)]
 pub struct Releases {
-    /// Every distinct release the application reported.
-    pub labels: RefCell<Vec<String>>,
+    /// Every release receipt the application reported, in arrival order.
+    labels: RefCell<Vec<String>>,
     /// Wakes the waiter when a release arrives.
-    pub changed: Notify,
+    changed: Notify,
 }
 
 impl Releases {
+    /// Record one release receipt and wake the waiter.
+    pub fn record(&self, label: String) {
+        self.labels.borrow_mut().push(label);
+        self.changed.notify_one();
+    }
+
     /// Wait for positive release receipts and reject early, duplicate or foreign ones.
     ///
     /// # Panics

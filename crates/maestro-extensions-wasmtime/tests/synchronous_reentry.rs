@@ -1,12 +1,12 @@
 //! Native code that calls back into the component it is serving, while that component waits
 //! in a synchronous host call, gets the result and order the reference produces.
 #![cfg(test)]
-use super::example_process::run;
 use super::retained_components::{loaded_on, view};
 use maestro_extensions::{
     Cancellation, CompactOptions, EventBus, ExtensionActions, ExtensionContextActions,
     ExtensionExecution, ExtensionRunner, Local, create_event_bus_for, types::ProviderActions,
 };
+use maestro_test_process::executor::run;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

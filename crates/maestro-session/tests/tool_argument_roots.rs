@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use maestro_models::test_support::target_model;
 use maestro_models::{AssistantContent, Message, ToolCall, transform_messages};
-use maestro_request::test_support::target_model;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_test_directory::Scratch;

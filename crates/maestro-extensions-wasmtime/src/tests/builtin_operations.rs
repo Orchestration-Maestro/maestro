@@ -3039,8 +3039,7 @@ fn callback_releases(
     let mut actions =
         <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::unbound_actions();
     actions.set_session_name = std::rc::Rc::new(move |label| {
-        counted.labels.borrow_mut().push(label);
-        counted.changed.notify_one();
+        counted.record(label);
         Ok(())
     });
     runner

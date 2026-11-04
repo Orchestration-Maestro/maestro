@@ -61,8 +61,8 @@ and `process`, so a child replaces one of its standard descriptors with the null
 applies its own umask, process-count limit and session without unsafe code; the process
 tests share that one operation. The mode and `umask` calls are the only items behind `fs`.
 
-The same owner inherits the existing `tokio =1.53.3` pin, defaults off with `rt` and
-`time`, for the caller-owned local executor its witnesses drive native futures on;
+The same owner uses the workspace's existing `tokio =1.53.3` pin, defaults off with
+`rt`, for the caller-owned local executor its witnesses drive native futures on;
 no package version changes.
 
 The process tests also use `nix =0.31.3` (MIT), defaults off with `signal`, the version

@@ -13,7 +13,11 @@ use tokio::task::LocalSet;
 /// Panics when the runtime cannot build its drivers.
 pub fn run(action: impl Future<Output = ()>) {
     let built = Builder::new_current_thread().enable_all().build();
-    assert!(built.is_ok(), "the local test runtime builds its drivers");
+    assert!(
+        built.is_ok(),
+        "the local test runtime builds its drivers: {:?}",
+        built.as_ref().err()
+    );
     if let Ok(runtime) = built {
         LocalSet::new().block_on(&runtime, action);
     }

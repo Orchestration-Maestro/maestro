@@ -14,8 +14,8 @@ use std::{
 };
 use tokio::sync::{mpsc, oneshot};
 
-use super::example_process::run;
 use super::retained_components::{loaded_on, view};
+use maestro_test_process::executor::run;
 
 /// Ordered effects supplied by native actions and authored emissions.
 type Trace = Rc<RefCell<Vec<String>>>;
