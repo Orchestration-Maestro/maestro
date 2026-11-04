@@ -16,7 +16,7 @@ pub(crate) fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command
     test_child_command(program, variables).unwrap()
 }
 
-/// [`command`](super::children::command) as the asynchronous command the owner takes.
+/// [`command`] as the asynchronous command the owner takes.
 pub(crate) fn async_command(
     program: impl Fn(),
     variables: &[(&str, &str)],

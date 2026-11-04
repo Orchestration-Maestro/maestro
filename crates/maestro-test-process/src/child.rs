@@ -118,7 +118,8 @@ pub fn test_child_command<F: Fn()>(
 ///
 /// # Errors
 ///
-/// Fails when the variable holds text that is not two hexadecimal digits per byte.
+/// Fails when the variable holds text that is not two hexadecimal digits per byte. A
+/// trailing character with no pair is dropped.
 pub fn hex_variable(name: &str) -> Result<Vec<u8>, ParseIntError> {
     let text = std::env::var(name).unwrap_or_default();
     (0..text.len() / 2)
