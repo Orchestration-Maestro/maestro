@@ -1,5 +1,6 @@
 //! Recorded fallback transactions through credential storage.
-use crate::{AuthSource, AuthStatus, AuthStorage, ConfigValueOperations};
+use crate::test_support::NoCommands;
+use crate::{AuthSource, AuthStatus, AuthStorage};
 use maestro_models::{DiagnosticErrorInfo, OAuthError};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -74,13 +75,6 @@ fn status_value(status: AuthStatus) -> Result<Value, Box<dyn std::error::Error>>
     }
     Ok(value)
 }
-/// Stored-value operations that resolve no command.
-struct NoOperations;
-impl ConfigValueOperations for NoOperations {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        None
-    }
-}
 /// Install a retained callback and retain its exact ordered invocations.
 ///
 /// # Panics
@@ -141,7 +135,7 @@ pub async fn drive(case: Case) -> Result<(), Box<dyn std::error::Error>> {
             .get_api_key(
                 provider,
                 input.include_fallback.unwrap_or(true),
-                &NoOperations,
+                &NoCommands,
             )
             .await
             .map(Into::into),

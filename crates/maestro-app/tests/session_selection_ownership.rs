@@ -5,6 +5,7 @@ use crate::session_model_selection::selection_entries;
 use crate::support::session_harness::{
     Auth, Harness, HarnessOptions, corpus, harness, on_task_set,
 };
+use futures_util::FutureExt;
 use maestro_app::agent_session::CycleDirection;
 use maestro_app::{AgentSession, ModelCycleResult};
 use maestro_extensions::{
@@ -17,7 +18,6 @@ use std::{
     future::Future,
     pin::Pin,
     rc::{Rc, Weak},
-    task::Poll,
 };
 use tokio::sync::{Notify, oneshot};
 
@@ -61,12 +61,6 @@ fn ownership_case(route: &str, observe: Option<bool>) -> Value {
         .find(|row| row["route"] == route && observe.is_none_or(|wanted| row["observe"] == wanted))
         .unwrap_or_else(|| panic!("no recorded case {route} {observe:?}"))
         .clone()
-}
-
-/// Polls `operation` once, so the test decides when the caller looks again.
-fn poll_once<T>(operation: &mut Pin<Box<dyn Future<Output = T> + '_>>) -> Poll<T> {
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
-    operation.as_mut().poll(&mut context)
 }
 
 /// The recorded form of the selected model's identity: its id.
@@ -290,9 +284,12 @@ fn observed_case(route: &str, observe: bool) {
             .await;
         scope(route, &h);
         let mut operation = Some(selection(&h, route));
-        let first = poll_once(operation.as_mut().expect("the selection is observed"));
+        let first = operation
+            .as_mut()
+            .expect("the selection is observed")
+            .now_or_never();
         assert_eq!(
-            json!(first.is_ready()),
+            json!(first.is_some()),
             expected["before"]["settled"],
             "the caller waits for the first handler"
         );
@@ -306,7 +303,11 @@ fn observed_case(route: &str, observe: bool) {
         assert_eq!(parked.steps(), expected["middle"]);
         if observe {
             assert!(
-                poll_once(operation.as_mut().expect("the selection is observed")).is_pending(),
+                operation
+                    .as_mut()
+                    .expect("the selection is observed")
+                    .now_or_never()
+                    .is_none(),
                 "the caller waits for the second handler"
             );
         }
@@ -319,8 +320,10 @@ fn observed_case(route: &str, observe: bool) {
         let after = expected["after"].clone();
         assert_finished(&parked, &h, &events, &after);
         let result = if observe {
-            let Poll::Ready(outcome) =
-                poll_once(operation.as_mut().expect("the selection is observed"))
+            let Some(outcome) = operation
+                .as_mut()
+                .expect("the selection is observed")
+                .now_or_never()
             else {
                 panic!("the observed selection finishes after the handlers");
             };

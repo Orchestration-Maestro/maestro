@@ -93,12 +93,14 @@ Wrappers are packed into `session-transcripts-NNN.txt` files up to 100,000 UTF-1
 units, separated by a blank line. A wrapper larger than that goes to its own
 numbered file and is reported as oversized.
 
-`--analyze` runs one child per written file and then one aggregating child in
-the output directory, with the `read` and `write` tools only. Each child receives
+`--analyze` runs one child per written file, then one aggregating child in the
+output directory once at least one summary file exists, both with the `read` and
+`write` tools only. A run that finds no summary file prints
+`No summary files created. Nothing to aggregate.` and stops. Each child receives
 the paths of any existing instruction files, the transcript or summary paths and
-the line count, and its JSON event stream is rendered as text. Analysis outcomes
-are reported but do not change the command's successful exit; a rejected
-operation is printed and the command still exits zero.
+the line count. Its JSON event stream is rendered as text. Analysis outcomes are
+reported but do not change the command's successful exit; a rejected operation
+is printed and the command still exits zero.
 
 ## Tool report
 

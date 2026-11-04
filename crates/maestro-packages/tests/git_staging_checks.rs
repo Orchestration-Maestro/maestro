@@ -1,5 +1,6 @@
 //! Retry-safe acquisition at filesystem, command and settings boundaries.
 use crate::sandbox::{Fixture, block_on};
+use futures_util::FutureExt;
 use maestro_packages::PackageManager;
 use serde_json::json;
 use std::{io, path::Path};
@@ -425,7 +426,7 @@ fn git_staging_collision_and_publication_failures_keep_owned_paths() {
     let mut pending = fixture
         .manager
         .install("https://example.test/team/repo", None);
-    assert!(crate::sandbox::poll_once(&mut pending).is_none());
+    assert!(pending.as_mut().now_or_never().is_none());
     assert_eq!(std::fs::read_dir(&parent).unwrap().count(), 1);
     drop(pending);
     assert_eq!(std::fs::read_dir(parent).unwrap().count(), 0);

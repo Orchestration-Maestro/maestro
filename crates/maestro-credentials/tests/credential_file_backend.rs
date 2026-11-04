@@ -9,9 +9,10 @@ mod tests {
     use crate::support::{
         TempDir, api_key, block_on, block_on_paused, is_child, memory_text, run_child,
     };
+    use futures_util::FutureExt;
     use maestro_credentials::{
-        AsyncLockUpdate, AuthSource, AuthStorage, AuthStorageBackend, ConfigValueOperations,
-        FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
+        AsyncLockUpdate, AuthSource, AuthStorage, AuthStorageBackend, FileAuthStorageBackend,
+        InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{BoxFuture, OAuthCredentials, OAuthError};
     use maestro_test_process::{TestProcess, selection};
@@ -78,15 +79,6 @@ mod tests {
                 ("MAESTRO_PROFILE_SENTINEL", "ambient"),
             ],
         );
-    }
-
-    /// Configuration operations that resolve no command.
-    struct NoOperations;
-
-    impl ConfigValueOperations for NoOperations {
-        fn execute(&self, _command: &str) -> Option<Vec<u8>> {
-            None
-        }
     }
 
     /// Pretty text of one API key record per entry.
@@ -643,7 +635,12 @@ mod tests {
         let reader = AuthStorage::create(&path);
         reader.set("stored-provider", api_key("old"));
         AuthStorage::create(&path).set("stored-provider", api_key("new"));
-        let key = block_on(reader.get_api_key("stored-provider", false, &NoOperations)).unwrap();
+        let key = block_on(reader.get_api_key(
+            "stored-provider",
+            false,
+            &maestro_credentials::test_support::NoCommands,
+        ))
+        .unwrap();
         assert_eq!(key.as_deref(), Some("new"));
     }
 
@@ -654,7 +651,12 @@ mod tests {
         AuthStorage::create(&dir.path("auth.json")).remove("written");
         assert!(!reader.has("written"));
         assert_eq!(
-            block_on(reader.get_api_key("written", false, &NoOperations)).unwrap(),
+            block_on(reader.get_api_key(
+                "written",
+                false,
+                &maestro_credentials::test_support::NoCommands
+            ))
+            .unwrap(),
             None
         );
     }
@@ -665,7 +667,12 @@ mod tests {
         assert_eq!(reader.get("written"), Some(api_key("fresh")));
         AuthStorage::create(&dir.path("auth.json")).remove("written");
         assert_eq!(
-            block_on(reader.get_api_key("written", false, &NoOperations)).unwrap(),
+            block_on(reader.get_api_key(
+                "written",
+                false,
+                &maestro_credentials::test_support::NoCommands
+            ))
+            .unwrap(),
             None
         );
     }
@@ -767,12 +774,6 @@ mod tests {
         });
     }
 
-    /// Poll `future` once with a waker that does nothing.
-    fn poll_once<F: std::future::Future + Unpin>(future: &mut F) -> std::task::Poll<F::Output> {
-        std::pin::Pin::new(future)
-            .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
-    }
-
     /// Credential file holding one expired OAuth record for `id`.
     fn expired_file(dir: &TempDir, id: &str) -> String {
         let path = dir.path("auth.json");
@@ -832,7 +833,7 @@ mod tests {
 
     /// A request dropped while waiting for the sidecar never runs its callback.
     async fn dropped_while_waiting() {
-        let operations = NoOperations;
+        let operations = maestro_credentials::test_support::NoCommands;
         let provider = ControlledProvider::new("f6-wait").register();
         let _cleanup = Unregister("f6-wait".into());
         let dir = TempDir::without_forks("pending-waiter");
@@ -841,7 +842,7 @@ mod tests {
         let idle = Arc::strong_count(&provider);
         let mut request = storage.get_api_key("f6-wait", true, &operations);
         let holder = hold_lock(&path);
-        assert!(poll_once(&mut request).is_pending());
+        assert!(request.as_mut().now_or_never().is_none());
         assert_eq!(Arc::strong_count(&provider), idle + 1);
         drop(request);
         assert_eq!(Arc::strong_count(&provider), idle);
@@ -853,7 +854,7 @@ mod tests {
             let _witness = &witness;
             Box::pin(async { Ok(None) })
         }));
-        assert!(poll_once(&mut waiting).is_pending());
+        assert!(waiting.as_mut().now_or_never().is_none());
         assert!(!released.load(Ordering::SeqCst));
         drop(waiting);
         assert!(released.load(Ordering::SeqCst));
@@ -865,7 +866,7 @@ mod tests {
 
     /// A request dropped while its provider refresh is pending releases the lock.
     async fn dropped_while_refreshing() {
-        let operations = NoOperations;
+        let operations = maestro_credentials::test_support::NoCommands;
         let (started, dropped) = (
             Arc::new(AtomicBool::new(false)),
             Arc::new(AtomicBool::new(false)),
@@ -877,7 +878,7 @@ mod tests {
         let path = expired_file(&dir, "f6-refresh");
         let storage = AuthStorage::create(&path);
         let mut request = storage.get_api_key("f6-refresh", true, &operations);
-        assert!(poll_once(&mut request).is_pending());
+        assert!(request.as_mut().now_or_never().is_none());
         assert!(started.load(Ordering::SeqCst) && !dropped.load(Ordering::SeqCst));
         assert!(!sidecar_is_free(&path));
         drop(request);
@@ -916,7 +917,7 @@ mod tests {
             let dir = TempDir::without_forks("contenders");
             let path = expired_file(&dir, "f7");
             let (first, second) = (AuthStorage::create(&path), AuthStorage::create(&path));
-            let operations = NoOperations;
+            let operations = maestro_credentials::test_support::NoCommands;
             let (a, b, ()) = tokio::join!(
                 first.get_api_key("f7", true, &operations),
                 second.get_api_key("f7", true, &operations),
