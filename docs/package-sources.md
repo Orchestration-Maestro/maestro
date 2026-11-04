@@ -9,7 +9,9 @@ For read-only availability and configured execution, see [package updates](packa
 
 The direct `parse_git_url` parser accepts explicit HTTP, HTTPS, SSH and Git URLs;
 shorthand requires the `git:` prefix. Its result separates the clone address,
-host/path identity and optional ref. The manager checks the literal `npm:` prefix
+host/path identity and optional ref. The `git@host:path` spelling admits a URI
+reg-name host: an alphanumeric first character, then alphanumeric characters,
+`-._~` or sub-delimiter punctuation. The manager checks the literal `npm:` prefix
 first, then the resource owner's local-path classification, then Git parsing.
 Git identity ignores transport and ref; npm identity uses the package name.
 Hosted shortcuts select their identity from the URL path, excluding the query;
@@ -113,6 +115,8 @@ provide crash recovery or concurrent-writer isolation.
 
 Corrected package defects:
 
+- A `git@host:path` source with a bracketed, spaced or percent-encoded host no
+  longer aborts the process; the source is rejected.
 - A malformed resource list in a package manifest no longer fails the package; it is ignored and the other lists load (see [package-root manifests](packages.md#package-root-manifests)).
 - Failed fresh acquisition no longer leaves partial contents that a retry skips.
 - Explicit version changes no longer leave an old checkout or stale settings pin.

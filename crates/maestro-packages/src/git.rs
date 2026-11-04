@@ -138,12 +138,11 @@ fn generic(repo: &str, reference: Option<String>) -> Option<GitSource> {
         .ok()?;
     let (clone, host, path) = if repo.starts_with("git@") {
         let (host, path) = repo.strip_prefix("git@")?.split_once(':')?;
-        let parsed = git_url_parse::GitUrl::parse(&format!("ssh://git@{host}/{path}")).ok()?;
-        (
-            repo.to_owned(),
-            parsed.host().unwrap_or(host).to_owned(),
-            path,
-        )
+        if !is_reg_name(host) {
+            return None;
+        }
+        Url::parse(&format!("ssh://git@{host}/{path}")).ok()?;
+        (repo.to_owned(), host.to_owned(), path)
     } else if let Some(url) = &url {
         (
             repo.to_owned(),
@@ -171,6 +170,18 @@ fn generic(repo: &str, reference: Option<String>) -> Option<GitSource> {
         pinned: reference.is_some(),
         r#ref: reference,
     })
+}
+
+/// Whether a host is the URI reg-name the `git@host:path` spelling admits.
+///
+/// The first character is alphanumeric and every character is an unreserved or
+/// sub-delimiter character, so a bracketed, percent-encoded or spaced host is
+/// refused instead of being percent-encoded or silently shortened by the URL parse.
+fn is_reg_name(host: &str) -> bool {
+    host.chars().next().is_some_and(char::is_alphanumeric)
+        && host
+            .chars()
+            .all(|c| c.is_alphanumeric() || "-._~!$&'()*+,;=".contains(c))
 }
 
 /// The provider that owns hosted path selection.
