@@ -190,8 +190,8 @@ impl TestProcess {
         self
     }
 
-    /// Drop the inherited environment, keeping the coverage profile path and the
-    /// Windows system root.
+    /// Drop the inherited environment, keeping the coverage profile path, the compiled-code
+    /// cache home the run's setup exports and the Windows system root.
     #[must_use]
     pub fn env_clear(mut self) -> Self {
         self.envs.push(EnvEdit::Clear);

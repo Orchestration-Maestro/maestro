@@ -275,11 +275,13 @@ fn aliases_install_without_a_system_installer() {
         let empty = crate::native::Scratch::new();
         std::fs::create_dir(empty.join("empty")).unwrap();
         let environment = std::collections::BTreeMap::from([
-            ("PATH", empty.join("empty")),
+            ("PATH", Some(empty.join("empty"))),
             (
                 "MAESTRO_NATIVE_FIXTURE",
-                std::env::var("MAESTRO_NATIVE_FIXTURE")
-                    .expect("run just prepare-tests, then run these tests with cargo nextest"),
+                Some(
+                    std::env::var("MAESTRO_NATIVE_FIXTURE")
+                        .expect("run just prepare-tests, then run these tests with cargo nextest"),
+                ),
             ),
         ]);
         maestro_test_process::run_per_environment(name, [()], |()| environment.clone()).unwrap();

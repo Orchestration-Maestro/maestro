@@ -554,7 +554,6 @@ fn git_config_home_uses_only_home_variable() {
         |(home, xdg, _)| {
             [("HOME", *home), ("XDG_CONFIG_HOME", *xdg)]
                 .into_iter()
-                .filter_map(|(key, value)| value.map(|value| (key, value)))
                 .collect()
         },
     )

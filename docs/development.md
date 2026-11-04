@@ -2310,10 +2310,12 @@ capture child does so for the rows that overflow, so the capture stops a waiting
 child, never an exiting one.
 
 Cases that read process variables go through `run_per_environment(test, cases,
-environment)`. It groups the cases by the variables `environment` returns and
+environment)`. It groups the cases by the edits `environment` returns and
 reruns the test once per group, in a child that holds exactly those variables
 after `env_clear()`, plus the compiled-code cache home the run's setup exports
-and the parent's temporary directory, unless the case sets one. A group child
+and the parent's temporary directory, unless the case sets one. A value of
+`Some` sets its variable and `None` removes it, so a case that names a kept
+variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
 instead of compiling it again. In the parent, `run_per_environment` returns
 `None` once every child passes, and repeats each passing child's standard error
