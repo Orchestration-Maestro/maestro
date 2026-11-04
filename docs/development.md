@@ -563,15 +563,17 @@ watch-test child lines, setup command lines and blocking-operation phases to
 per-test files in `MAESTRO_TEST_DIAGNOSTICS_DIR`, or
 `target/browser-author-diagnostics/` when it is unset, outside disposable fixtures
 and isolated home directories. Set the variable to an absolute path; a relative
-one resolves against `crates/maestro-tooling`. The harness does not capture
-commands whose output a test reads only after they exit. A forced-kill
-test checks both directory routes and verifies that child lines survive termination
-while still reaching stderr and the watch consumer. There are no exact build counts
-or negative observation windows. Their watch processes share a test-owned
-process group, stopped on completion or panic. Before starting a watch-test
-process group, the harness directs its LLVM profiles into that fixture's target
-directory, outside the merged coverage profile set, because cleanup can forcibly
-stop its descendants.
+one resolves against `crates/maestro-tooling`. Each line starts with the seconds
+since the first record in the process, and every recipe records its start and its
+exit status, so one file shows where a slow attempt spent its time. The harness
+does not capture commands whose output a test reads only after they exit. A
+forced-kill test checks both directory routes and verifies that child lines survive
+termination while still reaching stderr and the watch consumer. There are no exact
+build counts or negative observation windows. Their watch processes share a
+test-owned process group, stopped on completion or panic. Before starting a
+watch-test process group, the harness directs its LLVM profiles into that fixture's
+target directory, outside the merged coverage profile set, because cleanup can
+forcibly stop its descendants.
 
 Browser author tests keep the checked-in full fixture and its independent lock
 unchanged. Pipeline-only tests use disposable copies with the minimal bootstrap

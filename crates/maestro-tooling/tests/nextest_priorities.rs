@@ -131,6 +131,10 @@ fn browser_workspace_source_tests_receive_the_workspace_sources_setup() {
         "browser_resolution_prepares_sources_outside_nextest",
     ] {
         assert!(
+            include_str!("browser_author_build.rs").contains(&format!("fn {test}()")),
+            "{test} is not a browser author test"
+        );
+        assert!(
             filter.contains(&format!("test({test})")),
             "{filter} omits {test}"
         );
