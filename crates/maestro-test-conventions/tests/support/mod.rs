@@ -7,7 +7,10 @@ use std::path::PathBuf;
 /// generated bindings need at `deny`.
 pub const GUEST_LINTS: &str = "[lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[lints.clippy]\npedantic = { level = \"deny\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"deny\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"deny\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n";
 
+mod manifest;
 mod scratch;
+
+use manifest::WORKSPACE_MANIFEST;
 pub use scratch::Scratch;
 
 pub struct Workspace {
@@ -27,11 +30,7 @@ impl Workspace {
         let workspace = Self {
             scratch: Scratch::new(),
         };
-        fs::write(
-            workspace.root.path().join("Cargo.toml"),
-            "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = { version = \"=1.0.151\", features = [\"float_roundtrip\"] }\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = { level = \"forbid\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n",
-        )
-        .unwrap();
+        fs::write(workspace.root.path().join("Cargo.toml"), WORKSPACE_MANIFEST).unwrap();
         workspace.list(&[]);
         workspace
     }

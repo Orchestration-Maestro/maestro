@@ -1,12 +1,13 @@
 //! Platform viewer executables belong to the application opener.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 
 use proc_macro2::{TokenStream, TokenTree};
 use syn::{parse::Parser, spanned::Spanned, visit::Visit};
 
-use crate::source::{Member, imports::flatten, test_scope, test_spans};
+use crate::source::{Member, covered, imports::flatten, test_scope};
 
 /// Application source that owns native viewer selection.
 const OWNER: &str = "src/utils/platform_opener.rs";
@@ -31,7 +32,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             strings(
                 tokens,
                 &BTreeSet::new(),
-                &test_spans(source.syntax.as_ref()),
+                source.test_spans(),
                 &BTreeMap::new(),
                 &mut literals,
             );
@@ -61,6 +62,14 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Token positions looked up against test spans on the current test thread.
+    static POSITION_LOOKUPS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Import maps built for token scopes on the current test thread.
+    static IMPORT_SCOPES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// Collect production literals, tracking local `open` bindings through nested groups.
 fn strings(
     tokens: TokenStream,
@@ -71,12 +80,7 @@ fn strings(
 ) {
     let tokens: Vec<_> = tokens
         .into_iter()
-        .filter(|token| {
-            let start = token.span().start();
-            !testing
-                .iter()
-                .any(|span| span.contains(&(start.line, start.column)))
-        })
+        .filter(|token| testing.is_empty() || !covered(testing, position(token)))
         .collect();
     let imports = scoped_imports(&tokens, inherited_imports);
     let mut bindings = inherited.clone();
@@ -130,11 +134,19 @@ fn strings(
     }
 }
 
+/// Locate a token's start in the line and column coordinates of syntax spans.
+fn position(token: &TokenTree) -> (usize, usize) {
+    #[cfg(test)]
+    POSITION_LOOKUPS.set(POSITION_LOOKUPS.get() + 1);
+    let start = token.span().start();
+    (start.line, start.column)
+}
+
 /// Resolve explicit imports in this token group without changing the enclosing scope.
-fn scoped_imports(
+fn scoped_imports<'a>(
     tokens: &[TokenTree],
-    inherited: &BTreeMap<String, BTreeSet<String>>,
-) -> BTreeMap<String, BTreeSet<String>> {
+    inherited: &'a BTreeMap<String, BTreeSet<String>>,
+) -> Cow<'a, BTreeMap<String, BTreeSet<String>>> {
     let mut imports = BTreeMap::<String, BTreeSet<String>>::new();
     for (index, token) in tokens.iter().enumerate() {
         if !matches!(token, TokenTree::Ident(name) if name == "use") {
@@ -165,9 +177,14 @@ fn scoped_imports(
             }
         }
     }
+    if imports.is_empty() {
+        return Cow::Borrowed(inherited);
+    }
+    #[cfg(test)]
+    IMPORT_SCOPES.set(IMPORT_SCOPES.get() + 1);
     let mut scoped = inherited.clone();
     scoped.extend(imports);
-    scoped
+    Cow::Owned(scoped)
 }
 
 /// Recognize one plain name supplied to a known command-line parser constructor.
@@ -290,3 +307,6 @@ fn open_operand(tokens: TokenStream, bindings: &BTreeSet<String>) -> Option<usiz
     (bound || literal_text(&operand).as_deref() == Some("open"))
         .then(|| operand.span().start().line)
 }
+
+#[cfg(test)]
+mod tests;

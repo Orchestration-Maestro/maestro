@@ -1,8 +1,11 @@
-//! Tests for the private manifest reader and associated-item attribute accessors.
+//! Tests for source loading, the private manifest reader and associated-item attribute accessors.
 
+#[path = "../../tests/support/manifest.rs"]
+mod manifest;
 #[path = "../../tests/support/scratch.rs"]
 mod scratch;
 
+use self::manifest::WORKSPACE_MANIFEST;
 use self::scratch::Scratch;
 use super::{impl_item_attributes, read_manifest, trait_item_attributes};
 
@@ -108,11 +111,7 @@ fn documentation_scan_bytes(comments: usize) -> usize {
     let member = super::Member {
         name: "example".into(),
         directory: "example".into(),
-        sources: vec![super::Source {
-            path: "example/src/lib.rs".into(),
-            contents,
-            syntax: None,
-        }],
+        sources: vec![super::Source::new("example/src/lib.rs".into(), contents)],
     };
     super::SCANNED_BYTES.set(0);
     crate::repetition::check(&[member]).unwrap();
@@ -124,8 +123,54 @@ fn documentation_newline_scans_grow_linearly() {
     crate::repetition::MARKDOWN_PARSES.set(0);
     let small = documentation_scan_bytes(128);
     let large = documentation_scan_bytes(256);
-    println!("newline scan bytes: N={small}, 2N={large}");
+    let largest = documentation_scan_bytes(512);
+    println!("newline scan bytes: N={small}, 2N={large}, 4N={largest}");
     assert!(small > 0, "newline traversal must be observed");
     assert_eq!(crate::repetition::MARKDOWN_PARSES.get(), 0);
-    assert_eq!(large, 2 * small, "doubling documentation doubles scan work");
+    assert_eq!(
+        largest - large,
+        2 * (large - small),
+        "each added comment adds the same scan work"
+    );
+}
+
+/// Root manifest of a one-member fixture workspace that passes every check.
+
+#[test]
+fn workspace_checks_lex_and_search_each_source_once() {
+    let scratch = Scratch::new();
+    let root = scratch.root.path();
+    let member = root.join("crates").join("models");
+    std::fs::create_dir_all(member.join("src")).unwrap();
+    std::fs::write(root.join("Cargo.toml"), WORKSPACE_MANIFEST).unwrap();
+    std::fs::write(
+        root.join("workspace-crates.json"),
+        "{\"maestro-models\": \"core\"}",
+    )
+    .unwrap();
+    std::fs::write(
+        member.join("Cargo.toml"),
+        "[package]\nname = \"maestro-models\"\nversion = \"0.1.0\"\nedition = \"2024\"\n[lints]\nworkspace = true\n",
+    )
+    .unwrap();
+    for (name, contents) in [
+        (
+            "lib.rs",
+            "//! Models.\n\n/// The answer.\npub fn answer() -> &'static str {\n    // A literal follows.\n    \"forty-two\"\n}\n\n#[cfg(test)]\nmod tests;\n",
+        ),
+        (
+            "tests.rs",
+            "#[test]\nfn answers() {\n    assert_eq!(super::answer(), \"forty-two\");\n}\n",
+        ),
+        ("fragment.rs", "let unparsed = 1;\n"),
+    ] {
+        std::fs::write(member.join("src").join(name), contents).unwrap();
+    }
+    super::LEXER_PASSES.set(0);
+    super::TEST_SPAN_SEARCHES.set(0);
+    crate::check_workspace(root).unwrap();
+    let passes = (super::LEXER_PASSES.get(), super::TEST_SPAN_SEARCHES.get());
+    println!("lexer passes, test-span searches: {passes:?}");
+    // Three sources, each lexed once; the two production sources searched once.
+    assert_eq!(passes, (3, 2));
 }
