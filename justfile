@@ -273,9 +273,9 @@ browser-chat-example *args:
     @miniserve {{quote(justfile_directory() / "target/maestro-browser/chat")}} --interfaces 127.0.0.1 --index index.html {{quote(args)}}
 
 # Build and execute the retained sandbox exports with supplied browser tools.
-browser-test:
-    node crates/maestro-web/tests/sandbox_loading_support/run.cjs
-    node crates/maestro-app/tests/browser/analysis_page.cjs
+browser-test: prepare-tests
+    cargo nextest run --locked -p maestro-test-browser --run-ignored only --no-fail-fast -E 'test(/^browser::/)'
+    cargo run --quiet --locked -p maestro-test-browser --
 
 # Generate the extension index, example targets and workspace-derived guide lock.
 example-index:

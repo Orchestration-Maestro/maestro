@@ -332,3 +332,34 @@ fn cost_directory_lookup_matches_session_writer() {
         },
     );
 }
+
+#[test]
+fn cost_rows_sum_individual_components() {
+    with_environment(
+        "cost_rows_sum_individual_components",
+        &[("TZ", ZONE)],
+        |base| {
+            let journal = concat!(
+                "{\"type\":\"message\",\"timestamp\":\"2026-03-09T12:00:00Z\",\"message\":{\"role\":\"assistant\",\"provider\":\"one\",\"usage\":{\"cost\":{\"total\":1,\"input\":0.5,\"output\":0.25,\"cacheRead\":0.125,\"cacheWrite\":0.0625}}}}\n",
+                "{\"type\":\"message\",\"timestamp\":\"2026-03-09T13:00:00Z\",\"message\":{\"role\":\"assistant\",\"provider\":\"one\",\"usage\":{\"cost\":{\"total\":2,\"input\":0.25,\"output\":0.125,\"cacheRead\":0.03125,\"cacheWrite\":0.015625}}}}\n",
+            );
+            sessions(
+                base,
+                "/project",
+                &[("2026-03-09T12-00-00-000Z_a.jsonl", journal)],
+            );
+            let run = run_cost(&["-d", "/project", "-n", "7"]).expect("the report runs");
+            assert!(run.succeeded(), "{}", run.stderr);
+            // Each component is summed on its own, and the cache columns share one amount.
+            let components = "(2 reqs, in: $0.7500, out: $0.3750, cache: $0.2344)";
+            assert_eq!(
+                run.stdout.matches(components).count(),
+                2,
+                "the day and provider rows report the summed components:\n{}",
+                run.stdout
+            );
+            assert!(run.stdout.contains("Day total:"), "{}", run.stdout);
+            assert!(run.stdout.contains("$  3.0000"), "{}", run.stdout);
+        },
+    );
+}

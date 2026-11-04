@@ -35,7 +35,7 @@ pub(crate) fn run(args: &[OsString], checkout: &Path) -> io::Result<ExitCode> {
 }
 
 /// Write a standalone cdylib manifest beside the copied lock and linked authored tests.
-fn prepare(checkout: &Path, output: &Path) -> io::Result<()> {
+pub(crate) fn prepare(checkout: &Path, output: &Path) -> io::Result<()> {
     let checkout = checkout.canonicalize()?;
     let root = checkout
         .to_str()

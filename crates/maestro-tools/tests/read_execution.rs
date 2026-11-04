@@ -5,6 +5,7 @@
 use crate::read_support;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use futures_util::FutureExt;
 use image::ImageOutputFormat;
 use maestro_models::{Cancellation, DiagnosticCode, ModelInput};
 use maestro_tools::{ReadOperations, ReadToolInput, ReadToolOptions, create_read_tool_definition};
@@ -762,12 +763,12 @@ fn read_image_abort_settles_before_blocking_resize_finishes() {
             None,
             None,
         );
-        assert!(crate::write_support::poll_once(&mut call).is_pending());
+        assert!(call.as_mut().now_or_never().is_none());
         waiting.recv().unwrap();
         signal.abort();
-        let settled = crate::write_support::poll_once(&mut call);
+        let settled = call.as_mut().now_or_never();
         drop(release);
-        let std::task::Poll::Ready(Err(error)) = settled else {
+        let Some(Err(error)) = settled else {
             panic!("read must settle before the blocking resize can finish");
         };
         assert_eq!(error.message, "Operation aborted");

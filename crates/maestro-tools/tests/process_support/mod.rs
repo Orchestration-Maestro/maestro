@@ -1,15 +1,8 @@
 //! Polling and pipe ownership helpers shared by the process tests.
 #![cfg(test)]
-use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
-
-/// Polls `future` once and reports its state without consuming it.
-#[cfg(not(target_arch = "wasm32"))]
-pub async fn poll_once<F: Future>(future: &mut Pin<&mut F>) -> Poll<F::Output> {
-    std::future::poll_fn(|cx| Poll::Ready(future.as_mut().poll(cx))).await
-}
 
 /// Forwards wake-ups outside its mutex while counting as one owner of itself.
 pub struct Forward(Mutex<Option<Arc<Waker>>>);

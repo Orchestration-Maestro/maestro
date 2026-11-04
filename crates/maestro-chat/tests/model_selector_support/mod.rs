@@ -1,8 +1,8 @@
 //! Strict model-picker corpus and controlled owner operations.
 use crate::bindings::Binding;
 use maestro_app::{
-    AuthStorage, ConfigValueOperations, ConfigValues, Model, ModelFileOperations, ModelRegistry,
-    ProviderConfigInput, ProviderModelInput, SharedHandle,
+    AuthStorage, ConfigValues, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput,
+    ProviderModelInput, SharedHandle,
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use serde::Deserialize;
@@ -14,18 +14,9 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-/// Configured-value commands that selector fixtures never execute.
-pub struct UnusedCommands;
-
-impl ConfigValueOperations for UnusedCommands {
-    fn execute(&self, _: &str) -> Option<Vec<u8>> {
-        None
-    }
-}
-
 /// Credential command handle for selector fixtures.
 pub fn no_commands() -> ConfigValues {
-    SharedHandle::new(UnusedCommands)
+    SharedHandle::new(maestro_credentials::test_support::NoCommands)
 }
 
 /// Every accepted environment authentication route, excluded from each child.
