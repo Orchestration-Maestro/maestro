@@ -31,8 +31,7 @@ const EXCHANGE: Duration = Duration::from_secs(5);
 
 /// How a controlled API endpoint treats the stop connection.
 enum Answer {
-    /// Reads the request, then writes these bytes; a non-empty reply connection remains
-    /// readable until the endpoint ends.
+    /// Reads the request, then writes these bytes and closes.
     Bytes(&'static [u8]),
     /// Reads the request, announces it on [`Endpoint::holding`] and keeps the connection open
     /// without replying until the endpoint ends.
@@ -58,14 +57,10 @@ struct Signals {
     released: Arc<AtomicBool>,
     /// Sent once a held connection has delivered its request line.
     holding: Sender<()>,
-    /// Received once the endpoint ends.
-    release: Receiver<()>,
 }
 
 /// A controlled endpoint that disappears after a number of probes or stays until finished.
 struct Endpoint {
-    /// Ends an endpoint that left a connection open past its probe budget.
-    release: Sender<()>,
     /// The bound socket path.
     path: PathBuf,
     /// Tells a lasting endpoint to end at its next connection.
@@ -85,16 +80,13 @@ impl Endpoint {
         let listener = UnixListener::bind(path).unwrap();
         let released = Arc::new(AtomicBool::new(false));
         let (sender, holding) = channel();
-        let (release, wait_release) = channel();
         let signals = Signals {
             released: Arc::clone(&released),
             holding: sender,
-            release: wait_release,
         };
         let owned = path.to_owned();
         let peer = std::thread::spawn(move || serve(&listener, &owned, answer, probes, &signals));
         Self {
-            release,
             path: path.to_owned(),
             released,
             holding,
@@ -110,7 +102,6 @@ impl Endpoint {
     /// Ends the endpoint, waking a lasting one with one last connection.
     fn finish(self) -> Seen {
         self.released.store(true, Ordering::SeqCst);
-        let _delivered = self.release.send(());
         if self.path.exists() {
             drop(UnixStream::connect(&self.path));
         }
@@ -134,11 +125,6 @@ fn serve(
             Answer::Bytes(bytes) => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
                 stream.write_all(bytes)?;
-                // A written reply stays readable until the endpoint ends, so a kernel can
-                // never race the connection close against the client's read of the reply.
-                if !bytes.is_empty() {
-                    held = Some(stream);
-                }
             }
             Answer::Hold => {
                 BufReader::new(&mut stream).read_line(&mut request)?;
@@ -164,11 +150,6 @@ fn serve(
         count += 1;
     }
     std::fs::remove_file(path)?;
-    // The socket file alone proves shutdown, so a reading client may still be at work; a
-    // held reply connection stays readable until the endpoint ends.
-    if held.is_some() {
-        let _ended = signals.release.recv();
-    }
     drop(held);
     Ok(Seen {
         request,
