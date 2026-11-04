@@ -246,13 +246,17 @@ and lock stay unchanged. Build outputs remain in Cargo's resolved target directo
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then checks each family in bounded pairs of fresh, isolated pages:
+inventory before invoking assertions, then checks each family in pairs:
 26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
-exports. Each pair settles before the next starts; a failure closes both pages,
-the browser and the server. Page-local error accounting and input bindings remain
-isolated, and completion logs within a pair can arrive out of order. Packaging
-also builds the two runtime-module fixtures, each from its own manifest and lock
-with its own binding glue, into a copy of the fixture package.
+exports. Both exports of a pair run at once, each in a fresh page of its own
+driver, and the pair settles before the next starts; a failure closes both pages,
+the browser and the server. Two drivers connect to the one launched browser, so
+each export keeps its own connection, disposable browser context, page lifecycle
+and policy-error accounting. Each export records its diagnostics on its own
+driver, so completion logs within a pair can arrive out of order, and an odd
+last export runs alone. Packaging also builds the two runtime-module fixtures, each from its
+own manifest and lock with its own binding glue, into a copy of the fixture
+package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
@@ -269,22 +273,6 @@ the run goes on, so one Chromium run reports every failure; the command then fai
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
-
-The driver regression `expected_policy_error_matches_once` has a measured
-30-second test-time exception tracked in
-[#3600](https://github.com/Orchestration-Maestro/maestro/issues/3600). A local
-profile took 36.293 seconds for 270 fresh pages: one inventory preflight and
-269 exports. Cumulative operation times were 32.574 seconds creating pages,
-14.179 seconds installing 1,350 bindings, 9.220 seconds navigating,
-7.986 seconds evaluating and 2.707 seconds closing pages. These totals overlap
-because two pages run concurrently; they are not wall-clock phases. The earlier
-unprofiled observations were 29.542 seconds serial and 37.764 seconds paired.
-This fixture's empty export bodies leave browser orchestration as the cost.
-A smaller inventory would stop checking every export's START/PASS record and
-fresh page; reusing pages or stubbing bindings would bypass the runner path.
-Keep those checks and the real browser, with no deadline override. The hosted
-merge-group Chromium export loop must beat the ten-run serial baseline median
-of 436.179 seconds; otherwise revert the two-page scheduling change.
 
 After each native sandbox click completes, the driver checks the selected
 fixture document for a fresh trusted click whose composed path contains its
