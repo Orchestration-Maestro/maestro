@@ -1,8 +1,6 @@
 //! Native rendering and keyboard observations of the complete visible-state inventory.
 use super::{buttons, provider};
-use crate::contributions_support::{
-    call, computed, container, driver, host, page_module, rgb, text, view,
-};
+use crate::contributions_support::{computed, container, driver, host, rgb, text, view};
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
     CustomProviderCard,
@@ -10,22 +8,21 @@ use maestro_web::{
     dom::{DomContent, DomView},
 };
 use std::{cell::Cell, rc::Rc};
-use wasm_bindgen::{JsCast as _, JsValue};
+use wasm_bindgen::JsCast as _;
 use web_sys::{Element, HtmlElement};
 
 /// Exercise both packs, both modes and the independent native branches.
 pub(super) async fn check(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     for pack in ["brand.json", "signal.json"] {
         let pack = crate::brand::pack(pack).unwrap();
         for mode in [BrandMode::Dark, BrandMode::Light] {
             paint_sizes(&view, &pack.presentation(mode).unwrap());
         }
     }
-    keyboard_card(&view, &page).await;
-    offscreen_text(&view, &page).await;
+    keyboard_card(&view).await;
+    offscreen_text(&view);
 }
 /// Native widths and zoom retain the authored layout without a clipping surface.
 fn paint_sizes(view: &DomView, presentation: &BrandPresentation<'_>) {
@@ -152,7 +149,7 @@ fn painted_dot(
     assert!((gap - 4.0 * scale).abs() < 0.03);
 }
 /// Offscreen caller text stays native, findable and selectable.
-async fn offscreen_text(view: &DomView, page: &JsValue) {
+fn offscreen_text(view: &DomView) {
     let card = CustomProviderCard::new(provider());
     card.provider.borrow_mut().base_url = "https://offscreen.test".into();
     let root = card.mount(view).unwrap();
@@ -166,23 +163,18 @@ async fn offscreen_text(view: &DomView, page: &JsValue) {
     assert!(parent.get_bounding_client_rect().top() > 600.0);
     for literal in ["<b>雪</b>", "https://offscreen.test", "Models: 0"] {
         assert_eq!(
-            call(page, "find", &js_sys::Array::of1(&literal.into()))
-                .await
-                .as_bool(),
+            Some(crate::contributions_support::page::find(literal)),
             Some(true)
         );
     }
     assert_eq!(
-        call(page, "select", &js_sys::Array::of1(&root.node))
-            .await
-            .as_string()
-            .unwrap(),
+        crate::contributions_support::page::select_children(&root.node),
         "<b>雪</b>\nOllama • https://offscreen.test\nModels: 0"
     );
     parent.remove();
 }
 /// Tab and Shift-Tab traverse native actions once; Enter invokes exactly one action.
-async fn keyboard_card(view: &Rc<DomView>, page: &JsValue) {
+async fn keyboard_card(view: &Rc<DomView>) {
     let mut card = CustomProviderCard::new(provider());
     let count = Rc::new(Cell::new(0));
     let recorded = Rc::clone(&count);
@@ -212,7 +204,7 @@ async fn keyboard_card(view: &Rc<DomView>, page: &JsValue) {
         view.document.active_element().unwrap(),
         controls[0].clone().into()
     );
-    call(page, "finish", &js_sys::Array::of1(&controls[0])).await;
+    crate::contributions_support::page::finish(&controls[0]);
     let accent = rgb(view.pack.presentation(view.mode).unwrap().colors["accent"]);
     assert_ne!(computed(&controls[0], "box-shadow"), "none");
     assert_eq!(computed(&controls[0], "border-top-color"), accent);
@@ -231,11 +223,11 @@ async fn keyboard_card(view: &Rc<DomView>, page: &JsValue) {
         controls[2].clone().into()
     );
     reverse_tabs(view, [&controls[1], &controls[0], &before]).await;
-    hover_button(view, page, &controls[1]).await;
+    hover_button(view, &controls[1]).await;
     parent.remove();
 }
 /// The shared native button paints its hover surface.
-async fn hover_button(view: &DomView, page: &JsValue, button: &HtmlElement) {
+async fn hover_button(view: &DomView, button: &HtmlElement) {
     let rect = button.get_bounding_client_rect();
     driver(
         "driverPointer",
@@ -246,7 +238,7 @@ async fn hover_button(view: &DomView, page: &JsValue, button: &HtmlElement) {
         ),
     )
     .await;
-    call(page, "finish", &js_sys::Array::of1(button)).await;
+    crate::contributions_support::page::finish(button);
     assert_eq!(
         computed(button, "background-color"),
         rgb(view.pack.presentation(view.mode).unwrap().colors["panel"])

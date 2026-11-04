@@ -1,12 +1,14 @@
 //! Real-document clipboard effects and native message-slot composition.
 #![cfg(test)]
 #![cfg(target_arch = "wasm32")]
+use crate::browser_fixture_support::{Patch, dom_exception, error, get, global, object};
 use crate::reading_slots_support;
 use crate::support;
 use crate::support::pointer::pointer;
 use maestro_web::browser::attachment_content::{AttachmentHost, BrowserAttachmentHost};
 use reading_slots_support::{js, snapshot, unchanged};
-use wasm_bindgen::{JsCast as _, prelude::*};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::{JsCast as _, closure::Closure, prelude::*};
 
 /// Construct the default adapter on the runner's actual canvas document.
 fn host() -> BrowserAttachmentHost {
@@ -23,7 +25,7 @@ fn host() -> BrowserAttachmentHost {
 /// Native API admission precedes dispatch; rejected and absent APIs select fallback.
 #[wasm_bindgen]
 pub async fn browser_clipboard_prefers_api_and_falls_back() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     let host = host();
     for mode in [
         "api", "missing", "method", "getter", "call", "reject", "false",
@@ -40,7 +42,7 @@ pub async fn browser_clipboard_prefers_api_and_falls_back() {
 /// Real temporary nodes are disconnected on every reached failure and success.
 #[wasm_bindgen]
 pub async fn browser_clipboard_cleans_every_temporary_textarea() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     let host = host();
     for mode in [
         "create", "body", "append", "exec", "missing", "false", "removed",
@@ -168,7 +170,7 @@ impl Composition {
 /// Panics when the actual native observations differ from the required behavior.
 #[wasm_bindgen]
 pub async fn copy_link_native_slot_composition_preserves_reading_selection() {
-    let fixture = Fixture::load().await;
+    let fixture = Fixture::default();
     let mut view = Composition::new();
     let root = view.slots.root();
     assert_eq!(view.rect.size(), egui::vec2(28., 28.));
@@ -250,45 +252,228 @@ fn focus_and_activate(view: &mut Composition, root: &web_sys::Element) {
     }]);
 }
 
-/// Native namespaces retained for one browser test transaction.
-#[derive(Clone)]
+/// One controlled clipboard transaction at a time below the native adapter's wrappers.
+#[derive(Clone, Default)]
 pub struct Fixture {
-    /// Original packaged native namespace.
-    module0: crate::browser_fixture_support::FixtureModule,
+    /// The running transaction, if any.
+    active: Rc<RefCell<Option<Transaction>>>,
 }
+
+/// Effects one clipboard transaction observed.
+#[derive(Default)]
+struct Effects {
+    /// Effect names in order.
+    events: Vec<&'static str>,
+    /// Temporary text areas the page created.
+    nodes: Vec<web_sys::HtmlTextAreaElement>,
+    /// Timers the page scheduled.
+    timers: u32,
+    /// Settlement of a pending API write.
+    resolve: Option<js_sys::Function>,
+}
+
+/// A running transaction: its mode, its effects and the replaced page operations.
+struct Transaction {
+    /// The refused or altered step, or an ordinary mode.
+    mode: String,
+    /// Effects observed so far.
+    effects: Rc<RefCell<Effects>>,
+    /// Replaced page operations, restored when the transaction ends.
+    patches: Vec<Patch>,
+    /// The controlled API write, alive while installed.
+    _write: Closure<dyn Fn(JsValue) -> Result<JsValue, JsValue>>,
+}
+
+/// Modes whose clipboard API offers a write.
+const API_MODES: [&str; 4] = ["api", "call", "reject", "pending"];
+
 impl Fixture {
-    /// Load each namespace before installing controlled host effects.
-    pub async fn load() -> Self {
-        Self {
-            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
-                module = "/tests/session_links_support/clipboard.js"
-            ))
-            .await
-            .unwrap(),
-        }
-    }
     /// Install controlled effects below the native adapter's wrappers.
     pub fn begin(&self, mode: &str, text: &str) {
-        self.module0
-            .call("begin", &js_sys::Array::of2(&mode.into(), &text.into()))
-            .unwrap();
+        assert!(
+            self.active.borrow().is_none(),
+            "unfinished clipboard transaction"
+        );
+        let effects: Rc<RefCell<Effects>> = Rc::default();
+        let write = api_write(mode, text, &effects);
+        let clipboard = object(&[("writeText", write.as_ref())]);
+        let (document, window) = (global("document"), global("window"));
+        let counted = Rc::clone(&effects);
+        let mut patches = vec![
+            Patch::method(&window, "setTimeout", move |original, this, args| {
+                counted.borrow_mut().timers += 1;
+                original.apply(&this, &args)
+            }),
+            api(&get(&window, "navigator"), mode, clipboard.into()),
+            text_areas(&document, mode, &effects),
+            appends(&get(&document, "body"), mode, &effects),
+        ];
+        if mode == "body" {
+            patches.push(Patch::getter(&document, "body", |_| Ok(JsValue::NULL)));
+        }
+        patches.push(copy_command(&document, mode, text, &effects));
+        *self.active.borrow_mut() = Some(Transaction {
+            mode: mode.to_owned(),
+            effects,
+            patches,
+            _write: write,
+        });
     }
     /// Check synchronous native admission before polling the future.
     pub fn immediate(&self, mode: &str) {
-        self.module0
-            .call("immediate", &js_sys::Array::of1(&mode.into()))
-            .unwrap();
+        let active = self.active.borrow();
+        let effects = active.as_ref().unwrap().effects.borrow();
+        let api = API_MODES.contains(&mode);
+        assert!(
+            !api || effects.events.first() == Some(&"api"),
+            "API deferred behind local dispatch"
+        );
+        assert!(
+            api || ["create", "getter"].contains(&mode) || effects.nodes.len() == 1,
+            "synchronous fallback deferred"
+        );
     }
     /// Assert resource cleanup and restore every patched native operation.
     pub fn finish(&self, success: bool) {
-        self.module0
-            .call("finish", &js_sys::Array::of1(&success.into()))
-            .unwrap();
+        let transaction = self.active.borrow_mut().take().unwrap();
+        drop(transaction.patches);
+        let (mode, effects) = (transaction.mode.as_str(), transaction.effects.borrow());
+        assert!(
+            effects.nodes.iter().all(|node| !node.is_connected()),
+            "temporary selection leaked"
+        );
+        assert!(
+            !["api", "pending"].contains(&mode) || effects.nodes.is_empty(),
+            "fallback after API success"
+        );
+        let expected = !["false", "create", "body", "append", "exec"].contains(&mode);
+        assert_eq!(success, expected, "wrong native success result");
+        assert_eq!(effects.timers, 0, "feedback admitted without live control");
+        let expected_events: &[&str] = match mode {
+            "api" | "pending" => &["api"],
+            "create" => &[],
+            "body" | "append" => &["create"],
+            "call" | "reject" => &["api", "create", "append", "exec"],
+            _ => &["create", "append", "exec"],
+        };
+        assert_eq!(effects.events, expected_events, "wrong effect sequence");
+        let order = effects.events.join(" -> ");
+        web_sys::console::log_1(&format!("PASS clipboard {mode}: {order}").into());
     }
     /// Fulfill the retained native clipboard request after owner release.
     pub fn resolve_pending(&self) {
-        self.module0
-            .call("resolvePending", &js_sys::Array::new())
+        let active = self.active.borrow();
+        let effects = active.as_ref().unwrap().effects.borrow();
+        effects
+            .resolve
+            .as_ref()
+            .unwrap()
+            .call0(&JsValue::UNDEFINED)
             .unwrap();
     }
+}
+
+/// The controlled API write: it records the call and settles as `mode` selects.
+fn api_write(
+    mode: &str,
+    text: &str,
+    effects: &Rc<RefCell<Effects>>,
+) -> Closure<dyn Fn(JsValue) -> Result<JsValue, JsValue>> {
+    let (mode, text, effects) = (mode.to_owned(), text.to_owned(), Rc::clone(effects));
+    Closure::new(move |value: JsValue| {
+        effects.borrow_mut().events.push("api");
+        if value.as_string().as_deref() != Some(text.as_str()) {
+            return Err(error("wrong API text"));
+        }
+        Ok(match mode.as_str() {
+            "call" => return Err(dom_exception("controlled call", "Error")),
+            "reject" => js_sys::Promise::reject(&dom_exception("controlled rejection", "Error")),
+            "pending" => js_sys::Promise::new(&mut |resolve, _| {
+                effects.borrow_mut().resolve = Some(resolve);
+            }),
+            _ => js_sys::Promise::resolve(&JsValue::UNDEFINED),
+        }
+        .into())
+    })
+}
+
+/// The page clipboard as `mode` presents it.
+fn api(navigator: &JsValue, mode: &str, clipboard: JsValue) -> Patch {
+    let mode = mode.to_owned();
+    Patch::getter(navigator, "clipboard", move |_| match mode.as_str() {
+        "getter" => Err(dom_exception("controlled getter", "Error")),
+        "method" => Ok(js_sys::Object::new().into()),
+        api if API_MODES.contains(&api) => Ok(clipboard.clone()),
+        _ => Ok(JsValue::UNDEFINED),
+    })
+}
+
+/// Record created text areas, refusing creation in `create` mode.
+fn text_areas(document: &JsValue, mode: &str, effects: &Rc<RefCell<Effects>>) -> Patch {
+    let (refuse, effects) = (mode == "create", Rc::clone(effects));
+    Patch::method(document, "createElement", move |original, this, args| {
+        let text_area = args.get(0) == "textarea";
+        if text_area && refuse {
+            return Err(dom_exception("controlled create", "Error"));
+        }
+        let node = original.apply(&this, &args)?;
+        if text_area {
+            let mut effects = effects.borrow_mut();
+            effects.nodes.push(node.clone().unchecked_into());
+            effects.events.push("create");
+        }
+        Ok(node)
+    })
+}
+
+/// Record text-area appends to the body, refusing them in `append` mode.
+fn appends(body: &JsValue, mode: &str, effects: &Rc<RefCell<Effects>>) -> Patch {
+    let (refuse, effects) = (mode == "append", Rc::clone(effects));
+    Patch::method(body, "appendChild", move |original, this, args| {
+        if get(&args.get(0), "localName") == "textarea" {
+            if refuse {
+                return Err(dom_exception("controlled append", "Error"));
+            }
+            effects.borrow_mut().events.push("append");
+        }
+        original.apply(&this, &args)
+    })
+}
+
+/// The copy command, requiring the selected temporary text area's exact operands.
+fn copy_command(
+    document: &JsValue,
+    mode: &str,
+    text: &str,
+    effects: &Rc<RefCell<Effects>>,
+) -> Patch {
+    let (mode, text, effects) = (mode.to_owned(), text.to_owned(), Rc::clone(effects));
+    let document_node: web_sys::Document = document.clone().unchecked_into();
+    let command =
+        Closure::<dyn Fn(String) -> Result<bool, JsValue>>::new(move |command: String| {
+            let node = effects.borrow().nodes.last().cloned().unwrap();
+            let focused = document_node
+                .active_element()
+                .is_some_and(|active| active.is_same_node(Some(&node)));
+            let length = u32::try_from(text.encode_utf16().count()).unwrap();
+            let style = node.style();
+            let selected = command == "copy"
+                && focused
+                && node.value() == text
+                && node.selection_start().unwrap() == Some(0)
+                && node.selection_end().unwrap() == Some(length)
+                && style.get_property_value("position").unwrap() == "fixed"
+                && style.get_property_value("opacity").unwrap() == "0";
+            if !selected {
+                return Err(error("native selection operands"));
+            }
+            effects.borrow_mut().events.push("exec");
+            match mode.as_str() {
+                "exec" => return Err(dom_exception("controlled exec", "Error")),
+                "removed" => node.remove(),
+                _ => {}
+            }
+            Ok(mode != "false")
+        });
+    Patch::value(document, "execCommand", command.as_ref()).keeping(command)
 }

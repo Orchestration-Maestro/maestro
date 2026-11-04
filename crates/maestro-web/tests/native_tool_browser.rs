@@ -920,11 +920,10 @@ fn execution_card(
 pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
     import_module: &js_sys::Function,
 ) {
-    use crate::contributions_support::{container, driver, host, page_module, select};
+    use crate::contributions_support::{container, driver, host, select};
     use maestro_web::dom::MountedContent;
     let view = view();
     let _elements = host(&view, import_module);
-    let page = page_module(import_module).await;
     let parent = container();
     let mut slot = MountedContent::default();
     slot.show(execution_card("a", None).as_ref(), &parent, &view)
@@ -937,7 +936,7 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
     toggle.focus().unwrap();
     driver("driverPress", "Enter").await;
     assert!(toggle.is_same_node(view.document.active_element().as_deref()));
-    assert_motion(&page, &header, &pending).await;
+    assert_motion(&header, &pending);
     let code = select(&pending, ".maestro-code");
     slot.show(execution_card("b", None).as_ref(), &parent, &view)
         .unwrap();
@@ -962,7 +961,7 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
     );
     assert!(!select(&finished, ".maestro-code").is_same_node(Some(&code)));
     assert_collapsed(&header_of(&card), &finished);
-    assert_result_branch_retains(&page, (&mut slot, &parent), &view, &result).await;
+    assert_result_branch_retains((&mut slot, &parent), &view, &result).await;
     assert_instances_and_release(slot, &card, &parent, &view);
 }
 /// The card's current header.
@@ -981,43 +980,32 @@ fn assert_collapsed(header: &HtmlElement, body: &web_sys::Element) {
     );
 }
 /// Pause `body`'s height transition at `time` milliseconds, returning its duration when one runs.
-async fn seek_height(
-    page: &wasm_bindgen::JsValue,
-    body: &web_sys::Element,
-    time: f64,
-) -> Option<f64> {
-    let arguments = js_sys::Array::of3(body, &"max-height".into(), &time.into());
-    crate::contributions_support::call(page, "seek", &arguments)
-        .await
-        .as_f64()
+fn seek_height(body: &web_sys::Element, time: f64) -> Option<f64> {
+    crate::contributions_support::page::seek(body, "max-height", time)
 }
 /// Expansion animates over 300 ms, reverses from its partial height and settles collapsed.
-async fn assert_motion(
-    page: &wasm_bindgen::JsValue,
-    header: &HtmlElement,
-    body: &web_sys::Element,
-) {
+fn assert_motion(header: &HtmlElement, body: &web_sys::Element) {
     use crate::contributions_support::{computed, select};
-    let seek = |time| seek_height(page, body, time);
+    let seek = |time| seek_height(body, time);
     assert!(body.class_list().contains("max-h-[2000px]") && body.class_list().contains("mt-3"));
     assert_ne!(computed(&select(header, ".chevron-up"), "display"), "none");
-    assert_eq!(seek(10.).await, Some(300.));
+    assert_eq!(seek(10.), Some(300.));
     let partial = body.get_bounding_client_rect().height();
     assert!(
         partial > 0. && partial < f64::from(body.scroll_height()),
         "{partial}"
     );
     header.click();
-    assert!(seek(0.).await.is_some());
+    assert!(seek(0.).is_some());
     let reversed = body.get_bounding_client_rect().height();
     assert!(
         (reversed - partial).abs() < 1.,
         "collapse starts from the partial height: {reversed} {partial}"
     );
-    seek(300.).await;
+    seek(300.);
     assert_collapsed(header, body);
     header.click();
-    seek(300.).await;
+    seek(300.);
     let height = body.get_bounding_client_rect().height();
     assert!(
         (height - f64::from(body.scroll_height())).abs() < 1.,
@@ -1026,7 +1014,6 @@ async fn assert_motion(
 }
 /// Within the result template, listing, console, copy feedback and unchanged tiles stay mounted.
 async fn assert_result_branch_retains(
-    page: &wasm_bindgen::JsValue,
     (slot, parent): (&mut maestro_web::dom::MountedContent, &web_sys::Element),
     view: &maestro_web::dom::DomView,
     result: &maestro_app::ToolResultMessage<serde_json::Value>,
@@ -1051,7 +1038,7 @@ async fn assert_result_branch_retains(
     select(&control, "button")
         .unchecked_into::<HtmlElement>()
         .click();
-    until(page, &control, || text(&control).contains("Copied!")).await;
+    until(&control, || text(&control).contains("Copied!")).await;
     assert_eq!(clipboard.texts(), ["out"]);
     slot.show(execution_card("c", Some(result)).as_ref(), parent, view)
         .unwrap();

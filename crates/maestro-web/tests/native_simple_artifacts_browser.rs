@@ -112,10 +112,8 @@ async fn saved(
 }
 /// Every recorded media type and payload reaches the header's byte download.
 #[wasm_bindgen]
-pub async fn generic_artifact_dom_header_preserves_complete_binary(
-    import_module: &js_sys::Function,
-) {
-    let fixture = Fixture::import(import_module).await;
+pub async fn generic_artifact_dom_header_preserves_complete_binary() {
+    let fixture = Fixture::default();
     let host = Rc::new(Host::default());
     let view = localized("en");
     let cases = corpus();
@@ -152,10 +150,8 @@ pub async fn generic_artifact_dom_header_preserves_complete_binary(
 }
 /// Dropping a mounted root releases only its own native resources.
 #[wasm_bindgen]
-pub async fn generic_artifact_dom_roots_release_their_own_resources(
-    import_module: &js_sys::Function,
-) {
-    let fixture = Fixture::import(import_module).await;
+pub async fn generic_artifact_dom_roots_release_their_own_resources() {
+    let fixture = Fixture::default();
     let host = Rc::new(Host::default());
     let view = localized("en");
     let detached = artifact("a.zip", "Zg==", &host);
@@ -166,9 +162,7 @@ pub async fn generic_artifact_dom_roots_release_their_own_resources(
     drop(root);
     fixture.begin("detached");
     control.click();
-    wasm_bindgen_futures::JsFuture::from(fixture.finish_none())
-        .await
-        .unwrap();
+    fixture.finish_none();
     body().remove_child(&row).unwrap();
     let first = artifact("a.zip", "Zg==", &host);
     let second = artifact("b.bin", "Zm8=", &host);

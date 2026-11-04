@@ -354,14 +354,13 @@ pub async fn message_list_preserves_emitted_positions_and_current_actions(
     callbacks(&view, &fixture["listCallbacks"]);
     indexed_result(&view);
     let _elements = crate::contributions_support::host(&view, import_module);
-    let page = crate::contributions_support::page_module(import_module).await;
-    unchanged_user_row(&view, &page).await;
+    unchanged_user_row(&view).await;
 }
 
 /// An unrelated refresh updates an unchanged user row in place: its selected text, its focused
 /// tile and its listing's copy feedback survive with their nodes.
-async fn unchanged_user_row(view: &DomView, page: &wasm_bindgen::JsValue) {
-    use crate::contributions_support::{Clipboard, Recorded, call, select, selection, until};
+async fn unchanged_user_row(view: &DomView) {
+    use crate::contributions_support::{Clipboard, Recorded, select, until};
     let clipboard = Recorded::install(Clipboard::Accept);
     let (list, root) = mounted(view, vec![attached("selected words\n\n```\ncopied\n```")]);
     let row = rows(&root).remove(0);
@@ -369,10 +368,10 @@ async fn unchanged_user_row(view: &DomView, page: &wasm_bindgen::JsValue) {
     select(&copy, "button")
         .unchecked_ref::<HtmlElement>()
         .click();
-    until(page, &copy, || text(&copy).contains("Copied!")).await;
+    until(&copy, || text(&copy).contains("Copied!")).await;
     let tile = select(&row, "[data-open]");
     tile.unchecked_ref::<HtmlElement>().focus().unwrap();
-    call(page, "select", &js_sys::Array::of1(&words)).await;
+    crate::contributions_support::page::select_children(&words);
     list.messages.write().unwrap().push(user("later"));
     list.update(&root, view).unwrap();
     assert_eq!(rows(&root).len(), 2);
@@ -386,7 +385,7 @@ async fn unchanged_user_row(view: &DomView, page: &wasm_bindgen::JsValue) {
             .is_same_node(Some(&tile))
     );
     assert_eq!(
-        selection(page, &words).await,
+        crate::contributions_support::page::selection(&words),
         ("selected words".to_owned(), true)
     );
     assert!(text(&copy).contains("Copied!"));
@@ -614,21 +613,13 @@ fn indexed_result(view: &DomView) {
     unmount(&root);
 }
 
-/// A streaming container mounted under the page body, with the page helpers.
-async fn streaming(
-    import_module: &js_sys::Function,
-) -> (
-    Rc<DomView>,
-    wasm_bindgen::JsValue,
-    StreamingMessageContainer<Notice>,
-    DomRoot,
-) {
+/// A streaming container mounted under the page body.
+fn streaming() -> (Rc<DomView>, StreamingMessageContainer<Notice>, DomRoot) {
     let view = view();
-    let page = crate::contributions_support::page_module(import_module).await;
     let container = StreamingMessageContainer::<Notice>::default();
     let root = container.mount(&view).unwrap();
     body().append_child(&root.node).unwrap();
-    (view, page, container, root)
+    (view, container, root)
 }
 /// An assistant entry showing `text`.
 fn says(text: &str) -> Entry {
@@ -665,10 +656,10 @@ fn case(fixture: &Value, id: &str) -> Value {
 /// edits before the frame show, later edits do not; immediate publication keeps the original
 /// message, whose later edits show on the next update; custom payloads need no serialization.
 #[wasm_bindgen]
-pub async fn streaming_container_snapshots_latest_nested_message(import_module: &js_sys::Function) {
+pub async fn streaming_container_snapshots_latest_nested_message() {
     use crate::contributions_support::frames;
     let fixture = fixture();
-    let (view, page, container, root) = streaming(import_module).await;
+    let (view, container, root) = streaming();
     let last = case(&fixture, "stream_last_pending");
     for text in last["input"]["texts"].as_array().unwrap() {
         container
@@ -676,13 +667,13 @@ pub async fn streaming_container_snapshots_latest_nested_message(import_module: 
             .unwrap();
     }
     assert_eq!(shown(&root), "", "nothing publishes before the frame");
-    frames(&page, 2).await;
+    frames(2).await;
     assert_eq!(shown(&root), last["expected"]["text"]);
     let nested = case(&fixture, "stream_nested_snapshot");
     let entry = says(nested["input"]["initial"].as_str().unwrap());
     container.set_message(Some(entry.clone()), false).unwrap();
     edit(&entry, nested["input"]["beforeFrame"].as_str().unwrap());
-    frames(&page, 2).await;
+    frames(2).await;
     let published = nested["expected"]["published"]["content"][0]["text"]
         .as_str()
         .unwrap();
@@ -704,7 +695,7 @@ pub async fn streaming_container_snapshots_latest_nested_message(import_module: 
     container
         .set_message(Some(notice("notice", "typed payload")), false)
         .unwrap();
-    frames(&page, 2).await;
+    frames(2).await;
     assert_eq!(
         shown(&root),
         "",
@@ -716,22 +707,20 @@ pub async fn streaming_container_snapshots_latest_nested_message(import_module: 
 /// Clearing is synchronous and retires queued work; the next response publishes on its own
 /// first frame; instances and released roots do not settle each other's work.
 #[wasm_bindgen]
-pub async fn streaming_container_clear_allows_next_response_first_frame(
-    import_module: &js_sys::Function,
-) {
+pub async fn streaming_container_clear_allows_next_response_first_frame() {
     use crate::contributions_support::frames;
     let fixture = fixture();
-    let (view, page, container, root) = streaming(import_module).await;
+    let (view, container, root) = streaming();
     container.set_message(None, false).unwrap();
     container.set_message(Some(says("stale")), false).unwrap();
     container.set_message(None, false).unwrap();
     assert_eq!(shown(&root), "");
-    frames(&page, 2).await;
+    frames(2).await;
     assert_eq!(shown(&root), "", "retired work cannot publish");
     container
         .set_message(Some(says("published")), false)
         .unwrap();
-    frames(&page, 2).await;
+    frames(2).await;
     assert_eq!(shown(&root), "published");
     container.set_message(None, false).unwrap();
     assert_eq!(shown(&root), "", "clearing is synchronous");
@@ -752,31 +741,26 @@ pub async fn streaming_container_clear_allows_next_response_first_frame(
         container
             .set_message(Some(says("next turn")), false)
             .unwrap();
-        frames(&page, 1).await;
+        frames(1).await;
         let required = row["expected"]["required"]["content"][0]["text"]
             .as_str()
             .unwrap();
         assert_eq!(shown(&root), required, "{id}");
     }
-    independent(&view, &page, &container, &root).await;
+    independent(&view, &container, &root).await;
     unmount(&root);
 }
 
 /// A second instance publishes on its own while the first is cleared, and a released root is
 /// left alone while a remounted one publishes.
-async fn independent(
-    view: &DomView,
-    page: &wasm_bindgen::JsValue,
-    first: &StreamingMessageContainer<Notice>,
-    root: &DomRoot,
-) {
+async fn independent(view: &DomView, first: &StreamingMessageContainer<Notice>, root: &DomRoot) {
     use crate::contributions_support::frames;
     let second = StreamingMessageContainer::<Notice>::default();
     let other = second.mount(view).unwrap();
     body().append_child(&other.node).unwrap();
     second.set_message(Some(says("second")), false).unwrap();
     first.set_message(None, false).unwrap();
-    frames(page, 2).await;
+    frames(2).await;
     assert_eq!(shown(&other), "second");
     assert_eq!(shown(root), "");
     unmount(&other);
@@ -784,12 +768,12 @@ async fn independent(
         .set_message(Some(says("after release")), false)
         .unwrap();
     drop(other);
-    frames(page, 2).await;
+    frames(2).await;
     let remounted = second.mount(view).unwrap();
     body().append_child(&remounted.node).unwrap();
     assert_eq!(shown(&remounted), "after release");
     second.set_message(Some(says("remounted")), false).unwrap();
-    frames(page, 2).await;
+    frames(2).await;
     assert_eq!(shown(&remounted), "remounted");
     unmount(&remounted);
 }
@@ -798,11 +782,9 @@ async fn independent(
 /// the container's current operands without hiding tool or pending calls, keep their root
 /// through updates and keep a keyboard-usable cost control.
 #[wasm_bindgen]
-pub async fn streaming_container_branches_keep_real_assistant_controls(
-    import_module: &js_sys::Function,
-) {
+pub async fn streaming_container_branches_keep_real_assistant_controls() {
     let fixture = fixture();
-    let (view, _page, mut container, root) = streaming(import_module).await;
+    let (view, mut container, root) = streaming();
     assert_eq!(fixture["streamRender"].as_array().unwrap().len(), 12);
     for row in fixture["streamRender"].as_array().unwrap() {
         container.is_streaming = row["input"]["streaming"].as_bool().unwrap();

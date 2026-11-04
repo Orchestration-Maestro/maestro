@@ -1,8 +1,8 @@
 //! Runtime browser modules loaded from the fixture package and mounted through the shared callers.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    PACKAGE, Text, base, body, call, container, contributions, document, driver, host, origin,
-    page_module, slot, text, until, view,
+    PACKAGE, Text, base, body, container, contributions, document, driver, host, origin, slot,
+    text, until, view,
 };
 use maestro_app::{AgentMessage, JsonObject, SharedHandle};
 use maestro_web::{
@@ -868,7 +868,6 @@ pub async fn exercised_elements_keep_accessible_names_focus_and_find_text(
 /// The copy control writes its attribute text, shows success and restores after two seconds.
 #[wasm_bindgen]
 pub async fn copy_control_reports_success_then_restores(import_module: js_sys::Function) {
-    let page = page_module(&import_module).await;
     let view = view();
     let _host = host(&view, &import_module);
     let clipboard = crate::contributions_support::Recorded::install(
@@ -887,26 +886,17 @@ pub async fn copy_control_reports_success_then_restores(import_module: js_sys::F
     assert_eq!(button.title(), "Copy");
     let clicked = js_sys::Date::now();
     button.click();
-    until(&page, &control, || text(&control) == "Copied!").await;
+    until(&control, || text(&control) == "Copied!").await;
     assert_eq!(clipboard.texts(), ["copied text"]);
     assert_ne!(control.inner_html(), idle);
-    until(&page, &control, || text(&control).is_empty()).await;
+    until(&control, || text(&control).is_empty()).await;
     assert!(js_sys::Date::now() - clicked >= 2000.0);
     assert_eq!(control.inner_html(), idle);
 }
 
-/// Call a page helper and read its result as plain data.
-async fn plain(page: &JsValue, name: &str, args: &js_sys::Array) -> Value {
-    let value = call(page, name, args).await;
-    let text = js_sys::JSON::stringify(&value)
-        .unwrap()
-        .as_string()
-        .unwrap();
-    serde_json::from_str(&text).unwrap()
-}
 /// Raw and compressed sizes of the host bundle and both module artifacts.
-async fn asset_sizes(page: &JsValue) -> Value {
-    let assets: js_sys::Array = [
+async fn asset_sizes() -> Value {
+    let assets: Vec<String> = [
         "/sandbox.js",
         "/sandbox_bg.wasm",
         "/package/modules/a/module.js",
@@ -915,17 +905,16 @@ async fn asset_sizes(page: &JsValue) -> Value {
         "/package/modules/b/module_bg.wasm",
     ]
     .into_iter()
-    .map(|asset| JsValue::from(format!("{}{asset}", origin())))
+    .map(|asset| format!("{}{asset}", origin()))
     .collect();
-    let sizes = plain(page, "sizes", &js_sys::Array::of1(&assets)).await;
-    let measured = sizes.as_object().unwrap();
+    let measured = crate::contributions_support::page::sizes(&assets).await;
     assert_eq!(measured.len(), 6);
     assert!(
         measured
             .values()
             .all(|size| size["raw"].as_u64() > Some(0) && size["gzip"].as_u64() > Some(0))
     );
-    sizes
+    Value::Object(measured)
 }
 
 /// Mutation counts, frame intervals, load time, repeated mount memory and asset sizes, recorded without thresholds.
@@ -933,7 +922,6 @@ async fn asset_sizes(page: &JsValue) -> Value {
 pub async fn repeated_mount_and_unmount_records_mutations_timings_memory_and_sizes(
     import_module: js_sys::Function,
 ) {
-    let page = page_module(&import_module).await;
     let view = view();
     let host = host(&view, &import_module);
     let started = js_sys::Date::now();
@@ -941,11 +929,8 @@ pub async fn repeated_mount_and_unmount_records_mutations_timings_memory_and_siz
     let load_ms = js_sys::Date::now() - started;
     let parent = container();
     let node: Node = parent.clone().into();
-    let take: js_sys::Function = call(&page, "recorder", &js_sys::Array::of1(&parent))
-        .await
-        .dyn_into()
-        .unwrap();
-    let count = || take.call0(&JsValue::NULL).unwrap().as_f64().unwrap();
+    let recorder = crate::contributions_support::page::Recorder::new(&parent);
+    let count = || recorder.take().len();
     let mut mounted = MountedContent::default();
     show_tool(&mut mounted, &node, &view, "fixture_tool", ("one", false));
     let mount = count();
@@ -953,23 +938,22 @@ pub async fn repeated_mount_and_unmount_records_mutations_timings_memory_and_siz
     let update = count();
     show_tool(&mut mounted, &node, &view, "unknown_tool", ("three", false));
     let replace = count();
-    assert!(mount > 0.0 && update > 0.0 && replace > 0.0);
-    let frames = plain(&page, "frames", &js_sys::Array::of1(&JsValue::from(10))).await;
-    assert_eq!(frames.as_array().map(Vec::len), Some(10));
-    let no_arguments = js_sys::Array::new();
-    let heap_before = plain(&page, "heap", &no_arguments).await;
+    assert!(mount > 0 && update > 0 && replace > 0);
+    let frames = crate::contributions_support::page::frames(10).await;
+    assert_eq!(frames.len(), 10);
+    let heap_before = crate::contributions_support::page::heap();
     let mut home = SlotMount::new("home", container());
     for cycle in 0..200 {
         home.show(&json!({"title": cycle}), &view);
         home.clear();
     }
-    let heap_after = plain(&page, "heap", &no_arguments).await;
+    let heap_after = crate::contributions_support::page::heap();
     let report = json!({
         "mutations": {"mount": mount, "update": update, "replace": replace},
         "frameIntervalsMs": frames,
         "loadMs": load_ms,
         "heapBytes": {"before": heap_before, "after200MountCycles": heap_after},
-        "assets": asset_sizes(&page).await,
+        "assets": asset_sizes().await,
     });
     web_sys::console::log_1(&format!("MEASURE {report}").into());
 }
@@ -1100,7 +1084,11 @@ pub async fn a_replacement_with_a_new_tag_replaces_the_element(import_module: js
     )
     .await
     .unwrap();
-    call(&module, "upgrade", &js_sys::Array::new()).await;
+    crate::contributions_support::settle(
+        crate::browser_fixture_support::invoke(&module, "upgrade", &[]).unwrap(),
+    )
+    .await
+    .unwrap();
     show_tool(&mut mounted, &parent, &view, "fixture_tool", ("two", false));
     assert_eq!(name(&mounted), "qa-tool-view-2");
     assert_eq!(parent.child_nodes().length(), 1);
@@ -1286,10 +1274,8 @@ pub async fn the_element_bridge_ships_its_pinned_shim(import_module: js_sys::Fun
     let source =
         crate::contributions_support::fetch_text(&format!("{}{}", origin(), shim[0])).await;
     assert_eq!(source.lines().count(), 43);
-    let page = page_module(&import_module).await;
-    let digest = call(&page, "sha256", &js_sys::Array::of1(&source.into())).await;
     assert_eq!(
-        digest.as_string().as_deref(),
-        Some("3aa9226c9bc4b441dafcfe30649deef5e2f5dfe57eefe915a3ad0eaffe95f1e8")
+        crate::contributions_support::page::sha256(&source).await,
+        "3aa9226c9bc4b441dafcfe30649deef5e2f5dfe57eefe915a3ad0eaffe95f1e8"
     );
 }

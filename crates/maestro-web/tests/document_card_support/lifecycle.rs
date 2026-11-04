@@ -1,7 +1,7 @@
 //! Native document disclosures retain selected children, selection and independent controls.
 #![cfg(all(test, target_arch = "wasm32"))]
 use super::{Row, browser::Card, fixture};
-use crate::contributions_support::{host, select, text, view};
+use crate::contributions_support::{host, page::seek, select, text, view};
 use maestro_web::dom::DomContent as _;
 use wasm_bindgen::JsCast as _;
 
@@ -10,11 +10,9 @@ fn row(id: &str) -> Row {
     fixture().into_iter().find(|r| r.id == id).unwrap()
 }
 /// Observe real native height transitions through the shared animation driver.
-pub async fn transitions(import: &js_sys::Function) {
-    use crate::contributions_support::{call, page_module};
+pub fn transitions(import: &js_sys::Function) {
     let view = view();
     let _elements = host(&view, import);
-    let page = page_module(import).await;
     let mut row = row("repl-params-valid-true");
     row.input
         .params
@@ -26,37 +24,16 @@ pub async fn transitions(import: &js_sys::Function) {
     let body = select(&card.root(), ".maestro-tool-body");
     assert!(body.get_bounding_client_rect().height() < 0.5);
     card.toggle();
-    let duration = call(
-        &page,
-        "seek",
-        &js_sys::Array::of3(&body, &"max-height".into(), &75.into()),
-    )
-    .await;
-    assert_eq!(duration.as_f64(), Some(300.));
+    assert_eq!(seek(&body, "max-height", 75.), Some(300.));
     let partial = body.get_bounding_client_rect().height();
     assert!(partial > 0. && partial < f64::from(body.scroll_height()));
     card.toggle();
-    call(
-        &page,
-        "seek",
-        &js_sys::Array::of3(&body, &"max-height".into(), &0.into()),
-    )
-    .await;
+    seek(&body, "max-height", 0.);
     assert!((body.get_bounding_client_rect().height() - partial).abs() < 1.);
-    call(
-        &page,
-        "seek",
-        &js_sys::Array::of3(&body, &"max-height".into(), &300.into()),
-    )
-    .await;
+    seek(&body, "max-height", 300.);
     assert!(body.get_bounding_client_rect().height() < 0.5);
     card.toggle();
-    call(
-        &page,
-        "seek",
-        &js_sys::Array::of3(&body, &"max-height".into(), &300.into()),
-    )
-    .await;
+    seek(&body, "max-height", 300.);
     assert!(select(&card.root(), ".maestro-code").is_same_node(Some(&code)));
     assert!(body.get_bounding_client_rect().height() > 0.);
 }
@@ -114,11 +91,11 @@ pub fn renderer_switch(import: &js_sys::Function) {
     );
 }
 /// Independent rows retain their own selection when another row is removed.
-pub async fn independent(import: &js_sys::Function) {
+pub fn independent(import: &js_sys::Function) {
     let view = view();
     let _elements = host(&view, import);
     let first = Card::new(view.clone(), &row("repl-params-valid-false"));
-    let mut second = Card::new(view.clone(), &row("extract-params-valid-false"));
+    let mut second = Card::new(view, &row("extract-params-valid-false"));
     let code = select(&first.root(), ".maestro-code");
     let url = select(&second.root(), ".maestro-tool-url");
     first.toggle();
@@ -128,18 +105,14 @@ pub async fn independent(import: &js_sys::Function) {
             .contains("max-h-0")
     );
     second.toggle();
-    let page = crate::contributions_support::page_module(import).await;
-    let before = crate::contributions_support::call(&page, "select", &js_sys::Array::of1(&url))
-        .await
-        .as_string()
-        .unwrap();
+    let before = crate::contributions_support::page::select_children(&url);
     assert!(!before.is_empty());
     drop(first);
     assert!(!code.is_connected() && url.is_connected());
     second.show(&row("extract-params-valid-false"));
     assert!(select(&second.root(), ".maestro-tool-url").is_same_node(Some(&url)));
     assert_eq!(
-        crate::contributions_support::selection(&page, &url).await.0,
+        crate::contributions_support::page::selection(&url).0,
         before
     );
     drop(second);
@@ -147,10 +120,9 @@ pub async fn independent(import: &js_sys::Function) {
 }
 /// Native keyboard and clipboard routes keep selection while the body toggles and a modal covers it.
 pub async fn controls(import: &js_sys::Function) {
-    use crate::contributions_support::{call, driver, page_module};
+    use crate::contributions_support::driver;
     let view = view();
     let _elements = host(&view, import);
-    let page = page_module(import).await;
     let input = row("repl-result-valid-false-false");
     let card = Card::new(view.clone(), &input);
     let header = card
@@ -163,31 +135,26 @@ pub async fn controls(import: &js_sys::Function) {
     driver("driverPress", "Space").await;
     assert!(toggle.is_same_node(view.document.active_element().as_deref()));
     let body = select(&card.root(), ".maestro-tool-body");
-    call(&page, "finish", &js_sys::Array::of1(&body)).await;
+    crate::contributions_support::page::finish(&body);
     let code = select(&card.root(), ".maestro-code");
-    let before = call(&page, "select", &js_sys::Array::of1(&select(&code, "code")))
-        .await
-        .as_string()
-        .unwrap();
+    let before = crate::contributions_support::page::select_children(&select(&code, "code"));
     assert_eq!(before, input.expected.as_ref().unwrap().blocks[0].code);
-    copies(&card, &input, &page).await;
+    copies(&card, &input).await;
     toggle.focus().unwrap();
     for _ in 0..2 {
         driver("driverPress", "Space").await;
     }
-    call(&page, "finish", &js_sys::Array::of1(&body)).await;
+    crate::contributions_support::page::finish(&body);
     assert!(select(&card.root(), ".maestro-code").is_same_node(Some(&code)));
     assert_eq!(
-        crate::contributions_support::selection(&page, &code)
-            .await
-            .0,
+        crate::contributions_support::page::selection(&code).0,
         before
     );
     modal(&card, &header).await;
 }
 
 /// Both native copy controls write the original operands and show their own feedback.
-async fn copies(card: &Card, input: &Row, page: &wasm_bindgen::JsValue) {
+async fn copies(card: &Card, input: &Row) {
     use crate::contributions_support::{Clipboard, Recorded, until};
     let clipboard = Recorded::install(Clipboard::Accept);
     for (selector, expected) in [
@@ -204,7 +171,7 @@ async fn copies(card: &Card, input: &Row, page: &wasm_bindgen::JsValue) {
         select(&copy, "button")
             .unchecked_ref::<web_sys::HtmlElement>()
             .click();
-        until(page, &copy, || text(&copy).contains("Copied!")).await;
+        until(&copy, || text(&copy).contains("Copied!")).await;
         assert_eq!(clipboard.texts().last().unwrap(), expected);
     }
 }

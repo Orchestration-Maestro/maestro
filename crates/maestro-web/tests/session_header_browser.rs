@@ -400,19 +400,13 @@ fn slot_failure(route: Route, kind: &str, cleanup: bool) {
     }
     let root = slots.root();
     let wrapper = slots.wrapper();
-    let hook = js(
-        &root,
-        &format!(
-            "const kind={kind:?}, cleanup={cleanup};\n{}",
-            include_str!("session_header_browser_support/faults.js")
-        ),
-    );
+    let hook = session_header_browser_support::hooks::PlacementFault::install(&root, kind, cleanup);
     let result = if kind.starts_with("publish") {
         slots.place(ReadingPhase::Publish, egui::vec2(300., 40.), &sizes)
     } else {
         slots.layout().map(|_| ())
     };
-    let evidence = js(&hook, "return value.stop()");
+    let evidence = hook.stop();
     let error = result
         .expect_err(&format!("native {kind} fault must be reached"))
         .to_string();
@@ -424,7 +418,11 @@ fn slot_failure(route: Route, kind: &str, cleanup: bool) {
         }),
         "original failure must win for {kind}"
     );
-    assert!(js(&evidence, "return [0,1,2,3,4].every(i=>value.restored.includes(i)) && value.offsets.includes('scrollLeft') && value.offsets.includes('scrollTop')").as_bool().unwrap());
+    assert!(
+        (0..5).all(|index| evidence.restored.contains(&index))
+            && evidence.offsets.contains(&"scrollLeft")
+            && evidence.offsets.contains(&"scrollTop")
+    );
     if replacement {
         unchanged(&old);
         assert!(!wrapper.is_connected());

@@ -6,7 +6,7 @@ use maestro_web::{
     dom::{DomContent, DomRoot, DomView},
     tools::artifacts::{ArtifactElement, TextArtifact},
 };
-use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 
 /// Source classification, literal text and equal updates preserve the mounted listing.
 #[wasm_bindgen]
@@ -32,7 +32,7 @@ pub async fn text_artifact_dom_classifies_source_and_keeps_literal_text(import: 
             .as_deref(),
         Some(artifact.content())
     );
-    let fixture = crate::session_download_browser::Fixture::import(&import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.node, "button[title='Download']").unchecked_into(),
@@ -87,7 +87,7 @@ pub async fn image_artifact_dom_source_mime_and_fallback(import: js_sys::Functio
     );
     let header = artifact.get_header_buttons(&view).unwrap();
     body().append_child(&header.node).unwrap();
-    let fixture = crate::session_download_browser::Fixture::import(&import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.node, "button").unchecked_into(),
@@ -157,7 +157,7 @@ pub async fn markdown_artifact_dom_preview_uses_shared_math_and_links(import: js
             .as_deref(),
         Some("Copy Markdown")
     );
-    let fixture = crate::session_download_browser::Fixture::import(&import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.node, "button[title='Download Markdown']").unchecked_into(),
@@ -208,7 +208,7 @@ pub async fn svg_artifact_dom_urls_follow_edits_and_connection(import: js_sys::F
         Some(artifact.content())
     );
     assert!(select(&root.node, ".maestro-artifact-preview").has_attribute("hidden"));
-    let fixture = crate::session_download_browser::Fixture::import(&import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.node, "button[title='Download SVG']").unchecked_into(),
@@ -242,7 +242,7 @@ pub async fn excel_artifact_dom_tabs_keep_sheet_order_and_scroll(import: js_sys:
     assert_workbook_tabs(&artifact, &root, &view);
     let header = artifact.get_header_buttons(&view).unwrap();
     body().append_child(&header.node).unwrap();
-    let fixture = crate::session_download_browser::Fixture::import(&import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.node, "button").unchecked_into(),
@@ -338,12 +338,11 @@ fn assert_workbook_recovery(
 /// PDF pages use the shared renderer, preserve completed roots and recover after an invalid document.
 #[wasm_bindgen]
 pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function) {
-    use crate::contributions_support::{page_module, until};
+    use crate::contributions_support::until;
     use base64::Engine as _;
     use maestro_web::tools::artifacts::pdf_artifact::PdfArtifact;
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let bytes = include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf");
     let mut artifact = PdfArtifact::default();
     artifact.set_filename("pages.pdf".into());
@@ -352,7 +351,7 @@ pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function)
     assert_eq!(root.node.node_name(), "PDF-ARTIFACT");
     body().append_child(&root.node).unwrap();
     let element: &web_sys::Element = root.node.unchecked_ref();
-    until(&page, &root.node, || {
+    until(&root.node, || {
         element.query_selector_all("img").unwrap().length() == 3
     })
     .await;
@@ -367,7 +366,7 @@ pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function)
     assert!(select(&root.node, "img").is_same_node(Some(&first)));
     let header = artifact.get_header_buttons(&view).unwrap();
     body().append_child(&header.node).unwrap();
-    let fixture = crate::session_download_browser::Fixture::import(&import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.node, "button").unchecked_into(),
@@ -386,7 +385,7 @@ pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function)
     );
     artifact.set_content(base64::engine::general_purpose::STANDARD.encode(bytes));
     artifact.update(&root, &view).unwrap();
-    until(&page, &root.node, || {
+    until(&root.node, || {
         element.query_selector_all("img").unwrap().length() == 3
     })
     .await;
@@ -397,11 +396,9 @@ pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function)
 /// Bare source tags accept properties before connection and publish their real format bodies.
 #[wasm_bindgen]
 pub async fn artifact_tags_mount_their_owned_bodies(import: js_sys::Function) {
-    use crate::contributions_support::page_module;
     use base64::Engine as _;
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let encoded = base64::engine::general_purpose::STANDARD.encode(include_bytes!(
         "../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf"
     ));
@@ -424,7 +421,7 @@ pub async fn artifact_tags_mount_their_owned_bodies(import: js_sys::Function) {
         ("docx-artifact", "AA==", ".maestro-file-error"),
         ("html-artifact", "<p>source-tag</p>", "iframe"),
     ] {
-        assert_source_tag_fields(&view, &page, tag, content, selector).await;
+        assert_source_tag_fields(&view, tag, content, selector).await;
     }
     assert!(
         !web_sys::window()
@@ -442,13 +439,7 @@ pub async fn artifact_tags_mount_their_owned_bodies(import: js_sys::Function) {
 }
 
 /// Native source properties are declared accessors and reach the connected format body.
-async fn assert_source_tag_fields(
-    view: &DomView,
-    page: &JsValue,
-    tag: &str,
-    content: &str,
-    selector: &str,
-) {
+async fn assert_source_tag_fields(view: &DomView, tag: &str, content: &str, selector: &str) {
     use crate::contributions_support::until;
     assert!(
         !web_sys::window()
@@ -480,7 +471,7 @@ async fn assert_source_tag_fields(
         Some(content)
     );
     body().append_child(&node).unwrap();
-    until(page, &node.clone().into(), || {
+    until(&node.clone().into(), || {
         node.query_selector(selector).unwrap().is_some()
     })
     .await;
@@ -657,11 +648,10 @@ fn assert_panel_close_and_reconnect(
 
 /// Independent source bodies own bounded native scrolling and preserve focus and selection on equal updates.
 #[wasm_bindgen]
-pub async fn artifact_bodies_dom_keep_native_scroll_selection_and_focus(import: js_sys::Function) {
-    use crate::contributions_support::{call, computed, page_module, rgb, selection};
+pub fn artifact_bodies_dom_keep_native_scroll_selection_and_focus(import: &js_sys::Function) {
+    use crate::contributions_support::{computed, rgb};
     let view = view();
-    let _host = host(&view, &import);
-    let page = page_module(&import).await;
+    let _host = host(&view, import);
     let mut artifact = TextArtifact::default();
     artifact.set_filename("source.txt".into());
     artifact.set_content("literal line 雪\n".repeat(80));
@@ -687,10 +677,13 @@ pub async fn artifact_bodies_dom_keep_native_scroll_selection_and_focus(import: 
     button.focus().unwrap();
     assert!(button.get_bounding_client_rect().width() > 0.);
     let code = select(&root.node, "code");
-    call(&page, "select", &js_sys::Array::of1(&code)).await;
-    let selected = selection(&page, &code).await;
+    crate::contributions_support::page::select_children(&code);
+    let selected = crate::contributions_support::page::selection(&code);
     artifact.update(&root, &view).unwrap();
-    assert_eq!(selection(&page, &code).await, selected);
+    assert_eq!(
+        crate::contributions_support::page::selection(&code),
+        selected
+    );
     assert_eq!(viewport.scroll_top(), offset);
     assert!(
         view.document
@@ -931,7 +924,7 @@ pub async fn artifacts_panel_dom_errors_clear_after_a_successful_rewrite(import:
             .width()
             > 0.
     );
-    assert_html_rewrite_recovery(&panel, &caller, &root, &import).await;
+    assert_html_rewrite_recovery(&panel, &caller, &root).await;
     root.node.unchecked_ref::<web_sys::Element>().remove();
 }
 
@@ -940,7 +933,6 @@ async fn assert_html_rewrite_recovery(
     panel: &maestro_web::ArtifactsPanel,
     caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
     root: &DomRoot,
-    import: &js_sys::Function,
 ) {
     use maestro_app::{DiagnosticErrorInfo, SharedHandle};
     for (command, source, fail) in [
@@ -980,7 +972,7 @@ async fn assert_html_rewrite_recovery(
         Some("<p>after</p>")
     );
     let expected = standalone_panel_html(panel);
-    let fixture = crate::session_download_browser::Fixture::import(import).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     fixture
         .saved(
             &select(&header.into(), "button[title='Download HTML']").unchecked_into(),

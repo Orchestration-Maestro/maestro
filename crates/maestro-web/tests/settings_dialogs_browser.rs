@@ -1,7 +1,7 @@
 //! Settings tabs, the saved-session list and the storage permission request in a real page.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{
-    contributions_support::{computed, container, host, page_module, rgb, text, view},
+    contributions_support::{computed, container, host, rgb, text, view},
     dialog_support::{Prompts, panel, panels, press, settled, storage, type_text, until},
 };
 use maestro_app::{SessionData, SessionMetadata};
@@ -142,7 +142,6 @@ fn proxy_controls(root: &Element) -> (HtmlButtonElement, HtmlInputElement) {
 pub async fn proxy_tab_loads_defaults_and_saves_switch_and_address(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("proxy-tab");
     assert_eq!(ProxyTab.get_tab_name(&view).unwrap(), "Proxy");
     let parent = container();
@@ -183,10 +182,10 @@ pub async fn proxy_tab_loads_defaults_and_saves_switch_and_address(import: js_sy
     press("Tab").await;
     stored(&app, "proxy.url", &"http://localhost:3001/x".to_owned()).await;
     parent.remove();
-    loaded_values(&view, &page).await;
+    loaded_values(&view).await;
 }
 /// Stored values replace the defaults when the tab appears.
-async fn loaded_values(view: &DomView, page: &JsValue) {
+async fn loaded_values(view: &DomView) {
     let app = storage("proxy-loaded");
     app.settings.set("proxy.enabled", &true).await.unwrap();
     app.settings
@@ -198,10 +197,7 @@ async fn loaded_values(view: &DomView, page: &JsValue) {
     parent.append_child(&root.node).unwrap();
     let element: Element = root.node.clone().unchecked_into();
     let (switch, field) = proxy_controls(&element);
-    until(page, || {
-        switch.get_attribute("aria-checked").as_deref() == Some("true")
-    })
-    .await;
+    until(|| switch.get_attribute("aria-checked").as_deref() == Some("true")).await;
     assert_eq!(
         (field.value(), field.disabled()),
         ("https://p.test".into(), false)
@@ -274,19 +270,18 @@ fn open_list(view: &Rc<DomView>, calls: &Calls) -> SessionListDialog {
 pub async fn session_list_orders_dates_and_selects_sessions(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("session-list");
     let calls: Calls = Rc::default();
     let empty = open_list(&view, &calls);
     let shown = panel();
     assert_eq!(text(&find(&shown, ".maestro-session-notice")), "Loading...");
-    until(&page, || text(&shown).contains("No sessions yet")).await;
+    until(|| text(&shown).contains("No sessions yet")).await;
     empty.close();
     four_sessions(&app).await;
     let list = open_list(&view, &calls);
     let shown = panel();
     assert_eq!(text(&find(&shown, "h2")), "Sessions");
-    until(&page, || all(&shown, ".maestro-session-row").len() == 4).await;
+    until(|| all(&shown, ".maestro-session-row").len() == 4).await;
     let expected: Vec<String> = app
         .sessions
         .get_all_metadata()
@@ -355,14 +350,13 @@ pub async fn session_list_deletes_after_confirmation_and_reports_on_close(
 ) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("session-delete");
     four_sessions(&app).await;
     let prompts = Prompts::install(vec![false, true, true]);
     let calls: Calls = Rc::default();
     let _list = open_list(&view, &calls);
     let shown = panel();
-    until(&page, || all(&shown, ".maestro-session-row").len() == 4).await;
+    until(|| all(&shown, ".maestro-session-row").len() == 4).await;
     let first = all(&shown, ".maestro-session-row").remove(0);
     let id = text(&find(&first, ".maestro-session-title"))
         .trim_start_matches("Title ")
@@ -375,7 +369,7 @@ pub async fn session_list_deletes_after_confirmation_and_reports_on_close(
     assert_eq!(prompts.messages(), ["?Delete this session?"]);
     assert_eq!(all(&shown, ".maestro-session-row").len(), 4);
     click(&find(&first, ".maestro-session-delete"));
-    until(&page, || all(&shown, ".maestro-session-row").len() == 3).await;
+    until(|| all(&shown, ".maestro-session-row").len() == 3).await;
     assert!(app.sessions.get_metadata(&id).await.unwrap().is_none());
     let history = app
         .sessions
@@ -391,14 +385,13 @@ pub async fn session_list_deletes_after_confirmation_and_reports_on_close(
     press("Escape").await;
     assert_eq!(*calls.borrow(), [format!("delete:{id}")]);
     calls.borrow_mut().clear();
-    chosen_after_deleting(&view, &page, &calls).await;
+    chosen_after_deleting(&view, &calls).await;
 }
 /// Closing during deletion still reports a committed deletion exactly once.
 #[wasm_bindgen]
 pub async fn session_list_reports_deletion_when_closed_during_write(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("session-close-during-delete");
     let (data, metadata) = session("removed", "Removed", &days_ago(0.0), 1.0);
     app.sessions.save(&data, &metadata).await.unwrap();
@@ -406,7 +399,7 @@ pub async fn session_list_reports_deletion_when_closed_during_write(import: js_s
     let calls: Calls = Rc::default();
     let list = open_list(&view, &calls);
     let shown = panel();
-    until(&page, || all(&shown, ".maestro-session-row").len() == 1).await;
+    until(|| all(&shown, ".maestro-session-row").len() == 1).await;
     click(&find(&shown, ".maestro-session-delete"));
     list.close();
     list.close();
@@ -424,15 +417,15 @@ pub async fn session_list_reports_deletion_when_closed_during_write(import: js_s
 }
 
 /// A choice after a deletion reports only the choice.
-async fn chosen_after_deleting(view: &Rc<DomView>, page: &JsValue, calls: &Calls) {
+async fn chosen_after_deleting(view: &Rc<DomView>, calls: &Calls) {
     let _again = open_list(view, calls);
     let shown = panel();
-    until(page, || all(&shown, ".maestro-session-row").len() == 3).await;
+    until(|| all(&shown, ".maestro-session-row").len() == 3).await;
     click(&find(
         &all(&shown, ".maestro-session-row")[0],
         ".maestro-session-delete",
     ));
-    until(page, || all(&shown, ".maestro-session-row").len() == 2).await;
+    until(|| all(&shown, ".maestro-session-row").len() == 2).await;
     click(&all(&shown, ".maestro-session-row")[0]);
     assert_eq!(
         calls.borrow().len(),
@@ -556,7 +549,6 @@ pub async fn persistent_storage_asks_then_reports_each_outcome() {
 pub async fn settings_dialogs_follow_both_brand_packs(import: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import);
-    let page = page_module(&import).await;
     let app = storage("settings-brand");
     four_sessions(&app).await;
     for name in ["brand.json", "signal.json"] {
@@ -579,7 +571,7 @@ pub async fn settings_dialogs_follow_both_brand_packs(import: js_sys::Function) 
             let list = open_list(&view, &Rc::default());
             let shown = panel();
             apply(&shown, &presentation);
-            until(&page, || !all(&shown, ".maestro-session-row").is_empty()).await;
+            until(|| !all(&shown, ".maestro-session-row").is_empty()).await;
             let row = all(&shown, ".maestro-session-row").remove(0);
             assert_eq!(
                 computed(&row, "border-top-color"),
