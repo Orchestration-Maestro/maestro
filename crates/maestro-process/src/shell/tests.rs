@@ -148,8 +148,8 @@ fn detached_custom_commands_keep_the_login_flag() {
 #[test]
 #[cfg(target_os = "linux")]
 fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
-    let dir = std::env::temp_dir().join(format!("maestro-editor-{}", std::process::id()));
-    std::fs::create_dir(&dir).unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let dir = owned.path();
     let artifact =
         std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
     let editor = dir.join("vi");
@@ -192,7 +192,6 @@ fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
         let observed = std::fs::read_to_string(dir.join("result")).unwrap();
         assert_eq!(observed, format!("{}\n", path.display()));
     }
-    std::fs::remove_dir_all(dir).unwrap();
 }
 
 #[test]
@@ -254,8 +253,8 @@ fn launch_resolves_effective_child_path_and_extensions() {
         assert_launch_environment(&PathBuf::from(directory));
         return;
     }
-    let directory =
-        std::env::temp_dir().join(format!("maestro-launch-path-{}", std::process::id()));
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let directory = owned.path();
     let parent = directory.join("parent");
     let chosen = directory.join("chosen");
     std::fs::create_dir_all(&parent).unwrap();
@@ -269,12 +268,11 @@ fn launch_resolves_effective_child_path_and_extensions() {
         "launch_resolves_effective_child_path_and_extensions",
     )
     .unwrap()
-    .env(CHILD, &directory)
+    .env(CHILD, directory)
     .env("PATH", &parent)
     .env("PATHEXT", ".CMD")
     .output()
     .unwrap();
-    std::fs::remove_dir_all(directory).unwrap();
     assert!(output.status.success(), "{output:?}");
 }
 

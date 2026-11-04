@@ -68,8 +68,10 @@ mod example_process;
 #[path = "../../maestro-extensions/tests/support/model.rs"]
 mod model_support;
 
-#[path = "../../maestro-extensions/tests/support/command_operations.rs"]
-mod context_actions;
+/// The shared silent command operations the adapter's witnesses bind.
+mod context_actions {
+    pub use maestro_extensions::test_support::silent_command_operations;
+}
 
 use maestro_tui::test_support::manual_runtime;
 

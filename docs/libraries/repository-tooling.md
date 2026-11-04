@@ -40,6 +40,32 @@ Test-setup staging in `maestro-tooling` digests bundle files with `sha2 =0.11.0`
 defaults off (MIT OR Apache-2.0). This direct edge reuses the locked SHA-256
 dependency; it adds no resolved package or feature.
 
+## Browser qualification
+
+`maestro-test-browser` uses `chromiumoxide =0.9.1` (MIT choice), inherited from the
+workspace with default features disabled. Its public launcher starts only the
+explicitly supplied Chromium executable. The driver uses the library's one CDP
+connection and protocol records for command correlation, renderer-session events
+and completion signals. No downloader, optional feature, copied launcher or
+additional browser-control socket is used.
+
+The driver also inherits existing pinned libraries and their already enabled
+features: `tokio =1.53.3` (`rt`, `sync`, `net`, `io-util`, `macros`, `process`,
+`fs`), `futures-util =0.3.34` (`std`, `sink`), `hyper =1.11.1` (`server`,
+`http1`), `hyper-util =0.1.21` (`tokio`), `http-body-util =0.1.5` (defaults off),
+`reqwest =0.13.5` (default features), `base64 =0.23.1` (`std`) and
+`percent-encoding =2.3.2` (default features). These provide native runtime,
+fixture-only HTTP, verified asset acquisition and screenshot/request encoding.
+They add no new workspace feature beyond the browser library's mandatory closure.
+All use an allowed MIT or Apache-2.0 choice; Tokio uses MIT. The report's external
+JavaScript assets remain digest-pinned runtime inputs of the explicit browser
+qualification command, not Cargo or install-time downloads.
+
+The browser test crate is excluded from Hakari traversal and never links into
+`development` or `maestro-tooling`. Its scripted CDP unit tests inherit the already
+resolved `tokio-tungstenite =0.30.0` with defaults off, `connect` and
+`rustls-tls-native-roots` (MIT). This changes no resolved feature.
+
 ## External browser author tools
 
 Mise pins Trunk 0.21.14 and wasm-bindgen-cli 0.2.129 (MIT OR Apache-2.0),

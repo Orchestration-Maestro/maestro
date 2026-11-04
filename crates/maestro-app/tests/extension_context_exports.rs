@@ -82,7 +82,7 @@ fn native_command_context_exports_share_the_extension_records() {
                     Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
                 })
             }),
-            ..crate::command_operations::silent()
+            ..maestro_extensions::test_support::silent_command_operations()
         });
     runner.bind_command_context(Some(actions));
     let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();

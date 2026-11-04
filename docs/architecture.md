@@ -83,7 +83,10 @@ The binary composition root, conventions checker, terminal scenario harness,
 checked test-process owner, disposable test-directory owner, test tracing owner,
 portable fixture owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
-Repository tooling (`maestro-tooling`) is development-only, never shipped and has
+Browser qualification (`maestro-test-browser`) is dedicated, unpublished and
+depends on tooling for preparation. Hakari excludes its test-only browser stack
+from traversal. Repository tooling (`maestro-tooling`) is development-only, never
+shipped and has
 no internal dependencies apart from the optional utility and the native-only
 feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
@@ -452,6 +455,14 @@ The current shared wasm job builds these roots; it does not yet run this lint
 command. The [shared wasm-lint rollout](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/73)
 tracks that separate extension. Native strict checks remain unchanged.
 
+A browser compile witness is an example target whose body only compiles for the
+browser target, so native Clippy never reads it. Every witness the workspace keeps
+is listed with its owning package and source in `maestro-tooling`'s browser smoke
+command, which compiles each one for `wasm32-unknown-unknown` and stops at the
+first failure. The commit hook runs it when a staged crate owns a witness, and
+`just check` runs it for the workspace. The shared wasm job builds library roots
+only, so this command is what reports a witness that stopped compiling.
+
 ## Commands and failure evidence
 
 Run `just check`, `just test` and `just ci` with pinned tools. `just check` includes
@@ -499,6 +510,13 @@ disabled configurations and source fragments. Comments, larger fixture strings,
 byte strings and C strings are not selector tokens. This bounded rule does not expand macros, resolve constructed
 strings, interpret data files or infer process launches; review still checks
 those cases.
+
+The same source owner checks parsed `ignore` attributes. Ignored tests name
+either their controlled-child owner or the pinned Chromium job. The Chromium
+reason belongs only to `maestro-test-browser/tests/browser.rs`, where every test
+must carry it and the integration root must register that module. Comments and
+fixture strings are not attributes; syntax fragments without a parsed file are
+not checked for ignore ownership.
 
 Every crate builds its integration tests as one program from
 `tests/integration.rs`. Add new `tests/*.rs` files as unconditional out-of-line

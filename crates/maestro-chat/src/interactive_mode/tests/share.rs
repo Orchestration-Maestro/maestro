@@ -1,14 +1,20 @@
 //! The share and copy commands through the installed submission and their controlled
 //! native programs.
 use super::super::share::ShareArtifact;
-use super::transfer::{assert_last_row_holds, bundle, layout_dir, rows, themed};
+use super::transcript::{registering, tool};
+use super::transfer::{
+    assert_last_row_holds, bundle, call_probe, layout_dir, probing, rows, themed, themed_with,
+};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{World, cases as recorded_cases, install, record, started};
 use maestro_app::configuration::config::{
     APP_NAME, ENV_AGENT_DIR, SERVICE_ORIGIN, get_share_viewer_url,
 };
-use maestro_app::{NativeAgentMessage, SessionManager};
-use maestro_test_process::TestProcess;
+use maestro_app::{
+    DiagnosticErrorInfo, ExtensionFactory, Local, NativeAgentMessage, NativeExportOperations,
+    SessionManager,
+};
+use maestro_test_process::{IsolatedSetup, TestProcess};
 use maestro_theme::ThemeColor;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -153,8 +159,9 @@ fn path_without(names: &[&str]) -> String {
 ///
 /// The child gets a disposable agent directory, package directory, program directory
 /// holding the controlled program as `gh` with permission bits `mode`, state directory, temporary directory and a path
-/// whose only GitHub CLI and clipboard programs are the controlled ones. `body` runs in
-/// the selected child over its agent directory.
+/// whose only GitHub CLI and clipboard programs are the controlled ones. A write past a
+/// lowered file-size limit fails instead of ending the child. `body` runs in the selected
+/// child over its agent directory.
 fn run(
     test: &str,
     case: &str,
@@ -163,6 +170,7 @@ fn run(
 ) -> Option<String> {
     if maestro_test_process::selection().is_child() {
         if maestro_test_process::selection().runs_case(case) {
+            let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
             super::on_tasks(body(Path::new(&std::env::var(&*ENV_AGENT_DIR).unwrap())));
         }
         return None;
@@ -186,6 +194,7 @@ fn run(
         .unwrap()
         .case(case)
         .nocapture()
+        .setup(IsolatedSetup::new().file_size_continues())
         .current_dir(&root)
         .temp_dir(&temp)
         .env(ENV_AGENT_DIR.as_str(), &root)
@@ -624,6 +633,87 @@ fn share_auth_failure_does_not_export() {
     }));
 }
 
+/// A started mode over `directory` whose package carries the export bundle and whose session
+/// holds the published history and a call row `extension` renders.
+async fn drawing(directory: &Path, extension: ExtensionFactory<Local>) -> World {
+    let package = package_root();
+    bundle(&layout_dir(&package, "src"), "SRC");
+    let world = themed_with(directory, &package, Some(extension)).await;
+    call_probe(&world);
+    world
+}
+
+/// An extension registering `probe` with a renderer that refuses its call row.
+fn refusing() -> ExtensionFactory<Local> {
+    let mut probe = tool("probe");
+    probe.render_call = Some(Rc::new(|_, _, _| {
+        Err(DiagnosticErrorInfo::error(
+            "the renderer refused".to_owned(),
+        ))
+    }));
+    registering(vec![probe])
+}
+
+/// Asserts the operation's artifact survived a refused removal and leaves it removable for the
+/// next case; a privileged host, which refuses no removal, reports the premise instead.
+fn assert_kept_artifact(test: &str) {
+    if !removal_is_refused() {
+        eprintln!("{test} needs a host whose artifact removal is refused");
+        return;
+    }
+    let artifact = artifacts()
+        .first()
+        .cloned()
+        .expect("the artifact whose removal was refused is kept");
+    let restoring = maestro_test_directory::deny(&artifact, 0o500)
+        .unwrap()
+        .expect("the artifact's removal stays refused");
+    assert!(
+        artifact.join("session.html").exists(),
+        "the exported document is kept"
+    );
+    drop(restoring);
+    let mode = std::os::unix::fs::PermissionsExt::from_mode(0o700);
+    fs::set_permissions(&artifact, mode).unwrap();
+    fs::remove_file(artifact.join("session.html")).unwrap();
+    fs::remove_dir(&artifact).unwrap();
+}
+
+/// Whether a removal in this process's identity is refused, as it is for the controlled child
+/// that removes the artifact; a privileged host refuses nothing.
+fn removal_is_refused() -> bool {
+    let scratch = maestro_test_directory::Scratch::new().expect("a scratch directory");
+    maestro_test_directory::deny(scratch.path(), 0o500)
+        .unwrap()
+        .is_some()
+}
+
+/// Asserts the document the child received is the one the application owner writes for the same
+/// bundle, theme, session and renderer.
+fn assert_reference_document(world: &World, directory: &Path, exported: &str) {
+    let template = layout_dir(&package_root(), "src");
+    let operations = NativeExportOperations {
+        app_name: APP_NAME,
+        template_dir: template.to_str().unwrap(),
+        theme: &world.themes,
+    };
+    let direct = directory.join("direct.html");
+    let written = world
+        .host
+        .session()
+        .export_to_html(
+            Some(direct.to_str().unwrap()),
+            &operations,
+            Rc::clone(&world.mode.tool_environment),
+        )
+        .unwrap();
+    assert_eq!(
+        fs::read_to_string(written).unwrap(),
+        exported,
+        "the share exported the current session through its own renderer"
+    );
+}
+
 #[test]
 fn share_creates_secret_gist_and_restores_editor() {
     const TEST: &str = "share_creates_secret_gist_and_restores_editor";
@@ -632,7 +722,7 @@ fn share_creates_secret_gist_and_restores_editor() {
             {"copy": "artifact.html"},
             stdout("https://gist.github.com/alice/abc123\n")
         ]}}));
-        let world = exportable(directory).await;
+        let world = drawing(directory, probing()).await;
         let editor = Rc::clone(&world.mode.editor);
         submit(&world.mode, "/share");
         let operation = start(&world);
@@ -664,6 +754,7 @@ fn share_creates_secret_gist_and_restores_editor() {
         assert_eq!(PathBuf::from(&share[3]), artifact);
         let exported = fs::read_to_string(state_root().join("artifact.html")).unwrap();
         assert!(exported.starts_with("SRC-HTML|"), "{exported:.40}");
+        assert_reference_document(&world, directory, &exported);
         let restored = world.mode.editor_container.children().borrow().clone();
         assert_eq!(restored.len(), 1);
         assert!(std::ptr::addr_eq(
@@ -682,7 +773,7 @@ fn share_creates_secret_gist_and_restores_editor() {
 
 #[test]
 fn share_cancel_terminates_child_and_suppresses_late_outcome() {
-    use std::io::{BufRead, BufReader, Read as _};
+    use std::io::Read as _;
     const TEST: &str = "share_cancel_terminates_child_and_suppresses_late_outcome";
     drop(run(TEST, "child", Some(0o700), async |directory| {
         // The controlled program announces its gist step on a socket this test owns.
@@ -700,11 +791,7 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
         let operation = start(&world);
         // Readiness comes from the running child, not from a pause in this test.
         let (mut control, _) = listener.accept().unwrap();
-        let mut ready = String::new();
-        BufReader::new(control.try_clone().unwrap())
-            .read_line(&mut ready)
-            .unwrap();
-        assert_eq!(ready, "ready\n");
+        assert_eq!(greeting(&mut control), "ready\n");
         world.terminal.send_input("\x1b");
         // The cancellation is handled at once: the editor and its artifact are restored
         // before the operation settles.
@@ -742,14 +829,55 @@ fn share_cancel_terminates_child_and_suppresses_late_outcome() {
     }));
 }
 
+/// Runs a share that holds its child and asserts a buffer typed before it starts survives until
+/// it settles.
+async fn seeded_buffer_survives_until_settled(directory: &Path) {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    configure(
+        &json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": [
+            {"send": b"ready\n"},
+            "hold",
+            stdout("https://gist.github.com/alice/held\n")
+        ]}}),
+    );
+    let world = exportable(directory).await;
+    let editor = Rc::clone(&world.mode.editor);
+    submit(&world.mode, "/share");
+    editor.set_text("seeded");
+    let operation = start(&world);
+    let (mut control, _) = listener.accept().unwrap();
+    drop(listener);
+    assert_eq!(greeting(&mut control), "ready\n");
+    assert_eq!(
+        editor.get_text(),
+        "seeded",
+        "the share keeps a buffer typed while it runs"
+    );
+    drop(control);
+    assert!(operation.await.is_ok());
+    assert_eq!(
+        editor.get_text(),
+        "",
+        "the share cleared the buffer when it settled"
+    );
+    assert_notice(
+        &world,
+        &ThemeColor::Dim,
+        "Gist: https://gist.github.com/alice/held",
+    );
+    assert_loader_stopped(&world);
+}
+
 #[test]
 fn share_and_copy_commands_clear_editor_after_completion() {
     const TEST: &str = "share_and_copy_commands_clear_editor_after_completion";
     let cases: Vec<(Submitted, Routed)> = recorded_cases(FIXTURES, TEST);
     assert_eq!(cases.len(), 6);
-    drop(run(TEST, "child", None, async |directory| {
+    drop(run(TEST, "child", Some(0o700), async |directory| {
+        let mut kept_while_running = false;
         for (case, expected) in &cases {
-            let world = started(directory).await;
+            let world = exportable(directory).await;
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &case.text);
             if !expected.routed {
@@ -767,12 +895,36 @@ fn share_and_copy_commands_clear_editor_after_completion() {
             );
             assert!(recalled(&world.mode.editor).is_empty(), "{}", case.text);
             assert_eq!(world.runtime.futures(), 1, "{}", case.text);
-            // A buffer seeded while the command is pending is cleared once it settles.
+            // A buffer typed while the command's work runs is kept until that work settles, and
+            // the work then clears it. Seeding every routed case shows that none of them clears
+            // the buffer as its work starts; no copy route can be held long enough to observe
+            // the hold itself, so the held share below states that hold deterministically.
             world.mode.editor.set_text("seeded");
-            drive(&world).await.unwrap();
+            let mut operation = world
+                .runtime
+                .take_futures()
+                .pop()
+                .expect("the admitted operation");
+            if let Some(result) = poll(&mut operation) {
+                assert!(result.is_ok(), "{}", case.text);
+            } else {
+                assert_eq!(
+                    world.mode.editor.get_text(),
+                    "seeded",
+                    "{} keeps a buffer typed while it runs",
+                    case.text
+                );
+                kept_while_running = true;
+                assert!(operation.await.is_ok(), "{}", case.text);
+            }
             assert_eq!(world.mode.editor.get_text(), "", "{}", case.text);
             assert_eq!(world.runtime.futures(), 0, "{}", case.text);
         }
+        assert!(
+            kept_while_running,
+            "a command that runs on was observed holding a typed buffer"
+        );
+        seeded_buffer_survives_until_settled(directory).await;
     }));
 }
 
@@ -783,38 +935,98 @@ fn share_export_failure_cleans_only_owned_artifact() {
         configure(&json!({"auth": {"exit": 0}}));
         let keep = temp_root().join("keep.txt");
         fs::write(&keep, "unrelated").unwrap();
-        // A published session whose package carries no export bundle fails at the
-        // exporter's own asset step.
-        let published = exportable(directory).await;
-        fs::remove_dir_all(layout_dir(&package_root(), "src")).unwrap();
-        publish(&published, directory, &[answer("exported")]);
-        submit(&published.mode, "/share");
-        drive(&published).await.unwrap();
-        assert_last_row_holds(
-            &published,
-            "Error: Failed to export session: ",
-            "a missing bundle",
-        );
-        assert!(keep.exists(), "an unrelated file is kept");
-        assert!(artifacts().is_empty(), "the partial artifact is gone");
-        assert_eq!(arguments().len(), 1, "no gist was started");
-        // A temporary directory that refuses the operation's own directory is reported at
-        // the same export step. A privileged run has nothing to check here.
-        let Ok(Some(_restored)) = maestro_test_directory::deny(temp_root(), 0o500) else {
-            return;
-        };
-        forget_arguments();
-        let world = started(directory).await;
-        publish(&world, directory, &[answer("exported")]);
-        submit(&world.mode, "/share");
-        drive(&world).await.unwrap();
-        assert_last_row_holds(
-            &world,
-            "Error: Failed to export session: ",
-            "a refused directory",
-        );
-        assert_eq!(arguments().len(), 1, "no gist was started");
+        export_failures(directory, &keep).await;
+        refused_temp_directory(directory).await;
     }));
+}
+
+/// Runs each export failure over `directory` and asserts it reports its own step, keeps
+/// `keep`, and leaves no artifact or gist behind.
+async fn export_failures(directory: &Path, keep: &Path) {
+    // A published session whose package carries no export bundle fails at the exporter's own
+    // asset step.
+    let published = exportable(directory).await;
+    fs::remove_dir_all(layout_dir(&package_root(), "src")).unwrap();
+    publish(&published, directory, &[answer("exported")]);
+    submit(&published.mode, "/share");
+    drive(&published).await.unwrap();
+    assert_last_row_holds(
+        &published,
+        "Error: Failed to export session: ",
+        "a missing bundle",
+    );
+    assert!(keep.exists(), "an unrelated file is kept");
+    assert!(artifacts().is_empty(), "the partial artifact is gone");
+    assert_eq!(arguments().len(), 1, "no gist was started");
+    // A renderer that refuses its call row is not an export failure: the exporter keeps the
+    // standard row, so the share still reports its gist.
+    configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
+        stdout("https://gist.github.com/alice/fallback\n")
+    ]}}));
+    let refused = drawing(directory, refusing()).await;
+    submit(&refused.mode, "/share");
+    drive(&refused).await.unwrap();
+    assert_notice(
+        &refused,
+        &ThemeColor::Dim,
+        "Gist: https://gist.github.com/alice/fallback",
+    );
+    assert!(artifacts().is_empty(), "the artifact is gone");
+    // A session that only lives in memory cannot be exported at all.
+    let memory = exportable(directory).await;
+    *memory.host.session().session_manager().borrow_mut() =
+        SessionManager::in_memory(Some(directory.to_str().unwrap())).unwrap();
+    submit(&memory.mode, "/share");
+    drive(&memory).await.unwrap();
+    assert_last_row_holds(
+        &memory,
+        "Error: Failed to export session: ",
+        "a memory session",
+    );
+    assert!(artifacts().is_empty(), "the artifact is gone");
+    assert!(keep.exists(), "an unrelated file is kept");
+    #[cfg(target_os = "linux")]
+    partly_written_document(directory, keep).await;
+}
+
+/// Asserts a write past a lowered file-size limit fails after the document's first byte: the
+/// bundle's own document outgrows the limit the program's operand log still fits.
+#[cfg(target_os = "linux")]
+async fn partly_written_document(directory: &Path, keep: &Path) {
+    let partial = exportable(directory).await;
+    let template = layout_dir(&package_root(), "src").join("template.html");
+    let body = fs::read_to_string(&template).unwrap();
+    fs::write(&template, format!("{body}{}", "x".repeat(8192))).unwrap();
+    let previous = super::actions::file_size_limit(Some(1024));
+    submit(&partial.mode, "/share");
+    drive(&partial).await.unwrap();
+    super::actions::file_size_limit(previous);
+    assert_last_row_holds(
+        &partial,
+        "Error: Failed to export session: File too large",
+        "a partly written document",
+    );
+    assert!(artifacts().is_empty(), "the partial artifact is gone");
+    assert!(keep.exists(), "an unrelated file is kept");
+}
+
+/// Asserts a temporary directory that refuses the operation's own directory is reported at the
+/// same export step; a privileged run has nothing to check here.
+async fn refused_temp_directory(directory: &Path) {
+    let Ok(Some(_restored)) = maestro_test_directory::deny(temp_root(), 0o500) else {
+        return;
+    };
+    forget_arguments();
+    let world = started(directory).await;
+    publish(&world, directory, &[answer("exported")]);
+    submit(&world.mode, "/share");
+    drive(&world).await.unwrap();
+    assert_last_row_holds(
+        &world,
+        "Error: Failed to export session: ",
+        "a refused directory",
+    );
+    assert_eq!(arguments().len(), 1, "no gist was started");
 }
 
 #[test]
@@ -844,46 +1056,152 @@ fn share_spawn_failure_restores_editor_and_cleans_artifact() {
 fn share_cleanup_failure_does_not_replace_result() {
     const TEST: &str = "share_cleanup_failure_does_not_replace_result";
     drop(run(TEST, "child", Some(0o700), async |directory| {
-        configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
-            {"chmod": "0500"},
-            stdout("https://gist.github.com/alice/kept\n")
-        ]}}));
-        let world = exportable(directory).await;
-        submit(&world.mode, "/share");
-        drive(&world).await.unwrap();
-        assert_notice(
-            &world,
-            &ThemeColor::Dim,
-            "Gist: https://gist.github.com/alice/kept",
-        );
-        assert!(!last_row_holds(&world, "Failed to"));
-        assert_loader_stopped(&world);
-        assert_eq!(world.mode.editor_container.children().borrow().len(), 1);
-        // A privileged run removes the artifact despite the mode; either way the result
-        // stands and the directory is left removable.
-        for artifact in artifacts() {
-            let mode = std::os::unix::fs::PermissionsExt::from_mode(0o700);
-            fs::set_permissions(&artifact, mode).unwrap();
-        }
+        cleaned_after_success(directory, TEST).await;
+        cleaned_after_child_failure(directory, TEST).await;
+        cleaned_after_cancel(directory, TEST).await;
     }));
+}
+
+/// Asserts a successful gist keeps its result and the artifact whose removal is refused.
+async fn cleaned_after_success(directory: &Path, test: &str) {
+    configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
+        {"chmod": "0500"},
+        stdout("https://gist.github.com/alice/kept\n")
+    ]}}));
+    let world = exportable(directory).await;
+    submit(&world.mode, "/share");
+    drive(&world).await.unwrap();
+    assert_notice(
+        &world,
+        &ThemeColor::Dim,
+        "Gist: https://gist.github.com/alice/kept",
+    );
+    assert!(!last_row_holds(&world, "Failed to"));
+    assert_loader_stopped(&world);
+    assert_eq!(world.mode.editor_container.children().borrow().len(), 1);
+    assert_kept_artifact(test);
+}
+
+/// Asserts a failed gist keeps its own result and the refused artifact with it.
+async fn cleaned_after_child_failure(directory: &Path, test: &str) {
+    configure(&json!({"auth": {"exit": 0}, "gist": {"frames": [
+        {"chmod": "0500"}
+    ], "exit": 1}}));
+    let failed = exportable(directory).await;
+    submit(&failed.mode, "/share");
+    drive(&failed).await.unwrap();
+    assert_last_row_holds(&failed, "Error: Failed to create gist: ", "a failed child");
+    assert_loader_stopped(&failed);
+    assert_kept_artifact(test);
+}
+
+/// Asserts a cancellation keeps its own report and the refused artifact too.
+async fn cleaned_after_cancel(directory: &Path, test: &str) {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    configure(
+        &json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": [
+            {"chmod": "0500"},
+            {"send": b"ready\n"},
+            "hold"
+        ]}}),
+    );
+    let cancelled = exportable(directory).await;
+    submit(&cancelled.mode, "/share");
+    let operation = start(&cancelled);
+    let (mut control, _) = listener.accept().unwrap();
+    drop(listener);
+    assert_eq!(greeting(&mut control), "ready\n");
+    cancelled.terminal.send_input("\x1b");
+    assert_notice(&cancelled, &ThemeColor::Dim, "Share cancelled");
+    assert!(operation.await.is_ok());
+    assert!(!last_row_holds(&cancelled, "Failed to"));
+    assert_loader_stopped(&cancelled);
+    assert_kept_artifact(test);
+}
+
+/// The gist settings that announce `name` on the control port and hold until released.
+fn announced(port: u16, name: &str) -> Value {
+    json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": [
+        {"send": format!("{name}\n").into_bytes()},
+        "hold",
+        stdout(&format!("https://gist.github.com/alice/{name}\n"))
+    ]}})
+}
+
+/// The documents both shares exported, each in place and in its own directory.
+fn exported_documents() -> Vec<PathBuf> {
+    let documents: Vec<PathBuf> = arguments()
+        .into_iter()
+        .filter(|call| call.len() == 4 && call[..3] == ["gist", "create", "--public=false"])
+        .map(|call| PathBuf::from(&call[3]))
+        .collect();
+    assert_eq!(documents.len(), 2, "both shares exported a document");
+    assert_ne!(documents[0], documents[1]);
+    assert!(
+        documents.iter().all(|document| document.exists()),
+        "both exported documents are kept"
+    );
+    documents
+}
+
+/// Asserts the cancelled share removed its own directory and document and kept the other's.
+fn assert_cancelled_isolated(documents: &[PathBuf]) {
+    assert!(!documents[1].exists(), "the cancelled document is gone");
+    assert!(
+        !documents[1].parent().unwrap().exists(),
+        "the cancelled directory is gone"
+    );
+    assert!(
+        documents[0].exists(),
+        "the other operation's document is kept"
+    );
+    assert!(
+        documents[0].parent().unwrap().exists(),
+        "the other operation's directory is kept"
+    );
+}
+
+/// Runs two shares admitted before either settles, each exporting into its own directory, and
+/// asserts cancelling one leaves the other's directory and document intact.
+async fn concurrent_shares(directory: &Path) {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    configure(&announced(port, "first"));
+    let world = exportable(directory).await;
+    submit(&world.mode, "/share");
+    let first = start(&world);
+    let (mut first_control, _) = listener.accept().unwrap();
+    assert_eq!(greeting(&mut first_control), "first\n");
+    // The second share is admitted while the first still waits for its own child.
+    configure(&announced(port, "second"));
+    submit(&world.mode, "/share");
+    let second = start(&world);
+    let (mut second_control, _) = listener.accept().unwrap();
+    assert_eq!(greeting(&mut second_control), "second\n");
+    drop(listener);
+    let documents = exported_documents();
+    world.terminal.send_input("\x1b");
+    assert_notice(&world, &ThemeColor::Dim, "Share cancelled");
+    assert!(second.await.is_ok());
+    assert_cancelled_isolated(&documents);
+    // The first share settles on its own child and reports its own result.
+    drop(first_control);
+    assert!(first.await.is_ok());
+    assert_notice(
+        &world,
+        &ThemeColor::Dim,
+        "Gist: https://gist.github.com/alice/first",
+    );
+    assert!(!last_row_holds(&world, "second"));
+    assert!(artifacts().is_empty(), "both artifacts are gone");
 }
 
 #[test]
 fn share_temp_artifacts_do_not_collide() {
     const TEST: &str = "share_temp_artifacts_do_not_collide";
-    drop(run(TEST, "child", None, async |_directory| {
-        let first = ShareArtifact::new().unwrap();
-        let second = ShareArtifact::new().unwrap();
-        assert_ne!(first.file, second.file);
-        fs::write(&first.file, "first session").unwrap();
-        fs::write(&second.file, "second session").unwrap();
-        assert_eq!(fs::read_to_string(&first.file).unwrap(), "first session");
-        assert_eq!(fs::read_to_string(&second.file).unwrap(), "second session");
-        second.remove();
-        assert!(first.file.exists(), "the other artifact is kept");
-        assert!(!second.directory.exists());
-        first.remove();
-        assert!(!first.directory.exists(), "this operation removed its own");
+    drop(run(TEST, "child", Some(0o700), async |directory| {
+        concurrent_shares(directory).await;
         // An existing directory is refused, never reused or overwritten.
         let seeded = ShareArtifact::next_directory();
         fs::create_dir(&seeded).unwrap();
@@ -901,42 +1219,58 @@ fn share_temp_artifacts_do_not_collide() {
     }));
 }
 
-/// The settings for a successful sign-in and a gist that plays `frames` and ends with `exit`,
-/// and the thread granting each release the frames ask for on the control port they name.
-fn releasing(frames: &[Value], exit: u8) -> (Value, Option<std::thread::JoinHandle<()>>) {
-    let asked = frames.iter().filter(|frame| *frame == "release").count();
-    let granting = (asked > 0).then(|| {
-        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-        let port = listener.local_addr().unwrap().port();
-        let thread = std::thread::spawn(move || {
-            let (mut control, _) = listener.accept().unwrap();
-            for _ in 0..asked {
-                let mut request = [0];
-                std::io::Read::read_exact(&mut control, &mut request).unwrap();
-                assert_eq!(&request, b"R");
-                std::io::Write::write_all(&mut control, b"x").unwrap();
-            }
-        });
-        (port, thread)
-    });
-    let port = granting.as_ref().map(|(port, _)| *port);
-    let settings =
-        json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": frames, "exit": exit}});
-    (settings, granting.map(|(_, thread)| thread))
+/// How many continuations the gist frames ask for.
+fn continuations(frames: &[Value]) -> usize {
+    frames
+        .iter()
+        .filter(|frame| **frame == json!("release"))
+        .count()
 }
 
-/// Runs `/share` over the settings and returns the world once the command settles.
-async fn shared(
-    directory: &Path,
-    (settings, granting): (Value, Option<std::thread::JoinHandle<()>>),
-) -> World {
-    configure(&settings);
+/// The one byte the child sends on its control connection.
+fn continuation(control: &mut std::net::TcpStream) -> u8 {
+    let mut byte = [0u8];
+    std::io::Read::read_exact(control, &mut byte).unwrap();
+    byte[0]
+}
+
+/// The announcement the gist child sends once it runs.
+fn greeting(control: &mut std::net::TcpStream) -> String {
+    use std::io::BufRead as _;
+    let mut line = String::new();
+    std::io::BufReader::new(control.try_clone().unwrap())
+        .read_line(&mut line)
+        .unwrap();
+    line
+}
+
+/// Runs `/share` over `frames`, letting the running command consume every byte written
+/// before each request, so no scalar is decoded from a coalesced read.
+async fn acknowledged(directory: &Path, frames: &[Value], exit: u8) -> World {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    configure(
+        &json!({"auth": {"exit": 0}, "gist": {"port": port, "frames": frames, "exit": exit}}),
+    );
     let world = exportable(directory).await;
     submit(&world.mode, "/share");
-    drive(&world).await.unwrap();
-    if let Some(granting) = granting {
-        granting.join().unwrap();
+    let mut operation = start(&world);
+    let (mut control, _) = listener.accept().unwrap();
+    drop(listener);
+    for _ in 0..continuations(frames) {
+        assert_eq!(
+            continuation(&mut control),
+            b'R',
+            "the child asks to continue"
+        );
+        // Polling alone never turns the runtime's driver, so the pipe would stay
+        // unreadable and the next grant would join this byte to the bytes after it.
+        // The turn lets the command read what the child wrote before its request.
+        tokio::task::yield_now().await;
+        assert!(poll(&mut operation).is_none(), "the command waits for more");
+        std::io::Write::write_all(&mut control, b"x").unwrap();
     }
+    assert!(operation.await.is_ok(), "the share settled");
     world
 }
 
@@ -944,45 +1278,77 @@ async fn shared(
 fn share_capture_preserves_unicode_across_pipe_boundaries() {
     const TEST: &str = "share_capture_preserves_unicode_across_pipe_boundaries";
     drop(run(TEST, "child", Some(0o700), async |directory| {
-        // Two-, three- and four-byte scalars split across native writes the test releases one at
-        // a time, an unsplit control, and genuinely invalid bytes.
-        let byte = |byte: u8| json!({"stdout": [byte]});
-        let cases = [
-            (
-                vec![byte(0xc3), json!("release"), byte(0xa9), stdout("\n")],
-                "Gist: é",
-            ),
-            (
-                vec![
-                    byte(0xe2),
-                    json!("release"),
-                    byte(0x82),
-                    json!("release"),
-                    byte(0xac),
-                    stdout("\n"),
-                ],
-                "Gist: €",
-            ),
-            (vec![stdout("gists/\u{1f980}\n")], "Gist: gists/🦀"),
-            (vec![byte(0xff), stdout("\n")], "Gist: \u{fffd}"),
-        ];
-        for (frames, notice) in cases {
-            let world = shared(directory, releasing(&frames, 0)).await;
+        for (frames, notice) in split_scalars() {
+            let world = acknowledged(directory, &frames, 0).await;
             assert_notice(&world, &ThemeColor::Dim, notice);
         }
-        // A failed gist keeps a split standard-error scalar too.
-        let split = vec![
-            json!({"stderr": [0xc3]}),
-            json!("release"),
-            json!({"stderr": [0xa9]}),
-        ];
-        let world = shared(directory, releasing(&split, 1)).await;
-        assert_notice(
-            &world,
-            &ThemeColor::Error,
-            "Error: Failed to create gist: é",
-        );
+        for (frames, notice) in split_errors() {
+            let world = acknowledged(directory, &frames, 1).await;
+            assert_notice(&world, &ThemeColor::Error, notice);
+        }
     }));
+}
+
+/// The gist frames that write two-, three- and four-byte scalars across separate writes, an
+/// unsplit control and genuinely invalid bytes, each with the notice it produces.
+fn split_scalars() -> [(Vec<Value>, &'static str); 5] {
+    let byte = |byte: u8| json!({"stdout": [byte]});
+    [
+        (
+            vec![byte(0xc3), json!("release"), byte(0xa9), stdout("\n")],
+            "Gist: é",
+        ),
+        (
+            vec![
+                byte(0xe2),
+                json!("release"),
+                byte(0x82),
+                json!("release"),
+                byte(0xac),
+                stdout("\n"),
+            ],
+            "Gist: €",
+        ),
+        (
+            vec![
+                byte(0xf0),
+                json!("release"),
+                byte(0x9f),
+                json!("release"),
+                byte(0xa6),
+                json!("release"),
+                byte(0x80),
+                stdout("\n"),
+            ],
+            "Gist: 🦀",
+        ),
+        (vec![stdout("gists/\u{1f980}\n")], "Gist: gists/🦀"),
+        (vec![byte(0xff), stdout("\n")], "Gist: \u{fffd}"),
+    ]
+}
+
+/// The standard-error frames that write two- and four-byte scalars across separate writes of a
+/// failed gist, each with the notice it produces.
+fn split_errors() -> [(Vec<Value>, &'static str); 2] {
+    let byte = |byte: u8| json!({"stderr": [byte]});
+    [
+        (
+            vec![byte(0xc3), json!("release"), byte(0xa9)],
+            "Error: Failed to create gist: é",
+        ),
+        (
+            vec![
+                byte(0xf0),
+                json!("release"),
+                byte(0x9f),
+                json!("release"),
+                byte(0xa6),
+                json!("release"),
+                byte(0x80),
+            ],
+            "Error: Failed to create gist: 🦀",
+        ),
+    ]
 }
 
 #[test]

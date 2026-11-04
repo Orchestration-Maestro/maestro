@@ -200,7 +200,7 @@ pub(super) async fn async_corpus(name: &str, count: usize) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[ignore = "executed in a subprocess with controlled credentials"]
+#[ignore = "runs only inside a controlled child"]
 fn credential_child() {
     let selection = maestro_test_process::selection();
     if !selection.is_child() {

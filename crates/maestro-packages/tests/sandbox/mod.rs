@@ -277,17 +277,6 @@ pub fn block_on<T>(mut future: PackageFuture<'_, T>) -> io::Result<T> {
         }
     }
 }
-/// Polls once, returning the output when the future is already ready.
-pub fn poll_once<T>(future: &mut PackageFuture<'_, T>) -> Option<io::Result<T>> {
-    match future
-        .as_mut()
-        .poll(&mut Context::from_waker(Waker::noop()))
-    {
-        Poll::Ready(value) => Some(value),
-        Poll::Pending => None,
-    }
-}
-
 /// Reads a file's text.
 /// # Panics
 /// Panics if the file cannot be read as UTF-8.

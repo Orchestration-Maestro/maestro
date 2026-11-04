@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
     Clipboard, Recorded, call, computed, container, document, driver, frames, host, page_module,
-    rgb, selection, text, until, view,
+    rgb, select, selection, text, until, view,
 };
 use maestro_web::{
     ConsoleBlock,
@@ -498,7 +498,12 @@ pub async fn console_dom_removal_releases_its_subtree(import_module: js_sys::Fun
 
 /// The console's copy control keeps compact geometry, a muted idle role and an accent
 /// highlight, measured on the painted control.
-async fn assert_compact_control(page: &JsValue, view: &maestro_web::dom::DomView, root: &Element) {
+async fn assert_compact_control(
+    page: &JsValue,
+    view: &maestro_web::dom::DomView,
+    root: &Element,
+    cases: &Console,
+) {
     let presentation = view.pack.presentation(view.mode).unwrap();
     let role = |name: &str| rgb(presentation.colors[name]);
     let control = copy_button(root);
@@ -523,6 +528,23 @@ async fn assert_compact_control(page: &JsValue, view: &maestro_web::dom::DomView
     );
     assert_eq!(computed(&control, "color"), role("on-accent"), "hover role");
     driver("driverPointer", "[0,0,false]").await;
+    assert_success_gap(page, (&control, cases)).await;
+}
+/// Complete a copy and measure the success label's rendered separation from its glyph.
+async fn assert_success_gap(page: &JsValue, (control, cases): (&HtmlElement, &Console)) {
+    let clipboard = Recorded::install(Clipboard::Accept);
+    control.click();
+    copied(page, control).await;
+    assert_eq!(clipboard.texts(), [cases.mount.content.as_str()]);
+    assert_eq!(text(control), cases.copy.feedback, "success label");
+    let glyph = select(control.as_ref(), "svg").get_bounding_client_rect();
+    let label = select(control.as_ref(), "span").get_bounding_client_rect();
+    let gap = label.left() - glyph.right();
+    assert!(
+        (gap - 4.0).abs() < 0.5,
+        "success label separated by {gap} pixels"
+    );
+    restored(page, control).await;
 }
 /// Finish the control's running transitions, so the next reading is its painted result.
 async fn settle_transitions(page: &JsValue, element: &Element) {
@@ -544,5 +566,5 @@ pub async fn console_dom_control_keeps_compact_muted_and_accent_treatment(
     );
     frames(&page, 1).await;
     let root = placed.root();
-    assert_compact_control(&page, &view, &root).await;
+    assert_compact_control(&page, &view, &root, &cases).await;
 }

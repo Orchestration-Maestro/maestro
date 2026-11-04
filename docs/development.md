@@ -37,8 +37,8 @@ hook skips formatting and Clippy. The full conventions suite runs only for stage
 paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
 runs it as `just test-conventions`, which prepares the native fixture the probes
 install and then runs the suite with nextest.
-Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
-the browser entry is present, guarding targets outside native Clippy.
+Browser smoke runs when the browser entry is present and a staged crate owns a
+browser compile witness, guarding targets outside native Clippy.
 
 For changed crates, run `just _check -p <package>` with repeated `-p` arguments
 for multiple crates. `_check` verifies feature unification, runs native Clippy
@@ -146,6 +146,12 @@ Lint each changed browser crate separately, including all test and example targe
 `clippy --all-targets -D warnings` also rejects unused native-only helpers that
 `check --tests` leaves as warnings.
 
+A browser compile witness, an example target whose body only compiles for the
+browser target, is not covered by native Clippy. `just check-browser-smoke`
+compiles every witness for `wasm32-unknown-unknown` and stops at the first
+failure, printing the path of the diagnostics log. The commit hook runs the same
+command when a staged crate owns a witness.
+
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
 `test-support` development dependencies must all be available on browser targets.
@@ -194,16 +200,20 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
 Run the retained sandbox assertions with supplied browser tools:
 
 ```sh
-export PLAYWRIGHT_MODULE=/absolute/path/to/playwright
 export CHROMIUM_PATH=/absolute/path/to/chrome
 # Put wasm-bindgen CLI 0.2.129 on PATH.
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just browser-test
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
 ```
 
-The command installs no browser tools. It requires Node >=20, Playwright 1.64.1,
-Chromium 156.0.8078.4 (supplier revision 1248), and wasm-bindgen CLI 0.2.129,
-matching the locked Rust binding. The shared workflow owns tool acquisition.
-Observed versions, checkout SHA and Cargo's emitted artifact paths are printed.
+The command installs no browser tools. It requires Chromium 156.0.8078.4
+(supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
+binding. The browser executable must be an absolute path. The shared workflow owns
+tool acquisition. Rust repository tooling drives Chromium through its one CDP
+connection using chromiumoxide 0.9.1, with default features disabled and no browser
+downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
+printed.
+The real-browser cases run with `--no-fail-fast`, so one Chromium run reports every
+failing case.
 
 The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
@@ -239,8 +249,10 @@ with its own binding glue, into a copy of the fixture package. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
-`START` and `PASS`, each `FAMILY` total, the unchanged `HOST` digest and
-`COMPLETE 269/269` on success. `PHASE` records
+`START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
+`HOST` digest and `COMPLETE 269/269` on success. A failing export is recorded and
+the run goes on, so one Chromium run reports every failure; the command then fails
+with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
 so an interrupted run retains its last observed browser phase.
 
@@ -250,37 +262,75 @@ fixture document for a fresh trusted click whose composed path contains its
 `native click did not reach mounted target <id>` before waiting for the pointer
 message. An isolated frame receives its input through its own browser session:
 the driver scrolls `#target` into that document's view immediately, then sends
-move, press and release there. A frame that shares its parent's renderer keeps
-the locator click, because the pinned browser gives it no separate session. This
-keeps the containing page's coordinates out of an isolated frame's input path,
-which is where a native click used to land; it is not a hit-test-ready barrier,
-and the compositor cause of the original stall remains unknown. The check does
-not bound a native click that never completes.
+move, press and release there. A frame that shares its parent's renderer uses
+that renderer's native content quad. The driver releases lookup handles after
+success and failure, and retains attached renderer sessions only for the page's
+lifetime. The driver tracks the default execution context of every
+automatically attached iframe, including frames whose scripts are already
+running when they attach. It registers the binding script as a
+new-document script that also runs immediately, and sends no evaluation that needs a
+default context, because a frame that loads from a URL attaches before its document
+commits and has none yet: it runs the script at commit, and a `srcdoc` frame
+runs it at once. A host call that arrives while an iframe is still
+being set up waits, and runs in arrival order once that setup completes,
+ahead of any call that arrives while the queue drains. A session the caller
+attaches itself stays with the caller. An iframe removed during its own setup
+is reported where a call uses it, and a host call whose caller is already gone
+gets no reply and fails nothing else; page errors, crashes and console panics
+raised during that setup still fail the command. Browser events route by
+session; export, binding and input operations wait for their own completion
+signals without command deadlines.
+
+The launch tells Chromium that this desktop has a hover-capable pointer, so
+media queries such as `(hover: hover)` behave like they do on a real desktop.
+Pages keep touch emulation off; only an export that asks for touch input turns
+it on. A navigation waits for the committed main frame's own default
+execution context before it evaluates readiness, whichever side of the navigate
+reply announces it.
+
+The driver launches Chromium with `--no-startup-window`, so the only pages in
+the browser are the ones the driver opens. Each switch a test supplies must be
+written `--key` or `--key=value`; anything else is refused before launch, and
+repeated `--disable-features` switches merge into one list.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
-page crashes and unexpected browser disconnection fail the command. One deliberate
-policy-negative export, `inline_programs_preserve_text_policies_and_order`, must
-produce exactly one `TypeError` with message `window.complete is not a function`
-from `about:srcdoc`. Its ordinary assertions still run; absent, repeated or other
-errors fail. Error accounting stays attached until the page closes. Browser,
-server and temporary preparation are closed or removed on both outcomes; a
-cleanup failure does not skip the other resource or replace an assertion failure.
+page crashes and unexpected browser disconnection fail the command. An
+acknowledged browser close or a lost connection ends command admission: later
+operations, including page creation, fail immediately with a connection-closed
+error. Script arguments in the browser fixtures are JSON-encoded before evaluation
+so quotes in embedded document scripts remain data in the containing page.
 
-Run the driver regressions with the same supplied environment. The packaging
-regression invokes Cargo, so they use the same launcher:
+One deliberate policy-negative export,
+`inline_programs_preserve_text_policies_and_order`, must produce exactly one
+`TypeError` with message `window.complete is not a function` from `about:srcdoc`.
+Its ordinary assertions still run; absent, repeated or other errors fail. Error
+accounting stays attached until the page closes. Browser, server and temporary
+preparation are closed or removed on both outcomes; a cleanup failure does not
+skip the other resource or replace an assertion failure.
+
+The command first runs the Rust driver regressions from `maestro-test-browser`'s one
+integration target. This test-only crate owns the browser stack and reuses
+`maestro-tooling` for preparation, locked metadata and asset copying. Hakari excludes
+it from traversal, so ordinary development commands never build the browser stack.
+These tests carry the reason `runs in the pinned Chromium job`;
+ordinary native runs leave them ignored and run the browser-independent input,
+resource and pixel checks. The command selects only the `browser` module, keeping
+controlled-child tests out. Run only the browser regressions with the same supplied
+executable:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- \
-  node --test crates/maestro-web/tests/sandbox_loading_support/run.test.cjs
+~/.local/bin/capped just prepare-tests
+~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+  --run-ignored only -E 'test(/^browser::/)'
 ```
 
-The tool report page is a second witness in the same job: `analysis_page.cjs`
+The tool report page is a second witness in the same job. The Rust driver
 serves the committed report fixture and answers the page's two pinned library
-URLs from cached copies whose SHA-256 digests it checks (a missing copy is
-fetched with retries, and a mismatch fails). Any other request outside the
-script's own loopback origin is aborted and fails the run, checked after
+URLs from cached copies whose SHA-256 digests it checks. A missing copy is fetched
+with the existing three-attempt budget; a mismatch fails. Any other request outside
+the driver's loopback origin is aborted and fails the run, checked after
 navigation and again after the last observation, so the bytes the page executes
-are the bytes the cache was verified with. The script then observes what the
+are the bytes the cache was verified with. The driver then observes what the
 page paints: a row click must change the selected summary and the canvas bitmap,
 a recorded `</script>` payload must stay inert text, and bar fills, chart label
 text, heading glyphs, summary text and row borders must show the brand roles.
@@ -294,7 +344,7 @@ still depend on the canvas renderer. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
-`browser_test_crates = ["maestro-app", "maestro-web"]`.
+`browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]`.
 The job runs when the existing package selection includes a requested package,
 when a nonempty request changes, or for merge groups and main pushes; advisory-only
 runs skip it. Native package selection and the coverage floor stay unchanged.
@@ -676,7 +726,7 @@ distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
 Other tests retain priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
-count partitions (32 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
+count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
 membership, retries, time limits or coverage policy.
 Existing timeout comments retain their older CI maxima; priority ranks use the
 newer measurements below, not timeout ceilings or diagnostic phase timings.
@@ -2337,11 +2387,11 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, request (usage), agent, Markdown
-and package helpers live in their type owners. Native loopback servers, child
-probes and toolchain selection live in `maestro-test-process`. Fallible helpers
-return their errors to the test caller; fixed-output callbacks retain immediate
-assertions.
+and terminal helpers. Theme, tool, credential, request (usage), agent, extension,
+Markdown and package helpers live in their type owners. Native loopback servers,
+child probes and toolchain selection live in `maestro-test-process`. Fallible
+helpers return their errors to the test caller; fixed-output callbacks retain
+immediate assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.
