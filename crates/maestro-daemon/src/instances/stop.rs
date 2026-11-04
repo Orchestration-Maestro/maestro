@@ -140,8 +140,6 @@ fn exchange_stop_request(
 }
 
 /// Re-arms each native read from the same absolute deadline, including partial lines.
-/// A Unix socket whose re-armed deadline the kernel refuses is fully shut down, so its
-/// queued reply arrives through the direct reads.
 fn read_stop_reply(stream: &mut LocalStream, deadline: Instant) -> io::Result<Option<String>> {
     let mut line = Vec::new();
     loop {
