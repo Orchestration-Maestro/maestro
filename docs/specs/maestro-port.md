@@ -361,12 +361,12 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 
 | Directory | Role |
 |---|---|
-| `crates/maestro-test-process/examples/` | native test children |
-| `crates/maestro-extensions-wasm/examples/` | host-qualification fixture components and their preparation program |
-| `crates/maestro-models/examples/`, `crates/maestro-catalog/examples/` | catalog and fixture generators, browser smoke checks |
-| `crates/maestro-theme/examples/` | theme generation and browser author inputs |
-| `crates/maestro-tui-crossterm/examples/` | terminal development programs |
-| `crates/maestro-app/examples/*_report.rs`, `count_prompt_tokens.rs` | cost, usage, tool, transcript and prompt-token reports |
+| `crates/maestro-test-process/tests/support/` | native test children |
+| `crates/maestro-extensions-wasm/tests/support/` | host-qualification fixture components and their preparation program |
+| `crates/maestro-models/scripts/`, `crates/maestro-models/tests/support/`, `crates/maestro-catalog/tests/support/` | catalog and fixture generators, browser smoke checks |
+| `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
+| `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
+| `crates/maestro-app/scripts/*_report.rs`, `count_prompt_tokens.rs` | cost, usage, tool, transcript and prompt-token reports |
 
 **What users see.** Nothing moves in their installation: `examples/` ships in its package directory, beside the README and the documentation. `get_examples_path` resolves it, and the default system prompt names it. Documentation links examples by relative path. The links resolve in an installation and in a set-up source checkout.
 
@@ -412,7 +412,9 @@ Tests are black-box. They use Maestro's public crates and programs and the same 
 - the component crate is the workspace member whose manifest holds the generated example region;
 - the shipped extension folder is `examples/extensions` at the workspace root, when present;
 - a program whose package is not a workspace member is installed from that package's locked git source and commit;
-- a step tied to a package that is not a member, or to an input that is absent, is skipped, and the steps that remain still run.
+- an input the workspace does not hold is absent, and the step that needs it is skipped while the steps that remain still run;
+- staging the released executable is skipped when the workspace holds that package as a member or neither holds nor locks it;
+- a workspace that neither holds nor locks an example program stops preparation with a message naming it.
 
 **Pin moves.** One maestro-packages change moves every Maestro `rev`, the lock and any shared exact version Maestro moved, and fixes what the move breaks. An example broken by a Maestro change fails at the pin move. Maestro keeps its own host-feature tests on its fixture components, so host regressions still fail in Maestro's CI.
 

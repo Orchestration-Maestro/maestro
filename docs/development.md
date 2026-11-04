@@ -1204,11 +1204,12 @@ Four things it needs are the workspace's own:
   `maestro-test-process --example native_fixture`,
   `maestro-extensions-wasm --example prepare_author_component` and
   `maestro --bin maestro`. The tool reads the repository and commit from
-  `Cargo.lock`, so a pin move installs again and a workspace without the package
-  skips the step.
+  `Cargo.lock`, so a pin move installs again.
 
-Preparation skips a step whose package or input the workspace does not hold, and
-runs the rest. A workspace holding none of the three programs installs nothing.
+The two example programs must resolve: a workspace that neither holds nor locks
+their package stops preparation with a message naming it. Staging the `maestro`
+executable is the step that skips: a workspace holding that package builds it
+instead, and one that neither holds nor locks it stages nothing.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`

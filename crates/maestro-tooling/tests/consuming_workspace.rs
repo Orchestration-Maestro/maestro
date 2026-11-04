@@ -164,8 +164,9 @@ fn installed_tool_serves_the_workspace_it_starts_in() {
     assert!(region(root).contains("name = \"local\""));
 }
 
-/// A command that reads a workspace reports a directory outside every workspace, instead of
-/// reading the tree it was built from.
+/// A command that reads a workspace refuses a directory outside every workspace.
+///
+/// It names the missing manifest instead of reading the tree it was built from.
 #[test]
 fn installed_tool_refuses_a_directory_outside_every_workspace() {
     let scratch = Scratch::new().unwrap();
@@ -173,7 +174,6 @@ fn installed_tool_refuses_a_directory_outside_every_workspace() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
         .args(["example-index", "--check"])
         .current_dir(scratch.path())
-        .env_remove("CARGO_MANIFEST_DIR")
         .output()
         .unwrap();
 

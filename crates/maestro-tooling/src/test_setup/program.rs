@@ -169,7 +169,7 @@ mod tests {
 
     use maestro_test_directory::Scratch;
 
-    /// A workspace holding one crate, `name`, and the lock its dependencies come from.
+    /// A workspace with the crates `names` names, and the lock its dependencies come from.
     fn workspace_at(root: &Path, names: &[&str], lock: &str) -> Workspace {
         std::fs::write(
             root.join("Cargo.toml"),

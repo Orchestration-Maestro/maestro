@@ -129,9 +129,10 @@ fn built_example(directory: &Path) -> Option<PathBuf> {
 
 /// Whether `example` is newer than every workspace file it is built from.
 ///
-/// The example is compiled from the component crate's own sources, the tooling that compiles
-/// it and the workspace manifest, so a workspace that holds neither package has only the lock to
-/// compare and keeps an installed example.
+/// The example is compiled from the example package's sources, the tooling and the lock.
+///
+/// A workspace that holds neither package has only the lock to compare, and keeps an installed
+/// example.
 fn fresh(workspace: &Workspace, example: &Path) -> bool {
     let modified = |path: &Path| {
         std::fs::metadata(path)
