@@ -4010,6 +4010,7 @@ dependencies = [
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",
