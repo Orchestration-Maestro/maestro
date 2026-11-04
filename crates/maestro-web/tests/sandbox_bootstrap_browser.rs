@@ -13,12 +13,14 @@ const HEAD: &str = "window.S={first:typeof listAttachments,count:typeof listAtta
 /// First authored body script: helper type and live global reads.
 const BODY: &str = "S.second=typeof listAttachments;if(S.second==='function'){attachments.push({id:'b',fileName:'b.txt',mimeType:'text/plain',size:2});S.live=listAttachments().map(a=>a.id).join()}";
 /// Supplied provider recording its own position in the installation trace.
-const TRACE_PROVIDER: &str =
-    "function(id){__sandboxInstallTrace.push('provider:'+id+':'+typeof listAttachments)}";
+const TRACE_PROVIDER: &str = "function(id){if(1<2&&id)__sandboxInstallTrace.push('provider:'+id+':'+typeof listAttachments)}";
 /// Supplied provider that turns Trusted Types to `none` inside the frame.
 const TRUSTED_NONE: &str = "function(){const m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content=\"require-trusted-types-for 'script'; trusted-types 'none'\";document.head.append(m)}";
 /// Supplied completion provider for asynchronous programs.
 const COMPLETION: &str = "function(){window.S={log:[]};window.done=new Promise(r=>window.complete=async(error,value)=>{S.log.push('complete');S.error=error;S.value=value;r()})}";
+/// Frame policy that requires Trusted Types without any frame policy object.
+const STRICT: &str =
+    "<meta http-equiv=\"Content-Security-Policy\" content=\"require-trusted-types-for 'script'\">";
 /// Probe fields of an installed artifact.
 const INSTALLED: &[&str] = &["first", "count", "trace", "id", "second", "live"];
 
@@ -264,6 +266,22 @@ async fn policy_row(html: &str, label: &str, policy: &str, trusted_default: bool
     fields(&state, &["first", "trace", "scaffold"])
 }
 
+/// A supplied provider turns Trusted Types to `none`; later selections still install.
+async fn in_frame_none() -> Value {
+    let bundle = Bundle::load().await;
+    let none = Runtime::new(
+        Bundle::served(&bundle.wasm),
+        &config(&["provider", "attachments", "provider"]),
+        ID,
+        &[TRUSTED_NONE, TRACE_PROVIDER],
+    );
+    let policy = format!(
+        "script-src 'self' {} 'wasm-unsafe-eval'",
+        artifact_hashes(&none).await
+    );
+    policy_row(&artifact("", &none), "in-frame none", &policy, false).await
+}
+
 /// Hash admission, refusal and Trusted Types rows of the parser-blocking path.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
@@ -299,19 +317,15 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
         )
         .await,
         policy_row(&html, "inherited HTML-only default", &strict, true).await,
-        policy_row(&html, "inherited strict without default", &strict, false).await,
+        policy_row(
+            &artifact(STRICT, &runtime),
+            "frame strict without default",
+            &format!("script-src 'self' {all} 'wasm-unsafe-eval'"),
+            false,
+        )
+        .await,
     ];
-    let none = Runtime::new(
-        Bundle::served(&bundle.wasm),
-        &config(&["provider", "attachments", "provider"]),
-        ID,
-        &[TRUSTED_NONE, TRACE_PROVIDER],
-    );
-    let policy = format!(
-        "script-src 'self' {} 'wasm-unsafe-eval'",
-        artifact_hashes(&none).await
-    );
-    observed.push(policy_row(&artifact("", &none), "in-frame none", &policy, false).await);
+    observed.push(in_frame_none().await);
     let full = json!({"first":"function","trace":repeated_trace(),"scaffold":0});
     assert_eq!(
         Value::from(observed),
@@ -393,13 +407,18 @@ pub async fn bootstrap_staging_alternative_needs_a_trusted_html_sink() {
     );
     let hashes = digests(&[&boot.script, HEAD, BODY]).await;
     let mut observed = Vec::new();
-    for (label, trusted) in [
-        ("open", ""),
-        ("strict", "; require-trusted-types-for 'script'"),
+    for (label, trusted, trusted_default) in [
+        ("open", "", false),
+        (
+            "inherited HTML-only default",
+            "; require-trusted-types-for 'script'",
+            true,
+        ),
     ] {
         let policy = format!("script-src 'self' {hashes} 'wasm-unsafe-eval'{trusted}");
         let mount = Mount {
             policy: &policy,
+            trusted_default,
             staged: true,
             ..Mount::default()
         };

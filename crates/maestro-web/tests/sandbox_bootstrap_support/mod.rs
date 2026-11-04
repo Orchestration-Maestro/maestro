@@ -17,7 +17,7 @@ const FLAGS: &str = "allow-scripts allow-modals";
 /// Upper bound of the synchronous compilation search.
 const SEARCH_LIMIT: usize = 64 << 20;
 /// Records uncaught errors before the runtime and suppresses their default report.
-pub(crate) const OBSERVER: &str = "window.S={errors:[]};addEventListener('error',e=>{S.errors.push(e.error.name+': '+e.error.message);e.preventDefault()})";
+pub(crate) const OBSERVER: &str = "window.S={errors:[]};addEventListener('error',e=>{S.errors.push(e.error?e.error.name+': '+e.error.message:'muted: '+e.message);e.preventDefault()})";
 
 thread_local! {
     /// Distinct observation box per mounted frame.
@@ -86,8 +86,9 @@ impl Bundle {
     }
 }
 
-/// Glue element that loads from the fixture origin, parser-blocking.
-const SERVED: &str = "<script src=\"/package/modules/sandbox_runtime/runtime.js\"></script>";
+/// Glue element that loads from the fixture origin, parser-blocking, with unmuted errors.
+const SERVED: &str =
+    "<script src=\"/package/modules/sandbox_runtime/runtime.js\" crossorigin></script>";
 
 /// Inline statement that instantiates the embedded module synchronously.
 fn loader(wasm: &[u8]) -> String {
