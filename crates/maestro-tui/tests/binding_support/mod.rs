@@ -60,7 +60,7 @@ pub fn manager(input: &Value) -> KeybindingsManager {
     };
     KeybindingsManager::new(definitions, config(&input["user"]))
 }
-#[path = "../../../maestro-extensions-wasm/tests/support/binding_json.rs"]
+#[path = "../../../maestro-extensions-wasm/tests/support/harness/binding_json.rs"]
 mod binding_json;
 /// Observes the manager through the corpus-selected public queries.
 pub fn observe(manager: &KeybindingsManager, expected: &Value) -> Value {

@@ -21,9 +21,9 @@ use serde_json::{Value, from_value, json};
 mod action_author;
 #[path = "authored_editor_author.rs"]
 mod authored_editor_author;
-#[path = "../../tests/support/binding_config.rs"]
+#[path = "../../tests/support/harness/binding_config.rs"]
 pub(crate) mod binding_config;
-#[path = "../../tests/support/binding_json.rs"]
+#[path = "../../tests/support/harness/binding_json.rs"]
 pub(crate) mod binding_json;
 #[path = "bus_author.rs"]
 mod bus_author;
@@ -35,7 +35,7 @@ mod compaction_author;
 mod completion_author;
 #[path = "editor_factory_author.rs"]
 mod editor_factory_author;
-#[path = "../../tests/support/editor_text.rs"]
+#[path = "../../tests/support/harness/editor_text.rs"]
 pub(crate) mod editor_text;
 #[path = "factory_component_author.rs"]
 mod factory_component_author;

@@ -14,9 +14,9 @@ use maestro_extensions_wasm::{
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-#[path = "../binding_config.rs"]
+#[path = "../harness/binding_config.rs"]
 mod binding_config;
-#[path = "../binding_json.rs"]
+#[path = "../harness/binding_json.rs"]
 mod binding_json;
 #[path = "../../../src/tests/custom_author.rs"]
 mod custom_author;
@@ -24,7 +24,7 @@ mod custom_author;
 mod custom_overlay_author;
 #[path = "../../../src/tests/editor_factory_author.rs"]
 mod editor_factory_author;
-#[path = "../editor_text.rs"]
+#[path = "../harness/editor_text.rs"]
 mod editor_text;
 #[path = "../../../src/tests/factory_component_author.rs"]
 mod factory_component_author;
@@ -232,7 +232,7 @@ struct FooterView {
     footer: FooterData,
 }
 
-#[path = "../footer_view.rs"]
+#[path = "../harness/footer_view.rs"]
 mod footer_view;
 
 impl ComponentView for FooterView {

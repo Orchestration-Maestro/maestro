@@ -219,7 +219,7 @@ struct FooterView {
     _capture: Capture,
 }
 
-#[path = "../../tests/support/footer_view.rs"]
+#[path = "../../tests/support/harness/footer_view.rs"]
 mod footer_view;
 
 impl ComponentView for FooterView {
