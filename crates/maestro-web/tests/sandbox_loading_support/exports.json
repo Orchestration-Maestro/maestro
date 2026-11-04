@@ -76,7 +76,15 @@
     "artifacts_panel_dom_instances_keep_their_own_operands",
     "artifacts_panel_dom_placements_switch_the_application_owner",
     "artifact_dom_mode_changes_follow_the_bound_controller",
-    "artifacts_panel_dom_exposes_the_live_native_element"
+    "artifacts_panel_dom_exposes_the_live_native_element",
+    "bootstrap_measures_synchronous_compilation_limit",
+    "bootstrap_installs_selections_before_first_classic_scripts",
+    "bootstrap_settles_asynchronous_programs_in_rust",
+    "bootstrap_supplied_url_installs_before_first_classic_scripts",
+    "bootstrap_offline_document_needs_no_resource",
+    "bootstrap_policy_matrix_keeps_hash_and_trusted_types_results",
+    "bootstrap_refused_compilation_leaves_helpers_absent",
+    "bootstrap_staging_alternative_needs_a_trusted_html_sink"
   ],
   "contributions": [
     "native_optional_tools_artifacts_and_diff_replay_existing_corpus",
