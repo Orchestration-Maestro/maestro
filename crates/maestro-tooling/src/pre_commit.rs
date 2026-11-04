@@ -14,8 +14,8 @@ const CHECK_FAILURE: &str = "❌ Checks failed. Please fix the errors before com
 ///
 /// Formatting and Clippy cover only the crates holding staged paths; CI owns
 /// dependent and workspace-wide checks. The full conventions suite guards edits
-/// to the checker itself. Browser smoke compiles the browser compile witnesses of
-/// the staged crates that own one, because native Clippy never reads them.
+/// to the checker itself. Browser smoke compiles every browser compile witness once
+/// a staged crate owns one, because native Clippy never reads them.
 ///
 /// # Errors
 /// Returns native process and filesystem failures.

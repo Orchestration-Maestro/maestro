@@ -39,7 +39,8 @@ crates with `--all-targets --locked -- -D warnings`. Member manifests select the
 crate; root inputs select no crates and never widen a mixed change's selection.
 With no staged crate, the hook skips formatting and Clippy. The full conventions
 suite runs only for staged paths under `crates/maestro-test-conventions/`.
-Browser smoke runs when a staged crate owns a browser compile witness.
+Browser smoke runs when the browser entry is present and a staged crate owns a
+browser compile witness.
 Unformatted code is fixed, never rejected.
 The hook also rejects merge-conflict markers, invalid TOML or YAML, and a secret
 in the staged change. The commit-msg hook enforces the message rule in

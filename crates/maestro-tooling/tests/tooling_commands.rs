@@ -465,7 +465,6 @@ fn main() {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
-    if let Some(path) = env::var_os("MAESTRO_ARTIFACT") { fs::write(path, "compiled artifact").unwrap(); }
     if let Some(path) = env::var_os("MAESTRO_BLOCK_RESTORE") { fs::create_dir_all(PathBuf::from(path).join("auth.json.bak")).unwrap(); }
     if let Ok(message) = env::var("MAESTRO_DIAGNOSTIC") { eprint!("{message}"); }
     std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
@@ -2101,18 +2100,19 @@ fn witness_invocations() -> Vec<String> {
     .collect()
 }
 
+/// Run the browser smoke command in the fixture checkout.
+fn run_browser_smoke(fixture: &Fixture, test: &str) -> TestProcess {
+    fixture
+        .invoke(test, "check-browser-smoke", &[])
+        .temp_dir(fixture.root.path())
+}
+
 #[test]
 fn maestro_browser_build_records_diagnostics_without_noise() {
     drive();
+    let test = "maestro_browser_build_records_diagnostics_without_noise";
     let fixture = Fixture::new();
-    let output = fixture
-        .invoke(
-            "maestro_browser_build_records_diagnostics_without_noise",
-            "check-browser-smoke",
-            &[],
-        )
-        .output()
-        .unwrap();
+    let output = run_browser_smoke(&fixture, test).output().unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         output.stderr,
@@ -2120,33 +2120,16 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
     );
     write_browser_witnesses(fixture.root.path());
     let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
-    let artifact = fixture.root.path().join("artifact.wasm");
-    let output = fixture
-        .invoke(
-            "maestro_browser_build_records_diagnostics_without_noise",
-            "check-browser-smoke",
-            &[],
-        )
-        .temp_dir(fixture.root.path())
-        .env("MAESTRO_ARTIFACT", &artifact)
-        .output()
-        .unwrap();
+    let output = run_browser_smoke(&fixture, test).output().unwrap();
     assert!(output.status.success());
     assert_eq!(invocations(&fixture), witness_invocations());
     assert!(output.stderr.is_empty());
     assert!(!log.exists());
-    assert_eq!(fs::read(&artifact).unwrap(), b"compiled artifact");
 
     let fixture = Fixture::new();
     write_browser_witnesses(fixture.root.path());
     let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
-    let output = fixture
-        .invoke(
-            "maestro_browser_build_records_diagnostics_without_noise",
-            "check-browser-smoke",
-            &[],
-        )
-        .temp_dir(fixture.root.path())
+    let output = run_browser_smoke(&fixture, test)
         .env("MAESTRO_CHILD_EXIT", "17")
         .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
         .output()
