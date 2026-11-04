@@ -37,8 +37,8 @@ hook skips formatting and Clippy. The full conventions suite runs only for stage
 paths under `crates/maestro-test-conventions/`, guarding the checker itself. The hook
 runs it as `just test-conventions`, which prepares the native fixture the probes
 install and then runs the suite with nextest.
-Browser smoke runs only for staged paths in `maestro-models` or `maestro-web` when
-the browser entry is present, guarding targets outside native Clippy.
+Browser smoke runs when a staged crate owns a browser compile witness, guarding
+targets outside native Clippy.
 
 For changed crates, run `just _check -p <package>` with repeated `-p` arguments
 for multiple crates. `_check` verifies feature unification, runs native Clippy
