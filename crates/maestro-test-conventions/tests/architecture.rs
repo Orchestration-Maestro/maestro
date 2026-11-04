@@ -2743,6 +2743,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-session",
     "maestro-settings",
     "maestro-terminal",
+    "maestro-test-browser",
     "maestro-test-conventions",
     "maestro-test-process",
     "maestro-theme",

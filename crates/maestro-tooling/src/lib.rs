@@ -5,6 +5,9 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
+/// Encode bytes as lowercase hexadecimal.
+pub use test_setup::hex;
+
 /// Compile the browser compile witnesses and capture their diagnostics.
 pub mod check_browser_build;
 /// Copy prepared application assets.
@@ -212,10 +215,10 @@ fn binary_manifest(cargo: &Path, checkout: &Path) -> io::Result<std::path::PathB
 }
 
 /// Read locked root metadata with dependency packages omitted.
-pub(crate) fn locked_metadata(
-    cargo: &Path,
-    checkout: &Path,
-) -> io::Result<cargo_metadata::Metadata> {
+///
+/// # Errors
+/// Returns Cargo execution, locked resolution or metadata decoding failures.
+pub fn locked_metadata(cargo: &Path, checkout: &Path) -> io::Result<cargo_metadata::Metadata> {
     cargo_metadata::MetadataCommand::new()
         .cargo_path(cargo)
         .manifest_path(checkout.join("Cargo.toml"))

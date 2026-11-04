@@ -158,7 +158,7 @@ pub(super) async fn themed(directory: &Path, package: &Path) -> World {
 }
 
 /// [`themed`] over a session that also loads `extension`.
-async fn themed_with(
+pub(super) async fn themed_with(
     directory: &Path,
     package: &Path,
     extension: Option<ExtensionFactory<Local>>,
@@ -500,7 +500,7 @@ fn transfer_jsonl_command_writes_current_branch_with_original_path() {
 
 /// An extension registering the tool `probe`, whose call row names the README path of the
 /// environment that renders it.
-fn probing() -> ExtensionFactory<Local> {
+pub(super) fn probing() -> ExtensionFactory<Local> {
     let mut probe = tool("probe");
     probe.render_call = Some(Rc::new(|_, _, context| {
         Ok(text(&format!("README={}", context.environment.readme_path)))
@@ -509,7 +509,7 @@ fn probing() -> ExtensionFactory<Local> {
 }
 
 /// Appends a call of `probe` and its result to the current branch of `world`'s session.
-fn call_probe(world: &World) {
+pub(super) fn call_probe(world: &World) {
     let session = world.host.session();
     let mut manager = session.session_manager().borrow_mut();
     manager

@@ -124,7 +124,10 @@ fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<(
 }
 
 /// Copy an input tree while preserving symbolic links, naming the entry that failed.
-pub(crate) fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
+///
+/// # Errors
+/// Returns source observation, destination creation or copy failures.
+pub fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
     let metadata = fs::symlink_metadata(source).map_err(|error| input_error(source, &error))?;
     if metadata.is_symlink() {
         return copy_link(source, destination);

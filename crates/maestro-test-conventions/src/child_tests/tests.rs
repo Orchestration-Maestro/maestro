@@ -105,3 +105,70 @@ fn exact_child_selection_reports_source_line() {
     );
     assert_eq!(exact_offset(source), Some(source.find("r#").unwrap()));
 }
+
+/// Ignore ownership is parsed from attributes, not comments or fixture strings.
+#[test]
+fn ignored_tests_keep_known_execution_owners() {
+    for source in [
+        "#[test] #[ignore] fn helper() {}",
+        "#[test] #[ignore = \"unknown owner\"] fn helper() {}",
+        "#[test] #[ignore = \"runs in the pinned Chromium job\"] fn helper() {}",
+    ] {
+        assert!(
+            check(&[member(
+                "maestro-models",
+                "models",
+                "models/src/tests.rs",
+                source
+            )])
+            .is_err(),
+            "{source}"
+        );
+    }
+    for source in [
+        "#[test] #[ignore = \"runs only inside a controlled child\"] fn helper() {}",
+        "// #[ignore = \"unknown owner\"]\nfn helper() {}",
+        "const SOURCE: &str = r#\"#[ignore = \"unknown owner\"]\"#;",
+    ] {
+        assert!(
+            check(&[member(
+                "maestro-models",
+                "models",
+                "models/src/tests.rs",
+                source
+            )])
+            .is_ok(),
+            "{source}"
+        );
+    }
+}
+
+/// Browser annotations apply to each test, not merely an equal file-wide count.
+#[test]
+fn browser_tests_require_the_pinned_execution_owner() {
+    for source in [
+        "#[test] fn browser() {}",
+        "#[test] #[ignore = \"runs only inside a controlled child\"] fn browser() {}",
+        "#[ignore = \"runs in the pinned Chromium job\"] fn helper() {} #[test] fn browser() {}",
+    ] {
+        let browser = member(
+            "maestro-test-browser",
+            "browser",
+            "browser/tests/browser.rs",
+            source,
+        );
+        assert!(check(&[browser]).is_err(), "{source}");
+    }
+    let mut browser = member(
+        "maestro-test-browser",
+        "browser",
+        "browser/tests/browser.rs",
+        "#[test] #[ignore = \"runs in the pinned Chromium job\"] fn browser() {}",
+    );
+    browser.sources.push(Source {
+        path: "browser/tests/integration.rs".into(),
+        contents: "mod browser;".into(),
+        syntax: syn::parse_file("mod browser;").ok(),
+    });
+    assert!(check(&[browser]).is_ok());
+}

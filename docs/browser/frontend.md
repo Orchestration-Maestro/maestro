@@ -276,8 +276,8 @@ contribution family under
 Run them with the pinned driver, which the shared Chromium job also uses:
 
 ```sh
-PLAYWRIGHT_MODULE=/absolute/path/to/playwright CHROMIUM_PATH=/absolute/path/to/chrome \
-  CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just browser-test
+CHROMIUM_PATH=/absolute/path/to/chrome \
+  CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
 ```
 
 See [browser integration qualification](../development.md#browser-integration-qualification)
