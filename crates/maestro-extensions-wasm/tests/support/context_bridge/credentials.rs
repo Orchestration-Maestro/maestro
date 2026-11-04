@@ -13,6 +13,8 @@ use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 #[path = "credentials/lifetime.rs"]
 mod lifetime;
+#[path = "credentials/login.rs"]
+mod login;
 #[path = "credentials/state.rs"]
 mod state;
 
@@ -264,7 +266,7 @@ pub(super) async fn login(
     mode: &str,
     callbacks: Rc<maestro_extensions_wasm::OAuthLoginCallbacks>,
 ) -> ExtensionResult<Value> {
-    state::login(api, mode, callbacks).await
+    login::control(api, mode, callbacks).await
 }
 
 /// Dispatches exact credential observations after parameterized routes are selected.

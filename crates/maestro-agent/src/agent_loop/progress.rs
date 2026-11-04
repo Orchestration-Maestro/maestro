@@ -1,5 +1,6 @@
 //! Drive tool progress futures alongside execution without spawning tasks.
 use super::Driver;
+use crate::agent::lock;
 use crate::{
     AgentEvent, AgentToolResult, AgentToolUpdateCallback, CustomAgentMessages, ExecuteTool,
 };
@@ -82,10 +83,7 @@ pub struct Progress<C: CustomAgentMessages, E: crate::AgentExecution> {
 impl<C: CustomAgentMessages, E: crate::AgentExecution> Progress<C, E> {
     /// Admit the synchronous callback prefix before queueing its future.
     pub fn update(&self, partial_result: AgentToolResult) {
-        let mut state = self
-            .reservation
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut state = lock(&self.reservation);
         if state.closed {
             return;
         }
@@ -96,10 +94,7 @@ impl<C: CustomAgentMessages, E: crate::AgentExecution> Progress<C, E> {
                 tool_call: self.update_call.clone(),
                 partial_result,
             }));
-        let mut state = self
-            .reservation
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut state = lock(&self.reservation);
         state.pending -= 1;
         let settled = state.closed && state.pending == 0;
         drop(state);
@@ -114,9 +109,7 @@ fn close_progress<E: crate::AgentExecution>(
     admission: &Mutex<Admission>,
     updates: &EventStream<E::ObservationFuture, ()>,
 ) {
-    let mut state = admission
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = lock(admission);
     state.closed = true;
     let settled = state.pending == 0;
     drop(state);
