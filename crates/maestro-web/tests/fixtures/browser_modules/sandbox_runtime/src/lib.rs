@@ -237,6 +237,7 @@ fn join(window: &Window, list: &Array, success: bool) -> Promise {
 /// Log a callback failure without replacing the program outcome.
 fn report(window: &Window, error: &JsValue) {
     let console = get(window, "console").unwrap_or(JsValue::UNDEFINED);
+    // A failed log has nowhere to go and must not replace the program outcome.
     let _ = call(
         &console,
         "error",

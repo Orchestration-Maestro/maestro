@@ -204,7 +204,8 @@ fn modules(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::R
     sandbox_runtime(checkout, cargo, target, output)
 }
 
-/// Build the prototype sandbox runtime in release with classic-script glue for parser-blocking startup.
+/// Build the prototype sandbox runtime in release with classic-script glue for
+/// parser-blocking startup.
 fn sandbox_runtime(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::Result<()> {
     let bundle = output.join("package/modules/sandbox_runtime");
     let manifest = checkout

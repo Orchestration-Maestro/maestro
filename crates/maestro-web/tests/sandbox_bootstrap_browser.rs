@@ -267,8 +267,7 @@ async fn policy_row(html: &str, label: &str, policy: &str, trusted_default: bool
 }
 
 /// A supplied provider turns Trusted Types to `none`; later selections still install.
-async fn in_frame_none() -> Value {
-    let bundle = Bundle::load().await;
+async fn in_frame_none(bundle: &Bundle) -> Value {
     let none = Runtime::new(
         Bundle::served(&bundle.wasm),
         &config(&["provider", "attachments", "provider"]),
@@ -325,7 +324,7 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
         )
         .await,
     ];
-    observed.push(in_frame_none().await);
+    observed.push(in_frame_none(&bundle).await);
     let full = json!({"first":"function","trace":repeated_trace(),"scaffold":0});
     assert_eq!(
         Value::from(observed),

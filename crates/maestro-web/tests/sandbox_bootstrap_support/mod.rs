@@ -133,6 +133,7 @@ impl Runtime {
             prefix: mut markup,
             script: boot,
         } = boot;
+        // Writing into a `String` cannot fail.
         for provider in &providers {
             let _ = write!(
                 markup,
@@ -374,6 +375,7 @@ fn message(
         target
             .add_event_listener_with_callback("message", listener.as_ref().unchecked_ref())
             .unwrap();
+        // The harness never removes this listener; it lives as long as the test page.
         listener.forget();
     }))
 }
