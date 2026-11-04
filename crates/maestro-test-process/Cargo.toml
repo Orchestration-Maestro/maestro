@@ -19,6 +19,7 @@ path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-test-directory.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["std", "fs", "stdio", "process"] }
@@ -26,7 +27,6 @@ signal-hook.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 serde.workspace = true
-maestro-test-directory.workspace = true
 serde_json.workspace = true
 
 [lints]

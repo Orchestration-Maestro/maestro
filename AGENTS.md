@@ -317,7 +317,9 @@ The dedicated `maestro-test-directory` native leaf owns exclusive disposable-roo
 creation and cleanup. It has no internal edge except the native unifier, and no
 foundation utility permission. Only the crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
-as a non-optional native development dependency when used. `Scratch::new`
+as a non-optional native development dependency when used; the checked child
+launcher alone adds a native normal dependency on it, whose launch route reads
+`temporary_root` for its cleared children. `Scratch::new`
 canonicalizes its chosen root, without the Windows verbatim drive prefix;
 `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working

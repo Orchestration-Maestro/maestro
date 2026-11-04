@@ -228,6 +228,18 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
+    if member == Some(policy::TEST_DIRECTORY)
+        && policy::directory_observation(owner, policy::TEST_DIRECTORY)
+    {
+        return if native_declared(dependency, kind, &Kind::Normal) {
+            Ok(())
+        } else {
+            Err(format!(
+                "{owner}: {} must be a native, non-optional normal dependency",
+                policy::TEST_DIRECTORY
+            ))
+        };
+    }
     if let Some(member) =
         member.filter(|name| *name != TEST_FIXTURES && test_support_callers(name).is_some())
         && !native_declared(dependency, kind, &Kind::Development)
@@ -306,6 +318,23 @@ fn validate(
     Ok(())
 }
 
+/// Require a test-support target to serve only its declared callers' development edges.
+fn test_support_edge(owner: &str, callers: &[&str], edge: &Edge) -> Result<(), String> {
+    if edge.kind == Kind::Development && callers.contains(&edge.from.as_str()) {
+        return Ok(());
+    }
+    Err(format!(
+        "{owner} is reachable only as a {}development dependency of its declared callers: {} -> {}",
+        if owner == TEST_FIXTURES {
+            ""
+        } else {
+            "native "
+        },
+        edge.from,
+        edge.to
+    ))
+}
+
 /// Require a direct edge to obey its source and target crate rules.
 fn validate_edge(edge: &Edge, packages: &BTreeSet<String>) -> Result<(), String> {
     if let Some(result) = packages::dependency(edge, packages) {
@@ -316,22 +345,18 @@ fn validate_edge(edge: &Edge, packages: &BTreeSet<String>) -> Result<(), String>
     if edge.to == UNIFIER {
         return Ok(());
     }
-    if let Some(callers) = test_support_callers(&edge.to) {
-        return if edge.kind == Kind::Development && callers.contains(&edge.from.as_str()) {
+    if policy::directory_observation(&edge.from, &edge.to) {
+        return if edge.kind == Kind::Normal {
             Ok(())
         } else {
             Err(format!(
-                "{} is reachable only as a {}development dependency of its declared callers: {} -> {}",
-                edge.to,
-                if edge.to == TEST_FIXTURES {
-                    ""
-                } else {
-                    "native "
-                },
-                edge.from,
-                edge.to
+                "maestro-test-directory must be a normal dependency of maestro-test-process: {} -> {}",
+                edge.from, edge.to
             ))
         };
+    }
+    if let Some(callers) = test_support_callers(&edge.to) {
+        return test_support_edge(&edge.to, callers, edge);
     }
     if edge.to == UTILITY && edge.kind != Kind::Development && uses_utility(&edge.from) {
         return Ok(());

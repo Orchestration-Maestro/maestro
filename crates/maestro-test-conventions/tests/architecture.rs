@@ -2790,7 +2790,43 @@ const DIRECTORY_CALLERS: &[&str] = &[
 
 #[test]
 fn directory_support_edges_are_native_development_only() {
-    support_declarations_match_owner(DIRECTORY, DIRECTORY_CALLERS);
+    let without_launcher = DIRECTORY_CALLERS
+        .iter()
+        .copied()
+        .filter(|name| *name != "maestro-test-process")
+        .collect::<Vec<_>>();
+    support_declarations_match_owner(DIRECTORY, &without_launcher);
+}
+
+#[test]
+fn child_launcher_reaches_the_directory_owner_normally() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-test-process", DIRECTORY]);
+    let normal_table = "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies";
+    let wrong = "maestro-test-process: maestro-test-directory must be a native, non-optional normal dependency";
+    for (kind, extra, failure) in [
+        (normal_table, "", None),
+        ("dependencies", "", Some(wrong)),
+        ("dependencies", ", optional = true", Some(wrong)),
+        (NATIVE_DEV, "", Some(wrong)),
+        ("dev-dependencies", "", Some(wrong)),
+        ("build-dependencies", "", Some(wrong)),
+        (
+            "target.'cfg(target_os = \"none\")'.dependencies",
+            "",
+            Some(wrong),
+        ),
+    ] {
+        let declaration = format!(
+            "[{kind}]\ndirectory = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\"{extra} }}\n"
+        );
+        let expected = failure.map_or(Ok(()), |wrong| Err(wrong.to_owned()));
+        assert_eq!(
+            caller_declares(&workspace, "maestro-test-process", &declaration),
+            expected,
+            "{kind}{extra}"
+        );
+    }
 }
 
 #[test]

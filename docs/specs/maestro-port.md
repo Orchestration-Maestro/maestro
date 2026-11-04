@@ -804,9 +804,11 @@ handler and a new session. The parent carries the request and keeps its own mode
 limits, session and environment, and a refused effect stops the child before its
 body. The owner uses the approved `rustix` stdio and process operations for
 descriptor replacement and those effects, and the locked `signal-hook` flag
-registration for the file-size handler. It has no workspace dependencies except the native feature unifier and
-one native development edge to the disposable directory owner for its own child
-fixtures, and it is excluded from the foundation utility permission. Its only
+registration for the file-size handler. It has no workspace dependencies except the native feature unifier, one native
+development edge to the disposable directory owner for its own child fixtures
+and one native normal dependency on that owner for the platform directory it
+hands to its cleared children, and it is excluded from the foundation utility
+permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
@@ -829,8 +831,9 @@ one-test prologue through their own transport, followed by product readiness and
 completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
-`TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
-temporary directory unless its case sets one. `user_cache_home()` names the directory a
+`TEMP` on Windows. The launcher observes the parent's directory through the
+owner's `temporary_root`, so a cleared child of `run_per_environment` keeps the
+parent's temporary directory unless its case sets one. `user_cache_home()` names the directory a
 child passes as `XDG_CACHE_HOME` to keep this process's user cache when it replaces
 `HOME` on Linux, the only platform whose cache location follows that variable. `local_zone_follows_tz()` states the
 premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
@@ -852,8 +855,11 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
-declares it only when it uses it. Aliases follow the same rules. Normal, build,
+declares it only when it uses it. Aliases follow the same rules. Build,
 optional, unqualified, browser and foreign-target declarations are rejected.
+The checked child launcher alone adds the native normal dependency whose
+launcher code reads `temporary_root`; every other caller declares only the
+development edge.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
