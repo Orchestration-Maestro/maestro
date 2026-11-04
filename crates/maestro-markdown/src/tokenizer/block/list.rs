@@ -108,11 +108,14 @@ impl ListState {
     /// Produce each item's output and whether the list is loose.
     pub(crate) fn outputs(mut self) -> (Vec<BlockTokens>, bool) {
         #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| {
-            let mut retained = crate::tests::Retained::default();
-            self.retained(&mut retained);
-            work.frame_bytes = work.frame_bytes.max(retained.bytes);
-        });
+        if crate::tests::WORK.with_borrow(|work| work.track_frame) {
+            crate::tests::WORK.with_borrow_mut(|work| {
+                let mut retained = crate::tests::Retained::default();
+                self.retained(&mut retained);
+                work.frame_bytes = work.frame_bytes.max(retained.bytes);
+                work.frame_scans += 1;
+            });
+        }
         let following = self.completed.len();
         let mut outputs = Vec::with_capacity(following + 1);
         let mut loose = false;
