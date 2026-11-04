@@ -220,8 +220,9 @@ fn detached_worker_survives_a_dropped_handle() {
 #[test]
 fn inherited_launch_keeps_descriptors_operands_and_status() {
     use std::{io::Write, process::Stdio};
-    const CHILD: &str = "MAESTRO_INHERIT_CHILD";
-    if std::env::var_os(CHILD).is_some() {
+    /// The case that repeats the inherited launch in a child.
+    const CHILD: &str = "inherited";
+    if maestro_test_process::selection().case() == Some(CHILD) {
         inherited_child();
         return;
     }
@@ -231,7 +232,7 @@ fn inherited_launch_keeps_descriptors_operands_and_status() {
         )
         .unwrap()
         .nocapture()
-        .env(CHILD, "1")
+        .case(CHILD)
         .env("MAESTRO_EXIT", code)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

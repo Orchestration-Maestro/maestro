@@ -136,12 +136,14 @@ any other request outside the script's own loopback origin fails the run.
 
 ## Reading the journals
 
-Every report reads each selected journal once and aggregates it in one pass. Cost
-and transcript parsing remove outer whitespace from the whole file before
-splitting lines, while usage and tool parsing keep the authored lines so a
-leading byte-order mark reaches the parser and the line is counted as malformed.
-Blank lines are skipped, never counted as malformed, and entries of another type
-or role are ignored rather than rejected.
+Cost, usage and tool parsing read each selected journal once and aggregate it in
+that pass. The transcript report reads each journal once to write its transcript
+files, then reads those files again for the analysis run. Cost and transcript
+parsing remove outer whitespace from the whole file before splitting lines, while
+usage and tool parsing keep the authored lines so a leading byte-order mark
+reaches the parser and the line is counted as malformed. Blank lines are skipped,
+never counted as malformed, and entries of another type or role are ignored rather
+than rejected.
 
 ## Timestamps
 

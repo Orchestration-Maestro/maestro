@@ -6,13 +6,16 @@ use std::process::Command;
 use maestro_test_directory::Scratch;
 use maestro_test_process::TestProcess;
 
+/// Variable naming the lock file the wrapper holds while its child runs.
+const LOCK: &str = "MAESTRO_FIXED_PORT_LOCK";
+
 #[test]
 fn fixed_port_wrapper_holds_lock_while_child_runs() {
-    if let Some(path) = std::env::var_os("MAESTRO_WRAPPER_CHILD") {
+    if maestro_test_process::selection().is_child() {
         let file = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(path)
+            .open(std::env::var_os(LOCK).unwrap())
             .unwrap();
         assert!(matches!(
             file.try_lock(),
@@ -32,8 +35,8 @@ fn fixed_port_wrapper_holds_lock_while_child_runs() {
                     .args(["nextest-wrapper", "fixed-port"])
                     .arg(std::env::current_exe()?)
                     .args(arguments)
-                    .env("MAESTRO_WRAPPER_CHILD", &path)
-                    .env("MAESTRO_FIXED_PORT_LOCK", &path)
+                    .env(maestro_test_process::CASE, "wrapped")
+                    .env(LOCK, &path)
                     .output()
             })
             .unwrap();
@@ -51,7 +54,7 @@ fn fixed_port_wrapper_holds_lock_while_child_runs() {
 
 #[test]
 fn fixed_port_wrapper_runs_without_the_lock_variable() {
-    if std::env::var_os("MAESTRO_WRAPPER_CHILD").is_some() {
+    if maestro_test_process::selection().is_child() {
         return;
     }
     let output =
@@ -63,8 +66,8 @@ fn fixed_port_wrapper_runs_without_the_lock_variable() {
                     .args(["nextest-wrapper", "fixed-port"])
                     .arg(std::env::current_exe()?)
                     .args(arguments)
-                    .env("MAESTRO_WRAPPER_CHILD", "1")
-                    .env_remove("MAESTRO_FIXED_PORT_LOCK")
+                    .env(maestro_test_process::CASE, "wrapped")
+                    .env_remove(LOCK)
                     .output()
             })
             .unwrap();

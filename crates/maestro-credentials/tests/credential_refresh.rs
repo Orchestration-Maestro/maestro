@@ -427,6 +427,7 @@ mod tests {
         }
         run_isolated(
             "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
+            "*",
             &[("OPENAI_API_KEY", "env-key")],
         );
     }

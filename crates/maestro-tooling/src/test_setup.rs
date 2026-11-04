@@ -24,19 +24,23 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::argument;
-use super::example_files::{EXAMPLE_PACKAGE, FIXED_COMPONENTS, validate_variable};
+use super::example_files::{EXAMPLE_PACKAGE, FIXED_COMPONENTS, Fixed, validate_variable};
 use super::nextest_setup::browser_graph;
+use super::workspace::Workspace;
 use base::{Base, Supplied};
 use compiled_code::CompiledCode;
 use inputs::Inputs;
 use plan::{Artifacts, component_inputs};
+use program::{Program, Source, Target};
 
 mod base;
 pub(crate) mod cargo_checks;
 mod compiled_code;
+pub(crate) mod executable;
 mod inputs;
 pub(crate) mod native_fixture;
 mod plan;
+mod program;
 #[cfg(test)]
 mod tests;
 
@@ -54,8 +58,6 @@ const BASE: &str = "TEST_PREPARE_BASE";
 const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 /// The packages the browser graph is built from.
 const BROWSER_PACKAGES: [&str; 2] = ["maestro-web", "maestro-tooling"];
-/// The directory of the package's fixture components, which each component hashes for itself.
-const COMPONENT_EXAMPLES: &str = "crates/maestro-extensions-wasm/tests/support";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
 /// the Cargo configuration.
 const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"];
@@ -81,6 +83,9 @@ struct Manifest {
     example: String,
     /// The code the example compiled, when the host keeps it in a user cache.
     compiled: Option<CompiledCode>,
+    /// Digest of the staged executable, when the workspace builds it elsewhere.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    executable: Option<executable::Prepared>,
 }
 
 /// One staged component.
@@ -127,19 +132,31 @@ fn inherited_components(names: impl Iterator<Item = OsString>) -> Vec<OsString> 
         .collect()
 }
 
+/// The components prepared without a source marker whose packages this workspace builds.
+///
+/// A component whose package the workspace only depends on is built by Cargo outside its tree,
+/// so preparation leaves it to that package's own repository.
+pub(crate) fn fixed_components(workspace: &Workspace) -> Vec<Fixed> {
+    FIXED_COMPONENTS
+        .iter()
+        .copied()
+        .filter(|(_, package, _)| workspace.member(package).is_some())
+        .collect()
+}
+
 /// Build and run the setup example separately, then stage its output in `output`.
 /// Components and compiled code come from the first bundle in the path
 /// list `TEST_PREPARE_BASE` names that was prepared from the same shared inputs.
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
-    let artifacts = Artifacts::read(cargo, checkout)?;
+    let workspace = Workspace::read(cargo, checkout)?;
+    let component = workspace.component_crate()?;
+    let artifacts = Artifacts::read(checkout, &workspace, &component)?;
     let base = read_base(checkout, &artifacts.shared);
     remove(&output.join(MANIFEST))?;
     remove(&environment_file(target))?;
     remove_directory(&cache_home(target))?;
-    build_example(cargo, checkout, target, "dev")?;
-    let name = executable(EXAMPLE, EXE_EXTENSION);
-    let example = target.join("debug/examples").join(&name);
+    let example = example_program(cargo, checkout, &workspace, target, "dev")?;
     let cache_directory =
         compiled_code::directory(&mut preparation_command(checkout, &example, target))?;
     let (supplied, seeded) = match &base {
@@ -149,7 +166,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         ),
         None => (Vec::new(), None),
     };
-    run_example(cargo, checkout, &example, target, &supplied)?;
+    run_example(cargo, &workspace, &example, target, &supplied)?;
     let components = stage_components(checkout, output, target, &artifacts.shared, &supplied)?;
     let reused = supplied.len();
     let built = components.len().checked_sub(reused).ok_or_else(|| {
@@ -158,9 +175,16 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
             components.len()
         ))
     })?;
-    native_fixture::prepare(cargo, checkout, output, target)?;
-    cargo_checks::prepare(cargo, checkout, output, &target.join("cargo-checks"))?;
+    native_fixture::prepare(cargo, checkout, &workspace, output, target)?;
+    cargo_checks::prepare(
+        cargo,
+        checkout,
+        &workspace,
+        output,
+        &target.join("cargo-checks"),
+    )?;
     stage_browser_graph(cargo, checkout, output)?;
+    let executable = executable::stage(cargo, checkout, &workspace, output, target)?;
     let mut unchanged = artifacts.is_current(checkout)?;
     for component in components.values() {
         unchanged &= component.inputs.is_current(checkout)?;
@@ -171,15 +195,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
             output.display()
         )));
     }
-    remove_directory(&output.join(COMPILED))?;
-    let compiled = CompiledCode::collect(
-        &cache_directory,
-        &example,
-        &output.join(COMPILED),
-        seeded.as_deref(),
-    )?;
-    let staged = output.join(name);
-    copy(&example, &staged)?;
+    let (staged, compiled) = stage_example(output, &example, &cache_directory, seeded.as_deref())?;
     stage_tool(output)?;
     let manifest = Manifest {
         shared: artifacts.shared,
@@ -188,9 +204,24 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         components,
         example: digest(&std::fs::read(&staged)?),
         compiled,
+        executable,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
     writeln!(io::stdout(), "components: {reused} reused, {built} built")
+}
+
+/// Stage the compiled code the example produced and the example itself in `output`.
+fn stage_example(
+    output: &Path,
+    example: &Path,
+    cache_directory: &Path,
+    seeded: Option<&Path>,
+) -> io::Result<(PathBuf, Option<CompiledCode>)> {
+    remove_directory(&output.join(COMPILED))?;
+    let compiled = CompiledCode::collect(cache_directory, example, &output.join(COMPILED), seeded)?;
+    let staged = output.join(executable_name());
+    copy(example, &staged)?;
+    Ok((staged, compiled))
 }
 
 /// Read the first bundle in `TEST_PREPARE_BASE` prepared from the same shared inputs.
@@ -270,7 +301,8 @@ fn stage_tool(output: &Path) -> io::Result<()> {
     )
 }
 
-/// Build the setup example in `target` with the Cargo `profile`.
+/// Build the setup example in `target` with the Cargo `profile`, or install it when the
+/// workspace reaches its package through a locked dependency.
 pub(crate) fn build_example(
     cargo: &Path,
     checkout: &Path,
@@ -279,13 +311,7 @@ pub(crate) fn build_example(
 ) -> io::Result<()> {
     let status = Command::new(cargo)
         .current_dir(checkout)
-        .args([
-            "build",
-            "--quiet",
-            "--locked",
-            "-p",
-            "maestro-extensions-wasm",
-        ])
+        .args(["build", "--quiet", "--locked", "-p", EXAMPLE_PACKAGE])
         .args(["--example", EXAMPLE, "--target-dir"])
         .arg(target)
         .args(["--profile", profile])
@@ -299,17 +325,75 @@ pub(crate) fn build_example(
     }
 }
 
-/// Run the built example so it writes its component paths to the environment file of `target`
-/// and its compiled code under that build's cache home. It takes the `supplied` components from
-/// its environment instead of building them.
-fn run_example(
+/// The executable the setup example was built or installed as.
+pub(crate) fn example_program(
     cargo: &Path,
     checkout: &Path,
+    workspace: &Workspace,
+    target: &Path,
+    profile: &str,
+) -> io::Result<PathBuf> {
+    let program = Program {
+        package: EXAMPLE_PACKAGE,
+        target: Target::Example(EXAMPLE),
+    };
+    let source = program::source(checkout, workspace, EXAMPLE_PACKAGE)?.ok_or_else(|| {
+        io::Error::other(format!(
+            "{EXAMPLE_PACKAGE} is neither a workspace crate nor a locked dependency"
+        ))
+    })?;
+    if let Source::Member = source {
+        build_example(cargo, checkout, target, profile)?;
+        // Cargo names the development profile's output directory `debug`.
+        let directory = if profile == "dev" { "debug" } else { profile };
+        return Ok(target
+            .join(directory)
+            .join("examples")
+            .join(executable_name()));
+    }
+    program::install(
+        cargo,
+        checkout,
+        &source,
+        &program,
+        &target.join("installed"),
+    )
+}
+
+/// The arguments that tell the setup example which workspace to prepare: the workspace root,
+/// the component crate and the fixed components this workspace builds.
+///
+/// # Errors
+/// Returns a workspace without one component crate.
+pub(crate) fn example_arguments(workspace: &Workspace) -> io::Result<Vec<OsString>> {
+    let component = workspace.component_crate()?;
+    let fixed = fixed_components(workspace);
+    let names: Vec<&str> = fixed.iter().map(|(name, _, _)| *name).collect();
+    Ok(vec![
+        workspace.root().as_os_str().to_owned(),
+        component.into_os_string(),
+        names.join(",").into(),
+    ])
+}
+
+/// The staged name of the setup example.
+pub(crate) fn executable_name() -> PathBuf {
+    executable(EXAMPLE, EXE_EXTENSION)
+}
+
+/// Run the built example so it writes its component paths to the environment file of `target`
+/// and its compiled code under that build's cache home. It takes the `supplied` components from
+/// its environment instead of building them, and finds the workspace it prepares, the component
+/// crate and the fixed components this workspace builds through its arguments.
+fn run_example(
+    cargo: &Path,
+    workspace: &Workspace,
     example: &Path,
     target: &Path,
     supplied: &[Supplied],
 ) -> io::Result<()> {
-    let mut run = preparation_command(checkout, example, target);
+    let mut run = preparation_command(workspace.root(), example, target);
+    run.args(example_arguments(workspace)?);
     run.env("CARGO", cargo)
         .env("NEXTEST_ENV", environment_file(target));
     for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
@@ -333,30 +417,39 @@ fn preparation_command(checkout: &Path, example: &Path, target: &Path) -> Comman
     command
 }
 
+/// The directory beside the profile directory that holds the cache home a test run shares. It is
+/// separate from the preparation cache home, which each preparation deletes.
+const RUN_CACHE: &str = "component-cache";
+
+/// The user cache home a test run shares, beside its profile directory.
+pub(crate) fn run_cache_home(directory: &Path) -> PathBuf {
+    directory.parent().unwrap_or(directory).join(RUN_CACHE)
+}
+
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// the cache under `cache_home`, and write the component paths to `environment`. Nothing is
-/// installed or written unless every check passes.
+/// that run's cache home, and write the component paths to `environment`. Nothing is installed
+/// or written unless every check passes.
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
 pub(crate) fn install_bundle(
+    cargo: &Path,
     checkout: &Path,
     output: &Path,
     directory: &Path,
     environment: &Path,
-    cache_home: &Path,
 ) -> io::Result<()> {
-    export(checkout, output, directory, environment, cache_home)
+    export(cargo, checkout, output, directory, environment)
 }
 
-/// Validate and install the bundle in the cache directory the installed example reports for
-/// `cache_home`.
+/// Validate and install the bundle, and install its compiled code in the cache directory the
+/// installed example reports for this run's cache home.
 fn export(
+    cargo: &Path,
     checkout: &Path,
     output: &Path,
     directory: &Path,
     environment: &Path,
-    cache_home: &Path,
 ) -> io::Result<()> {
     let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
@@ -365,7 +458,8 @@ fn export(
     let manifest = read_manifest(&output)?;
     manifest.shared.verify(checkout, &output)?;
     manifest.tool.verify(checkout, &output)?;
-    if FIXED_COMPONENTS
+    let workspace = Workspace::read(cargo, checkout)?;
+    if fixed_components(&workspace)
         .iter()
         .any(|(_, _, variable)| !manifest.components.contains_key(*variable))
     {
@@ -379,7 +473,7 @@ fn export(
         verify(&path, &expected.file)?;
         lines.push(format!("{variable}={}\n", path.display()));
     }
-    let name = executable(EXAMPLE, EXE_EXTENSION);
+    let name = executable_name();
     let staged = output.join(&name);
     verify(&staged, &manifest.example)?;
     let compiled = output.join(COMPILED);
@@ -393,7 +487,7 @@ fn export(
         let cache_directory = compiled_code::directory(
             Command::new(&installed)
                 .current_dir(checkout)
-                .env("XDG_CACHE_HOME", cache_home),
+                .env("XDG_CACHE_HOME", run_cache_home(directory)),
         )?;
         code.install(&compiled, &cache_directory, &installed)?;
     }

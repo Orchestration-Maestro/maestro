@@ -592,8 +592,9 @@ mod tests {
 
     /// Runs the native witness in a child with explicit locale, key and proxy observations.
     fn native_child_completed() -> bool {
-        const CHILD: &str = "MAESTRO_COUNT_NATIVE_CHILD";
-        if std::env::var_os(CHILD).is_none() {
+        /// The case that repeats the witness as a child with supplied observations.
+        const CHILD: &str = "native";
+        if maestro_test_process::selection().case() != Some(CHILD) {
             let mut command = maestro_test_process::TestProcess::current(
                 "token_measurement_sends_five_current_descriptions_in_order",
             )
@@ -612,7 +613,7 @@ mod tests {
             }
             let output = command
                 .nocapture()
-                .env(CHILD, "1")
+                .case(CHILD)
                 .env("ANTHROPIC_API_KEY", "controlled")
                 .env("LC_ALL", "en_US.UTF-8")
                 .env("LC_MESSAGES", "en_US.UTF-8")

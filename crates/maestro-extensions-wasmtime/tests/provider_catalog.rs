@@ -1582,14 +1582,16 @@ async fn assert_session_release(
 
 #[test]
 fn provider_request_auth_uses_shared_credential_owner() {
-    if std::env::var_os("MAESTRO_PROVIDER_AUTH_CHILD").is_none() {
+    /// The case that repeats the request in a cleared child per key.
+    const CHILD: &str = "cleared";
+    if maestro_test_process::selection().case() != Some(CHILD) {
         for key in ["", "environment-key"] {
             let output = maestro_test_process::TestProcess::current(
                 "provider_request_auth_uses_shared_credential_owner",
             )
             .unwrap()
             .env_clear()
-            .env("MAESTRO_PROVIDER_AUTH_CHILD", "1")
+            .case(CHILD)
             .env(
                 "MAESTRO_CONTEXT_COMPONENT",
                 std::env::var_os("MAESTRO_CONTEXT_COMPONENT").unwrap(),

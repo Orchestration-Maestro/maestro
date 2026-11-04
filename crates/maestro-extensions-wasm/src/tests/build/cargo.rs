@@ -148,6 +148,7 @@ fn prepared_component(directory: &Path, name: &str) -> Result<Option<PathBuf>, S
             directory.join("tests/support"),
             directory.join("../../examples/extensions"),
         ],
+        &components::FIXED_COMPONENTS,
         |target, variable| {
             if target == name && path.is_none() {
                 path = std::env::var_os(variable).map(PathBuf::from);

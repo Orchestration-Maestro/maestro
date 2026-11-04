@@ -47,7 +47,10 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
 pub const EXAMPLE_PACKAGE: &str = "maestro-extensions-wasm";
 
 /// The target, package and export of each component prepared without a source marker.
-pub const FIXED_COMPONENTS: [(&str, &str, &str); 3] = [
+pub type Fixed = (&'static str, &'static str, &'static str);
+
+/// The target, package and export of each component prepared without a source marker.
+pub const FIXED_COMPONENTS: [Fixed; 3] = [
     (
         "author_component",
         EXAMPLE_PACKAGE,
@@ -67,15 +70,17 @@ pub const FIXED_COMPONENTS: [(&str, &str, &str); 3] = [
 
 /// Visits marked components in source order, validating each export before its callback.
 ///
-/// Variables are unique across all roots, including every fixed component export.
+/// `fixed` holds the components prepared without a marker that this workspace builds. Variables
+/// are unique across all roots, including every fixed component export.
 ///
 /// # Errors
 /// Returns discovery, invalid or duplicate marker, source-reading or callback failures.
 pub fn visit(
     folders: &[PathBuf],
+    fixed: &[Fixed],
     mut visit: impl FnMut(&str, &str) -> io::Result<()>,
 ) -> io::Result<()> {
-    let mut variables: HashSet<String> = FIXED_COMPONENTS
+    let mut variables: HashSet<String> = fixed
         .iter()
         .map(|(_, _, variable)| (*variable).to_owned())
         .collect();

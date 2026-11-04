@@ -8,6 +8,7 @@ mod browser_preparation;
 mod build_recipes;
 mod cargo_fixtures;
 mod component_preparation;
+mod consuming_workspace;
 mod date_time_data;
 mod fixture_sources_setup;
 mod native_setup;
