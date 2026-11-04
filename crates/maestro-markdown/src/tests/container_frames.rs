@@ -719,7 +719,6 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
 
 /// Charge every allocation reachable from a parsed document once, not overlapping view lengths.
 fn retained_document(document: &crate::Document) -> super::Retained {
-    use std::mem::size_of;
     let mut retained = super::Retained::default();
     retained.bytes += document.source.capacity()
         + document.scopes.capacity()
@@ -727,32 +726,7 @@ fn retained_document(document: &crate::Document) -> super::Retained {
     for scope in document.scopes.values() {
         scope.retained(&mut retained);
     }
-    let mut pending = vec![&document.nodes];
-    while let Some(nodes) = pending.pop() {
-        retained.bytes += nodes.capacity() * size_of::<Node>();
-        for node in nodes {
-            retained.nodes += 1;
-            node.authored.retained(&mut retained);
-            match &node.kind {
-                Kind::Quote(children, body) => {
-                    body.retained(&mut retained);
-                    pending.push(children);
-                }
-                Kind::Paragraph(children)
-                | Kind::Inline(children)
-                | Kind::List(_, children)
-                | Kind::Item(children) => pending.push(children),
-                Kind::Text(text) => {
-                    retained.bytes += text.authored.capacity() + text.decoded.capacity();
-                }
-                Kind::CodeBlock(body, language) => {
-                    retained.bytes +=
-                        body.capacity() + language.as_ref().map_or(0, String::capacity);
-                }
-                _ => {}
-            }
-        }
-    }
+    super::settled(&document.nodes, &mut retained);
     retained
 }
 
@@ -826,6 +800,27 @@ fn resumed_list_retained_storage_grows_linearly() {
             assert!(next <= 3 * previous, "{samples:?}");
         }
     }
+}
+
+/// Largest list state a complete parse of `source` kept alive before releasing it.
+fn measured_frame(source: &str) -> usize {
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = crate::parse(source.to_owned());
+    assert!(!document.nodes.is_empty());
+    super::WORK.with_borrow(|work| work.frame_bytes)
+}
+
+#[test]
+fn nested_item_frame_charges_its_settled_child() {
+    let flat = measured_frame("- a\n  b");
+    let nested = measured_frame("- a\n  - b");
+    eprintln!("flat={flat} nested={nested}");
+    // Both items hold nine authored bytes, so a frame that charged only the open item's
+    // own source stayed under two kilobytes for either input. The settled child adds its
+    // node record, its scope map and its latest operand.
+    assert!(flat > 2_400, "flat={flat}");
+    // The nested list's own item state is charged before that list publishes.
+    assert!(nested > flat + 384, "flat={flat} nested={nested}");
 }
 
 #[test]

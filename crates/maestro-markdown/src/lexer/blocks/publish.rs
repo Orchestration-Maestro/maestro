@@ -147,6 +147,12 @@ impl Listing {
         self.output
             .scopes
             .extend(std::mem::take(&mut output.scopes));
+        #[cfg(test)]
+        let settled = output.settled.bytes;
+        #[cfg(test)]
+        {
+            self.output.settled.bytes += settled;
+        }
         debug_assert!(
             matches!(node.kind, Kind::Item(_)),
             "a list's item slot holds an item node"

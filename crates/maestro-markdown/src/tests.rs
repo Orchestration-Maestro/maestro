@@ -20,7 +20,7 @@ mod segment_balance;
 mod shared_text;
 mod table_progress;
 
-pub(crate) use shared_text::Retained;
+pub(crate) use shared_text::{Retained, settled, settled_node};
 
 /// Worker stack well below the main thread's, so depth cannot lean on it.
 pub(crate) const WORKER_STACK: usize = 2 * 1024 * 1024;

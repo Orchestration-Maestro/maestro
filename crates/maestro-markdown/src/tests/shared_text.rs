@@ -1,6 +1,6 @@
 //! Shared authored values at the parser boundary.
-use crate::{MappedText, parse};
-use std::{collections::HashSet, mem::size_of_val, sync::Arc};
+use crate::{Kind, MappedText, Node, parse};
+use std::{collections::HashSet, mem::size_of, mem::size_of_val, sync::Arc};
 
 /// Unique live allocation payloads, excluding allocator headers and hash control bytes.
 #[derive(Default)]
@@ -32,6 +32,42 @@ impl Retained {
         }
         self.bytes += size_of_val(value.as_ref()) + capacity;
         true
+    }
+}
+
+/// Charge the allocations one settled node owns, returning the children it holds.
+pub(crate) fn settled_node<'a>(node: &'a Node, retained: &mut Retained) -> Option<&'a Vec<Node>> {
+    retained.nodes += 1;
+    node.authored.retained(retained);
+    match &node.kind {
+        Kind::Quote(children, body) => {
+            body.retained(retained);
+            Some(children)
+        }
+        Kind::Paragraph(children)
+        | Kind::Inline(children)
+        | Kind::List(_, children)
+        | Kind::Item(children) => Some(children),
+        Kind::Text(text) => {
+            retained.bytes += text.authored.capacity() + text.decoded.capacity();
+            None
+        }
+        Kind::CodeBlock(body, language) => {
+            retained.bytes += body.capacity() + language.as_ref().map_or(0, String::capacity);
+            None
+        }
+        _ => None,
+    }
+}
+
+/// Charge every allocation a settled block tree keeps alive, once per allocation.
+pub(crate) fn settled(nodes: &Vec<Node>, retained: &mut Retained) {
+    retained.bytes += nodes.capacity() * size_of::<Node>();
+    let mut pending = vec![nodes];
+    while let Some(nodes) = pending.pop() {
+        for node in nodes {
+            pending.extend(settled_node(node, retained));
+        }
     }
 }
 

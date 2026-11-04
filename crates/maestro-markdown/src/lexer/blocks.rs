@@ -42,6 +42,9 @@ pub(crate) struct BlockTokens {
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
     list: Option<Box<ListState>>,
+    /// Payload the published nodes and the adopted list state charged this output.
+    #[cfg(test)]
+    settled: Box<crate::tests::Retained>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -102,6 +105,8 @@ impl BlockTokens {
         self.complete();
         self.tail =
             Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
+        #[cfg(test)]
+        crate::tests::settled_node(&node, &mut self.settled);
         self.nodes.push(node);
     }
 
@@ -114,6 +119,16 @@ impl BlockTokens {
         list: Option<Box<ListState>>,
     ) {
         self.push_segmented(raw, node);
+        #[cfg(test)]
+        let mut list = list;
+        #[cfg(test)]
+        {
+            let mut adopted = crate::tests::Retained::default();
+            if let Some(state) = list.as_deref_mut() {
+                state.retained(&mut adopted);
+            }
+            self.settled.bytes += adopted.bytes;
+        }
         self.list = list;
     }
 
@@ -201,6 +216,16 @@ impl BlockTokens {
             Tail::Visible(raw) => raw.take(),
             Tail::Definition => None,
         }
+    }
+
+    /// Charge the operands and settled output this step keeps alive while it stays open.
+    #[cfg(test)]
+    pub(crate) fn retained(&self, retained: &mut crate::tests::Retained) {
+        retained.bytes += self.scopes.capacity() * std::mem::size_of::<(ScopeKey, Segmented)>();
+        for scope in self.scopes.values() {
+            scope.retained(retained);
+        }
+        retained.bytes += self.settled.bytes;
     }
 }
 impl<E> Lexer<'_, E> {
