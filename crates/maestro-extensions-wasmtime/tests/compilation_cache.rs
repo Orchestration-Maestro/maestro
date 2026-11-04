@@ -104,7 +104,7 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
             .unwrap();
     }
     for source in [
-        "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+        "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
         "crates/maestro-extensions-wasm/src/tests/build.rs",
         "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
         "crates/maestro-tooling/src/example_files.rs",

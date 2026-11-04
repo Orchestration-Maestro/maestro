@@ -1,6 +1,6 @@
 # Author component fixture
 
-This is the compiled [author component example](../../../maestro-extensions-wasm/examples/author_component.rs),
+This is the compiled [author component example](../../../maestro-extensions-wasm/tests/support/author_component.rs),
 using its existing [extension body](../../../maestro-extensions-wasm/src/tests/author.rs).
 Discovery tests copy this one artifact; they do not compile or activate it.
 
