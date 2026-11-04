@@ -230,20 +230,18 @@ fn inventory_matches_authored_exports() {
     let mut selected = inventory.families[2].1.clone();
     selected.sort();
     assert_eq!(selected, names);
-    let (family, selected) = inventory
-        .families
-        .iter()
-        .find(|(family, _)| *family == "canvas")
-        .unwrap();
     let mut names = CANVAS_SOURCES
         .iter()
         .flat_map(|file| source_exports(&root.join(file)))
-        .filter(|name| !SCREENSHOT_EXPORTS.contains(&name.as_str()))
         .collect::<Vec<_>>();
+    for export in SCREENSHOT_EXPORTS {
+        assert!(names.iter().any(|name| name == export), "{export}");
+    }
+    names.retain(|name| !SCREENSHOT_EXPORTS.contains(&name.as_str()));
     names.sort();
-    let mut selected = selected.clone();
+    let mut selected = inventory.families[3].1.clone();
     selected.sort();
-    assert_eq!(selected, names, "{family}");
+    assert_eq!(selected, names);
 }
 
 /// Authored source modules whose exports mount on the canvas page's `#canvas`.
