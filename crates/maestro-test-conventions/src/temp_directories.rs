@@ -4,8 +4,10 @@ use crate::source::Member;
 
 /// Crates whose test directories have moved onto the disposable-directory owner.
 ///
-/// A later migration batch adds the crates it converts; the batch that finishes the
-/// migration removes this scope so the check covers every crate.
+/// `maestro-test-process` is the only member still outside this scope, because its
+/// own builder declaration and its child-environment passthrough are resolved
+/// separately. The batch that converts it removes this scope so the check covers
+/// every crate.
 const MIGRATED_CRATES: &[&str] = &[
     "maestro-daemon",
     "maestro-session",
@@ -29,6 +31,36 @@ const MIGRATED_CRATES: &[&str] = &[
     "maestro-tools",
     "maestro-resources",
     "maestro-chat",
+    "maestro",
+    "maestro-agent",
+    "maestro-brand",
+    "maestro-cancellation",
+    "maestro-cli",
+    "maestro-entry",
+    "maestro-export",
+    "maestro-extensions",
+    "maestro-extensions-wasm",
+    "maestro-json",
+    "maestro-listeners",
+    "maestro-markdown",
+    "maestro-multiplexer",
+    "maestro-package",
+    "maestro-path",
+    "maestro-pattern",
+    "maestro-protocol",
+    "maestro-request",
+    "maestro-rpc",
+    "maestro-settings",
+    "maestro-subagents",
+    "maestro-test-browser",
+    "maestro-test-conventions",
+    "maestro-test-fixtures",
+    "maestro-test-terminal",
+    "maestro-test-tracing",
+    "maestro-text",
+    "maestro-theme",
+    "maestro-tool",
+    "maestro-web",
 ];
 
 /// Spelling that names the platform temporary directory.

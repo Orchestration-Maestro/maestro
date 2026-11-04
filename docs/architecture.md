@@ -380,10 +380,11 @@ so a call on a receiver is accepted while every member of its arguments stays
 checked. The check follows no bindings or data flow. Tests that observe the
 platform directory, name an uncreated socket path under it or pass it as the
 owner's parent read it through `maestro_test_directory::temporary_root`, and
-directory creation and removal go through `Scratch`. The check covers the
-crates the migration onto `maestro-test-directory` has reached, and each batch
-adds its crates until the last one removes the scope. The diagnostic names
-`TEST_DIRECTORY_CALLERS`, where a new crate asks for the owner.
+directory creation and removal go through `Scratch`. The check covers every
+member except `maestro-test-process`, whose own builder declaration and
+child-environment passthrough are still open; the batch that converts it removes
+the scope. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a new crate asks
+for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
