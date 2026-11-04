@@ -2,6 +2,7 @@
 
 use super::inputs;
 use maestro_tooling::copy_assets;
+use sha2::{Digest as _, Sha256};
 use std::{
     ffi::OsStr,
     fs, io,
@@ -204,13 +205,44 @@ fn modules(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::R
 }
 
 /// Build the prototype sandbox runtime with classic-script glue for parser-blocking startup.
+///
+/// A second, uncached build in its own target directory reports whether the bundle is reproducible.
 fn sandbox_runtime(checkout: &Path, cargo: &Path, target: &Path, output: &Path) -> io::Result<()> {
+    let bundle = output.join("package/modules/sandbox_runtime");
+    runtime_bundle(
+        checkout,
+        Command::new(cargo).env("CARGO_TARGET_DIR", target),
+        &bundle,
+    )?;
+    let repeat = output.with_file_name("repeat");
+    runtime_bundle(
+        checkout,
+        Command::new(cargo)
+            .env("CARGO_TARGET_DIR", repeat.join("target"))
+            .env("RUSTC_WRAPPER", ""),
+        &repeat.join("bundle"),
+    )?;
+    let mut identical = true;
+    for name in ["runtime.js", "runtime_bg.wasm"] {
+        let bytes = fs::read(bundle.join(name))?;
+        identical &= bytes == fs::read(repeat.join("bundle").join(name))?;
+        println!(
+            "RECEIPT sandbox-runtime {name} bytes={} sha256={}",
+            bytes.len(),
+            maestro_tooling::hex(&Sha256::digest(&bytes))
+        );
+    }
+    println!("RECEIPT sandbox-runtime reproducible={identical}");
+    Ok(())
+}
+
+/// Compile the prototype runtime in release and generate its no-modules glue.
+fn runtime_bundle(checkout: &Path, cargo: &mut Command, output: &Path) -> io::Result<()> {
     let manifest = checkout
         .join("crates/maestro-web/tests/fixtures/browser_modules/sandbox_runtime/Cargo.toml");
     let built = command(
-        Command::new(cargo)
+        cargo
             .current_dir(checkout)
-            .env("CARGO_TARGET_DIR", target)
             .args(["build", "--manifest-path"])
             .arg(manifest)
             .args([
@@ -229,7 +261,7 @@ fn sandbox_runtime(checkout: &Path, cargo: &Path, target: &Path, output: &Path) 
             .args(["--target", "no-modules", "--no-modules-global"])
             .arg("__maestroSandboxRuntime")
             .args(["--no-typescript", "--out-dir"])
-            .arg(output.join("package/modules/sandbox_runtime"))
+            .arg(output)
             .args(["--out-name", "runtime"]),
     )
     .map(drop)

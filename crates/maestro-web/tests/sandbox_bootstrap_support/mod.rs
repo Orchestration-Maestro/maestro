@@ -58,23 +58,51 @@ impl Bundle {
         Self { glue, wasm }
     }
 
-    /// Parser-blocking loading script: glue, then synchronous instantiation of the embedded module.
-    pub(crate) fn blocking(&self, wasm: &[u8]) -> String {
-        format!(
-            "{}\n{GLOBAL}.initSync({{module:Uint8Array.fromBase64(\"{}\")}});",
-            self.glue,
-            STANDARD.encode(wasm)
-        )
+    /// Glue and synchronous loader in one inline script, for documents with a hierarchical URL.
+    pub(crate) fn inline(&self, wasm: &[u8]) -> Boot {
+        Boot {
+            prefix: String::new(),
+            script: format!("{}\n{}", self.glue, loader(wasm)),
+        }
     }
 
-    /// Staging script: glue, then asynchronous instantiation of the embedded module.
-    pub(crate) fn staged(&self) -> String {
-        format!(
-            "{}\n{GLOBAL}({{module_or_path:Uint8Array.fromBase64(\"{}\")}});",
-            self.glue,
-            STANDARD.encode(&self.wasm)
-        )
+    /// Served glue, then the inline synchronous loader, for `about:srcdoc` documents.
+    pub(crate) fn served(wasm: &[u8]) -> Boot {
+        Boot {
+            prefix: SERVED.into(),
+            script: loader(wasm),
+        }
     }
+
+    /// Served glue, then an inline asynchronous loader, for the staging alternative.
+    pub(crate) fn staged(&self) -> Boot {
+        Boot {
+            prefix: SERVED.into(),
+            script: format!(
+                "{GLOBAL}({{module_or_path:Uint8Array.fromBase64(\"{}\")}});",
+                STANDARD.encode(&self.wasm)
+            ),
+        }
+    }
+}
+
+/// Glue element that loads from the fixture origin, parser-blocking.
+const SERVED: &str = "<script src=\"/package/modules/sandbox_runtime/runtime.js\"></script>";
+
+/// Inline statement that instantiates the embedded module synchronously.
+fn loader(wasm: &[u8]) -> String {
+    format!(
+        "{GLOBAL}.initSync({{module:Uint8Array.fromBase64(\"{}\")}});",
+        STANDARD.encode(wasm)
+    )
+}
+
+/// Markup that precedes the configuration block and the inline loading script text.
+pub(crate) struct Boot {
+    /// Elements placed before the carriers, such as a served glue script.
+    pub prefix: String,
+    /// Inline loading script text.
+    pub script: String,
 }
 
 /// One prototype runtime insertion and the exact script texts a hash policy admits.
@@ -88,9 +116,9 @@ pub(crate) struct Runtime {
 }
 
 impl Runtime {
-    /// Assemble carriers before the configuration block, then the loading script.
+    /// Assemble the boot prefix and carriers before the configuration block, then the loader.
     pub(crate) fn new(
-        boot: String,
+        boot: Boot,
         config: &serde_json::Value,
         id: &str,
         providers: &[&str],
@@ -100,7 +128,10 @@ impl Runtime {
             .iter()
             .map(|source| format!("({source})({quoted});"))
             .collect();
-        let mut markup = String::new();
+        let Boot {
+            prefix: mut markup,
+            script: boot,
+        } = boot;
         for provider in &providers {
             let _ = write!(
                 markup,

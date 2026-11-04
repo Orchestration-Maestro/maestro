@@ -1,7 +1,7 @@
 //! Prototype runtime bootstrap qualification in isolated Chromium frames.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::sandbox_bootstrap_support::{
-    Bundle, Mount, OBSERVER, Runtime, digests, encode, json as native_json, observe, padded,
+    Boot, Bundle, Mount, OBSERVER, Runtime, digests, encode, json as native_json, observe, padded,
     program, receipt, synchronous_limit, wrap,
 };
 use serde_json::{Value, json};
@@ -35,7 +35,7 @@ fn config(selections: &[&str]) -> Value {
 }
 
 /// Repeated built-ins around one supplied provider.
-fn repeated(boot: String) -> Runtime {
+fn repeated(boot: Boot) -> Runtime {
     Runtime::new(
         boot,
         &config(&["attachments", "provider", "attachments"]),
@@ -87,10 +87,10 @@ fn fields(state: &Value, keys: &[&str]) -> Value {
 pub async fn bootstrap_measures_synchronous_compilation_limit() {
     let bundle = Bundle::load().await;
     receipt(&format!(
-        "bundle wasm={} glue={} blocking-script={}",
+        "bundle wasm={} glue={} inline-script={}",
         bundle.wasm.len(),
         bundle.glue.len(),
-        bundle.blocking(&bundle.wasm).len()
+        bundle.inline(&bundle.wasm).script.len()
     ));
     let lower = bundle.glue.to_ascii_lowercase();
     assert!(!lower.contains("</script") && !lower.contains("<!--"));
@@ -110,9 +110,9 @@ pub async fn bootstrap_installs_selections_before_first_classic_scripts() {
     let bundle = Bundle::load().await;
     let (largest, _) = synchronous_limit(&bundle.wasm);
     for size in [bundle.wasm.len(), largest] {
-        let runtime = repeated(bundle.blocking(&padded(&bundle.wasm, size)));
+        let runtime = repeated(Bundle::served(&padded(&bundle.wasm, size)));
         let policy = format!(
-            "script-src {} 'wasm-unsafe-eval'",
+            "script-src 'self' {} 'wasm-unsafe-eval'",
             artifact_hashes(&runtime).await
         );
         let html = artifact("", &runtime);
@@ -132,7 +132,7 @@ pub async fn bootstrap_installs_selections_before_first_classic_scripts() {
         );
         assert_eq!(
             fields(&state, &["head", "scaffold", "origin"]),
-            json!({"head":"script","scaffold":0,"origin":"null"})
+            json!({"head":"script,script","scaffold":0,"origin":"null"})
         );
     }
 }
@@ -179,7 +179,7 @@ pub async fn bootstrap_settles_asynchronous_programs_in_rust() {
     ];
     for (code, expected) in rows {
         let runtime = Runtime::new(
-            bundle.blocking(&bundle.wasm),
+            Bundle::served(&bundle.wasm),
             &config(&["provider", "attachments"]),
             ID,
             &[COMPLETION],
@@ -203,7 +203,7 @@ pub async fn bootstrap_settles_asynchronous_programs_in_rust() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_supplied_url_installs_before_first_classic_scripts() {
     let bundle = Bundle::load().await;
-    let runtime = repeated(bundle.blocking(&bundle.wasm));
+    let runtime = repeated(bundle.inline(&bundle.wasm));
     let policy = format!(
         "script-src {} 'wasm-unsafe-eval'",
         artifact_hashes(&runtime).await
@@ -227,7 +227,7 @@ pub async fn bootstrap_supplied_url_installs_before_first_classic_scripts() {
 pub async fn bootstrap_offline_document_needs_no_resource() {
     let bundle = Bundle::load().await;
     let runtime = Runtime::new(
-        bundle.blocking(&bundle.wasm),
+        bundle.inline(&bundle.wasm),
         &config(&["attachments"]),
         ID,
         &[],
@@ -236,9 +236,12 @@ pub async fn bootstrap_offline_document_needs_no_resource() {
         "default-src 'none'; script-src {} 'wasm-unsafe-eval'",
         artifact_hashes(&runtime).await
     );
-    let html = artifact("", &runtime);
+    let html = artifact(
+        &format!("<meta http-equiv=\"Content-Security-Policy\" content=\"{policy}\">"),
+        &runtime,
+    );
     let mount = Mount {
-        policy: &policy,
+        url: true,
         ..Mount::default()
     };
     let (state, _) = observe(&html, mount).await;
@@ -265,32 +268,33 @@ async fn policy_row(html: &str, label: &str, policy: &str, trusted_default: bool
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
     let bundle = Bundle::load().await;
-    let runtime = repeated(bundle.blocking(&bundle.wasm));
+    let runtime = repeated(Bundle::served(&bundle.wasm));
     let html = artifact("", &runtime);
     let all = artifact_hashes(&runtime).await;
     let authored = digests(&[HEAD, BODY]).await;
     let encoded = encode(&runtime.providers[0]);
     let encoded = digests(&[&runtime.boot, &encoded, HEAD, BODY]).await;
-    let strict = format!("script-src {all} 'wasm-unsafe-eval'; require-trusted-types-for 'script'");
+    let strict =
+        format!("script-src 'self' {all} 'wasm-unsafe-eval'; require-trusted-types-for 'script'");
     let mut observed = vec![
         policy_row(
             &html,
             "matched",
-            &format!("script-src {all} 'wasm-unsafe-eval'"),
+            &format!("script-src 'self' {all} 'wasm-unsafe-eval'"),
             false,
         )
         .await,
         policy_row(
             &html,
             "unmatched loader",
-            &format!("script-src {authored} 'wasm-unsafe-eval'"),
+            &format!("script-src 'self' {authored} 'wasm-unsafe-eval'"),
             false,
         )
         .await,
         policy_row(
             &html,
             "encoded provider markup",
-            &format!("script-src {encoded} 'wasm-unsafe-eval'"),
+            &format!("script-src 'self' {encoded} 'wasm-unsafe-eval'"),
             false,
         )
         .await,
@@ -298,13 +302,13 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
         policy_row(&html, "inherited strict without default", &strict, false).await,
     ];
     let none = Runtime::new(
-        bundle.blocking(&bundle.wasm),
+        Bundle::served(&bundle.wasm),
         &config(&["provider", "attachments", "provider"]),
         ID,
         &[TRUSTED_NONE, TRACE_PROVIDER],
     );
     let policy = format!(
-        "script-src {} 'wasm-unsafe-eval'",
+        "script-src 'self' {} 'wasm-unsafe-eval'",
         artifact_hashes(&none).await
     );
     observed.push(policy_row(&artifact("", &none), "in-frame none", &policy, false).await);
@@ -322,7 +326,7 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
     );
 }
 
-/// Refused loading scripts surface their compile errors and leave helpers absent.
+/// Refused loading scripts surface their errors and leave helpers absent, including inline glue in srcdoc.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_refused_compilation_leaves_helpers_absent() {
     let bundle = Bundle::load().await;
@@ -331,25 +335,31 @@ pub async fn bootstrap_refused_compilation_leaves_helpers_absent() {
     let rows = [
         (
             "over limit",
-            padded(&bundle.wasm, largest + 1),
+            Bundle::served(&padded(&bundle.wasm, largest + 1)),
             " 'wasm-unsafe-eval'",
             "RangeError: ",
         ),
         (
             "no wasm permission",
-            bundle.wasm.clone(),
+            Bundle::served(&bundle.wasm),
             "",
             "CompileError: ",
         ),
+        (
+            "inline glue in srcdoc",
+            bundle.inline(&bundle.wasm),
+            " 'wasm-unsafe-eval'",
+            "TypeError: ",
+        ),
     ];
-    for (label, wasm, permission, error) in rows {
-        let runtime = Runtime::new(bundle.blocking(&wasm), &config(&["attachments"]), ID, &[]);
+    for (label, boot, permission, error) in rows {
+        let runtime = Runtime::new(boot, &config(&["attachments"]), ID, &[]);
         let html = format!(
             "<!DOCTYPE html><script>{OBSERVER}</script><head>{}<script>{probe}</script></head><body></body>",
             runtime.markup
         );
         let policy = format!(
-            "script-src {}{permission}",
+            "script-src 'self' {}{permission}",
             digests(&[OBSERVER, &runtime.boot, probe]).await
         );
         let mount = Mount {
@@ -376,16 +386,18 @@ pub async fn bootstrap_staging_alternative_needs_a_trusted_html_sink() {
     .into();
     let boot = bundle.staged();
     let staging = format!(
-        "<!DOCTYPE html><html><head><script type=\"application/json\" data-maestro-sandbox>{}</script><script>{boot}</script></head></html>",
-        config.to_string().replace('<', "\\u003c")
+        "<!DOCTYPE html><html><head>{}<script type=\"application/json\" data-maestro-sandbox>{}</script><script>{}</script></head></html>",
+        boot.prefix,
+        config.to_string().replace('<', "\\u003c"),
+        boot.script
     );
-    let hashes = digests(&[&boot, HEAD, BODY]).await;
+    let hashes = digests(&[&boot.script, HEAD, BODY]).await;
     let mut observed = Vec::new();
     for (label, trusted) in [
         ("open", ""),
         ("strict", "; require-trusted-types-for 'script'"),
     ] {
-        let policy = format!("script-src {hashes} 'wasm-unsafe-eval'{trusted}");
+        let policy = format!("script-src 'self' {hashes} 'wasm-unsafe-eval'{trusted}");
         let mount = Mount {
             policy: &policy,
             staged: true,
