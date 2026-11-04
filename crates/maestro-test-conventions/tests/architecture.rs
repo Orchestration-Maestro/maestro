@@ -4,7 +4,7 @@ use crate::support;
 
 use std::fmt::Write;
 
-use maestro_test_conventions::check_workspace;
+use maestro_test_conventions::{check_declared_graph, check_workspace};
 use support::Workspace;
 #[cfg(unix)]
 use support::{host_report, output, record_path};
@@ -1630,21 +1630,74 @@ fn policy_edge_matrix(dev: bool) {
     workspace.policy_probe(&workspace.metadata(), dev);
 }
 
-/// Reject each unpermitted policy edge, in the probe child serving the valid metadata.
+#[test]
+fn forbidden_edge_in_supplied_declared_metadata_is_reported() {
+    use serde_json::json;
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-cli", "maestro-agent", "maestro-settings"]);
+    let declared = workspace.metadata();
+    let mut edge = declared["packages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|package| package["name"] == "maestro-cli")
+        .unwrap()["dependencies"][0]
+        .clone();
+    edge["name"] = json!("maestro-settings");
+    edge["path"] = json!(workspace.root.path().join("crates/maestro-settings"));
+    let mut patched = declared.clone();
+    patched["packages"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|package| package["name"] == "maestro-agent")
+        .unwrap()["dependencies"] = json!([edge]);
+
+    assert_eq!(
+        check_declared_graph(workspace.root.path(), &patched),
+        Err("forbidden production dependency: maestro-agent -> maestro-settings".into())
+    );
+    assert_eq!(
+        check_declared_graph(workspace.root.path(), &declared),
+        Ok(())
+    );
+}
+
+#[test]
+fn malformed_supplied_declared_metadata_is_rejected() {
+    let workspace = Workspace::new();
+
+    let error = check_declared_graph(workspace.root.path(), &serde_json::json!({}))
+        .expect_err("an empty document is not cargo metadata");
+
+    assert!(error.starts_with("invalid cargo metadata"), "{error}");
+}
+
+/// Reject each unpermitted policy edge from one supplied declared document.
 #[cfg(unix)]
 fn policy_edge_cases(root: &std::path::Path, dev: bool) {
     use serde_json::json;
     let valid: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(root.join("resolved.json")).unwrap()).unwrap();
+        serde_json::from_slice(&std::fs::read(root.join("declared.json")).unwrap()).unwrap();
     let template = valid["packages"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|p| p["name"] == "maestro-cli")
+        .find(|package| package["name"] == "maestro-cli")
         .unwrap()["dependencies"][0]
         .clone();
     let excluded = utility_excluded();
+    let mut declared = valid;
+    for package in declared["packages"].as_array_mut().unwrap() {
+        package["dependencies"] = json!([]);
+    }
     for &(from, targets) in support::policy::POLICY {
+        let index = declared["packages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|package| package["name"] == from)
+            .unwrap();
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !excluded.contains(&from);
             let support_edge = support::policy::test_support_callers(to).is_some();
@@ -1656,22 +1709,11 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
             {
                 continue;
             }
-            let mut declared = valid.clone();
-            for package in declared["packages"].as_array_mut().unwrap() {
-                package["dependencies"] = json!([]);
-            }
-            let package = declared["packages"]
-                .as_array_mut()
-                .unwrap()
-                .iter_mut()
-                .find(|p| p["name"] == from)
-                .unwrap();
             let mut dependency = template.clone();
             dependency["name"] = json!(to);
             dependency["rename"] = json!("alias");
             dependency["path"] = json!(root.join("crates").join(to));
             dependency["kind"] = if dev { json!("dev") } else { json!(null) };
-            package["dependencies"] = json!([dependency]);
             let expected = if targets.is_empty() {
                 format!("{from} must not depend on workspace crate {to}")
             } else if support::class(from) == "core" && support::class(to) == "dedicated" {
@@ -1683,25 +1725,16 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
             } else {
                 format!("forbidden production dependency: {from} -> {to}")
             };
-            let result = check_declared(root, &declared);
+            declared["packages"][index]["dependencies"] = json!([dependency]);
+            let result = check_declared_graph(root, &declared);
+            declared["packages"][index]["dependencies"] = json!([]);
             assert!(
                 matches!(&result, Err(error) if error.contains(&expected)),
                 "{from} -> {to}: {result:?}"
             );
         }
     }
-    assert_eq!(check_declared(root, &valid), Ok(()));
-}
-
-/// Serve `declared` to the probe's declared pass, then check the probe workspace.
-#[cfg(unix)]
-fn check_declared(root: &std::path::Path, declared: &serde_json::Value) -> Result<(), String> {
-    std::fs::write(
-        root.join("declared.json"),
-        serde_json::to_vec(declared).unwrap(),
-    )
-    .unwrap();
-    check_workspace(root)
+    assert_eq!(check_workspace(root), Ok(()));
 }
 
 #[cfg(unix)]
