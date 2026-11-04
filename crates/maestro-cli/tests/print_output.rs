@@ -19,6 +19,41 @@ const SHUTDOWN_REPORT: &str = "MAESTRO_SHUTDOWN_REPORT";
 #[cfg(unix)]
 const WAITING_FOR_THE_REQUEST: &str = "print run waiting in its model stream";
 
+/// The shutdown case a signalled child runs.
+#[cfg(unix)]
+#[derive(Clone, Copy)]
+enum SignallingCase {
+    /// One termination signal, disposing while the request still waits.
+    Termination,
+    /// A hangup arriving while the termination's disposal still waits.
+    Hangup,
+    /// One termination signal whose disposal the host rejects.
+    Rejected,
+}
+
+#[cfg(unix)]
+impl SignallingCase {
+    /// Every case, in the order the parent may select them.
+    const ALL: [Self; 3] = [Self::Termination, Self::Hangup, Self::Rejected];
+
+    /// The case `spelled` names, as the parent hands it to its child.
+    fn parse(spelled: Option<&str>) -> Self {
+        Self::ALL
+            .into_iter()
+            .find(|case| Some(case.spelled()) == spelled)
+            .unwrap_or_else(|| panic!("the signalled run has no case: {spelled:?}"))
+    }
+
+    /// The spelling the parent hands its child for this case.
+    fn spelled(self) -> &'static str {
+        match self {
+            Self::Termination => "termination",
+            Self::Hangup => "hangup",
+            Self::Rejected => "rejected",
+        }
+    }
+}
+
 #[test]
 fn library_exports_accept_existing_runtime() {
     // The exports compile against the application's own runtime and typed inputs.
@@ -98,7 +133,8 @@ fn a_termination_signal_disposes_the_run_and_reports_quit() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
-    let (mut child, mut diagnostics) = signalling_case(name, "termination", root.path(), &report);
+    let (mut child, mut diagnostics) =
+        signalling_case(name, SignallingCase::Termination, root.path(), &report);
 
     await_announcement(&mut child, &mut diagnostics, WAITING_FOR_THE_REQUEST);
     signal(&child, rustix::process::Signal::TERM);
@@ -124,7 +160,8 @@ fn a_hangup_after_a_termination_ends_the_run_and_reports_quit_once() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
-    let (mut child, mut diagnostics) = signalling_case(name, "hangup", root.path(), &report);
+    let (mut child, mut diagnostics) =
+        signalling_case(name, SignallingCase::Hangup, root.path(), &report);
 
     await_announcement(&mut child, &mut diagnostics, WAITING_FOR_THE_REQUEST);
     signal(&child, rustix::process::Signal::TERM);
@@ -152,7 +189,8 @@ fn a_rejected_disposal_ends_the_run_and_reports_quit() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
-    let (mut child, mut diagnostics) = signalling_case(name, "rejected", root.path(), &report);
+    let (mut child, mut diagnostics) =
+        signalling_case(name, SignallingCase::Rejected, root.path(), &report);
 
     await_announcement(&mut child, &mut diagnostics, WAITING_FOR_THE_REQUEST);
     signal(&child, rustix::process::Signal::TERM);
@@ -174,14 +212,14 @@ fn a_rejected_disposal_ends_the_run_and_reports_quit() {
 #[cfg(unix)]
 fn signalling_case(
     name: &str,
-    case: &str,
+    case: SignallingCase,
     root: &std::path::Path,
     report: &std::path::Path,
 ) -> (
     std::process::Child,
     std::io::BufReader<std::process::ChildStderr>,
 ) {
-    let mut child = crate::support::missing_cwd::command(name, case, root)
+    let mut child = crate::support::missing_cwd::command(name, case.spelled(), root)
         .env(SHUTDOWN_REPORT, report)
         .quiet()
         .nocapture()
@@ -233,13 +271,9 @@ fn signalling_child() {
     let running = {
         let local = Rc::clone(&local);
         async move {
-            let selection = maestro_test_process::selection();
-            let fixture = signalling_fixture(
-                Rc::clone(&local),
-                std::path::Path::new(&report),
-                selection.case(),
-            )
-            .await;
+            let case = SignallingCase::parse(maestro_test_process::selection().case());
+            let fixture =
+                signalling_fixture(Rc::clone(&local), std::path::Path::new(&report), case).await;
             let created = create_runtime(
                 &startup::args(&["--model", "startup/first"]),
                 fixture.creation(),
@@ -255,7 +289,7 @@ fn signalling_child() {
                 created,
                 Rc::new(|_| panic!("a print run never replaces its session")),
             ));
-            if selection.case() == Some("rejected") {
+            if let SignallingCase::Rejected = case {
                 reject_disposal(&runtime);
             }
             *runtime.session().agent().stream_fn.write().unwrap() = Some(Rc::new(|_, _, _, _| {
@@ -291,14 +325,15 @@ fn reject_disposal(runtime: &AgentSessionRuntime) {
 async fn signalling_fixture(
     local: Rc<tokio::task::LocalSet>,
     report: &std::path::Path,
-    case: Option<&str>,
+    case: SignallingCase,
 ) -> Fixture {
     let settings = startup::settings(&[]);
     match case {
-        Some("hangup") => Fixture::with_pending_shutdown_report(local, settings, report).await,
-        Some("termination" | "rejected") => {
+        SignallingCase::Hangup => {
+            Fixture::with_pending_shutdown_report(local, settings, report).await
+        }
+        SignallingCase::Termination | SignallingCase::Rejected => {
             Fixture::with_shutdown_report(local, settings, report).await
         }
-        other => panic!("the signalled run has no case: {other:?}"),
     }
 }
