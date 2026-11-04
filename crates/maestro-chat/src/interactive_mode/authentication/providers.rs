@@ -2,7 +2,7 @@
 
 use super::{InteractiveMode, sorted_by_name};
 use crate::{AuthSelectorProvider, AuthType};
-use maestro_app::{BUILT_IN_PROVIDER_DISPLAY_NAMES, ModelRegistry, get_providers};
+use maestro_app::{BUILT_IN_PROVIDER_DISPLAY_NAMES, get_providers};
 use std::collections::HashSet;
 use std::error::Error;
 use std::hash::BuildHasher;
@@ -75,31 +75,19 @@ impl InteractiveMode {
                 model.provider.clone()
             })
             .collect();
-        options.extend(api_key_login_options(
-            model_providers.iter().map(String::as_str),
-            &oauth_provider_ids,
-            registry,
-        ));
+        let mut seen = HashSet::new();
+        options.extend(
+            model_providers
+                .iter()
+                .filter(|id| seen.insert(id.as_str()))
+                .filter(|id| is_api_key_login_provider(id, &oauth_provider_ids, None))
+                .map(|id| AuthSelectorProvider {
+                    id: id.clone(),
+                    name: registry.get_provider_display_name(id),
+                    auth_type: AuthType::ApiKey,
+                }),
+        );
         options.retain(|option| auth_type.is_none_or(|kind| option.auth_type == kind));
         sorted_by_name(options)
     }
-}
-
-/// The API-key choices among `model_providers`, read in one pass: each provider once, in
-/// its first appearance, when it may sign in with an API key, named by `registry`.
-pub(in crate::interactive_mode) fn api_key_login_options<'a>(
-    model_providers: impl IntoIterator<Item = &'a str>,
-    oauth_provider_ids: &'a HashSet<String>,
-    registry: &'a ModelRegistry,
-) -> impl Iterator<Item = AuthSelectorProvider> {
-    let mut seen = HashSet::new();
-    model_providers
-        .into_iter()
-        .filter(move |id| seen.insert(*id))
-        .filter(|id| is_api_key_login_provider(id, oauth_provider_ids, None))
-        .map(|id| AuthSelectorProvider {
-            id: id.to_owned(),
-            name: registry.get_provider_display_name(id),
-            auth_type: AuthType::ApiKey,
-        })
 }

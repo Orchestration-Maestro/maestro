@@ -1716,16 +1716,6 @@ fn notice_traversals_consume_each_input_once() {
             assert!(visits.get() <= count);
             assert!(rescanning_visits(&entries) > count);
             let names: Vec<_> = entries.into_iter().map(|entry| entry.content).collect();
-            visits.set(0);
-            let listed = super::super::notices::package_list(
-                names
-                    .iter()
-                    .map(String::as_str)
-                    .inspect(|_| visits.set(visits.get() + 1)),
-            );
-            assert_eq!(listed.lines().count(), count);
-            assert!(visits.get() <= count, "one visit per package at {count}");
-            assert!(rescanning_visits(&names) > count);
             let world = Setup::default().build(root);
             world.mode.show_package_update_notification(&names).unwrap();
             let rows: Vec<_> = world
@@ -1827,12 +1817,11 @@ fn held_release_fetch(release: std::sync::Arc<tokio::sync::Notify>) -> maestro_a
     })
 }
 
-/// A deliberately rescanning control: each item's check walks every earlier item again,
-/// counted at the same iterator boundary.
-pub(super) fn rescanning_visits<T>(items: &[T]) -> usize {
+/// A deliberately rescanning control, counted at the same iterator boundary.
+fn rescanning_visits(entries: &[maestro_app::ChangelogEntry]) -> usize {
     let visits = std::cell::Cell::new(0);
-    for end in 1..=items.len() {
-        for _ in items.iter().take(end) {
+    for end in 1..=entries.len() {
+        for _ in entries.iter().take(end) {
             visits.set(visits.get() + 1);
         }
     }

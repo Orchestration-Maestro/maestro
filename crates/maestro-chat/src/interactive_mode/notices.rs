@@ -185,14 +185,6 @@ pub(super) fn join_changelog<'a>(entries: impl Iterator<Item = &'a ChangelogEntr
         .join("\n\n")
 }
 
-/// Lists package names in the caller's order, one `- name` row each.
-pub(super) fn package_list<'a>(names: impl Iterator<Item = &'a str>) -> String {
-    names
-        .map(|name| format!("- {name}"))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
 impl InteractiveMode {
     /// Appends the available-release card and requests a frame.
     ///
@@ -245,7 +237,11 @@ impl InteractiveMode {
         )?;
         let instruction = theme.fg(&ThemeColor::Muted, "Package updates are available. Run ")?;
         let label = theme.fg(&ThemeColor::Muted, "Packages:")?;
-        let lines = package_list(packages.iter().map(String::as_str));
+        let lines = packages
+            .iter()
+            .map(|name| format!("- {name}"))
+            .collect::<Vec<_>>()
+            .join("\n");
         self.show_update_notification(
             "Package Updates Available",
             &format!("{instruction}{action}\n{label}\n{lines}"),

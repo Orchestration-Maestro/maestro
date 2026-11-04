@@ -728,13 +728,7 @@ fn session_rebinding_stops_at_each_failed_phase() {
                 panic!("a failing rebinding case");
             };
             assert!(expected.error.is_some());
-            if phase == "updateEditorBorderColor" {
-                // The border's only failure is an unpublished theme, which the listing before
-                // it has already reported; no later failure is reachable here.
-                assert_eq!(expected.calls.last(), Some(&phase));
-            } else {
-                failed_rebind(directory, subscription, &phase, &expected.calls).await;
-            }
+            failed_rebind(directory, subscription, &phase, &expected.calls).await;
         }
     });
 }
