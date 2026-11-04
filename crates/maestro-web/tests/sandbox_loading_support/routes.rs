@@ -335,6 +335,7 @@ impl Routes {
             }
             "unrelated" => self.unrelated_route(),
             "ready" => self.ready_route(&frame.unwrap()).await,
+            "replayed" => self.replayed_route(&frame.unwrap()).await,
             "error" => self.error_route(&frame.unwrap()).await,
             "tabs" => self.tabs_route(&frame.unwrap()).await,
             "reset-opens" => {
@@ -484,6 +485,28 @@ impl Routes {
             &observed.borrow().opened.len().into(),
             &before.into(),
             "late ready and error cannot resettle",
+        );
+    }
+
+    /// A handshake the written document replays neither loads again nor reaches consumers.
+    async fn replayed_route(&self, frame: &HtmlIFrameElement) {
+        self.exchange(frame, "flush", "flushed").await;
+        let observed = self.observed();
+        let observed = observed.borrow();
+        equal(
+            &observed.received.len().into(),
+            &0.into(),
+            "replayed readiness cannot load again",
+        );
+        let errors = observed
+            .messages
+            .iter()
+            .filter(|message| message_type(message).as_deref() == Some("execution-error"))
+            .count();
+        equal(
+            &errors.into(),
+            &0.into(),
+            "replayed error cannot reach consumers",
         );
     }
 

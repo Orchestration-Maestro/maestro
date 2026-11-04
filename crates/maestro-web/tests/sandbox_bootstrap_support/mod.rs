@@ -154,6 +154,28 @@ impl Runtime {
     }
 }
 
+/// Head script that reports the document has started, ahead of the loader.
+pub(crate) const STARTING: &str = "parent.postMessage({type:'bootstrap-starting'},'*')";
+
+/// Authored document carrying the loader with one attachment selection, then the `body` script.
+pub(crate) fn loader_document(boot: Boot, body: &str) -> String {
+    let id = "bootstrap-loader";
+    let config =
+        serde_json::json!({"sandboxId":id,"globals":{"attachments":[]},"runtime":["attachments"]});
+    format!(
+        "<html><head><script>{STARTING}</script>{}</head><body><script>{body}</script></body></html>",
+        Runtime::new(boot, &config, id, &[]).markup
+    )
+}
+
+/// Address of the packaged page that writes a posted document into its own frame.
+pub(crate) fn writer_url() -> String {
+    format!(
+        "{}/sandbox.html",
+        web_sys::window().unwrap().location().origin().unwrap()
+    )
+}
+
 /// Encode text for an SVG script carrier.
 pub(crate) fn encode(code: &str) -> String {
     code.replace('&', "&amp;")
@@ -432,10 +454,7 @@ pub(crate) async fn mount(html: &str, options: Mount<'_>) -> Mounted {
         .unwrap();
         drop(message(&window, &frame, "sandbox-ready", Some(&reply)));
         let installed = message(&window, &frame, "sandbox-installed", None);
-        frame.set_src(&format!(
-            "{}/sandbox.html",
-            web_sys::window().unwrap().location().origin().unwrap()
-        ));
+        frame.set_src(&writer_url());
         container.append_child(&frame).unwrap();
         installed.await.unwrap();
     } else if options.staged {

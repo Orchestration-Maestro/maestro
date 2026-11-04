@@ -134,7 +134,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
     let parsed = inputs::inventory(INVENTORY).unwrap();
     assert_eq!(
         parsed.families.each_ref().map(|(_, names)| names.len()),
-        [26, 60, 194]
+        [26, 63, 194]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
     for invalid in [
