@@ -4270,6 +4270,7 @@ dependencies = [
  "maestro-credentials",
  "maestro-dependencies",
  "maestro-extensions",
+ "maestro-extensions-wasmtime",
  "maestro-models",
  "maestro-path",
  "maestro-session",
@@ -4698,6 +4699,7 @@ dependencies = [
  "serde",
  "serde_json",
  "signal-hook",
+ "tokio",
 ]
 
 [[package]]

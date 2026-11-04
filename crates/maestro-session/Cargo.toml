@@ -31,6 +31,7 @@ maestro-resources = { path = "../maestro-resources" }
 tokio = { version = "=1.53.3", default-features = false, features = ["fs", "rt"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-request = { path = "../maestro-request", features = ["test-support"] }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt"] }

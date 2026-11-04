@@ -1,6 +1,7 @@
 //! Native code that calls back into the component it is serving, while that component waits
 //! in a synchronous host call, gets the result and order the reference produces.
 #![cfg(test)]
+use super::example_process::run;
 use super::retained_components::{loaded_on, view};
 use maestro_extensions::{
     Cancellation, CompactOptions, EventBus, ExtensionActions, ExtensionContextActions,
@@ -11,14 +12,6 @@ use std::{cell::RefCell, rc::Rc};
 
 /// Observable order shared by native and guest participants.
 type Trace = Rc<RefCell<Vec<String>>>;
-
-/// Runs one witness on a single-threaded local executor.
-fn run(witness: impl std::future::Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, witness);
-}
 
 /// A bus whose listener errors join the trace, so a rejected nested call is visible there.
 fn bus(trace: &Trace) -> EventBus<Local> {

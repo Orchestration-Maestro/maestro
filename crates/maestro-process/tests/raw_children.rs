@@ -4,19 +4,12 @@ use crate::child_programs::{self, async_command};
 use maestro_process::child_process::{RawChild, RawOutput};
 use maestro_test_process::HARNESS_START;
 use maestro_test_process::child::harness;
+use maestro_test_process::executor::run;
 use std::{
     process::Stdio,
     task::{Context, Waker},
 };
 
-/// Drives the process owner's collection work on a caller-owned local executor.
-fn run(action: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
-}
 /// Starts a controlled producer with its three descriptors piped.
 fn spawn(program: impl Fn()) -> (RawChild, impl Future<Output = ()> + 'static) {
     RawChild::spawn(

@@ -3,6 +3,7 @@ use maestro_app::{
     AgentEvent, AgentMessage, AgentSession, AssistantMessageEventStream, PromptOptions,
     SharedAssistantMessage,
 };
+use maestro_extensions_wasmtime::test_support::gate;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -108,16 +109,6 @@ fn observe_stream(
             })
         }));
     incoming
-}
-
-/// Release only after the native controller observed the original callback's readiness.
-async fn gate(
-    entered: &mpsc::UnboundedSender<(&'static str, oneshot::Sender<()>)>,
-    phase: &'static str,
-) {
-    let (resume, done) = oneshot::channel();
-    entered.send((phase, resume)).unwrap();
-    done.await.unwrap();
 }
 
 /// The independently observed result cannot settle while either hook is waiting.

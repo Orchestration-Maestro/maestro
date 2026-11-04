@@ -24,6 +24,7 @@ serde_json.workspace = true
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-models = { path = "../maestro-models", features = ["test-support"] }
 maestro-tools = { path = "../maestro-tools", features = ["test-support"] }
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 maestro-test-directory.workspace = true
