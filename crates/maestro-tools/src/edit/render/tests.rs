@@ -44,13 +44,20 @@ fn context(args: &Value, theme: Rc<Theme>) -> ToolRenderContext<'_, EditRenderSt
         }),
     }
 }
+/// Caught preview failure.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Failure {
+    /// Original error text.
+    error: String,
+}
 /// Decode exactly the generated preview record or caught error record.
 fn preview(value: &Value) -> Option<EditPreview> {
     if value.is_null() {
         return None;
     }
     Some(if value.get("error").is_some() {
-        let error: support::Failure = serde_json::from_value(value.clone()).unwrap();
+        let error: Failure = serde_json::from_value(value.clone()).unwrap();
         Err(EditDiffError { error: error.error })
     } else {
         let details: support::Details = serde_json::from_value(value.clone()).unwrap();

@@ -223,6 +223,10 @@ mod support {
     pub mod rpc_connection;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod runtime_fixtures;
+    #[cfg(unix)]
+    pub use runtime_fixtures::paused_io_runtime;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use runtime_fixtures::run;
     pub mod session_harness;
     #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;

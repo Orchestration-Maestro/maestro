@@ -21,6 +21,21 @@ use maestro_settings::SettingsManager;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
+#[cfg(unix)]
+use super::runtime::io_builder;
+
+/// Complete `future` on a fresh current-thread runtime without I/O or time drivers.
+pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+/// Build one current-thread runtime with its I/O and time drivers and its clock paused.
+#[cfg(unix)]
+pub fn paused_io_runtime() -> tokio::runtime::Runtime {
+    io_builder().start_paused(true).build().unwrap()
+}
 /// What a runtime under test records: replacement steps and factory calls.
 #[derive(Clone, Default)]
 pub struct Recorded {
