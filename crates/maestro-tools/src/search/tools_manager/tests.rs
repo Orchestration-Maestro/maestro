@@ -646,6 +646,7 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
         for row in cases::<EntryCase>("windows_binary_directory_entries_carry_the_exe_suffix") {
             let scratch = maestro_test_directory::Scratch::new().unwrap();
             let root = scratch.path();
+            let root_text = root.to_str().unwrap();
             let path = root.join("fd.exe");
             match row.kind.as_str() {
                 "file" => std::fs::write(&path, "not executable").unwrap(),
@@ -656,14 +657,14 @@ fn windows_binary_directory_entries_carry_the_exe_suffix() {
                 }
                 _ => panic!("unknown fixture entry"),
             }
-            let mut manager = ToolsManager::new(root.to_str().unwrap().to_owned(), None);
+            let mut manager = ToolsManager::new(root_text.to_owned(), None);
             manager.host = Host {
                 os: "windows",
                 arch: "x86_64",
             };
             assert_eq!(
                 manager.get_tool_path(SearchTool::Fd).await,
-                Some(expand(&row.found, root.to_str().unwrap()))
+                Some(expand(&row.found, root_text))
             );
         }
     });
