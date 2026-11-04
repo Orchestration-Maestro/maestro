@@ -121,7 +121,9 @@ Native path assertions use the host's separators. Build expected paths from
 individual components with `std::path`, or state Windows and Unix literals
 explicitly. Keep expectations independent of the production path formatter;
 leave authored path inputs unchanged. A passing Linux run does not qualify a
-Windows assertion: run it on native Windows too.
+Windows assertion: run it on native Windows too. Shared fixtures build an
+installed location once, in their support module, so every test that names it
+uses the same native path.
 
 Compile every declared browser crate's test and example targets without running them:
 
