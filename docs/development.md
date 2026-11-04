@@ -1365,12 +1365,11 @@ test copies only the source configuration into its initially empty Cargo home.
 
 The setup also runs for the test that proves source preparation works without nextest's
 exports: that test clears the exported paths and reruns the isolation test as a child, so
-the child prepares the sources itself. Preparing them there cost 54.3 of the test's 55.0
-seconds on an idle box, because the child vendored every package and built the seed from
-nothing. The setup runs before the tests, so the child's repeated preparation finds the
-directory for the same key and returns it at once; the same test then takes 0.85 seconds.
-The vendoring keeps its cost, paid once per run by the setup, and a shard that runs only
-these tests still builds the seed it does not read.
+the child prepares the sources itself. That preparation vendored every package and built
+the seed from nothing, which spent most of the test's time. The setup runs before the
+tests, so the child's repeated preparation finds the directory for the same key and
+returns it at once. The vendoring keeps its cost, paid once per run by the setup, and a
+shard that runs only these tests still builds the seed it does not read.
 
 The same setup also builds the cold bootstrap's native targets once per key, with the
 commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the

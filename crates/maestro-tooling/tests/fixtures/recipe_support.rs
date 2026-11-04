@@ -310,7 +310,8 @@ pub fn transcript() -> fs::File {
         .unwrap()
 }
 
-/// Write a phase or child-output record before the test can block again.
+/// Write a phase or child-output record before the test can block again, prefixed with
+/// the seconds since this process's first record.
 pub fn record(message: impl std::fmt::Display) {
     use std::io::Write;
     static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
