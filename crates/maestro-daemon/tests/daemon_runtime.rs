@@ -697,18 +697,19 @@ fn daemon_construction_initializes_supplied_manifest_summaries() {
 
 /// Prepares a home directory, then runs this test again with it as `HOME`.
 ///
-/// Returns the directory in that child and `None` in the parent.
+/// Returns the directory in that child, `None` where the prepared home does not exist so
+/// the behaviour cannot run there, and `None` in the parent.
 #[cfg(unix)]
 fn isolated_home(
     test: &str,
-    prepare: impl FnOnce(&std::path::Path) -> Option<std::path::PathBuf>,
+    prepare: impl FnOnce(&maestro_test_directory::Scratch) -> Option<std::path::PathBuf>,
 ) -> Option<std::path::PathBuf> {
     const CHILD: &str = "MAESTRO_DAEMON_HOME_CHILD";
     if std::env::var_os(CHILD).is_some() {
         return std::env::var_os("HOME").map(std::path::PathBuf::from);
     }
     let owner = maestro_test_directory::Scratch::new().unwrap();
-    let home = prepare(owner.path())?;
+    let home = prepare(&owner)?;
     let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env("HOME", &home)
@@ -724,23 +725,19 @@ fn isolated_home(
     None
 }
 
-/// Creates the home directory whose spelling text cannot hold, below `root`; `None` where
-/// the host refuses the name, so the native-home behaviour cannot run there.
+/// Creates the home directory whose spelling text cannot hold, inside the owner's
+/// directory; `None` where the host does not store that name, so the native-home
+/// behaviour cannot run there.
 #[cfg(unix)]
-fn unspellable_home(root: &std::path::Path) -> Option<std::path::PathBuf> {
+fn unspellable_home(root: &maestro_test_directory::Scratch) -> Option<std::path::PathBuf> {
     use std::os::unix::ffi::OsStrExt;
-    let home = root.join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"home-\xff"));
-    match std::fs::create_dir_all(home.join("child")) {
-        // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation.
-        Err(error) if cfg!(target_os = "macos") => {
-            assert_eq!(error.raw_os_error(), Some(92), "{error}");
-            None
-        }
-        result => {
-            result.unwrap();
-            Some(home)
-        }
+    let name = <std::ffi::OsStr as OsStrExt>::from_bytes(b"home-\xff");
+    if !root.keeps_distinct(&[name]).unwrap() {
+        return None;
     }
+    let home = root.path().join(name);
+    std::fs::create_dir_all(home.join("child")).unwrap();
+    Some(home)
 }
 
 /// Creates the default workspace through the prompt-free creation entry.
@@ -778,11 +775,15 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
     let Some(home) = isolated_home(
         "daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path",
         |root| {
-            std::fs::create_dir_all(root.join("elsewhere/child")).unwrap();
-            std::fs::create_dir(root.join("elsewhere/f")).unwrap();
-            std::fs::create_dir(root.join("f")).unwrap();
-            std::os::unix::fs::symlink(root.join("elsewhere/child"), root.join("link")).unwrap();
-            Some(root.to_path_buf())
+            std::fs::create_dir_all(root.path().join("elsewhere/child")).unwrap();
+            std::fs::create_dir(root.path().join("elsewhere/f")).unwrap();
+            std::fs::create_dir(root.path().join("f")).unwrap();
+            std::os::unix::fs::symlink(
+                root.path().join("elsewhere/child"),
+                root.path().join("link"),
+            )
+            .unwrap();
+            Some(root.path().to_path_buf())
         },
     ) else {
         return;
@@ -807,7 +808,7 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
 #[test]
 fn daemon_tilde_paths_join_their_rest_natively() {
     let Some(home) = isolated_home("daemon_tilde_paths_join_their_rest_natively", |root| {
-        Some(root.to_path_buf())
+        Some(root.path().to_path_buf())
     }) else {
         return;
     };

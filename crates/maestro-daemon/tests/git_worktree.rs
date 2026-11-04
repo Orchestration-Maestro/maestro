@@ -461,18 +461,16 @@ fn forced_remove_keeps_a_directory_whose_link_climbs_out_through_a_dangling_link
 fn forced_remove_keeps_a_directory_linked_to_a_repository_whose_name_differs_by_one_byte() {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
     let scratch = Scratch::new().unwrap();
-    let linked = scratch.path().join(OsStr::from_bytes(b"repo-\xff"));
-    let lookalike = scratch.path().join("repo-\u{fffd}");
-    // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation, where two
-    // names that differ by one byte cannot be two repositories.
-    let created = std::fs::create_dir(&linked);
-    #[cfg(not(target_os = "macos"))]
-    created.unwrap();
-    #[cfg(target_os = "macos")]
-    if let Err(error) = created {
-        assert_eq!(error.raw_os_error(), Some(92), "{error}");
+    // Two repositories this behaviour needs exist only where the host keeps the byte
+    // spellings apart.
+    if !scratch
+        .keeps_distinct(&[OsStr::from_bytes(b"repo-\xff"), OsStr::new("repo-\u{fffd}")])
+        .unwrap()
+    {
         return;
     }
+    let linked = scratch.path().join(OsStr::from_bytes(b"repo-\xff"));
+    let lookalike = scratch.path().join("repo-\u{fffd}");
     init_repo_with_commit(&linked);
     init_repo_with_commit(&lookalike);
     let checkout = scratch.path().join("trees/leftover");
@@ -600,20 +598,17 @@ fn list_marks_a_bare_repository() {
 fn list_keeps_the_bytes_of_a_checkout_path_that_text_cannot_hold() {
     use std::os::unix::ffi::OsStrExt;
     let scratch = Scratch::new().unwrap();
+    // The checkout path this listing needs exists only where the host stores that name.
+    if !scratch
+        .keeps_distinct(&[<std::ffi::OsStr as OsStrExt>::from_bytes(b"trees-\xff")])
+        .unwrap()
+    {
+        return;
+    }
     let repo = repository(&scratch);
     let checkout = scratch
         .path()
         .join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"trees-\xff"));
-    // A macOS filesystem may reject invalid UTF-8 names with EILSEQ at creation, where a
-    // checkout path text cannot hold cannot exist.
-    let created = std::fs::create_dir(&checkout);
-    #[cfg(not(target_os = "macos"))]
-    created.unwrap();
-    #[cfg(target_os = "macos")]
-    if let Err(error) = created {
-        assert_eq!(error.raw_os_error(), Some(92), "{error}");
-        return;
-    }
     worktree::add(&repo, &checkout, "bytes", "HEAD").unwrap();
 
     let entries = worktree::list(&repo).unwrap();
