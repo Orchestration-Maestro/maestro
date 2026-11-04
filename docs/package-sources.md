@@ -115,8 +115,10 @@ provide crash recovery or concurrent-writer isolation.
 
 Corrected package defects:
 
-- A `git@host:path` source with a bracketed, spaced or percent-encoded host no
-  longer aborts the process; the source is rejected.
+- A `git@host:path` source with a bracketed, spaced, percent-encoded or
+  query-bearing host no longer aborts the process; the source is rejected.
+- A `git@host:path` source whose host contains `@` was read as a shorter host;
+  the source is now rejected.
 - A malformed resource list in a package manifest no longer fails the package; it is ignored and the other lists load (see [package-root manifests](packages.md#package-root-manifests)).
 - Failed fresh acquisition no longer leaves partial contents that a retry skips.
 - Explicit version changes no longer leave an old checkout or stale settings pin.

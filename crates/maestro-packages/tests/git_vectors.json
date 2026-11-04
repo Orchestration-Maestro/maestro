@@ -1470,5 +1470,10 @@
     "test": "git_generic_admission_keeps_segment_boundaries",
     "input": "git:git@_host:u/r",
     "expected": null
+  },
+  {
+    "test": "git_generic_admission_keeps_segment_boundaries",
+    "input": "git:git@h@ost:u/r",
+    "expected": null
   }
 ]
