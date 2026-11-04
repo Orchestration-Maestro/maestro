@@ -78,6 +78,7 @@ fn references(member: &Member, source: &Source) -> Vec<usize> {
     let mut visitor = References {
         testing: test_scope(member, source),
         importing: false,
+        declared: Vec::new(),
         lines: Vec::new(),
     };
     visitor.visit_file(file);
@@ -92,22 +93,65 @@ struct References {
     testing: bool,
     /// Whether the current position is a `use` import, whose alias also counts.
     importing: bool,
+    /// Byte ranges of the declarations whose own name never names the platform
+    /// function.
+    declared: Vec<std::ops::Range<usize>>,
     /// Located reference lines.
     lines: Vec<usize>,
 }
 
 impl References {
+    /// Record the byte range of one declaration's own name so `record` skips it.
+    fn skip(&mut self, ident: &proc_macro2::Ident) {
+        self.declared.push(ident.span().byte_range());
+    }
+
     /// Record one identifier that names the platform temporary directory.
     fn record(&mut self, ident: &proc_macro2::Ident) {
-        if (self.testing || self.importing) && ident == PLATFORM_DIRECTORY {
-            self.lines.push(ident.span().start().line);
+        if !(self.testing || self.importing) || ident != PLATFORM_DIRECTORY {
+            return;
         }
+        let range = ident.span().byte_range();
+        if self
+            .declared
+            .iter()
+            .any(|skipped| skipped.start <= range.start && range.end <= skipped.end)
+        {
+            return;
+        }
+        self.lines.push(ident.span().start().line);
     }
 }
 
 impl<'ast> Visit<'ast> for References {
     fn visit_ident(&mut self, ident: &'ast proc_macro2::Ident) {
         self.record(ident);
+    }
+
+    /// A declaration's own name is its builder API, never a platform-directory
+    /// spelling: the standard function is always a call through a path. Its
+    /// remaining names, its body and its callers stay visited through the skips.
+    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
+        self.skip(&item.sig.ident);
+        syn::visit::visit_item_fn(self, item);
+    }
+
+    /// The same exemption for an impl or builder method declaration.
+    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
+        self.skip(&item.sig.ident);
+        syn::visit::visit_impl_item_fn(self, item);
+    }
+
+    /// The same exemption for a trait method declaration.
+    fn visit_trait_item_fn(&mut self, item: &'ast syn::TraitItemFn) {
+        self.skip(&item.sig.ident);
+        syn::visit::visit_trait_item_fn(self, item);
+    }
+
+    /// The same exemption for a foreign function declaration.
+    fn visit_foreign_item_fn(&mut self, item: &'ast syn::ForeignItemFn) {
+        self.skip(&item.sig.ident);
+        syn::visit::visit_foreign_item_fn(self, item);
     }
 
     /// Method names are the receiver's own API, never a platform-directory

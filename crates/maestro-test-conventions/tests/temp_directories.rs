@@ -250,6 +250,26 @@ fn test_process_builder_method_call_is_accepted() {
 }
 
 #[test]
+fn builder_declaration_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nstruct Child;\n\nimpl Child {\n    /// Point the child at one directory.\n    pub fn temp_dir(self, path: &std::path::Path) -> Self {\n        self\n    }\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declaration_name_does_not_exempt_a_same_line_call() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nfn temp_dir() -> std::path::PathBuf { std::env::temp_dir().join(\"maestro-harness\") }\n",
+        &[3],
+    );
+}
+
+#[test]
 fn platform_directory_passed_to_a_method_call_is_rejected() {
     check(
         "maestro-app",

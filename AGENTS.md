@@ -92,7 +92,9 @@ Duplicate assertions are a review judgement.
 Conventions reject a platform temporary directory that test code in a migrated
 crate names itself through `std::env::temp_dir()`, as a call, a value, a macro
 argument or an import under any alias; a method named `temp_dir` is the
-receiver's own API and is accepted, while its arguments stay checked. Tests that
+receiver's own API and is accepted, while its arguments stay checked, and a
+declaration's own `temp_dir` name is accepted the same way with its body and
+arguments staying checked. Tests that
 observe it use `maestro-test-directory::temporary_root`, and the diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
