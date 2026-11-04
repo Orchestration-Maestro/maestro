@@ -15,6 +15,7 @@ use std::{
 use tokio::sync::{mpsc, oneshot};
 
 use super::retained_components::{loaded_on, view};
+use maestro_test_process::executor::run;
 
 /// Ordered effects supplied by native actions and authored emissions.
 type Trace = Rc<RefCell<Vec<String>>>;
@@ -40,14 +41,6 @@ struct Fixture {
     waits: mpsc::UnboundedReceiver<oneshot::Sender<()>>,
     /// Session callbacks retained by the SDK-supplied replacement operation.
     sessions: mpsc::UnboundedReceiver<SessionOperation>,
-}
-
-/// Runs a witness with the same local executor used by the production facade.
-fn run(witness: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, witness);
 }
 
 impl Fixture {

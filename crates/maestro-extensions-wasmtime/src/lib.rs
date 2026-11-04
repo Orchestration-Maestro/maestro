@@ -117,3 +117,7 @@ mod oauth_imports;
 mod oauth_interaction;
 mod oauth_reads;
 mod oauth_registration;
+
+/// Controlled-test support shared by the engine's component and host witnesses.
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support;

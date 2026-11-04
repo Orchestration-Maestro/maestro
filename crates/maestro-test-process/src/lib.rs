@@ -56,6 +56,9 @@ pub use test_process::TestProcess;
 
 /// Controlled loopback HTTP fixtures.
 pub mod loopback;
+
+/// Caller-owned local executors for native test futures.
+pub mod executor;
 /// Child build toolchain selection.
 pub mod toolchain;
 

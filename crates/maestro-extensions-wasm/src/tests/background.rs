@@ -16,7 +16,7 @@ use tokio::sync::oneshot;
 
 use super::controlled::Controlled;
 use super::observed::Observed;
-use crate::component_adapter::{Capabilities, Exports};
+use crate::component_adapter::Exports;
 use crate::{
     Background, BackgroundTask, Extension, ExtensionAPI, ExtensionEventResult, ExtensionFuture,
     HookFuture,
@@ -86,24 +86,7 @@ impl Driver {
 
     /// Delivers one lifecycle event and returns the handler's failure, if any.
     fn event(&self, name: &str) -> Result<(), String> {
-        let key = self.host.observed().callback(&format!("event {name}"))?;
-        let event = super::documents::document(name).to_string();
-        let outcome = super::block_on(self.exports.invoke_event(
-            key,
-            event,
-            Capabilities {
-                ctx: self.host.context("/work"),
-                signal: None,
-            },
-        ))?;
-        let answer = super::documents::Answer::of(super::guest_family::delivery(outcome))?;
-        match answer.ended {
-            super::documents::Ended::Returned(None) => Ok(()),
-            super::documents::Ended::Failed(error) => Err(error),
-            other @ super::documents::Ended::Returned(_) => {
-                Err(format!("unexpected event answer: {other:?}"))
-            }
-        }
+        super::example_support::event(&self.host, &self.exports, name)
     }
 
     /// Starts the job and waits until its native wait holds.

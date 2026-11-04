@@ -1,4 +1,5 @@
 //! Built-in native tools retained and invoked by a compiled extension author.
+use crate::test_support::Releases;
 use serde_json::json;
 
 /// A bridge observation with every recorded virtual path spelled as recorded. Windows
@@ -3032,14 +3033,13 @@ fn builtin_callback_lifetimes_close_without_releasing_other_tools() {
 /// The existing application action records actual capture destruction.
 fn callback_releases(
     runner: &maestro_extensions::ExtensionRunner<maestro_extensions::Local>,
-) -> std::rc::Rc<CallbackReleases> {
-    let released = std::rc::Rc::new(CallbackReleases::default());
+) -> std::rc::Rc<Releases> {
+    let released = std::rc::Rc::new(Releases::default());
     let counted = released.clone();
     let mut actions =
         <maestro_extensions::Local as maestro_extensions::ExtensionExecution>::unbound_actions();
     actions.set_session_name = std::rc::Rc::new(move |label| {
-        counted.labels.borrow_mut().push(label);
-        counted.changed.notify_one();
+        counted.record(label);
         Ok(())
     });
     runner
@@ -3050,26 +3050,6 @@ fn callback_releases(
         )
         .unwrap();
     released
-}
-
-/// Original application observations acknowledge actual callback destruction, without timers.
-#[derive(Default)]
-struct CallbackReleases {
-    /// Destructor effects, including failed callback-table reentry if one occurs.
-    labels: std::cell::RefCell<Vec<String>>,
-    /// Wakes only when a destructor reaches the native application.
-    changed: tokio::sync::Notify,
-}
-impl CallbackReleases {
-    /// Waits for positive release receipts and rejects early, duplicate or foreign destruction.
-    async fn expect(&self, expected: &[&str]) {
-        while self.labels.borrow().len() < expected.len() {
-            self.changed.notified().await;
-        }
-        let mut actual = self.labels.borrow().clone();
-        actual.sort();
-        assert_eq!(actual, expected);
-    }
 }
 
 /// A separate Store turn closes releases queued by the preceding invocation.

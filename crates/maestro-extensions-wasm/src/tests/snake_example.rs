@@ -43,13 +43,6 @@ fn state(snake: &[(i32, i32)], food: (i32, i32), direction: &str, score: u64) ->
 fn entry(value: &Value) -> Value {
     json!({"type":"custom","id":"save","parentId":null,"timestamp":"2026-01-01T00:00:00Z","customType":"snake-save","data":value})
 }
-/// Supplies the whole session's entries rather than a branch projection.
-fn history(host: &mut Harness, entries: &Value) {
-    host.observed().readers.control(
-        &json!({"bind":{"replies":[{"method":"getEntries","args":[],"value":entries}]}})
-            .to_string(),
-    );
-}
 /// Executes the registered command on the built component.
 fn command(host: &mut Harness) -> Result<(), String> {
     let key = host.observed().callback("command snake")?;
@@ -63,7 +56,7 @@ fn run(
     ticks: Vec<usize>,
     display: (Vec<Vec<String>>, u32),
 ) -> Result<(), String> {
-    history(host, entries);
+    super::example_support::history(host, entries);
     let frames = display
         .0
         .into_iter()
@@ -283,7 +276,7 @@ fn snake_new_games_and_completed_saves_start_running() -> Result<(), String> {
 fn snake_rejects_invalid_saved_positions() -> Result<(), String> {
     for snake in [vec![], vec![(-1, 0)], vec![(40, 14)], vec![(0, 15)]] {
         let mut host = host()?;
-        history(
+        super::example_support::history(
             &mut host,
             &json!([entry(&state(&snake, (5, 5), "right", 0))]),
         );

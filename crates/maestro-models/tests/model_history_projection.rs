@@ -6,30 +6,13 @@ mod root_routes;
 mod tests {
     use crate::clock::epoch_millis;
     use maestro_models::*;
+    use maestro_request::test_support::target_model;
     use serde_json::json;
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn history_projections_keep_root_specific_defaults() -> crate::chat::TestResult {
         crate::runtime::run(super::root_routes::check())
-    }
-
-    fn model() -> Model {
-        Model {
-            id: "target".into(),
-            name: "Target".into(),
-            api: "anthropic-messages".into(),
-            provider: "target-provider".into(),
-            base_url: "https://example.invalid".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec![ModelInput::Text],
-            cost: ModelCost::default(),
-            context_window: 1000.0,
-            max_tokens: 100.0,
-            headers: None,
-            compat: None,
-        }
     }
 
     fn assistant(content: Vec<AssistantContent>) -> AssistantMessage {
@@ -114,7 +97,7 @@ mod tests {
 
     #[test]
     fn maestro_projects_account_tool_history_for_message_models() {
-        let target = model();
+        let target = target_model();
         let normalize = |id: &str, _: &Model, _: &AssistantMessage| {
             id.chars()
                 .map(normalize_character)
@@ -161,7 +144,7 @@ mod tests {
 
     #[test]
     fn maestro_replay_preserves_only_compatible_thinking() {
-        let target = model();
+        let target = target_model();
         for difference in 0..4 {
             for signature in [None, Some(""), Some("signed")] {
                 check_thinking_redaction(&target, difference, signature);
@@ -312,13 +295,13 @@ mod tests {
             timestamp: 1.0,
         });
         assert_eq!(
-            transform_messages(std::slice::from_ref(&user), &model(), None),
+            transform_messages(std::slice::from_ref(&user), &target_model(), None),
             vec![user]
         );
     }
 
     fn check_image_downgrade(placeholder: &str, tool: bool) {
-        let mut target = model();
+        let mut target = target_model();
         let signed = UserBlock::Text(TextContent {
             text: "ordinary".into(),
             text_signature: Some("signed".into()),
@@ -386,7 +369,7 @@ mod tests {
 
     #[test]
     fn maestro_projection_pairs_tool_occurrences() {
-        let target = model();
+        let target = target_model();
         assert!(transform_messages(&[], &target, None).is_empty());
         check_normalizer_inputs(&target);
         check_batch_boundaries(&target);
@@ -536,7 +519,7 @@ mod tests {
 
     #[test]
     fn maestro_projection_preserves_colliding_call_associations() {
-        let target = model();
+        let target = target_model();
         for already_equal in [false, true] {
             let ids = if already_equal {
                 ["x", "x"]
@@ -632,7 +615,7 @@ mod tests {
             format!("normalized-{id}")
         };
         let before = epoch_millis();
-        let mut output = transform_messages(&context.messages, &model(), Some(&normalize));
+        let mut output = transform_messages(&context.messages, &target_model(), Some(&normalize));
         let after = epoch_millis();
         assert_eq!(*seen.borrow(), vec!["a", "b"]);
         assert_eq!(context, original);
@@ -645,7 +628,7 @@ mod tests {
         }
         mutate_projected_content(&mut output);
         assert_eq!(context, original);
-        let mut target = model();
+        let mut target = target_model();
         target.input.push(ModelInput::Image);
         let mut supported = transform_messages(&context.messages, &target, None);
         let Message::User(user) = &mut supported[0] else {

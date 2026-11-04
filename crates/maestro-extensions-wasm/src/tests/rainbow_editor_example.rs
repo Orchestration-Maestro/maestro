@@ -10,7 +10,6 @@ use std::task::{Context, Poll, Waker};
 
 use serde::Deserialize;
 use serde_json::json;
-use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Resource};
 
 use super::controlled::Controlled;
@@ -119,8 +118,7 @@ impl Driver {
 
     /// The most recently announced host-owned animation.
     fn tail(&self) -> ExtensionFuture<'static, ()> {
-        let key = *self.host.observed().bus.tails.last().expect("announced");
-        Box::pin(Exports::<Controlled>::invoke_tail(key))
+        super::example_support::announced(&self.host)
     }
 
     /// The shown editor's factory, component and operation handles.
@@ -160,13 +158,6 @@ impl Drop for Driver {
     }
 }
 
-/// Holds exactly the next native wait and exposes its entry and release.
-fn hold(observed: &mut Observed) -> (oneshot::Receiver<()>, oneshot::Sender<()>) {
-    let (gate, entered, open) = super::observed::gate();
-    observed.hold_next_idle(gate);
-    (entered, open)
-}
-
 /// Polls once without a watchdog or a wall-clock dependency.
 fn poll(tail: &mut ExtensionFuture<'static, ()>) -> Poll<Result<(), String>> {
     tail.as_mut().poll(&mut Context::from_waker(Waker::noop()))
@@ -187,14 +178,14 @@ fn lines(observed: &Observed, prefix: &str) -> Vec<String> {
 fn rainbow_editor_shine_follows_reference_frames() -> Result<(), String> {
     let driver = Driver::new()?;
     let expected = expected();
-    let (entered, mut open) = hold(&mut driver.host.observe());
+    let (entered, mut open) = super::observed::hold(&mut driver.host.observe());
     driver.input(&typed(&expected))?;
     let mut tail = driver.tail();
     assert!(poll(&mut tail).is_pending());
     super::block_on(entered).unwrap();
     for (frame, rows) in expected.frames.iter().enumerate() {
         assert_eq!(driver.render()?, *rows, "frame {frame}");
-        let (entered, next) = hold(&mut driver.host.observe());
+        let (entered, next) = super::observed::hold(&mut driver.host.observe());
         open.send(()).unwrap();
         assert!(poll(&mut tail).is_pending());
         super::block_on(entered).unwrap();
@@ -241,13 +232,13 @@ fn rainbow_editor_input_starts_animation_on_keyword() -> Result<(), String> {
 fn rainbow_editor_restarted_animation_keeps_its_frame() -> Result<(), String> {
     let driver = Driver::new()?;
     let expected = expected();
-    let (entered, mut open) = hold(&mut driver.host.observe());
+    let (entered, mut open) = super::observed::hold(&mut driver.host.observe());
     driver.input(&typed(&expected))?;
     let mut tail = driver.tail();
     assert!(poll(&mut tail).is_pending());
     super::block_on(entered).unwrap();
     for _ in 0..3 {
-        let (entered, next) = hold(&mut driver.host.observe());
+        let (entered, next) = super::observed::hold(&mut driver.host.observe());
         open.send(()).unwrap();
         assert!(poll(&mut tail).is_pending());
         super::block_on(entered).unwrap();
@@ -261,7 +252,7 @@ fn rainbow_editor_restarted_animation_keeps_its_frame() -> Result<(), String> {
     assert_eq!(driver.render()?, expected.frames[3]);
     assert_eq!(driver.tails(), 2);
     let mut restarted = driver.tail();
-    let (entered, open) = hold(&mut driver.host.observe());
+    let (entered, open) = super::observed::hold(&mut driver.host.observe());
     assert!(poll(&mut restarted).is_pending());
     super::block_on(entered).unwrap();
     driver.input("enter")?;
@@ -362,7 +353,7 @@ fn release_lent(driver: &Driver, custom: u32, provided: &[String]) -> Result<(),
 #[test]
 fn rainbow_editor_release_cancels_the_animation() -> Result<(), String> {
     let driver = Driver::new()?;
-    let (entered, open) = hold(&mut driver.host.observe());
+    let (entered, open) = super::observed::hold(&mut driver.host.observe());
     driver.input(&typed(&expected()))?;
     let mut tail = driver.tail();
     assert!(poll(&mut tail).is_pending());
@@ -448,8 +439,8 @@ fn component_frames(
         (slot.component, slot.editor)
     };
     let exports = harness.exports.clone();
-    let (entered, open) = hold(harness.observed());
-    let (next, pending) = hold(harness.observed());
+    let (entered, open) = super::observed::hold(harness.observed());
+    let (next, pending) = super::observed::hold(harness.observed());
     super::block_on(harness.store.run_concurrent(async |accessor| {
         component(accessor, &exports, shown, Call::Input(&typed(expected))).await?;
         let key = accessor.with(|mut a| *a.get().observed.bus.tails.last().unwrap());

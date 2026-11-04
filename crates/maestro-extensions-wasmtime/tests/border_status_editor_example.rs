@@ -1,6 +1,7 @@
 //! The shipped border status editor on the production runner: the editor its session start
 //! installs, the status it writes into the borders and the branch it reads with Git.
 #![cfg(test)]
+use super::example_process::run;
 use maestro_extensions::{
     ContextUsage, EventBusController, EventError, ExtensionContextActions, ExtensionExecution,
     ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for, create_extension_runtime,
@@ -283,15 +284,6 @@ fn screen() -> (TUI, ManualRuntime) {
     tui.start().unwrap();
     runtime.settle().unwrap();
     (tui, runtime)
-}
-
-/// Runs on a local executor.
-fn run(action: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// Session start hides the working row, installs an empty footer and an editor whose bottom

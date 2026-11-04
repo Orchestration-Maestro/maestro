@@ -10,9 +10,9 @@ use maestro_extensions_wasm::{
     AbortListener, AbortSignal, CommandOptions, CompactionResult, ExtensionAPI,
     ExtensionCommandContext, ExtensionContext, ExtensionEvent, ExtensionEventResult,
     ExtensionFuture, ExtensionHandler, ExtensionResult, HookResult, InputEventResult,
-    InputTransform, NewSessionCommandData, NewSessionCommandOptions, Presence,
-    SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionEvent, SignalPort, Subscription,
-    SubscriptionPort,
+    InputTransform, KeybindingKeys, KeybindingsConfig, NewSessionCommandData,
+    NewSessionCommandOptions, Presence, SessionBeforeCompactEvent, SessionBeforeCompactResult,
+    SessionEvent, SignalPort, Subscription, SubscriptionPort,
 };
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
@@ -21,6 +21,10 @@ use serde_json::{Value, from_value, json};
 mod action_author;
 #[path = "authored_editor_author.rs"]
 mod authored_editor_author;
+#[path = "../../tests/support/harness/binding_config.rs"]
+pub(crate) mod binding_config;
+#[path = "../../tests/support/harness/binding_json.rs"]
+pub(crate) mod binding_json;
 #[path = "bus_author.rs"]
 mod bus_author;
 #[path = "catalog_author.rs"]
@@ -31,6 +35,8 @@ mod compaction_author;
 mod completion_author;
 #[path = "editor_factory_author.rs"]
 mod editor_factory_author;
+#[path = "../../tests/support/harness/editor_text.rs"]
+pub(crate) mod editor_text;
 #[path = "factory_component_author.rs"]
 mod factory_component_author;
 #[path = "provider_author.rs"]

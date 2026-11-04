@@ -57,6 +57,8 @@ mod writer;
 pub(crate) use editor_factories::keep_editor;
 pub(crate) use editor_factories::{AuthoredAnswer, AuthoredRequest, CurrentFactory, LentEditor};
 pub(crate) use foreign_editors::{ForeignAnswer, ForeignRequest};
+#[cfg(test)]
+pub(crate) use keys::bindings as keybinding_bindings;
 pub(crate) use lists::invoke_widget;
 #[cfg(test)]
 pub(crate) use providers::keep_provider;

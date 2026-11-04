@@ -1,5 +1,6 @@
 //! Project rules through the shipped component, the real runner and a disposable directory.
 #![cfg(test)]
+use super::example_process::run;
 use maestro_extensions::{
     BuildSystemPromptOptions, ExtensionRunner, ExtensionUIContext, Local, Presence,
     SessionStartEvent, SessionStartReason, create_event_bus_for, create_extension_runtime,
@@ -123,15 +124,6 @@ impl Harness {
             .unwrap()
             .and_then(|result| result.system_prompt)
     }
-}
-
-/// Runs native process futures on their caller-owned local executor.
-fn run(action: impl Future<Output = ()>) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, action);
 }
 
 /// The prompt with the rule section, written out in full rather than built from the example.
