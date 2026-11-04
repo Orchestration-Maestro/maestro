@@ -804,11 +804,11 @@ handler and a new session. The parent carries the request and keeps its own mode
 limits, session and environment, and a refused effect stops the child before its
 body. The owner uses the approved `rustix` stdio and process operations for
 descriptor replacement and those effects, and the locked `signal-hook` flag
-registration for the file-size handler. It has no workspace dependencies except the native feature unifier, one native
-development edge to the disposable directory owner for its own child fixtures
-and one native normal dependency on that owner for the platform directory it
-hands to its cleared children, and it is excluded from the foundation utility
-permission. Its only
+registration for the file-size handler. It has no workspace dependencies except the native feature unifier and one
+native, non-optional normal dependency on the disposable directory owner: its
+own child fixtures and its launcher reach the owner through that edge to read
+the platform directory it hands to its cleared children. It is excluded from
+the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
@@ -855,10 +855,11 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
-declares it only when it uses it. Aliases follow the same rules. Build,
+declares it only when it uses it, with the launcher as its one exception.
+Aliases follow the same rules. Build,
 optional, unqualified, browser and foreign-target declarations are rejected.
-The checked child launcher alone adds the native normal dependency whose
-launcher code reads `temporary_root`; every other caller declares only the
+The checked child launcher declares the owner as a native normal dependency,
+whose launcher code reads `temporary_root`; every other caller declares the
 development edge.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 

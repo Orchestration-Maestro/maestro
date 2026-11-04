@@ -260,6 +260,36 @@ fn builder_declaration_name_is_accepted() {
 }
 
 #[test]
+fn declared_item_fn_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nfn temp_dir() -> std::path::PathBuf {\n    maestro_test_directory::temporary_root()\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declared_trait_fn_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\ntrait Landable {\n    fn temp_dir(&self) -> std::path::PathBuf;\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declared_foreign_fn_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nextern \"C\" {\n    fn temp_dir() -> std::path::PathBuf;\n}\n",
+        &[],
+    );
+}
+
+#[test]
 fn declaration_name_does_not_exempt_a_same_line_call() {
     check(
         "maestro-app",

@@ -228,9 +228,7 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
-    if member == Some(policy::TEST_DIRECTORY)
-        && policy::directory_observation(owner, policy::TEST_DIRECTORY)
-    {
+    if member.is_some_and(|member| policy::directory_observation(owner, member)) {
         return if native_declared(dependency, kind, &Kind::Normal) {
             Ok(())
         } else {
@@ -350,8 +348,11 @@ fn validate_edge(edge: &Edge, packages: &BTreeSet<String>) -> Result<(), String>
             Ok(())
         } else {
             Err(format!(
-                "maestro-test-directory must be a normal dependency of maestro-test-process: {} -> {}",
-                edge.from, edge.to
+                "{} must be a normal dependency of {}: {} -> {}",
+                policy::TEST_DIRECTORY,
+                policy::TEST_PROCESS,
+                edge.from,
+                edge.to
             ))
         };
     }
