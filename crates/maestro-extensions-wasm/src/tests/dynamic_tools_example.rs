@@ -323,7 +323,7 @@ impl Host for ControlledHost {
         ))?;
         match outcome.decision {
             GuestDecision::Returned(_) => Ok(()),
-            GuestDecision::Failed(message) => Err(message),
+            GuestDecision::Failed(diagnostic) => Err(diagnostic.message),
         }
     }
 

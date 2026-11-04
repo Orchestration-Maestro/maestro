@@ -207,7 +207,7 @@ fn extension_labels_keep_package_identity() {
                     check_listing(directory, listing, expected);
                 }
                 (Input::ExtensionLabel { extension }, Expected::Value { value }) => {
-                    let (path, source_info) = extension.into_loaded();
+                    let (path, source_info) = extension.into_label_loaded();
                     let item = ResourceItem {
                         path: &path,
                         source_info: Some(&source_info),

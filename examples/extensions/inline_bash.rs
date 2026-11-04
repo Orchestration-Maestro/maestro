@@ -8,7 +8,8 @@
 
 use maestro_extensions_wasm::{
     ExecOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
-    ExtensionFuture, ExtensionResult, InputEventResult, InputTransform, NotificationType,
+    ExtensionFuture, ExtensionResult, HookResult, InputEventResult, InputTransform,
+    NotificationType,
 };
 use std::rc::Rc;
 
@@ -77,7 +78,7 @@ async fn input(
     api: &ExtensionAPI,
     event: &mut ExtensionEvent,
     ctx: &ExtensionContext,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let ExtensionEvent::Input(event) = event else {
         return Ok(None);
     };

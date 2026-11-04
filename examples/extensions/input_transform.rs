@@ -11,8 +11,8 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, InputEventResult, InputSource, InputTransform, NotificationType, Presence,
-    utils,
+    ExtensionResult, HookResult, InputEventResult, InputSource, InputTransform, NotificationType,
+    Presence, utils,
 };
 
 /// Trims surrounding characters using the host's shared whitespace definition.
@@ -37,7 +37,7 @@ fn input(
     api: &ExtensionAPI,
     event: &mut ExtensionEvent,
     ctx: &ExtensionContext,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+) -> HookResult<Option<ExtensionEventResult>> {
     let ExtensionEvent::Input(event) = event else {
         return Ok(None);
     };

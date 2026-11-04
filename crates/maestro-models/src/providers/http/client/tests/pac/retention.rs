@@ -49,8 +49,9 @@ fn reloaded_identical_source_keeps_globals_without_sharing_them_between_bridges(
 #[test]
 fn file_observation_and_identical_reread_preserve_the_compiled_globals() {
     crate::tests::runtime::run(async {
-        let path =
-            std::env::temp_dir().join(format!("maestro-pac-observation-{}", std::process::id()));
+        let scratch =
+            maestro_test_directory::Scratch::new().expect("test directory should be created");
+        let path = scratch.path().join("maestro-pac-observation");
         let code = "let n=0;function FindProxyForURL(){return 'FIRST '+(++n)}";
         std::fs::write(&path, code).unwrap();
         let file = std::fs::File::options().write(true).open(&path).unwrap();

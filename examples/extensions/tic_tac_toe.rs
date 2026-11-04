@@ -201,7 +201,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 event,
                 Rc::new(move |_, ctx| {
                     controls.active.set(false);
-                    Box::pin(std::future::ready(restore(&ctx, &state).map(|()| None)))
+                    Box::pin(std::future::ready(
+                        restore(&ctx, &state).map(|()| None).map_err(Into::into),
+                    ))
                 }),
             )?;
         }

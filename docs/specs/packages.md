@@ -248,10 +248,14 @@ as `maestro mcp`. No package carries server code (delivery 60).
 The skill pack merges three MIT-licensed skill packs and one MIT-licensed prose-pass skill into one skill per
 job (deliveries 62–64). It holds no code, and the skill loader and package discovery read it unchanged.
 
-- **Package.** `packages/maestro-skills/` is a content-only package. It holds `package.json` without a `maestro`
-  member, `skills/<name>/SKILL.md` with supporting files, `references/` beside `skills/`, `LICENSE` and
-  `THIRD-PARTY-NOTICES.md`. Conventional discovery loads `skills/`. `references/` is not a skill directory, and
-  `skills/` holds no loose Markdown file.
+- **Package.** The pack lives in the catalog repository, maestro-manifests, at
+  `manifests/capabilities/practice/maestro-skills/`, with its layout unchanged. It is a content-only package holding
+  `package.json` without a `maestro` member, `skills/<name>/SKILL.md` with supporting files, `references/`
+  beside `skills/`, `LICENSE` and `THIRD-PARTY-NOTICES.md`. Conventional discovery loads `skills/`. `references/`
+  is not a skill directory, and `skills/` holds no loose Markdown file. This repository holds no copy.
+- **Loading.** A release copies the pack from the catalog release it records and publishes it as base-package
+  content. Until base-package installation ships, users add the path of a catalog checkout's pack folder to
+  `packages`. Manifest mode can also select it.
 - **Names.** Every skill is named `maestro-<job>`, and the router is `maestro-ask`. A user or project skill with
   the same name still overrides the pack's.
 - **Invocation.** 23 skills are model-invoked. 14 are type-only (`disable-model-invocation: true`) and run as
@@ -282,8 +286,8 @@ job (deliveries 62–64). It holds no code, and the skill loader and package dis
   carries none of the workspace rules of Maestro's own maintainers.
 - **Notices.** The package's notice file keeps each source author's copyright line and the MIT permission text.
   Third-party text that has an unclear or share-alike licence is rewritten in our own words.
-- **Qualification.** One `maestro-packages` integration test resolves the pack as a package source and loads its
-  skills. It checks the diagnostics, the names, the `/skill:` pointers, router coverage and relative links.
+- **Qualification.** The catalog checks the content. Maestro checks content-only package resolution on a fixture,
+  and a release checks the copied pack through the skill loader.
 - **Growth.** A delivery points only at skills already delivered; later deliveries add their pointers and
   router arms.
 
@@ -298,7 +302,8 @@ setup skill; a vendor best-practices page; and a picture menu whose licence is u
 Every package except plan review is a base package. Plan review is the only optional package and is off by default. Each release publishes the base packages' components as package
 sources. The application lists those sources as the lowest default `packages` source. The reference's
 missing-source install installs them on first run, and a user's object-form filter entry turns one off
-(delivery 61). The skill pack has no component. Its package directory is published as content.
+(delivery 61). The skill pack has no component. The release copies it from the catalog and publishes it as
+content.
 Base packages load before every other extension but keep their ordinary place in the extension list, and a base
 package may publish the base layer and decision hook of
 [manifest mode](manifest-mode.md#core-hooks) (H1, H2, H4). The manifest base package is

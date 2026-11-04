@@ -302,8 +302,9 @@ cell widths belong to the [terminal components](../terminal/components.md).
 Native callers use
 [`components::config_selector::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/config_selector/mod.rs).
 Pass `maestro_app::ResolvedPaths`, a shared mutable `SettingsManager`,
-`ConfigSelectorOptions` and `ConfigSelectorCallbacks`. Options supply project and
-agent directories, a prepared `Collator`, live theme and a live bold-style policy.
+`config_selector::ComponentOptions` and `ConfigSelectorCallbacks`. The options supply
+project and agent directories, a prepared `Collator`, live theme and a live bold-style
+policy.
 Relative patterns resolve against the real process directories, which are separate
 from the selected project.
 The component does not acquire packages or reload resources.
@@ -373,5 +374,6 @@ configuration options and callbacks with their factory, and the session
 loaders, request, callbacks and factory. `maestro-chat` re-exports the records
 its widgets consume, and `maestro-cli` re-exports `ConfigSelectorOptions` while
 importing the rest from that application path, so one declaration states what
-each caller supplies. The chat widget keeps its own differently shaped
-`ConfigSelectorOptions`, and session discovery keeps its own progress callback.
+each caller supplies. The chat widget takes its own differently shaped
+`config_selector::ComponentOptions`, and session discovery keeps its own progress
+callback.

@@ -35,7 +35,7 @@ path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 futures-util = { workspace = true, features = ["async-await"] }
-maestro-models = { path = "../maestro-models" }
+maestro-models = { path = "../maestro-models", features = ["test-support"] }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true

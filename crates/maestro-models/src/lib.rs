@@ -83,7 +83,7 @@ pub use records::session_resources::{
 };
 pub use records::stream::{
     complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
-    stream_simple, stream_simple_for,
+    stream_simple, stream_simple_for, stream_simple_via_for,
 };
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;
@@ -120,6 +120,10 @@ pub use providers::response_sessions::openai_codex_responses::{
 };
 
 pub use providers::json_text::compact_json;
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub use maestro_request::test_support;
 
 #[cfg(test)]
 extern crate self as maestro_models;

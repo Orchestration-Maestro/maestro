@@ -188,7 +188,9 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 event,
                 Rc::new(move |_, ctx| {
                     let result = restore(&api_for_restore, &ctx, &state);
-                    Box::pin(std::future::ready(result.map(|()| None)))
+                    Box::pin(std::future::ready(
+                        result.map(|()| None).map_err(Into::into),
+                    ))
                 }),
             )?;
         }

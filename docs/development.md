@@ -174,9 +174,10 @@ builds the owner's declared platform handle, so identity comparisons hold on
 both targets.
 
 Compilation does not replace the browser assertions below.
-The theme examples `brand_themes` and `browser_author_inputs` run their author
-work on native targets; their browser entrypoints do nothing. Native usage
-messages and generated filenames are unchanged.
+The theme generators `brand_themes` and `browser_author_inputs` are repository
+scripts under `crates/maestro-theme/scripts`; they run their author work on native
+targets, and their browser entrypoints do nothing. Native usage messages and
+generated filenames are unchanged.
 
 ## Browser integration qualification
 
@@ -484,7 +485,7 @@ fonts, glyphs and mark paths. `maestro-brand` parses and projects those values;
 Changing a pack does not rename the command, environment variables or settings
 directory, and does not install that pack into a running application.
 
-Use the existing [brand theme example](theme.md#brand-pack) to try a pack without
+Use the existing [brand theme generator](theme.md#brand-pack) to try a pack without
 changing shipped files. Run this from the checkout root:
 
 ```sh
@@ -602,6 +603,16 @@ stay in their existing integration-test support modules.
 
 Use the shared fixture without changing the caller's assertions or adding a
 production feature for test access.
+
+Keep a crate's `examples/` directory for examples written for users. Put a program
+that exists for tests, checks or test preparation (a native test child, a fixture
+component, a browser compile witness, a terminal debugging program) in
+`tests/support/`, registered as an `[[example]]` target with an explicit `path`, as
+the models crate's browser witnesses are. Put a program that maintains repository
+files or reports on recorded data (a generator, a report tool) in the crate's
+`scripts/` directory, registered the same way. Both keep the `[[example]]` kind, so
+`cargo run -p <crate> --example <name>` and `target/<profile>/examples/<name>` stay
+the same.
 
 ### FTP peer support
 
@@ -1498,6 +1509,13 @@ behavior; an unknown family, scenario or field fails before any effect.
 | --- | --- |
 | `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
 | `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-sources` `sources` | Records `cargo vendor` calls in the record's `calls` file and `cargo build` calls in `builds`; writes `vendor exploded` or `build exploded` and ends with status 1 when `fails` names that operation. Otherwise a build leaves the seed units in `CARGO_TARGET_DIR/debug`, and a vendor creates the last operand as a directory and prints the vendored-source configuration. The fixture-sources setup installs it as `cargo`. |
+| `tooling-sources` `operands` | Prints each operand on its own line, writes the record's `stderr` text, and ends with the record's `code`. Tests use it to prove an adapter passes literal operands, diagnostics and the status through unchanged. |
+| `tooling-sources` `trunk-hook` | Copies `assets/app.css` to `hook.css`, writes the first operand and the `TRUNK_*` and `MAESTRO_HOOK_INHERITED` variables, one per line, to `hook-environment`, and ends with the status in `MAESTRO_HOOK_STATUS`. Installed as an authored build hook. |
+| `tooling-sources` `call-log` | Appends `call` and the operands to the record's `path`, followed by every variable whose name starts with one of the record's `prefixes`, sorted. Ends with status 1 when the first operand is the record's `refuse`. |
+| `tooling-sources` `artifacts` | Appends the operands to the file `CARGO_CALLS` names, then reports one compiled artifact per name in the record, at `/built/<name>.wasm`. |
+| `tooling-sources` `consumer-cargo` | Appends the operands to `cargo-log`, beside the directory holding the alias. Ends with status 17 when `MAESTRO_FAIL_PHASE` names the first operand, succeeds without work for `hakari`, `test` and `nextest`, and runs the record's `cargo` for everything else. |
+| `tooling-sources` `announce` | Prints `cargo` and the operands. When the record names `rebuilt`, it also replaces that path with a copy of itself that prints `example`. |
 | `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
 | `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
 
@@ -2134,8 +2152,8 @@ or replace queued landing runs. This is separate from required merge checks.
 Push runs never read a coverage baseline: the lookup runs only for merge
 groups. The suite caller still grants `actions: read`, because the
 shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller and the reporter caller pin the
-released shared CI commit that the organization rulesets require. Each pin
+fail to start. The suite caller, the reporter caller and the guards caller pin
+the released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 
@@ -2157,7 +2175,7 @@ the existing release App's repository-scoped token, minted from
 pull requests write access, plus workflows write access so it can revert CI
 changes. The App must be installed here and the organization
 secret available here. This token lets the revert trigger checks; test jobs do
-not receive it. The reporting workflow alone is declared in
+not receive it. The reporting workflow is declared in
 `privileged_trigger_workflows` for the existing trigger audit.
 
 Unknown PR attribution, missing permissions or a revert conflict fails the
@@ -2168,6 +2186,33 @@ Chromium job, such as a cancelled run. Inspect that run and the failure issue;
 resolve a conflict in a reviewed PR. Do not bypass required checks or push to
 main to recover. The workflow-run listener becomes active after it lands on
 the default branch.
+
+## CI speed guards
+
+`CI speed guards` hands each finished merge-group run of `Rust CI` to the shared
+guards, with that run's id. The guards hold time per unit of work against a
+ratchet, the compile-cache hit rate, the test selection share, shard balance,
+tests over 30 seconds and the pinned required checks; each one fails a check or
+files one issue per cause, and a breach that persists adds to that issue rather
+than filing another. A cold compile cache shows in the merge group first: its
+archive build reports the hit rate against the floor.
+
+A default-branch push is not judged yet. The only workflow that runs the suite on
+a push is `Full suite after landing`, which calls it through one reusable job, so
+its checks are named `suite / Caller declaration` and so on. The guards compare
+the pinned names exactly, so every landing would report all pinned checks as
+missing and open an issue for it. Until the shared guards read that prefix
+([issue 354](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/354)),
+this caller stops at the merge groups.
+
+On pull requests the same caller passes no run id, so only the shared test-time
+exception check runs. It fails when a nextest override allows more than the hang
+limit and the comment above it names no open issue. The caller reads Actions runs
+and contents, and writes issues with the automatic job token; GitHub reads a
+called workflow's own permissions when the run loads, so one caller job covers
+both events. It is declared in `privileged_trigger_workflows` beside the
+reporter, so the trigger audit exempts only these two files. Like the reporter,
+it becomes active after it lands on the default branch.
 
 ## Fuzzing
 
@@ -2292,10 +2337,11 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, agent, Markdown and package helpers
-live in their type owners. Native loopback servers, child probes and toolchain
-selection live in `maestro-test-process`. Fallible helpers return their errors to
-the test caller; fixed-output callbacks retain immediate assertions.
+and terminal helpers. Theme, tool, credential, request (usage), agent, Markdown
+and package helpers live in their type owners. Native loopback servers, child
+probes and toolchain selection live in `maestro-test-process`. Fallible helpers
+return their errors to the test caller; fixed-output callbacks retain immediate
+assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.

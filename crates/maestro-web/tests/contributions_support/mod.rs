@@ -210,7 +210,7 @@ pub(crate) enum Clipboard {
 pub(crate) struct Recorded {
     /// Texts written so far.
     texts: Rc<RefCell<Vec<String>>>,
-    /// Settlements of deferred writes, oldest last.
+    /// Settlements of deferred writes, newest last.
     settlements: Rc<RefCell<Vec<js_sys::Function>>>,
     /// The installed write, which stays reachable while this recorder lives.
     _write: Closure<dyn Fn(String) -> js_sys::Promise>,
@@ -244,7 +244,7 @@ impl Recorded {
     pub(crate) fn texts(&self) -> Vec<String> {
         self.texts.borrow().clone()
     }
-    /// Settle the oldest deferred write.
+    /// Settle the newest deferred write.
     pub(crate) fn settle(&self) {
         let next = self.settlements.borrow_mut().pop();
         if let Some(resolve) = next {
@@ -252,7 +252,7 @@ impl Recorded {
         }
     }
 }
-/// Wait for `count` animation frames.
+/// Wait for one frame that aligns to the next paint, then `count` more frames.
 pub(crate) async fn frames(page: &JsValue, count: u32) {
     call(page, "frames", &js_sys::Array::of1(&JsValue::from(count))).await;
 }

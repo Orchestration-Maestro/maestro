@@ -16,6 +16,7 @@ mod nextest_wrapper;
 mod prepared_setup_packages;
 mod setup_docs;
 mod shared_ci_callers;
+mod tooling_closure;
 mod tooling_commands;
 
 use maestro_test_process::toolchain as toolchain_support;

@@ -3770,6 +3770,7 @@ dependencies = [
  "maestro-cli",
  "maestro-dependencies",
  "maestro-extensions-wasmtime",
+ "maestro-lock",
  "maestro-process",
  "maestro-rpc",
  "maestro-test-directory",
@@ -4453,6 +4454,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-json",
+ "maestro-request",
  "serde",
  "serde_json",
 ]

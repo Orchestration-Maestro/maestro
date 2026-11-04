@@ -17,8 +17,8 @@ use std::{
 use maestro_extensions_wasm::{
     AutocompleteProvider, CallbackEmitter, ComponentView, CustomEditor, CustomEditorComponent,
     EditorComponent, EditorFactoryOutcome, EditorOptions, EventListener, ExtensionAPI,
-    ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult, Style, TUI,
-    TextHandler,
+    ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult, HookFuture, Style,
+    TUI, TextHandler,
 };
 
 /// The highlighted word, matched without regard to ASCII case.
@@ -276,7 +276,7 @@ fn install(
     api: ExtensionAPI,
     handoff: Handoff,
     context: ExtensionContext,
-) -> ExtensionFuture<'static, Option<ExtensionEventResult>> {
+) -> HookFuture<'static, Option<ExtensionEventResult>> {
     Box::pin(async move {
         context
             .ui()?
