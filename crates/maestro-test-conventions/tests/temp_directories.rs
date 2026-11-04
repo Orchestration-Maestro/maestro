@@ -268,3 +268,43 @@ fn packages_reads_the_platform_directory_into_a_setting() {
         &[5],
     );
 }
+
+#[test]
+fn catalog_exclusive_file_is_created_in_the_platform_directory() {
+    check(
+        "maestro-catalog",
+        "tests/support/common.rs",
+        "//! Catalog fixtures.\n\n/// Disposable native file, created exclusively.\npub struct File(pub std::path::PathBuf);\nimpl File {\n    /// Create one file.\n    pub fn new(bytes: &[u8]) -> Self {\n        let path = std::env::temp_dir().join(\"maestro-catalog.json\");\n        std::fs::write(&path, bytes).unwrap();\n        Self(path)\n    }\n}\n",
+        &[8],
+    );
+}
+
+#[test]
+fn process_launch_context_names_its_own_directory() {
+    check(
+        "maestro-process",
+        "src/shell/tests/context.rs",
+        "//! Shell context fixtures.\n\n/// Reuses the same executable fixtures in a checked child.\nfn in_directory_context(name: &str) {\n    let root = std::env::temp_dir().join(format!(\"maestro-launch-context-{name}\"));\n    std::fs::create_dir_all(&root).unwrap();\n}\n",
+        &[5],
+    );
+}
+
+#[test]
+fn tooling_compiler_runs_in_the_platform_directory() {
+    check(
+        "maestro-tooling",
+        "tests/tooling_commands.rs",
+        "//! Tooling commands.\n\n#[test]\nfn compiler_version_runs_outside_the_checkout() {\n    let mut compiler = std::process::Command::new(\"rustc\");\n    compiler.current_dir(std::env::temp_dir()).arg(\"--version\");\n    let _ = compiler;\n}\n",
+        &[6],
+    );
+}
+
+#[test]
+fn tui_crossterm_input_file_is_created_in_the_platform_directory() {
+    check(
+        "maestro-tui-crossterm",
+        "tests/lifecycle_support/mod.rs",
+        "//! Terminal input fixtures.\n\n/// Installs a regular file holding `content` as standard input.\npub fn file_input(content: &[u8]) {\n    let path = std::env::temp_dir().join(\"maestro-terminal-input\");\n    std::fs::write(&path, content).unwrap();\n}\n",
+        &[5],
+    );
+}

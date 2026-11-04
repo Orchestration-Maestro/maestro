@@ -28,10 +28,8 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
         run(&PathBuf::from(root));
         return;
     }
-    let root = std::env::temp_dir().join(format!(
-        "maestro-launch-context-{}-{name}",
-        std::process::id()
-    ));
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let root = owned.path();
     for (directory, text) in [("parent", "parent"), ("chosen", "chosen")] {
         let tools = root.join(directory).join("tools");
         std::fs::create_dir_all(&tools).unwrap();
@@ -42,14 +40,13 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     }
     let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
-        .env(CHILD, &root)
+        .env(CHILD, root)
         .env("PATHEXT", ".CMD")
         .env("PATH", root.join("parent").join("tools"))
         .env_remove("NoDefaultCurrentDirectoryInExePath")
         .current_dir(root.join(parent))
         .output()
         .unwrap();
-    std::fs::remove_dir_all(root).unwrap();
     assert!(output.status.success(), "{output:?}");
 }
 
@@ -321,8 +318,8 @@ fn run_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)]) -> Stri
 
 #[test]
 fn launch_rejects_missing_files_and_directories() {
-    let root = std::env::temp_dir().join(format!("maestro-launch-missing-{}", std::process::id()));
-    std::fs::create_dir(&root).unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let root = owned.path();
     std::fs::create_dir(root.join("nonfile.CMD")).unwrap();
     for program in ["./missing", "./nonfile.CMD"] {
         let error = Launch {
@@ -330,7 +327,7 @@ fn launch_rejects_missing_files_and_directories() {
             args: vec![],
             verbatim: false,
         }
-        .with_context([("PATH", "")], Some(&root))
+        .with_context([("PATH", "")], Some(root))
         .output()
         .unwrap_err();
         assert!(matches!(
@@ -338,5 +335,4 @@ fn launch_rejects_missing_files_and_directories() {
             std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
         ));
     }
-    std::fs::remove_dir_all(root).unwrap();
 }
