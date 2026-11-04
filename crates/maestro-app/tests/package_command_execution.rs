@@ -103,6 +103,63 @@ fn self_update_runs_inherited_steps_without_deadline() {
     );
 }
 
+/// A step the default inherited runner executes once, observed in the scratch root.
+fn executed_step(directory: &Path, log: &Path, operands_log: &Path) -> SelfUpdateCommandStep {
+    SelfUpdateCommandStep {
+        args: vec!["operand".into()],
+        ..step(
+            directory,
+            "executed-step",
+            &json!({
+                "scenario": "output",
+                "stdout": [],
+                "stderr": [],
+                "code": 0,
+                "append": {
+                    "path": log,
+                    "cwd": false,
+                    "variable": "MAESTRO_NATIVE_FIXTURE",
+                    "bytes": []
+                },
+                "argv_log": {"path": operands_log, "mark": "launch"}
+            }),
+        )
+    }
+}
+
+#[test]
+fn inherited_steps_run_authored_operands_with_the_parent_environment() {
+    let scratch = crate::child::Scratch::new();
+    let root = scratch.join("");
+    let directory = Path::new(&root);
+    let log = Path::new(&scratch.join("steps.log")).to_path_buf();
+    let operands = Path::new(&scratch.join("operands.log")).to_path_buf();
+    let artifact = std::env::var("MAESTRO_NATIVE_FIXTURE")
+        .expect("the prepared native fixture runs these tests");
+    let selected = SelfUpdateCommand {
+        steps: Some(vec![executed_step(directory, &log, &operands)]),
+        ..command(
+            directory,
+            "inherited",
+            "single",
+            &appending(&log, false, &[]),
+        )
+    };
+
+    run_io(run_self_update(&selected, &ReadOnly)).expect("the step runs in place");
+
+    assert_eq!(
+        fs::read_to_string(&operands).expect("the run wrote its operands"),
+        "launch\0operand\0",
+        "the step receives the authored command and arguments untouched"
+    );
+    assert_eq!(
+        fs::read_to_string(&log).expect("the run wrote its environment"),
+        format!("MAESTRO_NATIVE_FIXTURE={artifact}\n"),
+        "the step inherits the parent environment unchanged"
+    );
+}
+
 /// The message of `command` failing under the default runner.
 fn failure(command: &SelfUpdateCommand) -> String {
     run_io(run_self_update(command, &ReadOnly))
