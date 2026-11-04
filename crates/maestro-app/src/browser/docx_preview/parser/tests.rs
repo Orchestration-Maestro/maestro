@@ -9,7 +9,7 @@ fn round_trip(text: &str) -> String {
         .map_or_else(|_| text.to_owned(), |xml| xml.root().text_content())
 }
 
-/// Runs whose decoding differs from their literal bytes.
+/// Fragments, paired in every order, that cover plain text, entities, markup and control characters.
 const PIECES: [&str; 34] = [
     "",
     "plain",
