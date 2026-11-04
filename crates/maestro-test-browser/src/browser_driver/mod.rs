@@ -44,47 +44,38 @@ pub use page::Page;
 pub use resources::resource_path;
 pub use server::Server;
 
-/// One browser invocation, retaining its sole CDP connection until cleanup.
-pub struct Browser {
-    /// Browser process and diagnostics.
-    process: Process,
+/// One CDP connection, owning the fresh pages it creates and its ordered diagnostics.
+struct Driver {
     /// Session-aware transport shared by successive fresh pages.
     dispatcher: Dispatcher,
+    /// Advertised endpoint, reused by a companion connection to the same browser.
+    endpoint: String,
     /// Ordered output from assertions and completion phases.
     lines: Vec<String>,
     /// Parsed policy-error identity used by every page.
     expected_error: ExpectedError,
 }
 
-impl Browser {
-    /// Launch the explicit executable with an invocation-owned profile.
-    ///
-    /// Extra arguments retain the browser input's native renderer configurations.
-    ///
-    /// # Errors
-    /// Returns launch, readiness or CDP connection failures.
-    pub async fn launch(executable: &Path, profile: &Path, args: &[String]) -> io::Result<Self> {
+impl Driver {
+    /// Connect one transport to a launched browser's advertised endpoint.
+    async fn connect(endpoint: &str) -> io::Result<Self> {
         let expected_error = inputs::inventory(include_str!(
             "../../../maestro-web/tests/sandbox_loading_support/exports.json"
         ))?
         .expected_error;
-        let (process, endpoint) = Process::launch(executable, profile, args).await?;
-        match Dispatcher::connect(&endpoint).await {
-            Ok(dispatcher) => Ok(Self {
-                process,
-                dispatcher,
-                lines: Vec::new(),
-                expected_error,
-            }),
-            Err(error) => cleanup(Err(error), process.close().await),
-        }
+        Ok(Self {
+            dispatcher: Dispatcher::connect(endpoint).await?,
+            endpoint: endpoint.to_owned(),
+            lines: Vec::new(),
+            expected_error,
+        })
     }
 
     /// Open a fresh page whose explicit close settles renderer cleanup.
     ///
     /// # Errors
     /// Returns target creation or renderer initialization failures.
-    pub async fn page(&mut self, name: &str) -> io::Result<Page<'_>> {
+    async fn page(&mut self, name: &str) -> io::Result<Page<'_>> {
         Page::open(
             &mut self.dispatcher,
             name,
@@ -98,7 +89,7 @@ impl Browser {
     ///
     /// # Errors
     /// Returns navigation, assertion, page/crash/disconnect or cleanup failures.
-    pub async fn check(&mut self, url: &str, name: &str, expression: &str) -> io::Result<Value> {
+    async fn check(&mut self, url: &str, name: &str, expression: &str) -> io::Result<Value> {
         let mut page = self.page(name).await?;
         let result = async {
             page.initialize().await?;
@@ -116,7 +107,7 @@ impl Browser {
     ///
     /// # Errors
     /// Returns initialization failures or the complete missing/non-callable selection.
-    pub async fn preflight(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
+    async fn preflight(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
         let expression = format!(
             "(async () => {{ const module = await import('/sandbox.js'); await module.default(); return {}.filter(name => typeof module[name] !== 'function'); }})()",
             json!(names)
@@ -133,9 +124,81 @@ impl Browser {
     }
 
     /// Ordered observations emitted by completed and failed assertions.
+    fn lines(&self) -> &[String] {
+        &self.lines
+    }
+
+    /// Execute a browser-scoped protocol operation through the retained connection.
+    ///
+    /// # Errors
+    /// Returns browser protocol or disconnection failures.
+    async fn execute(&mut self, method: &'static str, params: Value) -> io::Result<Value> {
+        page::raw(&mut self.dispatcher, None, method, params).await
+    }
+
+    /// Emit family accounting alongside the page's diagnostic phases.
+    fn log(&mut self, text: &str) {
+        println!("{text}");
+        self.lines.push(text.to_owned());
+    }
+}
+
+/// One launched browser process with the first of its connected drivers.
+pub struct Browser {
+    /// Browser process and diagnostics.
+    process: Process,
+    /// Driver serving the whole run, including the inventory preflight.
+    driver: Driver,
+}
+
+impl Browser {
+    /// Launch the explicit executable with an invocation-owned profile.
+    ///
+    /// Extra arguments retain the browser input's native renderer configurations.
+    ///
+    /// # Errors
+    /// Returns launch, readiness or CDP connection failures.
+    pub async fn launch(executable: &Path, profile: &Path, args: &[String]) -> io::Result<Self> {
+        let (process, endpoint) = Process::launch(executable, profile, args).await?;
+        match Driver::connect(&endpoint).await {
+            Ok(driver) => Ok(Self { process, driver }),
+            Err(error) => cleanup(Err(error), process.close().await),
+        }
+    }
+
+    /// Connect a companion driver so two exports can run at once in their own pages.
+    async fn companion(&self) -> io::Result<Driver> {
+        Driver::connect(&self.driver.endpoint).await
+    }
+
+    /// Open a fresh page whose explicit close settles renderer cleanup.
+    ///
+    /// # Errors
+    /// Returns target creation or renderer initialization failures.
+    pub async fn page(&mut self, name: &str) -> io::Result<Page<'_>> {
+        self.driver.page(name).await
+    }
+
+    /// Execute one assertion with fresh page/module state and exact policy-error accounting.
+    ///
+    /// # Errors
+    /// Returns navigation, assertion, page/crash/disconnect or cleanup failures.
+    pub async fn check(&mut self, url: &str, name: &str, expression: &str) -> io::Result<Value> {
+        self.driver.check(url, name, expression).await
+    }
+
+    /// Require every selected export to be callable before invoking any assertion.
+    ///
+    /// # Errors
+    /// Returns initialization failures or the complete missing/non-callable selection.
+    pub async fn preflight(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
+        self.driver.preflight(origin, names).await
+    }
+
+    /// Ordered observations emitted by completed and failed assertions.
     #[must_use]
     pub fn lines(&self) -> &[String] {
-        &self.lines
+        self.driver.lines()
     }
 
     /// Close and reap the library-launched child, including failed-page outcomes.
@@ -154,13 +217,7 @@ impl Browser {
     /// # Errors
     /// Returns browser protocol or disconnection failures.
     pub async fn execute(&mut self, method: &'static str, params: Value) -> io::Result<Value> {
-        page::raw(&mut self.dispatcher, None, method, params).await
-    }
-
-    /// Emit family accounting alongside the page's diagnostic phases.
-    fn log(&mut self, text: &str) {
-        println!("{text}");
-        self.lines.push(text.to_owned());
+        self.driver.execute(method, params).await
     }
 }
 
@@ -250,7 +307,15 @@ async fn exports(
     let server = server::Server::start(root).await?;
     let result = async {
         let mut browser = Browser::launch(executable, profile, &[]).await?;
-        let result = run_inventory(&mut browser, root, &server.origin, inventory).await;
+        let mut companion = browser.companion().await?;
+        let result = run_inventory(
+            &mut browser.driver,
+            &mut companion,
+            root,
+            &server.origin,
+            inventory,
+        )
+        .await;
         cleanup(result, browser.close().await)
     }
     .await;
@@ -259,7 +324,8 @@ async fn exports(
 
 /// Preflight every callable export before invoking the first assertion.
 async fn run_inventory(
-    browser: &mut Browser,
+    first: &mut Driver,
+    second: &mut Driver,
     root: &Path,
     origin: &str,
     inventory: &Inventory,
@@ -269,18 +335,20 @@ async fn run_inventory(
         .iter()
         .flat_map(|(_, names)| names.iter().cloned())
         .collect();
-    browser.expected_error.clone_from(&inventory.expected_error);
+    first.expected_error.clone_from(&inventory.expected_error);
+    second.expected_error.clone_from(&inventory.expected_error);
     let before = host_digest(root).await?;
-    browser.preflight(origin, &names).await?;
+    first.preflight(origin, &names).await?;
     let cases = run_cases(
-        browser,
+        first,
+        second,
         &inventory.families,
-        Browser::log,
-        async |browser, family, name| run_case(browser, origin, family, name).await,
+        Driver::log,
+        async |driver, family, name| run_case(driver, origin, family, name).await,
     )
     .await;
     let unchanged = if host_digest(root).await? == before {
-        browser.log(&format!("HOST {before} unchanged"));
+        first.log(&format!("HOST {before} unchanged"));
         Ok(())
     } else {
         Err(io::Error::other("host bundle changed while modules loaded"))
@@ -288,8 +356,8 @@ async fn run_inventory(
     cases.and(unchanged)
 }
 
-/// Run one export in a fresh page.
-async fn run_case(browser: &mut Browser, origin: &str, family: &str, name: &str) -> io::Result<()> {
+/// Run one export in a fresh page of the driver that owns it.
+async fn run_case(driver: &mut Driver, origin: &str, family: &str, name: &str) -> io::Result<()> {
     let expression = format!(
         "(async () => {{ const module = await import('/sandbox.js'); await module.default(); await module[{}](url => import(url)); }})()",
         json!(name)
@@ -299,15 +367,19 @@ async fn run_case(browser: &mut Browser, origin: &str, family: &str, name: &str)
         "canvas" => "/canvas.html",
         _ => "/",
     };
-    browser
+    driver
         .check(&format!("{origin}{entry}"), name, &expression)
         .await
         .map(|_| ())
 }
 
+/// Run each family's exports in pairs, one fresh page per export on either driver.
+///
+/// A pair settles before the next starts, so a failure leaves no export in flight.
 /// Record every case, then fail with all failures, as nextest does under `--no-fail-fast`.
 async fn run_cases<S>(
-    state: &mut S,
+    first: &mut S,
+    second: &mut S,
     families: &[(&str, Vec<String>)],
     log: fn(&mut S, &str),
     case: impl AsyncFn(&mut S, &str, &str) -> io::Result<()>,
@@ -316,28 +388,66 @@ async fn run_cases<S>(
     let mut failures = Vec::new();
     for (family, names) in families {
         let mut passed = 0;
-        for name in names {
-            log(state, &format!("START {family} {name}"));
-            match case(state, family, name).await {
-                Ok(()) => {
-                    passed += 1;
-                    log(state, &format!("PASS {family} {name}"));
+        for pair in names.chunks(2) {
+            let outcomes = match pair {
+                [one, two] => {
+                    log(&mut *first, &format!("START {family} {one}"));
+                    log(&mut *second, &format!("START {family} {two}"));
+                    let (left, right) = futures_util::future::join(
+                        case(&mut *first, family, one),
+                        case(&mut *second, family, two),
+                    )
+                    .await;
+                    [Some(left), Some(right)]
                 }
-                Err(error) => {
-                    let failure = format!("FAIL {name}: {error}");
-                    log(state, &failure);
-                    failures.push(failure);
+                [one] => {
+                    log(&mut *first, &format!("START {family} {one}"));
+                    [Some(case(&mut *first, family, one).await), None]
                 }
+                _ => [None, None],
+            };
+            let settled = pair
+                .iter()
+                .zip(outcomes)
+                .filter_map(|(name, outcome)| outcome.map(|outcome| (name, outcome)));
+            for (slot, (name, outcome)) in [&mut *first, &mut *second].into_iter().zip(settled) {
+                let failure = settle(slot, log, family, name, outcome);
+                passed += usize::from(failure.is_none());
+                failures.extend(failure);
             }
         }
-        log(state, &format!("FAMILY {family} {passed}/{}", names.len()));
+        log(
+            &mut *first,
+            &format!("FAMILY {family} {passed}/{}", names.len()),
+        );
     }
     let passed = total - failures.len();
-    log(state, &format!("COMPLETE {passed}/{total}"));
+    log(&mut *first, &format!("COMPLETE {passed}/{total}"));
     if failures.is_empty() {
         Ok(())
     } else {
         Err(io::Error::other(failures.join("\n")))
+    }
+}
+
+/// Emit one export's outcome, returning its failure line for the family's total.
+fn settle<S>(
+    state: &mut S,
+    log: fn(&mut S, &str),
+    family: &str,
+    name: &str,
+    outcome: io::Result<()>,
+) -> Option<String> {
+    match outcome {
+        Ok(()) => {
+            log(state, &format!("PASS {family} {name}"));
+            None
+        }
+        Err(error) => {
+            let failure = format!("FAIL {name}: {error}");
+            log(state, &failure);
+            Some(failure)
+        }
     }
 }
 
