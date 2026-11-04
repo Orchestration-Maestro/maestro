@@ -218,13 +218,9 @@ fn rows(expected: &[records::DiffRow]) -> Vec<(String, String)> {
         .map(|row| (row.text.clone(), row.kind.clone()))
         .collect()
 }
-/// Prepare a recorded artifact card through the object adapter.
+/// [`cards::prepare`] selecting the recorded artifact and its phase.
 fn artifact(input: &crate::support::tool_input::Input) -> Result<Dom, ToolUiError> {
-    ArtifactsToolRenderer::new(None).render(
-        input.params.as_ref(),
-        input.result.as_ref().map(Into::into),
-        input.is_streaming,
-    )
+    cards::prepare(input)
 }
 /// Prepare an artifact card through the whole-value adapter at a recorded phase.
 fn value(params: Option<&Value>, phase: &str) -> Result<Dom, ToolUiError> {

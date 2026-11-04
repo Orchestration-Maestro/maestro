@@ -416,23 +416,40 @@ fn dash_and_equals_forms_do_not_create_a_new_grammar() {
 }
 
 #[test]
-fn argv_traversal_reads_each_token_a_bounded_number_of_times() {
-    for count in [32_usize, 64, 128] {
-        let argv: Vec<String> = (0..count).map(|index| format!("message-{index}")).collect();
-        let parsed = parse_args(&argv);
-        let retained: Vec<&str> = parsed.messages.iter().map(String::as_str).collect();
-        let authored: Vec<&str> = argv.iter().map(String::as_str).collect();
-        assert_eq!(
-            retained, authored,
-            "every message of {count} survives once, in its authored order"
-        );
-        let diagnostics: Vec<_> = parsed
-            .diagnostics
-            .iter()
-            .filter(|diagnostic| diagnostic.r#type == DiagnosticType::Error)
-            .collect();
-        assert!(diagnostics.is_empty());
-    }
+fn every_authored_message_survives_a_long_argv() {
+    let argv: Vec<String> = (0..32).map(|index| format!("message-{index}")).collect();
+
+    let parsed = parse_args(&argv);
+
+    let retained: Vec<&str> = parsed.messages.iter().map(String::as_str).collect();
+    let authored: Vec<&str> = argv.iter().map(String::as_str).collect();
+    assert_eq!(
+        retained, authored,
+        "every message survives once, in its authored order"
+    );
+    let diagnostics: Vec<_> = parsed
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.r#type == DiagnosticType::Error)
+        .collect();
+    assert!(diagnostics.is_empty());
+}
+
+#[test]
+fn equal_tokens_are_consumed_once_each() {
+    let mut argv = vec!["--print".to_owned()];
+    argv.extend(std::iter::repeat_n("message".to_owned(), 63));
+
+    let parsed = parse_args(&argv);
+
+    assert_eq!(parsed.print, Some(true));
+    assert_eq!(
+        parsed.messages.len(),
+        63,
+        "the option takes one token, and every other token survives once"
+    );
+    assert!(parsed.messages.iter().all(|message| message == "message"));
+    assert!(parsed.diagnostics.is_empty());
 }
 
 #[test]

@@ -86,7 +86,7 @@ binding they apply before the call returns. Queued validation failures are
 reported as extension errors, so inspect startup diagnostics as well as exit status.
 
 For working code behind this route, see the
-[provider catalog component](../../crates/maestro-extensions-wasm/examples/context_bridge/providers.rs)
+[provider catalog component](../../crates/maestro-extensions-wasm/tests/support/context_bridge/providers.rs)
 and its [controlled host checks](../../crates/maestro-extensions-wasmtime/tests/provider_catalog.rs).
 Standalone provider example deliveries are tracked separately in
 [#2223](https://github.com/Orchestration-Maestro/maestro/issues/2223) and
@@ -187,7 +187,7 @@ The installed account ID is the registration name, not the implementation's
 `id()` return value. `name()` supplies the account label;
 `uses_callback_server()` reports optional metadata, not a running listener.
 
-The complete [authored account implementation](../../crates/maestro-extensions-wasm/examples/context_bridge/oauth/registration.rs)
+The complete [authored account implementation](../../crates/maestro-extensions-wasm/tests/support/context_bridge/oauth/registration.rs)
 shows all methods, registration through both the facade and an independent catalog,
 and controlled login and refresh. Its token strings and endpoints are test data,
 not an authorization service. Replace those operations, not just their labels,
@@ -236,11 +236,11 @@ To select that bundled protocol per request, name its identifier through
 [`stream_simple_via`](guest_streams.md#invoking-registered-models); callers and
 final messages keep the model's API identity.
 
-Use the [model callback example](../../crates/maestro-extensions-wasm/examples/context_bridge/model_registered.rs)
+Use the [model callback fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/model_registered.rs)
 for registration and dispatch, the
-[assistant event example](../../crates/maestro-extensions-wasm/examples/context_bridge/assistant_streams.rs)
+[assistant event fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/assistant_streams.rs)
 for every event variant, and the
-[stream lifetime example](../../crates/maestro-extensions-wasm/examples/context_bridge/stream_lifetimes.rs)
+[stream lifetime fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/stream_lifetimes.rs)
 for independently owned producers. These are executable component fixtures, not
 standalone provider packages.
 

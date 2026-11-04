@@ -64,6 +64,7 @@ mod prompt_exports;
 mod provider_dialogs_browser;
 mod provider_exports;
 mod runtime_bridge;
+mod sandbox_bootstrap_browser;
 mod sandbox_execution_browser;
 mod sandbox_exports;
 mod sandbox_loading_browser;
@@ -114,6 +115,8 @@ pub mod panel_browser_support;
 pub mod pdf_support;
 pub mod reading_browser_support;
 pub mod reading_slots_support;
+#[cfg(target_arch = "wasm32")]
+pub mod sandbox_bootstrap_support;
 #[cfg(target_arch = "wasm32")]
 pub mod sandbox_execution_support;
 #[cfg(target_arch = "wasm32")]

@@ -24,7 +24,7 @@ use crate::test_setup::{self, EXAMPLE, executable};
 /// The sources the setup example is built from, beside the shared build and discovery
 /// directories listed below; the example is outdated once any of them is newer.
 const SOURCES: [&str; 5] = [
-    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
     "crates/maestro-extensions-wasm/src/tests/build.rs",
     "crates/maestro-tooling/src/example_files.rs",
     "crates/maestro-extensions-wasm/Cargo.toml",

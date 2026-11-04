@@ -604,32 +604,34 @@ fn failing_widget(api: &ExtensionAPI<Local>) -> WidgetContent {
 
 /// Reloads while a real shell is held until the test releases it.
 async fn reload_during_shell(directory: &Path) {
-    let started = directory.join("shell-started");
     let release = directory.join("shell-release");
     let held = super::gate(&release);
     let script = super::scripted(
         directory,
         "reload-shell",
         &json!([
-            {"mark": {"path": started}},
             {"hold": {"path": release}},
             {"print": "shell done\n"},
         ]),
     );
     let shell = super::bash::shelling(directory, &script).await;
-    let ((), errors) = super::driving(&shell, async {
-        submit(&shell.mode, "!held");
-        super::until_exists(&started).await;
+    let (mut errors, driven) = super::driving(&shell, async {
+        let command = super::start_shell(&shell, "!held");
+        let running = super::held_at(held).await;
         assert!(shell.host.session().is_bash_running());
         submit(&shell.mode, "/reload");
         assert!(admitted(&shell.runtime).await.is_empty());
         assert!(shell.loader.calls.borrow().contains(&"reload"));
-        drop(held);
-        while super::active(&shell).is_some() {
-            tokio::task::yield_now().await;
-        }
+        drop(running);
+        let errors = super::settle_shell(command).await;
+        assert!(
+            super::active(&shell).is_none(),
+            "the released shell row gives up its claim"
+        );
+        errors
     })
     .await;
+    errors.extend(driven);
     assert!(errors.is_empty(), "{errors:?}");
 }
 

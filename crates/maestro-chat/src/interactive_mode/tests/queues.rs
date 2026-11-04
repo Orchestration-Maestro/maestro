@@ -1130,7 +1130,7 @@ pub(super) async fn during_compaction(
             "Nothing to compact (session too small)"
         );
         // The compaction's end delivers the input it captured, on the terminal host.
-        super::progress::settle_host(world).await;
+        super::settle_host(world).await;
     }
     .await;
     unsubscribe();
