@@ -983,13 +983,14 @@ Development and test profiles use `debug = "line-tables-only"` for workspace cra
 backtraces retain file:line for workspace code, without debugger variable views.
 Dependencies build without debug info, so their frames show function names only;
 this keeps target directories about a sixth smaller.
-They also build `cranelift-codegen` and `regalloc2` optimised, because tests
-compile extension components and an unoptimised code generator makes each
-compile about five times slower, and `syn` and `proc-macro2`
-optimised, because the conventions tests parse every workspace source, and `sha2`
-optimised, because the test setup hashes the lock files on every nextest run and an
-unoptimised digest makes its reused-directory path about three times slower;
-release builds are unchanged.
+They also build these dependencies optimised; release builds are unchanged:
+
+- `cranelift-codegen` and `regalloc2`: tests compile extension components, and an
+  unoptimised code generator makes each compile about five times slower.
+- `syn`, `proc-macro2` and `ra-ap-rustc_lexer`: the conventions tests parse and lex
+  every workspace source.
+- `sha2`: the test setup hashes the lock files on every nextest run, and an
+  unoptimised digest makes its reused-directory path about three times slower.
 
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.

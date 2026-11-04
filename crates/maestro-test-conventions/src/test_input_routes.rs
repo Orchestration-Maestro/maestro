@@ -84,8 +84,15 @@ fn reads(member: &Member, source: &Source) -> BTreeSet<(usize, String)> {
     let Some(file) = source.syntax.as_ref() else {
         return BTreeSet::new();
     };
+    let testing = test_scope(member, source);
+    // Every read is test code, so a source without any is not visited.
+    if !testing && source.test_spans().is_empty() {
+        return BTreeSet::new();
+    }
+    #[cfg(test)]
+    VISITED.set(VISITED.get() + 1);
     let mut visitor = Reads {
-        testing: test_scope(member, source),
+        testing,
         climbs: false,
         direct: BTreeSet::new(),
         joined: BTreeSet::new(),
@@ -95,6 +102,14 @@ fn reads(member: &Member, source: &Source) -> BTreeSet<(usize, String)> {
         visitor.direct.append(&mut visitor.joined);
     }
     visitor.direct
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Sources whose syntax this check visits on the current test thread.
+    static VISITED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// String values and names spelled by this check on the current test thread.
+    static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Directory reads found in one file.
@@ -169,6 +184,8 @@ impl Reads {
             }
             TokenTree::Ident(name) => {
                 self.climbs |= self.testing && name == "ancestors";
+                #[cfg(test)]
+                SPELLINGS.set(SPELLINGS.get() + 1);
                 self.resolver(&name.to_string(), name.span().start().line);
             }
             TokenTree::Group(group) => {
@@ -208,6 +225,8 @@ fn is_join(tree: &TokenTree) -> bool {
 
 /// The decoded value of a string literal token.
 fn string_value(literal: &proc_macro2::Literal) -> Option<String> {
+    #[cfg(test)]
+    SPELLINGS.set(SPELLINGS.get() + 1);
     syn::parse_str::<syn::LitStr>(&literal.to_string())
         .ok()
         .map(|literal| literal.value())
@@ -217,13 +236,21 @@ impl<'ast> Visit<'ast> for Reads {
     fn visit_attribute(&mut self, _attribute: &'ast syn::Attribute) {}
 
     fn visit_expr_lit(&mut self, expression: &'ast syn::ExprLit) {
-        if let syn::Lit::Str(literal) = &expression.lit {
+        if self.testing
+            && let syn::Lit::Str(literal) = &expression.lit
+        {
+            #[cfg(test)]
+            SPELLINGS.set(SPELLINGS.get() + 1);
             self.literal(&literal.value(), literal.span().start().line);
         }
     }
 
     fn visit_expr_path(&mut self, expression: &'ast syn::ExprPath) {
-        if let Some(segment) = expression.path.segments.last() {
+        if self.testing
+            && let Some(segment) = expression.path.segments.last()
+        {
+            #[cfg(test)]
+            SPELLINGS.set(SPELLINGS.get() + 1);
             self.resolver(
                 &segment.ident.to_string(),
                 segment.ident.span().start().line,
@@ -236,7 +263,8 @@ impl<'ast> Visit<'ast> for Reads {
         if self.testing && call.method == "ancestors" {
             self.climbs = true;
         }
-        if (call.method == "join" || call.method == "push")
+        if self.testing
+            && (call.method == "join" || call.method == "push")
             && let Some(syn::Expr::Lit(expression)) = call.args.first()
             && let syn::Lit::Str(literal) = &expression.lit
         {
@@ -246,6 +274,12 @@ impl<'ast> Visit<'ast> for Reads {
     }
 
     fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
+        // Macro tokens hold no syntax to visit, and only test code reads directories.
+        if !self.testing {
+            return;
+        }
+        #[cfg(test)]
+        SPELLINGS.set(SPELLINGS.get() + 1);
         let compiled = invocation
             .path
             .segments
@@ -260,3 +294,6 @@ impl<'ast> Visit<'ast> for Reads {
     inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
     inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
 }
+
+#[cfg(test)]
+mod tests;

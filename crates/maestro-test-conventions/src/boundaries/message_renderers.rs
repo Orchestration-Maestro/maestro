@@ -40,7 +40,10 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 testing,
                 found: BTreeMap::new(),
             };
-            aliases.visit_file(syntax);
+            // Only the frontend's raw names are reported, so only its aliases are read.
+            if member.name == FRONTEND {
+                aliases.visit_file(syntax);
+            }
             let mut guard = Guard {
                 member: &member.name,
                 source,
@@ -82,8 +85,16 @@ impl Import<'_> {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Identifier spellings materialized by the renderer check on the current test thread.
+    pub(crate) static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// Restricted name an identifier spells, ignoring a raw prefix.
 fn restricted(name: &syn::Ident) -> Option<&'static str> {
+    #[cfg(test)]
+    SPELLINGS.set(SPELLINGS.get() + 1);
     let spelling = name.to_string();
     let spelling = spelling.strip_prefix("r#").unwrap_or(&spelling);
     RAW.iter().copied().find(|raw| *raw == spelling)
@@ -136,19 +147,22 @@ struct Guard<'a> {
 
 impl Guard<'_> {
     /// Records a raw identifier reached from the frontend.
-    fn raw(&mut self, written: &str, span: proc_macro2::Span) {
+    fn raw(&mut self, ident: &syn::Ident) {
         if self.member != FRONTEND || self.testing {
             return;
         }
+        #[cfg(test)]
+        SPELLINGS.set(SPELLINGS.get() + 1);
+        let written = ident.unraw().to_string();
         let Some(raw) = self
             .aliases
-            .get(written)
+            .get(&written)
             .copied()
             .or_else(|| RAW.iter().copied().find(|raw| *raw == written))
         else {
             return;
         };
-        let position = span.start();
+        let position = ident.span().start();
         self.found.push((
             self.source.path.display().to_string(),
             (position.line, position.column),
@@ -160,7 +174,7 @@ impl Guard<'_> {
     fn imported(&mut self, tree: &syn::UseTree) {
         for import in flatten(tree) {
             for segment in &import.path {
-                self.raw(&segment.unraw().to_string(), segment.span());
+                self.raw(segment);
             }
         }
     }
@@ -205,14 +219,13 @@ impl<'ast> Visit<'ast> for Guard<'_> {
     }
 
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        let name = call.method.unraw().to_string();
-        self.raw(&name, call.method.span());
+        self.raw(&call.method);
         syn::visit::visit_expr_method_call(self, call);
     }
 
     fn visit_path(&mut self, path: &'ast syn::Path) {
         for segment in &path.segments {
-            self.raw(&segment.ident.unraw().to_string(), segment.ident.span());
+            self.raw(&segment.ident);
         }
         syn::visit::visit_path(self, path);
     }
