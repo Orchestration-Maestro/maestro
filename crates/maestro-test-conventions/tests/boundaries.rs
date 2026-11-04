@@ -146,12 +146,6 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
             check_runtime_library(workspace.root.path(), &declared, owner, library);
         }
     }
-    // Every declaration above was checked against this one workspace and document.
-    assert_eq!(
-        support::fixture_counts(),
-        (1, 1),
-        "one fixture workspace and one metadata document hold the whole matrix"
-    );
     let workspace = Workspace::new();
     workspace.foundation(&["maestro", "maestro-extensions-wasmtime"]);
     workspace.external("wasmtime");

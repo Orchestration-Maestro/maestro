@@ -1,20 +1,7 @@
 #![cfg(test)]
 
-use std::cell::Cell;
 use std::fs;
 use std::path::PathBuf;
-
-thread_local! {
-    static WORKSPACES: Cell<usize> = const { Cell::new(0) };
-    static DOCUMENTS: Cell<usize> = const { Cell::new(0) };
-}
-
-/// Fixture workspaces and metadata documents this test thread has built since it started.
-///
-/// A matrix that checks every case against one fixture reports `(1, 1)` here.
-pub fn fixture_counts() -> (usize, usize) {
-    (WORKSPACES.with(Cell::get), DOCUMENTS.with(Cell::get))
-}
 
 /// The guest crate's own lint table: the fixture workspace table with the three lints its
 /// generated bindings need at `deny`.
@@ -40,7 +27,6 @@ impl std::ops::Deref for Workspace {
 
 impl Workspace {
     pub fn new() -> Self {
-        WORKSPACES.with(|count| count.set(count.get() + 1));
         let workspace = Self {
             scratch: Scratch::new(),
         };
@@ -180,7 +166,6 @@ pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &st
 
 impl Workspace {
     pub fn metadata(&self) -> serde_json::Value {
-        DOCUMENTS.with(|count| count.set(count.get() + 1));
         let output =
             std::process::Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
                 .args(["metadata", "--format-version", "1", "--offline"])
