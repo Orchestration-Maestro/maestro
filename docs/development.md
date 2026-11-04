@@ -247,7 +247,7 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then checks each family in pairs:
-26 execution exports, 63 loading exports, 194 contribution exports and 69 canvas
+27 execution exports, 64 loading exports, 194 contribution exports and 69 canvas
 exports. Both exports of a pair run at once, each in a fresh page of its own
 driver, and the pair settles before the next starts. A failing export closes its
 own page and the run continues; the browser and the server close once every
@@ -269,7 +269,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 352/352` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 354/354` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -335,7 +335,9 @@ stay JavaScript or HTML files beside their tests:
   constructor.
 - `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
   probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
+  driver's served `/sandbox.html`, it writes a load message's code only when the
+  frame's parent sent it.
 - `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
   and authored documents the program witnesses prepare, plus the generated carrier
   bootstraps their policies admit by hash.

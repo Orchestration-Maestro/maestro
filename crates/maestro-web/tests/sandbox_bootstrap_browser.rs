@@ -1,8 +1,8 @@
 //! Prototype runtime bootstrap qualification in isolated Chromium frames.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::sandbox_bootstrap_support::{
-    Boot, Bundle, Mount, OBSERVER, Runtime, digests, encode, json as native_json, observe, padded,
-    program, receipt, synchronous_limit, wrap,
+    Boot, Bundle, Mount, OBSERVER, Runtime, digests, encode, json as native_json,
+    loads_only_from_parent, observe, padded, program, receipt, synchronous_limit, wrap,
 };
 use serde_json::{Value, json};
 
@@ -222,6 +222,12 @@ pub async fn bootstrap_supplied_url_installs_before_first_classic_scripts() {
         fields(&state, &["head", "scaffold"]),
         json!({"head":"meta,script","scaffold":0})
     );
+}
+
+/// The served sandbox page writes a load message only when its frame's parent sent it.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_supplied_url_loads_only_from_its_parent() {
+    loads_only_from_parent("src", "/sandbox.html", "sandbox-ready").await;
 }
 
 /// One self-contained document runs with every network and resource directive refused.
