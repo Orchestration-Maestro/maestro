@@ -245,7 +245,7 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 57 loading exports and 194 contribution exports. Packaging
+26 execution exports, 63 loading exports and 194 contribution exports. Packaging
 also builds the two runtime-module fixtures, each from its own manifest and lock
 with its own binding glue, into a copy of the fixture package. It builds the
 prototype sandbox runtime the same way, with classic-script glue
@@ -256,7 +256,7 @@ exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 277/277` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 283/283` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
