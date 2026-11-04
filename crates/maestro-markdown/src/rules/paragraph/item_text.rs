@@ -327,7 +327,9 @@ impl ItemText {
             return false;
         }
         let end = line_end(source, local).unwrap_or(source.len());
-        let lookahead = line_end(source, end).unwrap_or(end);
+        // An unterminated next line still closes the window at the operand's end, so a
+        // header and delimiter pair it holds can interrupt this line.
+        let lookahead = line_end(source, end).unwrap_or(source.len());
         let line = self.line(source, local..end, lookahead, remainder.escaped);
         let position = self.lines.len();
         if line.setext != Stop::Open {
