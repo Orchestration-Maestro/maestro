@@ -8,6 +8,7 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use super::example_files;
+use super::workspace::{self, FIXTURES, Workspace};
 
 /// Offline resolution of the standalone guide's generated lock.
 mod guide_lock;
@@ -15,14 +16,11 @@ mod guide_lock;
 /// Markers around the README table.
 const README: [&str; 2] = ["<!-- example-index:start -->", "<!-- example-index:end -->"];
 /// Markers around the manifest's example targets.
-const MANIFEST: [&str; 2] = ["# example-index:start", "# example-index:end"];
-/// The crate that builds every example as a component.
-const CRATE: &str = "crates/maestro-extensions-wasm";
+const MANIFEST: [&str; 2] = [workspace::REGION_START, workspace::REGION_END];
+/// The crate whose examples the guide project builds on.
+const GUEST: &str = "maestro-extensions-wasm";
 /// The crate's native preparation program, the one crate example that is not a component.
 const PREPARATION: &str = "prepare_author_component";
-/// The crate's fixture components, relative to the crate.
-const FIXTURES: &str = "tests/support";
-
 /// One example target of the component crate.
 struct Target {
     /// Cargo target name.
@@ -32,21 +30,24 @@ struct Target {
 }
 
 /// Refresh the generated regions and guide lock, or check them without changing files.
+///
+/// # Errors
+/// Returns an unknown argument, a workspace without one component crate, a missing marker,
+/// stale output in check mode, or a failed read, render or write.
 pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     if !args.is_empty() && args != [OsString::from("--check")] {
         return Err(io::Error::other("usage: example-index [--check]"));
     }
-    let folder = checkout.join("examples/extensions");
-    let local = checkout.join(CRATE).join(FIXTURES);
-    let targets = targets(&folder, &local)?;
-    let regions = [
-        (folder.join("README.md"), README, table(&folder)?),
-        (
-            checkout.join(CRATE).join("Cargo.toml"),
-            MANIFEST,
-            manifest(&targets),
-        ),
-    ];
+    let check = !args.is_empty();
+    let workspace = Workspace::read(cargo, checkout)?;
+    let component = workspace.component_crate()?;
+    let shipped = workspace.shipped();
+    let targets = targets(&workspace, &component, shipped.as_deref())?;
+    let mut regions = Vec::new();
+    if let Some(folder) = &shipped {
+        regions.push((folder.join("README.md"), README, table(folder)?));
+    }
+    regions.push((component.join("Cargo.toml"), MANIFEST, manifest(&targets)));
     let mut changed = Vec::new();
     for (path, markers, body) in regions {
         let before = fs::read_to_string(&path)?;
@@ -55,9 +56,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             changed.push((path, after));
         }
     }
-    if !args.is_empty()
-        && let Some((path, _)) = changed.first()
-    {
+    if check && let Some((path, _)) = changed.first() {
         return Err(io::Error::other(format!(
             "{} is stale; run just example-index",
             path.display()
@@ -67,7 +66,14 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
     for (path, after) in changed {
         fs::write(path, after)?;
     }
-    guide_lock::refresh(cargo, checkout, !args.is_empty())?;
+    let guest = workspace.package(GUEST)?;
+    guide_lock::refresh(
+        cargo,
+        checkout,
+        workspace.guide().as_deref(),
+        guest.as_deref(),
+        check,
+    )?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -120,33 +126,42 @@ fn summary(path: &Path) -> io::Result<String> {
 
 /// Find the shipped examples and the crate's own fixture components, in name order.
 ///
-/// A shipped example is a top-level source file or a directory with its own `main.rs`.
-fn targets(folder: &Path, local: &Path) -> io::Result<Vec<Target>> {
+/// A shipped example is a top-level source file or a directory with its own `main.rs`. A
+/// workspace without the shipped folder renders the crate's own examples alone.
+fn targets(
+    workspace: &Workspace,
+    component: &Path,
+    shipped: Option<&Path>,
+) -> io::Result<Vec<Target>> {
     let mut targets = Vec::new();
-    for entry in fs::read_dir(folder)? {
-        let entry = entry?;
-        let file = file_name(&entry)?;
-        let source = if entry.file_type()?.is_dir() {
-            format!("{file}/main.rs")
-        } else if file.strip_suffix(".rs").is_some() {
-            file.clone()
-        } else {
-            continue;
-        };
-        if folder.join(&source).is_file() {
-            targets.push(Target {
-                name: example_files::target_name(folder, &folder.join(&source))?,
-                path: format!("../../examples/extensions/{source}"),
-            });
+    if let Some(folder) = shipped {
+        let climb = workspace.climb(component)?;
+        for entry in fs::read_dir(folder)? {
+            let entry = entry?;
+            let file = file_name(&entry)?;
+            let source = if entry.file_type()?.is_dir() {
+                format!("{file}/main.rs")
+            } else if file.strip_suffix(".rs").is_some() {
+                file.clone()
+            } else {
+                continue;
+            };
+            if folder.join(&source).is_file() {
+                targets.push(Target {
+                    name: example_files::target_name(folder, &folder.join(&source))?,
+                    path: format!("{climb}examples/extensions/{source}"),
+                });
+            }
         }
     }
-    for entry in fs::read_dir(local)? {
+    let local = component.join(FIXTURES);
+    for entry in fs::read_dir(&local)? {
         let entry = entry?;
         let file = file_name(&entry)?;
         match file.strip_suffix(".rs") {
             Some(stem) if stem != PREPARATION && entry.file_type()?.is_file() => {
                 targets.push(Target {
-                    name: example_files::target_name(local, &entry.path())?,
+                    name: example_files::target_name(&local, &entry.path())?,
                     path: format!("{FIXTURES}/{file}"),
                 });
             }

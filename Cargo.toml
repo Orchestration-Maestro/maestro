@@ -71,11 +71,14 @@ opt-level = 3
 [profile.dev.package.regalloc2]
 opt-level = 3
 
-# The conventions tests parse every workspace source; unoptimised parsers nearly double their time.
+# The conventions tests parse and lex every workspace source; unoptimised parsers and lexer nearly double their time.
 [profile.dev.package.syn]
 opt-level = 3
 
 [profile.dev.package.proc-macro2]
+opt-level = 3
+
+[profile.dev.package.ra-ap-rustc_lexer]
 opt-level = 3
 
 # Image and archive tests deflate and encode hundreds of megabytes; unoptimised codecs make them about eleven times slower.

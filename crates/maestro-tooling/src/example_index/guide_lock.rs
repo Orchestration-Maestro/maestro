@@ -6,24 +6,37 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// Guide inputs and generated lock, kept beside the host's clean-folder test.
-const FIXTURE: &str = "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension";
+use super::super::workspace::GUIDE;
+
 /// Distinguish concurrent resolutions in the same process.
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
 /// Compare or refresh the guide lock after rendering the example manifest.
 ///
+/// The guide is one crate's own qualification fixture and builds on the crate that supplies the
+/// guest SDK, so a workspace that holds neither has no guide lock to derive and skips this.
+///
 /// # Errors
 ///
 /// Returns an error if filesystem access or offline Cargo resolution fails,
 /// or if check mode finds a stale guide lock.
-pub(super) fn refresh(cargo: &Path, checkout: &Path, check: bool) -> io::Result<()> {
+pub(super) fn refresh(
+    cargo: &Path,
+    checkout: &Path,
+    guide: Option<&Path>,
+    guest: Option<&Path>,
+    check: bool,
+) -> io::Result<()> {
+    let (Some(crate_root), Some(guest)) = (guide, guest) else {
+        return Ok(());
+    };
     let checkout = checkout.canonicalize()?;
-    let fixture = checkout.join(FIXTURE);
+    let guest = guest.canonicalize()?;
+    let fixture = crate_root.join(GUIDE);
     let project = Project::new()?;
     let manifest = fs::read_to_string(fixture.join("Cargo.toml.in"))?.replace(
         "\"../maestro/crates/maestro-extensions-wasm\"",
-        &serde_json::to_string(&checkout.join("crates/maestro-extensions-wasm"))?,
+        &serde_json::to_string(&guest)?,
     );
     fs::write(project.0.join("Cargo.toml"), manifest)?;
     fs::create_dir(project.0.join("src"))?;

@@ -493,18 +493,16 @@ async fn installs(name: &str) {
         return;
     }
     for row in cases::<Install>(name) {
-        let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path().to_str().unwrap();
         // A host `tar` that accepts an empty archive reaches the binary check instead of the
         // recorded extraction failure.
         let empty = (row.download.as_ref()).is_some_and(|body| body.text.as_deref() == Some(""));
-        if empty && accepts_empty_archive(&scratch.path) {
+        if empty && accepts_empty_archive(root) {
             eprintln!("{} needs a host tar that refuses an empty archive", row.id);
             continue;
         }
-        let bin = maestro_path::join(&[
-            &scratch.path,
-            if row.bin_exists { "bin" } else { "nested/bin" },
-        ]);
+        let bin = maestro_path::join(&[root, if row.bin_exists { "bin" } else { "nested/bin" }]);
         if row.bin_exists {
             std::fs::create_dir(&bin).unwrap();
         }
@@ -607,8 +605,8 @@ struct WalkCase {
 #[test]
 fn recursive_search_prefers_files_then_the_last_directory() {
     for row in cases::<WalkCase>("recursive_search_prefers_files_then_the_last_directory") {
-        let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "walk").unwrap();
-        let root = Path::new(&scratch.path);
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let root = scratch.path();
         for file in row.files {
             let path = root.join(&file);
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -646,25 +644,27 @@ struct EntryCase {
 fn windows_binary_directory_entries_carry_the_exe_suffix() {
     run(async {
         for row in cases::<EntryCase>("windows_binary_directory_entries_carry_the_exe_suffix") {
-            let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "entry").unwrap();
-            let path = Path::new(&scratch.path).join("fd.exe");
+            let scratch = maestro_test_directory::Scratch::new().unwrap();
+            let root = scratch.path();
+            let root_text = root.to_str().unwrap();
+            let path = root.join("fd.exe");
             match row.kind.as_str() {
                 "file" => std::fs::write(&path, "not executable").unwrap(),
                 "directory" => std::fs::create_dir(&path).unwrap(),
                 "symlink" => {
-                    std::fs::write(Path::new(&scratch.path).join("target"), "target").unwrap();
+                    std::fs::write(root.join("target"), "target").unwrap();
                     std::os::unix::fs::symlink("target", &path).unwrap();
                 }
                 _ => panic!("unknown fixture entry"),
             }
-            let mut manager = ToolsManager::new(scratch.path.clone(), None);
+            let mut manager = ToolsManager::new(root_text.to_owned(), None);
             manager.host = Host {
                 os: "windows",
                 arch: "x86_64",
             };
             assert_eq!(
                 manager.get_tool_path(SearchTool::Fd).await,
-                Some(expand(&row.found, &scratch.path))
+                Some(expand(&row.found, root_text))
             );
         }
     });
@@ -728,9 +728,8 @@ fn lookup_and_download_deadlines_cover_the_whole_body() {
     }
     run_paused(async {
         for phase in 0..3 {
-            let scratch =
-                Staging::create(std::env::temp_dir().to_str().unwrap(), "deadline").unwrap();
-            let bin = maestro_path::join(&[&scratch.path, "bin"]);
+            let scratch = maestro_test_directory::Scratch::new().unwrap();
+            let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
             let fetch = stalled_fetch(phase);
             let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
             manager.host = Host {
@@ -774,9 +773,8 @@ fn concurrent_installs_stage_in_separate_directories() {
         return;
     }
     run(async {
-        let scratch =
-            Staging::create(std::env::temp_dir().to_str().unwrap(), "concurrent").unwrap();
-        let bin = maestro_path::join(&[&scratch.path, "bin"]);
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
         let fetch = concurrent_fetch(bin.clone());
         let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
         manager.host = Host {

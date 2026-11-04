@@ -1,6 +1,6 @@
 //! Exact test selection belongs to the checked test-process owner.
 
-use ra_ap_rustc_lexer::TokenKind;
+use ra_ap_rustc_lexer::{LiteralKind, TokenKind};
 
 use crate::source::{Member, Source, line};
 use syn::{spanned::Spanned, visit::Visit};
@@ -11,7 +11,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
         for source in &member.sources {
             ignore_ownership(member, source)?;
             if member.name != "maestro-test-process"
-                && let Some(offset) = exact_offset(&source.contents)
+                && let Some(offset) = exact_offset(source)
             {
                 return Err(format!(
                     "{}:{}: exact test selection belongs to maestro-test-process",
@@ -107,14 +107,33 @@ fn ignore_reason(attribute: &syn::Attribute) -> Option<String> {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Literal tokens decoded by the exact-selector search on the current test thread.
+    static DECODES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Decode one string literal token, or fail for any other token.
+fn decode(token: &str) -> syn::Result<syn::LitStr> {
+    #[cfg(test)]
+    DECODES.set(DECODES.get() + 1);
+    syn::parse_str(token)
+}
+
 /// Find the first string token whose decoded value is the exact-selector flag.
-fn exact_offset(source: &str) -> Option<usize> {
-    for (kind, range) in crate::source::tokens(source) {
+fn exact_offset(source: &Source) -> Option<usize> {
+    for (kind, range) in &source.tokens {
         let offset = range.start;
         let end = range.end;
-        if matches!(kind, TokenKind::Literal { .. })
-            && syn::parse_str::<syn::LitStr>(&source[offset..end])
-                .is_ok_and(|literal| literal.value().as_bytes() == b"--exact")
+        // Only string kinds can decode as a string literal.
+        if matches!(
+            kind,
+            TokenKind::Literal {
+                kind: LiteralKind::Str { .. } | LiteralKind::RawStr { .. },
+                ..
+            }
+        ) && decode(&source.contents[offset..end])
+            .is_ok_and(|literal| literal.value().as_bytes() == b"--exact")
         {
             return Some(offset);
         }

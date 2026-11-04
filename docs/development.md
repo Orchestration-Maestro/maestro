@@ -245,18 +245,21 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 57 loading exports and 194 contribution exports. Packaging
-also builds the two runtime-module fixtures, each from its own manifest and lock
-with its own binding glue, into a copy of the fixture package. It builds the
-prototype sandbox runtime the same way, with classic-script glue
+26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
+exports. Packaging also builds the two runtime-module fixtures, each from its own
+manifest and lock with its own binding glue, into a copy of the fixture package.
+It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
 records what they measure. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
+Canvas exports run on a page that holds only an 800 by 600 `#canvas` at the page
+origin, with no body margin, because they compare canvas points with page
+coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 277/277` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 346/346` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -372,12 +375,26 @@ completion is the render signal, so no test here waits on a clock. The native
 report test holds the fixture byte-for-byte, so a template change has to move
 both.
 
-Canvas session-header tests and offline tool cards are not executed; the latter
-still depend on the canvas renderer. The reading, PDF, Markdown and SVG artifact,
-export, session-link and session-download exports also need the `#canvas` element
-that the driver's page does not provide, so they are compiled but not executed;
-[the canvas export issue](https://github.com/Orchestration-Maestro/maestro/issues/4133)
-tracks running them. Transcript execution is tracked separately
+The canvas family covers every export that reads the page's `#canvas`: the
+session-header, reading, PDF, Markdown and SVG artifact, artifact panel,
+spreadsheet, text and image, generic file, tool renderer, offline tool card,
+expandable-output, session-link and session-download exports. Eight of them
+compile but do not run: each also awaits the screenshot observation
+(`readingPaint`), which the driver does not supply yet.
+[The screenshot test issue](https://github.com/Orchestration-Maestro/maestro/issues/2613)
+tracks it:
+
+- `header_trailing_spacing_precedes_following_widget`
+- `reading_viewport_keeps_content_and_occluders_clipped`
+- `reading_frame_neighbors_keep_existing_paint`
+- `export_rendering_uses_the_selected_brand_roles`
+- `copy_link_native_slot_composition_preserves_reading_selection`
+- `generic_guidance_is_literal_selectable_and_localized`
+- `tool_card_image_and_diff_layout_uses_native_content`
+- `tool_cards_use_selected_brand_roles_without_changing_custom_html`
+
+The driver's inventory test fails when an export in those source files is in
+neither the canvas family nor this list. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
@@ -983,13 +1000,14 @@ Development and test profiles use `debug = "line-tables-only"` for workspace cra
 backtraces retain file:line for workspace code, without debugger variable views.
 Dependencies build without debug info, so their frames show function names only;
 this keeps target directories about a sixth smaller.
-They also build `cranelift-codegen` and `regalloc2` optimised, because tests
-compile extension components and an unoptimised code generator makes each
-compile about five times slower, and `syn` and `proc-macro2`
-optimised, because the conventions tests parse every workspace source, and `sha2`
-optimised, because the test setup hashes the lock files on every nextest run and an
-unoptimised digest makes its reused-directory path about three times slower;
-release builds are unchanged.
+They also build these dependencies optimised; release builds are unchanged:
+
+- `cranelift-codegen` and `regalloc2`: tests compile extension components, and an
+  unoptimised code generator makes each compile about five times slower.
+- `syn`, `proc-macro2` and `ra-ap-rustc_lexer`: the conventions tests parse and lex
+  every workspace source.
+- `sha2`: the test setup hashes the lock files on every nextest run, and an
+  unoptimised digest makes its reused-directory path about three times slower.
 
 Archived CI shards receive `TEST_ARCHIVE=1` and `TEST_PREPARE_OUTPUT` pointing to
 `target/test-setup`.
@@ -1196,6 +1214,68 @@ The conventions check names every test that reads `docs/`, `examples/` or `asset
 run time, through a `../../` path, a join onto the workspace root or a call to
 `get_docs_path`, `get_examples_path` or `get_package_dir`, and fails until
 `test_inputs` routes that directory to the reading package.
+
+### Test preparation in a consuming workspace
+
+The development tool prepares the workspace it starts in. Install it once, start it
+from a workspace, and it reads no directory of the tree it was compiled in. One
+tool, one example and one bundle serve Maestro and a workspace that builds on
+Maestro through git dependencies.
+
+```sh
+target/test-setup/development prepare-test-setup prepare target/test-setup target/test-prepare
+target/test-setup/development nextest-setup author-component
+```
+
+The tool takes its checkout from the workspace root above the directory it starts
+in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
+workspace. A command that reads no workspace, such as `prepare-test-setup install`,
+is started in a directory of its own and keeps it; one that reads a workspace
+reports that it found none. Nothing reads the tree the tool was compiled in.
+
+The crates it prepares are Cargo's workspace members, so a nested fixture
+workspace and a crate the root manifest leaves out are not its crates. A package the
+workspace only depends on is reached through Cargo's resolved metadata, whose
+checkout sits outside the workspace.
+
+Four things it needs are the workspace's own:
+
+- **The component crate** is the member crate whose manifest holds the generated
+  example region between `# example-index:start` and `# example-index:end`.
+  `development example-index` renders into that crate, and preparation builds the
+  examples from it. No marked member, or two of them, fails with the crates named.
+- **The shipped extension folder** is `examples/extensions` beside the workspace
+  manifest. Without it the index renders the crate's own example targets alone and
+  writes no index page and no guide lock.
+- **The independent guide** is `tests/fixtures/hello-extension` under whichever
+  member crate carries one, and it builds on the guest SDK package the workspace
+  resolves. A workspace without the fixture skips the guide build and its lock.
+- **The programs** preparation runs: Cargo builds them from the workspace when it
+  holds their packages. A workspace that holds them only as git dependencies
+  installs them once per preparation instead, with
+  `cargo install --locked --git <source> --rev <locked commit>` for
+  `maestro-test-process --example native_fixture`,
+  `maestro-extensions-wasm --example prepare_author_component` and
+  `maestro --bin maestro`. The tool reads the repository and commit from
+  `Cargo.lock`, so a pin move installs again.
+
+The two example programs must resolve: a workspace that neither holds nor locks
+their package stops preparation with a message naming it. Staging the `maestro`
+executable is the step that skips: a workspace holding that package builds it
+instead, and one that neither holds nor locks it stages nothing.
+
+Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
+`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
+and `MAESTRO_EXECUTABLE`. Declare them in the workspace's own
+`.config/nextest.toml`; Maestro's file declares the setups this repository uses.
+
+`nextest-setup executable` exports `MAESTRO_EXECUTABLE` from the bundle for a
+workspace whose tests start Maestro's executable but do not hold its package. It
+serves the bundle prepared from the commit the lock pins, and refuses one installed
+from another source, so a pin move cannot hand the tests the previous executable.
+A workspace that holds `maestro` builds the executable with Cargo, so the setup
+refuses it instead of exporting a second copy: there, tests use Cargo's own
+executable path.
 
 ### Browser author build
 
@@ -1454,7 +1534,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 
 | Scenario | Fields and behavior |
 | --- | --- |
-| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, `"SIGKILL"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `split` writes each standard output byte on its own, so a reader must reassemble split UTF-8. Optional `append` (`path`, `bytes`, and `cwd` to append the working directory first) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
+| `output` | `stdout` and `stderr` are byte arrays and `code` is the exit status. Optional `signal` ends by that native signal instead: `"SIGTERM"`, `"SIGKILL"`, or `"SIGRTMAX"` on Linux for the real-time signal that carries no shared name. Optional `split` writes each standard output byte on its own, so a reader must reassemble split UTF-8. Optional `append` (`path`, `bytes`, `cwd` to append the working directory first, and `variable` to append that variable's `name=<text>` line, empty when unset) appends to that file. Optional `argv_log` (`path`, `mark`) appends `mark` and each native operand, separated by NUL. |
 | `labelled` | Reports the first operand on standard output, `<operand>-err` on standard error, then one line of input as `stdin:<line>`. It reads exactly one line, so the next sibling still receives the rest. |
 | `report` | `fields` lists what to print, joined by one bar in that order: `{"variable": "NAME"}` for a variable that reads empty when unset, `"working-directory"`, `{"operand": N}` for one operand by position, and `"input"` for the number of bytes standard input held. |
 | `stdio` | Prints every operand in angle brackets, `out-<invoked name>`, one line of input as `stdin:<line>` and the working directory on standard output, and `err-<invoked name>` on standard error. |
@@ -2189,11 +2269,13 @@ unchanged. `spawn` reads only the prologue from a piped standard output and repl
 it, preserving ready lines and acknowledgements. A test that depends on closing
 a live pipe end must first call `run_alone(test)` and return when it returns
 `true`: the transaction then runs in a fresh process with no sibling tests that
-could fork and inherit its pipe ends. `status` replays captured streams afterwards and is not a
-live route. `status_with_stdout` requires an empty regular file with its cursor at
-zero, sends standard output there and checks the prefix through that same open
-file. Nonempty files or nonzero cursors are rejected before launch, including
-append-mode files containing earlier output. `output_with` hands the final
+could fork and inherit its pipe ends. A passing isolated run repeats what its body
+wrote to standard error, such as the premise that left a case out. `status`
+replays captured streams afterwards and is not a live route. `status_with_stdout`
+requires an empty regular file with its cursor at zero, sends standard output
+there and checks the prefix through that same open file. Nonempty files or nonzero
+cursors are rejected before launch, including append-mode files containing earlier
+output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
 descriptor or setup setting. `setup` (Unix) carries an `IsolatedSetup` request.
 The child applies its effects in a fixed order: umask, new session, nonterminating
@@ -2231,23 +2313,31 @@ environment)`. It groups the cases by the variables `environment` returns and
 reruns the test once per group, in a child that holds exactly those variables
 after `env_clear()`, plus the parent's temporary directory unless the case sets
 one. In the parent, `run_per_environment` returns `None` once every child
-passes; in a child it returns that group's cases in their original order, and the
-test checks them. Cases that share variables therefore share one child and one
-fixture parse, so don't spawn a child per case yourself. A case that needs a fresh
-process for other state, such as a process-wide counter or files created per
-case, keeps its own child. Use `TestProcess::case(id)` to select that case. Set a
+passes, and repeats each passing child's standard error as it goes, so a case that
+left one out keeps its reason. A run shows those lines when it asks for child
+output, as `--nocapture` does, or when the test fails. In a child it returns that
+group's cases in their original order, and the test checks them. Cases that share
+variables therefore share one child and one fixture parse, so don't spawn a child
+per case yourself. A case that needs a fresh process for other state, such as a
+process-wide counter or files created per case, keeps its own child. Use
+`TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
-which only Linux reads, so it reuses the setup's compiled code instead of compiling the component again.
+which only Linux reads, so it reuses the setup's compiled code instead of
+compiling the component again.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
 selected for that id. `selection.runs_group(test)` accepts the parent, wildcard
 children and environment-group children of that test. Case children do not run
 groups, and group children do not run individually selected cases.
-Use case identifiers for suite roles and nested stages; keep fixture data separate
-from selection, and call `env_clear()` before `case(id)` when clearing is needed.
+Use case identifiers for suite roles and nested stages, read the selected one with
+`selection.case()`, keep fixture data in its own variable, and call `env_clear()`
+before `case(id)` when clearing is needed. The owner spells that selection variable
+once. A quoted `MAESTRO_*_CHILD` or `MAESTRO_*_CASE` name anywhere else under
+`crates/`, in a file of any type and whether it sits in an expression or behind a
+`const`, fails the owner's own guard and names every site it found.
 
 A test that denies access through mode bits calls
 `maestro_test_directory::deny(path, mode)` and skips the denial when it returns

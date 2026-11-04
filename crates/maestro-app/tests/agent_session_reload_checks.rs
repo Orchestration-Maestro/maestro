@@ -58,6 +58,40 @@ fn reload_keeps_another_sessions_registered_provider() {
     });
 }
 
+/// Several sessions live in one process: every session reloads, and each one keeps its own
+/// registered provider while the others reload.
+///
+/// The two-session check reloads one session while the other stays idle; here every session
+/// reloads before any prompt, so one reload that reset the shared map would cost every answer.
+#[test]
+fn reloads_across_sessions_keep_each_others_registered_providers() {
+    on_task_set(|_| async {
+        let left = harness(HarnessOptions::default()).await;
+        let middle = harness(HarnessOptions::default()).await;
+        let right = harness(HarnessOptions::default()).await;
+        drop(script_responses(&left, vec![answer("left", None, None)]));
+        drop(script_responses(
+            &middle,
+            vec![answer("middle", None, None)],
+        ));
+        drop(script_responses(&right, vec![answer("right", None, None)]));
+
+        left.session.reload().await.unwrap();
+        middle.session.reload().await.unwrap();
+        right.session.reload().await.unwrap();
+
+        for (session, text) in [(&left, "left"), (&middle, "middle"), (&right, "right")] {
+            session
+                .session
+                .prompt("question", PromptOptions::default())
+                .await
+                .unwrap();
+            let answered = history_view(session).pop().unwrap();
+            assert_eq!(answered, json!({"role": "assistant", "text": text}));
+        }
+    });
+}
+
 /// A probe callback whose invocation only reports the probe's diagnostic.
 struct Probe;
 impl<E: ProviderExecution, O> Invoke<E, ProviderCall<E, O>> for Probe {
