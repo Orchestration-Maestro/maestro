@@ -2311,7 +2311,7 @@ child, never an exiting one.
 
 Cases that read process variables go through `run_per_environment(test, cases,
 environment)`. It groups the cases by the edits `environment` returns and
-reruns the test once per group, in a child that holds exactly those variables
+reruns the test once per group, in a child that applies exactly those edits
 after `env_clear()`, plus the compiled-code cache home the run's setup exports
 and the parent's temporary directory, unless the case sets one. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept

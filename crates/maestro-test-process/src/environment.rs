@@ -15,8 +15,8 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 /// share one child, which inherits nothing else from this process except the coverage profile
 /// path, the compiled-code cache home the run's setup exports, the Windows system root and
 /// the temporary directory, which a case's own edits may replace. A case that names a kept
-/// variable as `None` therefore reaches its child without it. Returns
-/// `Ok(None)` in the calling process once every child passed; the test then returns.
+/// variable as `None` therefore reaches its child without it.
+/// Returns `Ok(None)` in the calling process once every child passed; the test then returns.
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
 /// other than the environment keep one child each. A passing child's standard error is
