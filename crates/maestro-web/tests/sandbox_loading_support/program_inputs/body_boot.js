@@ -1,0 +1,1 @@
+document.currentScript.previousElementSibling.remove()

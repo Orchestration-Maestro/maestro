@@ -135,25 +135,25 @@ pub(crate) async fn marker_witness() {
 }
 
 /// A provider runtime defining one marker-looking literal.
-const MARKER_PROVIDER: &str = r"function(id){window.S={};S.literal='__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__';window.done=new Promise(r=>window.complete=async(error,value)=>{S.error=error;S.value=value;r()});}";
+const MARKER_PROVIDER: &str = include_str!("program_inputs/marker_provider.js");
 /// User code returning every marker-looking value it can read.
-const MARKER_USER: &str = r"return [window.sandboxId,window['__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__'],window.attachment.text,S.literal,'__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__'];";
+const MARKER_USER: &str = include_str!("program_inputs/marker_user.js");
 /// A provider runtime observing its own text, data, loading order and an optional policy.
-const PROVIDER: &str = r#"function(){window.S={dcl:false,started:false};S.runtime=document.currentScript.textContent;S.raw=String.raw`</ScRiPt> <!--<script> </script> 雪`;S.data=window.obsData;document.addEventListener('DOMContentLoaded',()=>S.dcl=true);window.done=new Promise(r=>window.complete=async(error,value)=>{S.error=error;S.value=value;r()});if(location.hash==='#tt'){const m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content="script-src 'self' 'unsafe-inline'; require-trusted-types-for 'script'; trusted-types 'none'";document.head.append(m);}}"#;
+const PROVIDER: &str = include_str!("program_inputs/provider.js");
 /// User code observing loading order, module resolution and a preserved carriage return.
-const USER: &str = "S.started=true;S.ready=document.readyState;S.beforeDcl=!S.dcl;S.metaUrl=import.meta.url;S.base=document.baseURI;S.cr=(()=>{/*\r*/}).toString().includes('\\r');S.helper=(await import('./helper.js')).answer;return String.raw`</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪`;";
+const USER: &str = include_str!("program_inputs/user.js");
 /// An authored head reporting each click to its parent.
-const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
+const CLICK_DOCUMENT: &str = include_str!("program_inputs/click_document.html");
 /// An authored document with a policy and a parser-time observation.
-const ARTIFACT: &str = r#"<html><head><meta http-equiv="Content-Security-Policy" content="img-src 'none'"><title>artifact</title><script>S.before=!!S.runtime;</script></head><body><img src="/pixel.png" onerror="S.blocked=true" onload="S.blocked=false"></body></html>"#;
+const ARTIFACT: &str = include_str!("program_inputs/artifact.html");
 /// Raw provider data that looks like markup.
 const RAW: &str = r"</ScRiPt> <!--<script> </script> 雪";
 /// The raw value the user code returns.
 const USER_RAW: &str = r"</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪";
 /// The generated head carrier bootstrap the policy admits by hash.
-const HEAD_BOOT: &str = r"{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}";
+const HEAD_BOOT: &str = include_str!("program_inputs/head_boot.js");
 /// The generated body carrier bootstrap the policy admits by hash.
-const BODY_BOOT: &str = r"document.currentScript.previousElementSibling.remove()";
+const BODY_BOOT: &str = include_str!("program_inputs/body_boot.js");
 
 /// Prepared programs mounted in frames copied from the production frame, observed in place.
 #[derive(Clone, Default)]

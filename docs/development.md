@@ -311,6 +311,9 @@ stay JavaScript or HTML files beside their tests:
 - `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
   probe documents.
 - `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
+  and authored documents the program witnesses prepare, plus the generated carrier
+  bootstraps their policies admit by hash.
 
 Tests read these sources as text and hand them to the product unchanged.
 `markdown_support/dom.js` is the remaining page-side script; it still installs
