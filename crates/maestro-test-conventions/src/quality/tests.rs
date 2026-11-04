@@ -3,16 +3,20 @@
 use std::path::PathBuf;
 
 use super::production_lines;
-use crate::source::{SPAN_TESTS, Source};
+use crate::source::{Member, SPAN_TESTS, Source};
 
 /// Count the span containment tests that counting one documented source's lines performs.
 fn span_tests(items: usize) -> usize {
-    let source = Source::new(
-        PathBuf::from("models/src/lib.rs"),
-        "/// Item.\npub const ITEM: u8 = 0;\n".repeat(items),
-    );
+    let member = Member {
+        name: "maestro-models".into(),
+        directory: PathBuf::from("models"),
+        sources: vec![Source::new(
+            PathBuf::from("models/src/lib.rs"),
+            "/// Item.\npub const ITEM: u8 = 0;\n".repeat(items),
+        )],
+    };
     SPAN_TESTS.set(0);
-    assert_eq!(production_lines(&source), items);
+    assert_eq!(production_lines(&member, &member.sources[0]), items);
     SPAN_TESTS.get()
 }
 

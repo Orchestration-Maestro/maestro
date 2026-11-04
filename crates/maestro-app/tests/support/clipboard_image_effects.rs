@@ -315,7 +315,12 @@ pub fn run(name: &str) {
         .into_iter()
         .partition(|case| case.input.ambient_env.is_none());
     let selected = maestro_test_process::run_per_environment(name, ambient, |case| {
-        case.input.ambient_env.clone().unwrap_or_default()
+        case.input
+            .ambient_env
+            .iter()
+            .flatten()
+            .map(|(key, value)| (key.clone(), Some(value.clone())))
+            .collect()
     })
     .unwrap();
     for case in selected.unwrap_or(here) {

@@ -266,7 +266,7 @@ fn leading_home_paths_load_without_a_working_directory() {
     let test = "leading_home_paths_load_without_a_working_directory";
     let home = Scratch::new().unwrap();
     let home_text = home.path().to_str().unwrap().to_owned();
-    let environment = |_case: &&str| BTreeMap::from([("HOME", home_text.clone())]);
+    let environment = |_case: &&str| BTreeMap::from([("HOME", Some(home_text.clone()))]);
     let selected = maestro_test_process::run_per_environment(test, ["home"], environment);
     for _home in selected.unwrap().into_iter().flatten() {
         let parent = Scratch::new().unwrap();

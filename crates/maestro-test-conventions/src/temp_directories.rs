@@ -1,8 +1,6 @@
 //! Test-owned temporary directory checks.
 
-use syn::visit::Visit;
-
-use crate::source::{Member, Source, inherit_test_context, test_scope};
+use crate::source::Member;
 
 /// Crates whose test directories have moved onto the disposable-directory owner.
 ///
@@ -36,11 +34,16 @@ const MIGRATED_CRATES: &[&str] = &[
 /// Spelling that names the platform temporary directory.
 const PLATFORM_DIRECTORY: &str = "temp_dir";
 
+/// Whether the member's test code is checked for the platform temporary directory.
+pub(crate) fn migrated(member: &Member) -> bool {
+    MIGRATED_CRATES.contains(&member.name.as_str())
+}
+
 /// Reject a platform temporary directory that migrated-crate test code names itself.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = members
         .iter()
-        .filter(|member| MIGRATED_CRATES.contains(&member.name.as_str()))
+        .filter(|member| migrated(member))
         .flat_map(member_diagnostics)
         .collect::<Vec<_>>();
     if diagnostics.is_empty() {
@@ -64,86 +67,46 @@ fn member_diagnostics(member: &Member) -> Vec<(String, usize)> {
         .sources
         .iter()
         .flat_map(|source| {
-            references(member, source)
-                .into_iter()
-                .map(|line| (source.path.display().to_string(), line))
-                .collect::<Vec<_>>()
+            source
+                .walk(member)
+                .temp_directories
+                .iter()
+                .map(|line| (source.path.display().to_string(), *line))
         })
         .collect()
 }
 
-/// Lines of one source that name the platform temporary directory in test-owned code,
-/// or import it anywhere.
-fn references(member: &Member, source: &Source) -> Vec<usize> {
-    let Some(file) = source.syntax.as_ref() else {
-        return Vec::new();
-    };
-    let mut visitor = References {
-        testing: test_scope(member, source),
-        importing: false,
-        lines: Vec::new(),
-    };
-    visitor.visit_file(file);
-    visitor.lines.sort_unstable();
-    visitor.lines.dedup();
-    visitor.lines
-}
-
-/// Platform-directory references located in one file.
-struct References {
-    /// Whether the current item inherits test ownership.
-    testing: bool,
-    /// Whether the current position is a `use` import, whose alias also counts.
-    importing: bool,
+/// Platform-directory references of one file, gathered by the shared syntax walk.
+///
+/// The walk passes identifiers and macros of test-owned code and of `use` imports; it skips
+/// method names, the receiver's own API rather than a platform-directory spelling: the
+/// standard function is always a call through a path. It also skips a method call's
+/// attributes, which never name a call.
+#[derive(Default)]
+pub(crate) struct References {
     /// Located reference lines.
     lines: Vec<usize>,
 }
 
 impl References {
     /// Record one identifier that names the platform temporary directory.
-    fn record(&mut self, ident: &proc_macro2::Ident) {
-        if (self.testing || self.importing) && ident == PLATFORM_DIRECTORY {
+    pub(crate) fn ident(&mut self, ident: &proc_macro2::Ident) {
+        if ident == PLATFORM_DIRECTORY {
             self.lines.push(ident.span().start().line);
         }
     }
-}
 
-impl<'ast> Visit<'ast> for References {
-    fn visit_ident(&mut self, ident: &'ast proc_macro2::Ident) {
-        self.record(ident);
+    /// Record the platform-directory identifiers inside a macro's tokens.
+    pub(crate) fn macro_tokens(&mut self, invocation: &syn::Macro) {
+        token_references(&invocation.tokens, &mut self.lines);
     }
 
-    /// Method names are the receiver's own API, never a platform-directory
-    /// spelling: the standard function is always a call through a path.
-    /// Members stay visited inside the receiver and the arguments, while
-    /// expression attributes are not visited because they never name a call.
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        self.visit_expr(&call.receiver);
-        for argument in &call.args {
-            self.visit_expr(argument);
-        }
-        if let Some(turbofish) = &call.turbofish {
-            self.visit_angle_bracketed_generic_arguments(turbofish);
-        }
+    /// The located lines in order, each once.
+    pub(crate) fn finish(mut self) -> Vec<usize> {
+        self.lines.sort_unstable();
+        self.lines.dedup();
+        self.lines
     }
-
-    fn visit_use_tree(&mut self, tree: &'ast syn::UseTree) {
-        let importing = self.importing;
-        self.importing = true;
-        syn::visit::visit_use_tree(self, tree);
-        self.importing = importing;
-    }
-
-    fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
-        if self.testing || self.importing {
-            token_references(&invocation.tokens, &mut self.lines);
-        }
-        syn::visit::visit_macro(self, invocation);
-    }
-
-    inherit_test_context!(visit_item, Item, item_attributes);
-    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
-    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
 }
 
 /// Record platform-directory identifiers anywhere inside macro tokens, nesting included.

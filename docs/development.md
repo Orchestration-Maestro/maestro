@@ -246,10 +246,18 @@ and lock stay unchanged. Build outputs remain in Cargo's resolved target directo
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
-exports. Packaging also builds the two runtime-module fixtures, each from its own
-manifest and lock with its own binding glue, into a copy of the fixture package.
+inventory before invoking assertions, then checks each family in pairs:
+27 execution exports, 64 loading exports, 194 contribution exports and 69 canvas
+exports. Both exports of a pair run at once, each in a fresh page of its own
+driver, and the pair settles before the next starts. A failing export closes its
+own page and the run continues; the browser and the server close once every
+family has run. Two drivers connect to the one launched browser, and each keeps
+one connection, which its exports share across pairs. Every export still gets
+its own disposable browser context, page lifecycle and policy-error accounting.
+Each driver records its exports' diagnostics, so completion logs within a pair
+can arrive out of order, and an odd last export runs alone. Packaging also
+builds the two runtime-module fixtures, each from its own manifest and lock with
+its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
@@ -261,7 +269,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 346/346` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 354/354` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -327,7 +335,9 @@ stay JavaScript or HTML files beside their tests:
   constructor.
 - `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
   probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
+  driver's served `/sandbox.html`, it writes a load message's code only when the
+  frame's parent sent it.
 - `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
   and authored documents the program witnesses prepare, plus the generated carrier
   bootstraps their policies admit by hash.
@@ -423,7 +433,9 @@ the declaration check and the Chromium job run. The workflow file is read from
 one queue: a newer one replaces a queued proof and never cancels a running one.
 This repository keeps the default concurrency key the caller contract requires, so
 a proof joins the shared `main` group and names its artifacts `root`. A proof
-restores the compile cache but never publishes it.
+restores the compile cache but never publishes it. Its call grants
+`actions: write` only because GitHub checks the shared pruning jobs against the
+grant when the run starts; those jobs skip on a dispatch.
 
 The job saves the recipe's output as `browser-test.log` in the artifact
 `browser-test-root-<attempt>`, whether the recipe passes or fails:
@@ -565,15 +577,17 @@ watch-test child lines, setup command lines and blocking-operation phases to
 per-test files in `MAESTRO_TEST_DIAGNOSTICS_DIR`, or
 `target/browser-author-diagnostics/` when it is unset, outside disposable fixtures
 and isolated home directories. Set the variable to an absolute path; a relative
-one resolves against `crates/maestro-tooling`. The harness does not capture
-commands whose output a test reads only after they exit. A forced-kill
-test checks both directory routes and verifies that child lines survive termination
-while still reaching stderr and the watch consumer. There are no exact build counts
-or negative observation windows. Their watch processes share a test-owned
-process group, stopped on completion or panic. Before starting a watch-test
-process group, the harness directs its LLVM profiles into that fixture's target
-directory, outside the merged coverage profile set, because cleanup can forcibly
-stop its descendants.
+one resolves against `crates/maestro-tooling`. Each line starts with the seconds
+since the first record in the process, and every recipe records its start and its
+exit status, so one file shows where a slow attempt spent its time. The harness
+does not capture commands whose output a test reads only after they exit. A
+forced-kill test checks both directory routes and verifies that child lines survive
+termination while still reaching stderr and the watch consumer. There are no exact
+build counts or negative observation windows. Their watch processes share a
+test-owned process group, stopped on completion or panic. Before starting a
+watch-test process group, the harness directs its LLVM profiles into that fixture's
+target directory, outside the merged coverage profile set, because cleanup can
+forcibly stop its descendants.
 
 Browser author tests keep the checked-in full fixture and its independent lock
 unchanged. Pipeline-only tests use disposable copies with the minimal bootstrap
@@ -1381,6 +1395,14 @@ checkout. Outside nextest, the first cold-source caller runs the same setup. The
 shared-home isolation test prepares both source sets in its parent and forwards their
 configuration paths to the child before making the shared Cargo home unusable. The cold
 test copies only the source configuration into its initially empty Cargo home.
+
+The setup also runs for the test that proves source preparation works without nextest's
+exports: that test clears the exported paths and reruns the isolation test as a child, so
+the child prepares the sources itself. That preparation vendored every package and built
+the seed from nothing, which spent most of the test's time. The setup runs before the
+tests, so the child's repeated preparation finds the directory for the same key and
+returns it at once. The vendoring keeps its cost, paid once per run by the setup, and a
+shard that runs only these tests still builds the seed it does not read.
 
 The same setup also builds the cold bootstrap's native targets once per key, with the
 commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
@@ -2312,8 +2334,9 @@ mode type before applying it.
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
 selected test starts; callers still check its exit status and scenario output.
-`env_clear()` preserves the inherited coverage profile destination, and later
-caller edits can override or remove it. Live protocols retain `CheckedChild` and
+`env_clear()` preserves the inherited coverage profile destination and the
+compiled-code cache home the run's setup exports, and later caller edits can
+override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. Settings
@@ -2331,18 +2354,22 @@ capture child does so for the rows that overflow, so the capture stops a waiting
 child, never an exiting one.
 
 Cases that read process variables go through `run_per_environment(test, cases,
-environment)`. It groups the cases by the variables `environment` returns and
-reruns the test once per group, in a child that holds exactly those variables
-after `env_clear()`, plus the parent's temporary directory unless the case sets
-one. In the parent, `run_per_environment` returns `None` once every child
-passes, and repeats each passing child's standard error as it goes, so a case that
-left one out keeps its reason. A run shows those lines when it asks for child
-output, as `--nocapture` does, or when the test fails. In a child it returns that
-group's cases in their original order, and the test checks them. Cases that share
-variables therefore share one child and one fixture parse, so don't spawn a child
-per case yourself. A case that needs a fresh process for other state, such as a
-process-wide counter or files created per case, keeps its own child. Use
-`TestProcess::case(id)` to select that case. Set a
+environment)`. It groups the cases by the edits `environment` returns and
+reruns the test once per group, in a child that applies exactly those edits
+after `env_clear()`, plus the compiled-code cache home the run's setup exports
+and the parent's temporary directory, unless the case sets one. A value of
+`Some` sets its variable and `None` removes it, so a case that names a kept
+variable as `None` reaches its child without it. A group child
+that loads a component therefore reuses the compiled code the run prepared
+instead of compiling it again. In the parent, `run_per_environment` returns
+`None` once every child passes, and repeats each passing child's standard error
+as it goes, so a case that left one out keeps its reason. A run shows those lines
+when it asks for child output, as `--nocapture` does, or when the test fails. In
+a child it returns that group's cases in their original order, and the test
+checks them. Cases that share variables therefore share one child and one fixture
+parse, so don't spawn a child per case yourself. A case that needs a fresh process
+for other state, such as a process-wide counter or files created per case, keeps
+its own child. Use `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
@@ -2393,10 +2420,14 @@ even when the merge queue selected fewer crates. Later pushes do not cancel
 or replace queued landing runs. This is separate from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the
-shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller, the reporter caller and the guards caller pin
-the released shared CI commit that the organization rulesets require. Each pin
+groups. The suite job grants `actions: write`. After each shared job that saves
+a cache, a pruning job deletes the entries that save replaced, so the cache
+keeps one entry per prefix instead of filling its 10 GiB limit. Those pruning
+jobs are the only ones that take write access, and they run no repository code.
+GitHub checks every called job's permissions when the run starts, so a caller
+that grants less makes the run fail to start. The suite caller, the reporter
+caller and the guards caller pin the released shared CI commit that the
+organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 

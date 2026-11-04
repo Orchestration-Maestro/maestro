@@ -26,9 +26,8 @@ fn user_cache_home_follows_the_cache_variable_then_home() {
         "user_cache_home_follows_the_cache_variable_then_home",
         cases,
         |(xdg, home, _)| {
-            [("XDG_CACHE_HOME", xdg), ("HOME", home)]
+            [("XDG_CACHE_HOME", *xdg), ("HOME", *home)]
                 .into_iter()
-                .filter_map(|(name, value)| Some((name, (*value)?)))
                 .collect::<BTreeMap<_, _>>()
         },
     )

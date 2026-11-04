@@ -244,7 +244,7 @@ async fn assert_payload_rows(test: &str) -> TestResult {
             .and_then(Value::as_object)
             .into_iter()
             .flatten()
-            .filter_map(|(name, value)| Some((name.clone(), value.as_str()?.to_owned())))
+            .filter_map(|(name, value)| Some((name.clone(), Some(value.as_str()?.to_owned()))))
             .collect::<BTreeMap<_, _>>()
     })?;
     for row in group.into_iter().flatten() {

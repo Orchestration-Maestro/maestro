@@ -489,13 +489,13 @@ fn border_status_editor_component_shortens_only_the_home_directory() {
     let component = std::env::var(COMPONENT).expect("nextest component setup");
     let environment = |_: &&str| {
         let mut variables = BTreeMap::from([
-            ("HOME", "/home/al".to_owned()),
-            ("USERPROFILE", "/home/al".to_owned()),
-            (COMPONENT, component.clone()),
+            ("HOME", Some("/home/al".to_owned())),
+            ("USERPROFILE", Some("/home/al".to_owned())),
+            (COMPONENT, Some(component.clone())),
         ]);
         variables.extend(
             maestro_test_process::user_cache_home()
-                .map(|path| ("XDG_CACHE_HOME", path.to_string_lossy().into_owned())),
+                .map(|path| ("XDG_CACHE_HOME", Some(path.to_string_lossy().into_owned()))),
         );
         variables
     };

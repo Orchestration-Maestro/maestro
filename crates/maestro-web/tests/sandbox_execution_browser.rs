@@ -382,6 +382,17 @@ pub async fn execution_url_handshake_uses_live_callback_once() {
     fixture.end();
 }
 
+/// The URL bootstrap writes a load message only when its frame's parent sent it.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn execution_url_bootstrap_loads_only_from_its_parent() {
+    crate::sandbox_bootstrap_support::loads_only_from_parent(
+        "srcdoc",
+        &Fixture::bootstrap_document("bootstrap-waiting"),
+        "bootstrap-waiting",
+    )
+    .await;
+}
+
 /// Bootstrap failures traverse the existing admitted router and both callback phases.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_url_bootstrap_error_reuses_admitted_router() {

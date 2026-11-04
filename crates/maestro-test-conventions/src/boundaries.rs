@@ -6,14 +6,14 @@ use proc_macro2::{TokenStream, TokenTree};
 use syn::ext::IdentExt;
 
 /// Named frontend-facing exports from bounded domain crates.
-mod application_exports;
+pub(crate) mod application_exports;
 
 /// Static interface inputs for extension code generation.
 mod wit;
 use wit::{ScanContext, WitInputs};
 
 /// Single-owner rule for retained message renderer calls.
-mod message_renderers;
+pub(crate) mod message_renderers;
 
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;

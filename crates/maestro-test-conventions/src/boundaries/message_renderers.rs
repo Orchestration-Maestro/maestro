@@ -1,12 +1,11 @@
 //! Single-owner rule for retained message renderer calls.
 use std::collections::BTreeMap;
 
-use syn::{ext::IdentExt, visit::Visit};
+use syn::ext::IdentExt;
 
 use crate::source::{
     Member, Source,
     imports::{Import, flatten},
-    inherit_test_context, test_scope,
 };
 
 /// Crate that owns the projected call and the callbacks it retains.
@@ -32,32 +31,17 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members {
         for source in &member.sources {
-            let Some(syntax) = &source.syntax else {
+            if source.syntax.is_none() {
                 continue;
-            };
-            let testing = test_scope(member, source);
-            let mut aliases = Aliases {
-                testing,
-                found: BTreeMap::new(),
-            };
-            // Only the frontend's raw names are reported, so only its aliases are read.
-            if member.name == FRONTEND {
-                aliases.visit_file(syntax);
             }
-            let mut guard = Guard {
-                member: &member.name,
-                source,
-                testing,
-                aliases: aliases.found,
-                owner_file: source
-                    .path
-                    .strip_prefix(&member.directory)
-                    .is_ok_and(|relative| relative == std::path::Path::new(OWNER_FILE)),
-                declarations: 0,
-                found: Vec::new(),
-            };
-            guard.visit_file(syntax);
-            diagnostics.extend(guard.found);
+            let path = source.path.display().to_string();
+            diagnostics.extend(
+                source
+                    .walk(member)
+                    .renderers
+                    .iter()
+                    .map(|(position, message)| (path.clone(), *position, message.clone())),
+            );
         }
     }
     if diagnostics.is_empty() {
@@ -100,94 +84,85 @@ fn restricted(name: &syn::Ident) -> Option<&'static str> {
     RAW.iter().copied().find(|raw| *raw == spelling)
 }
 
-/// Restricted names imported under another local name across one parsed file.
-struct Aliases {
-    /// Whether the current syntax belongs to tests.
-    testing: bool,
-    /// Local name to the restricted name it stands for.
-    found: BTreeMap<String, &'static str>,
+/// One finding of the renderer check, in source order.
+enum Event<'a> {
+    /// A frontend production identifier, resolved once every alias of the file is known.
+    Name(&'a syn::Ident),
+    /// A located declaration violation.
+    Found((usize, usize), String),
 }
 
-impl<'ast> Visit<'ast> for Aliases {
-    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        if self.testing {
-            return;
-        }
-        for import in flatten(&item.tree) {
-            let (Some(binding), Some(raw)) = (import.binding, import.item().and_then(restricted))
-            else {
-                continue;
-            };
-            self.found.insert(binding.unraw().to_string(), raw);
-        }
-    }
-
-    inherit_test_context!(visit_item, Item, item_attributes);
-    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
-    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
-}
-
-/// Located rule violations for one source.
-struct Guard<'a> {
+/// Located rule violations for one source, gathered by the shared syntax walk.
+///
+/// The walk reports production syntax only; test-owned syntax never reaches these methods.
+pub(crate) struct Guard<'a> {
     /// Crate the source belongs to.
     member: &'a str,
-    /// Source being inspected.
-    source: &'a Source,
-    /// Whether the current syntax belongs to tests.
-    testing: bool,
-    /// Raw identifiers imported under another local name.
+    /// Raw identifiers imported under another local name, across the whole file.
     aliases: BTreeMap<String, &'static str>,
     /// Whether this source is the file that must hold the single declaration.
     owner_file: bool,
     /// Production declarations of the projected record seen in this source.
     declarations: usize,
-    /// Located messages in source order.
-    found: Vec<(String, (usize, usize), String)>,
+    /// Findings in source order.
+    events: Vec<Event<'a>>,
 }
 
-impl Guard<'_> {
-    /// Records a raw identifier reached from the frontend.
-    fn raw(&mut self, ident: &syn::Ident) {
-        if self.member != FRONTEND || self.testing {
-            return;
+impl<'a> Guard<'a> {
+    /// Start the renderer check of one member's source.
+    pub(crate) fn new(member: &'a Member, source: &Source) -> Self {
+        Self {
+            member: &member.name,
+            aliases: BTreeMap::new(),
+            owner_file: source
+                .path
+                .strip_prefix(&member.directory)
+                .is_ok_and(|relative| relative == std::path::Path::new(OWNER_FILE)),
+            declarations: 0,
+            events: Vec::new(),
         }
-        #[cfg(test)]
-        SPELLINGS.set(SPELLINGS.get() + 1);
-        let written = ident.unraw().to_string();
-        let Some(raw) = self
-            .aliases
-            .get(&written)
-            .copied()
-            .or_else(|| RAW.iter().copied().find(|raw| *raw == written))
-        else {
-            return;
-        };
-        let position = ident.span().start();
-        self.found.push((
-            self.source.path.display().to_string(),
-            (position.line, position.column),
-            format!("raw {raw} outside {OWNER}; bind a renderer through {PROJECTED} and call that"),
-        ));
     }
 
-    /// Records every restricted name a use tree writes, prefix segments included.
-    fn imported(&mut self, tree: &syn::UseTree) {
-        for import in flatten(tree) {
-            for segment in &import.path {
+    /// Records a raw identifier reached from the frontend.
+    pub(crate) fn raw(&mut self, ident: &'a syn::Ident) {
+        if self.member == FRONTEND {
+            self.events.push(Event::Name(ident));
+        }
+    }
+
+    /// Records the frontend's restricted aliases and every restricted name a use tree
+    /// writes, prefix segments included.
+    pub(crate) fn item_use(&mut self, item: &'a syn::ItemUse) {
+        // Only the frontend's raw names are reported, so only its aliases are read.
+        if self.member != FRONTEND {
+            return;
+        }
+        for import in flatten(&item.tree) {
+            if let (Some(binding), Some(raw)) = (import.binding, import.item().and_then(restricted))
+            {
+                self.aliases.insert(binding.unraw().to_string(), raw);
+            }
+            for segment in import.path {
                 self.raw(segment);
             }
         }
     }
 
+    /// Records the segments of a path written in the frontend.
+    pub(crate) fn path(&mut self, path: &'a syn::Path) {
+        for segment in &path.segments {
+            self.raw(&segment.ident);
+        }
+    }
+
     /// Records a foreign declaration of the projected record.
-    fn declaration(&mut self, name: &syn::Ident) {
+    pub(crate) fn declaration(&mut self, name: &syn::Ident) {
         if name.unraw() != PROJECTED {
             return;
         }
         let position = name.span().start();
         if self.member != OWNER {
-            self.found.push((
-                self.source.path.display().to_string(),
+            self.events.push(Event::Found(
                 (position.line, position.column),
                 format!(
                     "{PROJECTED} declaration belongs to {OWNER}, not {}",
@@ -204,56 +179,34 @@ impl Guard<'_> {
         } else {
             return;
         };
-        self.found.push((
-            self.source.path.display().to_string(),
-            (position.line, position.column),
-            message,
-        ));
-    }
-}
-
-impl<'ast> Visit<'ast> for Guard<'_> {
-    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        self.imported(&item.tree);
-        syn::visit::visit_item_use(self, item);
+        self.events
+            .push(Event::Found((position.line, position.column), message));
     }
 
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        self.raw(&call.method);
-        syn::visit::visit_expr_method_call(self, call);
+    /// Resolve the recorded names against the file's aliases, keeping source order.
+    pub(crate) fn finish(self) -> Vec<((usize, usize), String)> {
+        let aliases = self.aliases;
+        self.events
+            .into_iter()
+            .filter_map(|event| match event {
+                Event::Name(ident) => {
+                    #[cfg(test)]
+                    SPELLINGS.set(SPELLINGS.get() + 1);
+                    let written = ident.unraw().to_string();
+                    let raw = aliases
+                        .get(&written)
+                        .copied()
+                        .or_else(|| RAW.iter().copied().find(|raw| *raw == written))?;
+                    let position = ident.span().start();
+                    Some((
+                        (position.line, position.column),
+                        format!("raw {raw} outside {OWNER}; bind a renderer through {PROJECTED} and call that"),
+                    ))
+                }
+                Event::Found(position, message) => Some((position, message)),
+            })
+            .collect()
     }
-
-    fn visit_path(&mut self, path: &'ast syn::Path) {
-        for segment in &path.segments {
-            self.raw(&segment.ident);
-        }
-        syn::visit::visit_path(self, path);
-    }
-
-    fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
-        if !self.testing {
-            self.declaration(&item.ident);
-        }
-        syn::visit::visit_item_struct(self, item);
-    }
-
-    fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {
-        if !self.testing {
-            self.declaration(&item.ident);
-        }
-        syn::visit::visit_item_enum(self, item);
-    }
-
-    fn visit_item_type(&mut self, item: &'ast syn::ItemType) {
-        if !self.testing {
-            self.declaration(&item.ident);
-        }
-        syn::visit::visit_item_type(self, item);
-    }
-
-    inherit_test_context!(visit_item, Item, item_attributes);
-    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
-    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
 }
 
 #[cfg(test)]

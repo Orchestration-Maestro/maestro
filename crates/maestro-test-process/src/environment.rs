@@ -10,11 +10,13 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 
 /// Run the calling test's cases in one cleared child per distinct environment.
 ///
-/// `environment` gives the variables a case runs with. Cases with equal variables share
-/// one child, which inherits nothing else from this process except the coverage profile
-/// path, the Windows system root and the temporary directory, which a case's own
-/// variables may replace. Returns
-/// `Ok(None)` in the calling process once every child passed; the test then returns.
+/// `environment` gives the edits a case's child applies: `Some` sets a variable and `None`
+/// removes it, in key order after the child's cleared environment. Cases with equal edits
+/// share one child, which inherits nothing else from this process except the coverage profile
+/// path, the compiled-code cache home the run's setup exports, the Windows system root and
+/// the temporary directory, which a case's own edits may replace. A case that names a kept
+/// variable as `None` therefore reaches its child without it.
+/// Returns `Ok(None)` in the calling process once every child passed; the test then returns.
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
 /// other than the environment keep one child each. A passing child's standard error is
@@ -29,14 +31,14 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 pub fn run_per_environment<C, K, V>(
     test: &str,
     cases: impl IntoIterator<Item = C>,
-    environment: impl Fn(&C) -> BTreeMap<K, V>,
+    environment: impl Fn(&C) -> BTreeMap<K, Option<V>>,
 ) -> Result<Option<Vec<C>>, TestProcessError>
 where
     K: AsRef<OsStr> + Ord,
     V: AsRef<OsStr> + Ord,
 {
     let name = TestProcess::current(test)?.name().to_owned();
-    let mut groups: BTreeMap<BTreeMap<K, V>, Vec<C>> = BTreeMap::new();
+    let mut groups: BTreeMap<BTreeMap<K, Option<V>>, Vec<C>> = BTreeMap::new();
     for case in cases {
         groups.entry(environment(&case)).or_default().push(case);
     }
@@ -49,14 +51,18 @@ where
             TestProcessError::new(&name, "the selected environment group does not exist")
         });
     }
-    for (index, variables) in groups.keys().enumerate() {
-        let output = TestProcess::named(name.as_str())?
+    for (index, edits) in groups.keys().enumerate() {
+        let mut child = TestProcess::named(name.as_str())?
             .nocapture()
             .env_clear()
-            .temp_dir(std::env::temp_dir())
-            .envs(variables)
-            .env(GROUP, index.to_string())
-            .output()?;
+            .temp_dir(std::env::temp_dir());
+        for (key, value) in edits {
+            child = match value {
+                Some(value) => child.env(key, value),
+                None => child.env_remove(key),
+            };
+        }
+        let output = child.env(GROUP, index.to_string()).output()?;
         if !output.status.success() {
             return Err(TestProcessError::new(
                 &name,

@@ -9,6 +9,7 @@
     "execution_timeout_preserves_output_and_uses_two_minutes",
     "execution_honors_direct_consumers_and_html_mode",
     "execution_url_handshake_uses_live_callback_once",
+    "execution_url_bootstrap_loads_only_from_its_parent",
     "execution_url_bootstrap_error_reuses_admitted_router",
     "execution_abort_before_url_ready_detaches_handshake",
     "execution_setup_failures_unwind_the_shared_owner",
@@ -81,10 +82,17 @@
     "bootstrap_installs_selections_before_first_classic_scripts",
     "bootstrap_settles_asynchronous_programs_in_rust",
     "bootstrap_supplied_url_installs_before_first_classic_scripts",
+    "bootstrap_supplied_url_loads_only_from_its_parent",
     "bootstrap_offline_document_needs_no_resource",
     "bootstrap_policy_matrix_keeps_hash_and_trusted_types_results",
     "bootstrap_refused_compilation_leaves_helpers_absent",
-    "bootstrap_staging_alternative_needs_a_trusted_html_sink"
+    "bootstrap_staging_alternative_needs_a_trusted_html_sink",
+    "bootstrap_startup_leaves_no_frame_registrations",
+    "bootstrap_delayed_start_installs_selections_in_order",
+    "bootstrap_completion_follows_trailing_source",
+    "bootstrap_removal_during_startup_settles_once",
+    "bootstrap_outcomes_release_host_registrations",
+    "bootstrap_url_handshake_settles_once"
   ],
   "contributions": [
     "native_optional_tools_artifacts_and_diff_replay_existing_corpus",
