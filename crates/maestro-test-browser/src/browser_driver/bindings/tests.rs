@@ -584,6 +584,30 @@ fn press_resolves_every_key_name_the_qualification_exports_press() {
     );
 }
 
+/// Holding Shift still types the key's text, while any other held modifier suppresses it.
+#[test]
+fn press_types_key_text_under_shift_only() {
+    for (chord, modifiers, text) in [
+        ("Enter", 0, Some("\r")),
+        ("Shift+Enter", 8, Some("\r")),
+        ("Control+Enter", 2, None),
+        ("Shift+Alt+Enter", 9, None),
+        ("Shift+Tab", 8, None),
+    ] {
+        let [down, up] = key_events(chord).unwrap();
+        assert_eq!(down["type"], "keyDown", "{chord}");
+        assert_eq!(down["modifiers"], modifiers, "{chord}");
+        assert_eq!(down.get("text").and_then(Value::as_str), text, "{chord}");
+        assert_eq!(
+            down.get("unmodifiedText").and_then(Value::as_str),
+            text,
+            "{chord}"
+        );
+        assert_eq!(up["type"], "keyUp", "{chord}");
+        assert_eq!(up.get("text"), None, "{chord}");
+    }
+}
+
 /// Navigation readiness runs in the announced committed world, not in a context-free root
 /// evaluation, whichever side of the navigate reply announces that world.
 #[test]

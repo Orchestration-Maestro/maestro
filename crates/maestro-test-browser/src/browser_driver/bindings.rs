@@ -221,34 +221,7 @@ impl Page<'_> {
 
     /// Use the library's native key definitions, including configured modifier chords.
     async fn press(&mut self, context: &Context, chord: &str) -> io::Result<()> {
-        let parts: Vec<_> = chord.split('+').collect();
-        let (key, modifiers) = parts
-            .split_last()
-            .ok_or_else(|| io::Error::other("missing keyboard key"))?;
-        let definition = key_definition(key)
-            .ok_or_else(|| io::Error::other(format!("unknown keyboard key {key}")))?;
-        let mut mask = 0;
-        for modifier in modifiers {
-            mask |= match *modifier {
-                "Alt" => 1,
-                "Control" => 2,
-                "Meta" => 4,
-                "Shift" => 8,
-                _ => return Err(io::Error::other("unknown keyboard modifier")),
-            };
-        }
-        let text = definition
-            .text
-            .or_else(|| (definition.key.chars().count() == 1).then_some(definition.key));
-        for kind in ["keyDown", "keyUp"] {
-            let mut params = json!({"type":kind,"key":definition.key,"code":definition.code,"windowsVirtualKeyCode":definition.key_code,"modifiers":mask});
-            if kind == "keyDown"
-                && mask == 0
-                && let Some(text) = text
-            {
-                params["text"] = json!(text);
-                params["unmodifiedText"] = json!(text);
-            }
+        for params in key_events(chord)? {
             self.command(Some(&context.session), "Input.dispatchKeyEvent", params)
                 .await?;
         }
@@ -318,6 +291,41 @@ fn accessibility(node: &Value, nodes: &HashMap<&str, &Value>, output: &mut Strin
             }
         }
     }
+}
+
+/// Build the key-down and key-up events for one chord; the key-down types the key's text unless a
+/// modifier other than Shift is held.
+fn key_events(chord: &str) -> io::Result<[Value; 2]> {
+    let parts: Vec<_> = chord.split('+').collect();
+    let (key, modifiers) = parts
+        .split_last()
+        .ok_or_else(|| io::Error::other("missing keyboard key"))?;
+    let definition = key_definition(key)
+        .ok_or_else(|| io::Error::other(format!("unknown keyboard key {key}")))?;
+    let mut mask = 0;
+    for modifier in modifiers {
+        mask |= match *modifier {
+            "Alt" => 1,
+            "Control" => 2,
+            "Meta" => 4,
+            "Shift" => 8,
+            _ => return Err(io::Error::other("unknown keyboard modifier")),
+        };
+    }
+    let text = definition
+        .text
+        .or_else(|| (definition.key.chars().count() == 1).then_some(definition.key));
+    Ok(["keyDown", "keyUp"].map(|kind| {
+        let mut params = json!({"type":kind,"key":definition.key,"code":definition.code,"windowsVirtualKeyCode":definition.key_code,"modifiers":mask});
+        if kind == "keyDown"
+            && mask & !8 == 0
+            && let Some(text) = text
+        {
+            params["text"] = json!(text);
+            params["unmodifiedText"] = json!(text);
+        }
+        params
+    }))
 }
 
 /// Key names the browser input protocol resolves beyond the library's own US table, each carrying
