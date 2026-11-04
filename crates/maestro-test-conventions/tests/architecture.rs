@@ -4,7 +4,7 @@ use crate::support;
 
 use std::fmt::Write;
 
-use maestro_test_conventions::check_workspace;
+use maestro_test_conventions::{check_declared_graph, check_workspace};
 use support::Workspace;
 #[cfg(unix)]
 use support::{host_report, output, record_path};
@@ -1630,20 +1630,55 @@ fn policy_edge_matrix(dev: bool) {
     workspace.policy_probe(&workspace.metadata(), dev);
 }
 
-/// Reject each unpermitted policy edge, in the probe child serving the valid metadata.
+#[test]
+fn forbidden_edge_in_supplied_declared_metadata_is_reported() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-cli", "maestro-agent", "maestro-settings"]);
+    let declared = metadata_document(&serde_json::to_string(&workspace.metadata()).unwrap());
+    let mut edge = declared
+        .packages
+        .iter()
+        .find(|package| package.name.as_str() == "maestro-cli")
+        .unwrap()
+        .dependencies[0]
+        .clone();
+    edge.name = "maestro-settings".to_owned();
+    edge.path = Some(member_path(workspace.root.path(), "maestro-settings"));
+    let mut patched = declared.clone();
+    patched
+        .packages
+        .iter_mut()
+        .find(|package| package.name.as_str() == "maestro-agent")
+        .unwrap()
+        .dependencies = vec![edge];
+
+    assert_eq!(
+        check_declared_graph(workspace.root.path(), &patched),
+        Err("forbidden production dependency: maestro-agent -> maestro-settings".into())
+    );
+    assert_eq!(
+        check_declared_graph(workspace.root.path(), &declared),
+        Ok(())
+    );
+}
+
+/// Reject each unpermitted policy edge from one supplied declared document, so no case
+/// starts a metadata child of its own.
 #[cfg(unix)]
 fn policy_edge_cases(root: &std::path::Path, dev: bool) {
-    use serde_json::json;
-    let valid: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(root.join("resolved.json")).unwrap()).unwrap();
-    let template = valid["packages"]
-        .as_array()
-        .unwrap()
+    let valid = metadata_document(&std::fs::read_to_string(root.join("declared.json")).unwrap());
+    let template = valid
+        .packages
         .iter()
-        .find(|p| p["name"] == "maestro-cli")
-        .unwrap()["dependencies"][0]
+        .find(|package| package.name.as_str() == "maestro-cli")
+        .unwrap()
+        .dependencies[0]
         .clone();
     let excluded = utility_excluded();
+    let mut declared = valid;
+    for package in &mut declared.packages {
+        package.dependencies.clear();
+    }
     for &(from, targets) in support::policy::POLICY {
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !excluded.contains(&from);
@@ -1656,22 +1691,15 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
             {
                 continue;
             }
-            let mut declared = valid.clone();
-            for package in declared["packages"].as_array_mut().unwrap() {
-                package["dependencies"] = json!([]);
-            }
-            let package = declared["packages"]
-                .as_array_mut()
-                .unwrap()
-                .iter_mut()
-                .find(|p| p["name"] == from)
-                .unwrap();
             let mut dependency = template.clone();
-            dependency["name"] = json!(to);
-            dependency["rename"] = json!("alias");
-            dependency["path"] = json!(root.join("crates").join(to));
-            dependency["kind"] = if dev { json!("dev") } else { json!(null) };
-            package["dependencies"] = json!([dependency]);
+            dependency.name = to.to_owned();
+            dependency.rename = Some("alias".to_owned());
+            dependency.path = Some(member_path(root, to));
+            dependency.kind = if dev {
+                cargo_metadata::DependencyKind::Development
+            } else {
+                cargo_metadata::DependencyKind::Normal
+            };
             let expected = if targets.is_empty() {
                 format!("{from} must not depend on workspace crate {to}")
             } else if support::class(from) == "core" && support::class(to) == "dedicated" {
@@ -1683,25 +1711,31 @@ fn policy_edge_cases(root: &std::path::Path, dev: bool) {
             } else {
                 format!("forbidden production dependency: {from} -> {to}")
             };
-            let result = check_declared(root, &declared);
+            let index = declared
+                .packages
+                .iter()
+                .position(|package| package.name.as_str() == from)
+                .unwrap();
+            declared.packages[index].dependencies.push(dependency);
+            let result = check_declared_graph(root, &declared);
+            declared.packages[index].dependencies.clear();
             assert!(
                 matches!(&result, Err(error) if error.contains(&expected)),
                 "{from} -> {to}: {result:?}"
             );
         }
     }
-    assert_eq!(check_declared(root, &valid), Ok(()));
+    assert_eq!(check_workspace(root), Ok(()));
 }
 
-/// Serve `declared` to the probe's declared pass, then check the probe workspace.
-#[cfg(unix)]
-fn check_declared(root: &std::path::Path, declared: &serde_json::Value) -> Result<(), String> {
-    std::fs::write(
-        root.join("declared.json"),
-        serde_json::to_vec(declared).unwrap(),
-    )
-    .unwrap();
-    check_workspace(root)
+/// Read a metadata document the way the graph checker reads it.
+fn metadata_document(text: &str) -> cargo_metadata::Metadata {
+    cargo_metadata::MetadataCommand::parse(text).unwrap()
+}
+
+/// A member's directory as a declared path dependency names it.
+fn member_path(root: &std::path::Path, name: &str) -> cargo_metadata::camino::Utf8PathBuf {
+    root.join("crates").join(name).display().to_string().into()
 }
 
 #[cfg(unix)]

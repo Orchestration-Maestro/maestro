@@ -2,6 +2,8 @@
 
 use std::path::Path;
 
+use cargo_metadata::Metadata;
+
 /// Declaration ownership and extension interface checks.
 mod boundaries;
 /// Exact test-selection ownership.
@@ -140,4 +142,22 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     example_helpers::check(&members)?;
     temp_directories::check(&members)?;
     test_input_routes::check(root, &members)
+}
+
+/// Validate a workspace's declared dependency graph from a supplied metadata document.
+///
+/// This is the test-facing half of `check_workspace`: it reads the document's
+/// identities, opt-in helper activation, crate inventory and declared edges, and
+/// reports the same diagnostic the full check reports for them. Host-resolved
+/// edges, the required direct sets and the source checks belong to
+/// `check_workspace`. The conventions suite supplies hypothetical declarations
+/// here, so it rejects a whole family of edges from one metadata read instead of
+/// one child process per case.
+///
+/// # Errors
+///
+/// Returns a human-readable diagnostic on malformed metadata or a violated
+/// declared boundary.
+pub fn check_declared_graph(root: &Path, declared: &Metadata) -> Result<(), String> {
+    graph::declared_graph(root, declared).map(|_| ())
 }

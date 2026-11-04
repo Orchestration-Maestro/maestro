@@ -147,6 +147,10 @@ children omit `RUSTC_WRAPPER`; the calling process and build commands retain it.
 Package IDs and canonical member paths establish identity, not dependency aliases.
 Optional, build, dev and inactive foreign-target declarations remain subject to policy.
 Malformed metadata and command failures return diagnostics, not acceptance.
+`check_declared_graph` runs the declared pass from a metadata document the caller
+supplies, so the conventions suite rejects a whole family of hypothetical edges from
+one metadata read instead of one metadata child per case. Host-resolved edges, the
+required direct sets and the source checks stay with `check_workspace`.
 
 The cancellation leaf has no internal dependencies; only models and the toolkit
 may depend directly on it.

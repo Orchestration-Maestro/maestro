@@ -166,6 +166,21 @@ pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &st
 }
 
 impl Workspace {
+    pub fn metadata(&self) -> serde_json::Value {
+        let output =
+            std::process::Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
+                .args(["metadata", "--format-version", "1", "--offline"])
+                .current_dir(self.root.path())
+                .output()
+                .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        serde_json::from_slice(&output.stdout).unwrap()
+    }
+
     pub fn foundation(&self, names: &[&str]) {
         let mut pending = names.to_vec();
         let mut entries = std::collections::BTreeSet::new();
@@ -222,21 +237,6 @@ impl Workspace {
             record["argv_log"] = serde_json::json!({"path": root.join("order"), "mark": mark});
         }
         self.command(name, &record)
-    }
-
-    pub fn metadata(&self) -> serde_json::Value {
-        let output =
-            std::process::Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
-                .args(["metadata", "--format-version", "1", "--offline"])
-                .current_dir(self.root.path())
-                .output()
-                .unwrap();
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        serde_json::from_slice(&output.stdout).unwrap()
     }
 
     pub fn metadata_probe(
