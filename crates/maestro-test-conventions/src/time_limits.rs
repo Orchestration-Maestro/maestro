@@ -1,10 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use syn::{
-    ext::IdentExt, parse::Parser, parse::discouraged::Speculative, spanned::Spanned, visit::Visit,
-};
+use syn::{ext::IdentExt, parse::Parser, parse::discouraged::Speculative, spanned::Spanned};
 
-use crate::source::{Member, inherit_test_context, test_scope};
+use crate::source::Member;
 
 /// Reject recognized optional polling macros, timer calls and scoped tracing captures in
 /// test-owned parsed sources; only the test tracing owner may capture directly.
@@ -12,30 +10,12 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members {
         for source in &member.sources {
-            let Some(syntax) = &source.syntax else {
-                continue;
-            };
-            let testing = test_scope(member, source);
-            // Every finding needs test code, so a source without any is not visited.
-            if !testing && source.test_spans().is_empty() {
-                continue;
-            }
-            #[cfg(test)]
-            VISITED.set(VISITED.get() + 1);
-            let mut aliases = Aliases::default();
-            aliases.visit_file(syntax);
-            let mut calls = Calls {
-                testing,
-                tracing_owner: member.name == crate::graph::TEST_TRACING,
-                found: Vec::new(),
-                imports: aliases.0,
-            };
-            calls.visit_file(syntax);
             diagnostics.extend(
-                calls
-                    .found
-                    .into_iter()
-                    .map(|(position, api)| (source.path.display().to_string(), position, api)),
+                source
+                    .walk(member)
+                    .time_limits
+                    .iter()
+                    .map(|(position, api)| (source.path.display().to_string(), *position, api)),
             );
         }
     }
@@ -59,14 +39,12 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
 
 #[cfg(test)]
 thread_local! {
-    /// Sources whose syntax this check visits on the current test thread.
-    static VISITED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// Call paths and method names spelled by this check on the current test thread.
     static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Recognized test-source portability or synchronization violation.
-enum Diagnostic {
+pub(crate) enum Diagnostic {
     /// Canonical timer identity.
     Timer(String),
     /// Single polling requires an optional dependency feature.
@@ -75,16 +53,26 @@ enum Diagnostic {
     Capture(String),
 }
 
-/// Test ownership and located policy occurrences for one source.
-struct Calls {
-    /// Imported local names and their known authored identities.
-    imports: BTreeMap<String, BTreeSet<String>>,
-    /// Whether the current syntax belongs to tests.
-    testing: bool,
+/// One occurrence in test code, in source order, resolved once the file's imports are known.
+enum Pending<'a> {
+    /// A finding that needs no import.
+    Found((usize, usize), Diagnostic),
+    /// A macro invocation path that may name the optional polling macro.
+    Poll((usize, usize), String),
+    /// A call through a path that may name a timer or a scoped capture.
+    Call(&'a syn::ExprCall, String),
+}
+
+/// Imports and test-owned policy occurrences of one source, gathered by the shared syntax walk.
+///
+/// The walk passes every import, and test-owned syntax alone to the occurrence methods.
+pub(crate) struct Calls<'a> {
+    /// Use trees of the whole file, read only when an occurrence needs them.
+    uses: Vec<&'a syn::UseTree>,
     /// Whether the source belongs to the test tracing owner, which may capture directly.
     tracing_owner: bool,
-    /// Canonical labels with source coordinates.
-    found: Vec<((usize, usize), Diagnostic)>,
+    /// Occurrences in source order.
+    pending: Vec<Pending<'a>>,
 }
 
 /// Collect known import candidates from a use tree.
@@ -168,52 +156,50 @@ fn import_path(prefix: &str, name: &syn::Ident) -> String {
     }
 }
 
-/// Known API and namespace aliases collected across a parsed file.
-#[derive(Default)]
-struct Aliases(BTreeMap<String, BTreeSet<String>>);
-
-impl<'ast> Visit<'ast> for Aliases {
-    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        imports(&item.tree, "", &mut self.0);
+/// Prefer direct identities, then match every known alias candidate.
+fn resolve<'a>(
+    imports: &BTreeMap<String, BTreeSet<String>>,
+    name: &str,
+    known: &[&'a str],
+) -> Option<&'a str> {
+    if let Some(api) = known.iter().copied().find(|api| *api == name) {
+        return Some(api);
     }
+    let (first, suffix) = name.split_once("::").unwrap_or((name, ""));
+    let candidates = imports.get(first)?;
+    known.iter().copied().find(|api| {
+        candidates.iter().any(|candidate| {
+            (suffix.is_empty() && *api == candidate)
+                || api
+                    .strip_prefix(candidate.as_str())
+                    .and_then(|rest| rest.strip_prefix("::"))
+                    == Some(suffix)
+        })
+    })
 }
 
-impl Calls {
-    /// Prefer direct identities, then match every known alias candidate.
-    fn resolve<'a>(&self, name: &str, known: &[&'a str]) -> Option<&'a str> {
-        if let Some(api) = known.iter().copied().find(|api| *api == name) {
-            return Some(api);
+impl<'a> Calls<'a> {
+    /// Start the time-limit check of one member's source.
+    pub(crate) fn new(member: &Member) -> Self {
+        Self {
+            uses: Vec::new(),
+            tracing_owner: member.name == crate::graph::TEST_TRACING,
+            pending: Vec::new(),
         }
-        let (first, suffix) = name.split_once("::").unwrap_or((name, ""));
-        let candidates = self.imports.get(first)?;
-        known.iter().copied().find(|api| {
-            candidates.iter().any(|candidate| {
-                (suffix.is_empty() && *api == candidate)
-                    || api
-                        .strip_prefix(candidate.as_str())
-                        .and_then(|rest| rest.strip_prefix("::"))
-                        == Some(suffix)
-            })
-        })
     }
 
-    /// Record an optional macro at its authored invocation coordinates.
+    /// Retain an import of the file; known aliases apply file-wide.
+    pub(crate) fn item_use(&mut self, item: &'a syn::ItemUse) {
+        self.uses.push(&item.tree);
+    }
+
+    /// Record a macro path at its authored invocation coordinates.
     fn optional_poll(&mut self, path: &syn::Path) {
-        if self.resolve(&path_name(path), OPTIONAL_POLL).is_some() {
-            let position = path.span().start();
-            self.found
-                .push(((position.line, position.column), Diagnostic::OptionalPoll));
-        }
-    }
-
-    /// Record a scoped capture in test-owned syntax outside the test tracing owner.
-    fn capture(&mut self, position: proc_macro2::LineColumn, api: &str) {
-        if self.testing && !self.tracing_owner {
-            self.found.push((
-                (position.line, position.column),
-                Diagnostic::Capture(api.into()),
-            ));
-        }
+        let position = path.span().start();
+        self.pending.push(Pending::Poll(
+            (position.line, position.column),
+            path_name(path),
+        ));
     }
 
     /// Inspect literal invocation tokens without expanding their outer macro.
@@ -248,69 +234,103 @@ impl Calls {
             self.nested_macros(group.stream());
         }
     }
-}
 
-impl<'ast> Visit<'ast> for Calls {
-    fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
-        if self.testing {
-            self.optional_poll(&invocation.path);
-            self.nested_macros(invocation.tokens.clone());
-        }
-        syn::visit::visit_macro(self, invocation);
+    /// Record a test-owned macro invocation and the literal invocations inside its tokens.
+    pub(crate) fn macro_tokens(&mut self, invocation: &syn::Macro) {
+        self.optional_poll(&invocation.path);
+        self.nested_macros(invocation.tokens.clone());
     }
 
-    inherit_test_context!(visit_item, Item, item_attributes);
-    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
-    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        if self.testing {
-            #[cfg(test)]
-            SPELLINGS.set(SPELLINGS.get() + 1);
-            let name = call.method.unraw().to_string();
-            if timed_wait(&name) {
-                let position = call.span().start();
-                self.found
-                    .push(((position.line, position.column), Diagnostic::Timer(name)));
-            } else if name == "with_subscriber" {
-                self.capture(
-                    call.method.span().start(),
-                    "tracing::instrument::WithSubscriber::with_subscriber",
-                );
-            }
+    /// Record a test-owned timed wait or scoped capture method.
+    pub(crate) fn method_call(&mut self, call: &syn::ExprMethodCall) {
+        #[cfg(test)]
+        SPELLINGS.set(SPELLINGS.get() + 1);
+        let name = call.method.unraw().to_string();
+        if timed_wait(&name) {
+            let position = call.span().start();
+            self.pending.push(Pending::Found(
+                (position.line, position.column),
+                Diagnostic::Timer(name),
+            ));
+        } else if name == "with_subscriber" && !self.tracing_owner {
+            let position = call.method.span().start();
+            self.pending.push(Pending::Found(
+                (position.line, position.column),
+                Diagnostic::Capture("tracing::instrument::WithSubscriber::with_subscriber".into()),
+            ));
         }
-        syn::visit::visit_expr_method_call(self, call);
     }
-    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+
+    /// Record a test-owned call through a path, which may name a timer or a capture.
+    pub(crate) fn call(&mut self, call: &'a syn::ExprCall) {
         let mut callee = &*call.func;
         while let syn::Expr::Paren(parenthesized) = callee {
             callee = &parenthesized.expr;
         }
-        // Timers and captures are reported only in test code.
-        if self.testing
-            && let syn::Expr::Path(path) = callee
-        {
+        if let syn::Expr::Path(path) = callee {
             #[cfg(test)]
             SPELLINGS.set(SPELLINGS.get() + 1);
-            let name = path_name(&path.path);
-            let last = name.rsplit("::").next().unwrap_or(&name);
-            let timer = if timed_wait(last) {
-                Some(last)
-            } else {
-                self.resolve(&name, TIMERS)
-            };
-            if let Some(api) = timer {
-                let position = call.span().start();
-                self.found.push((
-                    (position.line, position.column),
-                    Diagnostic::Timer(api.into()),
-                ));
-            }
-            if let Some(api) = self.resolve(&name, CAPTURES) {
-                self.capture(call.span().start(), api);
+            self.pending
+                .push(Pending::Call(call, path_name(&path.path)));
+        }
+    }
+
+    /// Resolve the recorded occurrences against the file's imports, keeping source order.
+    pub(crate) fn finish(self) -> Vec<((usize, usize), Diagnostic)> {
+        let mut imports = BTreeMap::new();
+        // Every occurrence is test code, so a source without any reads no import.
+        if !self.pending.is_empty() {
+            for tree in self.uses {
+                self::imports(tree, "", &mut imports);
             }
         }
-        syn::visit::visit_expr_call(self, call);
+        let mut found = Vec::new();
+        for pending in self.pending {
+            match pending {
+                Pending::Found(position, diagnostic) => found.push((position, diagnostic)),
+                Pending::Poll(position, name)
+                    if resolve(&imports, &name, OPTIONAL_POLL).is_some() =>
+                {
+                    found.push((position, Diagnostic::OptionalPoll));
+                }
+                Pending::Poll(..) => {}
+                Pending::Call(call, name) => {
+                    let capturing = !self.tracing_owner;
+                    found.extend(resolve_call(&imports, call, &name, capturing));
+                }
+            }
+        }
+        found
     }
+}
+
+/// The timer and, where captures are reported, the scoped capture one called path names.
+fn resolve_call(
+    imports: &BTreeMap<String, BTreeSet<String>>,
+    call: &syn::ExprCall,
+    name: &str,
+    capturing: bool,
+) -> Vec<((usize, usize), Diagnostic)> {
+    let position = || {
+        let start = call.span().start();
+        (start.line, start.column)
+    };
+    let mut found = Vec::new();
+    let last = name.rsplit("::").next().unwrap_or(name);
+    let timer = if timed_wait(last) {
+        Some(last)
+    } else {
+        resolve(imports, name, TIMERS)
+    };
+    if let Some(api) = timer {
+        found.push((position(), Diagnostic::Timer(api.into())));
+    }
+    if let Some(api) = resolve(imports, name, CAPTURES)
+        && capturing
+    {
+        found.push((position(), Diagnostic::Capture(api.into())));
+    }
+    found
 }
 
 /// Recognize the syntactically forbidden timed method names.

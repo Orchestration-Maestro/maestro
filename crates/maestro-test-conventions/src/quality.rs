@@ -36,7 +36,7 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     if generated::catalog_source(member, source) || test_layout(path, &member.directory) {
         return Ok(());
     }
-    let lines = production_lines(source);
+    let lines = production_lines(member, source);
     if lines > 500 {
         return Err(format!(
             "{}: {lines} production lines exceeds 500",
@@ -47,9 +47,9 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
 }
 
 /// Count lines with non-whitespace characters outside documentation tokens and test-only spans.
-fn production_lines(source: &Source) -> usize {
+fn production_lines(member: &Member, source: &Source) -> usize {
     let contents = &source.contents;
-    let testing = source.test_spans();
+    let testing = source.test_spans(member);
     let documentation = documentation_spans(source);
     let end = source
         .syntax

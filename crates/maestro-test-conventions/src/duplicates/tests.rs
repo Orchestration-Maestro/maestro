@@ -106,3 +106,23 @@ fn nested_body_indexing_grows_linearly() {
         println!("GROWTH nested={nested} {measurements:?}");
     }
 }
+
+#[test]
+fn signature_lines_start_at_the_first_qualifier() {
+    let signatures = [
+        ("\nfn f()", 2),
+        ("\n\nconst\nfn f()", 3),
+        ("async\n\nfn f()", 1),
+        ("\nunsafe\nfn f()", 2),
+        ("\n\nextern \"C\"\nfn f()", 3),
+        (
+            "\nconst\nasync\nunsafe\nextern \"C\"\nfn f<T>(value: T) -> T\nwhere T: Copy",
+            2,
+        ),
+    ];
+    for (text, line) in signatures {
+        let signature = syn::parse_str::<syn::Signature>(text).unwrap();
+        assert_eq!(super::signature_line(&signature), line, "{text:?}");
+        assert_eq!(signature.span().start().line, line, "{text:?}");
+    }
+}

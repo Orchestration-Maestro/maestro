@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use ra_ap_rustc_lexer::TokenKind;
-use syn::{spanned::Spanned, visit::Visit};
+use syn::spanned::Spanned;
 
-use crate::source::{Member, Source, cfg_test, inherit_test_context, test_layout};
+use crate::source::{Member, Source, cfg_test, test_layout};
 
 /// Exact lexical identity, with nested delimiters represented by interned children.
 #[derive(PartialEq, Eq, Hash)]
@@ -100,59 +100,40 @@ impl<'a> Tokens<'a> {
     }
 }
 
-/// Collect eligible function bodies using the source owner's parsed test context.
-struct Bodies<'a> {
-    /// Source path used in diagnostics.
-    source: &'a Source,
-    /// Constant-time identity lookup at a parsed block's byte offset.
-    blocks: HashMap<usize, (usize, usize)>,
-    /// All eligible authored locations, grouped by exact token identity and count.
-    sites: &'a mut HashMap<usize, (usize, Vec<String>)>,
-    /// Inherited explicit test configuration.
-    testing: bool,
-}
+/// Production function bodies of one source, gathered by the shared syntax walk.
+///
+/// Each entry holds the body's opening-brace byte offset and its signature's line. The walk
+/// passes only functions outside test-gated items.
+#[derive(Default)]
+pub(crate) struct Bodies(pub(crate) Vec<(usize, usize)>);
 
-impl Bodies<'_> {
-    /// Retain a production function's source location once it reaches the threshold.
-    fn body(&mut self, signature: &syn::Signature, block: &syn::Block) {
-        if !self.testing
-            && let Some(&(id, count)) = self.blocks.get(&block.span().byte_range().start)
-            && count >= 30
-        {
-            self.sites
-                .entry(id)
-                .or_insert_with(|| (count, Vec::new()))
-                .1
-                .push(format!(
-                    "{}:{}",
-                    self.source.path.display(),
-                    signature.span().start().line,
-                ));
-        }
+impl Bodies {
+    /// Record one production function body.
+    pub(crate) fn function(&mut self, signature: &syn::Signature, block: &syn::Block) {
+        self.0
+            .push((block.span().byte_range().start, signature_line(signature)));
     }
 }
 
-impl<'ast> Visit<'ast> for Bodies<'_> {
-    inherit_test_context!(visit_item, Item, item_attributes);
-    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
-    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
-
-    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        self.body(&item.sig, &item.block);
-        syn::visit::visit_item_fn(self, item);
-    }
-
-    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
-        self.body(&item.sig, &item.block);
-        syn::visit::visit_impl_item_fn(self, item);
-    }
-
-    fn visit_trait_item_fn(&mut self, item: &'ast syn::TraitItemFn) {
-        if let Some(block) = &item.default {
-            self.body(&item.sig, block);
-        }
-        syn::visit::visit_trait_item_fn(self, item);
-    }
+/// Line where a signature starts: its first qualifier, or else its `fn` keyword.
+///
+/// This is the start of the signature's joined span, read without printing every token.
+fn signature_line(signature: &syn::Signature) -> usize {
+    let safety = match &signature.safety {
+        syn::Safety::Safe(token) => Some(token.span),
+        syn::Safety::Unsafe(token) => Some(token.span),
+        syn::Safety::Default => None,
+    };
+    signature
+        .constness
+        .as_ref()
+        .map(|token| token.span)
+        .or_else(|| signature.asyncness.as_ref().map(|token| token.span))
+        .or(safety)
+        .or_else(|| signature.abi.as_ref().map(|abi| abi.extern_token.span))
+        .unwrap_or(signature.fn_token.span)
+        .start()
+        .line
 }
 
 /// Reject every exact duplicate group in parsed, hand-written production sources.
@@ -171,13 +152,22 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             {
                 continue;
             }
-            Bodies {
-                source,
-                blocks: tokens.blocks(source),
-                sites: &mut sites,
-                testing: false,
+            let blocks = tokens.blocks(source);
+            let bodies = source
+                .walk(member)
+                .bodies
+                .iter()
+                .filter_map(|(start, line)| {
+                    let &(id, count) = blocks.get(start)?;
+                    (count >= 30).then_some((id, count, line))
+                });
+            for (id, count, line) in bodies {
+                sites
+                    .entry(id)
+                    .or_insert_with(|| (count, Vec::new()))
+                    .1
+                    .push(format!("{}:{line}", source.path.display()));
             }
-            .visit_file(syntax);
         }
     }
     let mut diagnostics = Vec::new();

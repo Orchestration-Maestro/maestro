@@ -1,13 +1,13 @@
 //! Guest-only package edges and single-export component layout.
 
 use std::{collections::BTreeSet, path::Path};
-use syn::{ext::IdentExt, visit::Visit};
+use syn::ext::IdentExt;
 
 use cargo_metadata::{CrateType, Metadata, TargetKind};
 use proc_macro2::{TokenStream, TokenTree};
 
 use super::{Edge, metadata::members, policy::UNIFIER};
-use crate::source::{Member, cfg_test, item_attributes, test_scope};
+use crate::source::{Member, Source, cfg_test, item_attributes, test_scope};
 
 /// Internal guest libraries available to a package on every target.
 const DEPENDENCIES: &[&str] = &[
@@ -93,15 +93,7 @@ fn check_exports(member: &Member, library: &Path) -> Result<(), String> {
         if source.path == library {
             factory = syntax.items.iter().any(public_factory);
         }
-        let mut names = ImportNames::default();
-        names.visit_file(syntax);
-        let names = names.export_names();
-        let mut found = ExportCalls {
-            names: &names,
-            count: 0,
-        };
-        found.visit_file(syntax);
-        let exports = found.count;
+        let exports = source.walk(member).exports;
         if exports > 0 && source.path != member.directory.join("src/component.rs") {
             return Err(format!(
                 "{}: export_extension belongs only in src/component.rs",
@@ -177,16 +169,43 @@ fn imports(tree: &syn::UseTree, names: &mut Vec<(String, String)>) {
     }
 }
 
-/// File-wide macro imports used by the bounded export scan.
-#[derive(Default)]
-struct ImportNames {
+/// The export macro's canonical name.
+const EXPORT: &str = "export_extension";
+
+/// File-wide macro imports and production invocations gathered by the shared syntax walk.
+///
+/// The walk passes every import, and the invocations outside test-gated items.
+pub(crate) struct Exports<'a> {
     /// Original and locally exposed names, including chained renames.
     imports: Vec<(String, String)>,
+    /// Macro invocations outside test-gated items, counted once every import is known.
+    invocations: Vec<&'a syn::Macro>,
 }
-impl ImportNames {
+
+impl<'a> Exports<'a> {
+    /// Start the export count of a production source that spells the export macro.
+    ///
+    /// A source whose text never spells the macro's name can neither import nor invoke it.
+    pub(crate) fn new(source: &Source, testing: bool) -> Option<Self> {
+        (!testing && source.contents.contains(EXPORT)).then(|| Self {
+            imports: Vec::new(),
+            invocations: Vec::new(),
+        })
+    }
+
+    /// Record the explicit names one use declaration binds.
+    pub(crate) fn item_use(&mut self, item: &syn::ItemUse) {
+        imports(&item.tree, &mut self.imports);
+    }
+
+    /// Record a macro invocation outside test-gated items.
+    pub(crate) fn invocation(&mut self, invocation: &'a syn::Macro) {
+        self.invocations.push(invocation);
+    }
+
     /// Resolves explicit renames until no additional export name is exposed.
     fn export_names(&self) -> BTreeSet<String> {
-        let mut names = BTreeSet::from(["export_extension".into()]);
+        let mut names = BTreeSet::from([EXPORT.into()]);
         let mut previous = 0;
         while previous != names.len() {
             previous = names.len();
@@ -196,35 +215,20 @@ impl ImportNames {
         }
         names
     }
-}
-impl<'ast> Visit<'ast> for ImportNames {
-    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        imports(&item.tree, &mut self.imports);
-    }
-}
 
-/// Counts authored exports while leaving parsed test scopes out of production.
-struct ExportCalls<'a> {
-    /// Canonical name and known import aliases.
-    names: &'a BTreeSet<String>,
-    /// Literal invocations admitted so far.
-    count: usize,
-}
-impl<'ast> Visit<'ast> for ExportCalls<'_> {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        if !cfg_test(item_attributes(item)) {
-            syn::visit::visit_item(self, item);
-        }
-    }
-    fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
-        if invocation
-            .path
-            .segments
-            .last()
-            .is_some_and(|segment| self.names.contains(&segment.ident.unraw().to_string()))
-        {
-            self.count += 1;
-        }
-        self.count += nested_exports(invocation.tokens.clone(), self.names);
+    /// Count the literal exports among the recorded invocations.
+    pub(crate) fn finish(self) -> usize {
+        let names = self.export_names();
+        self.invocations
+            .iter()
+            .map(|invocation| {
+                let direct = invocation
+                    .path
+                    .segments
+                    .last()
+                    .is_some_and(|segment| names.contains(&segment.ident.unraw().to_string()));
+                usize::from(direct) + nested_exports(invocation.tokens.clone(), &names)
+            })
+            .sum()
     }
 }

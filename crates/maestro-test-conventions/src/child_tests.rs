@@ -3,7 +3,7 @@
 use ra_ap_rustc_lexer::{LiteralKind, TokenKind};
 
 use crate::source::{Member, Source, line};
-use syn::{spanned::Spanned, visit::Visit};
+use syn::spanned::Spanned;
 
 /// Reject an exact-selector string token outside its owning package.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -27,22 +27,21 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
 /// The sole execution-owner reason for browser-only assertions.
 const CHROMIUM: &str = "runs in the pinned Chromium job";
 
+/// Whether the source is the dedicated pinned-browser module.
+fn browser(member: &Member, source: &Source) -> bool {
+    member.name == "maestro-test-browser"
+        && source.path == member.directory.join("tests/browser.rs")
+}
+
 /// Check parsed attributes through the existing workspace source model.
 fn ignore_ownership(member: &Member, source: &Source) -> Result<(), String> {
-    let Some(syntax) = &source.syntax else {
+    if source.syntax.is_none() {
         return Ok(());
-    };
-    let browser = member.name == "maestro-test-browser"
-        && source.path == member.directory.join("tests/browser.rs");
-    let mut visitor = Ignored {
-        browser,
-        error: None,
-    };
-    visitor.visit_file(syntax);
-    if let Some((line, message)) = visitor.error {
+    }
+    if let Some((line, message)) = source.walk(member).ignored {
         return Err(format!("{}:{line}: {message}", source.path.display()));
     }
-    if browser && !member.sources.iter().any(|source| {
+    if browser(member, source) && !member.sources.iter().any(|source| {
         source.path == member.directory.join("tests/integration.rs")
             && source.syntax.as_ref().is_some_and(|syntax| syntax.items.iter().any(|item| {
                 matches!(item, syn::Item::Mod(module) if module.ident == "browser" && module.content.is_none())
@@ -53,16 +52,25 @@ fn ignore_ownership(member: &Member, source: &Source) -> Result<(), String> {
     Ok(())
 }
 
-/// Ignore-attribute ownership during a parsed syntax walk.
-struct Ignored {
+/// Ignore-attribute ownership during the shared syntax walk.
+pub(crate) struct Ignored {
     /// Whether the source is the dedicated pinned-browser module.
     browser: bool,
     /// First offending line and diagnostic.
-    error: Option<(usize, &'static str)>,
+    pub(crate) error: Option<(usize, &'static str)>,
 }
 
-impl<'ast> Visit<'ast> for Ignored {
-    fn visit_attribute(&mut self, attribute: &'ast syn::Attribute) {
+impl Ignored {
+    /// Start the ownership check of one member's source.
+    pub(crate) fn new(member: &Member, source: &Source) -> Self {
+        Self {
+            browser: browser(member, source),
+            error: None,
+        }
+    }
+
+    /// Check one attribute, including an attribute nested inside another.
+    pub(crate) fn attribute(&mut self, attribute: &syn::Attribute) {
         if attribute.path().is_ident("ignore") {
             let reason = ignore_reason(attribute);
             if reason.as_deref() != Some("runs only inside a controlled child")
@@ -71,10 +79,10 @@ impl<'ast> Visit<'ast> for Ignored {
                 self.error.get_or_insert((attribute.span().start().line, "ignored tests must name their controlled-child or pinned-browser execution owner"));
             }
         }
-        syn::visit::visit_attribute(self, attribute);
     }
 
-    fn visit_item_fn(&mut self, function: &'ast syn::ItemFn) {
+    /// Check that a pinned-browser test names its Chromium execution owner.
+    pub(crate) fn item_fn(&mut self, function: &syn::ItemFn) {
         if self.browser
             && function
                 .attrs
@@ -90,7 +98,6 @@ impl<'ast> Visit<'ast> for Ignored {
                 "browser tests must run in the pinned Chromium job",
             ));
         }
-        syn::visit::visit_item_fn(self, function);
     }
 }
 
