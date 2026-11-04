@@ -142,7 +142,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
             ("execution", 26),
             ("loading", 57),
             ("contributions", 194),
-            ("canvas", 38)
+            ("canvas", 69)
         ]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
@@ -255,6 +255,12 @@ const CANVAS_SOURCES: &[&str] = &[
     "expandable_output_browser.rs",
     "session_links_browser.rs",
     "session_download_browser.rs",
+    "artifact_panel_browser.rs",
+    "excel_views_browser.rs",
+    "text_image_artifacts_browser.rs",
+    "artifact_elements_browser.rs",
+    "tool_renderers_browser.rs",
+    "offline_tool_cards_browser.rs",
 ];
 
 /// Canvas exports that also await the screenshot observation the driver does not supply.
@@ -264,6 +270,9 @@ const SCREENSHOT_EXPORTS: &[&str] = &[
     "reading_frame_neighbors_keep_existing_paint",
     "export_rendering_uses_the_selected_brand_roles",
     "copy_link_native_slot_composition_preserves_reading_selection",
+    "generic_guidance_is_literal_selectable_and_localized",
+    "tool_card_image_and_diff_layout_uses_native_content",
+    "tool_cards_use_selected_brand_roles_without_changing_custom_html",
 ];
 
 /// Authored source modules supplying the contribution inventory.
