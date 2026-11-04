@@ -140,7 +140,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
             .collect::<Vec<_>>(),
         [
             ("execution", 26),
-            ("loading", 57),
+            ("loading", 63),
             ("contributions", 194),
             ("canvas", 69)
         ]
