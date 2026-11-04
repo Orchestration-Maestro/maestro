@@ -7,7 +7,7 @@ use maestro_web::{
     tools::artifacts::html_artifact::HtmlArtifact,
 };
 use std::{cell::Cell, rc::Rc};
-use wasm_bindgen::{JsCast as _, JsValue};
+use wasm_bindgen::JsCast as _;
 use web_sys::{Element, HtmlIFrameElement};
 
 /// One runtime provider as artifacts hold it.
@@ -78,17 +78,8 @@ pub(crate) fn before(document: &str, first: &str, second: &str) -> bool {
     matches!((document.find(first), document.find(second)), (Some(a), Some(b)) if a < b)
 }
 /// Wait, by changes below `root`, until `artifact` reports `expected` logs.
-pub(crate) async fn logged(
-    page: &JsValue,
-    root: &DomRoot,
-    artifact: &HtmlArtifact,
-    i18n: &I18n,
-    expected: &str,
-) {
-    until(page, &root.node, || {
-        artifact.get_logs(i18n).unwrap() == expected
-    })
-    .await;
+pub(crate) async fn logged(root: &DomRoot, artifact: &HtmlArtifact, i18n: &I18n, expected: &str) {
+    until(&root.node, || artifact.get_logs(i18n).unwrap() == expected).await;
 }
 /// The listed source text of a body.
 pub(crate) fn listed(root: &DomRoot) -> String {

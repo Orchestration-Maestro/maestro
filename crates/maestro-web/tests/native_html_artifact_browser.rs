@@ -1,8 +1,7 @@
 //! HTML artifact bodies observed through the native document.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, call, container, document, host, localized_view, page_module, published,
-    select, selection, text, view,
+    Clipboard, Recorded, container, document, host, localized_view, published, select, text, view,
 };
 use crate::native_html_artifact_support::{
     LOGGING, QUIET, before, failing, frame, listed, logged, marker, srcdoc,
@@ -97,12 +96,9 @@ fn assert_literal_sources(artifact: &mut HtmlArtifact, root: &DomRoot, view: &Do
 }
 /// Detached bodies keep original source, read no provider data and leave the source in place.
 #[wasm_bindgen]
-pub async fn html_artifact_dom_source_is_literal_before_connection(
-    import_module: js_sys::Function,
-) {
+pub fn html_artifact_dom_source_is_literal_before_connection(import_module: &js_sys::Function) {
     let view = view();
-    let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
+    let _host = host(&view, import_module);
     let neighbour = HtmlArtifact::default();
     assert_empty(&HtmlArtifact::new());
     assert_empty(&neighbour);
@@ -121,13 +117,13 @@ pub async fn html_artifact_dom_source_is_literal_before_connection(
     container().append_child(&root.node).unwrap();
     let listing = code(&root);
     let token = first_token(&root);
-    call(&page, "select", &js_sys::Array::of1(&listing)).await;
+    crate::contributions_support::page::select_children(&listing);
     artifact.set_content(artifact.content().to_owned()).unwrap();
     artifact.filename = "renamed.html".to_owned();
     artifact.update(&root, &view).unwrap();
     assert!(code(&root).is_same_node(Some(&listing)));
     assert!(first_token(&root).is_same_node(Some(&token)));
-    assert!(selection(&page, &listing).await.1);
+    assert!(crate::contributions_support::page::selection(&listing).1);
     artifact.set_content("<b>changed</b>".to_owned()).unwrap();
     artifact.update(&root, &view).unwrap();
     assert!(code(&root).is_same_node(Some(&listing)));
@@ -140,7 +136,6 @@ pub async fn html_artifact_dom_source_is_literal_before_connection(
 pub async fn html_artifact_dom_executes_once_per_source_or_reload(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     let reads = Rc::new(Cell::new(0));
     let mut artifact = HtmlArtifact::new();
     artifact.filename = "proof.html".to_owned();
@@ -151,7 +146,7 @@ pub async fn html_artifact_dom_executes_once_per_source_or_reload(import_module:
     let parent = container();
     parent.append_child(&root.node).unwrap();
     assert_eq!((reads.get(), frame(&root).is_some()), (1, true));
-    logged(&page, &root, &artifact, &view.i18n, "[log] one").await;
+    logged(&root, &artifact, &view.i18n, "[log] one").await;
     artifact.update(&root, &view).unwrap();
     artifact.set_content(LOGGING.to_owned()).unwrap();
     assert_eq!(reads.get(), 1);
@@ -170,7 +165,7 @@ pub async fn html_artifact_dom_executes_once_per_source_or_reload(import_module:
     assert_eq!(reads.get(), 4, "an explicit empty run still loads");
     reload_current(&view);
     replace_unlisted_source(&view);
-    reconnection(&page, &parent, &root, &mut artifact, &reads).await;
+    reconnection(&parent, &root, &mut artifact, &reads).await;
     failure(&root, &mut artifact);
     parent.remove();
 }
@@ -256,7 +251,6 @@ fn replace_unlisted_source(view: &DomView) {
 }
 /// Detaching removes the frame and its route; reconnecting loads the source once more.
 async fn reconnection(
-    page: &wasm_bindgen::JsValue,
     parent: &Element,
     root: &DomRoot,
     artifact: &mut HtmlArtifact,
@@ -277,7 +271,7 @@ async fn reconnection(
         Rc::ptr_eq(&live, &adapter),
         "reconnection keeps the adapter"
     );
-    logged(page, root, artifact, &view.i18n, "[log] one").await;
+    logged(root, artifact, &view.i18n, "[log] one").await;
 }
 /// A reached provider failure returns after the source and logs changed; updates do not retry.
 fn failure(root: &DomRoot, artifact: &mut HtmlArtifact) {
@@ -300,7 +294,6 @@ fn failure(root: &DomRoot, artifact: &mut HtmlArtifact) {
 pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     let reads = Rc::new(Cell::new(0));
     let mut artifact = HtmlArtifact::new();
     artifact.filename = "forward.html".to_owned();
@@ -318,9 +311,9 @@ pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module:
     );
     assert!(!frame(&root).unwrap().has_attribute("src"));
     let header = artifact.get_header_buttons(&view).unwrap();
-    addresses(&page, &root, &mut artifact).await;
+    addresses(&root, &mut artifact).await;
     providers(&root, &mut artifact);
-    retarget(&page, &root, &artifact, &reads, &header).await;
+    retarget(&root, &artifact, &reads, &header).await;
     parent.remove();
 }
 /// A counting address provider for `path` below the page origin.
@@ -332,7 +325,7 @@ fn address(path: &'static str, reads: &Rc<Cell<u32>>) -> maestro_app::SandboxUrl
     })
 }
 /// Configured, changed, absent, frame-direct and failing addresses.
-async fn addresses(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut HtmlArtifact) {
+async fn addresses(root: &DomRoot, artifact: &mut HtmlArtifact) {
     let view = view();
     let (first, second, direct) = (Rc::default(), Rc::default(), Rc::default());
     artifact.sandbox_url_provider = Some(address("/sandbox.html", &first));
@@ -341,7 +334,7 @@ async fn addresses(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut 
         frame(root).unwrap().src(),
         format!("{}/sandbox.html", crate::contributions_support::origin())
     );
-    logged(page, root, artifact, &view.i18n, "[log] one").await;
+    logged(root, artifact, &view.i18n, "[log] one").await;
     artifact.sandbox_url_provider = Some(address("/sandbox.html?changed", &second));
     artifact.execute_content(QUIET).unwrap();
     assert!(
@@ -397,7 +390,6 @@ fn providers(root: &DomRoot, artifact: &mut HtmlArtifact) {
 }
 /// Updating the root from another artifact moves the frame to it; its own operands load.
 async fn retarget(
-    page: &wasm_bindgen::JsValue,
     root: &DomRoot,
     artifact: &HtmlArtifact,
     reads: &Rc<Cell<u32>>,
@@ -425,7 +417,7 @@ async fn retarget(
     );
     let document = srcdoc(root);
     assert!(document.contains("\"artifact-target.html\"") && document.contains("runtime_target"));
-    logged(page, root, &target, &view.i18n, "[log] one").await;
+    logged(root, &target, &view.i18n, "[log] one").await;
     assert_eq!(listed(root), LOGGING);
     artifact.execute_content(QUIET).unwrap();
     assert!(srcdoc(root).contains("\"artifact-target.html\""));
@@ -485,10 +477,12 @@ const METHODS: [(&str, &str); 12] = [
 ];
 /// A page posting raw messages to its parent: every recorded value domain, ignored message
 /// types, every method kind, then the texts a provider edits in place.
-fn messages_page(values: &str, cases: &serde_json::Value) -> String {
+fn messages_page(cases: &serde_json::Value) -> String {
+    // The artifact document constructs the native operands it posts, inside the isolated frame.
+    let operand = include_str!("native_artifact_console_support/operand.js");
     let methods = METHODS.map(|(method, _)| method).join(",");
     format!(
-        "<script type=\"module\">{values}
+        "<script type=\"module\">{operand}
 const send = message => window.parent.postMessage({{...message, sandboxId: window.sandboxId}}, '*');
 for (const [kind, value] of {cases}) send(kind === 'missing' ? {{type: 'console'}} : {{type: 'console', text: operand(kind, value)}});
 send({{text: 'ignored'}});
@@ -506,12 +500,7 @@ send({{type: 'console', marker: 'add'}});
 pub async fn html_artifact_dom_routes_logs_and_releases_its_frame(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     guidance(&view);
-    let factory = crate::native_artifact_console_support::factory(&import_module).await;
-    let values_url =
-        wasm_bindgen::link_to!(module = "/tests/native_artifact_console_support/values.js");
-    let values = crate::contributions_support::fetch_text(&values_url).await;
     let cases = crate::native_artifact_console_support::cases().values;
     let operands: Vec<_> = cases
         .iter()
@@ -521,40 +510,31 @@ pub async fn html_artifact_dom_routes_logs_and_releases_its_frame(import_module:
     artifact.filename = "routes.html".to_owned();
     artifact.runtime_providers.push(SharedHandle::new(Editing));
     artifact
-        .set_content(messages_page(&values, &serde_json::Value::Array(operands)))
+        .set_content(messages_page(&serde_json::Value::Array(operands)))
         .unwrap();
     let root = artifact.mount(&view).unwrap();
     let parent = container();
     parent.append_child(&root.node).unwrap();
-    let (returned, painted) = expected_lines(&factory, &cases);
-    logged(&page, &root, &artifact, &view.i18n, &returned.join("\n")).await;
+    let (returned, painted) = expected_lines(&cases);
+    logged(&root, &artifact, &view.i18n, &returned.join("\n")).await;
     crate::native_html_artifact_support::expand(&root);
     assert_eq!(crate::native_html_artifact_support::painted(&root), painted);
-    growth(&page, &root, &mut artifact).await;
+    growth(&root, &mut artifact).await;
     parent.remove();
-    lifetime(&page).await;
+    lifetime().await;
 }
 /// The returned and painted lines the messages page produces, in order.
 fn expected_lines(
-    factory: &wasm_bindgen::JsValue,
     cases: &[crate::native_artifact_console_support::Value],
 ) -> (Vec<String>, Vec<String>) {
     let mut returned = Vec::new();
     let mut painted = Vec::new();
     for case in cases {
         let (copy, paint) = if case.kind == "date" {
-            let operand = js_sys::JSON::parse(&case.operand.to_string()).unwrap();
-            let args = js_sys::Array::of2(&case.kind.as_str().into(), &operand);
-            let date = crate::native_artifact_console_support::native(factory, "operand", &args);
+            let date = crate::native_artifact_console_support::operand(&case.kind, &case.operand);
             let line = format!(
                 "[log] {}",
-                crate::native_artifact_console_support::native(
-                    factory,
-                    "nativeString",
-                    &js_sys::Array::of1(&date)
-                )
-                .as_string()
-                .unwrap()
+                crate::native_artifact_console_support::native_string(&date)
             );
             (line.clone(), line)
         } else {
@@ -579,13 +559,13 @@ fn expected_lines(
 }
 /// Changed sources reset the logs; 16, 32 and 64 messages arrive whole and in order, copy as
 /// one text, and twice the messages publish at most twice the bytes outside the frame.
-async fn growth(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut HtmlArtifact) {
+async fn growth(root: &DomRoot, artifact: &mut HtmlArtifact) {
     let view = view();
     let clipboard = Recorded::install(Clipboard::Accept);
     let preview = select(&root.node, ".maestro-html-preview");
     let mut bytes = Vec::new();
     for count in [16, 32, 64] {
-        let take = published(page, &preview, ".maestro-html-frame").await;
+        let take = published(&preview, ".maestro-html-frame");
         artifact
             .set_content(format!(
                 "<script type=\"module\">for (let i = 0; i < {count}; i++) window.parent.postMessage({{type: 'console', text: 'line-' + i, sandboxId: window.sandboxId}}, '*');</script>"
@@ -595,7 +575,7 @@ async fn growth(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut Htm
             .map(|index| format!("[log] line-{index}"))
             .collect::<Vec<_>>()
             .join("\n");
-        logged(page, root, artifact, &view.i18n, &expected).await;
+        logged(root, artifact, &view.i18n, &expected).await;
         bytes.push(take());
         select(&root.node, ".maestro-artifact-console copy-button button")
             .unchecked_ref::<web_sys::HtmlElement>()
@@ -604,7 +584,7 @@ async fn growth(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut Htm
     }
     web_sys::console::log_1(&format!("MEASURE html log bytes {bytes:?}").into());
     assert!(
-        bytes[1] <= 2.0 * bytes[0] && bytes[2] <= 4.0 * bytes[0],
+        bytes[1] <= 2 * bytes[0] && bytes[2] <= 4 * bytes[0],
         "messages published superlinear bytes: {bytes:?}"
     );
 }
@@ -635,7 +615,7 @@ fn guidance(view: &DomView) {
 }
 /// The public frame reference follows connection, and releasing one root leaves its retained
 /// adapter handle released and a differently named sibling working.
-async fn lifetime(page: &wasm_bindgen::JsValue) {
+async fn lifetime() {
     let view = view();
     let parent = container();
     let provider = marker("released", &Rc::default());
@@ -651,7 +631,7 @@ async fn lifetime(page: &wasm_bindgen::JsValue) {
     let sibling_root = sibling.mount(&view).unwrap();
     parent.append_child(&root.node).unwrap();
     parent.append_child(&sibling_root.node).unwrap();
-    logged(page, &root, &first, &view.i18n, "[log] one").await;
+    logged(&root, &first, &view.i18n, "[log] one").await;
     let adapter = first.sandbox_iframe_ref.borrow().clone().unwrap();
     parent.remove_child(&root.node).unwrap();
     assert!(first.sandbox_iframe_ref.borrow().is_none() && frame(&root).is_none());
@@ -674,16 +654,9 @@ async fn lifetime(page: &wasm_bindgen::JsValue) {
     );
     adapter.remove().unwrap();
     assert!(frame(&sibling_root).is_some());
-    logged(page, &sibling_root, &sibling, &view.i18n, "[log] one").await;
+    logged(&sibling_root, &sibling, &view.i18n, "[log] one").await;
     sibling.execute_content(sibling.content()).unwrap();
-    logged(
-        page,
-        &sibling_root,
-        &sibling,
-        &view.i18n,
-        "[log] one\n[log] one",
-    )
-    .await;
+    logged(&sibling_root, &sibling, &view.i18n, "[log] one\n[log] one").await;
     parent.remove();
 }
 /// Interleaved bodies and copy controls keep their own operands, untaken operands never reach
@@ -692,7 +665,6 @@ async fn lifetime(page: &wasm_bindgen::JsValue) {
 pub async fn html_artifact_dom_nested_creation_keeps_controllers(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     let german = localized_view(&view, "de");
     let parent = container();
     let (reads_a, reads_b) = (Rc::new(Cell::new(0)), Rc::new(Cell::new(0)));
@@ -702,7 +674,7 @@ pub async fn html_artifact_dom_nested_creation_keeps_controllers(import_module: 
     first.set_content(LOGGING.to_owned()).unwrap();
     let root_a = first.mount(&view).unwrap();
     parent.append_child(&root_a.node).unwrap();
-    logged(&page, &root_a, &first, &view.i18n, "[log] one").await;
+    logged(&root_a, &first, &view.i18n, "[log] one").await;
     crate::native_html_artifact_support::expand(&root_a);
     let mut second = HtmlArtifact::new();
     second.filename = "b.html".to_owned();
@@ -710,7 +682,7 @@ pub async fn html_artifact_dom_nested_creation_keeps_controllers(import_module: 
     second.set_content(LOGGING.to_owned()).unwrap();
     let root_b = second.mount(&german).unwrap();
     parent.append_child(&root_b.node).unwrap();
-    logged(&page, &root_b, &second, &german.i18n, "[log] one").await;
+    logged(&root_b, &second, &german.i18n, "[log] one").await;
     crate::native_html_artifact_support::expand(&root_b);
     for (root, title, own, other) in [
         (&root_a, "Copy logs", "runtime_a", "runtime_b"),
@@ -722,31 +694,24 @@ pub async fn html_artifact_dom_nested_creation_keeps_controllers(import_module: 
     }
     assert_eq!((reads_a.get(), reads_b.get()), (1, 1));
     attributes(&parent, &root_a, &reads_a);
-    default_released(&page, &view, &parent).await;
+    default_released(&view, &parent).await;
     parent.remove_child(&root_a.node).unwrap();
     drop(root_a);
     assert!(first.sandbox_iframe_ref.borrow().is_none());
     second.execute_content(second.content()).unwrap();
     assert_eq!(reads_b.get(), 2);
-    logged(
-        &page,
-        &root_b,
-        &second,
-        &german.i18n,
-        "[log] one\n[log] one",
-    )
-    .await;
+    logged(&root_b, &second, &german.i18n, "[log] one\n[log] one").await;
     parent.remove();
 }
 /// A disconnected default element releases its controller-owned descendants.
-async fn default_released(page: &wasm_bindgen::JsValue, view: &DomView, parent: &Element) {
+async fn default_released(view: &DomView, parent: &Element) {
     let released = untaken(view, parent);
     let window = web_sys::window().unwrap();
     let gc = js_sys::Reflect::get(&window, &"gc".into())
         .unwrap()
         .unchecked_into::<js_sys::Function>();
     for _ in 0..4 {
-        crate::contributions_support::frames(page, 1).await;
+        crate::contributions_support::frames(1).await;
         gc.call0(&window).unwrap();
     }
     assert!(
@@ -858,7 +823,6 @@ fn shows_source(root: &DomRoot) -> bool {
 pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     let parent = container();
     parent
         .set_attribute("style", "display:block;height:160px")
@@ -873,7 +837,7 @@ pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js
     let header = artifact.get_header_buttons(&view).unwrap();
     container().append_child(&header.node).unwrap();
     assert_header_gap(&header);
-    logged(&page, &root, &artifact, &view.i18n, "[log] one").await;
+    logged(&root, &artifact, &view.i18n, "[log] one").await;
     // The load and the header's standalone preparation each read the provider once.
     assert_eq!(reads.get(), 2);
     let loaded = frame(&root).unwrap();
@@ -892,7 +856,7 @@ pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js
     source_button.click();
     assert!(shows_source(&root));
     assert!(frame(&root).unwrap().is_same_node(Some(&loaded)));
-    source_mode(&page, &root, &mut artifact).await;
+    source_mode(&root, &mut artifact);
     preview_button.focus().unwrap();
     crate::contributions_support::driver("driverPress", "Enter").await;
     assert!(!shows_source(&root));
@@ -903,7 +867,7 @@ pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js
 }
 /// The shown listing paints the selected brand background, scrolls inside the bounded body, and
 /// keeps its nodes, selection and scroll through an unrelated update.
-async fn source_mode(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mut HtmlArtifact) {
+fn source_mode(root: &DomRoot, artifact: &mut HtmlArtifact) {
     let view = view();
     let source = select(&root.node, ".maestro-html-source");
     let background = view.pack.presentation(view.mode).unwrap().colors["background"];
@@ -915,7 +879,7 @@ async fn source_mode(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mu
     let scrolled = source.scroll_top();
     assert!(scrolled > 0, "the bounded listing scrolls");
     let listing = code(root);
-    call(page, "select", &js_sys::Array::of1(&listing)).await;
+    crate::contributions_support::page::select_children(&listing);
     artifact.filename = "renamed.html".to_owned();
     artifact.update(root, &view).unwrap();
     assert!(
@@ -923,7 +887,7 @@ async fn source_mode(page: &wasm_bindgen::JsValue, root: &DomRoot, artifact: &mu
         "an unrelated update keeps the presentation"
     );
     assert!(code(root).is_same_node(Some(&listing)));
-    assert!(selection(page, &listing).await.1);
+    assert!(crate::contributions_support::page::selection(&listing).1);
     assert_eq!(source.scroll_top(), scrolled);
 }
 /// A differently named sibling switches only its own presentation.
@@ -1011,9 +975,8 @@ pub async fn html_artifact_dom_source_copy_and_standalone_download(
 ) {
     let view = view();
     let _host = host(&view, &import_module);
-    let page = page_module(&import_module).await;
     localized_titles(&view);
-    let fixture = crate::session_download_browser::Fixture::import(&import_module).await;
+    let fixture = crate::session_download_browser::Fixture::default();
     let clipboard = crate::contributions_support::Recorded::install(
         crate::contributions_support::Clipboard::Accept,
     );
@@ -1037,17 +1000,16 @@ pub async fn html_artifact_dom_source_copy_and_standalone_download(
     for (header, text) in [(&captured, "test"), (&edited, "<p>edited</p>")] {
         let before = clipboard.texts().len();
         control(header, 2).click();
-        crate::contributions_support::frames(&page, 1).await;
+        crate::contributions_support::frames(1).await;
         assert_eq!(clipboard.texts()[before..], [text.to_owned()]);
     }
-    mounted_download(&page, &fixture, &mut artifact).await;
-    completion(&page).await;
+    mounted_download(&fixture, &mut artifact).await;
+    completion().await;
     parent.remove();
 }
 /// A connected body's header saves the standalone document, and reload loads the body's
 /// current source after clearing its logs.
 async fn mounted_download(
-    page: &wasm_bindgen::JsValue,
     fixture: &crate::session_download_browser::Fixture,
     artifact: &mut HtmlArtifact,
 ) {
@@ -1058,7 +1020,7 @@ async fn mounted_download(
     let root = artifact.mount(&view).unwrap();
     let parent = container();
     parent.append_child(&root.node).unwrap();
-    logged(page, &root, artifact, &view.i18n, "[log] one").await;
+    logged(&root, artifact, &view.i18n, "[log] one").await;
     let header = artifact.get_header_buttons(&view).unwrap();
     parent.append_child(&header.node).unwrap();
     let adapter = artifact.sandbox_iframe_ref.borrow().clone().unwrap();
@@ -1154,7 +1116,7 @@ fn authored(document: &str) -> String {
 }
 /// The completion signal follows the whole source exactly once, where the page parser places
 /// it, at the same moment of loading; malformed tails stay unrepaired.
-async fn completion(page: &wasm_bindgen::JsValue) {
+async fn completion() {
     let view = view();
     let cases: Completions =
         serde_json::from_str(include_str!("fixtures/html_artifact_completion.json")).unwrap();
@@ -1170,7 +1132,7 @@ async fn completion(page: &wasm_bindgen::JsValue) {
             artifact.execute_content("").unwrap();
         }
         assert_eq!(authored(&srcdoc(&root)), case.html);
-        crate::contributions_support::until(page, &root.node, || {
+        crate::contributions_support::until(&root.node, || {
             artifact
                 .get_logs(&view.i18n)
                 .unwrap()

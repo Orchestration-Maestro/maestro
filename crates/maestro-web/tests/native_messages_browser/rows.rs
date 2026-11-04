@@ -1,5 +1,5 @@
 //! Tool, debug and abort rows mounted directly in the page with original operands.
-use crate::contributions_support::{body, call, computed, localized_view, rgb, select, text};
+use crate::contributions_support::{body, computed, localized_view, rgb, select, text};
 use maestro_app::{JsonObject, ToolCall, ToolResultMessage};
 use maestro_web::{
     components::messages::{AbortedMessage, ToolMessage, ToolMessageDebugView},
@@ -474,11 +474,7 @@ pub(super) fn pretty_and_output_cases(view: &Rc<DomView>, fixture: &Value) {
 /// Tool rows keep their containing root and unchanged content across updates and reconnection,
 /// replace only on a changed card choice, keep the last published content on a failed candidate,
 /// stay independent of each other and release content when dropped.
-pub(super) async fn tool_row_lifecycle(
-    view: &Rc<DomView>,
-    fixture: &Value,
-    page: &wasm_bindgen::JsValue,
-) {
+pub(super) fn tool_row_lifecycle(view: &Rc<DomView>, fixture: &Value) {
     let observer = Observer::register("lifecycle");
     let mut lifecycle = (*tool_call(fixture)).clone();
     lifecycle.name = "lifecycle".into();
@@ -500,7 +496,7 @@ pub(super) async fn tool_row_lifecycle(
     assert!(root.node.first_child().unwrap().is_same_node(Some(&shown)));
     assert_eq!(text(&root.node), "current text");
     assert_eq!(text(&other.node), "native renderer");
-    native_text(page, &root.node).await;
+    native_text(&root.node);
     assert_eq!(observer.released.get(), 0);
     card_choice_and_failures(view, &row, &root, &observer);
     root.node.unchecked_ref::<Element>().remove();
@@ -514,15 +510,10 @@ pub(super) async fn tool_row_lifecycle(
         .with(|all| all.borrow_mut().shift_remove("lifecycle"));
 }
 /// The page's own find and selection reach the row's text.
-async fn native_text(page: &wasm_bindgen::JsValue, root: &web_sys::Node) {
-    assert!(
-        call(page, "find", &js_sys::Array::of1(&"current text".into()))
-            .await
-            .as_bool()
-            .unwrap()
-    );
-    let selected = call(page, "select", &js_sys::Array::of1(root)).await;
-    assert_eq!(selected.as_string().unwrap(), "current text");
+fn native_text(root: &web_sys::Node) {
+    assert!(crate::contributions_support::page::find("current text"));
+    let selected = crate::contributions_support::page::select_children(root);
+    assert_eq!(selected, "current text");
 }
 /// A changed card choice replaces the content once; failed candidates keep the published card.
 fn card_choice_and_failures(

@@ -3,7 +3,6 @@ use super::{close, control, opened, refresh};
 use crate::contributions_support::{frames, select, text};
 use maestro_web::{SharedAttachment, dom::DomView};
 use std::{rc::Rc, sync::Arc};
-use wasm_bindgen::JsValue;
 
 /// Original multipage input, with the raw attachment byte domain.
 fn record() -> SharedAttachment {
@@ -50,10 +49,10 @@ pub(in super::super) fn raw_admission(view: &Rc<DomView>) {
 }
 
 /// Equal inputs retain pages; replacement and mode changes cancel old progressive work.
-pub(in super::super) async fn live_replacement(view: &Rc<DomView>, page: &JsValue) {
+pub(in super::super) async fn live_replacement(view: &Rc<DomView>) {
     let record = record();
     let (overlay, root) = opened(view, Arc::clone(&record));
-    frames(page, 0).await;
+    frames(0).await;
     let old = select(root.as_ref(), ".maestro-pdf");
     let first = select(root.as_ref(), ".maestro-pdf img");
     assert_eq!(old.query_selector_all("img").unwrap().length(), 1);
@@ -62,7 +61,7 @@ pub(in super::super) async fn live_replacement(view: &Rc<DomView>, page: &JsValu
     record.write().unwrap().content = crate::pdf_views_browser::encoded(false);
     refresh(&overlay, view, &root);
     assert!(!old.is_connected());
-    frames(page, 3).await;
+    frames(3).await;
     assert_eq!(old.query_selector_all("img").unwrap().length(), 1);
     assert!(first.is_same_node(Some(&select(old.as_ref(), "img"))));
     assert_eq!(
@@ -81,7 +80,7 @@ pub(in super::super) async fn live_replacement(view: &Rc<DomView>, page: &JsValu
     let pending = select(root.as_ref(), ".maestro-pdf");
     record.write().unwrap().mime_type = "text/plain".into();
     refresh(&overlay, view, &root);
-    frames(page, 3).await;
+    frames(3).await;
     assert_eq!(pending.query_selector_all("img").unwrap().length(), 0);
     assert_eq!(text(&select(root.as_ref(), "pre")), "live alias");
     record.write().unwrap().mime_type = "application/pdf".into();

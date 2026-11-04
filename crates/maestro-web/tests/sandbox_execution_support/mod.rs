@@ -1,4 +1,5 @@
 //! Shared public execution witnesses and native effect observations.
+use crate::browser_fixture_support::{Patch, dom_exception, error, get, global, invoke, object};
 use maestro_app::browser::components::{
     sandbox::sandbox_runtime_provider::{SandboxRespond, SandboxRuntimeProvider},
     sandboxed_iframe::{SandboxEnvironment, SandboxExecution},
@@ -6,7 +7,7 @@ use maestro_app::browser::components::{
 use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
 use maestro_web::{SandboxIframe, browser::sandbox_value::BrowserSandboxValue};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsCast, prelude::*};
 
 /// Runtime provider allocation used unchanged in all witnesses.
 pub type Provider = SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>;
@@ -363,130 +364,292 @@ pub(crate) fn terminal_editor(kind: &'static str, script: &'static str) -> Provi
     })
 }
 
-/// Native namespaces retained for one browser test transaction.
-#[derive(Clone)]
-pub struct Fixture {
-    /// Original packaged native namespace.
-    module0: crate::browser_fixture_support::FixtureModule,
+/// The live production timers and the captured two-minute deadline.
+#[derive(Default)]
+struct Timers {
+    /// Deadline timers not yet cleared.
+    active: Vec<JsValue>,
+    /// The captured deadline callback and its delay.
+    captured: Option<(js_sys::Function, JsValue)>,
 }
+
+/// A running execution transaction above the routing one.
+struct Transaction {
+    /// Live production deadlines.
+    timers: Rc<RefCell<Timers>>,
+    /// The replaced scheduling and clearing.
+    patches: [Patch; 2],
+}
+
+/// One execution transaction at a time: routing observations plus production deadlines.
+#[derive(Clone, Default)]
+pub struct Fixture {
+    /// The routing transaction below the adapter.
+    routes: crate::sandbox_loading_support::routes::Routes,
+    /// The running transaction, if any.
+    active: Rc<RefCell<Option<Transaction>>>,
+    /// The frame attribute fault, while selected.
+    attribute: Rc<RefCell<Option<Patch>>>,
+    /// The parser fault, while selected.
+    parser: Rc<RefCell<Option<Patch>>>,
+}
+
+/// The two-minute production deadline.
+const DEADLINE: u32 = 120_000;
+
 impl Fixture {
-    /// Load each namespace before installing controlled host effects.
-    pub(crate) async fn load() -> Self {
-        Self {
-            module0: crate::browser_fixture_support::FixtureModule::load(&wasm_bindgen::link_to!(
-                module = "/tests/sandbox_execution_support/native.js"
-            ))
-            .await
-            .unwrap(),
-        }
-    }
-    /// Retain the loaded namespace in a live URL callback.
+    /// Retain the fixture in a live URL callback.
     #[must_use]
     pub(crate) fn bootstrap_callback(
-        &self,
         ready: bool,
     ) -> maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider {
-        let fixture = self.clone();
-        SharedHandle::new(move || Ok(fixture.bootstrap(ready)))
+        SharedHandle::new(move || Ok(Self::bootstrap(ready)))
     }
-    /// Install existing native subscription observations plus timer observations.
+    /// Install routing observations plus deadline timer observations.
     pub(crate) fn begin(&self) {
-        self.module0.call("begin", &js_sys::Array::new()).unwrap();
+        self.routes.begin();
+        let timers: Rc<RefCell<Timers>> = Rc::default();
+        let window = global("window");
+        let scheduled = Rc::clone(&timers);
+        let schedule = Patch::method(&window, "setTimeout", move |original, this, args| {
+            let id = original.apply(&this, &args)?;
+            if args.get(1).as_f64() == Some(f64::from(DEADLINE)) {
+                let mut timers = scheduled.borrow_mut();
+                timers.active.push(id.clone());
+                timers.captured = Some((args.get(0).unchecked_into(), args.get(1)));
+            }
+            Ok(id)
+        });
+        let cleared = Rc::clone(&timers);
+        let clear = Patch::method(&window, "clearInterval", move |original, this, args| {
+            cleared.borrow_mut().active.retain(|id| *id != args.get(0));
+            original.apply(&this, &args)
+        });
+        *self.active.borrow_mut() = Some(Transaction {
+            timers,
+            patches: [schedule, clear],
+        });
     }
     /// Assert release and restore every replaced native API.
     pub(crate) fn end(&self) {
-        self.module0.call("end", &js_sys::Array::new()).unwrap();
+        self.attribute.borrow_mut().take();
+        self.timers(0);
+        let transaction = self.active.borrow_mut().take().unwrap();
+        drop(transaction.patches);
+        self.routes.end();
+        crate::sandbox_loading_support::native::finish();
     }
-    /// Select an existing controlled native failure.
+    /// Select a controlled native failure; `attribute` refuses frame attributes.
     pub(crate) fn fault(&self, mode: &str) {
-        self.module0
-            .call("fault", &js_sys::Array::of1(&mode.into()))
-            .unwrap();
+        self.attribute.borrow_mut().take();
+        self.routes.fault(mode);
+        if mode == "attribute" {
+            *self.attribute.borrow_mut() = Some(attribute_refusal());
+        }
     }
     /// Assert the existing native listener count.
     pub(crate) fn closed(&self, count: u32) {
-        self.module0
-            .call("closed", &js_sys::Array::of1(&count.into()))
-            .unwrap();
+        self.routes.closed(count);
     }
-    /// Observe an explicit parent-directed readiness signal.
-    pub(crate) fn watch(&self, tag: &str) -> js_sys::Promise {
-        self.module0
-            .call("watch", &js_sys::Array::of1(&tag.into()))
-            .unwrap()
-            .unchecked_into()
+    /// Observe an explicit parent-directed readiness signal, listening through the page's
+    /// current registration.
+    pub(crate) fn watch(tag: &str) -> js_sys::Promise {
+        let window = global("window");
+        let add: js_sys::Function = get(&window, "addEventListener").unchecked_into();
+        let remove: js_sys::Function = get(&window, "removeEventListener").unchecked_into();
+        crate::sandbox_loading_support::routes::once_message(&add, &remove, tag)
     }
     /// Invoke the captured production deadline, checking the delay.
     pub(crate) fn deadline(&self) {
-        self.module0
-            .call("deadline", &js_sys::Array::new())
-            .unwrap();
+        let active = self.active.borrow();
+        let captured = active.as_ref().unwrap().timers.borrow().captured.clone();
+        let (callback, delay) = captured.unwrap();
+        drop(active);
+        crate::sandbox_loading_support::native::equal(
+            &delay,
+            &DEADLINE.into(),
+            "two-minute production callback",
+        );
+        callback.call0(&JsValue::UNDEFINED).unwrap();
     }
     /// Assert the live production timer count.
     pub(crate) fn timers(&self, count: u32) {
-        self.module0
-            .call("timers", &js_sys::Array::of1(&count.into()))
-            .unwrap();
+        let active = self.active.borrow();
+        let live = active.as_ref().unwrap().timers.borrow().active.len();
+        assert_eq!(live, count as usize, "production timer set");
     }
     /// Native bootstrap URL, with optional automatic readiness.
     #[must_use]
-    pub(crate) fn bootstrap(&self, ready: bool) -> String {
-        self.module0
-            .call("bootstrap", &js_sys::Array::of1(&ready.into()))
-            .unwrap()
-            .as_string()
-            .unwrap()
+    pub(crate) fn bootstrap(ready: bool) -> String {
+        let signal = if ready {
+            "sandbox-ready"
+        } else {
+            "bootstrap-waiting"
+        };
+        // The bootstrap document runs inside the isolated frame and loads what it receives.
+        let document = include_str!("bootstrap.html")
+            .trim_end()
+            .replace("__TYPE__", &serde_json::Value::from(signal).to_string());
+        format!(
+            "data:text/html,{}",
+            String::from(js_sys::encode_uri_component(&document))
+        )
     }
-    /// Dispatch current, unrelated or repeated native handshake messages.
-    pub(crate) fn dispatch(&self, tag: &str, current: bool) {
-        self.module0
-            .call(
-                "dispatch",
-                &js_sys::Array::of2(&tag.into(), &current.into()),
-            )
-            .unwrap();
+    /// Dispatch a handshake message carrying the bootstrap diagnostic, from the current frame
+    /// or else from the page itself.
+    pub(crate) fn dispatch(tag: &str, current: bool) {
+        let source = if current {
+            Self::remember_frame()
+        } else {
+            global("window")
+        };
+        message(tag, "bootstrap problem", "native stack", &source);
     }
     /// Retain the actual current native message source.
     #[must_use]
-    pub(crate) fn remember_frame(&self) -> JsValue {
-        self.module0
-            .call("remember_frame", &js_sys::Array::new())
-            .unwrap()
+    pub(crate) fn remember_frame() -> JsValue {
+        frame().content_window().unwrap().into()
     }
     /// Dispatch from a retained, possibly detached native source.
-    pub(crate) fn dispatch_source(&self, tag: &str, source: &JsValue) {
-        self.module0
-            .call("dispatch_source", &js_sys::Array::of2(&tag.into(), source))
-            .unwrap();
+    pub(crate) fn dispatch_source(tag: &str, source: &JsValue) {
+        message(tag, "stale", "stale", source);
     }
     /// Release the callback gate through the actual child window.
-    pub(crate) fn release_frame(&self) {
-        self.module0
-            .call("release_frame", &js_sys::Array::new())
-            .unwrap();
+    pub(crate) fn release_frame() {
+        Self::release_source(&Self::remember_frame());
     }
     /// Release one selected sibling through its captured native window.
-    pub(crate) fn release_source(&self, source: &JsValue) {
-        self.module0
-            .call("release_source", &js_sys::Array::of1(source))
-            .unwrap();
+    pub(crate) fn release_source(source: &JsValue) {
+        invoke(source, "postMessage", &[&"release".into(), &"*".into()]).unwrap();
     }
     /// Replace parser results for explicit validation outcomes.
     pub(crate) fn parser(&self, mode: &str) {
-        self.module0
-            .call("parser", &js_sys::Array::of1(&mode.into()))
-            .unwrap();
+        let mode = mode.to_owned();
+        let prototype = get(&global("DOMParser"), "prototype");
+        let patch = Patch::method(
+            &prototype,
+            "parseFromString",
+            move |original, this, args| match mode.as_str() {
+                "throw" => Err(error("controlled parse failure")),
+                "empty-throw" => Err(js_sys::Object::new().into()),
+                _ => parser_error(&original.apply(&this, &args)?, mode == "empty"),
+            },
+        );
+        *self.parser.borrow_mut() = Some(patch);
     }
     /// Restore a parser after a controlled failure.
     pub(crate) fn restore_parser(&self) {
-        self.module0
-            .call("restore_parser", &js_sys::Array::new())
-            .unwrap();
+        self.parser.borrow_mut().take();
     }
     /// Independently assert each retained native kind and value.
-    pub(crate) fn assert_native(&self, name: &str, value: &JsValue) {
-        self.module0
-            .call("assert_native", &js_sys::Array::of2(&name.into(), value))
-            .unwrap();
+    pub(crate) fn assert_native(name: &str, value: &JsValue) {
+        native_value(name, value);
     }
+}
+
+/// Refuse setting any frame attribute.
+fn attribute_refusal() -> Patch {
+    let prototype = get(&global("Element"), "prototype");
+    Patch::method(&prototype, "setAttribute", |original, this, args| {
+        if get(&this, "localName") == "iframe" {
+            return Err(dom_exception("controlled attribute", "InvalidStateError"));
+        }
+        original.apply(&this, &args)
+    })
+}
+
+/// Append a parser error, empty or not, to a parsed document.
+fn parser_error(parsed: &JsValue, empty: bool) -> Result<JsValue, JsValue> {
+    let document: &web_sys::Document = parsed.unchecked_ref();
+    let node = document.create_element("parsererror")?;
+    node.set_text_content(Some(if empty { "" } else { "controlled parser error" }));
+    document.body().unwrap().append_child(&node)?;
+    Ok(parsed.clone())
+}
+
+/// Dispatch a page handshake message of `tag` from `source`.
+fn message(tag: &str, error: &str, stack: &str, source: &JsValue) {
+    let data = object(&[
+        ("type", &tag.into()),
+        ("error", &error.into()),
+        ("stack", &stack.into()),
+    ]);
+    crate::sandbox_loading_support::routes::dispatch_message(&data, source);
+}
+
+/// The current test frame.
+fn current_frame() -> Option<web_sys::HtmlIFrameElement> {
+    crate::contributions_support::document()
+        .query_selector("[data-sandbox-test] iframe")
+        .unwrap()
+        .map(JsCast::unchecked_into::<web_sys::HtmlIFrameElement>)
+}
+
+/// The current test frame, which must be mounted.
+fn frame() -> web_sys::HtmlIFrameElement {
+    current_frame().unwrap()
+}
+
+/// Assert one retained native kind and value by case name.
+fn native_value(name: &str, value: &JsValue) {
+    let json =
+        |expected: &str| crate::sandbox_loading_support::native::equal_json(value, expected, name);
+    match name {
+        "native_null" => assert!(value.is_null(), "{name}"),
+        "native_false" => json("false"),
+        "native_true" => json("true"),
+        "native_zero" => assert!(js_sys::Object::is(value, &0.into()), "{name}"),
+        "native_negative_zero" => assert!(js_sys::Object::is(value, &(-0.0).into()), "{name}"),
+        "native_small" => json("1e-7"),
+        "native_large" => json("1e21"),
+        "native_empty_string" => json(r#""""#),
+        "native_unicode" => json("\"雪\u{FEFF}\u{0085}\""),
+        "native_object" => {
+            let keys = js_sys::Object::keys(value.unchecked_ref::<js_sys::Object>());
+            crate::sandbox_loading_support::native::equal_json(
+                &keys,
+                r#"["2","10","z","a"]"#,
+                name,
+            );
+            crate::sandbox_loading_support::native::equal_json(
+                &get(value, "a"),
+                "[true,null]",
+                name,
+            );
+        }
+        "native_array" => {
+            assert!(js_sys::Array::is_array(value), "{name}");
+            json(r#"[2,null,"x"]"#);
+        }
+        "native_date" => {
+            assert!(value.is_instance_of::<js_sys::Date>(), "{name}");
+            let iso = value.unchecked_ref::<js_sys::Date>().to_iso_string();
+            assert_eq!(String::from(iso), "2020-01-02T03:04:05.000Z", "{name}");
+        }
+        "native_map" | "native_set" | "native_bytes" => collection(name, value),
+        "native_bigint" => assert!(
+            js_sys::Object::is(value, &js_sys::BigInt::from(9).into()),
+            "{name}"
+        ),
+        "native_nan" => assert!(value.as_f64().is_some_and(f64::is_nan), "{name}"),
+        "native_infinity" => assert_eq!(value.as_f64(), Some(f64::INFINITY), "{name}"),
+        "native_negative_infinity" => assert_eq!(value.as_f64(), Some(f64::NEG_INFINITY), "{name}"),
+        other => panic!("unconsumed native assertion {other}"),
+    }
+}
+
+/// A retained map, set or byte array keeps its class and its entries in order.
+fn collection(name: &str, value: &JsValue) {
+    let (class, expected) = match name {
+        "native_map" => (value.is_instance_of::<js_sys::Map>(), r#"[["a",1]]"#),
+        "native_set" => (value.is_instance_of::<js_sys::Set>(), "[2,1]"),
+        _ => (value.is_instance_of::<js_sys::Uint8Array>(), "[0,128,255]"),
+    };
+    assert!(class, "{name}");
+    let entries: js_sys::Array = js_sys::try_iter(value)
+        .unwrap()
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    crate::sandbox_loading_support::native::equal_json(&entries, expected, name);
 }

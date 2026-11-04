@@ -1,10 +1,11 @@
 //! Real native transaction harness using only public reading admission.
 #![cfg(test)]
 #![cfg(target_arch = "wasm32")]
+use crate::browser_fixture_support::{get, global, invoke, object};
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::*;
 use std::{cell::RefCell, rc::Rc};
-use wasm_bindgen::{JsCast as _, JsValue};
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::Element;
 
 /// Invoke native browser observations and fault hooks below the adapter.
@@ -192,25 +193,75 @@ impl Drop for Slots {
         self.host.remove(self.id);
     }
 }
+/// The measured slots below `root`, then its viewport wrapper and frame.
+fn placement(root: &Element) -> (js_sys::Array, Element, Element) {
+    let wrapper = root.parent_element().unwrap();
+    let frame = wrapper.parent_element().unwrap();
+    let slots = js_sys::Array::from(&root.query_selector_all(".test-slot").unwrap());
+    (slots, wrapper, frame)
+}
+/// The style attributes of `slots`, `wrapper` and `frame`, null where absent.
+fn styles(slots: &js_sys::Array, wrapper: &Element, frame: &Element) -> Vec<JsValue> {
+    slots
+        .iter()
+        .map(JsCast::unchecked_into::<Element>)
+        .chain([wrapper.clone(), frame.clone()])
+        .map(|element| {
+            element
+                .get_attribute("style")
+                .map_or(JsValue::NULL, JsValue::from)
+        })
+        .collect()
+}
+/// The page selection.
+fn selection() -> JsValue {
+    invoke(&global("window"), "getSelection", &[]).unwrap()
+}
 /// Capture actual node identities, optional attributes and fractional offsets.
 #[must_use]
 pub fn snapshot(root: &Element) -> JsValue {
-    js(
-        root,
-        include_str!("../session_header_browser_support/snapshot.js"),
-    )
+    let (slots, wrapper, frame) = placement(root);
+    let styles: js_sys::Array = styles(&slots, &wrapper, &frame).into_iter().collect();
+    let selection = selection();
+    object(&[
+        ("root", root),
+        ("wrapper", &wrapper),
+        ("frame", &frame),
+        ("slots", &slots),
+        ("styles", &styles),
+        ("left", &get(&wrapper, "scrollLeft")),
+        ("top", &get(&wrapper, "scrollTop")),
+        ("anchor", &get(&selection, "anchorNode")),
+        ("anchorOffset", &get(&selection, "anchorOffset")),
+        ("focus", &get(&selection, "focusNode")),
+        ("focusOffset", &get(&selection, "focusOffset")),
+    ])
+    .into()
 }
 /// Compare native state against the retained snapshot, without serializing nodes.
 /// # Panics
 /// Panics when any retained native state differs from the snapshot.
 pub fn unchanged(saved: &JsValue) {
+    let field = |name: &str| get(saved, name);
+    let (root, wrapper, frame): (Element, Element, Element) = (
+        field("root").unchecked_into(),
+        field("wrapper").unchecked_into(),
+        field("frame").unchecked_into(),
+    );
+    let slots: js_sys::Array = field("slots").unchecked_into();
+    let saved_styles: Vec<JsValue> = js_sys::Array::from(&field("styles")).iter().collect();
+    let selection = selection();
     assert!(
-        js(
-            saved,
-            include_str!("../session_header_browser_support/unchanged.js")
-        )
-        .as_bool()
-        .unwrap()
+        root.parent_element().as_ref() == Some(&wrapper)
+            && wrapper.is_connected()
+            && wrapper.parent_element().as_ref() == Some(&frame)
+            && styles(&slots, &wrapper, &frame) == saved_styles
+            && get(&wrapper, "scrollLeft") == field("left")
+            && get(&wrapper, "scrollTop") == field("top")
+            && get(&selection, "anchorNode") == field("anchor")
+            && get(&selection, "anchorOffset") == field("anchorOffset")
+            && get(&selection, "focusNode") == field("focus")
+            && get(&selection, "focusOffset") == field("focusOffset")
     );
 }
 

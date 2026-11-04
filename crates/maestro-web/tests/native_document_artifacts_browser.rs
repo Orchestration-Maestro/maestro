@@ -81,10 +81,9 @@ pub fn docx_artifact_dom_uses_full_document_options(import_module: &js_sys::Func
 /// Native pages keep their document pixels, layout and safe authored links in either brand mode.
 #[wasm_bindgen]
 pub async fn docx_artifact_dom_styles_and_safe_targets(import_module: &js_sys::Function) {
-    use crate::contributions_support::{host, page_module};
+    use crate::contributions_support::host;
     let view = view();
     let _host = host(&view, import_module);
-    let page = page_module(import_module).await;
     for mode in [
         maestro_theme::BrandMode::Dark,
         maestro_theme::BrandMode::Light,
@@ -108,7 +107,7 @@ pub async fn docx_artifact_dom_styles_and_safe_targets(import_module: &js_sys::F
             body().append_child(&viewport).unwrap();
             let mut scrolled = 0;
             for case in packages() {
-                scrolled += assert_page_geometry(&view, &viewport, &case, &page, width).await;
+                scrolled += assert_page_geometry(&view, &viewport, &case, width).await;
             }
             assert!(
                 width > 240 || scrolled > 0,
@@ -124,10 +123,9 @@ async fn assert_page_geometry(
     view: &DomView,
     viewport: &Element,
     case: &Package,
-    page: &wasm_bindgen::JsValue,
     width: i32,
 ) -> u32 {
-    use crate::contributions_support::{call, computed};
+    use crate::contributions_support::computed;
     let root = artifact(&case.content).mount(view).unwrap();
     viewport.append_child(&root.node).unwrap();
     let node: &Element = root.node.unchecked_ref();
@@ -141,10 +139,7 @@ async fn assert_page_geometry(
     );
     assert_painted_page(&sheet, case);
     let scrolled = assert_contained_content(node, &sheet, (case, width)).await;
-    let text = call(page, "select", &js_sys::Array::of1(&sheet))
-        .await
-        .as_string()
-        .unwrap();
+    let text = crate::contributions_support::page::select_children(&sheet);
     if case.text.iter().any(|text| !text.is_empty()) {
         assert!(!text.is_empty(), "{} selectable text", case.name);
     }
@@ -282,7 +277,7 @@ pub async fn docx_artifact_dom_errors_retry_and_keep_download(import_module: &js
     use crate::session_download_browser::Fixture;
     let view = view();
     let _host = host(&view, import_module);
-    let fixture = Fixture::import(import_module).await;
+    let fixture = Fixture::default();
     for case in corpus().decode {
         let mut artifact = artifact(&case.content);
         artifact.filename = "literal$&雪.docx".to_owned();
@@ -343,9 +338,7 @@ async fn assert_download(
         Decoded::Error => {
             fixture.begin("success");
             assert!(artifact.get_header_buttons(view).is_err());
-            wasm_bindgen_futures::JsFuture::from(fixture.finish_none())
-                .await
-                .unwrap();
+            fixture.finish_none();
         }
     }
 }
@@ -379,10 +372,9 @@ fn assert_failed_retry(artifact: &mut DocxArtifact, root: &DomRoot, view: &DomVi
 /// Successful equal/empty updates preserve pages; replacement and drop release only owned resources.
 #[wasm_bindgen]
 pub async fn docx_artifact_dom_retains_and_releases_resources(import_module: &js_sys::Function) {
-    use crate::contributions_support::{host, page_module};
+    use crate::contributions_support::host;
     let view = view();
     let _host = host(&view, import_module);
-    let page = page_module(import_module).await;
     let cases = packages();
     let source = cases
         .iter()
@@ -399,8 +391,7 @@ pub async fn docx_artifact_dom_retains_and_releases_resources(import_module: &js
     let sibling_url = select(sibling.node.unchecked_ref(), "img")
         .get_attribute("src")
         .unwrap();
-    let (sheet, url) =
-        assert_preserved_pages(&mut artifact, &root, &page, &source.content, &view).await;
+    let (sheet, url) = assert_preserved_pages(&mut artifact, &root, &source.content, &view).await;
     artifact.set_content("!".to_owned());
     artifact.update(&root, &view).unwrap();
     assert!(node.query_selector("section.docx").unwrap().is_none());
@@ -415,7 +406,7 @@ pub async fn docx_artifact_dom_retains_and_releases_resources(import_module: &js
     drop(artifact);
     assert!(!fetch_bytes(&recovered).await.is_empty());
     assert_released_documents(root, sibling, &recovered, &sibling_url).await;
-    assert_cancelled_shapes(&view, &page).await;
+    assert_cancelled_shapes(&view).await;
 }
 
 /// Releasing each document revokes only its own live image URL.
@@ -438,18 +429,13 @@ async fn assert_released_documents(
 async fn assert_preserved_pages(
     artifact: &mut DocxArtifact,
     root: &DomRoot,
-    page: &wasm_bindgen::JsValue,
     source: &str,
     view: &DomView,
 ) -> (Element, String) {
-    use crate::contributions_support::{call, selection};
     let node: &Element = root.node.unchecked_ref();
     let sheet = select(node, "section.docx");
     let url = select(node, "img").get_attribute("src").unwrap();
-    let selected = call(page, "select", &js_sys::Array::of1(&sheet))
-        .await
-        .as_string()
-        .unwrap();
+    let selected = crate::contributions_support::page::select_children(&sheet);
     node.unchecked_ref::<HtmlElement>().set_scroll_top(10);
     let scroll = node.unchecked_ref::<HtmlElement>().scroll_top();
     assert!(scroll > 0);
@@ -462,14 +448,17 @@ async fn assert_preserved_pages(
         artifact.update(root, view).unwrap();
         assert!(select(node, "section.docx").is_same_node(Some(&sheet)));
         assert_eq!(node.unchecked_ref::<HtmlElement>().scroll_top(), scroll);
-        assert_eq!(selection(page, &sheet).await, (selected.clone(), true));
+        assert_eq!(
+            crate::contributions_support::page::selection(&sheet),
+            (selected.clone(), true)
+        );
         assert!(!fetch_bytes(&url).await.is_empty());
     }
     (sheet, url)
 }
 
 /// Dropping one document cancels its scheduled shape sizing while its sibling still completes.
-async fn assert_cancelled_shapes(view: &maestro_web::dom::DomView, page: &wasm_bindgen::JsValue) {
+async fn assert_cancelled_shapes(view: &maestro_web::dom::DomView) {
     use crate::contributions_support::frames;
     let cases = packages();
     let shapes = cases.iter().find(|case| case.name == "vml-shapes").unwrap();
@@ -481,7 +470,7 @@ async fn assert_cancelled_shapes(view: &maestro_web::dom::DomView, page: &wasm_b
     let running = select(live.node.unchecked_ref(), "svg");
     let before = stopped.get_attribute("width");
     drop(cancelled);
-    frames(page, 2).await;
+    frames(2).await;
     assert_eq!(stopped.get_attribute("width"), before);
     assert_ne!(running.get_attribute("width"), before);
     stopped

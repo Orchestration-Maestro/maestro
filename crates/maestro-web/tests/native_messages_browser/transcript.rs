@@ -1,5 +1,5 @@
 //! Composed transcript rows painted with brand roles and driven by native keyboard and scrolling.
-use crate::contributions_support::{body, call, computed, container, driver, rgb, text};
+use crate::contributions_support::{body, computed, container, driver, rgb, text};
 use maestro_app::{NoCustomMessages, ToolResultMessage};
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
@@ -9,7 +9,7 @@ use maestro_web::{
 };
 use serde_json::json;
 use std::{collections::HashMap, rc::Rc};
-use wasm_bindgen::{JsCast as _, JsValue};
+use wasm_bindgen::JsCast as _;
 use web_sys::{Element, HtmlElement};
 
 /// One original result envelope for `id`.
@@ -136,7 +136,7 @@ fn paint_size(view: &DomView, presentation: &BrandPresentation<'_>, width: u32, 
 }
 /// Tab and Shift-Tab walk the same native controls, offscreen text stays findable, and a control
 /// revealed when a collapse clamps the scroll position is usable at once.
-pub(super) async fn keyboard_and_scroll(view: &DomView, page: &JsValue) {
+pub(super) async fn keyboard_and_scroll(view: &DomView) {
     let before = button("before");
     let parent = container();
     let style = parent.unchecked_ref::<HtmlElement>().style();
@@ -181,11 +181,13 @@ pub(super) async fn keyboard_and_scroll(view: &DomView, page: &JsValue) {
             .unwrap()
             .is_same_node(Some(&before))
     );
-    clamped_controls(&parent, page).await;
+    clamped_controls(&parent).await;
     let element: &HtmlElement = parent.unchecked_ref();
     element.set_scroll_top(element.scroll_height());
-    let found = call(page, "find", &js_sys::Array::of1(&"user words".into())).await;
-    assert_eq!(found.as_bool(), Some(true), "offscreen text stays findable");
+    assert!(
+        crate::contributions_support::page::find("user words"),
+        "offscreen text stays findable"
+    );
     for element in [
         before.unchecked_into::<Element>(),
         parent,
@@ -196,13 +198,13 @@ pub(super) async fn keyboard_and_scroll(view: &DomView, page: &JsValue) {
 }
 /// Expand the execution card, scroll to its end, collapse it by keyboard, and click the control
 /// the clamped scroll position reveals.
-async fn clamped_controls(parent: &Element, page: &JsValue) {
+async fn clamped_controls(parent: &Element) {
     let scroller: &HtmlElement = parent.unchecked_ref();
     let headers = parent.query_selector_all(".maestro-tool-toggle").unwrap();
     let header: HtmlElement = headers.item(headers.length() - 1).unwrap().unchecked_into();
     header.click();
     let disclosure = header.next_element_sibling().unwrap();
-    call(page, "finish", &js_sys::Array::of1(&disclosure)).await;
+    crate::contributions_support::page::finish(&disclosure);
     scroller.set_scroll_top(scroller.scroll_height());
     let bottom = scroller.scroll_top();
     crate::contributions_support::disclosure(&header)
@@ -210,7 +212,7 @@ async fn clamped_controls(parent: &Element, page: &JsValue) {
         .focus()
         .unwrap();
     driver("driverPress", "Enter").await;
-    call(page, "finish", &js_sys::Array::of1(&disclosure)).await;
+    crate::contributions_support::page::finish(&disclosure);
     let limit = scroller.scroll_height() - scroller.client_height();
     assert!(
         scroller.scroll_top() <= limit,
