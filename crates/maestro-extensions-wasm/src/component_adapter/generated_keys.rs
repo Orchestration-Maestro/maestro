@@ -1,6 +1,7 @@
 //! Keybindings requests through the generated host bindings.
 
 use crate::bindings::maestro::extension::host;
+use crate::component_adapter::keys::bindings;
 use crate::component_adapter::{KeybindingsAnswer, KeybindingsRequest};
 use crate::types::ExtensionResult;
 use crate::{KeybindingConflict, KeybindingDefinition, KeybindingKeys, KeybindingsConfig};
@@ -33,17 +34,17 @@ pub(super) fn request(
             KeybindingsAnswer::Done
         }
         KeybindingsRequest::UserBindings => {
-            KeybindingsAnswer::Config(config(manager.get_user_bindings()?))
+            KeybindingsAnswer::Config(bindings(manager.get_user_bindings()?, keys))
         }
         KeybindingsRequest::ResolvedBindings => {
-            KeybindingsAnswer::Config(config(manager.get_resolved_bindings()?))
+            KeybindingsAnswer::Config(bindings(manager.get_resolved_bindings()?, keys))
         }
         KeybindingsRequest::Reload => {
             manager.reload()?;
             KeybindingsAnswer::Done
         }
         KeybindingsRequest::EffectiveConfig => {
-            KeybindingsAnswer::Config(config(manager.get_effective_config()?))
+            KeybindingsAnswer::Config(bindings(manager.get_effective_config()?, keys))
         }
     })
 }
@@ -71,14 +72,6 @@ pub(super) fn wire_config(
     config
         .iter()
         .map(|(id, keys)| (id.clone(), keys.as_ref().map(wire_keys)))
-        .collect()
-}
-
-/// Bindings from their wire form.
-fn config(config: Vec<(String, Option<host::KeybindingKeys>)>) -> KeybindingsConfig {
-    config
-        .into_iter()
-        .map(|(id, bound)| (id, bound.map(keys)))
         .collect()
 }
 

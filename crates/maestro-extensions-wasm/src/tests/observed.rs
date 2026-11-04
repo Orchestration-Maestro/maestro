@@ -34,6 +34,13 @@ pub fn gate() -> (Hold, oneshot::Receiver<()>, oneshot::Sender<()>) {
     )
 }
 
+/// Holds exactly the next native wait and exposes its entry and release.
+pub fn hold(observed: &mut Observed) -> (oneshot::Receiver<()>, oneshot::Sender<()>) {
+    let (gate, entered, open) = gate();
+    observed.hold_next_idle(gate);
+    (entered, open)
+}
+
 /// Reports that a held operation is pending and waits until the driver lets it continue.
 pub async fn pause(hold: Option<Hold>) {
     if let Some(Hold { started, open }) = hold {

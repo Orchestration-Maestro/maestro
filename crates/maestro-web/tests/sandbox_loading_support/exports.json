@@ -84,7 +84,13 @@
     "bootstrap_offline_document_needs_no_resource",
     "bootstrap_policy_matrix_keeps_hash_and_trusted_types_results",
     "bootstrap_refused_compilation_leaves_helpers_absent",
-    "bootstrap_staging_alternative_needs_a_trusted_html_sink"
+    "bootstrap_staging_alternative_needs_a_trusted_html_sink",
+    "bootstrap_startup_leaves_no_frame_registrations",
+    "bootstrap_delayed_start_installs_selections_in_order",
+    "bootstrap_completion_follows_trailing_source",
+    "bootstrap_removal_during_startup_settles_once",
+    "bootstrap_outcomes_release_host_registrations",
+    "bootstrap_url_handshake_settles_once"
   ],
   "contributions": [
     "native_optional_tools_artifacts_and_diff_replay_existing_corpus",

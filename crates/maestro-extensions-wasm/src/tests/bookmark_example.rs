@@ -6,7 +6,8 @@ use serde_json::{Value, json};
 
 use super::controlled::Controlled;
 use super::example_support::{
-    Command as CommandRecord, Observation, invoke_command_on_component, release_all, start,
+    Command as CommandRecord, Observation, invoke_command_on_component, release_all,
+    release_component, start,
 };
 use super::host::Harness;
 use super::reader_host::Reader;
@@ -188,11 +189,7 @@ impl Host for ComponentHost {
     }
 
     fn release(&mut self) {
-        for name in REGISTRATIONS {
-            let key = self.harness.callback(name).expect("a registration");
-            super::block_on(self.harness.release(key)).expect("a released registration");
-        }
-        assert_eq!(self.harness.store.data().observed.live, 0);
+        release_component(&mut self.harness, &REGISTRATIONS);
     }
 }
 

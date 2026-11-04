@@ -26,9 +26,9 @@ fn marker(test: &str) -> PathBuf {
 }
 
 /// Each case's variables: the shared marker plus its own optional value.
-fn variables<'a>(marker: &'a str, value: Option<&'a str>) -> BTreeMap<&'a str, &'a str> {
-    let mut variables = BTreeMap::from([(MARKER, marker)]);
-    variables.extend(value.map(|value| ("MTP_VALUE", value)));
+fn variables<'a>(marker: &'a str, value: Option<&'a str>) -> BTreeMap<&'a str, Option<&'a str>> {
+    let mut variables = BTreeMap::from([(MARKER, Some(marker))]);
+    variables.extend(value.map(|value| ("MTP_VALUE", Some(value))));
     variables
 }
 
@@ -89,7 +89,7 @@ fn equal_environments_share_one_cleared_child() {
 #[test]
 fn a_failed_child_reports_its_group_and_streams() {
     let test = "a_failed_child_reports_its_group_and_streams";
-    let selected = run_per_environment(test, ["bad"], |_| BTreeMap::<&str, &str>::new());
+    let selected = run_per_environment(test, ["bad"], |_| BTreeMap::<&str, Option<&str>>::new());
     match selected {
         Ok(Some(group)) => panic!("case {} failed in its child", group[0]),
         Ok(None) => panic!("a failing child passed"),
@@ -111,7 +111,8 @@ fn a_passing_child_reports_the_premise_it_skipped_a_case_for() {
     let test = "a_passing_child_reports_the_premise_it_skipped_a_case_for";
     if maestro_test_process::selection().is_child() {
         let selected =
-            run_per_environment(test, ["skipped"], |_| BTreeMap::<&str, &str>::new()).unwrap();
+            run_per_environment(test, ["skipped"], |_| BTreeMap::<&str, Option<&str>>::new())
+                .unwrap();
         if selected.is_some() {
             eprintln!("{PREMISE}");
         }
@@ -145,7 +146,8 @@ fn an_unknown_group_is_refused() {
         return;
     }
     if std::env::var_os("MTP_PROBE").is_some() {
-        let error = run_per_environment(test, [1], |_| BTreeMap::<&str, &str>::new()).unwrap_err();
+        let error =
+            run_per_environment(test, [1], |_| BTreeMap::<&str, Option<&str>>::new()).unwrap_err();
         assert!(error.to_string().contains("does not exist"), "{error}");
         return;
     }
@@ -169,6 +171,30 @@ fn an_unknown_group_is_refused() {
 }
 
 #[test]
+fn a_case_removes_a_kept_variable_from_its_child() {
+    let test = "a_case_removes_a_kept_variable_from_its_child";
+    if !maestro_test_process::selection().is_child() {
+        // The raw child carries the compiled-code cache home the run's setup exports, so a
+        // cleared group child would keep it unless its case removes it.
+        let output = TestProcess::current(test)
+            .unwrap()
+            .case("*")
+            .env("XDG_CACHE_HOME", "/controlled/cache")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        return;
+    }
+    let selected = run_per_environment(test, ["absent"], |_| {
+        BTreeMap::<&str, Option<&str>>::from([("XDG_CACHE_HOME", None)])
+    })
+    .unwrap();
+    if selected.is_some() {
+        assert_eq!(std::env::var_os("XDG_CACHE_HOME"), None);
+    }
+}
+
+#[test]
 fn cleared_children_keep_the_temporary_directory() {
     let test = "cleared_children_keep_the_temporary_directory";
     if !maestro_test_process::selection().is_child() {
@@ -186,7 +212,7 @@ fn cleared_children_keep_the_temporary_directory() {
     // child must see the same one.
     let expected = maestro_test_directory::temporary_root();
     let selected = run_per_environment(test, [()], |()| {
-        BTreeMap::from([("MTP_EXPECTED_TEMP", expected.clone())])
+        BTreeMap::from([("MTP_EXPECTED_TEMP", Some(expected.clone()))])
     });
     if selected.unwrap().is_some() {
         let expected = std::env::var_os("MTP_EXPECTED_TEMP").unwrap();

@@ -266,6 +266,35 @@ fn assert_painted_shrink(world: &World, clear: bool) {
     );
 }
 
+/// Paints an answer with a thinking block and asserts the frame shows its thinking text,
+/// or only the hidden-thinking label, as the setting selects.
+fn assert_painted_thinking(world: &World, hidden: bool) {
+    world.mode.chat_container.clear();
+    world.runtime.settle().unwrap();
+    let recorded = world.terminal.writes().len();
+    let content = json!([
+        {"type": "thinking", "thinking": "private plan"},
+        {"type": "text", "text": "public answer"},
+    ]);
+    let answer = super::transcript::assistant(&content, "stop", None);
+    world
+        .mode
+        .add_message_to_chat(&super::transcript::message(answer), false)
+        .unwrap();
+    world.mode.ui.request_render(false);
+    world.runtime.settle().unwrap();
+    let frame = strip_ansi(&world.terminal.writes()[recorded..].concat()).unwrap();
+    assert!(frame.contains("public answer"), "{frame:?}");
+    assert_eq!(
+        (
+            frame.contains("private plan"),
+            frame.contains("Thinking...")
+        ),
+        (!hidden, hidden),
+        "the painted frame follows the thinking setting: {frame:?}"
+    );
+}
+
 /// Asserts the settings effects `expected` reached for `input`, and only those; the
 /// effects after a failure keep the `before` clear-on-shrink, padding and row values.
 fn assert_settings(world: &World, input: &Input, expected: &Settled, before: (bool, u32, u32)) {
@@ -319,7 +348,10 @@ fn runtime_settings_follow_the_current_session_without_crossing_policies() {
             assert_eq!(changes.get(), moved + 1, "the session's cwd comes back");
             assert_settings(&world, &input, &expected, (false, 0, 0));
             let Input::Settings {
-                hardware, clear, ..
+                hardware,
+                clear,
+                hidden: thinking_hidden,
+                ..
             } = input
             else {
                 unreachable!()
@@ -328,6 +360,7 @@ fn runtime_settings_follow_the_current_session_without_crossing_policies() {
             let hidden = writes.iter().any(|w| w == "\u{1b}[?25l");
             assert_eq!(hidden, hardware_before && !hardware, "{writes:?}");
             assert_painted_shrink(&world, clear);
+            assert_painted_thinking(&world, thinking_hidden);
             world.mode.apply_runtime_settings().unwrap();
             assert_eq!(changes.get(), moved + 1, "an unchanged cwd notifies nobody");
         }
@@ -695,13 +728,7 @@ fn session_rebinding_stops_at_each_failed_phase() {
                 panic!("a failing rebinding case");
             };
             assert!(expected.error.is_some());
-            if phase == "updateEditorBorderColor" {
-                // The border's only failure is an unpublished theme, which the listing before
-                // it has already reported; no later failure is reachable here.
-                assert_eq!(expected.calls.last(), Some(&phase));
-            } else {
-                failed_rebind(directory, subscription, &phase, &expected.calls).await;
-            }
+            failed_rebind(directory, subscription, &phase, &expected.calls).await;
         }
     });
 }
@@ -888,6 +915,89 @@ fn session_binding_waits_for_extensions_before_completion_shortcuts_resources_an
             binding_case(directory, fail.as_deref(), &expected).await;
         }
     });
+}
+
+/// An extension whose discovery answers `found`.
+fn discovering(found: ResourcesDiscoverResult) -> ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let found = found.clone();
+        let registered = api.on::<ResourcesDiscoverEvent, ResourcesDiscoverResult>(
+            "resources_discover".into(),
+            Rc::new(move |_, _| Box::pin(std::future::ready(Ok(Some(found.clone()))))),
+        );
+        Box::pin(std::future::ready(registered.map(drop)))
+    })
+}
+
+/// Writes a skill, a prompt template and a theme under `directory`, and returns the
+/// discovery answer naming them.
+fn discoverable(directory: &Path) -> ResourcesDiscoverResult {
+    let skill = directory.join("found/skills/helper");
+    let prompts = directory.join("found/prompts");
+    let themes = directory.join("found/themes");
+    for created in [&skill, &prompts, &themes] {
+        std::fs::create_dir_all(created).unwrap();
+    }
+    std::fs::write(
+        skill.join("SKILL.md"),
+        "---\nname: helper\ndescription: Helps with the task.\n---\nHelp.\n",
+    )
+    .unwrap();
+    let prompt = prompts.join("review.md");
+    std::fs::write(&prompt, "---\ndescription: Reviews.\n---\nReview this.\n").unwrap();
+    let shipped = concat!(env!("CARGO_MANIFEST_DIR"), "/../maestro-theme/assets/theme");
+    let dark = std::fs::read_to_string(format!("{shipped}/dark.json")).unwrap();
+    let theme = themes.join("ocean.json");
+    std::fs::write(&theme, dark.replace("\"dark\"", "\"ocean\"")).unwrap();
+    let path =
+        |path: &Path| maestro_app::Presence::Present(vec![path.to_str().unwrap().to_owned()]);
+    ResourcesDiscoverResult {
+        skill_paths: path(&skill),
+        prompt_paths: path(&prompt),
+        theme_paths: path(&theme),
+    }
+}
+
+/// What tab completion leaves in the editor after `typed`, pressing tab twice and
+/// settling the requests each press starts.
+async fn completed(world: &World, typed: &str) -> String {
+    world.mode.editor.set_text(typed);
+    for _ in 0..2 {
+        world.terminal.send_input("\t");
+        for request in world.runtime.take_futures() {
+            request.await.unwrap();
+        }
+    }
+    world.mode.editor.get_text()
+}
+
+#[test]
+fn discovered_resources_reach_completion_and_the_startup_listing() {
+    isolated(
+        "discovered_resources_reach_completion_and_the_startup_listing",
+        async |directory| {
+            let world = Setup {
+                extension: Some(discovering(discoverable(directory))),
+                ..Setup::default()
+            }
+            .build(directory);
+
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+
+            let rows = transcript(&world.mode).join("\n");
+            let listed = |heading: &str, name: &str| {
+                rows.split_once(heading)
+                    .and_then(|(_, after)| after.lines().nth(1))
+                    .is_some_and(|row| row.trim() == name)
+            };
+            assert!(listed("[Skills]", "helper"), "{rows}");
+            assert!(listed("[Prompts]", "/review"), "{rows}");
+            assert!(listed("[Themes]", "ocean"), "{rows}");
+            assert_eq!(completed(&world, "/revi").await, "/review ");
+            assert_eq!(completed(&world, "/skill:hel").await, "/skill:helper ");
+        },
+    );
 }
 
 /// A mode whose initialization waits at discovery, after its session start asked through
@@ -1362,6 +1472,108 @@ fn aborting_shortcut(log: &Rc<RefCell<Vec<Value>>>) -> ExtensionShortcut<Local> 
         log.borrow_mut().push(abort_state(&context)?);
         Ok(())
     })
+}
+
+/// Receives the outcome a compaction callback reports.
+type Outcome = tokio::sync::oneshot::Sender<Value>;
+
+/// Sends `value` through the outcome `slot` still holds.
+fn send_outcome(slot: &RefCell<Option<Outcome>>, value: Value) {
+    if let Some(outcome) = slot.borrow_mut().take() {
+        drop(outcome.send(value));
+    }
+}
+
+/// A `ctrl+q` shortcut that compacts once and sends `outcome` the summary its success
+/// callback receives or the failure its error callback receives. Only the two callbacks
+/// hold the sender, so a compaction that calls neither closes the channel.
+fn compacting_shortcut(outcome: Outcome) -> ExtensionShortcut<Local> {
+    let outcome = RefCell::new(Some(outcome));
+    ctrl_q(move |context| {
+        let completed = Rc::new(RefCell::new(outcome.borrow_mut().take()));
+        let failed = Rc::clone(&completed);
+        context.compact(Some(maestro_app::CompactOptions {
+            custom_instructions: None,
+            on_complete: Some(Rc::new(move |result| {
+                send_outcome(&completed, json!({"summary": result.summary}));
+                Ok(())
+            })),
+            on_error: Some(Rc::new(move |error| {
+                send_outcome(&failed, json!({"compact": error.to_string()}));
+                Ok(())
+            })),
+        }))
+    })
+}
+
+/// Gives `session` a question and its answer, so a compaction has history to summarize.
+fn compactable_history(session: &maestro_app::AgentSession) {
+    let manager = session.session_manager();
+    for record in [
+        super::transcript::user_record("question"),
+        super::transcript::assistant(&json!([]), "stop", None),
+    ] {
+        manager.borrow_mut().append_message(record).unwrap();
+    }
+}
+
+#[test]
+fn shortcut_compaction_reaches_its_success_callback_the_session_and_the_frame() {
+    isolated(
+        "shortcut_compaction_reaches_its_success_callback_the_session_and_the_frame",
+        async |directory| {
+            let scripted =
+                super::prompts::Scripted::new(directory, crate::InteractiveModeOptions::default());
+            let world = &scripted.world;
+            let session = world.host.session();
+            let (outcome, reported) = tokio::sync::oneshot::channel();
+            register_shortcut(
+                &session.resource_loader().get_extensions(),
+                compacting_shortcut(outcome),
+            );
+            let provider = &scripted.provider.models[0].provider;
+            let auth = &world.host.services().auth_storage;
+            auth.set_runtime_api_key(provider, "controlled-key");
+            world.mode.init().await.unwrap();
+            world.runtime.settle().unwrap();
+            compactable_history(&session);
+            scripted
+                .provider
+                .set_responses(vec![maestro_models::FauxResponseStep::Message(Box::new(
+                    maestro_models::faux_assistant_message(
+                        "controlled summary",
+                        maestro_models::FauxAssistantMessageOptions::default(),
+                    ),
+                ))]);
+            let painted = world.terminal.writes().len();
+
+            world.mode.editor.handle_input("\u{11}");
+            let (reported, errors) = super::driving(world, reported).await;
+            world.runtime.settle().unwrap();
+
+            assert!(errors.is_empty(), "{errors:?}");
+            assert_eq!(reported.unwrap(), json!({"summary": "controlled summary"}));
+            let manager = session.session_manager();
+            let last = manager
+                .borrow()
+                .get_entries()
+                .last()
+                .copied()
+                .cloned()
+                .unwrap();
+            assert_eq!(
+                (&last["type"], &last["summary"]),
+                (&json!("compaction"), &json!("controlled summary")),
+                "the session stores the summary"
+            );
+            let frame = strip_ansi(&world.terminal.writes()[painted..].concat()).unwrap();
+            assert!(
+                frame.contains("Compacted from"),
+                "the painted frame shows the compaction: {frame:?}"
+            );
+            scripted.finish();
+        },
+    );
 }
 
 #[test]

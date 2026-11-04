@@ -1,5 +1,6 @@
 //! Presets exercised through registered callbacks on the controlled and component adapters.
-use super::{controlled::Controlled, host::Harness, observed::Observed};
+use super::controlled::Controlled;
+use super::{example_support::Adapter, host::Harness, observed::Observed};
 use crate::component_adapter::{Capabilities, Exports};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::{Value, json};
@@ -82,12 +83,7 @@ fn model(id: &str) -> Value {
 }
 
 /// Existing adapters serving identical callback invocations and host replies.
-enum Host {
-    /// Author code in process.
-    Controlled(Controlled, Exports<Controlled>),
-    /// Built WebAssembly component with read-only fixture access.
-    Component(Box<Harness>),
-}
+struct Host(Adapter);
 impl Host {
     /// Starts one factory with controlled inputs before registration.
     fn new(component: bool) -> Result<Self, String> {
@@ -97,7 +93,7 @@ impl Host {
             let mut wasi = wasmtime_wasi::WasiCtxBuilder::new();
             wasi.preopened_dir(fixtures(), fixtures(), wasmtime_wasi::FsPerms::ReadOnly)
                 .map_err(|e| e.to_string())?;
-            Ok(Self::Component(Box::new(
+            Ok(Self(Adapter::Component(Box::new(
                 super::block_on(Harness::from_compiled_with_inputs(
                     &engine,
                     &component,
@@ -105,7 +101,7 @@ impl Host {
                     wasi.build(),
                 ))
                 .map_err(|e| e.to_string())?,
-            )))
+            ))))
         } else {
             let host = Controlled::default();
             *host.observe() = observations();
@@ -114,15 +110,12 @@ impl Host {
             crate::component_adapter::install(std::rc::Rc::new(crate::component_adapter::Builder(
                 host.clone(),
             )));
-            Ok(Self::Controlled(host, exports))
+            Ok(Self(Adapter::Controlled(host, exports)))
         }
     }
     /// Reads or supplies host observations without holding a borrow across callbacks.
     fn observe<T>(&mut self, f: impl FnOnce(&mut Observed) -> T) -> T {
-        match self {
-            Self::Controlled(host, _) => f(&mut host.observe()),
-            Self::Component(host) => f(host.observed()),
-        }
+        self.0.observe(f)
     }
     /// Supplies current-branch entries independently of the whole-session history.
     fn branch(&mut self, entries: &Value) {
@@ -140,8 +133,8 @@ impl Host {
     fn event(&mut self, event: &Value) -> Result<super::documents::Answer, String> {
         let key =
             self.observe(|o| o.callback(&format!("event {}", event["type"].as_str().unwrap())))?;
-        match self {
-            Self::Controlled(host, exports) => {
+        match &mut self.0 {
+            Adapter::Controlled(host, exports) => {
                 let delivered = super::block_on(exports.invoke_event(
                     key,
                     event.to_string(),
@@ -152,7 +145,7 @@ impl Host {
                 ))?;
                 super::documents::Answer::of(super::guest_family::delivery(delivered))
             }
-            Self::Component(host) => {
+            Adapter::Component(host) => {
                 let caps = super::host_family::guest::Capabilities {
                     ctx: host.ordinary("/work").map_err(|e| e.to_string())?,
                     signal: None,
@@ -177,26 +170,20 @@ impl Host {
     /// Invokes the registered slash command with literal arguments.
     fn command(&mut self, args: &str) -> Result<(), String> {
         let key = self.observe(|o| o.callback("command preset"))?;
-        match self {
-            Self::Controlled(host, exports) => super::block_on(exports.invoke_command(
+        match &mut self.0 {
+            Adapter::Controlled(host, exports) => super::block_on(exports.invoke_command(
                 key,
                 args.into(),
                 host.command_context("/work"),
             )),
-            Self::Component(host) => {
+            Adapter::Component(host) => {
                 super::example_support::invoke_command_on_component(host, key, args, false)
             }
         }
     }
     /// Notification messages and their exact severities.
     fn notifications(&mut self) -> Vec<Value> {
-        self.observe(|o| {
-            super::ui_host::receipts(&o.transcript)
-                .into_iter()
-                .filter(|r| r.method == "notify")
-                .map(|r| r.operands)
-                .collect()
-        })
+        self.observe(|o| super::ui_host::notifications(o))
     }
     /// The admitted action operands for one host operation.
     fn actions(&mut self, method: &str) -> Vec<Value> {
@@ -294,11 +281,11 @@ impl Host {
     /// Invokes the configured keyboard shortcut through the public adapter.
     fn cycle(&mut self) -> Result<(), String> {
         let key = self.observe(|o| o.callback("shortcut ctrl+shift+u"))?;
-        match self {
-            Self::Controlled(host, exports) => {
+        match &mut self.0 {
+            Adapter::Controlled(host, exports) => {
                 super::block_on(exports.invoke_shortcut(key, host.context("/work")))
             }
-            Self::Component(host) => {
+            Adapter::Component(host) => {
                 let context = host.ordinary("/work").map_err(|e| e.to_string())?;
                 let exports = host.exports.clone();
                 super::block_on(host.store.run_concurrent(async |accessor| {
@@ -693,7 +680,7 @@ fn preset_startup_waits_for_pending_model_before_the_first_turn() -> Result<(), 
             .insert("preset".into(), Ok(Some(json!("plan"))));
     });
     let key = host.observe(|o| o.callback("event session_start"))?;
-    let Host::Controlled(controlled, _) = &host else {
+    let Adapter::Controlled(controlled, _) = &host.0 else {
         unreachable!();
     };
     let exports = Exports::new(controlled.clone());
@@ -743,7 +730,7 @@ fn preset_startup_waits_for_pending_model_before_the_first_turn() -> Result<(), 
 
 impl Drop for Host {
     fn drop(&mut self) {
-        let Self::Controlled(host, _) = self else {
+        let Adapter::Controlled(host, _) = &mut self.0 else {
             return;
         };
         let handlers = host.observe().ui.lists.take_handlers();
