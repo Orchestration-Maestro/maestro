@@ -1554,8 +1554,13 @@ fn shortcut_compaction_reaches_its_success_callback_the_session_and_the_frame() 
             assert!(errors.is_empty(), "{errors:?}");
             assert_eq!(reported.unwrap(), json!({"summary": "controlled summary"}));
             let manager = session.session_manager();
-            let last = manager.borrow().get_entries().last().copied().cloned();
-            let last = last.unwrap();
+            let last = manager
+                .borrow()
+                .get_entries()
+                .last()
+                .copied()
+                .cloned()
+                .unwrap();
             assert_eq!(
                 (&last["type"], &last["summary"]),
                 (&json!("compaction"), &json!("controlled summary")),

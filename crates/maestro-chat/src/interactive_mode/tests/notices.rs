@@ -248,7 +248,7 @@ struct SelectionExpected {
 
 /// Startups over a history file that is missing, empty or unreadable, over a resumed
 /// session, before a terminal that refuses to start and with an empty service origin;
-/// three of them read an unreadable file.
+/// three of them place an unreadable file and two of those read it.
 fn unrecorded_selections() -> Vec<(SelectionInput, SelectionExpected)> {
     let input = |history, messages, last: Option<&str>| SelectionInput {
         op: "select".to_owned(),
