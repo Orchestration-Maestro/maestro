@@ -2226,8 +2226,9 @@ mode type before applying it.
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
 selected test starts; callers still check its exit status and scenario output.
-`env_clear()` preserves the inherited coverage profile destination, and later
-caller edits can override or remove it. Live protocols retain `CheckedChild` and
+`env_clear()` preserves the inherited coverage profile destination and the
+compiled-code cache home the run's setup exports, and later caller edits can
+override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. Settings
@@ -2248,7 +2249,9 @@ Cases that read process variables go through `run_per_environment(test, cases,
 environment)`. It groups the cases by the variables `environment` returns and
 reruns the test once per group, in a child that holds exactly those variables
 after `env_clear()`, plus the parent's temporary directory unless the case sets
-one. In the parent, `run_per_environment` returns `None` once every child
+one and the compiled-code cache home the run's setup exports, so a group child
+that loads a component reuses the compiled code instead of compiling it again.
+In the parent, `run_per_environment` returns `None` once every child
 passes; in a child it returns that group's cases in their original order, and the
 test checks them. Cases that share variables therefore share one child and one
 fixture parse, so don't spawn a child per case yourself. A case that needs a fresh

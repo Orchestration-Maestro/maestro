@@ -12,9 +12,11 @@ use crate::proof::{check_file, check_output};
 use crate::setup::IsolatedSetup;
 use crate::{CheckedChild, TestProcessError, selection};
 
-/// Variables a cleared environment keeps: the coverage runtime's profile path and the
-/// Windows system root, without which a Windows child cannot load its socket library.
-const KEPT: [&str; 2] = ["LLVM_PROFILE_FILE", "SYSTEMROOT"];
+/// Variables a cleared environment keeps: the coverage runtime's profile path, the compiled-code
+/// cache home the run's setup exports, without which a child that loads a component compiles it
+/// again, and the Windows system root, without which a Windows child cannot load its socket
+/// library.
+const KEPT: [&str; 3] = ["LLVM_PROFILE_FILE", "XDG_CACHE_HOME", "SYSTEMROOT"];
 
 /// One ordered environment edit.
 #[derive(Debug)]
