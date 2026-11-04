@@ -7,7 +7,7 @@ use std::{collections::HashSet, io};
 /// Parsed export selections in their authored execution order.
 pub(super) struct Inventory {
     /// Named families with validated unique identifiers.
-    pub families: [(&'static str, Vec<String>); 3],
+    pub families: [(&'static str, Vec<String>); 4],
     /// The one admitted policy exception.
     pub expected_error: ExpectedError,
 }
@@ -22,6 +22,8 @@ struct RawInventory {
     loading: Vec<String>,
     /// Contribution assertions.
     contributions: Vec<String>,
+    /// Assertions that mount on the canvas page's `#canvas`.
+    canvas: Vec<String>,
     /// Designated policy exception.
     expected_error: ExpectedError,
 }
@@ -42,7 +44,7 @@ pub(super) struct ExpectedError {
     pub count: usize,
 }
 
-/// Read the three export families and their designated policy error.
+/// Read the four export families and their designated policy error.
 pub(super) fn inventory(text: &str) -> io::Result<Inventory> {
     let raw: RawInventory = serde_json::from_str(text).map_err(io::Error::other)?;
     let value = Inventory {
@@ -50,11 +52,12 @@ pub(super) fn inventory(text: &str) -> io::Result<Inventory> {
             ("execution", raw.execution),
             ("loading", raw.loading),
             ("contributions", raw.contributions),
+            ("canvas", raw.canvas),
         ],
         expected_error: raw.expected_error,
     };
     let mut names = HashSet::new();
-    for ((family, selected), count) in value.families.iter().zip([26, 63, 194]) {
+    for ((family, selected), count) in value.families.iter().zip([26, 63, 194, 69]) {
         if selected.len() != count {
             return Err(io::Error::other(format!("{family} inventory count")));
         }

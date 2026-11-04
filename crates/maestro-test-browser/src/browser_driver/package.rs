@@ -249,6 +249,11 @@ fn sandbox_runtime(checkout: &Path, cargo: &Path, target: &Path, output: &Path) 
 /// Write only the fixed bootstrap documents and helper module.
 pub(super) fn materialize(root: &Path) -> io::Result<()> {
     fs::write(root.join("index.html"), "<!doctype html><body></body>")?;
+    // Canvas exports read canvas points as page coordinates, so the canvas sits at the origin.
+    fs::write(
+        root.join("canvas.html"),
+        "<!doctype html><body style=\"margin:0\"><canvas id=\"canvas\" width=\"800\" height=\"600\"></canvas></body>",
+    )?;
     fs::write(root.join("helper.js"), "export const answer='helper-ok'")?;
     fs::write(
         root.join("sandbox.html"),

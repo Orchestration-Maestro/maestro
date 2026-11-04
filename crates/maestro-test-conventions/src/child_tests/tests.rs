@@ -1,6 +1,6 @@
 //! Decoded string-token ownership without macro expansion or source-tree assumptions.
 
-use super::{check, exact_offset};
+use super::check;
 use crate::source::{Member, Source};
 use std::path::PathBuf;
 
@@ -9,12 +9,13 @@ fn member(name: &str, directory: &str, path: &str, contents: &str) -> Member {
     Member {
         name: name.into(),
         directory: PathBuf::from(directory),
-        sources: vec![Source {
-            path: PathBuf::from(path),
-            contents: contents.into(),
-            syntax: syn::parse_file(contents).ok(),
-        }],
+        sources: vec![Source::new(PathBuf::from(path), contents.into())],
     }
+}
+
+/// Locate the first exact-selector string token in one loaded source.
+fn exact_offset(contents: &str) -> Option<usize> {
+    super::exact_offset(&Source::new(PathBuf::new(), contents.into()))
 }
 
 /// Decode all Rust string spellings before comparing the complete value.
@@ -165,10 +166,22 @@ fn browser_tests_require_the_pinned_execution_owner() {
         "browser/tests/browser.rs",
         "#[test] #[ignore = \"runs in the pinned Chromium job\"] fn browser() {}",
     );
-    browser.sources.push(Source {
-        path: "browser/tests/integration.rs".into(),
-        contents: "mod browser;".into(),
-        syntax: syn::parse_file("mod browser;").ok(),
-    });
+    browser.sources.push(Source::new(
+        "browser/tests/integration.rs".into(),
+        "mod browser;".into(),
+    ));
     assert!(check(&[browser]).is_ok());
+}
+
+/// Only string-kind literal tokens can hold the selector, so only they are decoded.
+#[test]
+fn exact_child_selection_decodes_only_string_literals() {
+    super::DECODES.set(0);
+    assert_eq!(
+        exact_offset(
+            "let values = (1, 2.5, 'c', b'b', b\"bytes\", c\"text\", \"text\", r\"raw\");"
+        ),
+        None
+    );
+    assert_eq!(super::DECODES.get(), 2);
 }

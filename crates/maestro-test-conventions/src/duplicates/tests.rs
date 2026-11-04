@@ -1,5 +1,6 @@
 use super::*;
 use ra_ap_rustc_lexer::FrontmatterAllowed;
+use std::path::PathBuf;
 
 /// Independent flat lexer vector for identity and count comparisons.
 fn flat(source: &str) -> Vec<String> {
@@ -36,13 +37,13 @@ fn interned_groups_match_flat_lexer_vectors() {
     ];
     let sources: Vec<_> = fragments
         .iter()
-        .map(|s| format!("fn f() {{{s}}}"))
+        .map(|s| Source::new(PathBuf::new(), format!("fn f() {{{s}}}")))
         .collect();
     let mut tokens = Tokens::default();
     let ids: Vec<_> = sources
         .iter()
         .map(|s| {
-            let start = s.find('{').unwrap();
+            let start = s.contents.find('{').unwrap();
             tokens.blocks(s)[&start]
         })
         .collect();
@@ -79,18 +80,22 @@ fn nested_body_indexing_grows_linearly() {
     for nested in [false, true] {
         let mut measurements = Vec::new();
         for n in [32, 64, 128] {
-            let source = if nested {
-                format!("{}{}{}", "fn f(){".repeat(n), ";".repeat(30), "}".repeat(n))
-            } else {
-                format!("fn f() {{{}}}", ";".repeat(30)).repeat(n)
-            };
+            let source = Source::new(
+                PathBuf::new(),
+                if nested {
+                    format!("{}{}{}", "fn f(){".repeat(n), ";".repeat(30), "}".repeat(n))
+                } else {
+                    format!("fn f() {{{}}}", ";".repeat(30)).repeat(n)
+                },
+            );
+            let length = source.contents.len();
             WORK.set(0);
             let mut tokens = Tokens::default();
             let blocks = tokens.blocks(&source);
-            let work = WORK.get() + source.len();
-            let wrong_rescan: usize = blocks.keys().map(|start| source.len() - start).sum();
-            assert!(work <= 8 * source.len());
-            measurements.push((n, source.len(), work, wrong_rescan));
+            let work = WORK.get() + length;
+            let wrong_rescan: usize = blocks.keys().map(|start| length - start).sum();
+            assert!(work <= 8 * length);
+            measurements.push((n, length, work, wrong_rescan));
         }
         assert!(measurements[1].2 <= 2 * measurements[0].2);
         assert!(measurements[2].2 <= 2 * measurements[1].2);
