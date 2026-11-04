@@ -146,6 +146,12 @@ Lint each changed browser crate separately, including all test and example targe
 `clippy --all-targets -D warnings` also rejects unused native-only helpers that
 `check --tests` leaves as warnings.
 
+A browser compile witness, an example target whose body only compiles for the
+browser target, is not covered by native Clippy. `just check-browser-smoke`
+compiles every witness for `wasm32-unknown-unknown` and stops at the first
+failure, printing the path of the diagnostics log. The commit hook runs the same
+command when a staged crate owns a witness.
+
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
 `test-support` development dependencies must all be available on browser targets.

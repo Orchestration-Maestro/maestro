@@ -2072,16 +2072,34 @@ fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
     );
 }
 
-const BROWSER_BUILD_ARGS: [&str; 8] = [
-    "build",
-    "--locked",
-    "-p",
-    "maestro-models",
-    "--example",
-    "browser_import_check",
-    "--target",
-    "wasm32-unknown-unknown",
-];
+/// Write the browser compile witnesses' sources into the fixture checkout.
+fn write_browser_witnesses(root: &Path) {
+    for source in [
+        "crates/maestro-catalog/tests/support/browser_catalog_check.rs",
+        "crates/maestro-models/tests/support/bedrock_browser.rs",
+        "crates/maestro-models/tests/support/browser_import_check.rs",
+        "crates/maestro-models/tests/support/cloud_content_browser.rs",
+    ] {
+        let path = root.join(source);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, "controlled build input").unwrap();
+    }
+}
+
+/// The controlled tool's browser witness invocations, in order.
+fn witness_invocations() -> Vec<String> {
+    [
+        ("maestro-catalog", "browser_catalog_check"),
+        ("maestro-models", "bedrock_browser_witness"),
+        ("maestro-models", "browser_import_check"),
+        ("maestro-models", "cloud_content_browser_witness"),
+    ]
+    .into_iter()
+    .map(|(package, example)| {
+        format!("check|--locked|--target|wasm32-unknown-unknown|-p|{package}|--example|{example}")
+    })
+    .collect()
+}
 
 #[test]
 fn maestro_browser_build_records_diagnostics_without_noise() {
@@ -2098,50 +2116,52 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         output.stderr,
-        b"browser_import_check entry is not delivered\n"
+        b"browser_catalog_check entry is not delivered\n"
     );
-    let entry = fixture
-        .root
-        .path()
-        .join("crates/maestro-models/tests/support/browser_import_check.rs");
-    fs::create_dir_all(entry.parent().unwrap()).unwrap();
-    fs::write(entry, "controlled build input").unwrap();
+    write_browser_witnesses(fixture.root.path());
     let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
     let artifact = fixture.root.path().join("artifact.wasm");
-    for exit in ["0", "17"] {
-        let output = fixture
-            .invoke(
-                "maestro_browser_build_records_diagnostics_without_noise",
-                "check-browser-smoke",
-                &[],
-            )
-            .temp_dir(fixture.root.path())
-            .env("MAESTRO_CHILD_EXIT", exit)
-            .env("MAESTRO_ARTIFACT", &artifact)
-            .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
-            .output()
-            .unwrap();
-        assert_eq!(output.status.success(), exit == "0");
-        assert_eq!(
-            fixture.arguments(),
-            BROWSER_BUILD_ARGS.map(|arg| arg.as_bytes().to_vec())
-        );
-        if exit == "0" {
-            assert!(output.stderr.is_empty());
-            assert!(!log.exists());
-            assert_eq!(fs::read(&artifact).unwrap(), b"compiled artifact");
-        } else {
-            assert_eq!(
-                output.stderr,
-                format!("Browser smoke check failed. See {}\n", log.display()).as_bytes()
-            );
-            assert_eq!(
-                fs::read(&log).unwrap(),
-                b"fixture.rs:4: compilation failed\n"
-            );
-        }
-        assert!(!stdout(&output).contains("compilation failed"));
-    }
+    let output = fixture
+        .invoke(
+            "maestro_browser_build_records_diagnostics_without_noise",
+            "check-browser-smoke",
+            &[],
+        )
+        .temp_dir(fixture.root.path())
+        .env("MAESTRO_ARTIFACT", &artifact)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(invocations(&fixture), witness_invocations());
+    assert!(output.stderr.is_empty());
+    assert!(!log.exists());
+    assert_eq!(fs::read(&artifact).unwrap(), b"compiled artifact");
+
+    let fixture = Fixture::new();
+    write_browser_witnesses(fixture.root.path());
+    let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
+    let output = fixture
+        .invoke(
+            "maestro_browser_build_records_diagnostics_without_noise",
+            "check-browser-smoke",
+            &[],
+        )
+        .temp_dir(fixture.root.path())
+        .env("MAESTRO_CHILD_EXIT", "17")
+        .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        output.stderr,
+        format!("Browser smoke check failed. See {}\n", log.display()).as_bytes()
+    );
+    assert_eq!(
+        fs::read(&log).unwrap(),
+        b"fixture.rs:4: compilation failed\n"
+    );
+    assert_eq!(invocations(&fixture), witness_invocations()[..1]);
+    assert!(!stdout(&output).contains("compilation failed"));
 }
 
 fn git(root: &Path, args: &[&str]) -> Output {
@@ -3054,6 +3074,7 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
     drive();
     for (paths, active, expected) in [
         (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
+        (vec!["crates/maestro-catalog/src/lib.rs"], true, 1),
         (vec!["crates/shared/src/lib.rs"], true, 0),
         (vec!["Cargo.toml"], true, 0),
         (vec!["crates/alone/src/lib.rs"], true, 0),
@@ -3146,12 +3167,7 @@ fn maestro_source_announces_non_executable_cargo() {
 fn maestro_browser_missing_tool_logs_smoke_failure() {
     drive();
     let fixture = Fixture::new();
-    let entry = fixture
-        .root
-        .path()
-        .join("crates/maestro-models/tests/support/browser_import_check.rs");
-    fs::create_dir_all(entry.parent().unwrap()).unwrap();
-    fs::write(entry, "fixture").unwrap();
+    write_browser_witnesses(fixture.root.path());
     fs::remove_file(&fixture.child).unwrap();
     let output = fixture
         .invoke(
