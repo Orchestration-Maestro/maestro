@@ -429,7 +429,7 @@ impl<E> Lexer<'_, E> {
         {
             return Some(Resume::Continue);
         }
-        let mut old = frame.output.nodes.pop()?;
+        let mut old = frame.output.pop_node()?;
         let mut joined = frame.output.raw()?;
         // A container whose own body is this text's tail loses exactly that body. One a
         // nested level published spells the same content with its quoting removed, so only

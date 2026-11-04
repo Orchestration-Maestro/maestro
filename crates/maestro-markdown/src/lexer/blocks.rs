@@ -42,12 +42,9 @@ pub(crate) struct BlockTokens {
     tail: Tail,
     /// Admission history of the visible trailing list, if present.
     list: Option<Box<ListState>>,
-    /// Payload the published nodes and the adopted list state charged this output.
+    /// Charges the published nodes and the adopted list state hold.
     #[cfg(test)]
-    settled: Box<crate::tests::Retained>,
-    /// Part of `settled` the adopted list state charged, released when that list publishes.
-    #[cfg(test)]
-    adopted: usize,
+    charges: Box<crate::tests::Charges>,
 }
 impl Default for Tail {
     fn default() -> Self {
@@ -109,7 +106,7 @@ impl BlockTokens {
         self.tail =
             Tail::Visible(matches!(node.kind, Kind::List(..) | Kind::Quote(..)).then_some(raw));
         #[cfg(test)]
-        self.charge(&node);
+        self.charges.push(&node);
         self.nodes.push(node);
     }
 
@@ -125,55 +122,40 @@ impl BlockTokens {
         #[cfg(test)]
         let mut list = list;
         #[cfg(test)]
-        self.adopt(list.as_deref_mut());
+        self.charges.adopt(list.as_deref_mut());
         self.list = list;
     }
 
-    /// Charge a published node and the child slots it already holds.
+    /// Payload this output's published nodes and adopted list state charged.
     ///
     /// A quote's settled children are charged by this output as they are pushed and hand
     /// their charge to the level that publishes them, so nothing below the slot is walked.
     #[cfg(test)]
-    fn charge(&mut self, node: &Node) {
-        crate::tests::settled_node(node, &mut self.settled);
+    fn settled(&self) -> usize {
+        self.charges.bytes()
     }
 
-    /// Charge the payload a closed level's settled output retained.
+    /// Charge the payload a closed level's settled output retained, carried by the node it
+    /// hands up to this output.
     #[cfg(test)]
     pub(crate) fn charge_settled(&mut self, bytes: usize) {
-        self.settled.bytes += bytes;
-    }
-
-    /// Payload this output's published nodes and adopted list state charged.
-    #[cfg(test)]
-    fn settled(&self) -> usize {
-        self.settled.bytes
-    }
-
-    /// Charge the list state this output adopts until its list publishes.
-    #[cfg(test)]
-    fn adopt(&mut self, list: Option<&mut ListState>) {
-        let Some(state) = list else {
-            return;
-        };
-        let before = self.settled.bytes;
-        state.retained(&mut self.settled);
-        self.adopted = self.settled.bytes - before;
+        self.charges.hand_up(bytes);
     }
 
     /// Take the trailing list's item history for publication.
     pub(super) fn take_list(&mut self) -> Option<Box<ListState>> {
         let list = self.list.take();
         #[cfg(test)]
-        self.release();
+        self.charges.release_adopted();
         list
     }
 
-    /// Release the charge the published list state held.
-    #[cfg(test)]
-    fn release(&mut self) {
-        self.settled.bytes -= self.adopted;
-        self.adopted = 0;
+    /// Remove the trailing node, releasing the payload a closed level handed up for it.
+    pub(super) fn pop_node(&mut self) -> Option<Node> {
+        let node = self.nodes.pop()?;
+        #[cfg(test)]
+        self.charges.release_handed();
+        Some(node)
     }
 
     /// Drop contributions admitted after `mark`, returning the removed nodes, and restore the
@@ -182,9 +164,11 @@ impl BlockTokens {
         let removed: Vec<_> = self.nodes.drain(mark.nodes..).collect();
         if !removed.is_empty() {
             #[cfg(test)]
-            self.release();
+            self.charges.release_adopted();
             self.list = None;
         }
+        #[cfg(test)]
+        self.charges.release_handed();
         for node in &removed {
             super::frames::forget(&mut self.scopes, node);
         }
@@ -266,7 +250,7 @@ impl BlockTokens {
         for scope in self.scopes.values() {
             scope.retained(retained);
         }
-        retained.bytes += self.settled.bytes;
+        retained.bytes += self.charges.bytes();
     }
 }
 impl<E> Lexer<'_, E> {

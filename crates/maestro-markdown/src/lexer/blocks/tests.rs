@@ -203,3 +203,41 @@ fn list_publication_reports_a_slot_that_is_not_an_item() {
     items[0].kind = crate::Kind::Gap;
     output.complete();
 }
+
+#[test]
+fn a_released_list_state_charges_what_it_holds_again() {
+    let mut output = pending_list("- a\n- b\n");
+    let mut state = output.take_list().expect("the pending list history");
+    let mut charges = crate::tests::Charges::default();
+    charges.adopt(Some(&mut state));
+    let once = charges.bytes();
+    charges.release_adopted();
+    assert_eq!(charges.bytes(), 0, "a released adoption keeps no payload");
+    charges.adopt(Some(&mut state));
+    let again = charges.bytes();
+    assert!(
+        again * 2 >= once,
+        "a released list state charges what it holds again: {again} against {once}"
+    );
+}
+
+#[test]
+fn a_popped_quote_releases_the_payload_its_level_handed_up() {
+    let mut output = pending_list("para\n");
+    let raw: crate::source::Segmented = ScopeSource::identity("> a\n").into();
+    let node = crate::Node {
+        authored: raw.mapped(),
+        range: 0..4,
+        kind: crate::Kind::Quote(Vec::new(), crate::MappedText::default()),
+    };
+    output.charge_settled(512);
+    output.push_container(raw, node, None);
+    let carried = output.settled();
+    let popped = output.pop_node().expect("the trailing quote");
+    assert!(matches!(popped.kind, crate::Kind::Quote(..)));
+    assert_eq!(
+        output.settled(),
+        carried - 512,
+        "a popped quote releases the payload its level handed up"
+    );
+}

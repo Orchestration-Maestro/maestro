@@ -839,6 +839,11 @@ fn quote_resumed_nested_list_frame_charges_each_allocation_once() {
     eprintln!("32/64/128 frame={frame:?} retained payload={payload:?}");
     for (frame, payload) in frame.iter().zip(payload) {
         assert!(*frame <= 2 * payload, "frame={frame:?} payload={payload:?}");
+        // A frame that keeps less than the payload it publishes lost a charge it still holds.
+        assert!(
+            *frame * 10 >= payload * 9,
+            "undercounted frame={frame:?} payload={payload:?}"
+        );
     }
 }
 

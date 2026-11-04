@@ -1,5 +1,5 @@
 //! Shared authored values at the parser boundary.
-use crate::{Kind, MappedText, Node, parse};
+use crate::{Kind, MappedText, Node, parse, tokenizer::block::ListState};
 use std::{collections::HashSet, mem::size_of, mem::size_of_val, sync::Arc};
 
 /// Unique allocation payloads one output charged, excluding allocator headers and hash control bytes.
@@ -15,6 +15,68 @@ pub(crate) struct Retained {
     pub(crate) mapping_records: usize,
     /// Published native nodes visited by the reply witness.
     pub(crate) nodes: usize,
+}
+
+/// Charges one output holds, released when the contribution that took them leaves.
+#[derive(Default)]
+pub(crate) struct Charges {
+    /// Payload the output's published nodes and adopted list state charged.
+    retained: Retained,
+    /// Payload the adopted list state charged, released when its list publishes.
+    adopted: usize,
+    /// Payload a closed level handed up for the node the output publishes next.
+    pending: usize,
+    /// Payload the trailing published node carries from the closed level that handed it up.
+    handed: usize,
+}
+
+impl Charges {
+    /// Payload the output's contributions charged.
+    pub(crate) fn bytes(&self) -> usize {
+        self.retained.bytes
+    }
+
+    /// Charge one published node and take the payload a closed level handed up for it.
+    pub(crate) fn push(&mut self, node: &Node) {
+        settled_node(node, &mut self.retained);
+        self.handed = std::mem::take(&mut self.pending);
+    }
+
+    /// Charge a payload another output already took for the node this one now holds.
+    pub(crate) fn add(&mut self, bytes: usize) {
+        self.retained.bytes += bytes;
+    }
+
+    /// Charge the payload a closed level's settled output retained for the node it hands up.
+    pub(crate) fn hand_up(&mut self, bytes: usize) {
+        self.retained.bytes += bytes;
+        self.pending += bytes;
+    }
+
+    /// Release the payload the output no longer carries because its node left it.
+    pub(crate) fn release_handed(&mut self) {
+        self.retained.bytes -= std::mem::take(&mut self.pending);
+        self.retained.bytes -= std::mem::take(&mut self.handed);
+    }
+
+    /// Charge the list state the output adopts until its list publishes.
+    ///
+    /// The state charges into its own accumulator, so releasing it leaves no address behind
+    /// and a later adoption of the same allocations charges them again.
+    pub(crate) fn adopt(&mut self, list: Option<&mut ListState>) {
+        let Some(state) = list else {
+            return;
+        };
+        let mut adopted = Retained::default();
+        state.retained(&mut adopted);
+        self.retained.bytes += adopted.bytes;
+        self.adopted = adopted.bytes;
+    }
+
+    /// Release the charge the published list state held.
+    pub(crate) fn release_adopted(&mut self) {
+        self.retained.bytes -= std::mem::take(&mut self.adopted);
+    }
 }
 
 impl Retained {
