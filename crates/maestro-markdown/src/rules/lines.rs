@@ -61,20 +61,11 @@ pub(crate) struct Cursor {
 impl Cursor {
     /// Return one complete line, searching each newly supplied byte once.
     pub(crate) fn next(&mut self, source: &(impl Input + ?Sized)) -> Option<Range<usize>> {
-        let mut scanned = self.scanned;
-        let mut end = None;
-        for chunk in source.chunks(self.scanned..source.len()) {
-            if let Some(offset) = chunk.find('\n') {
-                scanned += offset + 1;
-                end = Some(scanned);
-                break;
-            }
-            scanned += chunk.len();
-        }
-        #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += scanned - self.scanned);
-        self.scanned = scanned;
-        let end = end?;
+        let Some(end) = line_end(source, self.scanned) else {
+            self.scanned = source.len();
+            return None;
+        };
+        self.scanned = end;
         let line = self.start..end;
         self.start = end;
         Some(line)
@@ -86,6 +77,26 @@ impl Cursor {
         self.start = source.len();
         line
     }
+}
+
+/// End of the physical line starting at `from`, terminator included.
+///
+/// `None` when the operand ends before a terminator. Every byte read is charged once, so
+/// a caller framing line by line pays for the bytes it looks at.
+pub(super) fn line_end(source: &(impl Input + ?Sized), from: usize) -> Option<usize> {
+    let mut scanned = from;
+    for chunk in source.chunks(from..source.len()) {
+        if let Some(offset) = chunk.find('\n') {
+            let end = scanned + offset + 1;
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += end - from);
+            return Some(end);
+        }
+        scanned += chunk.len();
+    }
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.framing_bytes += scanned - from);
+    None
 }
 
 #[cfg(test)]

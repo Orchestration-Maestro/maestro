@@ -4,7 +4,7 @@ use crate::{
     MarkedOptions,
     lexer::Child,
     rules::ItemStops,
-    source::{ScopeSource, Segmented},
+    source::{Cursor, ScopeSource, Segmented},
 };
 use maestro_text::{is_whitespace_scalar, truncate_utf16};
 
@@ -45,14 +45,78 @@ enum Padding {
     Expanded,
 }
 
+/// Added source pieces joined only when a reader needs the whole value.
+struct Accumulated {
+    /// Value of the pieces joined so far.
+    value: Segmented,
+    /// Admitted pieces awaiting that join.
+    pending: Cursor,
+}
+
+impl From<Segmented> for Accumulated {
+    fn from(value: Segmented) -> Self {
+        Self {
+            value,
+            pending: Cursor::default(),
+        }
+    }
+}
+
+impl From<ScopeSource> for Accumulated {
+    fn from(source: ScopeSource) -> Self {
+        Self::from(Segmented::from(source))
+    }
+}
+
+impl Accumulated {
+    /// Retain one admitted piece without joining it to the pieces before it.
+    fn push(&mut self, piece: Segmented) {
+        self.pending.segmented(piece);
+    }
+
+    /// Logical bytes accumulated so far.
+    fn len(&self) -> usize {
+        self.value.len() + self.pending.len()
+    }
+
+    /// The whole value, joining the admitted pieces at most once.
+    fn value(&mut self) -> &Segmented {
+        if !self.pending.is_empty() {
+            let pending = std::mem::take(&mut self.pending);
+            self.value.append(&pending.seal());
+        }
+        &self.value
+    }
+
+    /// The whole value, consuming the accumulator.
+    fn into_value(mut self) -> Segmented {
+        self.value();
+        self.value
+    }
+
+    /// Discard a logical suffix after joining the admitted pieces.
+    fn truncate(&mut self, end: usize) {
+        self.value();
+        self.value.truncate(end);
+    }
+
+    /// Charge the unique source this accumulated value keeps alive.
+    #[cfg(test)]
+    fn retained(&mut self, retained: &mut crate::tests::Retained) {
+        self.value().retained(retained);
+    }
+}
+
 /// One item's admission state, independent of its provisional block publication.
 pub(super) struct ItemLines {
     /// Child invocation retained until the owning list's final publication.
     pub(super) child: Child,
     /// Admitted physical spelling, including trailing whitespace.
-    raw: Segmented,
+    raw: Accumulated,
     /// Dedented spelling selected from the same shared source.
-    body: Segmented,
+    body: Accumulated,
+    /// Final admitted line, whose terminator separates it from the next.
+    tail: ScopeSource,
     /// Raw end before trailing whitespace, which the list trims from its final item.
     raw_end: usize,
     /// Whether an admitted line has been blank.
@@ -100,6 +164,7 @@ impl ItemLines {
             child: Child::default(),
             raw: source.clone().into(),
             body: body.into(),
+            tail: source.clone(),
             raw_end: source.text.trim_end_matches(is_whitespace_scalar).len(),
             blank,
             previous_stops,
@@ -121,14 +186,15 @@ impl ItemLines {
             crate::source::Cursor::materialize,
         );
         let offset = end + separator.text.len();
-        self.raw = source.select(start..offset);
+        self.raw = source.select(start..offset).into();
         self.body.truncate(self.trimmed.body_end);
         let padding_end = separator.text.len() - usize::from(separator.text.ends_with('\n'));
         let mut padding = separator.select(std::iter::once(0..padding_end));
         if matches!(self.trimmed.padding, Padding::Expanded) {
             padding = padding.replace("\t", "    ");
         }
-        self.body.append(&padding.into());
+        self.body.push(padding.into());
+        self.tail = separator;
         self.blank = self.trimmed.blank;
         self.previous_stops = self.trimmed.previous_stops;
         self.phase = self.trimmed.phase;
@@ -155,26 +221,32 @@ impl ItemLines {
             return false;
         }
         let measured = original.replace("\t", "    ");
-        let spaces = measured
+        let empty = original
             .text
-            .bytes()
-            .take_while(|byte| *byte == b' ')
-            .count();
-        let empty = original.text.trim_matches(is_whitespace_scalar).is_empty();
-        let aligned = spaces >= self.indent || empty;
+            .trim_end_matches(is_whitespace_scalar)
+            .is_empty();
+        // Only the first continuation indent decides alignment, so the scan stops there.
+        let aligned = empty
+            || measured
+                .text
+                .as_bytes()
+                .get(..self.indent)
+                .is_some_and(|prefix| prefix.iter().all(|byte| *byte == b' '));
         if !aligned && (self.blank || self.previous_stops) {
             return false;
         }
         let start = truncate_utf16(&measured.text, self.indent).len();
-        self.body
-            .append(&self.raw.select(self.raw.len() - 1..self.raw.len()));
+        if let Some(last) = self.tail.text.len().checked_sub(1) {
+            self.body
+                .push(self.tail.select(std::iter::once(last..last + 1)).into());
+        }
         let content = if aligned {
             measured.select(std::iter::once(start..measured.text.len()))
         } else {
             original
         };
         let body_end = self.body.len() + content.text.trim_end_matches(is_whitespace_scalar).len();
-        self.body.append(&content.into());
+        self.body.push(content.into());
         self.previous_stops = self.rules.ends_lazy(&measured.text[start..]);
         self.blank |= empty;
         self.phase = Phase::Open;
@@ -206,12 +278,16 @@ impl ItemLines {
         }
         self.suffix.swap(0, 1);
         self.suffix[1] = source.clone();
-        self.raw.append(&source.into());
+        self.tail = source.clone();
+        self.raw.push(source.into());
     }
 
     /// Charge the unique source this item keeps alive while its list is open.
+    ///
+    /// Both accumulators join their pending pieces first, as a reader of the whole
+    /// value does.
     #[cfg(test)]
-    pub(super) fn retained(&self, retained: &mut crate::tests::Retained) {
+    pub(super) fn retained(&mut self, retained: &mut crate::tests::Retained) {
         self.raw.retained(retained);
         self.body.retained(retained);
         self.trimmed.line.retained(retained);
@@ -222,19 +298,20 @@ impl ItemLines {
 
     /// Keep only what publication and a caller replay read from a stopped item.
     pub(super) fn complete(self) -> CompletedItem {
-        let task = super::task(&self.body).1;
+        let body = self.body.into_value();
+        let task = super::task(&body).1;
         let blank_end = blank_suffix(&self.suffix);
         CompletedItem {
             child: self.child,
-            body: self.body,
+            body,
             task,
             blank_end,
         }
     }
 
     /// Borrow dedented source for child admission.
-    pub(super) fn body(&self) -> &Segmented {
-        &self.body
+    pub(super) fn body(&mut self) -> &Segmented {
+        self.body.value()
     }
 
     /// Final semantic boundary already measured during physical-line admission.
@@ -243,8 +320,8 @@ impl ItemLines {
     }
 
     /// Borrow the complete recognized raw, independently of final-list trim.
-    pub(super) fn raw(&self) -> &Segmented {
-        &self.raw
+    pub(super) fn raw(&mut self) -> &Segmented {
+        self.raw.value()
     }
 
     /// End of the final non-whitespace raw scalar.
