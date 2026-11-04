@@ -238,6 +238,10 @@ impl<'input> XmlParser<'input> {
 
 /// Decode one text fragment, preserving literal carriage returns and raw failures.
 pub(crate) fn decode_text(text: &str) -> String {
+    // A run without an entity or markup parses to itself, so the round trip is skipped.
+    if !text.contains('&') && !text.contains('<') {
+        return text.to_owned();
+    }
     let fragment = format!("<t>{}</t>", text.replace('\r', "&#13;"));
     parse_xml_string(&fragment, false)
         .map_or_else(|_| text.to_owned(), |xml| xml.root().text_content())
