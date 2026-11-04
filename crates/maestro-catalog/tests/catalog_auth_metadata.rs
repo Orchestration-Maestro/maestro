@@ -426,6 +426,39 @@ fn configured_key_does_not_mask_fallback_error() {
         };
         assert!(actual == case.expected, "recorded presence failure");
     }
+    let interleaved = r#"[{"test":"x","input":1,"expected":null},
+        {"test":"y","input":2,"expected":"kept elsewhere"},
+        {"test":"x","input":3,"expected":null}]"#;
+    let rows = maestro_test_fixtures::cases::<serde_json::Value>(interleaved, "x").unwrap();
+    let inputs: Vec<_> = rows.iter().map(|row| row.input.clone()).collect();
+    assert_eq!(inputs, [serde_json::json!(1), serde_json::json!(3)]);
+    assert_eq!(rows[0].expected, serde_json::Value::Null);
+    assert!(
+        maestro_test_fixtures::cases::<serde_json::Value>(
+            r#"[{"test":"x","input":1,"expected":null,"extra":true}]"#,
+            "x"
+        )
+        .is_err(),
+        "an extra outer field fails the whole array"
+    );
+    assert!(
+        maestro_test_fixtures::cases::<u32>(
+            r#"[{"test":"x","input":1,"expected":null},{"test":"y","input":"wrong"}]"#,
+            "x"
+        )
+        .is_err(),
+        "an unselected row still decodes"
+    );
+    let error = maestro_test_fixtures::cases::<serde_json::Value>(
+        include_str!("fixtures/fallback_failures.json"),
+        "ConfiguredKeyDoesNotMaskFallbackError",
+    )
+    .err()
+    .unwrap();
+    assert_eq!(
+        error.to_string(),
+        "empty fixture group: ConfiguredKeyDoesNotMaskFallbackError"
+    );
 }
 #[test]
 fn provider_status_does_not_mask_fallback_failure() {

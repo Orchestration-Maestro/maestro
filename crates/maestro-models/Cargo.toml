@@ -41,6 +41,7 @@ test-support = ["maestro-request/test-support"]
 
 [dev-dependencies]
 maestro-request = { path = "../maestro-request", features = ["test-support"] }
+maestro-test-fixtures.workspace = true
 
 [lints]
 workspace = true

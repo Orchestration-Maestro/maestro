@@ -11,6 +11,18 @@ use std::thread::JoinHandle;
 /// Fallible test body result.
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+/// First value recorded under the exact header name `name`.
+///
+/// Names are compared as supplied and the borrowed value is the first exact match, so a
+/// repeated header keeps its first value. Normalization stays with the request producer.
+#[must_use]
+pub fn header<'a>(headers: &'a [(String, String)], name: &str) -> Option<&'a str> {
+    headers
+        .iter()
+        .find(|(candidate, _)| candidate == name)
+        .map(|(_, value)| value.as_str())
+}
+
 /// What the server read from its client.
 pub struct Received {
     /// Method, target and version.
@@ -27,10 +39,7 @@ impl Received {
     /// First value of a header.
     #[must_use]
     pub fn header(&self, name: &str) -> Option<&str> {
-        self.headers
-            .iter()
-            .find(|(candidate, _)| candidate == name)
-            .map(|(_, value)| value.as_str())
+        header(&self.headers, name)
     }
 
     /// The bytes after `name: ` on the header line of that name (lowercase), as received.

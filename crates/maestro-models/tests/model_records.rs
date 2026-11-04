@@ -125,9 +125,19 @@ mod tests {
         assert_eq!(message.diagnostics, Some(vec![diagnostic, second]));
     }
     fn assert_literals<T: serde::de::DeserializeOwned + serde::Serialize>(literals: &[&str]) {
-        for literal in literals {
-            let record: T = serde_json::from_value(json!(literal)).unwrap();
-            assert_eq!(serde_json::to_value(record).unwrap(), json!(literal));
+        assert!(maestro_test_fixtures::literals_round_trip::<T>(literals).unwrap());
+    }
+
+    /// Record whose decode accepts every string and whose encode writes another one.
+    struct Withheld;
+    impl<'de> serde::Deserialize<'de> for Withheld {
+        fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            String::deserialize(deserializer).map(|_| Self)
+        }
+    }
+    impl serde::Serialize for Withheld {
+        fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.serialize_str("other")
         }
     }
 
@@ -136,6 +146,15 @@ mod tests {
         use maestro_models::records::types::{CacheRetention, ThinkingBudgets, Transport};
         assert_literals::<CacheRetention>(&["none", "short", "long"]);
         assert_literals::<Transport>(&["sse", "websocket", "websocket-cached", "auto"]);
+        assert!(maestro_test_fixtures::literals_round_trip::<CacheRetention>(&[]).unwrap());
+        assert!(
+            maestro_test_fixtures::literals_round_trip::<CacheRetention>(&["gone"]).is_err(),
+            "an unrecorded literal fails its decode"
+        );
+        assert!(
+            !maestro_test_fixtures::literals_round_trip::<Withheld>(&["none"]).unwrap(),
+            "a record that encodes another value is not a round trip"
+        );
         let budget = json!({"minimal":1.0,"low":2.0,"medium":3.0,"high":4.0});
         let record: ThinkingBudgets = serde_json::from_value(budget.clone()).unwrap();
         assert_eq!(serde_json::to_value(record).unwrap(), budget);

@@ -6,13 +6,7 @@ use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock};
 
 /// One recorded public operation.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Case {
-    pub test: String,
-    pub input: Input,
-    pub expected: Value,
-}
+pub type Case = maestro_test_fixtures::Case<Input>;
 /// Supplied operation inputs.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -43,11 +37,7 @@ pub struct Descriptor {
 }
 /// Rows owned by the requested test.
 pub fn cases(test: &str) -> Vec<Case> {
-    let rows: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/fallback_failures.json")).unwrap();
-    let rows: Vec<_> = rows.into_iter().filter(|row| row.test == test).collect();
-    assert!(!rows.is_empty());
-    rows
+    maestro_test_fixtures::cases(include_str!("../fixtures/fallback_failures.json"), test).unwrap()
 }
 /// Real registry whose single live descriptor has the recorded identity.
 pub fn registry(configured: bool) -> ModelRegistry {

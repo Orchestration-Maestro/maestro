@@ -83,10 +83,7 @@ impl Seen {
     /// Value of a header.
     #[must_use]
     pub fn header(&self, name: &str) -> Option<&str> {
-        self.headers
-            .iter()
-            .find(|(candidate, _)| candidate == name)
-            .map(|(_, value)| value.as_str())
+        maestro_test_process::loopback::header(&self.headers, name)
     }
 }
 /// Requests recorded by a controlled transport.
