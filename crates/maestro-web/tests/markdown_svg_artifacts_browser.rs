@@ -130,7 +130,7 @@ mod tests {
     /// SVG documents load as inert, contained, pointer-interactive native images.
     #[wasm_bindgen]
     pub async fn svg_preview_is_an_inert_contained_image() {
-        run(include_str!("markdown_svg_support/url_audit.js"));
+        let _urls = crate::markdown_svg_support::url_audit::install();
         for case in cases("svg").filter(|c| c.outcome.as_deref() == Some("load")) {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
@@ -149,7 +149,7 @@ mod tests {
     /// Empty and malformed SVG preserve no-image and native error states separately.
     #[wasm_bindgen]
     pub async fn svg_empty_and_invalid_content_keep_native_states() {
-        run(include_str!("markdown_svg_support/url_audit.js"));
+        let _urls = crate::markdown_svg_support::url_audit::install();
         for case in cases("svg").filter(|c| c.outcome.as_deref() != Some("load")) {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
@@ -179,7 +179,7 @@ mod tests {
     /// Resource identity follows edits and real attachment, never selection or hiding.
     #[wasm_bindgen]
     pub async fn svg_urls_follow_content_and_real_attachment() {
-        run(include_str!("markdown_svg_support/url_audit.js"));
+        let _urls = crate::markdown_svg_support::url_audit::install();
         let case = corpus().lifecycle;
         let mut view = View::new("a.svg", &case.contents[0]);
         view.element.connected_callback().unwrap();
@@ -284,7 +284,7 @@ mod tests {
     }
     /// Exercise real panel lifecycle forwarding, including an already-connected insert.
     fn panel_attachment() {
-        run(include_str!("markdown_svg_support/url_audit.js"));
+        let _urls = crate::markdown_svg_support::url_audit::install();
         let panel = crate::panel_browser_support::Panel::new();
         panel.create("a.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
         check("urlBlobs.size===1");

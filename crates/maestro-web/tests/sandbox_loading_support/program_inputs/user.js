@@ -1,0 +1,1 @@
+S.started=true;S.ready=document.readyState;S.beforeDcl=!S.dcl;S.metaUrl=import.meta.url;S.base=document.baseURI;S.cr=(()=>{/**/}).toString().includes('\r');S.helper=(await import('./helper.js')).answer;return String.raw`</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪`;

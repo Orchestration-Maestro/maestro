@@ -278,20 +278,20 @@ pub fn header_root_release_detaches_callbacks_with_factory_alias() {
 fn registration_failures(factory: &maestro_web::browser::attachment_content::ReadingContent) {
     let document = web_sys::window().unwrap().document().unwrap();
     for failed_removal in [false, true] {
-        let hook = js(
-            &document,
-            &format!(
-                "const failedRemoval={failed_removal}; {}",
-                include_str!("disclosure_registration.js")
-            ),
-        );
+        let hook = super::hooks::Registrations::install(failed_removal);
         let result = (factory.mount)(&document);
-        let evidence = js(&hook, "return value.stop()");
+        let (added, removed) = hook.stop();
         assert!(result.is_err());
-        assert!(js(&evidence,"return value.added.length===1 && value.removed.length===1 && value.added[0][0]===value.removed[0][0] && value.added[0][1]===value.removed[0][1]").as_bool().unwrap());
-        js(
-            &evidence,
-            "const [target,callback]=value.added[0],before=target.className;target.dispatchEvent(new Event('click'));if(target.className!==before)throw Error('released callback changed state')",
+        assert!(added.len() == 1 && removed.len() == 1 && added[0] == removed[0]);
+        let target: web_sys::Element = added[0].0.clone().unchecked_into();
+        let before = target.class_name();
+        target
+            .dispatch_event(&web_sys::Event::new("click").unwrap())
+            .unwrap();
+        assert_eq!(
+            target.class_name(),
+            before,
+            "released callback changed state"
         );
     }
 }
@@ -352,15 +352,9 @@ pub fn header_replacement_resets_disclosures_without_losing_old_on_failure() {
             &root,
             "const s=window.getSelection();return {anchor:s.anchorNode,focus:s.focusNode,text:s.toString()}",
         );
-        let hook = js(
-            &root,
-            &format!(
-                "const kind={kind:?};{}",
-                include_str!("disclosure_replacement.js")
-            ),
-        );
+        let hook = super::hooks::CandidateFault::install(&root, kind);
         let result = redraw(&mut header);
-        js(&hook, "value()");
+        hook.stop();
         assert!(result.is_err(), "{kind}");
         assert!(root.is_connected());
         assert!(js(&selection,"const s=window.getSelection();return s.anchorNode===value.anchor && s.focusNode===value.focus && s.toString()===value.text").as_bool().unwrap());
@@ -397,12 +391,7 @@ async fn style_corpus() {
             slots.content = factory_for(&row["input"]["data"]);
             let layout = slots.publish(egui::vec2(350., 600.), &[]);
             let root = root();
-            let output: serde_json::Value = serde_json::from_str(
-                &js(&root, include_str!("disclosure_projection.js"))
-                    .as_string()
-                    .unwrap(),
-            )
-            .unwrap();
+            let output = super::hooks::projection(&root);
             assert_eq!(output, row["output"], "{}", row["name"]);
             assert!(layout.height > 0.);
             let bounds = root.get_bounding_client_rect();
