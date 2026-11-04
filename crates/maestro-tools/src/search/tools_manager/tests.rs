@@ -493,7 +493,11 @@ async fn installs(name: &str) {
         return;
     }
     for row in cases::<Install>(name) {
-        let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "unit").unwrap();
+        let scratch = Staging::create(
+            maestro_test_directory::temporary_root().to_str().unwrap(),
+            "unit",
+        )
+        .unwrap();
         // A host `tar` that accepts an empty archive reaches the binary check instead of the
         // recorded extraction failure.
         let empty = (row.download.as_ref()).is_some_and(|body| body.text.as_deref() == Some(""));
@@ -607,7 +611,11 @@ struct WalkCase {
 #[test]
 fn recursive_search_prefers_files_then_the_last_directory() {
     for row in cases::<WalkCase>("recursive_search_prefers_files_then_the_last_directory") {
-        let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "walk").unwrap();
+        let scratch = Staging::create(
+            maestro_test_directory::temporary_root().to_str().unwrap(),
+            "walk",
+        )
+        .unwrap();
         let root = Path::new(&scratch.path);
         for file in row.files {
             let path = root.join(&file);
@@ -646,7 +654,11 @@ struct EntryCase {
 fn windows_binary_directory_entries_carry_the_exe_suffix() {
     run(async {
         for row in cases::<EntryCase>("windows_binary_directory_entries_carry_the_exe_suffix") {
-            let scratch = Staging::create(std::env::temp_dir().to_str().unwrap(), "entry").unwrap();
+            let scratch = Staging::create(
+                maestro_test_directory::temporary_root().to_str().unwrap(),
+                "entry",
+            )
+            .unwrap();
             let path = Path::new(&scratch.path).join("fd.exe");
             match row.kind.as_str() {
                 "file" => std::fs::write(&path, "not executable").unwrap(),
@@ -728,8 +740,11 @@ fn lookup_and_download_deadlines_cover_the_whole_body() {
     }
     run_paused(async {
         for phase in 0..3 {
-            let scratch =
-                Staging::create(std::env::temp_dir().to_str().unwrap(), "deadline").unwrap();
+            let scratch = Staging::create(
+                maestro_test_directory::temporary_root().to_str().unwrap(),
+                "deadline",
+            )
+            .unwrap();
             let bin = maestro_path::join(&[&scratch.path, "bin"]);
             let fetch = stalled_fetch(phase);
             let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
@@ -774,8 +789,11 @@ fn concurrent_installs_stage_in_separate_directories() {
         return;
     }
     run(async {
-        let scratch =
-            Staging::create(std::env::temp_dir().to_str().unwrap(), "concurrent").unwrap();
+        let scratch = Staging::create(
+            maestro_test_directory::temporary_root().to_str().unwrap(),
+            "concurrent",
+        )
+        .unwrap();
         let bin = maestro_path::join(&[&scratch.path, "bin"]);
         let fetch = concurrent_fetch(bin.clone());
         let mut manager = ToolsManager::new(bin.clone(), Some(fetch));

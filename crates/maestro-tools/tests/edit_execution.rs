@@ -433,7 +433,7 @@ fn cwd_binding() {
         assert!(ops.script.calls().iter().all(|call| call[1] == absolute));
         std::env::set_current_dir(original.path()).unwrap();
     }
-    std::env::set_current_dir(std::env::temp_dir()).unwrap();
+    std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
 }
 
 /// Native adapter whose first read is captured before a controlled release.
@@ -627,7 +627,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
     .unwrap();
     assert!(error.message.contains("edits must contain"));
     assert!(ops.script.calls().is_empty());
-    std::env::set_current_dir(std::env::temp_dir()).unwrap();
+    std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
 }
 
 #[test]
@@ -868,7 +868,7 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
             }
         }
     }
-    std::env::set_current_dir(std::env::temp_dir()).unwrap();
+    std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
 }
 
 #[test]
