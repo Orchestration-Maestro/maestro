@@ -380,6 +380,15 @@ impl<E> Lexer<'_, E> {
         if crate::source::strip_quote(&first.text).len() == first.text.len() {
             return None;
         }
+        let marker = first
+            .text
+            .bytes()
+            .take_while(|byte| *byte == b' ')
+            .count()
+            .min(3);
+        if self.is_escaped_closer(source, marker) {
+            return None;
+        }
         let (raw, matched) = quote_prefix(source, rules::block_blockquote(self.options)?)?;
         self.undecided |= !source.settled_after(matched.end());
         let view = raw.view(0..raw.text.len());

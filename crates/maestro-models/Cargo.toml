@@ -36,6 +36,12 @@ idna = "=1.1.0"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 
+[features]
+test-support = ["maestro-request/test-support"]
+
+[dev-dependencies]
+maestro-request = { path = "../maestro-request", features = ["test-support"] }
+
 [lints]
 workspace = true
 

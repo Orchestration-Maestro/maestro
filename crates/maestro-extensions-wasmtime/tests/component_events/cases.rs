@@ -150,7 +150,7 @@ async fn emit<V: RunnerEmitEvent<Result = ()>>(
 }
 
 /// Emits the named notification with a minimal typed event.
-pub(super) async fn notify(runner: &ExtensionRunner<Local>, name: &str) -> bool {
+pub(crate) async fn notify(runner: &ExtensionRunner<Local>, name: &str) -> bool {
     use maestro_extensions as domain;
     match name {
         "session_start" => emit(runner, SessionStartEvent { reason: SessionStartReason::Startup, previous_session_file: Presence::Missing }).await,

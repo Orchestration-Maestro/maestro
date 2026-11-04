@@ -2152,8 +2152,8 @@ or replace queued landing runs. This is separate from required merge checks.
 Push runs never read a coverage baseline: the lookup runs only for merge
 groups. The suite caller still grants `actions: read`, because the
 shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller and the reporter caller pin the
-released shared CI commit that the organization rulesets require. Each pin
+fail to start. The suite caller, the reporter caller and the guards caller pin
+the released shared CI commit that the organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 
@@ -2175,7 +2175,7 @@ the existing release App's repository-scoped token, minted from
 pull requests write access, plus workflows write access so it can revert CI
 changes. The App must be installed here and the organization
 secret available here. This token lets the revert trigger checks; test jobs do
-not receive it. The reporting workflow alone is declared in
+not receive it. The reporting workflow is declared in
 `privileged_trigger_workflows` for the existing trigger audit.
 
 Unknown PR attribution, missing permissions or a revert conflict fails the
@@ -2186,6 +2186,33 @@ Chromium job, such as a cancelled run. Inspect that run and the failure issue;
 resolve a conflict in a reviewed PR. Do not bypass required checks or push to
 main to recover. The workflow-run listener becomes active after it lands on
 the default branch.
+
+## CI speed guards
+
+`CI speed guards` hands each finished merge-group run of `Rust CI` to the shared
+guards, with that run's id. The guards hold time per unit of work against a
+ratchet, the compile-cache hit rate, the test selection share, shard balance,
+tests over 30 seconds and the pinned required checks; each one fails a check or
+files one issue per cause, and a breach that persists adds to that issue rather
+than filing another. A cold compile cache shows in the merge group first: its
+archive build reports the hit rate against the floor.
+
+A default-branch push is not judged yet. The only workflow that runs the suite on
+a push is `Full suite after landing`, which calls it through one reusable job, so
+its checks are named `suite / Caller declaration` and so on. The guards compare
+the pinned names exactly, so every landing would report all pinned checks as
+missing and open an issue for it. Until the shared guards read that prefix
+([issue 354](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/354)),
+this caller stops at the merge groups.
+
+On pull requests the same caller passes no run id, so only the shared test-time
+exception check runs. It fails when a nextest override allows more than the hang
+limit and the comment above it names no open issue. The caller reads Actions runs
+and contents, and writes issues with the automatic job token; GitHub reads a
+called workflow's own permissions when the run loads, so one caller job covers
+both events. It is declared in `privileged_trigger_workflows` beside the
+reporter, so the trigger audit exempts only these two files. Like the reporter,
+it becomes active after it lands on the default branch.
 
 ## Fuzzing
 
@@ -2310,10 +2337,11 @@ these boundaries while retaining cross-crate cycle detection.
 
 The terminal toolkit's `test_support` module owns controlled runtimes, recording
 terminals and input-global admission. The scenario library reexports the runtime
-and terminal helpers. Theme, tool, credential, agent, extension, Markdown and package helpers
-live in their type owners. Native loopback servers, child probes and toolchain
-selection live in `maestro-test-process`. Fallible helpers return their errors to
-the test caller; fixed-output callbacks retain immediate assertions.
+and terminal helpers. Theme, tool, credential, request (usage), agent, extension,
+Markdown and package helpers live in their type owners. Native loopback servers,
+child probes and toolchain selection live in `maestro-test-process`. Fallible
+helpers return their errors to the test caller; fixed-output callbacks retain
+immediate assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build
 profiles. Only the parent program receives coverage instrumentation.

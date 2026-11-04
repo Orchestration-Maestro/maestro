@@ -633,11 +633,12 @@ fn extension_argument_callback_receives_the_typed_prefix() {
                 .outcome
                 .clone()
                 .unwrap_or_else(|| "success".to_owned());
+            let query = input.query.clone().unwrap_or_default();
             let called = Rc::new(RefCell::new(Vec::new()));
             let record = output_record(&called, &outcome);
             let world = Setup::default().build(directory);
             let provider = provider(&world, &[record]);
-            let result = suggested(&provider, "/addon value").await;
+            let result = suggested(&provider, &format!("/addon {query}")).await;
             assert_eq!(
                 called.borrow().as_slice(),
                 [expected.called.clone().unwrap()]
@@ -899,9 +900,6 @@ fn file_completion_consumes_the_search_owner_fd_path() {
             );
             assert_eq!(applied.lines, ["@target-unique.rs "]);
             std::fs::remove_file(managed.join("fd")).unwrap();
-            let world = Setup::default().build(directory);
-            start(&world).await;
-            let completer = provider(&world, &[]);
             let without = suggested(&completer, &query).await.unwrap();
             recorded(without, expected.without_selected_executable.as_ref());
         },

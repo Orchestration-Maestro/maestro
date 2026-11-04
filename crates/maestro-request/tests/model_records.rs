@@ -366,6 +366,14 @@ fn saved_usage_preserves_total_presence() {
 }
 
 #[test]
+fn the_zero_usage_record_reads_as_the_default_usage() {
+    use maestro_request::test_support::zero_usage;
+    use maestro_request::types::Usage;
+    let read: Usage = serde_json::from_value(zero_usage()).unwrap();
+    assert_eq!(read, Usage::default());
+}
+
+#[test]
 fn usage_defaults_preserve_zero_fields() {
     use maestro_request::presence::Presence;
     use maestro_request::types::Usage;

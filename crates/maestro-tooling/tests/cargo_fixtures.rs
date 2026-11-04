@@ -2,6 +2,7 @@
 
 use crate::recipe_support::{self, Workspace};
 use crate::toolchain_support;
+use crate::tooling_closure::{dependency_entries, tooling_local_dependencies};
 use maestro_test_directory::Scratch;
 use std::fs;
 use std::path::Path;
@@ -481,21 +482,8 @@ fn read_manifest(path: &str) -> toml::Table {
 
 /// Names of the dependencies a manifest declares, including its target-specific tables.
 fn declared_dependencies(manifest: &toml::Table) -> Vec<&String> {
-    let targets = manifest
-        .get("target")
-        .and_then(toml::Value::as_table)
-        .into_iter()
-        .flat_map(toml::Table::values)
-        .filter_map(toml::Value::as_table);
-    std::iter::once(manifest)
-        .chain(targets)
-        .flat_map(|table| {
-            ["dependencies", "dev-dependencies"]
-                .into_iter()
-                .filter_map(|kind| table.get(kind))
-        })
-        .filter_map(toml::Value::as_table)
-        .flat_map(toml::Table::keys)
+    dependency_entries(manifest, &["dependencies", "dev-dependencies"])
+        .map(|(name, _)| name)
         .collect()
 }
 
@@ -504,12 +492,8 @@ fn declared_dependencies(manifest: &toml::Table) -> Vec<&String> {
 fn registry_sources_name_every_tooling_dependency() {
     let closure = read_manifest("maestro-tooling/tests/fixtures/registry_sources/Cargo.toml");
     let named = closure["dependencies"].as_table().unwrap();
-    for owner in [
-        "maestro-tooling",
-        "maestro-path",
-        "maestro-test-process",
-        "maestro-test-directory",
-    ] {
+    let owners = std::iter::once("maestro-tooling".to_owned()).chain(tooling_local_dependencies());
+    for owner in owners {
         let manifest = read_manifest(&format!("{owner}/Cargo.toml"));
         for name in declared_dependencies(&manifest) {
             assert!(

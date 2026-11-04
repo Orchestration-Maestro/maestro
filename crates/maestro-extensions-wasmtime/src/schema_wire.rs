@@ -1,4 +1,4 @@
-//! Canonical component records for executable schema calls.
+//! Canonical component records for executable schema calls and event decisions.
 use wasmtime::component::{ComponentType, Lift, Lower, Resource};
 /// The canonical kind of a present JSON value.
 #[derive(ComponentType, Lift, Lower, Clone, Copy, Debug)]
@@ -64,7 +64,7 @@ pub(crate) enum Code {
     #[component(name = "number")]
     Number(f64),
 }
-/// The guest failure without loss of its supplied fields.
+/// The canonical diagnostic record, without loss of its supplied fields.
 #[derive(ComponentType, Lift, Lower, Debug)]
 #[component(record)]
 pub(crate) struct Error {

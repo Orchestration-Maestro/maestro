@@ -91,6 +91,8 @@ pub(crate) struct Work {
     pub(crate) code_bytes: usize,
     /// Bytes supplied to HTML recognition.
     pub(crate) html_bytes: usize,
+    /// Whole-document bytes searched by the escaped browser angle projection.
+    pub(crate) escaped_bytes: usize,
     /// Bytes visited by physical-line framing, including repeated visits.
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.
@@ -498,12 +500,13 @@ fn later_paragraphs_clip_at_their_own_block_hints() {
             Delimited("%%", "`"),
             &["p", "block %%`", "`", "block %%`", " t"][..],
         ),
-        // An escaped opening tag does not suppress a later block hint.
+        // An escaped opening tag does not suppress a later block hint, and its closing
+        // angle stays text after the hint splits the paragraph.
         (
             "p <a\n\nq <$$x$$> r\n",
             escaped,
             Delimited("$$", "$$"),
-            &["p <a", "q <", "block $$x$$"][..],
+            &["p <a", "q <", "block $$x$$", "> r"][..],
         ),
     ] {
         assert_eq!(

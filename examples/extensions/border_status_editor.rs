@@ -19,8 +19,8 @@ use maestro_extensions_wasm::{
     AutocompleteProvider, Background, BackgroundTask, CallbackEmitter, Component, ComponentView,
     ContextUsage, CustomEditor, CustomEditorComponent, Editor, EditorComponent,
     EditorFactoryOutcome, EditorOptions, ExecOptions, ExtensionAPI, ExtensionComponent,
-    ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult, Style, TUI,
-    TextHandler, truncate_to_width, visible_width,
+    ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult, HookFuture, Style,
+    TUI, TextHandler, truncate_to_width, visible_width,
 };
 
 /// Spinner frames in display order, one every 80 milliseconds.
@@ -354,7 +354,7 @@ fn handle(
     work: Rc<Work>,
     event: &'static str,
     context: ExtensionContext,
-) -> ExtensionFuture<'static, Option<ExtensionEventResult>> {
+) -> HookFuture<'static, Option<ExtensionEventResult>> {
     Box::pin(async move {
         match event {
             "session_start" => session_start(api, status, work, context).await?,

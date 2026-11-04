@@ -7,7 +7,7 @@
 )]
 
 use maestro_extensions_wasm::{
-    ExtensionAPI, ExtensionEventResult, ExtensionFuture, ExtensionResult,
+    ExtensionAPI, ExtensionEventResult, ExtensionFuture, HookResult,
     child_process::{SpawnOptions, Stdio},
     io::NativeIo,
 };
@@ -47,7 +47,7 @@ fn terminal_notification(title: &str, body: &str, kitty: bool) -> String {
 }
 
 /// Sends completion through the selected native notification protocol.
-async fn notify(io: Rc<dyn NativeIo>) -> ExtensionResult<Option<ExtensionEventResult>> {
+async fn notify(io: Rc<dyn NativeIo>) -> HookResult<Option<ExtensionEventResult>> {
     if std::env::var_os("WT_SESSION").is_some_and(|v| !v.is_empty()) {
         let child = io
             .spawn(

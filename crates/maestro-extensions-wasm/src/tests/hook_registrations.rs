@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     AgentToolResult, CommandOptions, ExtensionAPI, ExtensionEventResult, ExtensionResult,
-    FlagOptions, FlagType, FlagValue, ShortcutOptions, ToolDefinition,
+    FlagOptions, FlagType, FlagValue, HookResult, ShortcutOptions, ToolDefinition,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -87,10 +87,7 @@ impl Registrations {
 }
 
 /// Reports a handled event and returns no result.
-async fn handled(
-    api: ExtensionAPI,
-    label: String,
-) -> ExtensionResult<Option<ExtensionEventResult>> {
+async fn handled(api: ExtensionAPI, label: String) -> HookResult<Option<ExtensionEventResult>> {
     trace(api, json!({ "event": label })).await?;
     Ok(None)
 }

@@ -119,7 +119,7 @@ fn restore(host: &mut Harness, name: &str, branch: &Value) -> Result<(), String>
     .map_err(|e| e.to_string())?
     .map_err(|e| e.to_string())??;
     match outcome.decision {
-        super::host_family::guest::Decision::Failed(error) => Err(error),
+        super::host_family::guest::Decision::Failed(diagnostic) => Err(diagnostic.message),
         super::host_family::guest::Decision::Returned(result) => result.map(|_| ()),
     }
 }

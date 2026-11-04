@@ -24,8 +24,10 @@ async fn retained(simple: bool, action: &str) {
         Rc::new(|_| panic!("no tails")),
         reporter,
     );
+    let (session, _) = crate::session::runner_session("/render-domain");
+    let registry = maestro_models::SharedHandle::clone(&session.model_registry);
     let (owner, runner, events) =
-        super::super::retained_components::loaded_on(bus.for_extension()).await;
+        super::super::retained_components::loaded_in(bus.for_extension(), session).await;
     register(&runner, "create").await;
     let (entered, mut incoming) = mpsc::unbounded_channel();
     let signal = Cancellation::new();
@@ -44,7 +46,7 @@ async fn retained(simple: bool, action: &str) {
     let producer = tokio::task::spawn_local(producer);
     let (phase, resume) = incoming.recv().await.unwrap();
     assert_eq!(phase, "payload");
-    unregister_api_providers("provider:compiled-stream");
+    registry.unregister_provider("compiled-stream").unwrap();
     bus.clear();
     drop((owner, runner, events, bus));
     unretired(&mut teardown);

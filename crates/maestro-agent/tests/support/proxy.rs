@@ -294,8 +294,10 @@ pub fn message(content: &Value, stop: &str, error: Option<&str>, usage: &str) ->
     }
     expected
 }
-/// Usage with every count and cost zero.
-pub const ZERO: &str = r#"{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}}"#;
+/// Usage with every count and cost zero, as JSON text.
+pub fn zero() -> String {
+    maestro_models::test_support::zero_usage().to_string()
+}
 
 /// A finished run: every event, its handles and the shared final message.
 pub struct Run {

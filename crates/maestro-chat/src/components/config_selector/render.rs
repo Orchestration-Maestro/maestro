@@ -1,6 +1,6 @@
 //! Live header and resource rows through the existing theme/text owners.
 use super::{
-    ConfigSelectorOptions,
+    ComponentOptions,
     resource_list::{FlatEntry, ResourceList},
 };
 use maestro_theme::{Theme, ThemeColor, ThemeError};
@@ -8,7 +8,7 @@ use maestro_tui::{Component, TruncateOptions, expand_tabs, truncate_to_width, vi
 use std::{error::Error, rc::Rc};
 
 /// Current colors and bold policy for the two header rows.
-pub(super) struct ConfigSelectorHeader(pub Rc<ConfigSelectorOptions>);
+pub(super) struct ConfigSelectorHeader(pub Rc<ComponentOptions>);
 /// Clips a displayed row, expanding tab bytes through the toolkit owner.
 fn clip(text: &str, width: usize, ellipsis: &str) -> String {
     truncate_to_width(
@@ -21,11 +21,7 @@ fn clip(text: &str, width: usize, ellipsis: &str) -> String {
     )
 }
 /// Samples an authored foreground role without suppressing missing colors.
-fn paint(
-    options: &ConfigSelectorOptions,
-    color: &ThemeColor,
-    text: &str,
-) -> Result<String, ThemeError> {
+fn paint(options: &ComponentOptions, color: &ThemeColor, text: &str) -> Result<String, ThemeError> {
     options.theme.get()?.fg(color, text)
 }
 impl Component for ConfigSelectorHeader {

@@ -164,7 +164,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C09 | `crates/maestro-extensions-wasm/examples/context_bridge/exec.rs:183-205`; `crates/maestro-extensions-wasmtime/tests/exec_io.rs:80-90,199-205,278-301,446-493`; hook/cache/minimal-mode consumers. |
 | C10 | `crates/maestro/tests/native_io.rs:86-591`; `tests/native_io/faults.rs:214`; `tests/native_io/reload.rs:112-113`; `tests/truncated_tool_example.rs:15-35`; `tests/entry_routes.rs:260-306`. |
 | C11 | `examples/rpc_extension_ui.rs:365` onward; `crates/maestro-chat/Cargo.toml` registers that example; `examples/sdk/test_rpc.py`, `examples/sdk/rpc.py` and the [RPC guide](../rpc.md). |
-| C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_support.rs`; the `tooling-command` and `tooling-wrapper` families of `crates/maestro-test-process/examples/native`; browser/setup/recipe consumers. |
+| C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_support.rs`; the `tooling-command` and `tooling-wrapper` families of `crates/maestro-test-process/tests/support/native`; browser/setup/recipe consumers. |
 | C13 | `crates/maestro-packages/tests/cache_support/native/mod.rs:11-28`; `tests/candidate_inspection_checks.rs:169-176`; `tests/capture_context_checks.rs:34-52`; `tests/git_staging_checks.rs:1042-1056`; native Git and package-manager unit consumers. |
 | C14 | `crates/maestro-models/src/providers/content/google_shared/node_auth/tests/adc.rs:423-434`; `tests/support/profile_files.rs:24-39,60` and every process-profile consumer. |
 | C15 | `crates/maestro-daemon/tests/desktop_notification.rs:20-26,72-74`; `tests/repository_discovery.rs:365-380`. |
