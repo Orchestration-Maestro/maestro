@@ -133,8 +133,17 @@ fn chromium_path_requires_an_absolute_existing_file() {
 fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
     let parsed = inputs::inventory(INVENTORY).unwrap();
     assert_eq!(
-        parsed.families.each_ref().map(|(_, names)| names.len()),
-        [26, 57, 194]
+        parsed
+            .families
+            .iter()
+            .map(|(family, names)| (*family, names.len()))
+            .collect::<Vec<_>>(),
+        [
+            ("execution", 26),
+            ("loading", 57),
+            ("contributions", 194),
+            ("canvas", 38)
+        ]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
     for invalid in [
@@ -221,7 +230,41 @@ fn inventory_matches_authored_exports() {
     let mut selected = inventory.families[2].1.clone();
     selected.sort();
     assert_eq!(selected, names);
+    let (family, selected) = inventory
+        .families
+        .iter()
+        .find(|(family, _)| *family == "canvas")
+        .unwrap();
+    let mut names = CANVAS_SOURCES
+        .iter()
+        .flat_map(|file| source_exports(&root.join(file)))
+        .filter(|name| !SCREENSHOT_EXPORTS.contains(&name.as_str()))
+        .collect::<Vec<_>>();
+    names.sort();
+    let mut selected = selected.clone();
+    selected.sort();
+    assert_eq!(selected, names, "{family}");
 }
+
+/// Authored source modules whose exports mount on the canvas page's `#canvas`.
+const CANVAS_SOURCES: &[&str] = &[
+    "session_header_browser.rs",
+    "session_header_browser_support/disclosures.rs",
+    "markdown_svg_artifacts_browser.rs",
+    "pdf_views_browser.rs",
+    "expandable_output_browser.rs",
+    "session_links_browser.rs",
+    "session_download_browser.rs",
+];
+
+/// Canvas exports that also await the screenshot observation the driver does not supply.
+const SCREENSHOT_EXPORTS: &[&str] = &[
+    "header_trailing_spacing_precedes_following_widget",
+    "reading_viewport_keeps_content_and_occluders_clipped",
+    "reading_frame_neighbors_keep_existing_paint",
+    "export_rendering_uses_the_selected_brand_roles",
+    "copy_link_native_slot_composition_preserves_reading_selection",
+];
 
 /// Authored source modules supplying the contribution inventory.
 const CONTRIBUTION_SOURCES: &[&str] = &[
@@ -257,7 +300,7 @@ const CONTRIBUTION_SOURCES: &[&str] = &[
 /// Read only declarations exported with the authored browser-binding attribute.
 fn source_exports(path: &Path) -> Vec<String> {
     let source = fs::read_to_string(path).unwrap();
-    let lines = source.lines().collect::<Vec<_>>();
+    let lines = source.lines().map(str::trim).collect::<Vec<_>>();
     lines
         .windows(2)
         .filter(|pair| {
