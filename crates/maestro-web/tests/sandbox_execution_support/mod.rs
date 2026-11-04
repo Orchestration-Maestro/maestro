@@ -486,17 +486,16 @@ impl Fixture {
         } else {
             "bootstrap-waiting"
         };
+        let document = Self::bootstrap_document(signal);
         format!(
             "data:text/html,{}",
-            String::from(js_sys::encode_uri_component(&Self::bootstrap_document(
-                signal
-            )))
+            String::from(js_sys::encode_uri_component(&document))
         )
     }
-    /// Native bootstrap document announcing itself to its parent with `signal`.
+    /// Bootstrap document that announces itself to its parent with `signal`.
     #[must_use]
     pub(crate) fn bootstrap_document(signal: &str) -> String {
-        // The bootstrap document runs inside the isolated frame and loads what it receives.
+        // The document writes the code of a load message only when its parent sent it.
         include_str!("bootstrap.html")
             .trim_end()
             .replace("__TYPE__", &serde_json::Value::from(signal).to_string())
