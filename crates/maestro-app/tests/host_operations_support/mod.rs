@@ -5,9 +5,10 @@ pub use commands::git;
 
 /// The installed location of the fixture repository under one scope root.
 pub fn repository(root: &std::path::Path) -> std::path::PathBuf {
-    ["git", "example.test", "team", "repo"]
-        .iter()
-        .fold(root.to_path_buf(), |path, part| path.join(part))
+    root.join("git")
+        .join("example.test")
+        .join("team")
+        .join("repo")
 }
 
 /// Creates two commits with a pin at the first and a local-only origin.
