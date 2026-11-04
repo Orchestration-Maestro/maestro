@@ -49,19 +49,19 @@ pub(super) fn request(
     })
 }
 
-/// Keybinding keys from their wire form.
-fn keys(keys: host::KeybindingKeys) -> KeybindingKeys {
-    match keys {
-        host::KeybindingKeys::Single(key) => KeybindingKeys::Single(key),
-        host::KeybindingKeys::Multiple(keys) => KeybindingKeys::Multiple(keys),
-    }
-}
-
 /// The wire form of keybinding keys.
 pub(super) fn wire_keys(keys: &KeybindingKeys) -> host::KeybindingKeys {
     match keys {
         KeybindingKeys::Single(key) => host::KeybindingKeys::Single(key.clone()),
         KeybindingKeys::Multiple(keys) => host::KeybindingKeys::Multiple(keys.clone()),
+    }
+}
+
+/// Keybinding keys from their wire form.
+fn keys(keys: host::KeybindingKeys) -> KeybindingKeys {
+    match keys {
+        host::KeybindingKeys::Single(key) => KeybindingKeys::Single(key),
+        host::KeybindingKeys::Multiple(keys) => KeybindingKeys::Multiple(keys),
     }
 }
 

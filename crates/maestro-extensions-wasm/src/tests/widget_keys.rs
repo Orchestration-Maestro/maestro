@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use serde_json::json;
 
-use super::author::binding_config::bindings_json as config;
+use super::author::binding_config::bindings_json;
 use super::observed::Observed;
 use crate::{
     KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
@@ -66,7 +66,10 @@ pub fn keep(
     managers.1 += 1;
     let key = managers.1;
     let definitions = definitions.unwrap_or_else(defaults);
-    observed.log(format!("keys {key} new {}", json!([config(&user), path])));
+    observed.log(format!(
+        "keys {key} new {}",
+        json!([bindings_json(&user), path])
+    ));
     observed.ui.keys.0.insert(
         key,
         Manager {
@@ -198,7 +201,7 @@ pub fn request(observed: &mut Observed, key: u32, request: Request) -> Answer {
         Request::Keys(id) => format!("getKeys {}", json!(id)),
         Request::Definition(id) => format!("getDefinition {}", json!(id)),
         Request::Conflicts => "getConflicts".to_owned(),
-        Request::SetUserBindings(user) => format!("setUserBindings {}", config(user)),
+        Request::SetUserBindings(user) => format!("setUserBindings {}", bindings_json(user)),
         Request::UserBindings => "getUserBindings".to_owned(),
         Request::ResolvedBindings => "getResolvedBindings".to_owned(),
         Request::Reload => "reload".to_owned(),

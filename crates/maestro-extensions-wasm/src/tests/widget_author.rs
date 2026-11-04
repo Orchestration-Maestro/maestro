@@ -27,6 +27,8 @@ use maestro_extensions_wasm::{
 };
 use std::rc::Rc;
 
+use super::binding_json::keys_json;
+
 /// A widget or authored component the author keeps under a name.
 #[derive(Clone)]
 enum Kept {
@@ -964,7 +966,6 @@ fn bindings(value: Option<Value>) -> ExtensionResult<KeybindingsConfig> {
 }
 
 pub(super) use super::binding_config::bindings_json;
-use super::binding_json::keys_json;
 
 /// A kept keybindings manager from its source.
 fn manager_of(step: Step) -> ExtensionResult<(String, KeybindingsManager)> {
