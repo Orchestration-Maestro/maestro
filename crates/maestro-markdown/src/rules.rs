@@ -130,7 +130,7 @@ pub(crate) struct ItemStops {
 impl ItemStops {
     /// A current line can end framing before it is dedented.
     pub(crate) fn interrupts(&self, line: &str) -> bool {
-        rule_matches(self.interrupts.as_ref(), line)
+        Self::within_prefix(line) && rule_matches(self.interrupts.as_ref(), line)
     }
 
     /// A previous code line or block opener cannot admit another lazy line.
@@ -144,7 +144,15 @@ impl ItemStops {
                     .sum::<usize>()
                     >= 4
             });
-        code || rule_matches(self.lazy.as_ref(), line)
+        code || (Self::within_prefix(line) && rule_matches(self.lazy.as_ref(), line))
+    }
+
+    /// Whether the line's first non-space byte lies where every stop alternative starts.
+    ///
+    /// Each alternative begins with at most three spaces, so a deeper line cannot match
+    /// and does not need the grammar.
+    fn within_prefix(line: &str) -> bool {
+        line.bytes().take_while(|byte| *byte == b' ').count() <= 3
     }
 }
 

@@ -196,16 +196,77 @@ pub(crate) mod tests {
             "lineHeight": typography.line_height,
             "weight": typography.weight,
         });
-        js_sys::Reflect::set(
-            &js_sys::global(),
-            &"exportTypography".into(),
-            &expected.to_string().into(),
+        assert!(typography_matches(root, &expected));
+    }
+
+    /// CSS text of a recorded number or string value.
+    fn css(value: &serde_json::Value) -> String {
+        value
+            .as_str()
+            .map_or_else(|| value.to_string(), str::to_owned)
+    }
+
+    /// The bounds of the text in `element`'s first child.
+    fn text_bounds(element: &web_sys::Element) -> web_sys::DomRect {
+        use crate::browser_fixture_support::invoke;
+        let document = element.owner_document().unwrap();
+        let range = invoke(&document, "createRange", &[]).unwrap();
+        invoke(
+            &range,
+            "selectNodeContents",
+            &[&element.first_child().unwrap()],
         )
         .unwrap();
-        assert_eq!(
-            js(root, include_str!("export_support/typography.js")).as_bool(),
-            Some(true)
-        );
+        invoke(&range, "getBoundingClientRect", &[])
+            .unwrap()
+            .unchecked_into()
+    }
+
+    /// Whether the exported paragraph below `root` measures like an independently styled
+    /// specimen of the same text in the `expected` family, fallbacks, size, line height and weight.
+    fn typography_matches(root: &web_sys::Element, expected: &serde_json::Value) -> bool {
+        use wasm_bindgen::JsCast as _;
+        let document = root.owner_document().unwrap();
+        let target = root.query_selector(".markdown-content p").unwrap().unwrap();
+        let reference: web_sys::HtmlElement =
+            document.create_element("div").unwrap().unchecked_into();
+        reference.set_text_content(target.first_child().unwrap().text_content().as_deref());
+        let style = reference.style();
+        style.set_css_text("position:fixed;visibility:hidden;white-space:pre");
+        let fallbacks = expected["fallbacks"].as_array().unwrap().iter().map(css);
+        let family = std::iter::once(expected["family"].to_string()).chain(fallbacks);
+        style
+            .set_property("font-family", &family.collect::<Vec<_>>().join(","))
+            .unwrap();
+        style
+            .set_property("font-size", &format!("{}px", css(&expected["size"])))
+            .unwrap();
+        style
+            .set_property("line-height", &css(&expected["lineHeight"]))
+            .unwrap();
+        style
+            .set_property("font-weight", &css(&expected["weight"]))
+            .unwrap();
+        document.body().unwrap().append_child(&reference).unwrap();
+        let (actual, wanted) = (text_bounds(&target), text_bounds(&reference));
+        let window = web_sys::window().unwrap();
+        let computed = |element: &web_sys::Element, property: &str| {
+            let style = window.get_computed_style(element).unwrap().unwrap();
+            style.get_property_value(property).unwrap()
+        };
+        let close = |a: f64, b: f64| (a - b).abs() < 0.01;
+        let matches = computed(&target, "font-family") == computed(&reference, "font-family")
+            && computed(&target, "font-size") == computed(&reference, "font-size")
+            && close(actual.width(), wanted.width())
+            && close(actual.height(), wanted.height())
+            && close(
+                target.get_bounding_client_rect().height(),
+                reference.get_bounding_client_rect().height(),
+            )
+            && wanted.width() > 0.
+            && wanted.height() > 0.;
+        reference.remove();
+        matches
     }
 
     /// Selected packs paint export roles without importing the chat layout.

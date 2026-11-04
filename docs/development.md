@@ -245,14 +245,18 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 49 loading exports and 194 contribution exports. Packaging
+26 execution exports, 57 loading exports and 194 contribution exports. Packaging
 also builds the two runtime-module fixtures, each from its own manifest and lock
-with its own binding glue, into a copy of the fixture package. Contribution
+with its own binding glue, into a copy of the fixture package. It builds the
+prototype sandbox runtime the same way, with classic-script glue
+(`--target no-modules`), for the bootstrap qualification exports; the
+[sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
+records what they measure. Contribution
 exports run on a page served under a content security policy without
 `unsafe-eval` and receive the page's `url => import(url)` as their module import.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 269/269` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 277/277` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -302,6 +306,33 @@ operations, including page creation, fail immediately with a connection-closed
 error. Script arguments in the browser fixtures are JSON-encoded before evaluation
 so quotes in embedded document scripts remain data in the containing page.
 
+Browser tests install their page hooks and observers from Rust inside the test
+module, not from JavaScript modules. The `browser_fixture_support::Patch` guard
+replaces one page property and restores its own previous definition when dropped.
+It has four forms: a method (through a proxy whose `apply` trap hands the Rust hook
+the original function, the receiver and the arguments), a getter, an accessor or a
+value. Test-owned observers, such as the contribution page's mutation recorders,
+selections, animation seeks and frame intervals, call the page's own objects
+through `js_sys` and `web_sys`. Sources the
+product runs inside an isolated frame stand in for model or user content, so they
+stay JavaScript or HTML files beside their tests:
+
+- `native_html_artifact_support/probe.js` is a runtime provider's source.
+- `native_artifact_console_support/operand.js` is the artifact document's operand
+  constructor.
+- `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
+  probe documents.
+- `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
+  and authored documents the program witnesses prepare, plus the generated carrier
+  bootstraps their policies admit by hash.
+
+Tests read these sources as text and hand them to the product unchanged.
+[The frame-side input issue](https://github.com/Orchestration-Maestro/maestro/issues/4134)
+tracks replacing them once the sandbox has a Rust runtime.
+`markdown_support/dom.js` is the remaining page-side script; it still installs
+the Markdown projection.
+
 One deliberate policy-negative export,
 `inline_programs_preserve_text_policies_and_order`, must produce exactly one
 `TypeError` with message `window.complete is not a function` from `about:srcdoc`.
@@ -342,7 +373,11 @@ report test holds the fixture byte-for-byte, so a template change has to move
 both.
 
 Canvas session-header tests and offline tool cards are not executed; the latter
-still depend on the canvas renderer. Transcript execution is tracked separately
+still depend on the canvas renderer. The reading, PDF, Markdown and SVG artifact,
+export, session-link and session-download exports also need the `#canvas` element
+that the driver's page does not provide, so they are compiled but not executed;
+[the canvas export issue](https://github.com/Orchestration-Maestro/maestro/issues/4133)
+tracks running them. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with

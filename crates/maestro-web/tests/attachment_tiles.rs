@@ -171,11 +171,8 @@ pub(crate) fn user_attachment_tiles_wrap_as_single_fixed_items(view: &maestro_we
 }
 
 /// The badge intercepts pointer clicks while the thumbnail keeps its own hover and opening route.
-pub(crate) async fn tile_badge_keeps_image_pointer_route(
-    view: &maestro_web::dom::DomView,
-    import_module: &js_sys::Function,
-) {
-    use crate::contributions_support::{body, call, computed, driver, page_module, select};
+pub(crate) async fn tile_badge_keeps_image_pointer_route(view: &maestro_web::dom::DomView) {
+    use crate::contributions_support::{body, computed, driver, select};
     use maestro_web::{AttachmentTile, dom::DomContent as _};
     use wasm_bindgen::JsCast as _;
     let record = attachment_support::attachment();
@@ -183,7 +180,6 @@ pub(crate) async fn tile_badge_keeps_image_pointer_route(
     record.write().unwrap().mime_type = "application/pdf".into();
     let root = AttachmentTile::from(record).mount(view).unwrap();
     body().append_child(&root.node).unwrap();
-    let page = page_module(import_module).await;
     let target = select(&root.node, "[data-open]");
     let badge = select(&root.node, ".maestro-tile-badge");
     let rect = badge.get_bounding_client_rect();
@@ -196,7 +192,7 @@ pub(crate) async fn tile_badge_keeps_image_pointer_route(
         ),
     )
     .await;
-    call(&page, "finish", &js_sys::Array::of1(&target)).await;
+    crate::contributions_support::page::finish(&target);
     assert_eq!(computed(&target, "opacity"), "1");
     assert!(
         view.document
@@ -210,7 +206,7 @@ pub(crate) async fn tile_badge_keeps_image_pointer_route(
         &format!("[{}, {}, false]", rect.x() + 10., rect.y() + 10.),
     )
     .await;
-    call(&page, "finish", &js_sys::Array::of1(&target)).await;
+    crate::contributions_support::page::finish(&target);
     assert_eq!(computed(&target, "opacity"), "0.8");
     driver(
         "driverPointer",

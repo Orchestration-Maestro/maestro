@@ -215,11 +215,10 @@ fn current_actions(expected: &fixture::Updates) {
 
 /// Stable roots retain focus/selection, revoke detached actions and release captures.
 #[wasm_bindgen]
-pub async fn provider_card_updates_reconnect_and_release_bindings(import: js_sys::Function) {
-    use crate::contributions_support::{call, host, page_module, selection};
+pub fn provider_card_updates_reconnect_and_release_bindings(import: &js_sys::Function) {
+    use crate::contributions_support::host;
     let view = view();
-    let _host = host(&view, &import);
-    let page = page_module(&import).await;
+    let _host = host(&view, import);
     let mut card = CustomProviderCard::new(provider());
     let observed = Rc::new(std::cell::Cell::new(0));
     let weak = Rc::downgrade(&observed);
@@ -238,11 +237,14 @@ pub async fn provider_card_updates_reconnect_and_release_bindings(import: js_sys
         .query_selector(".maestro-provider-name")
         .unwrap()
         .unwrap();
-    call(&page, "select", &js_sys::Array::of1(&name)).await;
-    let selected = selection(&page, &element).await;
+    crate::contributions_support::page::select_children(&name);
+    let selected = crate::contributions_support::page::selection(&element);
     card.update(&root, &view).unwrap();
     assert_eq!(view.document.active_element().unwrap(), edit.clone().into());
-    assert_eq!(selection(&page, &element).await, selected);
+    assert_eq!(
+        crate::contributions_support::page::selection(&element),
+        selected
+    );
     assert!(edit.is_same_node(buttons(&element).first().map(AsRef::as_ref)));
     edit.click();
     assert_eq!(observed.get(), 1);

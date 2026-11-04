@@ -36,13 +36,10 @@ pub(super) async fn fixture<T>(
         "export default async function(){};export function ready(){throw Error('must not run')};export const not_callable=9;",
     ).unwrap();
     fs::write(
-        root.path().join("programs.js"),
-        include_str!("../../../maestro-web/tests/sandbox_loading_support/programs.js"),
-    )
-    .unwrap();
-    fs::write(
-        root.path().join("native.js"),
-        include_str!("../../../maestro-web/tests/sandbox_loading_support/native.js"),
+        root.path().join("click_document.html"),
+        include_str!(
+            "../../../maestro-web/tests/sandbox_loading_support/program_inputs/click_document.html"
+        ),
     )
     .unwrap();
     let profile = Scratch::new().unwrap();
@@ -92,7 +89,7 @@ pub(super) async fn foreign_page(page: &mut Page<'_>) -> io::Result<(BrowserCont
 
 /// Mount the exact pointer-reporting document with nested, SVG and decoy variations.
 pub(super) const MOUNT: &str = r#"async (nested=false, count=0, svg=false, setup='window.done=Promise.resolve();') => {
-  const {program_input}=await import('/programs.js');
+  const clickDocument=await (await fetch('/click_document.html')).text();
   for(let i=0;i<=count;i++) {
     const frame=document.createElement('iframe');if(i===0) frame.id='obsolete';
     const loaded=new Promise(resolve=>frame.onload=resolve);document.body.append(frame);await loaded;
@@ -104,7 +101,7 @@ pub(super) const MOUNT: &str = r#"async (nested=false, count=0, svg=false, setup
   const wrongLoaded=new Promise(resolve=>wrong.onload=resolve);decoy.append(wrong);await wrongLoaded;window.decoyWitness=wrong;
   const box=doc.createElement('div');box.id='probe:"雪]';doc.body.append(box);
   const target=doc.createElement('iframe');target.sandbox='allow-scripts allow-modals';
-  target.srcdoc=program_input('click-document').replace('<head>','<head><meta http-equiv="x-test" content="retained">')
+  target.srcdoc=clickDocument.replace('<head>','<head><meta http-equiv="x-test" content="retained">')
     .replace('</script>','window.S={value:"right",started:true};'+setup+'</script>')
     +(svg?'<body><svg width="200" height="40"><rect id="target" width="150" height="30"/></svg>':'<body><button id="target" onclick="window.S.clicked=true">click</button>')+'</body>';
   const loaded=new Promise(resolve=>target.onload=resolve);box.append(target);await loaded;

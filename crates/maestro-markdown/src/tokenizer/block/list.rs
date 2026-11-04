@@ -115,7 +115,8 @@ impl ListState {
             loose |= item.blank_end() || blank_separator(&output);
             outputs.push(output);
         }
-        let output = self.item.child.finish(task(self.item.body()).1);
+        let task = task(self.item.body()).1;
+        let output = self.item.child.finish(task);
         loose |= blank_separator(&output);
         outputs.push(output);
         (outputs, loose)
@@ -132,7 +133,7 @@ enum ItemSlot<'a> {
 
 impl ItemSlot<'_> {
     /// Borrow the dedented semantic body this item's child admits.
-    fn body(&self) -> &Segmented {
+    fn body(&mut self) -> &Segmented {
         match self {
             Self::Open(item) => item.body(),
             Self::Stopped(item) => item.body(),
@@ -392,7 +393,7 @@ impl ListFrame {
         let Some(state) = self.state.as_deref_mut() else {
             return;
         };
-        let Some(node) = wrapper(&state.item) else {
+        let Some(node) = wrapper(&mut state.item) else {
             self.phase = ListPhase::Reject;
             return;
         };
@@ -490,7 +491,7 @@ fn operand(source: &Segmented, end: Option<usize>) -> (Segmented, usize) {
 }
 
 /// Publish an item's provisional wrapper over its recognized raw.
-fn wrapper(item: &ItemLines) -> Option<Node> {
+fn wrapper(item: &mut ItemLines) -> Option<Node> {
     let raw = item.raw();
     Some(Node {
         authored: raw.mapped(),

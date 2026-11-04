@@ -21,9 +21,8 @@ pub async fn transcript_parts_dom_use_brand_roles_layout_and_native_focus(
 ) {
     let view = view();
     let _elements = crate::contributions_support::host(&view, import_module);
-    let page = crate::contributions_support::page_module(import_module).await;
     transcript::paint(&view);
-    transcript::keyboard_and_scroll(&view, &page).await;
+    transcript::keyboard_and_scroll(&view).await;
 }
 
 /// Assistant admission, order and original tool/result operands through native children.
@@ -74,14 +73,13 @@ pub fn debug_dom_keeps_strict_pretty_missing_null_and_literal_code(
 /// Every delivered row keeps its containing root through updates and reconnection, keeps its last
 /// published content when a candidate fails and releases its children when dropped.
 #[wasm_bindgen]
-pub async fn message_dom_reconnect_update_and_drop_keep_independent_roots(
+pub fn message_dom_reconnect_update_and_drop_keep_independent_roots(
     import_module: &js_sys::Function,
 ) {
     let view = view();
     let _elements = crate::contributions_support::host(&view, import_module);
-    let page = crate::contributions_support::page_module(import_module).await;
     let fixture = rows::fixture();
-    rows::tool_row_lifecycle(&view, &fixture, &page).await;
+    rows::tool_row_lifecycle(&view, &fixture);
     rows::debug_row_lifecycle(&view);
     rows::abort_row(&view, &fixture);
     user_row_lifecycle(&view);

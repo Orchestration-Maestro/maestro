@@ -1,7 +1,7 @@
 //! The message editor in a real page: sending, aborting, composition, files, drop, paste and focus.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{
-    contributions_support::{container, frames, host, page_module, text, view},
+    contributions_support::{container, frames, host, text, view},
     dialog_support::{Prompts, press, settled, type_text, until},
 };
 use maestro_app::{Model, ThinkingLevel};
@@ -115,10 +115,9 @@ fn construct(name: &str, args: &[JsValue]) -> JsValue {
 pub async fn message_editor_send_abort_and_composition_routes(import: js_sys::Function) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let calls = Rc::new(Calls::default());
     let editor = mounted(props(&calls));
-    frames(&page, 2).await;
+    frames(2).await;
     let text_field = field(&editor);
     let active = shown.document.active_element();
     assert!(
@@ -223,8 +222,8 @@ fn choose(editor: &MessageEditor, files: &[web_sys::File]) {
         .unwrap();
 }
 /// Wait until no file is loading.
-async fn idle(page: &JsValue, editor: &MessageEditor) {
-    until(page, || !has(editor.root(), ".maestro-editor-spinner")).await;
+async fn idle(editor: &MessageEditor) {
+    until(|| !has(editor.root(), ".maestro-editor-spinner")).await;
     settled().await;
 }
 /// Text files named `prefix0.txt` onward.
@@ -242,7 +241,6 @@ pub async fn message_editor_files_keep_limits_order_failures_and_current_callbac
 ) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let prompts = Prompts::install(vec![]);
     let calls = Rc::new(Calls::default());
     let editor = mounted(MessageEditorProps {
@@ -255,7 +253,7 @@ pub async fn message_editor_files_keep_limits_order_failures_and_current_callbac
         picker.accept(),
         maestro_web::components::message_editor::ACCEPTED_TYPES
     );
-    first_batches(&page, &editor, &prompts).await;
+    first_batches(&editor, &prompts).await;
     assert_eq!(*calls.files.borrow(), [vec!["b.txt".to_owned()]]);
     let replaced = Rc::new(Calls::default());
     editor
@@ -265,7 +263,7 @@ pub async fn message_editor_files_keep_limits_order_failures_and_current_callbac
         })
         .unwrap();
     choose(&editor, &texts("next", 2));
-    idle(&page, &editor).await;
+    idle(&editor).await;
     assert_eq!(
         names(&editor.attachments()),
         ["b.txt", "next0.txt", "next1.txt"]
@@ -289,7 +287,7 @@ pub async fn message_editor_files_keep_limits_order_failures_and_current_callbac
 }
 /// One more file than the limit is refused whole; a batch at the limit loads in order with
 /// per-file size and processing failures.
-async fn first_batches(page: &JsValue, editor: &MessageEditor, prompts: &Prompts) {
+async fn first_batches(editor: &MessageEditor, prompts: &Prompts) {
     let picker: HtmlInputElement = find(editor.root(), "input[type=file]").unchecked_into();
     choose(editor, &texts("over", 4));
     assert_eq!(prompts.messages(), ["Maximum 3 files allowed"]);
@@ -309,7 +307,7 @@ async fn first_batches(page: &JsValue, editor: &MessageEditor, prompts: &Prompts
     );
     let send: HtmlButtonElement = find(editor.root(), ".maestro-editor-send").unchecked_into();
     assert!(send.disabled(), "nothing is sent while files load");
-    idle(page, editor).await;
+    idle(editor).await;
     let messages = prompts.messages();
     assert_eq!(messages[1], "big.txt exceeds maximum size of 0MB");
     assert!(
@@ -359,7 +357,6 @@ fn dispatch(target: &Element, kind: &str, name: &str, field: &str, data: &JsValu
 pub async fn message_editor_drop_paste_removal_and_focus_are_native(import: js_sys::Function) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let _prompts = Prompts::install(vec![]);
     let calls = Rc::new(Calls::default());
     let editor = mounted(MessageEditorProps {
@@ -377,7 +374,7 @@ pub async fn message_editor_drop_paste_removal_and_focus_are_native(import: js_s
         "drop is handled"
     );
     assert!(!has(&root, ".maestro-editor-drop"));
-    idle(&page, &editor).await;
+    idle(&editor).await;
     let text_field = field(&editor);
     let pasted = transfer(&[file("three.png", "image/png", PIXEL)]);
     assert!(!dispatch(
@@ -387,7 +384,7 @@ pub async fn message_editor_drop_paste_removal_and_focus_are_native(import: js_s
         "clipboardData",
         &pasted
     ));
-    idle(&page, &editor).await;
+    idle(&editor).await;
     assert_eq!(
         names(&editor.attachments()),
         ["one.png", "two.txt", "three.png"]
@@ -411,7 +408,7 @@ pub async fn message_editor_drop_paste_removal_and_focus_are_native(import: js_s
         calls.files.borrow().last().unwrap(),
         &["one.png", "three.png"]
     );
-    controls(&page, &editor, &calls).await;
+    controls(&editor, &calls).await;
 }
 /// The drop hint shows on drag-over and stays while a child is left, until the box is left.
 fn dragged(root: &Element) {
@@ -469,7 +466,7 @@ fn left(root: &Element, inside: bool) {
         .unwrap();
 }
 /// The model control focuses the field before asking, and the level menu follows the model.
-async fn controls(page: &JsValue, editor: &MessageEditor, calls: &Rc<Calls>) {
+async fn controls(editor: &MessageEditor, calls: &Rc<Calls>) {
     let root = editor.root();
     assert!(
         !has(root, "select"),
@@ -486,7 +483,7 @@ async fn controls(page: &JsValue, editor: &MessageEditor, calls: &Rc<Calls>) {
             .active_element()
             .is_some_and(|node| node.is_same_node(Some(&field(editor))))
     );
-    frames(page, 2).await;
+    frames(2).await;
     assert_eq!(calls.models.get(), 1);
     editor
         .update(MessageEditorProps {
@@ -551,7 +548,6 @@ pub async fn message_editor_actions_have_accessible_names(import: js_sys::Functi
 pub async fn message_editor_attachment_callbacks_allow_reentry(import: js_sys::Function) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let editor = Rc::new(mounted(MessageEditorProps::default()));
     let weak = Rc::downgrade(&editor);
     let called = Rc::new(Cell::new(false));
@@ -566,7 +562,7 @@ pub async fn message_editor_attachment_callbacks_allow_reentry(import: js_sys::F
         })
         .unwrap();
     choose(&editor, &texts("one", 1));
-    idle(&page, &editor).await;
+    idle(&editor).await;
     assert!(called.get());
     assert!(editor.attachments().is_empty());
 }
@@ -601,7 +597,6 @@ fn release_file(release: &js_sys::Function) {
 pub async fn message_editor_overlapping_batches_respect_the_limit(import: js_sys::Function) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let prompts = Prompts::install(vec![]);
     let editor = mounted(MessageEditorProps::default());
     let (held, release, _read) = held_file("held.txt");
@@ -618,7 +613,7 @@ pub async fn message_editor_overlapping_batches_respect_the_limit(import: js_sys
     );
     assert_eq!(prompts.messages(), ["Maximum 10 files allowed"]);
     release_file(&release);
-    idle(&page, &editor).await;
+    idle(&editor).await;
     assert_eq!(editor.attachments().len(), 6);
 }
 
@@ -627,7 +622,6 @@ pub async fn message_editor_overlapping_batches_respect_the_limit(import: js_sys
 pub async fn message_editor_waits_for_every_attachment_batch(import: js_sys::Function) {
     let shown = view();
     let _host = host(&shown, &import);
-    let page = page_module(&import).await;
     let editor = mounted(MessageEditorProps::default());
     editor.set_value("draft").unwrap();
     let (first, release_first, _read_first) = held_file("first.txt");
@@ -642,12 +636,12 @@ pub async fn message_editor_waits_for_every_attachment_batch(import: js_sys::Fun
     );
     settled().await;
     release_file(&release_first);
-    until(&page, || editor.attachments().len() == 1).await;
+    until(|| editor.attachments().len() == 1).await;
     let send: HtmlButtonElement = find(editor.root(), ".maestro-editor-send").unchecked_into();
     assert!(send.disabled(), "the second batch is still loading");
     assert!(has(editor.root(), ".maestro-editor-spinner"));
     release_file(&release_second);
-    idle(&page, &editor).await;
+    idle(&editor).await;
     assert!(!send.disabled());
     assert_eq!(names(&editor.attachments()), ["first.txt", "second.txt"]);
 }

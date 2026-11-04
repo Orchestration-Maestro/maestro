@@ -1,8 +1,6 @@
 //! Markdown mounted as native page content through its public component.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{
-    call, computed, container, document, host, page_module, rgb, selection, view,
-};
+use crate::contributions_support::{computed, container, document, host, rgb, view};
 use crate::markdown_support::{
     BlockRow, ContextRow, rows,
     walk::{self, Mounter as _},
@@ -83,9 +81,8 @@ impl Fixture {
     }
 }
 /// Select every child of `node`, returning the selected text.
-async fn select(page: &JsValue, node: &Element) -> String {
-    let selected = call(page, "select", &js_sys::Array::of1(node)).await;
-    selected.as_string().unwrap()
+fn select(node: &Element) -> String {
+    crate::contributions_support::page::select_children(node)
 }
 /// The selected pack's color for `role`, as computed CSS spells it.
 fn color(view: &DomView, role: &str) -> String {
@@ -94,9 +91,8 @@ fn color(view: &DomView, role: &str) -> String {
 
 /// Defaults are exact, an empty document adds no text, and updates keep the root and unchanged nodes.
 #[wasm_bindgen]
-pub async fn markdown_dom_defaults_and_unchanged_roots(import_module: js_sys::Function) {
-    let page = page_module(&import_module).await;
-    let (mut fixture, _host) = Fixture::new(&import_module);
+pub fn markdown_dom_defaults_and_unchanged_roots(import_module: &js_sys::Function) {
+    let (mut fixture, _host) = Fixture::new(import_module);
     let block = MarkdownBlock::default();
     assert!(block.content.is_empty() && !block.is_thinking && block.escape_html);
     fixture.show(&block);
@@ -107,29 +103,28 @@ pub async fn markdown_dom_defaults_and_unchanged_roots(import_module: js_sys::Fu
     );
     assert_eq!(mounted.child_nodes().length(), 0);
     assert!(document().query_selector("canvas").unwrap().is_none());
-    let paragraph = unchanged_update_keeps_nodes(&mut fixture, &page).await;
+    let paragraph = unchanged_update_keeps_nodes(&mut fixture);
     fixture.show(&markdown("Changed *second* text"));
     assert_eq!(fixture.root(), mounted);
     assert!(!mounted.contains(Some(&paragraph)));
     assert_eq!(mounted.text_content().unwrap(), "Changed second text\n");
-    let found = call(&page, "find", &js_sys::Array::of1(&"second text".into())).await;
-    assert_eq!(found.as_bool(), Some(true));
-    assert!(selection(&page, &mounted).await.1);
+    assert!(crate::contributions_support::page::find("second text"));
+    assert!(crate::contributions_support::page::selection(&mounted).1);
 }
 /// Publish a document, then require an unchanged update to keep its nodes and selection.
-async fn unchanged_update_keeps_nodes(fixture: &mut Fixture, page: &JsValue) -> Element {
+fn unchanged_update_keeps_nodes(fixture: &mut Fixture) -> Element {
     let mounted = fixture.root();
     let block = markdown(WITH_CODE);
     fixture.show(&block);
     assert_eq!(fixture.root(), mounted);
     let paragraph = mounted.first_element_child().unwrap();
     let listing = mounted.query_selector(".maestro-code").unwrap();
-    assert_eq!(select(page, &paragraph).await, "Findable first paragraph");
+    assert_eq!(select(&paragraph), "Findable first paragraph");
     fixture.show(&block);
     assert_eq!(mounted.first_element_child(), Some(paragraph.clone()));
     assert_eq!(mounted.query_selector(".maestro-code").unwrap(), listing);
     assert_eq!(
-        selection(page, &mounted).await,
+        crate::contributions_support::page::selection(&mounted),
         ("Findable first paragraph".to_owned(), true)
     );
     paragraph
@@ -189,7 +184,6 @@ pub async fn markdown_dom_replays_qualified_document_rows(import_module: js_sys:
 pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     import_module: js_sys::Function,
 ) {
-    let page = page_module(&import_module).await;
     let (mut fixture, _host) = Fixture::new(&import_module);
     let mut block = markdown(WITH_CODE);
     fixture.show(&block);
@@ -197,9 +191,9 @@ pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     let paragraph = mounted.first_element_child().unwrap();
     assert_eq!(computed(&paragraph, "color"), color(&fixture.view, "text"));
     assert_eq!(computed(&paragraph, "font-style"), "normal");
-    let copy = copied(&page, &mounted).await;
+    let copy = copied(&mounted).await;
     let code = mounted.query_selector("code.hljs").unwrap().unwrap();
-    let selected = select(&page, &code).await;
+    let selected = select(&code);
     assert!(selected.starts_with("let kept = 1;"));
     block.is_thinking = true;
     fixture.show(&block);
@@ -209,20 +203,23 @@ pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     );
     assert_eq!(mounted.query_selector("code.hljs").unwrap(), Some(code));
     assert!(copy.text_content().unwrap().contains("Copied!"));
-    assert_eq!(selection(&page, &mounted).await, (selected, true));
+    assert_eq!(
+        crate::contributions_support::page::selection(&mounted),
+        (selected, true)
+    );
     assert_eq!(computed(&paragraph, "color"), color(&fixture.view, "muted"));
     assert_eq!(computed(&paragraph, "font-style"), "italic");
-    supplied_adapters_reach_updates(&page, &mut fixture, &block, &copy).await;
+    supplied_adapters_reach_updates(&mut fixture, &block, &copy).await;
 }
 /// Click the document's copy control with a succeeding clipboard and wait for its feedback.
-async fn copied(page: &JsValue, mounted: &Element) -> Element {
+async fn copied(mounted: &Element) -> Element {
     let copy = mounted.query_selector("copy-button").unwrap().unwrap();
-    click_copy(page, &copy).await;
+    click_copy(&copy).await;
     assert!(copy.text_content().unwrap().contains("Copied!"));
     copy
 }
 /// Click `copy` with a succeeding clipboard and wait until it shows success feedback.
-async fn click_copy(page: &JsValue, copy: &Element) {
+async fn click_copy(copy: &Element) {
     let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(|_: String| {
         js_sys::Promise::resolve(&JsValue::UNDEFINED)
     });
@@ -236,14 +233,11 @@ async fn click_copy(page: &JsValue, copy: &Element) {
         .unwrap()
         .unchecked_into();
     control.click();
-    crate::contributions_support::until(page, copy, || {
-        copy.query_selector("span").unwrap().is_some()
-    })
-    .await;
+    crate::contributions_support::until(copy, || copy.query_selector("span").unwrap().is_some())
+        .await;
 }
 /// A supplied language reaches the copy title and feedback; a supplied failing engine fails without publishing.
 async fn supplied_adapters_reach_updates(
-    page: &JsValue,
     fixture: &mut Fixture,
     block: &MarkdownBlock,
     copy: &Element,
@@ -255,7 +249,7 @@ async fn supplied_adapters_reach_updates(
         copy.get_attribute("title").as_deref(),
         Some("Code kopieren")
     );
-    click_copy(page, copy).await;
+    click_copy(copy).await;
     assert!(copy.text_content().unwrap().contains("Kopiert!"));
     let failing = DomView {
         highlighter: Rc::new(crate::failing_highlighter::FailingEngine(Arc::new(()))),
