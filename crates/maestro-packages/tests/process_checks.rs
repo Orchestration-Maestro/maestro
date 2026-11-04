@@ -148,6 +148,9 @@ fn streams_settle_at_child_exit(root: &Scratch) {
     assert_eq!(text, "done\n");
 }
 
+/// The case that repeats a scenario in a child.
+const CHILD: &str = "native";
+
 /// Variable carrying the scratch directory a child fixture works in.
 const STDIO_ROOT: &str = "MAESTRO_STDIO_ROOT";
 
@@ -185,8 +188,6 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
 
 /// Drives the same native stream routes through either admission constructor.
 fn stdio_scenario(test: &str, supplied: bool) {
-    /// The case that repeats the native stream routes in a child.
-    const CHILD: &str = "native";
     if maestro_test_process::selection().case() == Some(CHILD) {
         stdio_launches(Path::new(&std::env::var_os(STDIO_ROOT).unwrap()), supplied);
         return;
@@ -316,8 +317,6 @@ fn repository_scenario(root: &Path) {
 
 #[test]
 fn native_local_repository_installs_checks_out_and_removes() {
-    /// The case that repeats the install and removal in a child.
-    const CHILD: &str = "native";
     if maestro_test_process::selection().case() == Some(CHILD) {
         repository_scenario(Path::new(&std::env::var_os(REPOSITORY_ROOT).unwrap()));
         return;

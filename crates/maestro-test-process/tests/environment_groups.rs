@@ -277,7 +277,7 @@ fn scheme_literals(source: &[u8]) -> Vec<(usize, String)> {
             let line = source[..start].split(|byte| *byte == b'\n').count();
             literals.push((line, String::from_utf8_lossy(name).into_owned()));
         }
-        cursor = end.max(start);
+        cursor = end;
     }
     literals
 }

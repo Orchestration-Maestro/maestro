@@ -24,13 +24,12 @@ enum Phase {
 fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
     const TEST: &str = "providers::http::client::tests::pac::tls::pac_proxy_tls_and_destination_tls_keep_failure_phases";
     let selection = maestro_test_process::selection();
-    if selection.is_child() {
-        let trusted = selection.runs_case("trusted");
+    if let Some(trust) = selection.case() {
         crate::tests::runtime::run(async {
             for phase in [Phase::Forward, Phase::Tunnel, Phase::Direct, Phase::Socks] {
-                failure(phase, trusted).await;
+                failure(phase, trust == "trusted").await;
             }
-            if trusted {
+            if trust == "trusted" {
                 success(false).await;
                 success(true).await;
                 connect_failure().await;

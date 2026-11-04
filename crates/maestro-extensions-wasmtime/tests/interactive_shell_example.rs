@@ -5,6 +5,9 @@ use maestro_extensions::{
 };
 use std::{rc::Rc, sync::RwLock};
 
+/// The case that repeats a test with a supplied environment in a cleared child.
+const ISOLATED_CASE: &str = "isolated";
+
 /// Loads the shipped component without a UI or provider.
 async fn loaded(
     io: Option<Rc<dyn maestro_extensions::native_io::NativeIo>>,
@@ -98,16 +101,14 @@ fn interactive_shell_headless_detection() {
 
 /// Isolates environment configuration without changing another test's process state.
 fn isolated(name: &str, environment: &[(&str, &str)]) -> bool {
-    /// The case that repeats a test with the supplied environment in a cleared child.
-    const CHILD: &str = "isolated";
-    if maestro_test_process::selection().case() == Some(CHILD) {
+    if maestro_test_process::selection().case() == Some(ISOLATED_CASE) {
         return false;
     }
     let component = std::env::var("MAESTRO_INTERACTIVE_SHELL_COMPONENT").unwrap();
     let mut child = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .env_clear()
-        .case(CHILD)
+        .case(ISOLATED_CASE)
         .env("PATH", "/usr/bin:/bin")
         .env("MAESTRO_INTERACTIVE_SHELL_COMPONENT", component);
     for (key, value) in environment {
@@ -389,7 +390,7 @@ const SHELL_CASES: [ShellCase; 6] = [
 /// Covers inherited descriptors, cwd, force removal, statuses and restoration after failure.
 #[test]
 fn interactive_shell_restores_terminal_and_returns_child_status() {
-    if maestro_test_process::selection().case() != Some("isolated") {
+    if maestro_test_process::selection().case() != Some(ISOLATED_CASE) {
         for env in [
             &[][..],
             &[("SHELL", "")][..],

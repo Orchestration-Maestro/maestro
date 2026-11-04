@@ -19,20 +19,20 @@ use std::{
 #[test]
 fn setup_entry() {
     let selection = maestro_test_process::selection();
-    if !selection.is_child() {
+    let Some(child) = selection.case() else {
         return;
-    }
-    let command = if selection.runs_case("replacement") {
-        shell("read -r command; eval \"$command\"")
-    } else if selection.runs_case("wrapper") {
-        shell(
+    };
+    let command = match child {
+        "replacement" => shell("read -r command; eval \"$command\""),
+        "wrapper" => shell(
             "exec -a codex /bin/sleep infinity & member=$!; read -r stop; \
              kill \"$member\"; wait \"$member\"; exit 0",
-        )
-    } else {
-        let mut sleep = Command::new("/bin/sleep");
-        sleep.arg("infinity");
-        sleep
+        ),
+        _ => {
+            let mut sleep = Command::new("/bin/sleep");
+            sleep.arg("infinity");
+            sleep
+        }
     };
     let _ = pty::setup_and_exec(command);
     std::process::exit(1);

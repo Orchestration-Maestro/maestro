@@ -293,11 +293,6 @@ mod tests {
         });
     }
 
-    /// Name of the child scenario, empty in the parent.
-    fn scenario() -> String {
-        selected_case()
-    }
-
     /// Storage with a fallback resolver returning `fallback`.
     fn with_fallback(storage: AuthStorage, fallback: &'static str) -> AuthStorage {
         storage.set_fallback_resolver(move |_| Ok(Some(fallback.to_owned())));
@@ -326,7 +321,7 @@ mod tests {
 
     /// Check one environment scenario inside its child process.
     async fn environment_scenario() {
-        let populated = scenario() == "populated";
+        let populated = selected_case() == "populated";
         let expected = |ambient_free: Option<&str>| {
             populated
                 .then(|| "env-key".to_owned())
@@ -424,7 +419,7 @@ mod tests {
         }
         block_on(crate::fallback_support::replay(
             "fallback_keys_and_presence_keep_result_domains",
-            &scenario(),
+            &selected_case(),
         ))
         .unwrap();
     }
@@ -447,7 +442,7 @@ mod tests {
         }
         block_on(crate::fallback_support::replay(
             "earlier_sources_skip_failing_fallback",
-            &scenario(),
+            &selected_case(),
         ))
         .unwrap();
     }
@@ -463,7 +458,7 @@ mod tests {
         }
         block_on(crate::fallback_support::replay(
             "fallback_option_false_avoids_callback",
-            &scenario(),
+            &selected_case(),
         ))
         .unwrap();
     }

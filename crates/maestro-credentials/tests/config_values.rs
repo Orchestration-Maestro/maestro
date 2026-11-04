@@ -30,12 +30,10 @@ mod tests {
         if !is_child() {
             for (index, value) in KEY_VALUES.into_iter().enumerate() {
                 let index = index.to_string();
-                let envs: Vec<(&str, &str)> =
-                    value.map(|value| ("KEY", value)).into_iter().collect();
                 run_isolated(
                     "config_values::tests::config_values_choose_exact_environment_or_literal",
                     &index,
-                    &envs,
+                    value.map(|value| ("KEY", value)).as_slice(),
                 );
             }
             return;
