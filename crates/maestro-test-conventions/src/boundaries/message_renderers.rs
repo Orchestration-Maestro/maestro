@@ -88,7 +88,7 @@ impl Import<'_> {
 #[cfg(test)]
 thread_local! {
     /// Identifier spellings materialized by the renderer check on the current test thread.
-    pub(crate) static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Restricted name an identifier spells, ignoring a raw prefix.
@@ -255,3 +255,6 @@ impl<'ast> Visit<'ast> for Guard<'_> {
     inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
     inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
 }
+
+#[cfg(test)]
+mod tests;

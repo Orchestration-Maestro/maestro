@@ -1,8 +1,11 @@
 //! Tests for source loading, the private manifest reader and associated-item attribute accessors.
 
+#[path = "../../tests/support/manifest.rs"]
+mod manifest;
 #[path = "../../tests/support/scratch.rs"]
 mod scratch;
 
+use self::manifest::WORKSPACE_MANIFEST;
 use self::scratch::Scratch;
 use super::{impl_item_attributes, read_manifest, trait_item_attributes};
 
@@ -132,7 +135,6 @@ fn documentation_newline_scans_grow_linearly() {
 }
 
 /// Root manifest of a one-member fixture workspace that passes every check.
-const WORKSPACE_MANIFEST: &str = "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = { version = \"=1.0.151\", features = [\"float_roundtrip\"] }\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = { level = \"forbid\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n";
 
 #[test]
 fn workspace_checks_lex_and_search_each_source_once() {
