@@ -249,8 +249,9 @@ packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then checks each family in pairs:
 26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
 exports. Both exports of a pair run at once, each in a fresh page of its own
-driver, and the pair settles before the next starts; a failure closes both pages,
-the browser and the server. Two drivers connect to the one launched browser, so
+driver, and the pair settles before the next starts. A failing export closes its
+own page and the run continues; the browser and the server close once every
+family has run. Two drivers connect to the one launched browser, so
 each export keeps its own connection, disposable browser context, page lifecycle
 and policy-error accounting. Each export records its diagnostics on its own
 driver, so completion logs within a pair can arrive out of order, and an odd

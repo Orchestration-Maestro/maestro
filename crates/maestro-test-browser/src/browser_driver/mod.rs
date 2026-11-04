@@ -307,14 +307,17 @@ async fn exports(
     let server = server::Server::start(root).await?;
     let result = async {
         let mut browser = Browser::launch(executable, profile, &[]).await?;
-        let mut companion = browser.companion().await?;
-        let result = run_inventory(
-            &mut browser.driver,
-            &mut companion,
-            root,
-            &server.origin,
-            inventory,
-        )
+        let result = async {
+            let mut companion = browser.companion().await?;
+            run_inventory(
+                &mut browser.driver,
+                &mut companion,
+                root,
+                &server.origin,
+                inventory,
+            )
+            .await
+        }
         .await;
         cleanup(result, browser.close().await)
     }
