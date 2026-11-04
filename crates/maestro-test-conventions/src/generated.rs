@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use syn::punctuated::Punctuated;
-use syn::visit::Visit;
 
 use crate::source::{Member, Source, read_manifest as read};
 
@@ -83,19 +82,20 @@ fn levels(group: Option<&toml::Value>) -> BTreeMap<String, Level> {
 }
 
 /// One lint attribute: its level and the lints it names.
-struct LintAttribute {
+pub(crate) struct LintAttribute {
     /// Attribute level such as `allow` or `forbid`.
     level: String,
     /// Lint paths named by the attribute.
     lints: Vec<String>,
 }
 
-/// Collects every lint-level attribute of a file.
+/// Collects every lint-level attribute of a file during the shared syntax walk.
 #[derive(Default)]
-struct Attributes(Vec<LintAttribute>);
+pub(crate) struct Attributes(pub(crate) Vec<LintAttribute>);
 
-impl<'ast> Visit<'ast> for Attributes {
-    fn visit_attribute(&mut self, attribute: &'ast syn::Attribute) {
+impl Attributes {
+    /// Record one attribute when it sets a lint level.
+    pub(crate) fn attribute(&mut self, attribute: &syn::Attribute) {
         let Some(level) = attribute.path().get_ident().map(ToString::to_string) else {
             return;
         };
@@ -140,9 +140,7 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
         .syntax
         .as_ref()
         .ok_or_else(|| format!("{}: cannot parse a guest source", source.path.display()))?;
-    let mut collected = Attributes::default();
-    collected.visit_file(file);
-    let attributes = collected.0;
+    let attributes = &source.walk(member).lint_attributes;
     let at = source.path.display();
     if bindings_source(member, source) {
         let widened = attributes
@@ -189,7 +187,7 @@ fn crate_or_module_root(relative: &Path) -> bool {
 fn restores_forbid(file: &syn::File) -> bool {
     file.attrs.iter().any(|attribute| {
         let mut inner = Attributes::default();
-        inner.visit_attribute(attribute);
+        inner.attribute(attribute);
         inner.0.iter().any(|attribute| {
             let mut lints = attribute.lints.clone();
             lints.sort();

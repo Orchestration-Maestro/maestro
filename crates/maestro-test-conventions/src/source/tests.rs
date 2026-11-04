@@ -137,7 +137,7 @@ fn documentation_newline_scans_grow_linearly() {
 /// Root manifest of a one-member fixture workspace that passes every check.
 
 #[test]
-fn workspace_checks_lex_and_search_each_source_once() {
+fn workspace_checks_lex_and_walk_each_source_once() {
     let scratch = Scratch::new();
     let root = scratch.root.path();
     let member = root.join("crates").join("models");
@@ -167,10 +167,10 @@ fn workspace_checks_lex_and_search_each_source_once() {
         std::fs::write(member.join("src").join(name), contents).unwrap();
     }
     super::LEXER_PASSES.set(0);
-    super::TEST_SPAN_SEARCHES.set(0);
+    super::SYNTAX_WALKS.set(0);
     crate::check_workspace(root).unwrap();
-    let passes = (super::LEXER_PASSES.get(), super::TEST_SPAN_SEARCHES.get());
-    println!("lexer passes, test-span searches: {passes:?}");
-    // Three sources, each lexed once; the two production sources searched once.
+    let passes = (super::LEXER_PASSES.get(), super::SYNTAX_WALKS.get());
+    println!("lexer passes, syntax walks: {passes:?}");
+    // Three sources, each lexed once; the two parsed sources walked once for every check.
     assert_eq!(passes, (3, 2));
 }
