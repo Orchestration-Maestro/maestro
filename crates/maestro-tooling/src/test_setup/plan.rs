@@ -51,19 +51,14 @@ impl Artifacts {
     /// Digest the inputs of each artifact in `checkout`.
     ///
     /// # Errors
-    /// Returns failed metadata, a component crate that is not a member, a missing built package,
-    /// or a failed listing or read.
+    /// Returns a component crate that is not a member, a missing built package, or a failed
+    /// listing or read.
     pub(super) fn read(
-        cargo: &Path,
         checkout: &Path,
         workspace: &Workspace,
         component: &Path,
     ) -> io::Result<Self> {
-        let plan = plan(
-            &crate::locked_metadata(cargo, checkout)?,
-            workspace,
-            component,
-        )?;
+        let plan = plan(workspace, component)?;
         let locked = locked_closure(checkout, &plan.dependencies)?;
         Ok(Self {
             shared: Inputs::new(checkout, plan.shared, locked)?,
@@ -121,19 +116,6 @@ fn closure_packages<'a>(
     )
 }
 
-/// The names among `names` that this workspace holds, in their original order.
-///
-/// A package the workspace only depends on is built by Cargo outside the checkout, so it
-/// contributes no crate directory to fingerprint.
-pub(super) fn held<'a>(metadata: &Metadata, names: &[&'a str]) -> Vec<&'a str> {
-    let members = members(metadata);
-    names
-        .iter()
-        .copied()
-        .filter(|name| members.iter().any(|member| member.name == *name))
-        .collect()
-}
-
 /// The repository-relative directories of `packages`.
 fn directories(metadata: &Metadata, packages: &[&Package]) -> BTreeSet<String> {
     packages
@@ -179,11 +161,8 @@ fn crate_paths(
 ///
 /// # Errors
 /// Returns a component crate that is not a member, or a failed metadata read.
-pub(super) fn plan(
-    metadata: &Metadata,
-    workspace: &Workspace,
-    component: &Path,
-) -> io::Result<Plan> {
+pub(super) fn plan(workspace: &Workspace, component: &Path) -> io::Result<Plan> {
+    let metadata = workspace.metadata();
     let members = members(metadata);
     let component_package = members
         .iter()
@@ -203,7 +182,7 @@ pub(super) fn plan(
         .iter()
         .map(|(_, package, _)| *package)
         .chain([component_package])
-        .filter(|name| members.iter().any(|member| member.name == *name))
+        .filter(|name| workspace.member(name).is_some())
         .collect();
     let components = closure_packages(
         metadata,
@@ -229,10 +208,10 @@ pub(super) fn plan(
         dependencies,
         tool: crate_paths(
             metadata,
-            &held(metadata, &TOOL_PACKAGES),
+            &workspace.holds(&TOOL_PACKAGES),
             fixed.clone().chain(EXAMPLE_INPUTS),
         )?,
-        browser: crate_paths(metadata, &held(metadata, &BROWSER_PACKAGES), fixed)?,
+        browser: crate_paths(metadata, &workspace.holds(&BROWSER_PACKAGES), fixed)?,
     })
 }
 

@@ -81,7 +81,8 @@ impl Build {
     }
 }
 
-/// Forward real metadata unchanged; stage the two finite example targets for other calls.
+/// Forward real metadata unchanged; stage the two finite example targets and the locked
+/// installs for other calls.
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
     match args.first().and_then(|value| value.to_str()) {
         Some("metadata") => {
@@ -99,12 +100,42 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             }
         }
         Some("clippy") => Ok(()),
+        Some("install") => install(args),
         Some("build") if args.iter().any(|arg| arg == "--target") => build_wasm(args),
         Some(operation @ ("build" | "run")) => {
             build(record, &Build::parse(args)?, operation == "run")
         }
         _ => Err(io::Error::other("unknown fixture Cargo operation")),
     }
+}
+
+/// Record a locked install and stage the executable it would place.
+///
+/// The record keeps the operands the preparation passed, so a test reads the exact command
+/// instead of a shell imitation of Cargo.
+fn install(args: &[OsString]) -> io::Result<()> {
+    let root = Path::new(option(args, "--root")?);
+    let name = ["--example", "--bin"]
+        .into_iter()
+        .find_map(|flag| option(args, flag).ok())
+        .ok_or_else(|| io::Error::other("install names no target"))?;
+    let words: Vec<_> = args.iter().map(|arg| arg.to_string_lossy()).collect();
+    writeln!(
+        std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("install-args")?,
+        "{}",
+        words.join(" ")
+    )?;
+    let binary = root.join("bin").join(name);
+    std::fs::create_dir_all(
+        binary
+            .parent()
+            .ok_or_else(|| io::Error::other("missing install bin directory"))?,
+    )?;
+    std::fs::copy(std::env::current_exe()?, &binary)?;
+    executable(&binary)
 }
 
 /// Stage an existing fixture, counting author and native builds independently.

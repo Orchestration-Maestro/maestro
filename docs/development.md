@@ -1124,28 +1124,34 @@ target/test-setup/development nextest-setup author-component
 
 The tool takes its checkout from the workspace root above the directory it starts
 in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
-workspace. Started outside every workspace, which only stages the command, it falls
-back to the tree it was built in.
+workspace. A command that reads no workspace, such as `prepare-test-setup install`,
+is started in a directory of its own and keeps it; one that reads a workspace
+reports that it found none. Nothing reads the tree the tool was compiled in.
+
+The crates it prepares are Cargo's workspace members, so a nested fixture
+workspace and a crate the root manifest leaves out are not its crates. A package the
+workspace only depends on is reached through Cargo's resolved metadata, whose
+checkout sits outside the workspace.
 
 Four things it needs are the workspace's own:
 
-- **The component crate** is the crate whose manifest holds the generated example
-  region between `# example-index:start` and `# example-index:end`.
+- **The component crate** is the member crate whose manifest holds the generated
+  example region between `# example-index:start` and `# example-index:end`.
   `development example-index` renders into that crate, and preparation builds the
-  examples from it. No marked manifest, or two of them, fails with the manifests
-  named.
+  examples from it. No marked member, or two of them, fails with the crates named.
 - **The shipped extension folder** is `examples/extensions` beside the workspace
   manifest. Without it the index renders the crate's own example targets alone and
   writes no index page and no guide lock.
 - **The independent guide** is `tests/fixtures/hello-extension` under whichever
-  crate carries one. A workspace without it skips the guide build and its lock.
+  member crate carries one, and it builds on the guest SDK package the workspace
+  resolves. A workspace without the fixture skips the guide build and its lock.
 - **The programs** preparation runs: Cargo builds them from the workspace when it
   holds their packages. A workspace that holds them only as git dependencies
   installs them once per preparation instead, with
   `cargo install --locked --git <source> --rev <locked commit>` for
   `maestro-test-process --example native_fixture`,
   `maestro-extensions-wasm --example prepare_author_component` and
-  `maestro --bin maestro`. Cargo's metadata supplies the source and commit from
+  `maestro --bin maestro`. The tool reads the repository and commit from
   `Cargo.lock`, so a pin move installs again and a workspace without the package
   skips the step.
 
@@ -1158,8 +1164,10 @@ and `MAESTRO_EXECUTABLE`. Declare them in the workspace's own
 `.config/nextest.toml`; Maestro's file declares the setups this repository uses.
 
 `nextest-setup executable` exports `MAESTRO_EXECUTABLE` from the bundle for a
-workspace whose tests start Maestro's executable but do not hold its package. A
-workspace that holds `maestro` builds the executable with Cargo, so the setup
+workspace whose tests start Maestro's executable but do not hold its package. It
+serves the bundle prepared from the commit the lock pins, and refuses one installed
+from another source, so a pin move cannot hand the tests the previous executable.
+A workspace that holds `maestro` builds the executable with Cargo, so the setup
 refuses it instead of exporting a second copy: there, tests use Cargo's own
 executable path.
 

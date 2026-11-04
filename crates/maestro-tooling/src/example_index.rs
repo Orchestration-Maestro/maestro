@@ -40,7 +40,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         return Err(io::Error::other("usage: example-index [--check]"));
     }
     let check = !args.is_empty();
-    let workspace = Workspace::read(checkout)?;
+    let workspace = Workspace::read(cargo, checkout)?;
     let component = workspace.component_crate()?;
     let shipped = workspace.shipped();
     let targets = targets(&workspace, &component, shipped.as_deref())?;
@@ -67,11 +67,12 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
     for (path, after) in changed {
         fs::write(path, after)?;
     }
+    let guest = workspace.package(GUEST)?;
     guide_lock::refresh(
         cargo,
         checkout,
         workspace.guide().as_deref(),
-        workspace.package(GUEST).as_deref(),
+        guest.as_deref(),
         check,
     )?;
     Ok(ExitCode::SUCCESS)

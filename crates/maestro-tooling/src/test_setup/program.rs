@@ -8,6 +8,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use serde::{Deserialize, Serialize};
+
 use crate::cargo_lock::Lock;
 use crate::workspace::Workspace;
 
@@ -45,7 +47,8 @@ impl Target<'_> {
 }
 
 /// Where a program is built from.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub(super) enum Source {
     /// The workspace holds the program's package, so Cargo builds it in the checkout.
     Member,
@@ -64,33 +67,35 @@ pub(super) enum Source {
 /// is skipped.
 ///
 /// # Errors
-/// Returns a locked package without a git source, or a failed metadata read.
+/// Returns a lock the workspace cannot read, or a locked package without a git source.
 pub(super) fn source(
-    cargo: &Path,
     checkout: &Path,
     workspace: &Workspace,
     package: &str,
 ) -> io::Result<Option<Source>> {
-    if workspace.package(package).is_some() {
+    if workspace.member(package).is_some() {
         return Ok(Some(Source::Member));
     }
-    // A package the lock does not name cannot be built, so no resolution is needed to skip it.
-    if !Lock::read(checkout)?
+    locked(checkout, package)
+}
+
+/// The source `Cargo.lock` pins `package` at, when the workspace depends on it.
+///
+/// # Errors
+/// Returns a lock the workspace cannot read, or a locked package without a git source.
+pub(super) fn locked(checkout: &Path, package: &str) -> io::Result<Option<Source>> {
+    Lock::read(checkout)?
         .packages()
         .iter()
-        .any(|entry| entry.name == package)
-    {
-        return Ok(None);
-    }
-    let metadata = crate::locked_dependencies(cargo, checkout)?;
-    let Some(found) = metadata.packages.iter().find(|found| found.name == package) else {
-        return Ok(None);
-    };
-    let locked = found
-        .source
-        .as_ref()
-        .ok_or_else(|| io::Error::other(format!("{package} has no locked source")))?;
-    locked_source(locked.repr.as_str()).map(Some)
+        .find(|entry| entry.name == package)
+        .map(|entry| {
+            let locked = entry
+                .source
+                .as_deref()
+                .ok_or_else(|| io::Error::other(format!("{package} has no locked source")))?;
+            locked_source(locked)
+        })
+        .transpose()
 }
 
 /// Split a locked git source into the repository and the exact commit it pins.
@@ -162,6 +167,34 @@ pub(super) fn install(
 mod tests {
     use super::*;
 
+    use maestro_test_directory::Scratch;
+
+    /// A workspace holding one crate, `name`, and the lock its dependencies come from.
+    fn workspace_at(root: &Path, names: &[&str], lock: &str) -> Workspace {
+        std::fs::write(
+            root.join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("crates")).unwrap();
+        for name in names {
+            let directory = root.join("crates").join(name);
+            std::fs::create_dir_all(directory.join("src")).unwrap();
+            std::fs::write(directory.join("src/lib.rs"), "").unwrap();
+            std::fs::write(
+                directory.join("Cargo.toml"),
+                format!("[package]\nname = \"{name}\"\nversion = \"0.0.0\"\n"),
+            )
+            .unwrap();
+        }
+        std::fs::write(root.join("Cargo.lock"), lock).unwrap();
+        Workspace::read(Path::new(env!("CARGO")), root).unwrap()
+    }
+
+    /// A locked source as `Cargo.lock` records it.
+    const LOCKED_MAESTRO: &str = "version = 4\n\n[[package]]\nname = \"maestro\"\nversion = \"0.0.0\"\n\
+        source = \"git+https://example.invalid/maestro?rev=4d5e6f#4d5e6f\"\n";
+
     /// A locked git dependency names its repository and the commit the lock resolved.
     #[test]
     fn a_locked_git_source_names_its_repository_and_commit() {
@@ -186,28 +219,54 @@ mod tests {
         assert_eq!(rev, "abc123");
     }
 
-    /// A program the workspace only depends on is installed from the repository and commit the
-    /// lock pins, and the installed executable is the one preparation exports.
-    #[cfg(unix)]
+    /// A package the workspace holds is built in the checkout, and one neither held nor locked is
+    /// absent, so the step that needs it is skipped.
     #[test]
-    fn installation_uses_the_locked_source_and_exports_the_installed_executable() {
-        use std::os::unix::fs::PermissionsExt;
-
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+    fn a_member_is_built_in_the_checkout_and_a_missing_package_is_absent() {
+        let scratch = Scratch::new().unwrap();
         let root = scratch.path();
-        let destination = root.join("installed");
-        let log = root.join("argv");
+        let workspace = workspace_at(root, &["held"], "version = 4\n");
+
+        assert_eq!(
+            source(root, &workspace, "held").unwrap(),
+            Some(Source::Member)
+        );
+        assert_eq!(source(root, &workspace, "maestro").unwrap(), None);
+    }
+
+    /// A package the workspace only depends on resolves to the repository and commit the lock
+    /// pins, without a checkout of its own.
+    #[test]
+    fn a_locked_dependency_resolves_to_its_pinned_source() {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        let workspace = workspace_at(root, &["held"], LOCKED_MAESTRO);
+
+        assert_eq!(
+            source(root, &workspace, "maestro").unwrap(),
+            Some(Source::Locked {
+                url: "https://example.invalid/maestro".to_owned(),
+                rev: "4d5e6f".to_owned(),
+            })
+        );
+    }
+
+    /// The install runs against the repository and commit the lock pins, and the installed
+    /// executable is the one preparation exports. The tooling test child observes the command.
+    #[test]
+    fn installation_uses_the_locked_source_and_installs_the_executable() {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        let destination = root.join("target/installed");
         let cargo = root.join("cargo");
+        let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+            .expect("nextest native-fixture setup supplies the artifact");
+        maestro_test_process::install_executable(Path::new(&artifact), &cargo).unwrap();
         std::fs::write(
-            &cargo,
-            format!(
-                "#!/bin/sh\nprintf '%s\\n' \"$@\" > {log}\nmkdir -p {bin}\ntouch {bin}/maestro\n",
-                log = log.display(),
-                bin = destination.join("bin").display()
-            ),
+            root.join("cargo.fixture"),
+            format!("tooling-cargo\n{}\n{}\n", env!("CARGO"), root.display()),
         )
         .unwrap();
-        std::fs::set_permissions(&cargo, std::fs::Permissions::from_mode(0o755)).unwrap();
         let source = Source::Locked {
             url: "https://example.invalid/maestro".to_owned(),
             rev: "4d5e6f".to_owned(),
@@ -219,23 +278,21 @@ mod tests {
 
         let executable = install(&cargo, root, &source, &program, &destination).unwrap();
 
-        assert_eq!(executable, destination.join("bin/maestro"));
-        let argv = std::fs::read_to_string(&log).unwrap();
         assert_eq!(
-            argv.lines().collect::<Vec<_>>(),
-            [
-                "install",
-                "--locked",
-                "--git",
-                "https://example.invalid/maestro",
-                "--rev",
-                "4d5e6f",
+            executable,
+            destination.join("bin").join(super::super::executable(
                 "maestro",
-                "--bin",
-                "maestro",
-                "--root",
-                destination.to_str().unwrap(),
-            ]
+                std::env::consts::EXE_EXTENSION
+            ))
+        );
+        let argv = std::fs::read_to_string(root.join("install-args")).unwrap();
+        assert_eq!(
+            argv.trim_end(),
+            format!(
+                "install --locked --git https://example.invalid/maestro --rev 4d5e6f maestro \
+                 --bin maestro --root {}",
+                destination.display()
+            )
         );
     }
 

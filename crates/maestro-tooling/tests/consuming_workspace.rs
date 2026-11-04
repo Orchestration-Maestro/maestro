@@ -25,7 +25,7 @@ fn crate_at(root: &Path, relative: &str, manifest: &str) {
 /// The manifest of the crate whose generated region the index owns.
 fn component_manifest() -> String {
     format!(
-        "[package]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n{REGION_START}\nold\n{REGION_END}\n"
+        "[package]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n{REGION_START}\n# old\n{REGION_END}\n"
     )
 }
 
@@ -37,7 +37,11 @@ fn consuming_workspace(root: &Path, shipped: bool) {
         "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
     )
     .unwrap();
-    fs::write(root.join("Cargo.lock"), "version = 4\n").unwrap();
+    fs::write(
+        root.join("Cargo.lock"),
+        "version = 4\n\n[[package]]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
     crate_at(root, "crates/component-fixture", &component_manifest());
     fs::create_dir_all(root.join("crates/component-fixture/examples")).unwrap();
     fs::write(
@@ -161,8 +165,22 @@ const EXECUTABLE: &str = "maestro";
 /// The digest of a file with no bytes, which the empty fixture files below have.
 const EMPTY: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
-/// A prepared bundle whose inputs are the empty file set and whose executable is empty.
-fn prepared_bundle(root: &Path) -> PathBuf {
+/// The commit the fixture's dependency on Maestro is pinned at.
+const PINNED: &str = "4d5e6f";
+
+/// Pin the workspace's dependency on Maestro at `rev` in its lock.
+fn depend_on_maestro(root: &Path, rev: &str) {
+    let lock = fs::read_to_string(root.join("Cargo.lock")).unwrap();
+    let pinned = format!(
+        "\n[[package]]\nname = \"maestro\"\nversion = \"0.0.0\"\n\
+         source = \"git+https://example.invalid/maestro?rev={rev}#{rev}\"\n"
+    );
+    fs::write(root.join("Cargo.lock"), lock + &pinned).unwrap();
+}
+
+/// A prepared bundle whose inputs are the empty file set and whose executable is empty,
+/// installed from the source `rev` pins.
+fn prepared_bundle(root: &Path, rev: &str) -> PathBuf {
     let bundle = root.join("bundle");
     fs::create_dir_all(&bundle).unwrap();
     for name in [EXECUTABLE, "prepare_author_component"] {
@@ -175,7 +193,10 @@ fn prepared_bundle(root: &Path) -> PathBuf {
         "browser": inputs,
         "components": {},
         "example": EMPTY,
-        "executable": EMPTY,
+        "executable": {
+            "file": EMPTY,
+            "source": {"kind": "locked", "url": "https://example.invalid/maestro", "rev": rev},
+        },
     });
     fs::write(
         bundle.join("components.json"),
@@ -203,7 +224,8 @@ fn executable_setup_exports_the_prepared_bundle() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     consuming_workspace(root, false);
-    let bundle = prepared_bundle(root);
+    depend_on_maestro(root, PINNED);
+    let bundle = prepared_bundle(root, PINNED);
 
     let output = executable_setup(root, &bundle);
 
@@ -227,11 +249,29 @@ fn executable_setup_refuses_a_workspace_that_builds_maestro() {
     let root = scratch.path();
     consuming_workspace(root, false);
     crate_at(root, "crates/maestro", "[package]\nname = \"maestro\"\n");
-    let bundle = prepared_bundle(root);
+    let bundle = prepared_bundle(root, PINNED);
 
     let output = executable_setup(root, &bundle);
 
     assert!(!output.status.success());
     let error = String::from_utf8_lossy(&output.stderr);
     assert!(error.contains("builds maestro itself"), "{error}");
+}
+
+/// A bundle installed from another pinned source exports nothing, so a pin move cannot hand the
+/// tests the executable the previous pin installed.
+#[test]
+fn executable_setup_refuses_a_bundle_from_another_pinned_source() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    consuming_workspace(root, false);
+    depend_on_maestro(root, "9f8e7d");
+    let bundle = prepared_bundle(root, PINNED);
+
+    let output = executable_setup(root, &bundle);
+
+    assert!(!output.status.success());
+    let error = String::from_utf8_lossy(&output.stderr);
+    assert!(error.contains("another source"), "{error}");
+    assert!(!root.join("nextest-env").exists());
 }

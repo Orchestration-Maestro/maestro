@@ -3528,6 +3528,11 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
         fs::File::create(&path).unwrap();
         set_age(&path, std::time::Duration::from_secs(3600));
     }
+    fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
     for (path, body) in [
         (
             "crates/maestro-extensions-wasm/Cargo.toml",
@@ -3537,8 +3542,11 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
             "crates/maestro-tooling/Cargo.toml",
             "[package]\nname = \"maestro-tooling\"\n",
         ),
+        ("crates/maestro-extensions-wasm/src/lib.rs", ""),
+        ("crates/maestro-tooling/src/lib.rs", ""),
     ] {
         let manifest = root.join(path);
+        fs::create_dir_all(manifest.parent().unwrap()).unwrap();
         fs::write(&manifest, body).unwrap();
         set_age(&manifest, std::time::Duration::from_secs(3600));
     }
@@ -3553,6 +3561,7 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
         &serde_json::json!({
             "scenario": "announce",
             "rebuilt": "target/debug/examples/prepare_author_component",
+            "cargo": env!("CARGO"),
         }),
     );
     (profile, example)
@@ -3746,7 +3755,11 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     let check_only = profile.join("deps/libmaestro_request-2.rmeta");
     fs::write(&check_only, b"").unwrap();
     set_age(&check_only, Duration::from_mins(1));
-    recipe_support::scenario(root, "cargo", &serde_json::json!({"scenario": "announce"}));
+    recipe_support::scenario(
+        root,
+        "cargo",
+        &serde_json::json!({"scenario": "announce", "cargo": env!("CARGO")}),
+    );
     let output = author_setup(root, &profile);
     let (printed, logged) = (stdout(&output), String::from_utf8_lossy(&output.stderr));
     assert!(output.status.success(), "{logged}");
@@ -4115,6 +4128,11 @@ fn example_index_discovers_independent_additions() {
 
 /// Write a checkout with stale generated regions and an untouched preparation program.
 fn example_checkout(root: &Path) {
+    fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
     let folder = root.join("examples/extensions");
     let local = root.join("crates/maestro-extensions-wasm/examples");
     let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
@@ -4146,7 +4164,7 @@ fn example_checkout(root: &Path) {
     .unwrap();
     fs::write(
         root.join("crates/maestro-extensions-wasm/Cargo.toml"),
-        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\nold\n# example-index:end\n\n[dependencies]\n",
+        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n# old\n# example-index:end\n\n[dependencies]\n",
     )
     .unwrap();
     fs::create_dir_all(root.join("crates/maestro-extensions-wasm/src")).unwrap();

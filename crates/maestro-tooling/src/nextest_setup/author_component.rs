@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use super::normalize::{self, Outcome, archive_signalled};
-use super::{cargo, export, prepared_bundle};
+use super::{export, prepared_bundle};
 use crate::exit_code;
 use crate::test_setup::{self, EXAMPLE, example_arguments, executable_name};
 use crate::workspace::Workspace;
@@ -32,10 +32,6 @@ const SOURCES: [&str; 3] = [
 /// The directories whose `.rs` files the setup example is built from.
 const SOURCE_DIRECTORIES: [&str; 2] = ["src/tests/build", "src/example_files"];
 
-/// The directory beside the profile directory that holds this run's cache home. It is
-/// separate from the preparation cache home, which each preparation deletes.
-const CACHE_HOME: &str = "component-cache";
-
 /// Prepare the components with a staged or built example and run it, then export the cache
 /// home the example warmed so the tests read the same compiled code.
 ///
@@ -43,15 +39,15 @@ const CACHE_HOME: &str = "component-cache";
 /// Returns an unresolved artifact directory, a workspace without one component crate, a stale
 /// or missing bundle, a failed build or install, or a setup example that cannot start. A setup
 /// example that fails keeps its own status.
-pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
+pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let directory = artifact_directory()?;
-    let cache_home = directory.parent().unwrap_or(&directory).join(CACHE_HOME);
-    let workspace = Workspace::read(checkout)?;
-    let component = workspace.component_crate()?;
+    let cache_home = test_setup::run_cache_home(&directory);
     let status = if let Some(bundle) = prepared_bundle(checkout) {
-        run_prepared(checkout, &bundle, &directory, &cache_home)?
+        run_prepared(cargo, checkout, &bundle, &directory, &cache_home)?
     } else {
-        run_local(checkout, &workspace, &component, &directory, &cache_home)?
+        let workspace = Workspace::read(cargo, checkout)?;
+        let component = workspace.component_crate()?;
+        run_local(cargo, &workspace, &component, &directory, &cache_home)?
     };
     // The example and the installation rewrite the file, so the entry follows them.
     let mut entry = OsString::from("XDG_CACHE_HOME=");
@@ -64,13 +60,14 @@ pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
 /// bundle's components. The staged example is as new as the archive's executables, so it is
 /// never outdated.
 fn run_prepared(
+    cargo: &Path,
     checkout: &Path,
     bundle: &Path,
     directory: &Path,
     cache_home: &Path,
 ) -> io::Result<ExitCode> {
     let environment = environment_file()?;
-    test_setup::install_bundle(checkout, bundle, directory, &environment, cache_home)?;
+    test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         return Ok(ExitCode::from(3));
     }
@@ -83,7 +80,8 @@ fn run_prepared(
             command.env(name, value);
         }
     }
-    command.args(example_arguments(checkout)?);
+    let workspace = Workspace::read(cargo, checkout)?;
+    command.args(example_arguments(&workspace)?);
     Ok(exit_code(command.current_dir(checkout).status()?))
 }
 
@@ -93,7 +91,7 @@ fn run_prepared(
 /// and recompiles the engine. Running it only while it is newer than its sources keeps a
 /// filtered build from running outdated preparation.
 fn run_local(
-    checkout: &Path,
+    cargo: &Path,
     workspace: &Workspace,
     component: &Path,
     directory: &Path,
@@ -109,24 +107,23 @@ fn run_local(
         && fresh(workspace, component, &example)
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
-        return start(checkout, &example, cache_home);
+        return start(workspace, &example, cache_home);
     }
-    let example =
-        test_setup::example_program(Path::new(&cargo()), checkout, workspace, target, profile)?;
+    let example = test_setup::example_program(cargo, workspace.root(), workspace, target, profile)?;
     // Cargo may retain an outdated example; running it still allows preparation to finish.
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         eprintln!("Cargo kept the setup example; test binaries may compile components again.");
     }
-    start(checkout, &example, cache_home)
+    start(workspace, &example, cache_home)
 }
 
 /// Run the setup example in the checkout with this process's environment and `cache_home` as
 /// its user cache, and the workspace it prepares as its arguments.
-fn start(checkout: &Path, example: &Path, cache_home: &Path) -> io::Result<ExitCode> {
+fn start(workspace: &Workspace, example: &Path, cache_home: &Path) -> io::Result<ExitCode> {
     let mut command = Command::new(example);
     command
-        .current_dir(checkout)
-        .args(example_arguments(checkout)?)
+        .current_dir(workspace.root())
+        .args(example_arguments(workspace)?)
         .env("XDG_CACHE_HOME", cache_home);
     Ok(exit_code(command.status()?))
 }
@@ -149,7 +146,7 @@ fn fresh(workspace: &Workspace, component: &Path, example: &Path) -> bool {
     let Some(built) = modified(example) else {
         return false;
     };
-    let tooling = workspace.package("maestro-tooling");
+    let tooling = workspace.member("maestro-tooling");
     let listed = SOURCES
         .iter()
         .map(|source| component.join(source))

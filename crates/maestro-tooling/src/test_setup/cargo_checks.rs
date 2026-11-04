@@ -8,7 +8,7 @@ use std::process::Command;
 use serde::{Deserialize, Serialize};
 
 use super::inputs::Inputs;
-use super::plan::{closure_directories, held};
+use super::plan::closure_directories;
 use super::{SHARED_INPUTS, at, copy, digest, remove_directory, verify};
 use crate::nextest_setup::browser_graph;
 use crate::workspace::{GUIDE, Workspace};
@@ -73,7 +73,7 @@ pub(crate) fn prepare(
     if let Ok(paths) = prepared(checkout, output) {
         return Ok(paths);
     }
-    let inputs = inputs(cargo, checkout, workspace)?;
+    let inputs = inputs(workspace)?;
     let checks = checks(cargo, checkout, workspace, target)?;
     let built = checks
         .into_iter()
@@ -100,7 +100,7 @@ fn checks(
     target: &Path,
 ) -> io::Result<Vec<(&'static str, Command, &'static str)>> {
     let mut checks = Vec::new();
-    if workspace.package(MODELS).is_some() {
+    if workspace.member(MODELS).is_some() {
         let mut browser = command(cargo, checkout, target);
         browser.args([
             "--target",
@@ -114,7 +114,7 @@ fn checks(
         ]);
         checks.push((BROWSER, browser, BROWSER_EXAMPLE));
     }
-    if let (Some(guide), Some(guest)) = (workspace.guide(), workspace.package(GUEST)) {
+    if let (Some(guide), Some(guest)) = (workspace.guide(), workspace.package(GUEST)?) {
         let project = target.join("guide-project");
         project_files(checkout, &project, &guide, &guest)?;
         let mut author = command(cargo, &project, target);
@@ -125,13 +125,12 @@ fn checks(
 }
 
 /// Fingerprint the checked package closures and the independent guide's authored inputs.
-fn inputs(cargo: &Path, checkout: &Path, workspace: &Workspace) -> io::Result<Inputs> {
-    let metadata = crate::locked_metadata(cargo, checkout)?;
-    let named = held(&metadata, &[MODELS, GUEST]);
+fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
+    let named = workspace.holds(&[MODELS, GUEST]);
     let mut paths = if named.is_empty() {
         BTreeSet::new()
     } else {
-        closure_directories(&metadata, &named)?
+        closure_directories(workspace.metadata(), &named)?
     };
     paths.extend(
         SHARED_INPUTS
@@ -143,7 +142,7 @@ fn inputs(cargo: &Path, checkout: &Path, workspace: &Workspace) -> io::Result<In
         paths.insert(format!("{}/{GUIDE}", workspace.relative(&guide)?));
         paths.insert(GUIDE_SOURCE.to_owned());
     }
-    Inputs::new(checkout, paths, BTreeSet::new())
+    Inputs::new(workspace.root(), paths, BTreeSet::new())
 }
 
 /// Create a clean independent author project from the checked manifest, lock and shipped source.

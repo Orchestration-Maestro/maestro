@@ -66,11 +66,32 @@ fn executable_names_survive_bundle_copy_and_restore() {
     }
 }
 
+/// Write a member crate holding `name`, which the fixed components name.
+fn member(root: &Path, name: &str) {
+    let directory = root.join("crates").join(name);
+    std::fs::create_dir_all(directory.join("src")).unwrap();
+    std::fs::write(directory.join("src/lib.rs"), "").unwrap();
+    std::fs::write(
+        directory.join("Cargo.toml"),
+        format!("[package]\nname = \"{name}\"\nversion = \"0.0.0\"\n"),
+    )
+    .unwrap();
+}
+
 /// Bundle installation verifies and copies the native setup example beside test artifacts.
 #[test]
 fn bundle_export_installs_the_native_example() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
+    std::fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/*\"]\n",
+    )
+    .unwrap();
+    for (_, package, _) in FIXED_COMPONENTS {
+        member(root, package);
+    }
+    let cargo = Path::new(env!("CARGO"));
     let bundle = root.join("bundle");
     std::fs::create_dir_all(&bundle).unwrap();
     let inputs = Inputs::new(root, BTreeSet::new(), BTreeSet::new()).unwrap();
@@ -106,7 +127,7 @@ fn bundle_export_installs_the_native_example() {
     let artifacts = root.join("debug");
     let environment = root.join("nextest-env");
 
-    export(root, &bundle, &artifacts, &environment, &root.join("cache")).unwrap();
+    export(cargo, root, &bundle, &artifacts, &environment).unwrap();
 
     assert_eq!(
         std::fs::read(artifacts.join("examples").join(native)).unwrap(),
@@ -120,16 +141,77 @@ fn bundle_export_installs_the_native_example() {
     }
 }
 
+/// A workspace that builds on Maestro plans its own component crate's components, and none of
+/// the fixed components or example inputs whose packages it does not hold.
+#[test]
+fn a_consuming_workspace_plans_its_own_components_alone() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    std::fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
+    let component = root.join("crates/component-fixture");
+    std::fs::create_dir_all(component.join("src")).unwrap();
+    std::fs::create_dir_all(component.join("examples")).unwrap();
+    std::fs::write(component.join("src/lib.rs"), "").unwrap();
+    std::fs::write(
+        component.join("examples/one.rs"),
+        "// maestro-component: MAESTRO_ONE_COMPONENT\n",
+    )
+    .unwrap();
+    std::fs::write(
+        component.join("Cargo.toml"),
+        format!(
+            "[package]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n\
+             {}{}\n",
+            crate::workspace::REGION_START,
+            crate::workspace::REGION_END
+        ),
+    )
+    .unwrap();
+
+    let workspace = Workspace::read(Path::new(env!("CARGO")), root).unwrap();
+    let planned = plan(&workspace, &component).unwrap();
+
+    assert!(fixed_components(&workspace).is_empty());
+    assert!(
+        planned
+            .shared
+            .iter()
+            .any(|path| path == "crates/component-fixture"),
+        "{:?}",
+        planned.shared
+    );
+    let named: Vec<&String> = planned
+        .shared
+        .iter()
+        .chain(&planned.tool)
+        .chain(&planned.browser)
+        .collect();
+    assert!(
+        named
+            .iter()
+            .all(|path| !path.contains("maestro-extensions-wasm")
+                && !path.contains("maestro-subagents")),
+        "{named:?}"
+    );
+    assert_eq!(
+        named
+            .iter()
+            .filter(|path| path.starts_with("crates/"))
+            .map(|path| path.as_str())
+            .collect::<Vec<_>>(),
+        ["crates/component-fixture"]
+    );
+}
+
 /// What each artifact hashes, from the real workspace's metadata.
 fn workspace_plan(root: &Path) -> super::plan::Plan {
-    let workspace = Workspace::read(root).unwrap();
+    let workspace = Workspace::read(Path::new(env!("CARGO")), root).unwrap();
     let component = workspace.component_crate().unwrap();
-    plan(
-        &crate::locked_metadata(Path::new(env!("CARGO")), root).unwrap(),
-        &workspace,
-        &component,
-    )
-    .unwrap()
+    plan(&workspace, &component).unwrap()
 }
 
 /// Whether a `test_prepare_inputs` pattern covers a file: the pattern names the file, or it is a

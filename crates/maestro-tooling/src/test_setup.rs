@@ -85,7 +85,7 @@ struct Manifest {
     compiled: Option<CompiledCode>,
     /// Digest of the staged executable, when the workspace builds it elsewhere.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    executable: Option<String>,
+    executable: Option<executable::Prepared>,
 }
 
 /// One staged component.
@@ -140,7 +140,7 @@ pub(crate) fn fixed_components(workspace: &Workspace) -> Vec<Fixed> {
     FIXED_COMPONENTS
         .iter()
         .copied()
-        .filter(|(_, package, _)| workspace.package(package).is_some())
+        .filter(|(_, package, _)| workspace.member(package).is_some())
         .collect()
 }
 
@@ -149,9 +149,9 @@ pub(crate) fn fixed_components(workspace: &Workspace) -> Vec<Fixed> {
 /// list `TEST_PREPARE_BASE` names that was prepared from the same shared inputs.
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
-    let workspace = Workspace::read(checkout)?;
+    let workspace = Workspace::read(cargo, checkout)?;
     let component = workspace.component_crate()?;
-    let artifacts = Artifacts::read(cargo, checkout, &workspace, &component)?;
+    let artifacts = Artifacts::read(checkout, &workspace, &component)?;
     let base = read_base(checkout, &artifacts.shared);
     remove(&output.join(MANIFEST))?;
     remove(&environment_file(target))?;
@@ -166,7 +166,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         ),
         None => (Vec::new(), None),
     };
-    run_example(cargo, checkout, &example, target, &supplied)?;
+    run_example(cargo, &workspace, &example, target, &supplied)?;
     let components = stage_components(checkout, output, target, &artifacts.shared, &supplied)?;
     let reused = supplied.len();
     let built = components.len().checked_sub(reused).ok_or_else(|| {
@@ -184,7 +184,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         &target.join("cargo-checks"),
     )?;
     stage_browser_graph(cargo, checkout, output)?;
-    let executable = executable::stage(cargo, checkout, &workspace, output)?;
+    let executable = executable::stage(cargo, checkout, &workspace, output, target)?;
     let mut unchanged = artifacts.is_current(checkout)?;
     for component in components.values() {
         unchanged &= component.inputs.is_current(checkout)?;
@@ -337,12 +337,11 @@ pub(crate) fn example_program(
         package: EXAMPLE_PACKAGE,
         target: Target::Example(EXAMPLE),
     };
-    let source =
-        program::source(cargo, checkout, workspace, EXAMPLE_PACKAGE)?.ok_or_else(|| {
-            io::Error::other(format!(
-                "{EXAMPLE_PACKAGE} is neither a workspace crate nor a locked dependency"
-            ))
-        })?;
+    let source = program::source(checkout, workspace, EXAMPLE_PACKAGE)?.ok_or_else(|| {
+        io::Error::other(format!(
+            "{EXAMPLE_PACKAGE} is neither a workspace crate nor a locked dependency"
+        ))
+    })?;
     if let Source::Member = source {
         build_example(cargo, checkout, target, profile)?;
         // Cargo names the development profile's output directory `debug`.
@@ -365,14 +364,13 @@ pub(crate) fn example_program(
 /// the component crate and the fixed components this workspace builds.
 ///
 /// # Errors
-/// Returns a failed workspace scan, or a workspace without one component crate.
-pub(crate) fn example_arguments(checkout: &Path) -> io::Result<Vec<OsString>> {
-    let workspace = Workspace::read(checkout)?;
+/// Returns a workspace without one component crate.
+pub(crate) fn example_arguments(workspace: &Workspace) -> io::Result<Vec<OsString>> {
     let component = workspace.component_crate()?;
-    let fixed = fixed_components(&workspace);
+    let fixed = fixed_components(workspace);
     let names: Vec<&str> = fixed.iter().map(|(name, _, _)| *name).collect();
     Ok(vec![
-        checkout.as_os_str().to_owned(),
+        workspace.root().as_os_str().to_owned(),
         component.into_os_string(),
         names.join(",").into(),
     ])
@@ -389,13 +387,13 @@ pub(crate) fn executable_name() -> PathBuf {
 /// crate and the fixed components this workspace builds through its arguments.
 fn run_example(
     cargo: &Path,
-    checkout: &Path,
+    workspace: &Workspace,
     example: &Path,
     target: &Path,
     supplied: &[Supplied],
 ) -> io::Result<()> {
-    let mut run = preparation_command(checkout, example, target);
-    run.args(example_arguments(checkout)?);
+    let mut run = preparation_command(workspace.root(), example, target);
+    run.args(example_arguments(workspace)?);
     run.env("CARGO", cargo)
         .env("NEXTEST_ENV", environment_file(target));
     for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
@@ -419,30 +417,39 @@ fn preparation_command(checkout: &Path, example: &Path, target: &Path) -> Comman
     command
 }
 
+/// The directory beside the profile directory that holds the cache home a test run shares. It is
+/// separate from the preparation cache home, which each preparation deletes.
+const RUN_CACHE: &str = "component-cache";
+
+/// The user cache home a test run shares, beside its profile directory.
+pub(crate) fn run_cache_home(directory: &Path) -> PathBuf {
+    directory.parent().unwrap_or(directory).join(RUN_CACHE)
+}
+
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// the cache under `cache_home`, and write the component paths to `environment`. Nothing is
-/// installed or written unless every check passes.
+/// that run's cache home, and write the component paths to `environment`. Nothing is installed
+/// or written unless every check passes.
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
 pub(crate) fn install_bundle(
+    cargo: &Path,
     checkout: &Path,
     output: &Path,
     directory: &Path,
     environment: &Path,
-    cache_home: &Path,
 ) -> io::Result<()> {
-    export(checkout, output, directory, environment, cache_home)
+    export(cargo, checkout, output, directory, environment)
 }
 
-/// Validate and install the bundle in the cache directory the installed example reports for
-/// `cache_home`.
+/// Validate and install the bundle, and install its compiled code in the cache directory the
+/// installed example reports for this run's cache home.
 fn export(
+    cargo: &Path,
     checkout: &Path,
     output: &Path,
     directory: &Path,
     environment: &Path,
-    cache_home: &Path,
 ) -> io::Result<()> {
     let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
@@ -451,7 +458,7 @@ fn export(
     let manifest = read_manifest(&output)?;
     manifest.shared.verify(checkout, &output)?;
     manifest.tool.verify(checkout, &output)?;
-    let workspace = Workspace::read(checkout)?;
+    let workspace = Workspace::read(cargo, checkout)?;
     if fixed_components(&workspace)
         .iter()
         .any(|(_, _, variable)| !manifest.components.contains_key(*variable))
@@ -480,7 +487,7 @@ fn export(
         let cache_directory = compiled_code::directory(
             Command::new(&installed)
                 .current_dir(checkout)
-                .env("XDG_CACHE_HOME", cache_home),
+                .env("XDG_CACHE_HOME", run_cache_home(directory)),
         )?;
         code.install(&compiled, &cache_directory, &installed)?;
     }

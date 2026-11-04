@@ -8,7 +8,7 @@ use std::process::Command;
 use serde::{Deserialize, Serialize};
 
 use super::inputs::Inputs;
-use super::plan::{closure_directories, held};
+use super::plan::closure_directories;
 use super::program::{self, Program, Source, Target};
 use super::{SHARED_INPUTS, at, copy, digest, verify};
 use crate::workspace::Workspace;
@@ -87,8 +87,8 @@ pub(crate) fn prepare(
     if let Ok(path) = prepared(checkout, output) {
         return Ok(path);
     }
-    let inputs = inputs(cargo, checkout)?;
-    let source = program::source(cargo, checkout, workspace, PACKAGE)?.ok_or_else(|| {
+    let inputs = inputs(workspace)?;
+    let source = program::source(checkout, workspace, PACKAGE)?.ok_or_else(|| {
         io::Error::other(format!(
             "{PACKAGE} is neither a workspace crate nor a locked dependency"
         ))
@@ -128,16 +128,15 @@ pub(crate) fn prepare(
 ///
 /// # Errors
 /// Returns a failed metadata read, or a failed listing or read of the workspace files.
-fn inputs(cargo: &Path, checkout: &Path) -> io::Result<Inputs> {
-    let metadata = crate::locked_metadata(cargo, checkout)?;
-    let mut paths = closure_directories(&metadata, &held(&metadata, &[PACKAGE]))?;
+fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
+    let mut paths = closure_directories(workspace.metadata(), &workspace.holds(&[PACKAGE]))?;
     paths.extend(
         SHARED_INPUTS
             .into_iter()
             .chain(["Cargo.lock"])
             .map(str::to_owned),
     );
-    Inputs::new(checkout, paths, BTreeSet::new())
+    Inputs::new(workspace.root(), paths, BTreeSet::new())
 }
 
 /// Build the one target and accept only Cargo's reported executable, never a directory scan.

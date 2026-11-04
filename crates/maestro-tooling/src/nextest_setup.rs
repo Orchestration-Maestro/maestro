@@ -34,7 +34,7 @@ mod normalize;
 pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     let checkout = normalize_native(&std::env::current_dir()?);
     match args.first().and_then(|name| name.to_str()) {
-        Some("author-component") => author_component::run(&checkout),
+        Some("author-component") => author_component::run(Path::new(&cargo()), &checkout),
         Some("fixture-sources") => {
             let scope = match args.get(1).and_then(|scope| scope.to_str()) {
                 None if args.len() == 1 => fixture_sources::Scope::Fixtures,
@@ -45,7 +45,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
         }
         Some("native-fixture") => native(&checkout),
         Some("cargo-checks") => checks(&checkout),
-        Some("executable") => executable::run(&checkout),
+        Some("executable") => executable::run(Path::new(&cargo()), &checkout),
         Some("browser-author") => browser_graph::run(&checkout),
         Some("normalize-component-cache") => normalize::run(
             &checkout.join(argument(args, 1, "directory")?),
@@ -60,10 +60,11 @@ fn native(checkout: &Path) -> io::Result<ExitCode> {
     let path = if let Some(bundle) = prepared_bundle(checkout) {
         native_fixture::prepared(checkout, &bundle)?
     } else {
+        let cargo = Path::new(&cargo()).to_path_buf();
         native_fixture::prepare(
-            Path::new(&cargo()),
+            &cargo,
             checkout,
-            &Workspace::read(checkout)?,
+            &Workspace::read(&cargo, checkout)?,
             &checkout.join(BUNDLE),
             &checkout.join("target/native-fixture"),
         )?
@@ -79,10 +80,11 @@ fn checks(checkout: &Path) -> io::Result<ExitCode> {
     let paths = if let Some(bundle) = prepared_bundle(checkout) {
         cargo_checks::prepared(checkout, &bundle)?
     } else {
+        let cargo = Path::new(&cargo()).to_path_buf();
         cargo_checks::prepare(
-            Path::new(&cargo()),
+            &cargo,
             checkout,
-            &Workspace::read(checkout)?,
+            &Workspace::read(&cargo, checkout)?,
             &checkout.join(BUNDLE),
             &checkout.join("target/cargo-checks"),
         )?
