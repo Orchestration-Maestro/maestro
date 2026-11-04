@@ -67,6 +67,19 @@ impl Fixture {
         })
         .await
     }
+    /// Record each shutdown event to `report`, then leave the disposal waiting forever.
+    #[cfg(unix)]
+    pub(crate) async fn with_pending_shutdown_report(
+        local: Rc<LocalSet>,
+        settings: SettingsManager,
+        report: &Path,
+    ) -> Self {
+        let report = report.to_owned();
+        Self::build(local, settings, move |resources| {
+            resources.extension_factories.push(hold_shutdowns(report));
+        })
+        .await
+    }
     /// Construct the actual service owner, letting `configure` adjust its resource loading.
     async fn build(
         local: Rc<LocalSet>,
@@ -538,6 +551,10 @@ fn record_starts(events: &Rc<RefCell<Vec<String>>>) -> maestro_app::ExtensionFac
     })
 }
 
+/// The line a held disposal writes once the run's own signal path waits on it.
+#[cfg(unix)]
+pub(crate) const SHUTDOWN_UNDER_WAY: &str = "print run disposing its session";
+
 /// Record each shutdown event to `report` through the real extension registration and dispatch
 /// owners, so a run that ends its process can still report what it delivered.
 #[cfg(unix)]
@@ -547,18 +564,41 @@ fn report_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
         let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |event, _| {
-                let mut delivered: Vec<Value> = match std::fs::read_to_string(&report) {
-                    Ok(text) => serde_json::from_str(&text).unwrap(),
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
-                    Err(error) => panic!("the shutdown report is unreadable: {error}"),
-                };
-                delivered.push(serde_json::to_value(event).unwrap());
-                std::fs::write(&report, serde_json::to_vec(&delivered).unwrap()).unwrap();
+                append_shutdown(&report, event);
                 Box::pin(std::future::ready(Ok(None)))
             }),
         );
         Box::pin(std::future::ready(registered))
     })
+}
+
+/// Record each shutdown event to `report`, then never answer, so the disposal stays pending.
+#[cfg(unix)]
+fn hold_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
+    Rc::new(move |api| {
+        let report = report.clone();
+        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+            "session_shutdown".into(),
+            Rc::new(move |event, _| {
+                append_shutdown(&report, event);
+                eprintln!("{SHUTDOWN_UNDER_WAY}");
+                Box::pin(std::future::pending())
+            }),
+        );
+        Box::pin(std::future::ready(registered))
+    })
+}
+
+/// Appends `event` to the shutdown report at `report`.
+#[cfg(unix)]
+fn append_shutdown(report: &Path, event: &maestro_app::SessionShutdownEvent) {
+    let mut delivered: Vec<Value> = match std::fs::read_to_string(report) {
+        Ok(text) => serde_json::from_str(&text).unwrap(),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        Err(error) => panic!("the shutdown report is unreadable: {error}"),
+    };
+    delivered.push(serde_json::to_value(event).unwrap());
+    std::fs::write(report, serde_json::to_vec(&delivered).unwrap()).unwrap();
 }
 
 /// Record each shutdown event through the real extension registration and dispatch owners.

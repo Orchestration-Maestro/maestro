@@ -1,5 +1,7 @@
 //! The published print-mode surface over the application's own runtime.
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
+use crate::startup_runtime::SHUTDOWN_UNDER_WAY;
 use crate::startup_runtime::{Fixture, run};
 use crate::support::startup;
 use maestro_app::{AgentSessionRuntime, ImageContent, ModelResolverOutput};
@@ -89,7 +91,6 @@ fn a_print_run_shuts_the_session_down_with_quit() {
 #[cfg(unix)]
 #[test]
 fn a_termination_signal_disposes_the_run_and_reports_quit() {
-    use std::io::BufRead;
     let name = "a_termination_signal_disposes_the_run_and_reports_quit";
     if maestro_test_process::selection().is_child() {
         signalling_child();
@@ -97,9 +98,91 @@ fn a_termination_signal_disposes_the_run_and_reports_quit() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
+    let (mut child, mut diagnostics) = signalling_case(name, "termination", root.path(), &report);
 
-    let mut child = crate::support::missing_cwd::command(name, "termination", root.path())
-        .env(SHUTDOWN_REPORT, &report)
+    await_announcement(&mut child, &mut diagnostics, WAITING_FOR_THE_REQUEST);
+    signal(&child, rustix::process::Signal::TERM);
+    let status = child.wait().unwrap();
+
+    assert_eq!(status.code(), Some(143), "the run's termination status");
+    assert_eq!(
+        shutdown_report(&report),
+        [json!({"reason": "quit"})],
+        "the run disposed and the bound extension heard quit exactly once"
+    );
+}
+
+/// A hangup arriving while the first signal's disposal still waits ends the run with the
+/// hangup status, without disposing the session a second time.
+#[cfg(unix)]
+#[test]
+fn a_hangup_after_a_termination_ends_the_run_and_reports_quit_once() {
+    let name = "a_hangup_after_a_termination_ends_the_run_and_reports_quit_once";
+    if maestro_test_process::selection().is_child() {
+        signalling_child();
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let report = root.path().join("shutdown.json");
+    let (mut child, mut diagnostics) = signalling_case(name, "hangup", root.path(), &report);
+
+    await_announcement(&mut child, &mut diagnostics, WAITING_FOR_THE_REQUEST);
+    signal(&child, rustix::process::Signal::TERM);
+    await_announcement(&mut child, &mut diagnostics, SHUTDOWN_UNDER_WAY);
+    signal(&child, rustix::process::Signal::HUP);
+    let status = child.wait().unwrap();
+
+    assert_eq!(status.code(), Some(129), "the run's hangup status");
+    assert_eq!(
+        shutdown_report(&report),
+        [json!({"reason": "quit"})],
+        "the run reported quit once and the hangup disposed nothing further"
+    );
+}
+
+/// A disposal the host rejects still ends the run with the termination status, after the
+/// extension the session binds heard `quit`.
+#[cfg(unix)]
+#[test]
+fn a_rejected_disposal_ends_the_run_and_reports_quit() {
+    let name = "a_rejected_disposal_ends_the_run_and_reports_quit";
+    if maestro_test_process::selection().is_child() {
+        signalling_child();
+        return;
+    }
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let report = root.path().join("shutdown.json");
+    let (mut child, mut diagnostics) = signalling_case(name, "rejected", root.path(), &report);
+
+    await_announcement(&mut child, &mut diagnostics, WAITING_FOR_THE_REQUEST);
+    signal(&child, rustix::process::Signal::TERM);
+    let status = child.wait().unwrap();
+
+    assert_eq!(
+        status.code(),
+        Some(143),
+        "a rejected disposal still ends the run with the termination status"
+    );
+    assert_eq!(
+        shutdown_report(&report),
+        [json!({"reason": "quit"})],
+        "the bound extension heard quit before the host rejected the disposal"
+    );
+}
+
+/// The signalled child running `case`, with its diagnostics.
+#[cfg(unix)]
+fn signalling_case(
+    name: &str,
+    case: &str,
+    root: &std::path::Path,
+    report: &std::path::Path,
+) -> (
+    std::process::Child,
+    std::io::BufReader<std::process::ChildStderr>,
+) {
+    let mut child = crate::support::missing_cwd::command(name, case, root)
+        .env(SHUTDOWN_REPORT, report)
         .quiet()
         .nocapture()
         .stdout(std::process::Stdio::null())
@@ -108,44 +191,53 @@ fn a_termination_signal_disposes_the_run_and_reports_quit() {
         .unwrap()
         .spawn()
         .unwrap();
-    let mut diagnostics = std::io::BufReader::new(child.stderr.take().unwrap());
-    let mut waiting = String::new();
-    let announced = diagnostics.read_line(&mut waiting).unwrap();
-    if announced == 0 || waiting.trim_end() != WAITING_FOR_THE_REQUEST {
+    let diagnostics = std::io::BufReader::new(child.stderr.take().unwrap());
+    (child, diagnostics)
+}
+
+/// Waits until `child` announces `expected`, ending it when it announces anything else.
+#[cfg(unix)]
+fn await_announcement(
+    child: &mut std::process::Child,
+    diagnostics: &mut impl std::io::BufRead,
+    expected: &str,
+) {
+    let mut line = String::new();
+    let announced = diagnostics.read_line(&mut line).unwrap();
+    if announced == 0 || line.trim_end() != expected {
         let _ = child.kill();
         let _ = child.wait();
-        panic!("the child never reached its model stream: {waiting}");
+        panic!("the child announced {line:?} instead of {expected:?}");
     }
+}
 
+/// Delivers `signal` to `child`.
+#[cfg(unix)]
+fn signal(child: &std::process::Child, signal: rustix::process::Signal) {
     let pid = rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap();
-    rustix::process::kill_process(pid, rustix::process::Signal::TERM).unwrap();
-    let status = child.wait().unwrap();
+    rustix::process::kill_process(pid, signal).unwrap();
+}
 
-    assert_eq!(status.code(), Some(143), "the run's termination status");
-    let reported: Vec<serde_json::Value> = serde_json::from_str(
-        &std::fs::read_to_string(&report).expect("the run reported no shutdown"),
-    )
-    .unwrap();
-    assert_eq!(
-        reported,
-        [json!({"reason": "quit"})],
-        "the run disposed and the bound extension heard quit exactly once"
-    );
+/// The shutdown events the run reported at `report`.
+#[cfg(unix)]
+fn shutdown_report(report: &std::path::Path) -> Vec<serde_json::Value> {
+    serde_json::from_str(&std::fs::read_to_string(report).expect("the run reported no shutdown"))
+        .unwrap()
 }
 
 /// Runs the print run the parent signals, reporting what its disposal delivered.
 #[cfg(unix)]
 fn signalling_child() {
-    use std::path::Path;
     let report = std::env::var_os(SHUTDOWN_REPORT).expect("a shutdown report path");
     let local = Rc::new(tokio::task::LocalSet::new());
     let running = {
         let local = Rc::clone(&local);
         async move {
-            let fixture = Fixture::with_shutdown_report(
+            let selection = maestro_test_process::selection();
+            let fixture = signalling_fixture(
                 Rc::clone(&local),
-                startup::settings(&[]),
-                Path::new(&report),
+                std::path::Path::new(&report),
+                selection.case(),
             )
             .await;
             let created = create_runtime(
@@ -163,6 +255,9 @@ fn signalling_child() {
                 created,
                 Rc::new(|_| panic!("a print run never replaces its session")),
             ));
+            if selection.case() == Some("rejected") {
+                reject_disposal(&runtime);
+            }
             *runtime.session().agent().stream_fn.write().unwrap() = Some(Rc::new(|_, _, _, _| {
                 eprintln!("{WAITING_FOR_THE_REQUEST}");
                 Box::pin(std::future::pending())
@@ -181,4 +276,29 @@ fn signalling_child() {
         }
     };
     startup::runtime().block_on(local.run_until(running));
+}
+
+/// Rejects the disposal the run's signal path starts, as a host's teardown can.
+#[cfg(unix)]
+fn reject_disposal(runtime: &AgentSessionRuntime) {
+    runtime.set_before_session_invalidate(Some(Rc::new(|| {
+        Err("the host could not invalidate the session".into())
+    })));
+}
+
+/// The fixture the signalled run starts from, chosen by its case.
+#[cfg(unix)]
+async fn signalling_fixture(
+    local: Rc<tokio::task::LocalSet>,
+    report: &std::path::Path,
+    case: Option<&str>,
+) -> Fixture {
+    let settings = startup::settings(&[]);
+    match case {
+        Some("hangup") => Fixture::with_pending_shutdown_report(local, settings, report).await,
+        Some("termination" | "rejected") => {
+            Fixture::with_shutdown_report(local, settings, report).await
+        }
+        other => panic!("the signalled run has no case: {other:?}"),
+    }
 }
