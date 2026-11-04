@@ -44,6 +44,8 @@ mod nextest_wrapper;
 mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
+/// The workspace a development command serves.
+pub mod workspace;
 
 /// Provider credential variables removed by controlled development commands.
 pub(crate) const CREDENTIALS: &[&str] = &[
@@ -250,6 +252,19 @@ pub fn locked_metadata(cargo: &Path, checkout: &Path) -> io::Result<cargo_metada
         .cargo_path(cargo)
         .manifest_path(checkout.join("Cargo.toml"))
         .no_deps()
+        .other_options(vec!["--locked".into()])
+        .exec()
+        .map_err(io::Error::other)
+}
+
+/// Read locked root metadata with dependency packages included.
+///
+/// # Errors
+/// Returns Cargo execution, locked resolution or metadata decoding failures.
+pub fn locked_dependencies(cargo: &Path, checkout: &Path) -> io::Result<cargo_metadata::Metadata> {
+    cargo_metadata::MetadataCommand::new()
+        .cargo_path(cargo)
+        .manifest_path(checkout.join("Cargo.toml"))
         .other_options(vec!["--locked".into()])
         .exec()
         .map_err(io::Error::other)

@@ -8,13 +8,17 @@ use std::process::Command;
 use serde::{Deserialize, Serialize};
 
 use super::inputs::Inputs;
-use super::plan::closure_directories;
+use super::plan::{closure_directories, held};
+use super::program::{self, Program, Source, Target};
 use super::{SHARED_INPUTS, at, copy, digest, verify};
+use crate::workspace::Workspace;
 
 /// The explicit native artifact exported to tests.
 pub(crate) const VARIABLE: &str = "MAESTRO_NATIVE_FIXTURE";
 /// The one harness-free example target.
 const EXAMPLE: &str = "native_fixture";
+/// The package that owns the fixture.
+const PACKAGE: &str = "maestro-test-process";
 /// The fixture's record in the prepared bundle.
 const RECEIPT: &str = "native-fixture.json";
 
@@ -76,22 +80,35 @@ pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<PathBuf> {
 pub(crate) fn prepare(
     cargo: &Path,
     checkout: &Path,
+    workspace: &Workspace,
     output: &Path,
     target: &Path,
 ) -> io::Result<PathBuf> {
     if let Ok(path) = prepared(checkout, output) {
         return Ok(path);
     }
-    let metadata = crate::locked_metadata(cargo, checkout)?;
-    let mut paths = closure_directories(&metadata, &["maestro-test-process"])?;
-    paths.extend(
-        SHARED_INPUTS
-            .into_iter()
-            .chain(["Cargo.lock"])
-            .map(str::to_owned),
-    );
-    let inputs = Inputs::new(checkout, paths, BTreeSet::new())?;
-    let emitted = build(cargo, checkout, target)?;
+    let inputs = inputs(cargo, checkout)?;
+    let source = program::source(cargo, checkout, workspace, PACKAGE)?.ok_or_else(|| {
+        io::Error::other(format!(
+            "{PACKAGE} is neither a workspace crate nor a locked dependency"
+        ))
+    })?;
+    let emitted = match source {
+        Source::Member => build(cargo, checkout, target)?,
+        source @ Source::Locked { .. } => {
+            let program = Program {
+                package: PACKAGE,
+                target: Target::Example(EXAMPLE),
+            };
+            program::install(
+                cargo,
+                checkout,
+                &source,
+                &program,
+                &target.join("installed"),
+            )?
+        }
+    };
     let bytes = std::fs::read(&emitted)?;
     inputs.verify(checkout, output)?;
     std::fs::create_dir_all(output)?;
@@ -106,6 +123,23 @@ pub(crate) fn prepare(
     prepared(checkout, output)
 }
 
+/// The fixture's inputs: the crates it builds from and the shared workspace files, which name
+/// the locked source when the workspace only depends on the package.
+///
+/// # Errors
+/// Returns a failed metadata read, or a failed listing or read of the workspace files.
+fn inputs(cargo: &Path, checkout: &Path) -> io::Result<Inputs> {
+    let metadata = crate::locked_metadata(cargo, checkout)?;
+    let mut paths = closure_directories(&metadata, &held(&metadata, &[PACKAGE]))?;
+    paths.extend(
+        SHARED_INPUTS
+            .into_iter()
+            .chain(["Cargo.lock"])
+            .map(str::to_owned),
+    );
+    Inputs::new(checkout, paths, BTreeSet::new())
+}
+
 /// Build the one target and accept only Cargo's reported executable, never a directory scan.
 fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
     let output = Command::new(cargo)
@@ -114,7 +148,7 @@ fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
             "build",
             "--locked",
             "-p",
-            "maestro-test-process",
+            PACKAGE,
             "--example",
             EXAMPLE,
             "--profile",

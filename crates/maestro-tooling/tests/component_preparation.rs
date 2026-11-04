@@ -16,6 +16,7 @@ fn component_consumers_have_prepared_examples() {
             workspace.join("crates/maestro-extensions-wasm/examples"),
             workspace.join("examples/extensions"),
         ],
+        &maestro_tooling::example_files::FIXED_COMPONENTS,
         |name, variable| {
             prepared.insert(name.to_owned(), variable.to_owned());
             Ok(name.into())

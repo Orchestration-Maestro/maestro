@@ -1012,9 +1012,16 @@ fn workspace(root: &Path) {
         let crate_root = root.join("crates").join(name);
         fs::create_dir_all(crate_root.join("src")).unwrap();
         fs::write(crate_root.join("src/lib.rs"), "original source").unwrap();
+        let region = if name == "maestro-extensions-wasm" {
+            "# example-index:start\n# example-index:end\n"
+        } else {
+            ""
+        };
         fs::write(
             crate_root.join("Cargo.toml"),
-            format!("[package]\nname = \"{name}\"\nversion = \"0.0.0\"\nedition = \"2024\"\n{dependency}"),
+            format!(
+                "[package]\nname = \"{name}\"\nversion = \"0.0.0\"\nedition = \"2024\"\n{region}{dependency}"
+            ),
         )
         .unwrap();
     }

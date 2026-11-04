@@ -120,6 +120,18 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
             .set_modified(std::time::UNIX_EPOCH)
             .unwrap();
     }
+    // The component crate is the manifest this fixture shares with preparation: it holds the
+    // generated example region, so preparation finds it from the workspace alone.
+    let component = root.join("crates/maestro-extensions-wasm/Cargo.toml");
+    std::fs::write(
+        &component,
+        "[package]\nname = \"maestro-extensions-wasm\"\n# example-index:start\n# example-index:end\n",
+    )
+    .unwrap();
+    std::fs::File::open(&component)
+        .unwrap()
+        .set_modified(std::time::UNIX_EPOCH)
+        .unwrap();
     let example = profile.join("examples/prepare_author_component");
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");

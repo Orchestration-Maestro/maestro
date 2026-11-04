@@ -3528,6 +3528,20 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
         fs::File::create(&path).unwrap();
         set_age(&path, std::time::Duration::from_secs(3600));
     }
+    for (path, body) in [
+        (
+            "crates/maestro-extensions-wasm/Cargo.toml",
+            "[package]\nname = \"maestro-extensions-wasm\"\n# example-index:start\n# example-index:end\n",
+        ),
+        (
+            "crates/maestro-tooling/Cargo.toml",
+            "[package]\nname = \"maestro-tooling\"\n",
+        ),
+    ] {
+        let manifest = root.join(path);
+        fs::write(&manifest, body).unwrap();
+        set_age(&manifest, std::time::Duration::from_secs(3600));
+    }
     let example = recipe_support::printer(
         &profile.join("examples"),
         "prepare_author_component",
@@ -4106,6 +4120,17 @@ fn example_checkout(root: &Path) {
     let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
     fs::create_dir_all(&fixture).unwrap();
     fs::write(
+        root.join("crates/maestro-extensions-wasmtime/Cargo.toml"),
+        "[package]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("crates/maestro-extensions-wasmtime/src")).unwrap();
+    fs::write(
+        root.join("crates/maestro-extensions-wasmtime/src/lib.rs"),
+        "",
+    )
+    .unwrap();
+    fs::write(
         fixture.join("Cargo.toml.in"),
         "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\n[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro/crates/maestro-extensions-wasm\" }\n[workspace]\n",
     ).unwrap();
@@ -4385,12 +4410,15 @@ fn example_components_discover_source_only_additions() {
     fs::write(root.path().join("helpers/unmarked.rs"), "//! Helper.\n").unwrap();
     let prepare = || {
         let mut builds = Vec::new();
-        let entries =
-            tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+        let entries = tooling::example_files::prepare(
+            &[root.path().to_path_buf()],
+            &tooling::example_files::FIXED_COMPONENTS,
+            |name, environment| {
                 builds.push((name.to_owned(), environment.to_owned()));
                 Ok(PathBuf::from(format!("/components/{name}.wasm")))
-            })
-            .unwrap();
+            },
+        )
+        .unwrap();
         (builds, entries)
     };
     assert_eq!(prepare(), (Vec::new(), String::new()));
@@ -4435,12 +4463,15 @@ fn example_components_reject_invalid_markers() {
         )
         .unwrap();
         let mut builds = Vec::new();
-        let error =
-            tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+        let error = tooling::example_files::prepare(
+            &[root.path().to_path_buf()],
+            &tooling::example_files::FIXED_COMPONENTS,
+            |name, environment| {
                 builds.push((name.to_owned(), environment.to_owned()));
                 Ok(PathBuf::from("/components/fixture.wasm"))
-            })
-            .unwrap_err();
+            },
+        )
+        .unwrap_err();
         assert_eq!(
             error.to_string(),
             format!("invalid component variable: {variable}")
@@ -4461,12 +4492,15 @@ fn example_components_reject_duplicate_markers() {
         .unwrap();
     }
     let mut builds = Vec::new();
-    let error =
-        tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+    let error = tooling::example_files::prepare(
+        &[root.path().to_path_buf()],
+        &tooling::example_files::FIXED_COMPONENTS,
+        |name, environment| {
             builds.push((name.to_owned(), environment.to_owned()));
             Ok(PathBuf::from(format!("/components/{name}.wasm")))
-        })
-        .unwrap_err();
+        },
+    )
+    .unwrap_err();
     assert_eq!(
         error.to_string(),
         "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
@@ -4493,8 +4527,10 @@ fn example_components_propagate_builder_failure() {
         .unwrap();
     }
     let mut builds = Vec::new();
-    let error =
-        tooling::example_files::prepare(&[root.path().to_path_buf()], |name, environment| {
+    let error = tooling::example_files::prepare(
+        &[root.path().to_path_buf()],
+        &tooling::example_files::FIXED_COMPONENTS,
+        |name, environment| {
             builds.push((name.to_owned(), environment.to_owned()));
             if name == "second" {
                 Err(std::io::Error::new(
@@ -4504,8 +4540,9 @@ fn example_components_propagate_builder_failure() {
             } else {
                 Ok(PathBuf::from(format!("/components/{name}.wasm")))
             }
-        })
-        .unwrap_err();
+        },
+    )
+    .unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
     assert_eq!(error.to_string(), "fixture build refused");
     assert_eq!(
@@ -4527,9 +4564,11 @@ fn example_components_reject_reserved_variables() {
             format!("// maestro-component: {variable}\n"),
         )
         .unwrap();
-        let error = tooling::example_files::prepare(&[root.path().to_path_buf()], |_, _| {
-            panic!("reserved variable reached the builder")
-        })
+        let error = tooling::example_files::prepare(
+            &[root.path().to_path_buf()],
+            &tooling::example_files::FIXED_COMPONENTS,
+            |_, _| panic!("reserved variable reached the builder"),
+        )
         .unwrap_err();
         assert_eq!(
             error.to_string(),
@@ -4552,10 +4591,14 @@ fn example_components_reject_cross_root_duplicates() {
         .unwrap();
     }
     let mut builds = 0;
-    let error = tooling::example_files::prepare(&folders, |_, _| {
-        builds += 1;
-        Ok(PathBuf::from("/components/fixture.wasm"))
-    })
+    let error = tooling::example_files::prepare(
+        &folders,
+        &tooling::example_files::FIXED_COMPONENTS,
+        |_, _| {
+            builds += 1;
+            Ok(PathBuf::from("/components/fixture.wasm"))
+        },
+    )
     .unwrap_err();
     assert_eq!(
         error.to_string(),
@@ -4574,13 +4617,16 @@ fn example_components_prepare_directory_targets() {
         "// maestro-component: MAESTRO_DIRECTORY_COMPONENT\n",
     )
     .unwrap();
-    let entries =
-        tooling::example_files::prepare(&[root.path().to_path_buf()], |name, variable| {
+    let entries = tooling::example_files::prepare(
+        &[root.path().to_path_buf()],
+        &tooling::example_files::FIXED_COMPONENTS,
+        |name, variable| {
             assert_eq!(name, "with_deps");
             assert_eq!(variable, "MAESTRO_DIRECTORY_COMPONENT");
             Ok(PathBuf::from(format!("/components/{name}.wasm")))
-        })
-        .unwrap();
+        },
+    )
+    .unwrap();
     assert_eq!(
         entries,
         "MAESTRO_DIRECTORY_COMPONENT=/components/with_deps.wasm\n"
@@ -4596,10 +4642,14 @@ fn example_components_prepare_top_level_main() {
         "// maestro-component: MAESTRO_MAIN_COMPONENT\n",
     )
     .unwrap();
-    let entries = tooling::example_files::prepare(&[root.path().to_path_buf()], |name, _| {
-        assert_eq!(name, "main");
-        Ok(PathBuf::from("/components/main.wasm"))
-    })
+    let entries = tooling::example_files::prepare(
+        &[root.path().to_path_buf()],
+        &tooling::example_files::FIXED_COMPONENTS,
+        |name, _| {
+            assert_eq!(name, "main");
+            Ok(PathBuf::from("/components/main.wasm"))
+        },
+    )
     .unwrap();
     assert_eq!(entries, "MAESTRO_MAIN_COMPONENT=/components/main.wasm\n");
 }

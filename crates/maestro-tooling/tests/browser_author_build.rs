@@ -1940,9 +1940,7 @@ fn browser_native_build_routes_preserve_authored_configuration() {
         let ignore: Vec<std::path::PathBuf> =
             serde_json::from_value(value["watch"]["ignore"].clone()).unwrap();
         assert!(ignore.contains(&root.join("ignored.txt")));
-        assert!(ignore.contains(
-            &browser.path("crates/maestro-tooling/../../target/maestro-browser/.author")
-        ));
+        assert!(ignore.contains(&browser.path("target/maestro-browser/.author")));
         let bytes = browser_support::wasm(&browser, route);
         assert_eq!(&bytes[..8], b"\0asm\x01\0\0\0");
         assert!(bytes.windows(wordmark.len()).any(|part| part == wordmark));

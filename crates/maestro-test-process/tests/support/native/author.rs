@@ -57,7 +57,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             write_stdout(&serde_json::to_vec(&cache_directory()?)?)?;
             return write_stdout(b"\n");
         }
-        [] => {}
+        [_workspace, _component, _fixed] => {}
         _ => return Err(io::Error::other("unknown author preparation arguments")),
     }
     let environment = std::env::var_os("NEXTEST_ENV")

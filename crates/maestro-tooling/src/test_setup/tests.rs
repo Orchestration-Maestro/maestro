@@ -96,6 +96,7 @@ fn bundle_export_installs_the_native_example() {
         components,
         example: digest(b"native example"),
         compiled: None,
+        executable: None,
     };
     std::fs::write(
         bundle.join(MANIFEST),
@@ -117,6 +118,18 @@ fn bundle_export_installs_the_native_example() {
         let (_, file) = line.split_once('=').unwrap();
         assert_eq!(std::fs::read(file).unwrap(), b"component");
     }
+}
+
+/// What each artifact hashes, from the real workspace's metadata.
+fn workspace_plan(root: &Path) -> super::plan::Plan {
+    let workspace = Workspace::read(root).unwrap();
+    let component = workspace.component_crate().unwrap();
+    plan(
+        &crate::locked_metadata(Path::new(env!("CARGO")), root).unwrap(),
+        &workspace,
+        &component,
+    )
+    .unwrap()
 }
 
 /// Whether a `test_prepare_inputs` pattern covers a file: the pattern names the file, or it is a
@@ -151,7 +164,7 @@ fn ci_cache_key_names_exactly_the_files_the_preparation_reads() {
         );
     }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let plan = plan(&crate::locked_metadata(Path::new(env!("CARGO")), &root).unwrap()).unwrap();
+    let plan = workspace_plan(&root);
     let names: BTreeSet<&String> = [&plan.shared, &plan.tool, &plan.browser]
         .into_iter()
         .flatten()
@@ -220,8 +233,7 @@ fn closure_directories_reject_a_missing_built_package() {
 #[test]
 fn component_crates_hold_only_what_the_wasm_build_uses() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let metadata = crate::locked_metadata(Path::new(env!("CARGO")), &root).unwrap();
-    let shared = plan(&metadata).unwrap().shared;
+    let shared = workspace_plan(&root).shared;
     assert_eq!(
         shared
             .iter()
@@ -246,7 +258,6 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
 #[test]
 fn component_bundle_tracks_subagent_sources_but_not_unrelated_packages() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let metadata = crate::locked_metadata(Path::new(env!("CARGO")), &root).unwrap();
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     assert!(
         Command::new("git")
@@ -264,7 +275,7 @@ fn component_bundle_tracks_subagent_sources_but_not_unrelated_packages() {
     }
     let inputs = Inputs::new(
         scratch.path(),
-        plan(&metadata).unwrap().shared,
+        workspace_plan(&root).shared,
         BTreeSet::new(),
     )
     .unwrap();

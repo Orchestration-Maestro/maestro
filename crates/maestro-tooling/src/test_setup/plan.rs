@@ -14,11 +14,12 @@ use cargo_metadata::{Dependency, DependencyKind, Metadata, Package};
 
 use super::inputs::{Inputs, locked_closure};
 use super::{
-    BROWSER_PACKAGES, COMPONENT_EXAMPLES, EXAMPLE_INPUTS, EXAMPLE_PACKAGE, FIXED_COMPONENTS,
-    LOCKED_INPUTS, SHARED_INPUTS, TOOL_PACKAGES, at,
+    BROWSER_PACKAGES, EXAMPLE_INPUTS, FIXED_COMPONENTS, LOCKED_INPUTS, SHARED_INPUTS,
+    TOOL_PACKAGES, at,
 };
 use crate::dep_info;
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
+use crate::workspace::Workspace;
 use maestro_path::normalize_native;
 
 /// The workspace-level gate that marks an edge as native only.
@@ -50,9 +51,19 @@ impl Artifacts {
     /// Digest the inputs of each artifact in `checkout`.
     ///
     /// # Errors
-    /// Returns failed metadata, a missing built package, or a failed listing or read.
-    pub(super) fn read(cargo: &Path, checkout: &Path) -> io::Result<Self> {
-        let plan = plan(&crate::locked_metadata(cargo, checkout)?)?;
+    /// Returns failed metadata, a component crate that is not a member, a missing built package,
+    /// or a failed listing or read.
+    pub(super) fn read(
+        cargo: &Path,
+        checkout: &Path,
+        workspace: &Workspace,
+        component: &Path,
+    ) -> io::Result<Self> {
+        let plan = plan(
+            &crate::locked_metadata(cargo, checkout)?,
+            workspace,
+            component,
+        )?;
         let locked = locked_closure(checkout, &plan.dependencies)?;
         Ok(Self {
             shared: Inputs::new(checkout, plan.shared, locked)?,
@@ -110,6 +121,19 @@ fn closure_packages<'a>(
     )
 }
 
+/// The names among `names` that this workspace holds, in their original order.
+///
+/// A package the workspace only depends on is built by Cargo outside the checkout, so it
+/// contributes no crate directory to fingerprint.
+pub(super) fn held<'a>(metadata: &Metadata, names: &[&'a str]) -> Vec<&'a str> {
+    let members = members(metadata);
+    names
+        .iter()
+        .copied()
+        .filter(|name| members.iter().any(|member| member.name == *name))
+        .collect()
+}
+
 /// The repository-relative directories of `packages`.
 fn directories(metadata: &Metadata, packages: &[&Package]) -> BTreeSet<String> {
     packages
@@ -152,11 +176,34 @@ fn crate_paths(
 }
 
 /// What each artifact hashes, from the workspace metadata.
-pub(super) fn plan(metadata: &Metadata) -> io::Result<Plan> {
+///
+/// # Errors
+/// Returns a component crate that is not a member, or a failed metadata read.
+pub(super) fn plan(
+    metadata: &Metadata,
+    workspace: &Workspace,
+    component: &Path,
+) -> io::Result<Plan> {
+    let members = members(metadata);
+    let component_package = members
+        .iter()
+        .find(|package| {
+            package.manifest_path.parent().is_some_and(|directory| {
+                normalize_native(directory.as_std_path()) == normalize_native(component)
+            })
+        })
+        .map(|package| package.name.as_str())
+        .ok_or_else(|| {
+            io::Error::other(format!(
+                "{} holds the example region but is not a workspace member",
+                component.display()
+            ))
+        })?;
     let packages: BTreeSet<&str> = FIXED_COMPONENTS
         .iter()
         .map(|(_, package, _)| *package)
-        .chain([EXAMPLE_PACKAGE])
+        .chain([component_package])
+        .filter(|name| members.iter().any(|member| member.name == *name))
         .collect();
     let components = closure_packages(
         metadata,
@@ -172,17 +219,20 @@ pub(super) fn plan(metadata: &Metadata) -> io::Result<Plan> {
     // The examples are hashed one by one, beside the shared inputs.
     let mut shared = directories(metadata, &components);
     shared.extend(SHARED_INPUTS.map(str::to_owned));
-    shared.insert(format!(":(exclude){COMPONENT_EXAMPLES}"));
+    shared.insert(format!(
+        ":(exclude){}/examples",
+        workspace.relative(component)?
+    ));
     let fixed = SHARED_INPUTS.into_iter().chain(LOCKED_INPUTS);
     Ok(Plan {
         shared,
         dependencies,
         tool: crate_paths(
             metadata,
-            &TOOL_PACKAGES,
+            &held(metadata, &TOOL_PACKAGES),
             fixed.clone().chain(EXAMPLE_INPUTS),
         )?,
-        browser: crate_paths(metadata, &BROWSER_PACKAGES, fixed)?,
+        browser: crate_paths(metadata, &held(metadata, &BROWSER_PACKAGES), fixed)?,
     })
 }
 

@@ -10,7 +10,6 @@
 //! cache can evict the code this setup warmed before the tests that read it have run. macOS
 //! and Windows ignore the variable, so there the example warms the engine's own cache.
 
-use std::env::consts::EXE_EXTENSION;
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -19,23 +18,19 @@ use std::process::{Command, ExitCode};
 use super::normalize::{self, Outcome, archive_signalled};
 use super::{cargo, export, prepared_bundle};
 use crate::exit_code;
-use crate::test_setup::{self, EXAMPLE, executable};
+use crate::test_setup::{self, EXAMPLE, example_arguments, executable_name};
+use crate::workspace::Workspace;
 
-/// The sources the setup example is built from, beside the shared build and discovery
-/// directories listed below; the example is outdated once any of them is newer.
-const SOURCES: [&str; 5] = [
-    "crates/maestro-extensions-wasm/examples/prepare_author_component.rs",
-    "crates/maestro-extensions-wasm/src/tests/build.rs",
-    "crates/maestro-tooling/src/example_files.rs",
-    "crates/maestro-extensions-wasm/Cargo.toml",
-    "Cargo.lock",
+/// The sources the setup example is built from within its own package, beside the files of the
+/// tooling that compiles it.
+const SOURCES: [&str; 3] = [
+    "examples/prepare_author_component.rs",
+    "src/tests/build.rs",
+    "Cargo.toml",
 ];
 
 /// The directories whose `.rs` files the setup example is built from.
-const SOURCE_DIRECTORIES: [&str; 2] = [
-    "crates/maestro-extensions-wasm/src/tests/build",
-    "crates/maestro-tooling/src/example_files",
-];
+const SOURCE_DIRECTORIES: [&str; 2] = ["src/tests/build", "src/example_files"];
 
 /// The directory beside the profile directory that holds this run's cache home. It is
 /// separate from the preparation cache home, which each preparation deletes.
@@ -45,15 +40,18 @@ const CACHE_HOME: &str = "component-cache";
 /// home the example warmed so the tests read the same compiled code.
 ///
 /// # Errors
-/// Returns an unresolved artifact directory, a stale or missing bundle, a failed build, or
-/// a setup example that cannot start. A setup example that fails keeps its own status.
+/// Returns an unresolved artifact directory, a workspace without one component crate, a stale
+/// or missing bundle, a failed build or install, or a setup example that cannot start. A setup
+/// example that fails keeps its own status.
 pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
     let directory = artifact_directory()?;
     let cache_home = directory.parent().unwrap_or(&directory).join(CACHE_HOME);
+    let workspace = Workspace::read(checkout)?;
+    let component = workspace.component_crate()?;
     let status = if let Some(bundle) = prepared_bundle(checkout) {
         run_prepared(checkout, &bundle, &directory, &cache_home)?
     } else {
-        run_local(checkout, &directory, &cache_home)?
+        run_local(checkout, &workspace, &component, &directory, &cache_home)?
     };
     // The example and the installation rewrite the file, so the entry follows them.
     let mut entry = OsString::from("XDG_CACHE_HOME=");
@@ -76,9 +74,7 @@ fn run_prepared(
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         return Ok(ExitCode::from(3));
     }
-    let example = directory
-        .join("examples")
-        .join(executable(EXAMPLE, EXE_EXTENSION));
+    let example = directory.join("examples").join(executable_name());
     let mut command = Command::new(example);
     command.env("XDG_CACHE_HOME", cache_home);
     // The example takes the prepared components from its environment, so it only warms.
@@ -87,23 +83,36 @@ fn run_prepared(
             command.env(name, value);
         }
     }
+    command.args(example_arguments(checkout)?);
     Ok(exit_code(command.current_dir(checkout).status()?))
 }
 
-/// Run the test build's example while it is newer than its sources, else build it first.
+/// Run the test build's example while it is newer than its sources, else prepare one first.
 ///
-/// The test build keeps the example's resolved features; a single-package `cargo run`
-/// resolves fewer and recompiles the engine. Running it only while it is newer than its
-/// sources keeps a filtered build from running outdated preparation.
-fn run_local(checkout: &Path, directory: &Path, cache_home: &Path) -> io::Result<ExitCode> {
-    if let Some(example) = built_example(directory).filter(|example| fresh(checkout, example))
+/// The test build keeps the example's resolved features; a single-package build resolves fewer
+/// and recompiles the engine. Running it only while it is newer than its sources keeps a
+/// filtered build from running outdated preparation.
+fn run_local(
+    checkout: &Path,
+    workspace: &Workspace,
+    component: &Path,
+    directory: &Path,
+    cache_home: &Path,
+) -> io::Result<ExitCode> {
+    let profile = directory
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    let profile = if profile == "debug" { "dev" } else { profile };
+    let target = directory.parent().unwrap_or(directory);
+    if let Some(example) = built_example(directory)
+        && fresh(workspace, component, &example)
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
         return start(checkout, &example, cache_home);
     }
-    build(checkout, directory)?;
-    let example = built_example(directory)
-        .ok_or_else(|| io::Error::other(format!("{EXAMPLE} was not built")))?;
+    let example =
+        test_setup::example_program(Path::new(&cargo()), checkout, workspace, target, profile)?;
     // Cargo may retain an outdated example; running it still allows preparation to finish.
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         eprintln!("Cargo kept the setup example; test binaries may compile components again.");
@@ -112,25 +121,14 @@ fn run_local(checkout: &Path, directory: &Path, cache_home: &Path) -> io::Result
 }
 
 /// Run the setup example in the checkout with this process's environment and `cache_home` as
-/// its user cache.
+/// its user cache, and the workspace it prepares as its arguments.
 fn start(checkout: &Path, example: &Path, cache_home: &Path) -> io::Result<ExitCode> {
-    Ok(exit_code(
-        Command::new(example)
-            .current_dir(checkout)
-            .env("XDG_CACHE_HOME", cache_home)
-            .status()?,
-    ))
-}
-
-/// Build the setup example in the target directory and profile of `directory`.
-fn build(checkout: &Path, directory: &Path) -> io::Result<()> {
-    let profile = directory
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or_default();
-    let profile = if profile == "debug" { "dev" } else { profile };
-    let target = directory.parent().unwrap_or(directory);
-    test_setup::build_example(Path::new(&cargo()), checkout, target, profile)
+    let mut command = Command::new(example);
+    command
+        .current_dir(checkout)
+        .args(example_arguments(checkout)?)
+        .env("XDG_CACHE_HOME", cache_home);
+    Ok(exit_code(command.status()?))
 }
 
 /// The setup example the test build left in `directory`, if any.
@@ -142,7 +140,7 @@ fn built_example(directory: &Path) -> Option<PathBuf> {
 }
 
 /// Whether `example` is newer than every source it is built from.
-fn fresh(checkout: &Path, example: &Path) -> bool {
+fn fresh(workspace: &Workspace, component: &Path, example: &Path) -> bool {
     let modified = |path: &Path| {
         std::fs::metadata(path)
             .and_then(|data| data.modified())
@@ -151,17 +149,29 @@ fn fresh(checkout: &Path, example: &Path) -> bool {
     let Some(built) = modified(example) else {
         return false;
     };
-    let listed = SOURCES.iter().map(|source| checkout.join(source));
+    let tooling = workspace.package("maestro-tooling");
+    let listed = SOURCES
+        .iter()
+        .map(|source| component.join(source))
+        .chain(tooling.as_ref().map(|dir| dir.join("src/example_files.rs")))
+        .chain([workspace.root().join("Cargo.lock")]);
     let discovered = SOURCE_DIRECTORIES
         .iter()
-        .filter_map(|folder| std::fs::read_dir(checkout.join(folder)).ok())
+        .filter_map(|folder| {
+            let owner = match *folder {
+                "src/example_files" => tooling.clone()?,
+                _ => component.to_path_buf(),
+            };
+            std::fs::read_dir(owner.join(folder)).ok()
+        })
         .flatten()
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.extension().is_some_and(|extension| extension == "rs"));
-    listed
-        .chain(discovered)
-        .filter_map(|source| modified(&source))
+    let sources: Vec<PathBuf> = listed.chain(discovered).collect();
+    sources
+        .iter()
+        .filter_map(|source| modified(source))
         .all(|source| built > source)
 }
 

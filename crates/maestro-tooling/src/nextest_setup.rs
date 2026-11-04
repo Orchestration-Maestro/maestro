@@ -11,7 +11,8 @@ use std::process::ExitCode;
 use maestro_path::normalize_native;
 
 use super::argument;
-use crate::test_setup::{MANIFEST, cargo_checks, native_fixture};
+use crate::test_setup::{MANIFEST, cargo_checks, executable, native_fixture};
+use crate::workspace::Workspace;
 
 /// The bundle directory a run reads when it names none.
 const BUNDLE: &str = "target/test-setup";
@@ -44,6 +45,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
         }
         Some("native-fixture") => native(&checkout),
         Some("cargo-checks") => checks(&checkout),
+        Some("executable") => executable::run(&checkout),
         Some("browser-author") => browser_graph::run(&checkout),
         Some("normalize-component-cache") => normalize::run(
             &checkout.join(argument(args, 1, "directory")?),
@@ -55,14 +57,16 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
 
 /// Export the validated host fixture, building only during local repository setup.
 fn native(checkout: &Path) -> io::Result<ExitCode> {
-    let path = match prepared_bundle(checkout) {
-        Some(bundle) => native_fixture::prepared(checkout, &bundle)?,
-        None => native_fixture::prepare(
+    let path = if let Some(bundle) = prepared_bundle(checkout) {
+        native_fixture::prepared(checkout, &bundle)?
+    } else {
+        native_fixture::prepare(
             Path::new(&cargo()),
             checkout,
+            &Workspace::read(checkout)?,
             &checkout.join(BUNDLE),
             &checkout.join("target/native-fixture"),
-        )?,
+        )?
     };
     let mut entry = OsString::from(format!("{}=", native_fixture::VARIABLE));
     entry.push(path);
@@ -70,16 +74,18 @@ fn native(checkout: &Path) -> io::Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
-/// Export both real build checks after strict bundle validation or local preparation.
+/// Export the prepared build checks after strict bundle validation or local preparation.
 fn checks(checkout: &Path) -> io::Result<ExitCode> {
-    let paths = match prepared_bundle(checkout) {
-        Some(bundle) => cargo_checks::prepared(checkout, &bundle)?,
-        None => cargo_checks::prepare(
+    let paths = if let Some(bundle) = prepared_bundle(checkout) {
+        cargo_checks::prepared(checkout, &bundle)?
+    } else {
+        cargo_checks::prepare(
             Path::new(&cargo()),
             checkout,
+            &Workspace::read(checkout)?,
             &checkout.join(BUNDLE),
             &checkout.join("target/cargo-checks"),
-        )?,
+        )?
     };
     for (variable, path) in paths {
         let mut entry = OsString::from(format!("{variable}="));
@@ -91,7 +97,7 @@ fn checks(checkout: &Path) -> io::Result<ExitCode> {
 
 /// The bundle directory a prepared run reads: the one `TEST_PREPARE_OUTPUT` names while it holds
 /// a manifest, else the default of an archived run. A run without a bundle has none.
-fn prepared_bundle(checkout: &Path) -> Option<PathBuf> {
+pub(crate) fn prepared_bundle(checkout: &Path) -> Option<PathBuf> {
     let named = nonempty("TEST_PREPARE_OUTPUT").map(PathBuf::from);
     let archived = std::env::var_os("TEST_ARCHIVE").is_some_and(|value| value == "1");
     let prepared = archived
@@ -112,7 +118,7 @@ fn nonempty(name: &str) -> Option<OsString> {
 }
 
 /// Export one `NAME=value` entry to the tests, when nextest supplied a file for it.
-fn export(entry: &OsStr) -> io::Result<()> {
+pub(crate) fn export(entry: &OsStr) -> io::Result<()> {
     let Some(file) = std::env::var_os("NEXTEST_ENV") else {
         return Ok(());
     };
