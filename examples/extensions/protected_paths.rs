@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    NotificationType, Presence, ToolCallEventResult,
+    HookFuture, NotificationType, Presence, ToolCallEventResult,
 };
 use serde::Deserialize;
 
@@ -25,7 +25,7 @@ struct PathInput {
 fn tool_call(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::ToolCall(event) = event else {
             return Ok(None);

@@ -156,7 +156,9 @@ pub fn dynamic_tools_extension(api: ExtensionAPI) -> ExtensionFuture<'static, ()
             "session_start",
             Rc::new(move |_, ctx| {
                 Box::pin(std::future::ready(
-                    session_start(&event_api, &event_names, &ctx).map(|()| None),
+                    session_start(&event_api, &event_names, &ctx)
+                        .map(|()| None)
+                        .map_err(Into::into),
                 ))
             }),
         )?;

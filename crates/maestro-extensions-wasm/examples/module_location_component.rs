@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    FlagOptions, FlagType, FlagValue, Presence, ResourcesDiscoverResult,
+    FlagOptions, FlagType, FlagValue, HookFuture, Presence, ResourcesDiscoverResult,
 };
 
 /// Variable through which the host names the artifact this instance was loaded from.
@@ -42,7 +42,7 @@ pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
 fn resources(
     event: &mut ExtensionEvent,
     _context: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::ResourcesDiscover(_) = event else {
             return Err("unexpected resource callback".into());

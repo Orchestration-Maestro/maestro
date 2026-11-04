@@ -5,6 +5,7 @@ use crate::manual_runtime;
 use crate::model_selector_support;
 use crate::published;
 use crate::recording_terminal;
+use crate::refusing_provider::RefusingProvider;
 use crate::runtime_spy;
 use crate::selector_failure_support;
 #[cfg(not(target_arch = "wasm32"))]
@@ -690,7 +691,7 @@ fn failing_registry(
             "maestro-unconfigured",
             SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
                 callbacks: maestro_app::ProviderCallbacks {
-                    oauth: Some(SharedHandle::new(RejectingModels)),
+                    oauth: Some(refusing()),
                     ..Default::default()
                 },
                 models: Some(vec![
@@ -801,43 +802,12 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
 }
 
 /// Provider whose stored credentials reject a catalog transformation.
-struct RejectingModels;
-impl maestro_app::OAuthProviderInterface for RejectingModels {
-    fn id(&self) -> &'static str {
-        "maestro-refresh-failure"
-    }
-    fn name(&self) -> &'static str {
-        "Controlled refresh"
-    }
-    fn login(
-        &self,
-        _: maestro_app::OAuthCallbacks,
-        _: Option<maestro_app::Fetch>,
-    ) -> maestro_app::BoxFuture<Result<maestro_app::OAuthCredentials, maestro_app::OAuthError>>
-    {
-        Box::pin(async { Err(selector_failure_support::errors::failure()) })
-    }
-    fn refresh_token(
-        &self,
-        _: maestro_app::OAuthCredentials,
-        _: Option<maestro_app::Fetch>,
-    ) -> maestro_app::BoxFuture<Result<maestro_app::OAuthCredentials, maestro_app::OAuthError>>
-    {
-        Box::pin(async { Err(selector_failure_support::errors::failure()) })
-    }
-    fn get_api_key<'a>(
-        &self,
-        credentials: &'a maestro_app::OAuthCredentials,
-    ) -> Result<std::borrow::Cow<'a, str>, maestro_app::OAuthError> {
-        Ok(std::borrow::Cow::Borrowed(&credentials.access))
-    }
-    fn modify_models<'m>(
-        &self,
-        _: &'m [Model],
-        _: &maestro_app::OAuthCredentials,
-    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, maestro_app::OAuthError>> {
-        Some(Err(selector_failure_support::errors::failure()))
-    }
+fn refusing() -> SharedHandle<RefusingProvider> {
+    SharedHandle::new(RefusingProvider::new(
+        "maestro-refresh-failure",
+        "Controlled refresh",
+        selector_failure_support::errors::failure,
+    ))
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
 fn rejecting_registry() -> maestro_app::ModelRegistry {
@@ -853,7 +823,7 @@ fn rejecting_registry() -> maestro_app::ModelRegistry {
             "maestro-refresh-failure",
             SharedHandle::new(RwLock::new(maestro_app::ProviderConfigInput {
                 callbacks: maestro_app::ProviderCallbacks {
-                    oauth: Some(SharedHandle::new(RejectingModels)),
+                    oauth: Some(refusing()),
                     ..Default::default()
                 },
                 models: Some(vec![

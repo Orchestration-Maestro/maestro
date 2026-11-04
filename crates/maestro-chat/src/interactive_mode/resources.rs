@@ -282,6 +282,32 @@ fn format_resource_groups(
     )
 }
 
+/// The slash name displayed for each prompt path, the last template at a shared path
+/// naming it.
+fn prompt_names_by_path<'a>(
+    prompts: impl IntoIterator<Item = &'a PromptTemplate>,
+) -> HashMap<&'a str, &'a str> {
+    prompts
+        .into_iter()
+        .map(|prompt| (prompt.file_path.as_str(), prompt.name.as_str()))
+        .collect()
+}
+
+/// Names a prompt row: its slash name from `names`, or else its displayed path.
+///
+/// # Errors
+/// Returns the failure of the home lookup.
+fn prompt_label<'a>(
+    names: &HashMap<&'a str, &'a str>,
+    item: &ResourceItem<'_>,
+    home: &HomeLookup<'_>,
+) -> Result<String, Box<dyn Error>> {
+    Ok(match names.get(item.path) {
+        Some(name) => format!("/{name}"),
+        None => format_display_path(item.path, home)?,
+    })
+}
+
 /// Joins the trimmed nonempty labels as one dimmed row, sorted by locale when a
 /// collator is supplied and in their supplied order otherwise.
 ///
@@ -476,16 +502,8 @@ impl InteractiveMode {
                 source_info: Some(&prompt.source_info),
             })
             .collect();
-        let by_path: HashMap<_, _> = prompts
-            .iter()
-            .map(|prompt| (prompt.file_path.as_str(), prompt.name.as_str()))
-            .collect();
-        let label = |item: &ResourceItem<'_>| {
-            Ok(match by_path.get(item.path) {
-                Some(name) => format!("/{name}"),
-                None => format_display_path(item.path, home)?,
-            })
-        };
+        let by_path = prompt_names_by_path(prompts.iter());
+        let label = |item: &ResourceItem<'_>| prompt_label(&by_path, item, home);
         let expanded =
             format_scope_groups(&build_scope_groups(&items), theme, collator, label, label)?;
         let names: Vec<_> = prompts

@@ -9,6 +9,7 @@ use maestro_app::{
     ExtensionContext, ExtensionFactory, Local, MessageRenderOptions, NativeAgentMessage, Presence,
     ToolRenderResult, ToolRenderResultLike, UserContent, is_whitespace_scalar,
 };
+use maestro_models::test_support::zero_usage;
 use maestro_theme::{ColorMode, ColorValue, LiveTheme, Theme, ThemeBg, ThemeColor, ThemeOptions};
 use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Component, Container, EditorComponent, MarkdownTheme, Spacer, Text};
@@ -762,16 +763,10 @@ fn transcript_status_reuses_only_the_adjacent_owned_pair() {
     });
 }
 
-/// The usage record of every recorded assistant message.
-fn usage() -> Value {
-    json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
-        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}})
-}
-
 /// A stored assistant record with `content`, its stop reason and an optional error.
 pub(super) fn assistant(content: &Value, stop: &str, error: Option<&str>) -> Value {
     let mut record = json!({"role": "assistant", "content": content, "api": "controlled",
-        "provider": "controlled", "model": "controlled", "usage": usage(),
+        "provider": "controlled", "model": "controlled", "usage": zero_usage(),
         "stopReason": stop, "timestamp": 0});
     if let Some(error) = error {
         record["errorMessage"] = json!(error);

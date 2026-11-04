@@ -9,8 +9,8 @@
 
 use maestro_extensions_wasm::{
     CommandOptions, ExtensionAPI, ExtensionCommandContext, ExtensionContext, ExtensionEvent,
-    ExtensionEventResult, ExtensionFuture, ExtensionHandler, ExtensionResult, NotificationType,
-    Presence, SessionBeforeSwitchReason, SessionBeforeSwitchResult, SessionEvent,
+    ExtensionEventResult, ExtensionFuture, ExtensionHandler, ExtensionResult, HookFuture,
+    NotificationType, Presence, SessionBeforeSwitchReason, SessionBeforeSwitchResult, SessionEvent,
     SessionStartReason, ToolCallEventResult,
 };
 use regex::RegexSet;
@@ -74,7 +74,7 @@ fn tool_call(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
     patterns: Rc<RegexSet>,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::ToolCall(event) = event else {
             return Ok(None);
@@ -118,7 +118,7 @@ fn tool_call(
 fn before_switch(
     event: &mut ExtensionEvent,
     ctx: ExtensionContext,
-) -> ExtensionFuture<'_, Option<ExtensionEventResult>> {
+) -> HookFuture<'_, Option<ExtensionEventResult>> {
     Box::pin(async move {
         let ExtensionEvent::Session(SessionEvent::BeforeSwitch(event)) = event else {
             return Ok(None);

@@ -15,3 +15,7 @@ pub mod types;
 
 pub mod extension_events;
 pub mod system_prompt;
+
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;

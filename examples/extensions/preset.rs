@@ -410,7 +410,9 @@ fn register_state(api: &ExtensionAPI, state: &Rc<RefCell<State>>) -> ExtensionRe
             } else {
                 Ok(())
             };
-            Box::pin(std::future::ready(result.map(|()| None)))
+            Box::pin(std::future::ready(
+                result.map(|()| None).map_err(Into::into),
+            ))
         }),
     )?;
     let restoring = state.clone();
@@ -419,7 +421,9 @@ fn register_state(api: &ExtensionAPI, state: &Rc<RefCell<State>>) -> ExtensionRe
         Rc::new(move |_, ctx| {
             let result = restore(&ctx, &mut restoring.borrow_mut());
             let result = result.and_then(|()| status(&ctx, &restoring.borrow()));
-            Box::pin(std::future::ready(result.map(|()| None)))
+            Box::pin(std::future::ready(
+                result.map(|()| None).map_err(Into::into),
+            ))
         }),
     )
 }

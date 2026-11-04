@@ -12,7 +12,7 @@ check: prepare-tests
     cargo fmt --all
     just example-index-check
     just _check --workspace
-    if [ -f crates/maestro-models/examples/browser_import_check.rs ]; then just check-browser-smoke; fi
+    if [ -f crates/maestro-models/tests/support/browser_import_check.rs ]; then just check-browser-smoke; fi
 
 # Shared checks for explicit Cargo package-selection arguments.
 [private]

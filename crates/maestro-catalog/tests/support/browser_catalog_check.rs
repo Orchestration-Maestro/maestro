@@ -3,7 +3,8 @@
 mod browser {
     //! Compile-only browser callers with real non-Send effects.
     use maestro_catalog::{
-        CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderConfigInput,
+        CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderCallbacks,
+        ProviderConfigInput,
     };
     use maestro_credentials::{AuthStorage, ConfigValueOperations};
     use maestro_models::{OAuthCredentials, SharedHandle};
@@ -73,7 +74,10 @@ mod browser {
             commands,
         )?);
         let config = SharedHandle::new(RwLock::new(ProviderConfigInput {
-            oauth: Some(Rc::new(Account(count))),
+            callbacks: ProviderCallbacks {
+                oauth: Some(Rc::new(Account(count))),
+                ..Default::default()
+            },
             ..Default::default()
         }));
         registry.register_provider("browser", config)?;

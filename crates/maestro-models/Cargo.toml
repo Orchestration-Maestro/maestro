@@ -36,6 +36,12 @@ idna = "=1.1.0"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 
+[features]
+test-support = ["maestro-request/test-support"]
+
+[dev-dependencies]
+maestro-request = { path = "../maestro-request", features = ["test-support"] }
+
 [lints]
 workspace = true
 
@@ -99,3 +105,15 @@ crate-type = ["cdylib"]
 name = "cloud_content_browser_witness"
 path = "tests/support/cloud_content_browser.rs"
 crate-type = ["cdylib"]
+
+[[example]]
+name = "browser_import_check"
+path = "tests/support/browser_import_check.rs"
+
+[[example]]
+name = "generate_catalog_data"
+path = "scripts/generate_catalog_data.rs"
+
+[[example]]
+name = "generate_circle_fixture"
+path = "scripts/generate_circle_fixture.rs"

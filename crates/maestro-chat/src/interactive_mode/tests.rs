@@ -118,9 +118,28 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
 }
 
 /// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
-/// so the constructor reads its key bindings from there rather than the developer's.
+/// so the constructor reads its key bindings from there rather than the developer's. The
+/// child is offline and its binary directory supplies both search programs, so an
+/// ordinary startup witness neither downloads a program nor runs a host one.
 fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
-    isolated_case(test, "child", &[], body);
+    isolated_case(
+        test,
+        "child",
+        &[(OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1"))],
+        async |directory| {
+            controlled_search_programs(directory);
+            body(directory).await;
+        },
+    );
+}
+
+/// Installs stub `fd` and `rg` in the binary directory, which is searched before the
+/// command path.
+fn controlled_search_programs(directory: &Path) {
+    let bin = directory.join("bin");
+    for name in ["fd", "rg"] {
+        install_output(&bin, name, b"", 0);
+    }
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
@@ -1363,18 +1382,37 @@ pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
     mode.editor.on_submit().unwrap()(text);
 }
 
-/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
-///
-/// Work handed over earlier goes back to `runtime` unawaited, so a [`driving`] task beside the
-/// caller runs it: such work, like a running shell command's output, can end only after the
-/// caller's later steps.
-pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+/// Takes the work `runtime` holds and returns what the last input handed over; work handed
+/// over earlier is spawned beside the caller, so a [`driving`] task runs it: such work, like
+/// a running shell command's output, can end only after the caller's later steps.
+fn take_admitted(runtime: &ManualRuntime) -> maestro_tui::tui::LocalFuture {
     let mut work = runtime.take_futures();
     let command = work.pop().expect("the input handed over its work");
     for earlier in work {
         maestro_tui::tui::TuiRuntime::spawn_local(runtime, earlier);
     }
-    command.await.err().into_iter().collect()
+    command
+}
+
+/// Awaits the work handed to `runtime` last, by the input just given, and returns its failure.
+pub(super) async fn admitted(runtime: &ManualRuntime) -> Vec<Box<dyn Error>> {
+    take_admitted(runtime).await.err().into_iter().collect()
+}
+
+/// A submitted shell command running beside the caller, whose own completion ends a wait.
+pub(super) type StartedShell = tokio::task::JoinHandle<Vec<Box<dyn Error>>>;
+
+/// Submits `text` and runs the shell work it admitted beside the caller, so a later step
+/// waits for that command's own end.
+pub(super) fn start_shell(world: &World, text: &str) -> StartedShell {
+    submit(&world.mode, text);
+    let command = take_admitted(&world.runtime);
+    tokio::task::spawn_local(async move { command.await.err().into_iter().collect() })
+}
+
+/// Waits for a started shell command to settle and returns the failures it reported.
+pub(super) async fn settle_shell(command: StartedShell) -> Vec<Box<dyn Error>> {
+    command.await.expect("the shell command finishes")
 }
 
 /// Waits until `path` exists, yielding so the work that creates it runs.
@@ -1386,21 +1424,6 @@ pub(super) async fn until_exists(path: &Path) {
         tokio::task::yield_now().await;
     }
     panic!("{} appeared", path.display());
-}
-
-/// Waits until no shell row is producing output and the transcript holds `rows` children.
-pub(super) async fn until_complete(world: &World, rows: usize) {
-    for _ in 0..10_000 {
-        if active(world).is_none() && world.mode.chat_container.children().borrow().len() == rows {
-            return;
-        }
-        tokio::task::yield_now().await;
-    }
-    panic!(
-        "the shell command completed: active={} rows={}",
-        active(world).is_some(),
-        world.mode.chat_container.children().borrow().len()
-    );
 }
 
 /// The shell row that is still producing output, when one is attached.
@@ -1459,11 +1482,28 @@ pub(super) fn printing(directory: &Path, name: &str, text: &str) -> String {
     scripted(directory, name, &serde_json::json!([{"print": text}]))
 }
 
-/// Listens at `path`, so a shell step holding there waits until the listener is dropped.
+/// Listens at `path`, so a shell step holding there waits until its gate closes: dropping the
+/// returned listener resets a connection still queued, and dropping the connection a caller
+/// took through [`held_at`] ends the same wait at the command's read.
 pub(super) fn gate(path: &Path) -> std::os::unix::net::UnixListener {
     // A gate of an earlier case in the same directory leaves its socket file behind.
     drop(std::fs::remove_file(path));
     std::os::unix::net::UnixListener::bind(path).unwrap()
+}
+
+/// Waits for a shell command to reach the gate `listener`, which it reports by connecting, and
+/// returns the connection that holds it; dropping the connection releases the command. The
+/// accept runs on a blocking thread, because this crate's Tokio features carry no asynchronous
+/// socket listener.
+pub(super) async fn held_at(
+    listener: std::os::unix::net::UnixListener,
+) -> std::os::unix::net::UnixStream {
+    let accepted = tokio::task::spawn_blocking(move || listener.accept());
+    let (stream, _) = accepted
+        .await
+        .expect("the accepting thread finishes")
+        .expect("the command reaches its gate");
+    stream
 }
 
 /// A response the controlled provider left open.

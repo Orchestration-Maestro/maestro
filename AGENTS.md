@@ -90,8 +90,9 @@ are not evaluated. There are no suppressions or baseline. See
 Duplicate assertions are a review judgement.
 Conventions reject a platform temporary directory that test code in a migrated
 crate names itself through `std::env::temp_dir()`, as a call, a value, a macro
-argument or an import under any alias; tests that observe it use
-`maestro-test-directory::temporary_root`, and the diagnostic names
+argument or an import under any alias; a method named `temp_dir` is the
+receiver's own API and is accepted, while its arguments stay checked. Tests that
+observe it use `maestro-test-directory::temporary_root`, and the diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or

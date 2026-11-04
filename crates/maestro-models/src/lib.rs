@@ -121,6 +121,10 @@ pub use providers::response_sessions::openai_codex_responses::{
 
 pub use providers::json_text::compact_json;
 
+/// Opt-in helpers for controlled tests.
+#[cfg(feature = "test-support")]
+pub use maestro_request::test_support;
+
 #[cfg(test)]
 extern crate self as maestro_models;
 

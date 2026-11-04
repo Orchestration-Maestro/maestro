@@ -52,6 +52,7 @@ fn setup(root: &Path, failure: Failure) -> Command {
         Failure::Build => Some("build"),
     };
     let record = serde_json::json!({
+        "scenario": "sources",
         "calls": root.join("calls"),
         "builds": root.join("builds"),
         "fails": fails,
