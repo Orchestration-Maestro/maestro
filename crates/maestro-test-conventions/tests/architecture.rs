@@ -1663,8 +1663,17 @@ fn forbidden_edge_in_supplied_declared_metadata_is_reported() {
     );
 }
 
-/// Reject each unpermitted policy edge from one supplied declared document, so no case
-/// starts a metadata child of its own.
+#[test]
+fn malformed_supplied_declared_metadata_is_rejected() {
+    let workspace = Workspace::new();
+
+    let error = check_declared_graph(workspace.root.path(), &serde_json::json!({}))
+        .expect_err("an empty document is not cargo metadata");
+
+    assert!(error.starts_with("invalid cargo metadata"), "{error}");
+}
+
+/// Reject each unpermitted policy edge from one supplied declared document.
 #[cfg(unix)]
 fn policy_edge_cases(root: &std::path::Path, dev: bool) {
     use serde_json::json;

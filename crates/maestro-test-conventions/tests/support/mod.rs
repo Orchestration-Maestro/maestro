@@ -249,8 +249,7 @@ impl Workspace {
         self.probe(&cargo, &rustc, expectation);
     }
 
-    /// Check every policy edge case in one probe child, which rewrites the declared metadata
-    /// per case instead of starting a child per case.
+    /// Check every policy edge case in one probe child against one parsed metadata document.
     pub fn policy_probe(&self, valid: &serde_json::Value, dev: bool) {
         let (cargo, rustc) = self.metadata_commands(valid, valid);
         let matrix = if dev { "dev" } else { "production" };
