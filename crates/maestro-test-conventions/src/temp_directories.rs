@@ -30,6 +30,7 @@ const MIGRATED_CRATES: &[&str] = &[
     "maestro-credentials",
     "maestro-tools",
     "maestro-resources",
+    "maestro-chat",
 ];
 
 /// Spelling that names the platform temporary directory.
