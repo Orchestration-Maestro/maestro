@@ -67,9 +67,13 @@ which session an application continuation selects after an await.
 
 [Path loading and discovery](loading.md) take the module loader from the caller,
 so the domain never evaluates a module itself.
+A setup failure stops its continuation, and a continuation failure keeps the
+effects it already completed; both reach the awaiting command unchanged.
+
 Component execution, faults, resource disposal and pending stream work belong to
-the [component runtime](https://github.com/Orchestration-Maestro/maestro/issues/206)
-and its [retention tests](https://github.com/Orchestration-Maestro/maestro/issues/209).
+the [component runtime](https://github.com/Orchestration-Maestro/maestro/issues/206).
+The [component execution guide](native-execution.md) lists which retained reads,
+views and replacement callbacks stay usable past their originating callback.
 Application UI integration and component host bindings remain with the
 [UI integration](https://github.com/Orchestration-Maestro/maestro/issues/203)
 and [host bindings](https://github.com/Orchestration-Maestro/maestro/issues/210)
