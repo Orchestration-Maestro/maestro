@@ -148,7 +148,9 @@ fn stage(
     html: &str,
 ) -> Result<(), JsValue> {
     let trace = |entry: &str| -> Result<(), JsValue> {
-        Array::from(&get(window, TRACE)?).push(&JsValue::from_str(entry));
+        get(window, TRACE)?
+            .unchecked_into::<Array>()
+            .push(&JsValue::from_str(entry));
         Ok(())
     };
     call(document, "open", &Array::new())?;
