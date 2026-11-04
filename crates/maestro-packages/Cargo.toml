@@ -16,7 +16,6 @@ maestro-pattern = { path = "../maestro-pattern" }
 maestro-settings = { path = "../maestro-settings" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-path = { path = "../maestro-path" }
-git-url-parse = "=0.6.0"
 url = "=2.5.8"
 percent-encoding = "=2.3.2"
 serde_json = { workspace = true, features = ["raw_value"] }

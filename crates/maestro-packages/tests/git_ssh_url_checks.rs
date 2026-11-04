@@ -51,6 +51,7 @@ fn vectors(test: &str) -> serde_json::Result<()> {
                     | "git_clone_targets_follow_the_selected_repository"
                     | "git_hosted_identities_follow_provider_paths"
                     | "git_generic_admission_keeps_segment_boundaries"
+                    | "git_shorthand_host_is_a_reg_name"
                     | "git_refs_credentials_ports_and_suffixes_stay_distinct"
                     | "git_url_escaping_uses_hosted_or_generic_identity"
                     | "git_hosted_protocols_choose_provider_or_generic_rules"
@@ -126,6 +127,10 @@ fn git_hosted_identities_follow_provider_paths() {
 #[test]
 fn git_generic_admission_keeps_segment_boundaries() {
     vectors("git_generic_admission_keeps_segment_boundaries").unwrap();
+}
+#[test]
+fn git_shorthand_host_is_a_reg_name() {
+    vectors("git_shorthand_host_is_a_reg_name").unwrap();
 }
 #[test]
 fn git_refs_credentials_ports_and_suffixes_stay_distinct() {
