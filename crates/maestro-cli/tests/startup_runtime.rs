@@ -547,10 +547,11 @@ fn report_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
         let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |event, _| {
-                let mut delivered: Vec<Value> = std::fs::read_to_string(&report)
-                    .ok()
-                    .and_then(|text| serde_json::from_str(&text).ok())
-                    .unwrap_or_default();
+                let mut delivered: Vec<Value> = match std::fs::read_to_string(&report) {
+                    Ok(text) => serde_json::from_str(&text).unwrap(),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+                    Err(error) => panic!("the shutdown report is unreadable: {error}"),
+                };
                 delivered.push(serde_json::to_value(event).unwrap());
                 std::fs::write(&report, serde_json::to_vec(&delivered).unwrap()).unwrap();
                 Box::pin(std::future::ready(Ok(None)))

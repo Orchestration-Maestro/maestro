@@ -114,7 +114,7 @@ fn a_termination_signal_disposes_the_run_and_reports_quit() {
     if announced == 0 || waiting.trim_end() != WAITING_FOR_THE_REQUEST {
         let _ = child.kill();
         let _ = child.wait();
-        panic!("the child reached its model stream before the signal: {waiting}");
+        panic!("the child never reached its model stream: {waiting}");
     }
 
     let pid = rustix::process::Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap();
