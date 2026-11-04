@@ -67,6 +67,12 @@ pub fn denied_link(dir: &Directory, link: &Path) -> Option<Restore> {
     deny(target.parent().unwrap()).map(|(guard, _)| guard)
 }
 
+/// The platform temporary directory as an authored loader input.
+#[must_use]
+pub fn cwd() -> String {
+    text(&maestro_test_directory::temporary_root()).to_owned()
+}
+
 /// Borrow a UTF-8 authored fixture path.
 ///
 /// # Panics

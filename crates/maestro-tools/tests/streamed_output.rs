@@ -125,7 +125,7 @@ fn artifact(path: Option<String>, expected: Option<String>, prefix: &str) {
             id.bytes()
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         );
-        let root = std::env::temp_dir();
+        let root = maestro_test_directory::temporary_root();
         assert_eq!(
             path,
             maestro_path::join(&[root.to_str().unwrap(), &format!("{prefix}-{id}.log")])
@@ -337,7 +337,7 @@ fn artifact_names_keep_prefix_and_suffix() {
 
 /// Prefix below a parent that cannot exist beneath a regular file.
 fn missing_parent() -> (std::path::PathBuf, String) {
-    let path = std::env::temp_dir().join(format!(
+    let path = maestro_test_directory::temporary_root().join(format!(
         "maestro-parent-{}-{:?}",
         std::process::id(),
         std::thread::current().id()
