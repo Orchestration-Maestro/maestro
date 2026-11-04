@@ -6,8 +6,7 @@ use crate::{process_support, runtime};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{SleepError, sleep};
-use process_support::{poll_once, polled_to_completion};
-use std::task::Poll;
+use process_support::polled_to_completion;
 use std::time::Duration;
 
 #[test]
@@ -17,11 +16,11 @@ fn delay_obeys_its_selected_duration() {
         for signal in [None, Some(&live)] {
             let wait = sleep(Duration::from_millis(25), signal);
             tokio::pin!(wait);
-            assert!(poll_once(&mut wait).await.is_pending());
+            assert!(wait.as_mut().now_or_never().is_none());
             tokio::time::advance(Duration::from_millis(24)).await;
-            assert!(poll_once(&mut wait).await.is_pending());
+            assert!(wait.as_mut().now_or_never().is_none());
             tokio::time::advance(Duration::from_millis(1)).await;
-            assert_eq!(poll_once(&mut wait).await, Poll::Ready(Ok(())));
+            assert_eq!(wait.as_mut().now_or_never(), Some(Ok(())));
             assert_eq!(sleep(Duration::ZERO, signal).await, Ok(()));
         }
     });
@@ -46,11 +45,11 @@ fn active_abort_releases_delay_with_exact_error() {
         let signal = Cancellation::new();
         let wait = sleep(Duration::from_millis(25), Some(&signal));
         tokio::pin!(wait);
-        assert!(poll_once(&mut wait).await.is_pending());
+        assert!(wait.as_mut().now_or_never().is_none());
         signal.abort();
         assert_eq!(
-            poll_once(&mut wait).await,
-            Poll::Ready(Err(SleepError)),
+            wait.as_mut().now_or_never(),
+            Some(Err(SleepError)),
             "settled by the abort, not by the elapsed time"
         );
     });

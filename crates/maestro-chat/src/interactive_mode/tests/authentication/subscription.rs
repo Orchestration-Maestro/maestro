@@ -1,6 +1,7 @@
 //! Subscription sign-in: the provider's callbacks, their dialog and how the sign-in ends.
 
 use super::super::models::{editor_focused, shows_only};
+use super::super::{finish_host_work, start_host_work};
 use super::{
     World, answer, chooser, dialog, editor_restored, isolated, notes, panel_rows, quiet_browser,
     saved_path, settle, sign_in_to, signed, started_with, storage, stored_access, subscribe,
@@ -538,14 +539,6 @@ async fn progress_from(callbacks: OAuthCallbacks, route: Route) -> Result<(), OA
     }
 }
 
-/// Drives the terminal runtime and its executor until `record` holds `count` entries.
-async fn until_recorded(world: &World, record: &Record, count: usize) {
-    while record.all().len() < count {
-        drop(world.runtime.drain_futures());
-        tokio::task::yield_now().await;
-    }
-}
-
 /// The gates and observations of one failing presentation.
 #[derive(Clone)]
 struct Failing {
@@ -557,6 +550,18 @@ struct Failing {
     repaired: Gate,
     /// The store the sign-in saves into.
     storage: Arc<maestro_app::AuthStorage>,
+    /// Announces the observation the sign-in recorded.
+    observation: Arc<Mutex<Option<oneshot::Sender<()>>>>,
+}
+
+impl Failing {
+    /// Announces the recorded observation, which the case waits for.
+    fn announced(&self) {
+        let announce = self.observation.lock().unwrap().take();
+        if let Some(announce) = announce {
+            let _ = announce.send(());
+        }
+    }
 }
 
 /// Fails one presentation `phase` from `route`, recording the failure and whether the
@@ -579,6 +584,7 @@ async fn failing_sign_in(
     failing.record.push(error.to_string());
     let stored = failing.storage.get("acme").is_some();
     failing.record.push(format!("stored={stored}"));
+    failing.announced();
     failing.repaired.passed().await;
     Err(error)
 }
@@ -589,11 +595,13 @@ async fn failure_case(directory: &std::path::Path, phase: &'static str, route: R
     let world = started_with(directory, None).await;
     let (fail, broken) = Gate::closed();
     let (finish, repaired) = Gate::closed();
+    let (announce, announced) = oneshot::channel();
     let observed = Failing {
         record: Record::default(),
         broken,
         repaired,
         storage: storage(&world),
+        observation: Arc::new(Mutex::new(Some(announce))),
     };
     let script = observed.clone();
     subscribe(&world, ("acme", "Acme"), None, move |callbacks| {
@@ -603,8 +611,12 @@ async fn failure_case(directory: &std::path::Path, phase: &'static str, route: R
     let theme = world.themes.theme().get().unwrap();
     let empty = Theme::new([], [], ColorMode::Truecolor, ThemeOptions::default()).unwrap();
     world.themes.set_theme_instance(Rc::new(empty)).unwrap();
+    // The sign-in runs beside the caller and announces the observation it recorded.
+    let work = start_host_work(&world);
     fail.send(()).unwrap();
-    until_recorded(&world, &observed.record, 2).await;
+    announced
+        .await
+        .expect("the sign-in records its observation");
     world.themes.set_theme_instance(theme).unwrap();
     let recorded = observed.record.all();
     assert_eq!(
@@ -612,6 +624,10 @@ async fn failure_case(directory: &std::path::Path, phase: &'static str, route: R
         "{phase} {route:?}: nothing saved first"
     );
     finish.send(()).unwrap();
+    assert!(
+        finish_host_work(work).await.is_empty(),
+        "{phase} {route:?}: the sign-in handles its own failure"
+    );
     settle(&world);
     let shown = format!("Error: Failed to login to Acme: {}", recorded[0]);
     assert!(

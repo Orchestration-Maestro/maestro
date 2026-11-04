@@ -1206,6 +1206,10 @@ struct Captured {
     replaced: Rc<Cell<bool>>,
     /// The subscriptions recording the sessions' queue updates.
     subscriptions: Removals,
+    /// Announces the command a delayed batch parks at.
+    reached: Rc<RefCell<Option<tokio::sync::oneshot::Sender<()>>>>,
+    /// The announcement of a delayed batch's parked command, taken by the case that holds one.
+    command_reached: Rc<RefCell<Option<Wait>>>,
 }
 
 impl Captured {
@@ -1215,11 +1219,17 @@ impl Captured {
         if self.replaced.get() { "b" } else { "a" }
     }
 
-    /// Records `kind` and `text` against the session they reached.
+    /// Records `kind` and `text` against the session they reached, and announces the first
+    /// command a delayed batch parks at.
     fn record(&self, kind: &str, text: &str) {
         self.log
             .borrow_mut()
             .push(format!("{} {kind} {text}", self.session()));
+        if kind == "command"
+            && let Some(reached) = self.reached.borrow_mut().take()
+        {
+            let _ = reached.send(());
+        }
     }
 
     /// Records what one queue update changed: a grown steering or follow-up queue.
@@ -1233,7 +1243,8 @@ impl Captured {
         *self.queued.borrow_mut() = (steering.to_vec(), follow_up.to_vec());
     }
 
-    /// Creates the two releases a delayed case waits for.
+    /// Creates the two releases a delayed case waits for, and the announcement of the
+    /// command its batch parks at.
     fn delay(&self) {
         let (release, wait) = tokio::sync::oneshot::channel();
         *self.prompt_gate.borrow_mut() = Some(release);
@@ -1241,6 +1252,9 @@ impl Captured {
         let (release, wait) = tokio::sync::oneshot::channel();
         *self.command_gate.borrow_mut() = Some(release);
         *self.command_wait.borrow_mut() = Some(wait);
+        let (announce, reached) = tokio::sync::oneshot::channel();
+        *self.reached.borrow_mut() = Some(announce);
+        *self.command_reached.borrow_mut() = Some(reached);
     }
 
     /// The release and message of a refused prompt, absent when `text` is not refused.
@@ -1259,6 +1273,14 @@ impl Captured {
     /// The release a waiting command handler waits for, absent when the case holds none.
     fn command_release_wait(&self) -> Option<Wait> {
         self.command_wait.borrow_mut().take()
+    }
+
+    /// The announcement of a delayed batch parking at its command.
+    fn command_reached(&self) -> Wait {
+        self.command_reached
+            .borrow_mut()
+            .take()
+            .expect("a delayed case announces its parked command")
     }
 
     /// The release the refused prompt waits for.
@@ -1647,37 +1669,6 @@ fn end_quietly(world: &World, will_retry: bool) {
         .unwrap();
 }
 
-/// Hands the terminal host one round of work and lets the session's own tasks run.
-async fn round(world: &World) {
-    tokio::task::yield_now().await;
-    let _ = world.runtime.drain_futures();
-}
-
-/// Rounds until `done` holds, failing the case when the delivery never reaches it.
-async fn until(world: &World, captured: &Captured, done: impl Fn() -> bool) {
-    for _ in 0..200 {
-        if done() {
-            return;
-        }
-        round(world).await;
-    }
-    panic!(
-        "the captured batch did not reach the recorded state: {:?}",
-        captured.log.borrow()
-    );
-}
-
-/// Rounds until the terminal host holds no work.
-pub(super) async fn settle_host(world: &World) {
-    for _ in 0..200 {
-        if world.runtime.futures() == 0 {
-            return;
-        }
-        round(world).await;
-    }
-    panic!("the terminal host still holds work");
-}
-
 /// Checks what one delivered batch left.
 fn assert_flush(world: &World, captured: &Captured, expected: &FlushExpected) {
     assert_eq!(*captured.log.borrow(), expected.log);
@@ -1779,15 +1770,10 @@ async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpect
         seed_session(&world, &captured);
     }
     run_flush(&world, &input.local, input.will_retry);
+    let delivery = super::start_host_work(&world);
     if input.faults.delayed {
-        until(&world, &captured, || {
-            captured
-                .log
-                .borrow()
-                .iter()
-                .any(|entry| entry.contains("command"))
-        })
-        .await;
+        // The delivery runs beside the caller and announces the command it parks at.
+        captured.command_reached().await.unwrap();
         world
             .mode
             .compaction_queued_messages
@@ -1797,19 +1783,18 @@ async fn flush_case(directory: &Path, input: &FlushInput, expected: &FlushExpect
                 mode: UserMessageDelivery::Steer,
             });
         let _ = captured.release_prompt().send(());
-        // The first prompt's failure is noticed while the tail's command still waits.
-        until(&world, &captured, || {
-            world
-                .mode
-                .chat_container
-                .render(100)
-                .join("\n")
-                .contains("Failed to send queued message")
-        })
-        .await;
+        // The first prompt's failure starts its own recovery task, which the case awaits
+        // while the tail's command still waits.
+        super::settle_host(&world).await;
+        let rows = world.mode.chat_container.render(100).join("\n");
+        assert!(
+            rows.contains("Failed to send queued message"),
+            "the first prompt's failure is noticed: {rows:?}"
+        );
         let _ = captured.release_command().send(());
     }
-    until(&world, &captured, || world.runtime.futures() == 0).await;
+    drop(super::finish_host_work(delivery).await);
+    super::settle_host(&world).await;
     assert_flush(&world, &captured, expected);
     released.track_current(&world);
     drop((world, removal, captured));
@@ -1961,20 +1946,21 @@ fn compaction_flush_capture_precedes_async_handoff() {
         );
         assert!(captured.log.borrow().is_empty());
         assert_eq!(world.runtime.futures(), 1, "the delivery is handed over");
-        round(&world).await;
+        let delivery = super::start_host_work(&world);
+        drop(super::finish_host_work(delivery).await);
         assert_eq!(
             *captured.log.borrow(),
             ["a prompt first", "a follow-up tail"]
         );
         // A second flush finds nothing captured and adds no work.
         end_quietly(&world, false);
-        round(&world).await;
+        assert_eq!(world.runtime.futures(), 1, "the second flush adds no work");
         assert_eq!(
             *captured.log.borrow(),
             ["a prompt first", "a follow-up tail"]
         );
         held.end();
-        until(&world, &captured, || world.runtime.futures() == 0).await;
+        super::settle_host(&world).await;
         assert_eq!(
             *captured.log.borrow(),
             ["a prompt first", "a follow-up tail"]
@@ -2002,7 +1988,7 @@ fn compaction_flush_real_session_rejects_without_duplicate_tail() {
             .remove_runtime_api_key("unknown");
         seed_session(&world, &captured);
         run_flush(&world, &input.local, false);
-        until(&world, &captured, || world.runtime.futures() == 0).await;
+        super::settle_host(&world).await;
         // The refused prompt stops the tail, so no duplicate reaches the session queue.
         assert_eq!(*captured.log.borrow(), ["a prompt first"]);
         let session = world.mode.runtime_host.session();
@@ -2038,7 +2024,7 @@ fn compaction_flush_delivers_each_message_once() {
             };
             let (world, _removal) = flush_world(directory, &input, &captured).await;
             run_flush(&world, &input.local, true);
-            until(&world, &captured, || world.runtime.futures() == 0).await;
+            super::settle_host(&world).await;
             // Every message reaches the session once at each size. The walk's own cost is not
             // measured here: no test-owned callback runs per visited message.
             let log = captured.log.borrow().clone();

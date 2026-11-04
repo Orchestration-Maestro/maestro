@@ -8,7 +8,7 @@ use std::process::{Command, ExitCode};
 /// Encode bytes as lowercase hexadecimal.
 pub use test_setup::hex;
 
-/// Capture browser compilation diagnostics.
+/// Compile the browser compile witnesses and capture their diagnostics.
 pub mod check_browser_build;
 /// Copy prepared application assets.
 pub mod copy_assets;
@@ -128,7 +128,8 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             args,
             run_source::Mode::Windows,
         )),
-        Some("check-browser-smoke") => browser_build(cargo, checkout),
+        Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
+        Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
             copy_assets::copy(
@@ -205,31 +206,38 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Compile the delivered browser import witness and capture its diagnostics.
-fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    if !checkout
-        .join("crates/maestro-models/tests/support/browser_import_check.rs")
-        .is_file()
-    {
-        return Err(io::Error::other(
-            "browser_import_check entry is not delivered",
-        ));
-    }
-    let mut child = Command::new(cargo);
-    child.current_dir(checkout).args([
-        "build",
+/// Run the real-browser regressions, then the export inventory even when a regression fails, so
+/// one run reports every case; the first failure's status is the command's.
+fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
+    let mut regressions = Command::new(cargo);
+    regressions.current_dir(checkout).args([
+        "nextest",
+        "run",
         "--locked",
         "-p",
-        "maestro-models",
-        "--example",
-        "browser_import_check",
-        "--target",
-        "wasm32-unknown-unknown",
+        "maestro-test-browser",
+        "--run-ignored",
+        "only",
+        "--no-fail-fast",
+        "-E",
+        "test(/^browser::/)",
     ]);
-    check_browser_build::run(
-        &mut child,
-        &std::env::temp_dir().join("maestro-browser-smoke-errors.log"),
-    )
+    let mut inventory = Command::new(cargo);
+    inventory.current_dir(checkout).args([
+        "run",
+        "--quiet",
+        "--locked",
+        "-p",
+        "maestro-test-browser",
+        "--",
+    ]);
+    let regressed = regressions.status()?;
+    let inventoried = inventory.status()?;
+    Ok(exit_code(if regressed.success() {
+        inventoried
+    } else {
+        regressed
+    }))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

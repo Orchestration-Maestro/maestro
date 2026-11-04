@@ -4,7 +4,8 @@ use super::{execution, factories, select};
 #[cfg(unix)]
 use crate::read_support::Fixture;
 use crate::runtime;
-use crate::{agent_shell_support, read_support, write_support};
+use crate::{agent_shell_support, read_support};
+use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::*;
 use serde_json::json;
@@ -78,7 +79,7 @@ fn pending_read() {
             Some(signal.clone()),
             None,
         );
-        assert!(write_support::poll_once(&mut future).is_pending());
+        assert!(future.as_mut().now_or_never().is_none());
         assert!(ops.polled.load(Ordering::SeqCst) > 0);
         signal.abort();
         assert_eq!(

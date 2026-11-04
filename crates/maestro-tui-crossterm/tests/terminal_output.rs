@@ -687,7 +687,8 @@ fn native_output_regular_destinations_remain_synchronous() {
             use std::fs::File;
             let rig = Rig::paused();
             let _input = pipe_input();
-            let path = std::env::temp_dir().join(format!("maestro-output-{}", std::process::id()));
+            let path = maestro_test_directory::temporary_root()
+                .join(format!("maestro-output-{}", std::process::id()));
             let file = if case == 0 {
                 File::options()
                     .create_new(true)

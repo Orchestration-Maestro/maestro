@@ -8,7 +8,7 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use super::example_files;
-use super::workspace::{self, Workspace};
+use super::workspace::{self, FIXTURES, Workspace};
 
 /// Offline resolution of the standalone guide's generated lock.
 mod guide_lock;
@@ -21,13 +21,12 @@ const MANIFEST: [&str; 2] = [workspace::REGION_START, workspace::REGION_END];
 const GUEST: &str = "maestro-extensions-wasm";
 /// The crate's native preparation program, the one crate example that is not a component.
 const PREPARATION: &str = "prepare_author_component";
-
 /// One example target of the component crate.
 struct Target {
     /// Cargo target name.
     name: String,
-    /// Manifest path of a shipped example; crate examples use Cargo's default location.
-    path: Option<String>,
+    /// Manifest path of the target's source, relative to the crate.
+    path: String,
 }
 
 /// Refresh the generated regions and guide lock, or check them without changing files.
@@ -125,7 +124,7 @@ fn summary(path: &Path) -> io::Result<String> {
     Ok(result)
 }
 
-/// Find the shipped examples and the crate's own component examples, in name order.
+/// Find the shipped examples and the crate's own fixture components, in name order.
 ///
 /// A shipped example is a top-level source file or a directory with its own `main.rs`. A
 /// workspace without the shipped folder renders the crate's own examples alone.
@@ -150,12 +149,12 @@ fn targets(
             if folder.join(&source).is_file() {
                 targets.push(Target {
                     name: example_files::target_name(folder, &folder.join(&source))?,
-                    path: Some(format!("{climb}examples/extensions/{source}")),
+                    path: format!("{climb}examples/extensions/{source}"),
                 });
             }
         }
     }
-    let local = component.join("examples");
+    let local = component.join(FIXTURES);
     for entry in fs::read_dir(&local)? {
         let entry = entry?;
         let file = file_name(&entry)?;
@@ -163,7 +162,7 @@ fn targets(
             Some(stem) if stem != PREPARATION && entry.file_type()?.is_file() => {
                 targets.push(Target {
                     name: example_files::target_name(&local, &entry.path())?,
-                    path: None,
+                    path: format!("{FIXTURES}/{file}"),
                 });
             }
             _ => {}
@@ -185,14 +184,9 @@ fn manifest(targets: &[Target]) -> String {
     let tables: Vec<String> = targets
         .iter()
         .map(|target| {
-            let path = target
-                .path
-                .as_ref()
-                .map(|path| format!("path = \"{path}\"\n"))
-                .unwrap_or_default();
             format!(
-                "[[example]]\nname = \"{}\"\n{path}crate-type = [\"cdylib\"]\n",
-                target.name
+                "[[example]]\nname = \"{}\"\npath = \"{}\"\ncrate-type = [\"cdylib\"]\n",
+                target.name, target.path
             )
         })
         .collect();

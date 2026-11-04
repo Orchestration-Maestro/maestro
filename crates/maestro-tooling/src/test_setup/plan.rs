@@ -19,7 +19,7 @@ use super::{
 };
 use crate::dep_info;
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
-use crate::workspace::Workspace;
+use crate::workspace::{FIXTURES, Workspace};
 use maestro_path::normalize_native;
 
 /// The workspace-level gate that marks an edge as native only.
@@ -199,7 +199,7 @@ pub(super) fn plan(workspace: &Workspace, component: &Path) -> io::Result<Plan> 
     let mut shared = directories(metadata, &components);
     shared.extend(SHARED_INPUTS.map(str::to_owned));
     shared.insert(format!(
-        ":(exclude){}/examples",
+        ":(exclude){}/{FIXTURES}",
         workspace.relative(component)?
     ));
     let fixed = SHARED_INPUTS.into_iter().chain(LOCKED_INPUTS);

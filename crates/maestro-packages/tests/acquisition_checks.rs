@@ -4,6 +4,7 @@ use crate::native_support;
 use crate::sandbox;
 #[cfg(windows)]
 use crate::scratch;
+use futures_util::FutureExt;
 use maestro_packages::{
     InstalledSourceScope::{Project, User},
     PackageManager, ProgressAction, ProgressCallback, ProgressEventType as Phase, parse_git_url,
@@ -12,7 +13,7 @@ use maestro_settings::{
     InMemorySettingsStorage, PackageSource, SettingsListEntry, SettingsScope, SettingsStorage,
     SettingsStorageError, SettingsUpdate,
 };
-use sandbox::{Call, Fixture, block_on, poll_once};
+use sandbox::{Call, Fixture, block_on};
 use serde_json::json;
 use std::{
     cell::{Cell, RefCell},
@@ -886,14 +887,14 @@ fn progress_listener_replacement_is_live_for_same_operation() {
         let fixture = Fixture::new(&json!({}));
         fixture.script.held.set(true);
         let mut operation = fixture.manager.install("npm:pkg", None);
-        assert!(poll_once(&mut operation).is_none());
+        assert!(operation.as_mut().now_or_never().is_none());
         assert_eq!(fixture.calls().len(), 1);
         let late = sandbox::Events::default();
         fixture
             .manager
             .set_progress_callback((!clear).then(|| sandbox::recorder(&late)));
         fixture.script.held.set(false);
-        poll_once(&mut operation).unwrap().unwrap();
+        operation.as_mut().now_or_never().unwrap().unwrap();
         assert_eq!(fixture.phases().len(), 1);
         assert_eq!(late.borrow().len(), usize::from(!clear));
     }
@@ -1023,7 +1024,7 @@ fn check_manager_aliases_during_acquisition(admitted: bool) {
         })));
     fixture.script.held.set(true);
     let mut operation = fixture.manager.install_and_persist("npm:pkg", None);
-    assert!(poll_once(&mut operation).is_none());
+    assert!(operation.as_mut().now_or_never().is_none());
     assert_eq!(fixture.calls().len(), 1);
     assert_eq!(uses.get(), 1);
     assert_eq!(fixture.manager.list_configured_packages().unwrap().len(), 2);
@@ -1041,7 +1042,7 @@ fn check_manager_aliases_during_acquisition(admitted: bool) {
             .unwrap()
     );
     fixture.script.held.set(false);
-    poll_once(&mut operation).unwrap().unwrap();
+    operation.as_mut().now_or_never().unwrap().unwrap();
     assert_eq!(
         stored(&fixture),
         json!(["npm:listed", "npm:held", "npm:pkg"])
@@ -1189,13 +1190,13 @@ fn check_persistence_after_acquisition(admitted: bool) {
     allow_package_edits(&fixture, admitted);
     fixture.script.held.set(true);
     let mut operation = fixture.manager.install_and_persist("npm:added", None);
-    assert!(poll_once(&mut operation).is_none());
+    assert!(operation.as_mut().now_or_never().is_none());
     fixture.settings.borrow_mut().set_packages(vec![
         PackageSource::Source("npm:alias".into()),
         PackageSource::Unknown(json!({"source": "npm:keep", "extra": 2})),
     ]);
     fixture.script.held.set(false);
-    poll_once(&mut operation).unwrap().unwrap();
+    operation.as_mut().now_or_never().unwrap().unwrap();
     assert_eq!(
         stored(&fixture),
         json!(["npm:alias", {"source": "npm:keep", "extra": 2}, "npm:added"])
@@ -1203,14 +1204,14 @@ fn check_persistence_after_acquisition(admitted: bool) {
 
     fixture.script.held.set(true);
     let mut operation = fixture.manager.remove_and_persist("npm:added", None);
-    assert!(poll_once(&mut operation).is_none());
+    assert!(operation.as_mut().now_or_never().is_none());
     fixture.settings.borrow_mut().set_packages(vec![
         PackageSource::Source("npm:added".into()),
         PackageSource::Source("npm:late".into()),
         PackageSource::Unknown(json!({"source": "npm:added", "tail": true})),
     ]);
     fixture.script.held.set(false);
-    assert!(poll_once(&mut operation).unwrap().unwrap());
+    assert!(operation.as_mut().now_or_never().unwrap().unwrap());
     assert_eq!(stored(&fixture), json!(["npm:late"]));
 }
 
@@ -1791,10 +1792,10 @@ fn admitted_package_publication_returns_borrow_errors() {
                     .map(|()| true)
             })
         };
-        assert!(poll_once(&mut operation).is_none());
+        assert!(operation.as_mut().now_or_never().is_none());
         let guard = fixture.settings.borrow();
         fixture.script.held.set(false);
-        assert!(poll_once(&mut operation).unwrap().is_err());
+        assert!(operation.as_mut().now_or_never().unwrap().is_err());
         assert_eq!(
             guard.get_global_settings().0.get("packages"),
             Some(&json!(["npm:pkg"]))
@@ -1843,14 +1844,14 @@ fn check_noop_package_intents(admitted: bool) {
                     .map(|()| true)
             })
         };
-        assert!(poll_once(&mut operation).is_none());
+        assert!(operation.as_mut().now_or_never().is_none());
         fixture.settings.borrow_mut().set_packages(if remove {
             vec![PackageSource::Source("npm:pkg".into())]
         } else {
             Vec::new()
         });
         fixture.script.held.set(false);
-        assert!(poll_once(&mut operation).unwrap().unwrap());
+        assert!(operation.as_mut().now_or_never().unwrap().unwrap());
         assert_eq!(stored(&fixture), initial);
     }
 }

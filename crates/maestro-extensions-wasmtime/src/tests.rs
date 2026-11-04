@@ -2,8 +2,10 @@
 use maestro_extensions::{ExtensionRunner, Local, create_extension_runtime};
 use std::{rc::Rc, sync::RwLock};
 
-#[path = "../../maestro-extensions/tests/support/command_operations.rs"]
-pub(super) mod context_actions;
+/// The shared silent command operations the adapter's witnesses bind.
+pub(super) mod context_actions {
+    pub use maestro_extensions::test_support::silent_command_operations;
+}
 
 pub(crate) mod api;
 mod bash_output;

@@ -42,4 +42,8 @@ name = "integration"
 path = "tests/integration.rs"
 
 [dev-dependencies]
+maestro-extensions = { path = ".", features = ["test-support"] }
 maestro-theme = { path = "../maestro-theme", features = ["test-support"] }
+
+[features]
+test-support = []

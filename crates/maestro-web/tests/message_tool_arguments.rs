@@ -292,12 +292,7 @@ pub fn tool_rows_dispatch_borrowed_argument_root_values() {
         ] {
             let streaming = !aborted && (pending || is_streaming);
             let calls = Rc::new(Cell::new(0));
-            let id = if aborted {
-                "root-call"
-            } else {
-                "original call"
-            };
-            register_root_observer(&call, &calls, &native, streaming, id);
+            register_root_observer(&call, &calls, &native, RowState { streaming, aborted });
             let props = maestro_web::ToolMessage {
                 tool_call: Some(call.clone()),
                 tool: None,
@@ -306,7 +301,10 @@ pub fn tool_rows_dispatch_borrowed_argument_root_values() {
                 aborted,
                 is_streaming,
             };
-            assert!(draw_row(&props).is_empty(), "custom rows draw no listing");
+            assert!(
+                draw_row(&props).listings.is_empty(),
+                "custom rows draw no listing"
+            );
             assert_eq!(calls.get(), 1, "{} {pending} {aborted}", call.arguments);
         }
     }
@@ -333,54 +331,207 @@ pub fn tool_rows_keep_root_specific_default_input_sections() {
         is_error: false,
         ..message(None)
     };
-    let ok = "{\n  \"ok\": true\n}";
-    let cases: [(
-        Value,
-        Option<&maestro_app::ToolResultMessage>,
-        bool,
-        Vec<&str>,
-    ); 17] = [
-        (json!(null), None, false, vec![]),
-        (json!(false), None, false, vec![]),
-        (json!(0), None, false, vec![]),
-        (json!(""), None, false, vec![]),
-        (json!(true), None, false, vec!["true"]),
-        (json!([]), None, true, vec!["[]"]),
-        (json!([5]), None, false, vec!["[\n  5\n]"]),
-        (json!([null]), None, false, vec!["[\n  null\n]"]),
-        (
-            json!(r#"{"b":1,"a":[2]}"#),
-            None,
-            false,
-            vec!["{\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}"],
-        ),
-        (json!(r#""quoted""#), None, false, vec!["\"quoted\""]),
-        (json!("plain"), None, false, vec!["\"plain\""]),
-        (json!("null"), None, true, vec![]),
-        (json!({}), None, true, vec![]),
-        (json!({}), None, false, vec!["{}"]),
-        (json!(null), Some(&output), false, vec![ok]),
-        (json!({}), Some(&output), true, vec!["{}", ok]),
-        (json!({}), Some(&empty), false, vec!["{}"]),
-    ];
+    let cases = default_row_cases(&output, &empty);
     for custom in [false, true] {
         if custom {
             show_json_over_custom("default-sections");
         }
-        for (arguments, result, is_streaming, expected) in &cases {
-            let call = Rc::new(model_call("default-sections", arguments));
+        for case in &cases {
+            let call = Rc::new(model_call("default-sections", &case.arguments));
             let props = maestro_web::ToolMessage {
                 tool_call: Some(call.clone()),
                 tool: None,
-                result: result.map(|value| Rc::new(value.clone())),
+                result: case.result.map(|value| Rc::new(value.clone())),
                 pending: false,
                 aborted: false,
-                is_streaming: *is_streaming,
+                is_streaming: case.is_streaming,
             };
-            assert_eq!(draw_row(&props), *expected, "{arguments} {is_streaming}");
+            let drawn = draw_row(&props);
+            let listings: Vec<(String, String)> = case
+                .listings
+                .iter()
+                .map(|(language, text)| ((*language).to_owned(), (*text).to_owned()))
+                .collect();
+            assert_eq!(drawn.listings, listings, "{}", case.arguments);
+            assert_eq!(drawn.caption, case.caption, "{}", case.arguments);
         }
     }
     maestro_web::set_show_json_mode(false);
+}
+
+/// The default-row cases: each call's parts and the row that must appear.
+#[cfg(target_arch = "wasm32")]
+fn default_row_cases<'a>(
+    output: &'a maestro_app::ToolResultMessage,
+    empty: &'a maestro_app::ToolResultMessage,
+) -> Vec<Shown<'a>> {
+    let ok = "{\n  \"ok\": true\n}";
+    let mut cases = awaiting_rows();
+    cases.extend(param_rows());
+    cases.extend(preparing_rows());
+    cases.extend(ready_rows(output, empty, ok));
+    cases
+}
+
+/// The rows a call draws before any result or usable input arrives.
+#[cfg(target_arch = "wasm32")]
+fn awaiting_rows<'a>() -> Vec<Shown<'a>> {
+    vec![
+        shown(json!(null), None, false, "Preparing tool...", vec![]),
+        shown(json!(false), None, false, "Preparing tool...", vec![]),
+        shown(json!(0), None, false, "Preparing tool...", vec![]),
+        shown(json!(""), None, false, "Preparing tool...", vec![]),
+    ]
+}
+
+/// The rows a call with input draws before any result arrives.
+#[cfg(target_arch = "wasm32")]
+fn param_rows<'a>() -> Vec<Shown<'a>> {
+    vec![
+        shown(
+            json!(true),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("true")],
+        ),
+        shown(json!([]), None, true, "Tool Call", vec![json_listing("[]")]),
+        shown(
+            json!([5]),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("[\n  5\n]")],
+        ),
+        shown(
+            json!([null]),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("[\n  null\n]")],
+        ),
+        shown(
+            json!(r#"{"b":1,"a":[2]}"#),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("{\n  \"b\": 1,\n  \"a\": [\n    2\n  ]\n}")],
+        ),
+        shown(
+            json!(r#""quoted""#),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("\"quoted\"")],
+        ),
+        shown(
+            json!("plain"),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("\"plain\"")],
+        ),
+    ]
+}
+
+/// The rows an incomplete input draws, with the completed one that replaces them.
+#[cfg(target_arch = "wasm32")]
+fn preparing_rows<'a>() -> Vec<Shown<'a>> {
+    vec![
+        shown(
+            json!("null"),
+            None,
+            true,
+            "Preparing tool parameters...",
+            vec![],
+        ),
+        shown(
+            json!({}),
+            None,
+            true,
+            "Preparing tool parameters...",
+            vec![],
+        ),
+        shown(
+            json!({}),
+            None,
+            false,
+            "Tool Call",
+            vec![json_listing("{}")],
+        ),
+    ]
+}
+
+/// The rows a call draws once a result arrives, including its abort-free listings.
+#[cfg(target_arch = "wasm32")]
+fn ready_rows<'a>(
+    output: &'a maestro_app::ToolResultMessage,
+    empty: &'a maestro_app::ToolResultMessage,
+    ok: &'a str,
+) -> Vec<Shown<'a>> {
+    vec![
+        shown(
+            json!(null),
+            Some(output),
+            false,
+            "Tool Call",
+            vec![json_listing(ok)],
+        ),
+        shown(
+            json!({}),
+            Some(output),
+            true,
+            "Tool Call",
+            vec![json_listing("{}"), json_listing(ok)],
+        ),
+        shown(
+            json!({}),
+            Some(empty),
+            false,
+            "Tool Call",
+            vec![json_listing("{}"), ("text", "(no output)")],
+        ),
+    ]
+}
+
+/// One default-row case: the call it draws and the row that must appear.
+#[cfg(target_arch = "wasm32")]
+fn shown<'a>(
+    arguments: Value,
+    result: Option<&'a maestro_app::ToolResultMessage>,
+    is_streaming: bool,
+    caption: &'a str,
+    listings: Vec<(&'a str, &'a str)>,
+) -> Shown<'a> {
+    Shown {
+        arguments,
+        result,
+        is_streaming,
+        caption,
+        listings,
+    }
+}
+
+/// A listing the row highlights as JSON.
+#[cfg(target_arch = "wasm32")]
+fn json_listing(text: &str) -> (&str, &str) {
+    ("json", text)
+}
+
+/// One rendered tool row: the arguments, result, streaming flag, caption and
+/// listings it must show.
+#[cfg(target_arch = "wasm32")]
+struct Shown<'a> {
+    /// Call arguments.
+    arguments: Value,
+    /// Result ready for the row, absent before one arrives.
+    result: Option<&'a maestro_app::ToolResultMessage>,
+    /// Whether the response still streams.
+    is_streaming: bool,
+    /// Caption the header must show.
+    caption: &'a str,
+    /// Selected language and text of each listing.
+    listings: Vec<(&'a str, &'a str)>,
 }
 
 /// Register a custom renderer, then enable JSON mode so the default sections still render.
@@ -406,14 +557,22 @@ fn model_call(name: &str, arguments: &Value) -> maestro_app::ToolCall {
     .unwrap()
 }
 
+/// The streaming and abort state one tool row supplies to its renderer.
+#[cfg(target_arch = "wasm32")]
+#[derive(Clone, Copy)]
+struct RowState {
+    /// Whether the response still streams.
+    streaming: bool,
+    /// Whether the row replaced its result with a synthetic abort envelope.
+    aborted: bool,
+}
 /// Register the call's operand route and check each callback borrows the original value.
 #[cfg(target_arch = "wasm32")]
 fn register_root_observer(
     call: &maestro_app::ToolCall,
     calls: &Rc<Cell<usize>>,
     native: &Rc<Cell<i32>>,
-    streaming: bool,
-    id: &'static str,
+    state: RowState,
 ) {
     let address = match call.arguments.as_object() {
         Some(members) => std::ptr::from_ref(members) as usize,
@@ -427,9 +586,9 @@ fn register_root_observer(
                       flag: bool| {
         assert_eq!(address_seen, address);
         assert_eq!(seen, expected);
-        assert_eq!(flag, streaming);
+        assert_eq!(flag, state.streaming);
         let result = result.unwrap();
-        assert_eq!(result.tool_call_id(), id);
+        assert_envelope(&result, state);
         if let Some(details) = result.details() {
             assert!(Rc::ptr_eq(details, &native));
             native.set(native.get() + 1);
@@ -465,24 +624,75 @@ fn register_root_observer(
     register_tool_renderer(&call.name, binding);
 }
 
-/// Mount one tool row and read its JSON listings in order.
+/// The envelope an actual row shows: the original result, or its abort replacement.
 #[cfg(target_arch = "wasm32")]
-fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Vec<String> {
-    use crate::contributions_support::{body, text, view};
+fn assert_envelope(result: &ToolResultMessageView<'_, Rc<Cell<i32>>>, state: RowState) {
+    assert!(
+        result.is_error(),
+        "every observed envelope reports its error flag"
+    );
+    if state.aborted {
+        assert_eq!(result.tool_call_id(), "root-call");
+        assert_eq!(result.tool_name(), "root-dispatch");
+        assert!(
+            result.content().is_empty(),
+            "the abort envelope carries no blocks"
+        );
+        assert!(
+            result.details().is_none(),
+            "the abort envelope replaces the native details"
+        );
+        assert!(
+            result.timestamp() > 1_000_000.0,
+            "the abort envelope is stamped when it is built"
+        );
+        return;
+    }
+    assert_eq!(result.tool_call_id(), "original call");
+    assert_eq!(result.tool_name(), "original tool");
+    assert_eq!(
+        maestro_app::UserBlock::text_output(result.content()),
+        "one\ntwo"
+    );
+    assert_eq!(result.timestamp().to_bits(), 17.25_f64.to_bits());
+}
+
+/// One mounted default row: its header caption and every listing with its selected language.
+#[cfg(target_arch = "wasm32")]
+struct Drawn {
+    /// Caption the header shows.
+    caption: String,
+    /// Selected language and text of each listing, in document order.
+    listings: Vec<(String, String)>,
+}
+/// Mount one tool row and read its caption and listings.
+#[cfg(target_arch = "wasm32")]
+fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Drawn {
+    use crate::contributions_support::{body, select, text, view};
     use maestro_web::dom::DomContent as _;
     use wasm_bindgen::JsCast as _;
     let view = view();
     let root = props.mount(&view).unwrap();
     body().append_child(&root.node).unwrap();
     let element = root.node.unchecked_ref::<web_sys::Element>();
-    let blocks = element
-        .query_selector_all(".maestro-code[language='json'] pre code")
-        .unwrap();
+    let caption = element
+        .query_selector(".maestro-tool-caption")
+        .unwrap()
+        .map(|caption| text(&caption))
+        .unwrap_or_default();
+    let blocks = element.query_selector_all(".maestro-code").unwrap();
     let listings = (0..blocks.length())
-        .map(|index| text(&blocks.item(index).unwrap()))
+        .map(|index| {
+            let block = blocks.item(index).unwrap();
+            let language = block
+                .unchecked_ref::<web_sys::Element>()
+                .get_attribute("language")
+                .unwrap_or_default();
+            (language, text(&select(&block, "pre code")))
+        })
         .collect();
     element.remove();
-    listings
+    Drawn { caption, listings }
 }
 
 /// Register the typed callback with the original envelope addresses.

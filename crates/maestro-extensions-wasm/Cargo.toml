@@ -10,6 +10,7 @@ description = "Author-side contract for native-async extension components."
 # example-index:start
 [[example]]
 name = "author_component"
+path = "tests/support/author_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -49,6 +50,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "context_bridge"
+path = "tests/support/context_bridge.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -113,6 +115,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "helper_capabilities"
+path = "tests/support/helper_capabilities.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -122,6 +125,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "hook_component"
+path = "tests/support/hook_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -141,6 +145,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "local_shell_component"
+path = "tests/support/local_shell_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -170,10 +175,12 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "module_location_component"
+path = "tests/support/module_location_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
 name = "native_io_component"
+path = "tests/support/native_io_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -253,10 +260,12 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "resource_component"
+path = "tests/support/resource_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
 name = "resource_component_reloaded"
+path = "tests/support/resource_component_reloaded.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -266,6 +275,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "sdk_standard_component"
+path = "tests/support/sdk_standard_component.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -355,6 +365,7 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "wasi_capabilities"
+path = "tests/support/wasi_capabilities.rs"
 crate-type = ["cdylib"]
 
 [[example]]
@@ -377,6 +388,10 @@ name = "working_message_test"
 path = "../../examples/extensions/working_message_test.rs"
 crate-type = ["cdylib"]
 # example-index:end
+
+[[example]]
+name = "prepare_author_component"
+path = "tests/support/prepare_author_component.rs"
 
 [dependencies]
 maestro-package = { path = "../maestro-package" }

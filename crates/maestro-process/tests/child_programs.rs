@@ -6,22 +6,17 @@
 //! before the program runs; parents compare output through `maestro_test_process::child`.
 #![cfg(test)]
 #![cfg(unix)]
-use maestro_test_process::TestProcess;
 use maestro_test_process::child::{
-    Stream, announce, close_streams, connect, is_null, leave, port, read_input, receive, variable,
-    write_stderr, write_stdout,
+    Stream, announce, close_streams, connect, hex_variable, is_null, leave, port, read_input,
+    receive, test_child_command, variable, write_stderr, write_stdout,
 };
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Command, Stdio};
 
-/// The command that runs `program` with `variables` added to its environment.
+/// The command the owner builds for the checked child `program` with `variables` added.
 pub fn command(program: impl Fn(), variables: &[(&str, &str)]) -> Command {
-    TestProcess::child(program)
-        .unwrap()
-        .envs(variables.iter().copied())
-        .command()
-        .unwrap()
+    test_child_command(program, variables).unwrap()
 }
 
 /// [`command`] as the asynchronous command the process owner takes.
@@ -359,21 +354,13 @@ pub fn raw_stream_writer() {
     leave(0)
 }
 
-/// The bytes the hex field `name` holds, empty when the variable is unset.
-fn hex_field(name: &str) -> Vec<u8> {
-    let text = std::env::var(name).unwrap_or_default();
-    (0..text.len() / 2)
-        .map(|at| u8::from_str_radix(&text[at * 2..at * 2 + 2], 16).unwrap())
-        .collect()
-}
-
 /// Writes the bytes `CHILD_OUT` and `CHILD_ERR` name in hex to the two output streams, then
 /// ends through the status `CHILD_EXIT` names or the signal `CHILD_SIGNAL` numbers.
 #[test]
 #[ignore = "runs only inside a controlled child"]
 pub fn output_writer() {
-    write_stderr(&hex_field("CHILD_ERR")).unwrap();
-    write_stdout(&hex_field("CHILD_OUT")).unwrap();
+    write_stderr(&hex_variable("CHILD_ERR").unwrap()).unwrap();
+    write_stdout(&hex_variable("CHILD_OUT").unwrap()).unwrap();
     if let Ok(number) = variable("CHILD_SIGNAL") {
         signal_hook::low_level::raise(number.parse().unwrap()).unwrap();
         wait_for_signal()

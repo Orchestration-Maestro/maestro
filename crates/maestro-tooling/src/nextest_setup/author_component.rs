@@ -21,16 +21,21 @@ use crate::exit_code;
 use crate::test_setup::{self, EXAMPLE, example_arguments, executable_name};
 use crate::workspace::Workspace;
 
-/// The sources the setup example is built from within its own package, beside the files of the
-/// tooling that compiles it.
-const SOURCES: [&str; 3] = [
-    "examples/prepare_author_component.rs",
-    "src/tests/build.rs",
-    "Cargo.toml",
+/// The sources the setup example is built from, beside the shared build and discovery
+/// directories listed below; the example is outdated once any of them is newer.
+const SOURCES: [&str; 5] = [
+    "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
+    "crates/maestro-extensions-wasm/src/tests/build.rs",
+    "crates/maestro-tooling/src/example_files.rs",
+    "crates/maestro-extensions-wasm/Cargo.toml",
+    "Cargo.lock",
 ];
 
 /// The directories whose `.rs` files the setup example is built from.
-const SOURCE_DIRECTORIES: [&str; 2] = ["src/tests/build", "src/example_files"];
+const SOURCE_DIRECTORIES: [&str; 2] = [
+    "crates/maestro-extensions-wasm/src/tests/build",
+    "crates/maestro-tooling/src/example_files",
+];
 
 /// Prepare the components with a staged or built example and run it, then export the cache
 /// home the example warmed so the tests read the same compiled code.
@@ -46,8 +51,10 @@ pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         run_prepared(cargo, checkout, &bundle, &directory, &cache_home)?
     } else {
         let workspace = Workspace::read(cargo, checkout)?;
-        let component = workspace.component_crate()?;
-        run_local(cargo, &workspace, &component, &directory, &cache_home)?
+        // The example is given the component crate, so a workspace without one fails here,
+        // before a build.
+        workspace.component_crate()?;
+        run_local(cargo, &workspace, &directory, &cache_home)?
     };
     // The example and the installation rewrite the file, so the entry follows them.
     let mut entry = OsString::from("XDG_CACHE_HOME=");
@@ -93,7 +100,6 @@ fn run_prepared(
 fn run_local(
     cargo: &Path,
     workspace: &Workspace,
-    component: &Path,
     directory: &Path,
     cache_home: &Path,
 ) -> io::Result<ExitCode> {
@@ -104,7 +110,7 @@ fn run_local(
     let profile = if profile == "debug" { "dev" } else { profile };
     let target = directory.parent().unwrap_or(directory);
     if let Some(example) = built_example(directory)
-        && fresh(workspace, component, &example)
+        && fresh(workspace.root(), &example)
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
         return start(workspace, &example, cache_home);
@@ -137,7 +143,7 @@ fn built_example(directory: &Path) -> Option<PathBuf> {
 }
 
 /// Whether `example` is newer than every source it is built from.
-fn fresh(workspace: &Workspace, component: &Path, example: &Path) -> bool {
+fn fresh(checkout: &Path, example: &Path) -> bool {
     let modified = |path: &Path| {
         std::fs::metadata(path)
             .and_then(|data| data.modified())
@@ -146,29 +152,17 @@ fn fresh(workspace: &Workspace, component: &Path, example: &Path) -> bool {
     let Some(built) = modified(example) else {
         return false;
     };
-    let tooling = workspace.member("maestro-tooling");
-    let listed = SOURCES
-        .iter()
-        .map(|source| component.join(source))
-        .chain(tooling.as_ref().map(|dir| dir.join("src/example_files.rs")))
-        .chain([workspace.root().join("Cargo.lock")]);
+    let listed = SOURCES.iter().map(|source| checkout.join(source));
     let discovered = SOURCE_DIRECTORIES
         .iter()
-        .filter_map(|folder| {
-            let owner = match *folder {
-                "src/example_files" => tooling.clone()?,
-                _ => component.to_path_buf(),
-            };
-            std::fs::read_dir(owner.join(folder)).ok()
-        })
+        .filter_map(|folder| std::fs::read_dir(checkout.join(folder)).ok())
         .flatten()
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.extension().is_some_and(|extension| extension == "rs"));
-    let sources: Vec<PathBuf> = listed.chain(discovered).collect();
-    sources
-        .iter()
-        .filter_map(|source| modified(source))
+    listed
+        .chain(discovered)
+        .filter_map(|source| modified(&source))
         .all(|source| built > source)
 }
 

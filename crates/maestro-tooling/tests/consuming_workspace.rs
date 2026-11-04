@@ -43,9 +43,9 @@ fn consuming_workspace(root: &Path, shipped: bool) {
     )
     .unwrap();
     crate_at(root, "crates/component-fixture", &component_manifest());
-    fs::create_dir_all(root.join("crates/component-fixture/examples")).unwrap();
+    fs::create_dir_all(root.join("crates/component-fixture/tests/support")).unwrap();
     fs::write(
-        root.join("crates/component-fixture/examples/local.rs"),
+        root.join("crates/component-fixture/tests/support/local.rs"),
         "//! Local component.\n// maestro-component: MAESTRO_LOCAL_COMPONENT\n",
     )
     .unwrap();
@@ -98,7 +98,9 @@ fn example_index_renders_the_workspace_component_crate() {
         "{rendered}"
     );
     assert!(
-        rendered.contains("name = \"local\"\ncrate-type = [\"cdylib\"]\n"),
+        rendered.contains(
+            "name = \"local\"\npath = \"tests/support/local.rs\"\ncrate-type = [\"cdylib\"]\n"
+        ),
         "{rendered}"
     );
     assert!(!rendered.contains("old"), "{rendered}");
@@ -125,7 +127,9 @@ fn example_index_renders_local_targets_without_a_shipped_folder() {
 
     let rendered = region(root);
     assert!(
-        rendered.contains("name = \"local\"\ncrate-type = [\"cdylib\"]\n"),
+        rendered.contains(
+            "name = \"local\"\npath = \"tests/support/local.rs\"\ncrate-type = [\"cdylib\"]\n"
+        ),
         "{rendered}"
     );
     assert!(!rendered.contains("examples/extensions"), "{rendered}");

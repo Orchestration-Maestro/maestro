@@ -13,7 +13,7 @@ fn component_consumers_have_prepared_examples() {
     let mut prepared = HashMap::new();
     maestro_tooling::example_files::prepare(
         &[
-            workspace.join("crates/maestro-extensions-wasm/examples"),
+            workspace.join("crates/maestro-extensions-wasm/tests/support"),
             workspace.join("examples/extensions"),
         ],
         &maestro_tooling::example_files::FIXED_COMPONENTS,
@@ -101,10 +101,10 @@ fn component_build_reuses_the_prepared_example() {
     if !selection().is_child() {
         let scratch = Scratch::new().unwrap();
         let directory = scratch.path().join("crates/author");
-        fs::create_dir_all(directory.join("examples")).unwrap();
+        fs::create_dir_all(directory.join("tests/support")).unwrap();
         fs::create_dir_all(scratch.path().join("examples/extensions")).unwrap();
         fs::write(
-            directory.join("examples/fixture.rs"),
+            directory.join("tests/support/fixture.rs"),
             "// maestro-component: MAESTRO_PREPARED_FIXTURE_COMPONENT\n",
         )
         .unwrap();
@@ -144,7 +144,7 @@ fn component_build_compiles_unprepared_examples_in_one_cargo_run() {
     if !selection().is_child() {
         let scratch = Scratch::new().unwrap();
         let directory = scratch.path().join("crates/author");
-        fs::create_dir_all(directory.join("examples")).unwrap();
+        fs::create_dir_all(directory.join("tests/support")).unwrap();
         fs::create_dir_all(scratch.path().join("examples/extensions")).unwrap();
         let calls = scratch.path().join("calls");
         let cargo = crate::recipe_support::scenario(

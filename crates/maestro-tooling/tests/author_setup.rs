@@ -567,7 +567,6 @@ fn marked_fixture(root: &Path) {
         "fn tail() {}\n",
     )
     .unwrap();
-    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/examples")).unwrap();
 }
 
 /// Prepare into `target/next-setup` in a child process of the test `test`, whose environment
@@ -1204,12 +1203,7 @@ fn setup_command() -> Command {
 
 /// Display both output streams when a fixture command fails.
 fn assert_success(output: &Output) {
-    assert!(
-        output.status.success(),
-        "{}\n{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
+    crate::browser_author_build::browser_support::success(output);
 }
 
 /// The native setup builds once, exports an explicit artifact and reuses it after relocation.

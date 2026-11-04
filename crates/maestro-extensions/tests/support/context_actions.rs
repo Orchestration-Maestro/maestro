@@ -177,4 +177,4 @@ pub fn check_compaction_forwarding(ctx: &ExtensionContext, recorder: &Recorder) 
     assert!(!called.get());
 }
 
-pub use crate::support::command_operations::silent_command_operations;
+pub use maestro_extensions::test_support::silent_command_operations;

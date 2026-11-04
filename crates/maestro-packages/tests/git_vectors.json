@@ -1425,5 +1425,55 @@
       "ref": "topic",
       "pinned": true
     }
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@høst:u/r",
+    "expected": {
+      "repo": "git@høst:u/r",
+      "host": "høst",
+      "path": "u/r",
+      "pinned": false
+    }
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@[::1]:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@ho st:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@ho%73t:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@host?-x:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@-host:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@.host:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@_host:u/r",
+    "expected": null
+  },
+  {
+    "test": "git_shorthand_host_is_a_reg_name",
+    "input": "git:git@h@ost:u/r",
+    "expected": null
   }
 ]

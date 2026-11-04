@@ -14,12 +14,16 @@
 use std::fmt::Write as _;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../src/tests/build.rs"]
+#[path = "../../src/tests/build.rs"]
 mod build;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../src/tests/search_tools.rs"]
+#[path = "../../src/tests/search_tools.rs"]
 mod search_tools;
+
+/// The fixture components of the component crate, relative to that crate.
+#[cfg(not(target_arch = "wasm32"))]
+const FIXTURES: &str = "tests/support";
 
 // The preparation module below reaches source discovery through this import, and so does the
 // listing of component names.
@@ -27,7 +31,7 @@ mod search_tools;
 use build::cargo::components;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-tooling/src/example_files/preparation.rs"]
+#[path = "../../../maestro-tooling/src/example_files/preparation.rs"]
 mod example_files;
 
 /// Preparation runs the native host, which a WebAssembly build does not have.
@@ -91,7 +95,7 @@ fn prepare(
     let fixed = fixed_components(fixed)?;
     let shipped = workspace.join("examples/extensions");
     let folders: Vec<std::path::PathBuf> = [
-        Some(root.join("examples")),
+        Some(root.join(FIXTURES)),
         shipped.is_dir().then_some(shipped),
     ]
     .into_iter()

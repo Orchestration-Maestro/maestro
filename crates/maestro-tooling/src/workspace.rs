@@ -22,6 +22,8 @@ pub const REGION_END: &str = "# example-index:end";
 const SHIPPED: &str = "examples/extensions";
 /// The standalone guide fixture, under the crate that holds one.
 pub(crate) const GUIDE: &str = "tests/fixtures/hello-extension";
+/// The fixture components of the component crate, relative to that crate.
+pub(crate) const FIXTURES: &str = "tests/support";
 
 /// The workspace root: the nearest directory at or above `start` whose manifest declares one.
 ///
