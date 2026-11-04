@@ -441,12 +441,16 @@ impl ListFrame {
                 consumed: end,
                 node,
                 list: Some(state),
+                #[cfg(test)]
+                settled: 0,
             }),
             ListTarget::Resumed => Step::Done(Done::Resumed {
                 used: raw,
                 node,
                 rest: self.source.select(end..self.source.len()),
                 list: Some(state),
+                #[cfg(test)]
+                settled: 0,
             }),
         }
     }

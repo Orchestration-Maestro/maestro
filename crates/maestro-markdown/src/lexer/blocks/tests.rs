@@ -221,23 +221,51 @@ fn a_released_list_state_charges_what_it_holds_again() {
     );
 }
 
-#[test]
-fn a_popped_quote_releases_the_payload_its_level_handed_up() {
-    let mut output = pending_list("para\n");
+/// A quote node over its own raw source, with no children.
+fn quote() -> (crate::source::Segmented, crate::Node) {
     let raw: crate::source::Segmented = ScopeSource::identity("> a\n").into();
     let node = crate::Node {
         authored: raw.mapped(),
         range: 0..4,
         kind: crate::Kind::Quote(Vec::new(), crate::MappedText::default()),
     };
+    (raw, node)
+}
+
+#[test]
+fn a_popped_quote_releases_every_charge_it_took() {
+    let mut output = pending_list("para\n");
+    let before = output.settled();
+    let (raw, node) = quote();
+    output.push_container(raw.clone(), node, None);
     output.charge_settled(512);
-    output.push_container(raw, node, None);
-    let carried = output.settled();
+    let held = output.settled();
     let popped = output.pop_node().expect("the trailing quote");
-    assert!(matches!(popped.kind, crate::Kind::Quote(..)));
+    assert_eq!(output.settled(), before, "a popped quote keeps no charge");
+    output.push_container(raw, popped, None);
+    output.charge_settled(512);
     assert_eq!(
         output.settled(),
-        carried - 512,
-        "a popped quote releases the payload its level handed up"
+        held,
+        "a quote pushed again is charged in full"
+    );
+}
+
+#[test]
+fn a_restored_output_keeps_the_charges_of_the_nodes_it_keeps() {
+    let mut output = pending_list("para\n");
+    let (raw, node) = quote();
+    output.push_container(raw, node, None);
+    output.charge_settled(512);
+    let kept = output.settled();
+    let mark = super::Mark::new(&output, true);
+    let gap = ScopeSource::identity("\n");
+    let gap = gap.view(0..1);
+    output.push(&gap, 1, gap.node(0..1, crate::Kind::Gap));
+    assert_eq!(output.restore(mark).len(), 1, "the gap after the mark");
+    assert_eq!(
+        output.settled(),
+        kept,
+        "a restored output keeps its quote's charges"
     );
 }

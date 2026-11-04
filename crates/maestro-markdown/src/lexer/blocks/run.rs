@@ -72,12 +72,6 @@ enum Fallback {
 }
 
 impl BlockRun {
-    /// Charge the payload a closed level's settled output retained.
-    #[cfg(test)]
-    pub(crate) fn charge_settled(&mut self, bytes: usize) {
-        self.output.charge_settled(bytes);
-    }
-
     /// Start one admission level over an operand and its retained output.
     fn new(
         source: Segmented,
@@ -160,10 +154,14 @@ impl BlockRun {
                 consumed,
                 node,
                 list,
+                #[cfg(test)]
+                settled,
             } => {
                 let start = awaiting.cursor;
                 self.output
                     .push_container(self.source.select(start..start + consumed), node, list);
+                #[cfg(test)]
+                self.output.charge_settled(settled);
                 let rest = self.source.select(start..self.source.len());
                 self.admitted(lexer, &rest, (start, awaiting.mark), consumed);
                 None

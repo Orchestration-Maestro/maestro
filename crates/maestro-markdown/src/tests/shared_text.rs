@@ -7,6 +7,9 @@ use std::{collections::HashSet, mem::size_of, mem::size_of_val, sync::Arc};
 pub(crate) struct Retained {
     /// Allocation addresses this output already charged.
     seen: HashSet<usize>,
+    /// The addresses in `seen`, in the order they were charged, kept only by an accumulator
+    /// that releases charges.
+    order: Option<Vec<usize>>,
     /// Shared allocation payloads plus independently owned native capacities.
     pub(crate) bytes: usize,
     /// Unique backing string capacity, separate from view and native metadata.
@@ -17,17 +20,43 @@ pub(crate) struct Retained {
     pub(crate) nodes: usize,
 }
 
-/// Charges one output holds, released when the contribution that took them leaves.
-#[derive(Default)]
+/// The payload and the addresses a [`Retained`] had charged, so a later charge can be released.
+#[derive(Clone, Copy)]
+struct Taken {
+    /// Payload charged before.
+    bytes: usize,
+    /// Addresses charged before.
+    addresses: usize,
+}
+
+/// Charges one output holds, each owned by the node that trailed the output when it was taken.
+///
+/// A node's own allocations, the payload its closed level handed up with it, its adopted list
+/// state and the item outputs its list publishes are all taken while it trails, so they sit
+/// after its start. Nodes leave an output from its end, so releasing from a node's start
+/// releases that node, the nodes after it and the addresses only they charged. The adopted
+/// state is the one charge that leaves while its node stays, when its list publishes; it
+/// charges into its own accumulator, so it holds no address here.
 pub(crate) struct Charges {
-    /// Payload the output's published nodes and adopted list state charged.
+    /// Payload and addresses the held nodes charged.
     retained: Retained,
+    /// Where each held node's charges start, in output order.
+    starts: Vec<Taken>,
     /// Payload the adopted list state charged, released when its list publishes.
     adopted: usize,
-    /// Payload a closed level handed up for the node the output publishes next.
-    pending: usize,
-    /// Payload the trailing published node carries from the closed level that handed it up.
-    handed: usize,
+}
+
+impl Default for Charges {
+    fn default() -> Self {
+        Self {
+            retained: Retained {
+                order: Some(Vec::new()),
+                ..Retained::default()
+            },
+            starts: Vec::new(),
+            adopted: 0,
+        }
+    }
 }
 
 impl Charges {
@@ -36,27 +65,32 @@ impl Charges {
         self.retained.bytes
     }
 
-    /// Charge one published node and take the payload a closed level handed up for it.
+    /// Charge one node the output now holds.
     pub(crate) fn push(&mut self, node: &Node) {
+        self.starts.push(self.retained.taken());
         settled_node(node, &mut self.retained);
-        self.handed = std::mem::take(&mut self.pending);
     }
 
-    /// Charge a payload another output already took for the node this one now holds.
+    /// Charge the trailing node a payload another output already took for it.
     pub(crate) fn add(&mut self, bytes: usize) {
         self.retained.bytes += bytes;
     }
 
-    /// Charge the payload a closed level's settled output retained for the node it hands up.
-    pub(crate) fn hand_up(&mut self, bytes: usize) {
-        self.retained.bytes += bytes;
-        self.pending += bytes;
-    }
-
-    /// Release the payload the output no longer carries because its node left it.
-    pub(crate) fn release_handed(&mut self) {
-        self.retained.bytes -= std::mem::take(&mut self.pending);
-        self.retained.bytes -= std::mem::take(&mut self.handed);
+    /// Release every charge the `removed` nodes from `index` on took, as they leave the output.
+    ///
+    /// The adopted state belongs to the trailing node, so it always leaves with them.
+    pub(crate) fn release(&mut self, index: usize, removed: usize) {
+        debug_assert_eq!(
+            self.starts.len(),
+            index + removed,
+            "every node an output holds took its charges"
+        );
+        let Some(start) = self.starts.get(index).copied() else {
+            return;
+        };
+        self.starts.truncate(index);
+        self.retained.release(start);
+        self.adopted = 0;
     }
 
     /// Charge the list state the output adopts until its list publishes.
@@ -80,6 +114,24 @@ impl Charges {
 }
 
 impl Retained {
+    /// How much this accumulator has charged so far.
+    fn taken(&self) -> Taken {
+        Taken {
+            bytes: self.bytes,
+            addresses: self.order.as_ref().map_or(0, Vec::len),
+        }
+    }
+
+    /// Release the payload and the addresses charged after `taken`.
+    fn release(&mut self, taken: Taken) {
+        self.bytes = taken.bytes;
+        if let Some(order) = &mut self.order {
+            for address in order.drain(taken.addresses..) {
+                self.seen.remove(&address);
+            }
+        }
+    }
+
     /// Charge shared string capacity without counting overlapping selected windows twice.
     pub(crate) fn text(&mut self, value: &Arc<String>) {
         if self.arc(value, value.capacity()) {
@@ -89,8 +141,12 @@ impl Retained {
 
     /// Charge shared metadata and its backing capacity once, returning whether it is new.
     pub(crate) fn arc<T>(&mut self, value: &Arc<T>, capacity: usize) -> bool {
-        if !self.seen.insert(Arc::as_ptr(value) as usize) {
+        let address = Arc::as_ptr(value) as usize;
+        if !self.seen.insert(address) {
             return false;
+        }
+        if let Some(order) = &mut self.order {
+            order.push(address);
         }
         self.bytes += size_of_val(value.as_ref()) + capacity;
         true

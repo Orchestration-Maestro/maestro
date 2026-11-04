@@ -97,6 +97,8 @@ impl BlockTokens {
             matches!(node.kind, Kind::List(..) | Kind::Quote(..))
                 .then(|| source.select(std::iter::once(0..consumed)).into()),
         );
+        #[cfg(test)]
+        self.charges.push(&node);
         self.nodes.push(node);
     }
 
@@ -135,11 +137,10 @@ impl BlockTokens {
         self.charges.bytes()
     }
 
-    /// Charge the payload a closed level's settled output retained, carried by the node it
-    /// hands up to this output.
+    /// Charge the trailing node the payload its closed level's settled output retained.
     #[cfg(test)]
     pub(crate) fn charge_settled(&mut self, bytes: usize) {
-        self.charges.hand_up(bytes);
+        self.charges.add(bytes);
     }
 
     /// Take the trailing list's item history for publication.
@@ -150,11 +151,11 @@ impl BlockTokens {
         list
     }
 
-    /// Remove the trailing node, releasing the payload a closed level handed up for it.
+    /// Remove the trailing node, releasing every charge it took.
     pub(super) fn pop_node(&mut self) -> Option<Node> {
         let node = self.nodes.pop()?;
         #[cfg(test)]
-        self.charges.release_handed();
+        self.charges.release(self.nodes.len(), 1);
         Some(node)
     }
 
@@ -164,11 +165,9 @@ impl BlockTokens {
         let removed: Vec<_> = self.nodes.drain(mark.nodes..).collect();
         if !removed.is_empty() {
             #[cfg(test)]
-            self.charges.release_adopted();
+            self.charges.release(mark.nodes, removed.len());
             self.list = None;
         }
-        #[cfg(test)]
-        self.charges.release_handed();
         for node in &removed {
             super::frames::forget(&mut self.scopes, node);
         }
