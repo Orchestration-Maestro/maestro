@@ -70,12 +70,16 @@ impl Resolutions {
 
     /// Record a path that ends in the name, unless it is the owner's qualified function.
     pub(crate) fn path(&mut self, path: &syn::Path) {
-        let segments: Vec<_> = path.segments.iter().map(|segment| &segment.ident).collect();
-        if let [.., last] = segments[..]
-            && last == NAME
-            && !matches!(segments[..], [owner, _] if owner == OWNER_PATH)
-        {
-            self.lines.push(last.span().start().line);
+        let Some(last) = path.segments.last().filter(|last| last.ident == NAME) else {
+            return;
+        };
+        let owner = path.segments.len() == 2
+            && path
+                .segments
+                .first()
+                .is_some_and(|first| first.ident == OWNER_PATH);
+        if !owner {
+            self.lines.push(last.ident.span().start().line);
         }
     }
 
