@@ -27,7 +27,10 @@ Native `maestro-chat` external editing directly uses Tokio `=1.53.3`, with defau
 features disabled and `process` enabled, for the caller-built command accepted by
 the application's inherited-terminal process bridge. This reuses the existing
 locked Tokio process dependency closure; it adds no runtime or deadline policy.
-Tokio is MIT licensed.
+Its Unix tests also enable Tokio `signal`, which the process crate already
+compiles into the same build, so a suspension test waits until an interrupt
+reaches the runtime instead of assuming which thread took it. Tokio is MIT
+licensed.
 
 Native `maestro-chat` names pasted clipboard images with `uuid =1.27.0`, defaults
 off with `std` and `v4`, the version and features the application already locks.
