@@ -297,7 +297,7 @@ fn create_bare_repo_with_linked_worktree() -> (maestro_test_directory::Scratch, 
 
 /// Canonical native path with the source fallback on missing paths.
 fn canonicalize_best_effort_path(path: &Path) -> PathBuf {
-    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+    maestro_realpath::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
 #[test]
@@ -409,7 +409,10 @@ fn repository_discovery_preserves_non_utf8_ancestors_and_relative_links() {
     std::fs::write(child.join(".git"), b"gitdir: ../../metadata-\xfe\n").unwrap();
     let discovered = discover_git_paths(&child).unwrap();
     assert_eq!(discovered.repo_root, child);
-    assert_eq!(std::fs::canonicalize(discovered.git_dir).unwrap(), metadata);
+    assert_eq!(
+        maestro_realpath::canonicalize(discovered.git_dir).unwrap(),
+        metadata
+    );
     std::fs::remove_dir_all(scratch).unwrap();
 }
 

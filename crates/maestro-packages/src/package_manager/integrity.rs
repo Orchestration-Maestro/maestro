@@ -25,7 +25,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Refuses linked worktrees and redirected repository metadata before mutation.
     pub(super) async fn check_pin_repository(&self, path: &str) -> io::Result<()> {
-        let target = std::fs::canonicalize(path)?;
+        let target = maestro_realpath::canonicalize(path)?;
         let metadata = target.join(".git");
         if !std::fs::symlink_metadata(&metadata)?.is_dir() {
             return Err(io::Error::other("Integrity requires managed Git metadata"));
@@ -37,7 +37,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         ] {
             let observed = self.git_capture(path, &["rev-parse", option], &[]).await?;
             let observed = Path::new(path).join(crate::trim(&observed));
-            if std::fs::canonicalize(observed)? != expected {
+            if maestro_realpath::canonicalize(observed)? != expected {
                 return Err(io::Error::other("Git checkout escapes managed contents"));
             }
         }
@@ -119,7 +119,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Compares the real index and an unsuppressed index against the selected commit.
     pub(super) async fn tracked_pin_paths(&self, path: &str, commit: &str) -> io::Result<String> {
         let stage = super::git::GitStaging::new(&maestro_path::dirname(path))?;
-        let index = std::fs::canonicalize(stage.path())?.join("index");
+        let index = maestro_realpath::canonicalize(stage.path())?.join("index");
         let index = index.to_string_lossy();
         let env = [("GIT_INDEX_FILE", index.as_ref())];
         self.git_capture(path, &["read-tree", "--no-sparse-checkout", commit], &env)

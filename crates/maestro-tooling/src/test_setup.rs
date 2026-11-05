@@ -451,7 +451,7 @@ fn export(
     directory: &Path,
     environment: &Path,
 ) -> io::Result<()> {
-    let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
+    let output = maestro_realpath::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
     }

@@ -108,7 +108,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let mut stage = GitStaging::new(&parent)?;
         let result = async {
             self.prepare_git_checkout(&git, stage.path(), true).await?;
-            let root = std::fs::canonicalize(stage.path())?;
+            let root = maestro_realpath::canonicalize(stage.path())?;
             paths
                 .iter()
                 .map(|path| read_candidate_file(&root, path))
@@ -121,7 +121,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
 /// Follows in-release links but never reads a target outside the staged candidate.
 fn read_candidate_file(root: &Path, path: &str) -> io::Result<Option<Vec<u8>>> {
-    let target = match std::fs::canonicalize(root.join(path)) {
+    let target = match maestro_realpath::canonicalize(root.join(path)) {
         Ok(target) => target,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error),

@@ -64,7 +64,7 @@ pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<PathBuf> {
     }
     let path = output.join(filename());
     verify(&path, &record.file)?;
-    let path = std::fs::canonicalize(&path)?;
+    let path = maestro_realpath::canonicalize(&path)?;
     if path
         .as_os_str()
         .as_encoded_bytes()

@@ -246,7 +246,9 @@ fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
         path.to_path_buf()
     };
     match fs::symlink_metadata(&target) {
-        Ok(meta) if !meta.file_type().is_symlink() => return fs::canonicalize(&target),
+        Ok(meta) if !meta.file_type().is_symlink() => {
+            return maestro_realpath::canonicalize(&target);
+        }
         Ok(_) => (),
         Err(error) if error.kind() == io::ErrorKind::NotFound => (),
         Err(error) => return Err(error),
@@ -258,7 +260,7 @@ fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
         } else {
             ancestor
         };
-        match fs::canonicalize(directory) {
+        match maestro_realpath::canonicalize(directory) {
             Ok(canonical) => {
                 return Ok(canonical.join(target.strip_prefix(ancestor).map_err(io::Error::other)?));
             }

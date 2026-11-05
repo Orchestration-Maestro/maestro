@@ -36,7 +36,7 @@ pub(crate) fn run(args: &[OsString], checkout: &Path) -> io::Result<ExitCode> {
 
 /// Write a standalone cdylib manifest beside the copied lock and linked authored tests.
 pub(crate) fn prepare(checkout: &Path, output: &Path) -> io::Result<()> {
-    let checkout = checkout.canonicalize()?;
+    let checkout = maestro_realpath::canonicalize(checkout)?;
     let root = checkout
         .to_str()
         .ok_or_else(|| io::Error::other("browser preparation requires UTF-8 paths"))?;
