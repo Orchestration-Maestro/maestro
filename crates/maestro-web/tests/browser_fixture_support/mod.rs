@@ -190,6 +190,23 @@ pub(crate) fn construct(name: &str, args: &[&JsValue]) -> JsValue {
     .unwrap()
 }
 
+/// Post `data` to `target` from a function of `window`'s realm, so the receiver sees `window`
+/// as the sender, as it does when that page posts the message itself.
+pub(crate) fn post_from(window: &JsValue, target: &JsValue, data: &JsValue) {
+    let arguments = js_sys::Array::of2(
+        &"target,data".into(),
+        &"target.postMessage(data,'*')".into(),
+    );
+    let post = js_sys::Reflect::construct(
+        get(window, "Function").unchecked_ref::<js_sys::Function>(),
+        &arguments,
+    )
+    .unwrap();
+    post.unchecked_ref::<js_sys::Function>()
+        .call2(&JsValue::NULL, target, data)
+        .unwrap();
+}
+
 /// A plain page object with `entries`.
 pub(crate) fn object(entries: &[(&str, &JsValue)]) -> js_sys::Object {
     let object = js_sys::Object::new();

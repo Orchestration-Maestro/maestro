@@ -246,10 +246,18 @@ and lock stay unchanged. Build outputs remain in Cargo's resolved target directo
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 63 loading exports, 194 contribution exports and 69 canvas
-exports. Packaging also builds the two runtime-module fixtures, each from its own
-manifest and lock with its own binding glue, into a copy of the fixture package.
+inventory before invoking assertions, then checks each family in pairs:
+27 execution exports, 64 loading exports, 194 contribution exports and 69 canvas
+exports. Both exports of a pair run at once, each in a fresh page of its own
+driver, and the pair settles before the next starts. A failing export closes its
+own page and the run continues; the browser and the server close once every
+family has run. Two drivers connect to the one launched browser, and each keeps
+one connection, which its exports share across pairs. Every export still gets
+its own disposable browser context, page lifecycle and policy-error accounting.
+Each driver records its exports' diagnostics, so completion logs within a pair
+can arrive out of order, and an odd last export runs alone. Packaging also
+builds the two runtime-module fixtures, each from its own manifest and lock with
+its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
@@ -261,7 +269,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 352/352` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 354/354` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -327,7 +335,9 @@ stay JavaScript or HTML files beside their tests:
   constructor.
 - `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
   probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
+  driver's served `/sandbox.html`, it writes a load message's code only when the
+  frame's parent sent it.
 - `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
   and authored documents the program witnesses prepare, plus the generated carrier
   bootstraps their policies admit by hash.
@@ -423,7 +433,9 @@ the declaration check and the Chromium job run. The workflow file is read from
 one queue: a newer one replaces a queued proof and never cancels a running one.
 This repository keeps the default concurrency key the caller contract requires, so
 a proof joins the shared `main` group and names its artifacts `root`. A proof
-restores the compile cache but never publishes it.
+restores the compile cache but never publishes it. Its call grants
+`actions: write` only because GitHub checks the shared pruning jobs against the
+grant when the run starts; those jobs skip on a dispatch.
 
 The job saves the recipe's output as `browser-test.log` in the artifact
 `browser-test-root-<attempt>`, whether the recipe passes or fails:
@@ -1269,7 +1281,8 @@ executable is the step that skips: a workspace holding that package builds it
 instead, and one that neither holds nor locks it stages nothing.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
-`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
+`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
+`MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
 and `MAESTRO_EXECUTABLE`. Declare them in the workspace's own
 `.config/nextest.toml`; Maestro's file declares the setups this repository uses.
 
@@ -1335,6 +1348,25 @@ Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
 tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
+
+The instrumented child-toolchain probe is a `maestro-tooling` example target that
+preparation builds once, so no test and no test shard compiles it. Preparation
+stages it, and the `native-fixture` setup validates and exports it as
+`MAESTRO_CHILD_TOOLCHAIN_PROBE` alongside the native fixture; a test launches the
+exported path directly.
+
+A test shard starts from an extracted test archive, which carries test executables
+and never Cargo's build records. A probe that a test compiled would therefore
+recompile its dependency closure cold in every shard. Preparation compiles it
+once instead, into the run's target directory with the dev profile:
+
+```sh
+cargo rustc --locked -p maestro-tooling --example child_toolchain_probe \
+    --profile dev --target-dir <run target> -- -C instrument-coverage
+```
+
+Preparation always passes `-C instrument-coverage`, so the staged parent records
+counters in every run, not only in a coverage run.
 
 A fixture that resolves registry crates reads one offline source configuration.
 The nextest setup `nextest-setup fixture-sources` vendors the crates
@@ -1480,7 +1512,8 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
-`maestro-test-process` and every crate the crate graph allows to depend on it.
+`maestro-test-process` and every crate the crate graph allows to depend on it, and
+the instrumented parent `MAESTRO_CHILD_TOOLCHAIN_PROBE` to `maestro-tooling`.
 To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
 add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
 `.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
@@ -2389,10 +2422,14 @@ even when the merge queue selected fewer crates. Later pushes do not cancel
 or replace queued landing runs. This is separate from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the
-shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller, the reporter caller and the guards caller pin
-the released shared CI commit that the organization rulesets require. Each pin
+groups. The suite job grants `actions: write`. After each shared job that saves
+a cache, a pruning job deletes the entries that save replaced, so the cache
+keeps one entry per prefix instead of filling its 10 GiB limit. Those pruning
+jobs are the only ones that take write access, and they run no repository code.
+GitHub checks every called job's permissions when the run starts, so a caller
+that grants less makes the run fail to start. The suite caller, the reporter
+caller and the guards caller pin the released shared CI commit that the
+organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 

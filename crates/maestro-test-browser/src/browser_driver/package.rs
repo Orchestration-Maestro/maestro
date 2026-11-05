@@ -257,7 +257,7 @@ pub(super) fn materialize(root: &Path) -> io::Result<()> {
     fs::write(root.join("helper.js"), "export const answer='helper-ok'")?;
     fs::write(
         root.join("sandbox.html"),
-        "<script>addEventListener('message',e=>{if(e.data?.type==='sandbox-load'){document.open();document.write(e.data.code);document.close();parent.postMessage({type:'sandbox-installed'},'*');}});parent.postMessage({type:'sandbox-ready'},'*');</script>",
+        "<script>addEventListener('message',e=>{if(e.source===parent&&e.data?.type==='sandbox-load'){document.open();document.write(e.data.code);document.close();parent.postMessage({type:'sandbox-installed'},'*');}});parent.postMessage({type:'sandbox-ready'},'*');</script>",
     )?;
     Ok(())
 }
