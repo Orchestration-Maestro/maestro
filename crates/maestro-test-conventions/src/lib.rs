@@ -30,6 +30,8 @@ mod integration_tests;
 mod platform_opener;
 /// Source-size and protected-lint checks.
 mod quality;
+/// Real-path resolution outside its owner.
+mod real_paths;
 /// Repeated documentation and test source layout checks.
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
@@ -143,6 +145,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     duplicates::check(&members)?;
     example_helpers::check(&members)?;
     temp_directories::check(&members)?;
+    real_paths::check(&members)?;
     test_input_routes::check(root, &members)
 }
 
