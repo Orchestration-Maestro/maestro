@@ -1281,7 +1281,8 @@ executable is the step that skips: a workspace holding that package builds it
 instead, and one that neither holds nor locks it stages nothing.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
-`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
+`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
+`MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
 and `MAESTRO_EXECUTABLE`. Declare them in the workspace's own
 `.config/nextest.toml`; Maestro's file declares the setups this repository uses.
 
@@ -1347,6 +1348,25 @@ Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
 tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
+
+The instrumented child-toolchain probe is a `maestro-tooling` example target that
+preparation builds once, so no test and no test shard compiles it. Preparation
+stages it, and the `native-fixture` setup validates and exports it as
+`MAESTRO_CHILD_TOOLCHAIN_PROBE` alongside the native fixture; a test launches the
+exported path directly.
+
+A test shard starts from an extracted test archive, which carries test executables
+and never Cargo's build records. A probe that a test compiled would therefore
+recompile its dependency closure cold in every shard. Preparation compiles it
+once instead, into the run's target directory with the dev profile:
+
+```sh
+cargo rustc --locked -p maestro-tooling --example child_toolchain_probe \
+    --profile dev --target-dir <run target> -- -C instrument-coverage
+```
+
+Preparation always passes `-C instrument-coverage`, so the staged parent records
+counters in every run, not only in a coverage run.
 
 A fixture that resolves registry crates reads one offline source configuration.
 The nextest setup `nextest-setup fixture-sources` vendors the crates
@@ -1492,7 +1512,8 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
-`maestro-test-process` and every crate the crate graph allows to depend on it.
+`maestro-test-process` and every crate the crate graph allows to depend on it, and
+the instrumented parent `MAESTRO_CHILD_TOOLCHAIN_PROBE` to `maestro-tooling`.
 To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
 add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
 `.config/nextest.toml`. Adding fixture tests inside a declared caller needs no

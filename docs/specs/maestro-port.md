@@ -406,7 +406,7 @@ The SDK examples, the RPC client demo, the browser chat example and the other-la
 
 Tests are black-box. They use Maestro's public crates and programs and the same recorded corpora, never the guest crate's private test host. Name every assertion with no public-host equivalent, and agree it before dropping it.
 
-**Test preparation.** maestro-packages runs Maestro's development tool at the locked commit. `development prepare-test-setup` builds the example components and installs the executable and the native test child once per CI run. Nextest setups then export their paths: `MAESTRO_<NAME>_COMPONENT`, `MAESTRO_EXECUTABLE`, `MAESTRO_NATIVE_FIXTURE` and `MAESTRO_GUIDE_COMPONENT`. The tool works in the workspace it runs in:
+**Test preparation.** maestro-packages runs Maestro's development tool at the locked commit. `development prepare-test-setup` builds the example components and installs the executable and the native test children once per CI run. Nextest setups then export their paths: `MAESTRO_<NAME>_COMPONENT`, `MAESTRO_EXECUTABLE`, `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE` and `MAESTRO_GUIDE_COMPONENT`. The tool works in the workspace it runs in:
 
 - the checkout is the workspace root of the working directory;
 - the component crate is the workspace member whose manifest holds the generated example region;
