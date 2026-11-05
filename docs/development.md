@@ -1350,18 +1350,19 @@ runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
 
 The instrumented child-toolchain probe is a `maestro-tooling` example target that
-preparation builds once, so no test and no test shard compiles it. The
-`native-fixture` setup stages and exports it as `MAESTRO_CHILD_TOOLCHAIN_PROBE`
-alongside the native fixture, and a test launches the exported path directly.
+preparation builds once, so no test and no test shard compiles it. Preparation
+stages it, and the `native-fixture` setup validates and exports it as
+`MAESTRO_CHILD_TOOLCHAIN_PROBE` alongside the native fixture; a test launches the
+exported path directly.
 
 A test shard starts from an extracted test archive, which carries test executables
 and never Cargo's build records. A probe that a test compiled would therefore
 recompile its dependency closure cold in every shard. Preparation compiles it
-once instead, into the run's target directory and profile:
+once instead, into the run's target directory with the dev profile:
 
 ```sh
 cargo rustc --locked -p maestro-tooling --example child_toolchain_probe \
-    --profile dev -- -C instrument-coverage
+    --profile dev --target-dir <run target> -- -C instrument-coverage
 ```
 
 Preparation always passes `-C instrument-coverage`, so the staged parent records

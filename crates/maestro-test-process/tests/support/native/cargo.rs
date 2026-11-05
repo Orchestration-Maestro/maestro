@@ -106,7 +106,11 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
         Some("install") => install(args),
         Some("build") if args.iter().any(|arg| arg == "--target") => build_wasm(args),
         Some(operation @ ("build" | "run" | "rustc")) => {
-            build(record, &Build::parse(args)?, operation == "run")
+            let parsed = Build::parse(args)?;
+            if operation == "rustc" && !matches!(parsed.example, Example::Probe) {
+                return Err(io::Error::other("only the probe compiles through rustc"));
+            }
+            build(record, &parsed, operation == "run")
         }
         _ => Err(io::Error::other("unknown fixture Cargo operation")),
     }

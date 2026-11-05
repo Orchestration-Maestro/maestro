@@ -11,12 +11,15 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
     let before: Vec<_> = env::vars_os().collect();
-    let Ok(output) = toolchain_support::command(cargo)
+    let output = match toolchain_support::command(cargo)
         .args(["build", "--locked", "--target", "wasm32-unknown-unknown"])
         .output()
-    else {
-        eprintln!("the probe could not run the child build");
-        return ExitCode::FAILURE;
+    {
+        Ok(output) => output,
+        Err(error) => {
+            eprintln!("the probe could not run the child build: {error}");
+            return ExitCode::FAILURE;
+        }
     };
     if !output.status.success() {
         eprintln!("{}", String::from_utf8_lossy(&output.stderr));
