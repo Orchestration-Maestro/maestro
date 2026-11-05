@@ -405,14 +405,14 @@ adds its crates until the last one removes the scope. The diagnostic names
 
 Conventions reject real-path resolution in production code outside
 `maestro-realpath`, with the file and line. There the name `canonicalize` is
-accepted only as the qualified path `maestro_realpath::canonicalize`. These forms
-are rejected: `std::fs::canonicalize` and `tokio::fs::canonicalize`; the
-`canonicalize` method on any receiver; a path such as `Path::canonicalize` used as
-a value; an import of the name from anywhere, under any alias; and the name in
-macro tokens without the owner's crate in front. The scan reads names, not types,
-so a crate's own method needs another name. Test code, as the other checks define
-it, is not scanned: test layouts, items inside an inherited `cfg(test)` context
-and the `maestro-test-*` crates.
+accepted only as the qualified path `maestro_realpath::canonicalize`. The check
+rejects `std::fs::canonicalize` and `tokio::fs::canonicalize`; the `canonicalize`
+method on any receiver; a path such as `Path::canonicalize` used as a value; an
+import of the name from anywhere, under any alias; and the name in macro tokens
+without the owner's crate in front. The scan reads names, not types, so a crate's
+own method needs another name. It skips test code as the other checks define it:
+test layouts, items inside an inherited `cfg(test)` context and the
+`maestro-test-*` crates.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.

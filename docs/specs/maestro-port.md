@@ -700,12 +700,13 @@ permits no normal or build edge.
 
 `maestro-realpath` is a core leaf below layer 0 whose only workspace dependency is
 `maestro-path`. Its one job is resolving a native path to its real path: links
-followed, `.` and `..` resolved, through the file system. On Windows the operating
-system reports a real path in the verbatim form, `\\?\D:\x` or `\\?\UNC\server\share\x`,
-while users, settings, test directories and external programs hold the ordinary
-form. The JavaScript runtime's native real path returns the ordinary form, so the
-leaf does too: `D:\x` and `\\server\share\x`. That conversion is lexical and belongs
-to `maestro_path::win32`; every other platform returns the native real path as it is.
+followed, `.` and `..` resolved, through the file system. On Windows the
+operating system reports a real path in the verbatim form, `\\?\D:\x` or
+`\\?\UNC\server\share\x`, while users, settings, test directories and external
+programs hold the ordinary form, so the leaf returns that form: `D:\x` and
+`\\server\share\x`. That conversion is lexical and belongs to
+`maestro_path::win32`; every other platform returns the native real path as it
+is.
 Comparisons, stored identities and paths handed to another program then see one
 spelling. Only the application, the daemon, detection, lock, models, packages,
 terminal, tools, workspace, repository tooling, browser qualification, the
@@ -938,7 +939,8 @@ Windows reads its system zone, so such a test reports the premise and returns th
 `maestro-test-directory` is a dedicated, unpublished, native, std-only owner for
 exclusive disposable-directory allocation and cleanup. Its only workspace
 edges are the native feature unifier and `maestro-realpath`, which resolves
-the roots it creates; it is excluded from the foundation utility permission. Its only incoming edges are non-optional development
+the roots it creates; it is excluded from the foundation utility permission.
+Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
@@ -955,8 +957,8 @@ Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
 root's real path from `maestro-realpath`; on Windows that is the ordinary
-form without the verbatim `\\?\` prefix, so `/` keeps separating components. `temporary_root()` reports
-that parent for tests that observe it without owning it.
+form without the verbatim `\\?\` prefix, so `/` keeps separating components.
+`temporary_root()` reports that parent for tests that observe it without owning it.
 `Scratch::new_in(parent)` preserves native path-join spelling, including relative
 and non-Unicode parents. Both return `io::Result`,
 use PID/atomic-sequence candidates and exclusive `create_dir`, retry only

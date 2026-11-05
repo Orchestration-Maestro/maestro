@@ -172,7 +172,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
   `maestro-lock` depends only on `maestro-path` for final-link resolution and
   `maestro-realpath` for canonical targets, and uses the existing external
-  `sha2 =0.11.0` to shorten lock and record names for long file names. Only theme/application may depend on watch; only
+  `sha2 =0.11.0` to shorten lock and record names for long file names. Only
+  theme/application may depend on watch; only
   settings/credentials/workspace/detection/session/application may depend on lock, and
   the composed executable crate only as a native development dependency so its
   tests serialize one shared native fixture.
@@ -290,7 +291,8 @@ conventions checker, terminal scenario harness, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from `maestro-realpath`, the optional utility and the unifier. Sparse workspaces need
+no internal dependencies apart from `maestro-realpath`, the optional utility and
+the unifier. Sparse workspaces need
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
@@ -328,11 +330,12 @@ dependency of `maestro-cli` only.
 
 The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
 creation and cleanup. Its only internal edges are the native unifier and
-`maestro-realpath`, and it has no foundation utility permission. Only the crates its [directory
+`maestro-realpath`, and it has no foundation utility permission. Only the
+crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
 as a non-optional native development dependency when used. `Scratch::new`
-resolves its chosen root through `maestro-realpath`, in the ordinary Windows form;
-`Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
+resolves its chosen root through `maestro-realpath`, in the ordinary Windows
+form; `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working
 directory, and `deny(path, mode)` sets a mode and
 returns its restoring guard, or `None` when the process is not refused, as in a
