@@ -358,8 +358,8 @@ fn extension(path: String, source_info: SourceInfo) -> Rc<RwLock<Extension<Local
     Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
 }
 
-/// One local project extension at `path` registering the command `name` through the
-/// interface an extension registers through.
+/// One local project extension at `path` registering the command `name` through
+/// the extension registration interface.
 fn commanding(name: &str, path: &str) -> Rc<RwLock<Extension<Local>>> {
     let source_info = SourceInfo {
         path: path.to_owned(),
