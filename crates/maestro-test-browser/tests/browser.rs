@@ -409,6 +409,67 @@ fn inventory_requires_every_callable_export() {
     }
 }
 
+/// The console scenes answer from real screenshots: resting lines, the hovered summary and the
+/// focused follow control pass only while they paint their roles, and a wrong role, a missing
+/// outline, a pointer elsewhere and focus elsewhere each fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn console_scenes_require_their_painted_roles() {
+    let hover = "const b=document.querySelector('.maestro-artifact-summary').getBoundingClientRect();await driverPointer(JSON.stringify([b.x+b.width/2,b.y+b.height/2,false]));";
+    let focus = "document.querySelector('.maestro-artifact-follow').focus();";
+    let ring = "2px solid #ff0000";
+    for (scene, (log, text, outline), prepare, failure) in [
+        ("console-rest", ("#ffff00", "#fff", ring), "", None),
+        (
+            "console-rest",
+            ("#808080", "#fff", ring),
+            "",
+            Some(".maestro-artifact-log paints muted"),
+        ),
+        ("console-hover", ("#ffff00", "#fff", ring), hover, None),
+        (
+            "console-hover",
+            ("#ffff00", "#ffff00", ring),
+            hover,
+            Some("the hovered summary paints text"),
+        ),
+        (
+            "console-hover",
+            ("#ffff00", "#fff", ring),
+            "",
+            Some("the pointer must rest on the console summary"),
+        ),
+        ("console-focus", ("#ffff00", "#fff", ring), focus, None),
+        (
+            "console-focus",
+            ("#ffff00", "#fff", "none"),
+            focus,
+            Some("accent along the top edge"),
+        ),
+        (
+            "console-focus",
+            ("#ffff00", "#fff", ring),
+            "",
+            Some("keyboard focus must reach the follow control"),
+        ),
+    ] {
+        let result = run(fixture(&[], async |browser, origin| {
+            browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{globalThis.colors=JSON.stringify({{muted:'#ffff00',error:'#ff00ff',text:'#ffffff',accent:'#ff0000','on-accent':'#00ff00'}});document.body.innerHTML='<style>.maestro-artifact-summary{{color:#ffff00}}.maestro-artifact-summary:hover{{color:{text}}}</style><div style=\"margin:20px;padding:8px;width:400px;background:#000;font:16px sans-serif\"><div style=\"display:flex;gap:8px\"><button class=\"maestro-artifact-summary\" style=\"flex:1;border:0;background:transparent;font:inherit\">console (1 error)</button><button class=\"maestro-artifact-follow\" style=\"border:0;padding:4px;width:28px;height:28px;background:#ff0000;outline:{outline};outline-offset:2px\"><svg width=\"20\" height=\"20\" style=\"display:block\"><rect width=\"20\" height=\"20\" fill=\"#00ff00\"/></svg></button></div><div class=\"maestro-artifact-log\" style=\"color:{log}\">[log] ordinary</div><div class=\"maestro-artifact-error\" style=\"color:#ff00ff\">[error] failed</div></div>';{prepare}return await readingPaint('{scene}');}})()")).await
+        }));
+        match result {
+            Ok(value) => assert!(
+                failure.is_none() && value == json!(true),
+                "{scene} {log} {text} {outline}: expected {}",
+                failure.unwrap_or("an accepted scene")
+            ),
+            Err(error) => assert!(
+                failure.is_some_and(|failure| error.to_string().contains(failure)),
+                "{scene} {log} {text} {outline}: {error}"
+            ),
+        }
+    }
+}
+
 /// A paint scene answers from real screenshots: text that paints nothing, an outer frame shadow
 /// and an unknown scene each fail, and only the painted, unshadowed reading root passes.
 #[test]

@@ -715,6 +715,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 KaTeX 0.18.5, edited only to keep the `woff2` font source of each face.
 The typed math adapter in `crates/maestro-web/src/components/markdown_block/math/`
 also derives from KaTeX 0.16.45's radical, sizing, macro and error-handling code.
+The `embedded-font-loaded` package in
+`crates/maestro-web/tests/fixtures/native_document_artifacts.json` embeds
+`KaTeX_Typewriter-Regular.woff2` from that directory as an obfuscated Word font,
+which decodes back to the original bytes.
 
 ```text
 The MIT License (MIT)
