@@ -35,7 +35,16 @@ pub fn pinned_search_tool(
             "{name}: expected {tool} {version}, got {reported:?}"
         ));
     }
-    path.into_os_string()
-        .into_string()
-        .map_err(|path| format!("{name}: executable path is not UTF-8: {}", path.display()))
+    executable_text(name, &path)
+}
+
+/// Returns the resolved executable path as text.
+///
+/// # Errors
+///
+/// Returns an error naming `name` and the path when the spelling is not UTF-8.
+pub fn executable_text(name: &str, path: &std::path::Path) -> Result<String, String> {
+    path.to_str()
+        .map(str::to_owned)
+        .ok_or_else(|| format!("{name}: executable path is not UTF-8: {}", path.display()))
 }
