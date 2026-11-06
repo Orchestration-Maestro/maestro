@@ -13,6 +13,7 @@ use std::{
     path::Path,
     process::{ChildStdin, ChildStdout, Command, Output, Stdio},
 };
+use tokio::signal::unix::SignalKind;
 
 /// The default key of `app.suspend`.
 const CTRL_Z: &str = "\x1a";
@@ -33,8 +34,11 @@ fn suspended(test: &str, body: impl AsyncFnOnce(&World, &Path)) -> Option<Output
 }
 
 /// Sends `signal` to this process through the native `kill` command, naming the calling
-/// thread: Linux then delivers it to that thread, which runs the signal's action before
-/// the command's wait returns, so the next statement observes its outcome.
+/// thread, and waits for the command.
+///
+/// Linux queues the signal for the whole process and hands it to the named thread only
+/// when that thread can take it at once, so another thread may still be running the
+/// signal's action when this returns.
 fn signal(signal: &str) {
     let thread = std::fs::read_link("/proc/thread-self").unwrap();
     let thread = thread.file_name().unwrap().to_str().unwrap().to_owned();
@@ -43,6 +47,20 @@ fn signal(signal: &str) {
         .status()
         .unwrap();
     assert!(status.success());
+}
+
+/// Interrupts this process through [`signal`] and returns once the runtime receives the
+/// interrupt: by then every interrupt action registered before the runtime's own has run
+/// and left the process alive.
+///
+/// Signal actions run in registration order and the runtime registers its own the first
+/// time this runs, so a caller interrupts only after its first suspension has prepared
+/// the suspension's action. An interrupt that takes its default action ends the process
+/// inside that earlier action, so this call never returns.
+async fn interrupt() {
+    let mut interrupts = tokio::signal::unix::signal(SignalKind::interrupt()).unwrap();
+    signal("-INT");
+    interrupts.recv().await.unwrap();
 }
 
 /// What a child printed after each `PROBE ` marker, which can follow the harness's own
@@ -187,13 +205,13 @@ fn suspend_preserves_existing_interrupt_ownership() {
         async |world, _| {
             for round in 1..=2 {
                 world.mode.editor.handle_input(CTRL_Z);
-                signal("-INT");
+                interrupt().await;
                 println!("PROBE ignored {round}");
                 let mut resumed = world.runtime.take_futures();
                 signal("-CONT");
                 resumed.pop().unwrap().await.unwrap();
             }
-            signal("-INT");
+            interrupt().await;
             println!("PROBE survived");
         },
     );
