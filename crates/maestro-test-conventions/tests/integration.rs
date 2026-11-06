@@ -17,6 +17,7 @@ mod message_renderer_ownership;
 mod package_crates;
 mod platform_opener;
 mod quality;
+mod real_paths;
 mod repetition;
 mod rpc_ownership;
 mod support;

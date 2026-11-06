@@ -60,8 +60,7 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
                 .map(move |source| (member, source))
         })
         .flat_map(|(member, source)| {
-            reads(member, source)
-                .iter()
+            reads(source)
                 .filter(|(_, directory)| !routed(&configuration, directory, &member.name))
                 .map(move |(line, directory)| {
                     format!(
@@ -79,8 +78,8 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
 }
 
 /// The located directory reads of one source, as `(line, "docs/")` pairs.
-fn reads<'a>(member: &Member, source: &'a Source) -> &'a BTreeSet<(usize, String)> {
-    &source.walk(member).reads
+fn reads(source: &Source) -> impl Iterator<Item = &(usize, String)> {
+    source.walk.iter().flat_map(|walk| &walk.reads)
 }
 
 #[cfg(test)]

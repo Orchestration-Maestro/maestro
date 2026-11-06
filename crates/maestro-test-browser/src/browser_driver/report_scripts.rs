@@ -58,15 +58,3 @@ pub(super) const PROBE: &str = r"(() => {
     payloadName:()=>[...document.querySelectorAll('#tools tbody tr td:first-child')].map(cell=>cell.textContent).find(text=>text.includes('payloadExecuted'))||''
   };
 })()";
-
-/// Decode a real browser screenshot into RGBA pixels using the browser's image decoder.
-pub(super) const DECODE: &str = r"source => new Promise((resolve,reject) => {
-  const image = new Image();
-  image.onload = () => {
-    const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
-    const context=canvas.getContext('2d');context.drawImage(image,0,0);
-    resolve({pixels:[...context.getImageData(0,0,image.width,image.height).data],width:image.width});
-  };
-  image.onerror=()=>reject(new Error('the screenshot does not decode'));
-  image.src=source;
-})";

@@ -2,7 +2,40 @@
 
 use std::path::Path;
 
-use crate::source::{Member, read_manifest};
+use crate::source::{Member, Source, read_manifest};
+
+/// One top-level module declaration of an integration-test root.
+pub(crate) struct Module {
+    /// Declared name as written.
+    pub(crate) name: String,
+    /// Whether the declaration names a file instead of holding its body.
+    pub(crate) out_of_line: bool,
+    /// Whether it is an unconditional out-of-line module at its own file name.
+    ordinary: bool,
+}
+
+/// Top-level module declarations of a member's integration-test root, for the shared walk.
+///
+/// Every other source records none.
+pub(crate) fn modules(member: &Member, source: &Source, file: &syn::File) -> Vec<Module> {
+    if source.path != member.directory.join("tests").join("integration.rs") {
+        return Vec::new();
+    }
+    file.items
+        .iter()
+        .filter_map(|item| match item {
+            syn::Item::Mod(module) => {
+                let name = module.ident.to_string();
+                Some(Module {
+                    out_of_line: module.content.is_none(),
+                    ordinary: ordinary_module(module, &name),
+                    name,
+                })
+            }
+            _ => None,
+        })
+        .collect()
+}
 
 /// Check every member with top-level integration-test sources, reporting each failing member.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -69,7 +102,7 @@ fn check_member(member: &Member) -> Result<(), String> {
     let root = files
         .iter()
         .find(|source| source.path == root_path)
-        .and_then(|source| source.syntax.as_ref())
+        .and_then(|source| source.walk.as_ref())
         .ok_or_else(|| {
             format!(
                 "{}: require a parseable integration root",
@@ -83,14 +116,11 @@ fn check_member(member: &Member) -> Result<(), String> {
             .and_then(|name| name.to_str())
             .ok_or_else(|| format!("{}: invalid module name", source.path.display()))?;
         let modules: Vec<_> = root
-            .items
+            .root_modules
             .iter()
-            .filter_map(|item| match item {
-                syn::Item::Mod(module) if module.ident == name => Some(module),
-                _ => None,
-            })
+            .filter(|module| module.name == name)
             .collect();
-        if modules.len() != 1 || !ordinary_module(modules[0], name) {
+        if modules.len() != 1 || !modules[0].ordinary {
             return Err(format!(
                 "{}: require one unconditional out-of-line module in {}",
                 source.path.display(),

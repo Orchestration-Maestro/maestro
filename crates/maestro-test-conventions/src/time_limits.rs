@@ -12,9 +12,9 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         for source in &member.sources {
             diagnostics.extend(
                 source
-                    .walk(member)
-                    .time_limits
+                    .walk
                     .iter()
+                    .flat_map(|walk| &walk.time_limits)
                     .map(|(position, api)| (source.path.display().to_string(), *position, api)),
             );
         }
