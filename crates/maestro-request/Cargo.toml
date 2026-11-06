@@ -23,6 +23,7 @@ test-support = []
 
 [dev-dependencies]
 maestro-request = { path = ".", features = ["test-support"] }
+maestro-test-fixtures.workspace = true
 
 [[test]]
 name = "integration"

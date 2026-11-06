@@ -145,12 +145,10 @@ pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
 
 /// Declared consumers of portable fixture support.
 pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
-    "maestro-agent",
     "maestro-models",
     "maestro-request",
     "maestro-catalog",
     "maestro-chat",
-    "maestro-credentials",
     "maestro-tools",
     "maestro-export",
 ];

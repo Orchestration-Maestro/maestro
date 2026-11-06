@@ -892,9 +892,9 @@ Repository tooling builds the host artifact once per input set, records its emit
 path, source freshness and digest, and exports an explicit absolute path for local,
 filtered and archive-remapped runs. Tests never compile or discover a fallback.
 See [Rust test children](test-processes.md) for the complete contract.
-Its native helpers also provide loopback servers, completed child probes,
-executable installation, child-build toolchain selection and the caller-owned local
-executor its witnesses drive native futures on.
+Its native helpers also provide loopback servers and their recorded-request header
+lookup, completed child probes, executable installation, child-build toolchain
+selection and the caller-owned local executor its witnesses drive native futures on.
 
 On Unix the owner applies each isolated child's typed native setup at that child's
 entry: a file creation umask, a process-count limit, a nonterminating file-size
@@ -993,16 +993,15 @@ timer, retry limit or ownership-transfer API.
 ### Test fixture owner
 
 `maestro-test-fixtures` is a dedicated, unpublished, portable leaf for shared
-fixture records, recorded-header lookup, wire-literal round trips and single-color
-theme construction. It has no product dependencies or foundation utility edge;
-its only internal normal dependency is the native feature unifier.
-Fixture development callers are `maestro-agent`, `maestro-models`, `maestro-request`,
-`maestro-catalog`, `maestro-chat`, `maestro-credentials`, `maestro-tools` and
-`maestro-export`; declarations may be portable or target-specific, including aliases.
-Models, request, catalog, chat and credentials use portable development declarations;
-agent, tools and export use native development declarations. No normal or build
-edge to this owner is permitted. Both production and test cycle checks apply.
-The policy and inventory admit this owner before its first member exists.
+fixture records, wire-literal round trips and single-color theme construction.
+It has no product dependencies or foundation utility edge; its only internal
+normal dependency is the native feature unifier.
+Fixture development callers are `maestro-models`, `maestro-request`, `maestro-catalog`,
+`maestro-chat`, `maestro-tools` and `maestro-export`; declarations may be portable or
+target-specific, including aliases. Models, request, catalog and chat use portable
+development declarations; tools and export use native development declarations. No
+normal or build edge to this owner is permitted. Both production and test cycle
+checks apply.
 
 ### Test tracing owner
 

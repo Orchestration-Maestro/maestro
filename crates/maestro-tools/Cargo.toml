@@ -51,6 +51,7 @@ maestro-tools = { path = ".", features = ["test-support"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-agent = { path = "../maestro-agent", features = ["test-support"] }
+maestro-test-fixtures.workspace = true
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true

@@ -23,6 +23,7 @@ maestro-listeners = { path = "crates/maestro-listeners" }
 interprocess = { version = "=2.4.2", default-features = false }
 maestro-dependencies = { path = "crates/maestro-dependencies" }
 maestro-test-process = { path = "crates/maestro-test-process" }
+maestro-test-fixtures = { path = "crates/maestro-test-fixtures" }
 maestro-test-directory = { path = "crates/maestro-test-directory" }
 maestro-test-terminal = { path = "crates/maestro-test-terminal" }
 maestro-test-tracing = { path = "crates/maestro-test-tracing" }

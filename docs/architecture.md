@@ -131,12 +131,11 @@ follows the same checks with its own five callers; see the
 [tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
 reexports the recording terminal and manual runtime from
 `maestro-tui::test_support`; the harness itself admits only `maestro-cli` under
-the same native development rules. The portable fixture owner has the eight
-exact development callers in its
+the same native development rules. The portable fixture owner has six exact
+development callers, listed in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
 be portable or target-specific; normal/build edges and outgoing domain or utility
-edges are forbidden. The policy admits the owner before its member exists.
-Both production
+edges are forbidden. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 
