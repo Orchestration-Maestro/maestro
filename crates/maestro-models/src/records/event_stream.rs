@@ -1,5 +1,6 @@
 //! Competing-reader FIFO with an independently retained terminal result.
 
+use maestro_lock::lock;
 use std::collections::VecDeque;
 use std::future::{Future, poll_fn};
 use std::sync::{Arc, Mutex};
@@ -384,7 +385,6 @@ impl<T, R> Drop for Observing<T, R> {
 }
 
 use super::types::{AssistantMessageEvent, SharedAssistantMessage};
-use maestro_lock::lock;
 
 /// Operations on an assistant stream whose original owner retains buffering and settlement.
 pub trait AssistantMessageEventStreamPort {
