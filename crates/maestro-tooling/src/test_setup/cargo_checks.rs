@@ -142,7 +142,7 @@ fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
         paths.insert(format!("{}/{GUIDE}", workspace.relative(&guide)?));
         paths.insert(GUIDE_SOURCE.to_owned());
     }
-    Inputs::new(workspace.root(), paths, BTreeSet::new())
+    Inputs::new(workspace.root(), paths, BTreeSet::new(), BTreeSet::new())
 }
 
 /// Create a clean independent author project from the checked manifest, lock and shipped source.

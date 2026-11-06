@@ -2,7 +2,9 @@
 //!
 //! An artifact names the repository paths it reads and the locked packages it uses. Its digest
 //! covers the files those paths list, by name and content, and the `Cargo.lock` entries of
-//! those packages, so a change elsewhere in the checkout leaves it valid.
+//! those packages, so a change elsewhere in the checkout leaves it valid. A listed manifest can
+//! instead be digested without its development dependencies, for a build that never compiles
+//! them.
 
 use std::collections::BTreeSet;
 use std::io;
@@ -22,12 +24,15 @@ pub(super) struct Inputs {
     paths: BTreeSet<String>,
     /// Names of the locked packages whose `Cargo.lock` entries the artifact uses.
     locked: BTreeSet<String>,
-    /// Digest of the listed files and of the lock entries.
+    /// Repository-relative manifests digested without their development dependencies.
+    manifests: BTreeSet<String>,
+    /// Digest of the listed files, the manifests and the lock entries.
     pub(super) digest: String,
 }
 
 impl Inputs {
-    /// Digest the files `paths` list in `checkout` and the lock entries of `locked`.
+    /// Digest the files `paths` list in `checkout`, the `manifests` without their development
+    /// dependencies and the lock entries of `locked`.
     ///
     /// # Errors
     /// Returns a failed listing, read or lock parse.
@@ -35,11 +40,13 @@ impl Inputs {
         checkout: &Path,
         paths: BTreeSet<String>,
         locked: BTreeSet<String>,
+        manifests: BTreeSet<String>,
     ) -> io::Result<Self> {
-        let digest = digest(checkout, &paths, &locked)?;
+        let digest = digest(checkout, &paths, &locked, &manifests)?;
         Ok(Self {
             paths,
             locked,
+            manifests,
             digest,
         })
     }
@@ -57,7 +64,7 @@ impl Inputs {
     /// # Errors
     /// Returns a failed listing, read or lock parse.
     pub(super) fn is_current(&self, checkout: &Path) -> io::Result<bool> {
-        Ok(digest(checkout, &self.paths, &self.locked)? == self.digest)
+        Ok(digest(checkout, &self.paths, &self.locked, &self.manifests)? == self.digest)
     }
 
     /// Check that `checkout` still holds what the digest was taken from, naming `bundle` when
@@ -74,11 +81,13 @@ impl Inputs {
     }
 }
 
-/// Digest the listed files by name and content, then the lock entries.
+/// Digest the listed files by name and content, then the manifests without their development
+/// dependencies, then the lock entries.
 fn digest(
     checkout: &Path,
     paths: &BTreeSet<String>,
     locked: &BTreeSet<String>,
+    manifests: &BTreeSet<String>,
 ) -> io::Result<String> {
     let mut hash = Sha256::new();
     for name in listed(checkout, paths.iter().map(String::as_str))? {
@@ -91,10 +100,43 @@ fn digest(
             hash.update(b"missing");
         }
     }
+    for name in manifests {
+        hash.update(name.as_bytes());
+        hash.update([0]);
+        hash.update(without_development(&checkout.join(name))?.as_bytes());
+    }
     for entry in lock_entries(checkout, locked)? {
         hash.update(entry.as_bytes());
     }
     Ok(hex(&hash.finalize()))
+}
+
+/// Remove the development dependency tables of a manifest or of one of its target tables.
+fn remove_development(table: &mut toml::Table) {
+    table.remove("dev-dependencies");
+    table.remove("dev_dependencies");
+}
+
+/// The manifest at `path` without its development dependencies, which a build of the package
+/// as a dependency never compiles. A missing manifest reads as empty.
+fn without_development(path: &Path) -> io::Result<String> {
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(String::new()),
+        Err(error) => return Err(error),
+    };
+    let mut manifest: toml::Table = text.parse().map_err(|error| at(path, &error))?;
+    remove_development(&mut manifest);
+    if let Some(targets) = manifest
+        .get_mut("target")
+        .and_then(toml::Value::as_table_mut)
+    {
+        targets
+            .iter_mut()
+            .filter_map(|(_, target)| target.as_table_mut())
+            .for_each(remove_development);
+    }
+    Ok(manifest.to_string())
 }
 
 /// The repository-relative names of the files the pathspecs match, sorted. No pathspec matches

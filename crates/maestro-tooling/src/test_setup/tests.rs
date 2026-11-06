@@ -9,7 +9,7 @@ use cargo_metadata::Metadata;
 
 use super::inputs::listed;
 use super::inputs::{Inputs, locked_closure};
-use super::plan::{closure_directories, component_inputs, plan};
+use super::plan::{Artifacts, closure_directories, component_inputs, plan};
 use super::*;
 
 /// Every name component discovery accepts is removed, including the bare and doubled
@@ -94,7 +94,7 @@ fn bundle_export_installs_the_native_example() {
     let cargo = Path::new(env!("CARGO"));
     let bundle = root.join("bundle");
     std::fs::create_dir_all(&bundle).unwrap();
-    let inputs = Inputs::new(root, BTreeSet::new(), BTreeSet::new()).unwrap();
+    let inputs = Inputs::new(root, BTreeSet::new(), BTreeSet::new(), BTreeSet::new()).unwrap();
     let components = FIXED_COMPONENTS
         .iter()
         .map(|(_, _, variable)| {
@@ -206,6 +206,127 @@ fn a_consuming_workspace_plans_its_own_components_alone() {
             .collect::<Vec<_>>(),
         ["crates/component-fixture"]
     );
+}
+
+/// A workspace whose component crate builds on `library`, which has a unit test file, an
+/// integration test and a development dependency on `helper`; `spare` is a member nothing uses.
+fn closure_workspace(root: &Path) {
+    assert!(
+        Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(root)
+            .status()
+            .unwrap()
+            .success()
+    );
+    std::fs::write(root.join("Cargo.lock"), "version = 4\n").unwrap();
+    std::fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
+    )
+    .unwrap();
+    for (name, manifest) in [
+        (
+            "component-fixture",
+            format!(
+                "[dependencies]\nlibrary = {{ path = \"../library\" }}\n{}{}\n",
+                crate::workspace::REGION_START,
+                crate::workspace::REGION_END
+            ),
+        ),
+        (
+            "library",
+            "[dev-dependencies]\nhelper = { path = \"../helper\" }\n".to_owned(),
+        ),
+        ("helper", String::new()),
+        ("spare", String::new()),
+    ] {
+        let directory = root.join("crates").join(name);
+        for file in [
+            "src/lib.rs",
+            "src/tests.rs",
+            "tests/it.rs",
+            "examples/one.rs",
+        ] {
+            let path = directory.join(file);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(
+                path,
+                if file == "examples/one.rs" {
+                    "// maestro-component: MAESTRO_ONE_COMPONENT\n"
+                } else {
+                    "// before\n"
+                },
+            )
+            .unwrap();
+        }
+        std::fs::write(
+            directory.join("Cargo.toml"),
+            format!("[package]\nname = \"{name}\"\nversion = \"0.1.0\"\n{manifest}"),
+        )
+        .unwrap();
+    }
+}
+
+/// The digest the components share in the workspace `closure_workspace` wrote at `root`.
+fn shared_digest(root: &Path) -> String {
+    let workspace = Workspace::read(Path::new(env!("CARGO")), root).unwrap();
+    let component = workspace.component_crate().unwrap();
+    Artifacts::read(root, &workspace, &component)
+        .unwrap()
+        .shared
+        .digest
+}
+
+/// The components build with `cargo build`, so the tests and the development dependencies of
+/// the crates they build on are never compiled: changing them leaves the components valid, and
+/// changing the source of such a crate does not.
+#[test]
+fn component_digest_ignores_tests_and_development_dependencies_of_dependencies() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    closure_workspace(root);
+    let before = shared_digest(root);
+
+    std::fs::write(root.join("crates/library/tests/it.rs"), "// after\n").unwrap();
+    std::fs::write(root.join("crates/library/src/tests.rs"), "// after\n").unwrap();
+    std::fs::write(
+        root.join("crates/library/Cargo.toml"),
+        "[package]\nname = \"library\"\nversion = \"0.1.0\"\n\
+         [dev-dependencies]\nspare = { path = \"../spare\" }\n",
+    )
+    .unwrap();
+    assert_eq!(shared_digest(root), before);
+
+    std::fs::write(root.join("crates/library/src/lib.rs"), "// after\n").unwrap();
+    assert_ne!(shared_digest(root), before);
+}
+
+/// The build reads everything else of a dependency's manifest, and the manifest of the crate
+/// that holds the examples in full, since `cargo build` compiles that crate's development
+/// dependencies for them.
+#[test]
+fn component_digest_follows_the_dependency_manifest_and_the_example_crate_manifest() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    closure_workspace(root);
+    let before = shared_digest(root);
+
+    let library = root.join("crates/library/Cargo.toml");
+    let original = std::fs::read_to_string(&library).unwrap();
+    std::fs::write(&library, original.replace("0.1.0", "0.2.0")).unwrap();
+    let changed = shared_digest(root);
+    assert_ne!(changed, before);
+
+    std::fs::write(&library, original).unwrap();
+    let component = root.join("crates/component-fixture/Cargo.toml");
+    let original = std::fs::read_to_string(&component).unwrap();
+    std::fs::write(
+        &component,
+        format!("{original}[dev-dependencies]\nlibrary = {{ path = \"../library\" }}\n"),
+    )
+    .unwrap();
+    assert_ne!(shared_digest(root), before);
 }
 
 /// What each artifact hashes, from the real workspace's metadata.
@@ -331,7 +452,6 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             "crates/maestro-package",
             "crates/maestro-request",
             "crates/maestro-subagents",
-            "crates/maestro-test-fixtures",
             "crates/maestro-text",
             "crates/maestro-tool"
         ]
@@ -360,6 +480,7 @@ fn component_bundle_tracks_subagent_sources_but_not_unrelated_packages() {
     let inputs = Inputs::new(
         scratch.path(),
         workspace_plan(&root).shared,
+        BTreeSet::new(),
         BTreeSet::new(),
     )
     .unwrap();
@@ -397,9 +518,14 @@ fn lock_digest_follows_only_the_closure_of_the_named_packages() {
     assert_eq!(closure, BTreeSet::from(["b".to_owned(), "c".to_owned()]));
     let digest = |text: &str| {
         std::fs::write(&lock, text).unwrap();
-        Inputs::new(scratch.path(), BTreeSet::new(), closure.clone())
-            .unwrap()
-            .digest
+        Inputs::new(
+            scratch.path(),
+            BTreeSet::new(),
+            closure.clone(),
+            BTreeSet::new(),
+        )
+        .unwrap()
+        .digest
     };
     let before = digest(LOCK);
     assert_eq!(digest(&bumped("d")), before);
@@ -505,7 +631,7 @@ fn staging_stages_components_alone() {
         ),
     )
     .unwrap();
-    let shared = Inputs::new(&checkout, BTreeSet::new(), BTreeSet::new()).unwrap();
+    let shared = Inputs::new(&checkout, BTreeSet::new(), BTreeSet::new(), BTreeSet::new()).unwrap();
     let staged = stage_components(&checkout, &output, &target, &shared, &[]).unwrap();
     assert_eq!(
         staged.keys().map(String::as_str).collect::<Vec<_>>(),
