@@ -85,3 +85,68 @@ impl std::fmt::Display for Payload {
     }
 }
 impl std::error::Error for Payload {}
+
+/// Poison `shared` by panicking while a writer holds its write guard.
+fn poison_rwlock(shared: &std::sync::Arc<std::sync::RwLock<i32>>) {
+    let writer = std::sync::Arc::clone(shared);
+    let _ = std::thread::spawn(move || {
+        let _guard = writer.write().unwrap();
+        panic!("writer panics while holding the write guard");
+    })
+    .join();
+}
+
+/// Poison `shared` by panicking while a holder owns its mutex guard.
+fn poison_mutex(shared: &std::sync::Arc<std::sync::Mutex<i32>>) {
+    let holder = std::sync::Arc::clone(shared);
+    let _ = std::thread::spawn(move || {
+        let _guard = holder.lock().unwrap();
+        panic!("holder panics while holding the mutex guard");
+    })
+    .join();
+}
+
+/// A read finds the value the panicked writer retained.
+#[test]
+fn read_finds_the_value_a_panicking_writer_left() {
+    let shared = std::sync::Arc::new(std::sync::RwLock::new(7));
+    assert_eq!(*read(&shared), 7);
+    poison_rwlock(&shared);
+    assert_eq!(*read(&shared), 7);
+}
+
+/// A write after a panicked writer lands for the next read.
+#[test]
+fn write_lands_after_a_panicking_writer() {
+    let shared = std::sync::Arc::new(std::sync::RwLock::new(1));
+    *write(&shared) = 2;
+    assert_eq!(*read(&shared), 2);
+    poison_rwlock(&shared);
+    assert_eq!(*write(&shared), 2);
+    *write(&shared) = 3;
+    assert_eq!(*read(&shared), 3);
+}
+
+/// A lock finds the value the panicked holder retained and can replace it.
+#[test]
+fn lock_finds_the_value_a_panicking_holder_left() {
+    let shared = std::sync::Arc::new(std::sync::Mutex::new(3));
+    assert_eq!(*lock(&shared), 3);
+    poison_mutex(&shared);
+    assert_eq!(*lock(&shared), 3);
+    *lock(&shared) = 4;
+    assert_eq!(*lock(&shared), 4);
+}
+
+/// Every operation accepts state that borrows from its caller.
+#[test]
+fn acquisition_keeps_borrowed_values() {
+    let text = String::from("borrowed");
+    let shared = std::sync::RwLock::new(text.as_str());
+    assert_eq!(*read(&shared), "borrowed");
+    *write(&shared) = &text[..4];
+    assert_eq!(*read(&shared), "borr");
+    let mutex = std::sync::Mutex::new(vec![text.as_str()]);
+    lock(&mutex).push(&text[..7]);
+    assert_eq!(*lock(&mutex), vec!["borrowed", "borrowe"]);
+}
