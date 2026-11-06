@@ -84,7 +84,7 @@ impl Definitions {
     }
 }
 
-/// Recognize a body that only acquires a lock, recovering a poetically poisoned value.
+/// Recognize a body that only acquires a lock, recovering a poisoned value.
 fn recovered_body(block: &syn::Block) -> Option<usize> {
     let [syn::Stmt::Expr(expression, None)] = block.stmts.as_slice() else {
         return None;
