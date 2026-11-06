@@ -449,6 +449,12 @@ of the face its `embedded-font-loaded` package embeds, then requires the text in
 that face to measure a different width from the same text in a family the page
 lacks, so a face that fails to load cannot pass.
 
+Every package in `tests/fixtures/native_document_artifacts.json` is also a
+`.docx` under `src/docx_preview/fixtures/docx/`, and a native test holds the
+two byte for byte. To change a package, edit the `.docx` and copy its base64
+into the JSON. Another native test decodes the embedded face and compares it
+with the font file it came from.
+
 ### Prove a browser test on a branch
 
 Run the Chromium job on any branch, tag or commit, without the merge queue:
