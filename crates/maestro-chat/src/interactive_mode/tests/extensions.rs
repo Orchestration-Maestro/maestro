@@ -5,9 +5,10 @@ mod autocomplete;
 
 use super::{Setup, World, isolated};
 use maestro_app::{
-    Extension, ExtensionFactory, ExtensionShortcut, Local, ReadonlySessionManager, strip_ansi,
+    DefaultEventBus, Extension, ExtensionAPI, ExtensionFactory, ExtensionShortcutOptions, Local,
+    ReadonlySessionManager, create_extension_runtime, strip_ansi,
 };
-use maestro_tui::{Component, tui::InputHandler};
+use maestro_tui::tui::InputHandler;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 
@@ -46,31 +47,34 @@ fn built(directory: &Path, further: Vec<(String, ExtensionFactory<Local>)>) -> W
     .build(directory)
 }
 
-/// Registers `shortcut` on `owner` under the owner's own path.
+/// Registers `key` on `owner` through the facade an extension registers through, so the
+/// replacement keeps the key's original slot.
 pub(super) fn register(
     owner: &Rc<RwLock<Extension<Local>>>,
-    mut shortcut: ExtensionShortcut<Local>,
+    key: &str,
+    options: ExtensionShortcutOptions<Local>,
 ) {
-    shortcut.extension_path = owner.read().unwrap().path.clone();
-    let key = shortcut.shortcut.clone();
-    owner
-        .write()
-        .unwrap()
-        .shortcuts
-        .insert(key, Rc::new(RwLock::new(shortcut)));
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let events = <Local as DefaultEventBus>::default_event_bus(&local).for_extension();
+    ExtensionAPI::new(
+        owner,
+        create_extension_runtime::<Local>(),
+        events,
+        "/workspace".into(),
+    )
+    .register_shortcut(key.to_owned(), options)
+    .unwrap();
 }
 
-/// A shortcut on `key` whose handler records `entry` and then fails with `refused`.
+/// A shortcut whose handler records `entry` and then fails with `refused`.
 fn shortcut(
-    key: &str,
     runs: &Rc<RefCell<Vec<Value>>>,
     entry: Value,
     refused: Option<&str>,
-) -> ExtensionShortcut<Local> {
+) -> ExtensionShortcutOptions<Local> {
     let runs = Rc::clone(runs);
     let refused = refused.map(str::to_owned);
-    ExtensionShortcut {
-        shortcut: key.to_owned(),
+    ExtensionShortcutOptions {
         description: None,
         handler: Rc::new(move |_context| {
             let runs = Rc::clone(&runs);
@@ -84,7 +88,6 @@ fn shortcut(
                 }
             })
         }),
-        extension_path: String::new(),
     }
 }
 
@@ -105,29 +108,19 @@ fn diagnostics(world: &World) -> Vec<String> {
     messages
 }
 
-/// Presses `key` at the editor, then finishes the work the handler started and the frames
-/// it requested.
+/// Presses `key` at the editor, then finishes the work the handler started and the frame
+/// that work requests.
 fn press(world: &World, key: &str) {
+    world.terminal.clear_writes();
     world.mode.editor.handle_input(key);
-    world.runtime.settle().unwrap();
     let errors = world.runtime.drain_futures();
     assert!(errors.is_empty(), "the shortcut work reported {errors:?}");
+    world.runtime.settle().unwrap();
 }
 
-/// The error notices the transcript holds, without their colours or `Error: ` prefix.
-fn notices(world: &World) -> Vec<String> {
-    world
-        .mode
-        .chat_container
-        .render(80)
-        .iter()
-        .filter_map(|row| {
-            strip_ansi(row)
-                .ok()?
-                .split_once("Error: ")
-                .map(|(_, notice)| notice.trim_end().to_owned())
-        })
-        .collect()
+/// The frame the terminal painted since the last press, without its escape sequences.
+fn painted(world: &World) -> String {
+    strip_ansi(&world.terminal.writes().concat()).unwrap()
 }
 
 #[test]
@@ -147,9 +140,9 @@ fn extension_shortcut_selection_reuses_reserved_and_ordered_conflict_diagnostics
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, vec![("/second/ext.js".to_owned(), idle())]);
             let owners = owners(&world);
-            register(&owners[0], shortcut("ctrl+r", &runs, json!("first"), None));
-            register(&owners[0], shortcut("CTRL+Q", &runs, json!("first"), None));
-            register(&owners[1], shortcut("ctrl+q", &runs, json!("second"), None));
+            register(&owners[0], "ctrl+r", shortcut(&runs, json!("first"), None));
+            register(&owners[0], "CTRL+Q", shortcut(&runs, json!("first"), None));
+            register(&owners[1], "ctrl+q", shortcut(&runs, json!("second"), None));
             let world = started(world).await;
             assert_eq!(
                 diagnostics(&world),
@@ -189,7 +182,7 @@ fn extension_shortcuts_never_replace_reserved_keys() {
                 let runs = Rc::new(RefCell::new(Vec::new()));
                 let world = built(directory, Vec::new());
                 let owners = owners(&world);
-                register(&owners[0], shortcut("ctrl+q", &runs, json!("ran"), None));
+                register(&owners[0], "ctrl+q", shortcut(&runs, json!("ran"), None));
                 let world = started(world).await;
                 assert_eq!(
                     diagnostics(&world),
@@ -213,7 +206,7 @@ fn extension_shortcuts_never_replace_reserved_keys() {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
-            register(&owners[0], shortcut("ctrl+q", &runs, json!("ran"), None));
+            register(&owners[0], "ctrl+q", shortcut(&runs, json!("ran"), None));
             let world = started(world).await;
             assert_eq!(
                 diagnostics(&world),
@@ -229,24 +222,38 @@ fn extension_shortcuts_never_replace_reserved_keys() {
     );
 }
 
+/// Registers `key` again with a handler recording `entry`, then reapplies the selection
+/// the editor holds.
+fn reclaim(
+    world: &World,
+    owner: &Rc<RwLock<Extension<Local>>>,
+    runs: &Rc<RefCell<Vec<Value>>>,
+    key: &str,
+    entry: &str,
+) {
+    register(owner, key, shortcut(runs, json!(entry), None));
+    let runner = world.mode.runtime_host.session().extension_runner();
+    world.mode.setup_extension_shortcuts(&runner);
+}
+
 #[test]
 fn extension_shortcut_input_consumes_only_the_first_match() {
     isolated(
         "extension_shortcut_input_consumes_only_the_first_match",
         async |directory| {
+            // A raw tab reports the key both `tab` and `ctrl+i` name, so both claims match
+            // it and only the selection order decides which handler starts.
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
-            register(
-                &owners[0],
-                shortcut("ctrl+q", &runs, json!("matched"), None),
-            );
+            register(&owners[0], "tab", shortcut(&runs, json!("tab"), None));
+            register(&owners[0], "ctrl+i", shortcut(&runs, json!("ctrl+i"), None));
             let world = started(world).await;
             let editor = Rc::clone(&world.mode.editor);
             assert!(editor.on_extension_shortcut().is_some());
 
             editor.set_text("");
-            editor.handle_input("\x11");
+            editor.handle_input("\t");
             assert_eq!(editor.get_text(), "", "the matching input is consumed");
             assert!(
                 runs.borrow().is_empty(),
@@ -256,8 +263,30 @@ fn extension_shortcut_input_consumes_only_the_first_match() {
             assert!(world.runtime.drain_futures().is_empty());
             assert_eq!(
                 *runs.borrow(),
-                [json!("matched")],
-                "the matching encoding starts its handler once"
+                [json!("tab")],
+                "only the first selected match starts its handler"
+            );
+
+            // Replacing the first match's key keeps its slot, so the earlier claim decides
+            // the input even though its handler changed.
+            runs.borrow_mut().clear();
+            reclaim(&world, &owners[0], &runs, "tab", "replaced tab");
+            press(&world, "\t");
+            assert_eq!(
+                *runs.borrow(),
+                [json!("replaced tab")],
+                "the replaced key keeps its original slot"
+            );
+
+            // A later claim spelled another way fills the first claim's slot in the
+            // selection, so the order does not change.
+            runs.borrow_mut().clear();
+            reclaim(&world, &owners[0], &runs, "TAB", "later tab");
+            press(&world, "\t");
+            assert_eq!(
+                *runs.borrow(),
+                [json!("later tab")],
+                "a later claim on the same key reorders nothing"
             );
 
             runs.borrow_mut().clear();
@@ -284,8 +313,7 @@ fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
             let world = built(directory, Vec::new());
             let owners = owners(&world);
             let runs = Rc::clone(&log);
-            let handler: ExtensionShortcut<Local> = ExtensionShortcut {
-                shortcut: "ctrl+q".to_owned(),
+            let handler: ExtensionShortcutOptions<Local> = ExtensionShortcutOptions {
                 description: None,
                 handler: Rc::new(move |context| {
                     let runs = Rc::clone(&runs);
@@ -299,9 +327,8 @@ fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
                         Ok(())
                     })
                 }),
-                extension_path: String::new(),
             };
-            register(&owners[0], handler);
+            register(&owners[0], "ctrl+q", handler);
             let world = started(world).await;
 
             let session = world.mode.runtime_host.session();
@@ -315,10 +342,10 @@ fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
             );
 
             press(&world, "\x11");
-            let notices = notices(&world);
+            let frame = painted(&world);
             assert!(
-                notices.is_empty(),
-                "the current runner answers: {notices:?}"
+                frame.is_empty(),
+                "the current runner answers without painting a notice: {frame:?}"
             );
             assert_eq!(
                 *log.borrow(),
@@ -350,11 +377,16 @@ fn extension_shortcut_rejection_keeps_its_error_notice() {
             let owners = owners(&world);
             register(
                 &owners[0],
-                shortcut("ctrl+q", &runs, json!("rejected"), Some("rejected")),
+                "ctrl+q",
+                shortcut(&runs, json!("rejected"), Some("rejected")),
             );
             let world = started(world).await;
             press(&world, "\x11");
-            assert_eq!(notices(&world), ["Shortcut handler error: rejected"]);
+            let frame = painted(&world);
+            assert!(
+                frame.contains("Error: Shortcut handler error: rejected"),
+                "the terminal paints the notice the rejection produced: {frame:?}"
+            );
             let editor = Rc::clone(&world.mode.editor);
             editor.handle_input("x");
             assert_eq!(editor.get_text(), "x", "later input still edits");
@@ -370,7 +402,7 @@ fn empty_shortcut_rebinding_removes_the_previous_input_interceptor() {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
-            register(&owners[0], shortcut("ctrl+w", &runs, json!("ran"), None));
+            register(&owners[0], "ctrl+w", shortcut(&runs, json!("ran"), None));
             let world = started(world).await;
             let editor = Rc::clone(&world.mode.editor);
 
@@ -411,7 +443,7 @@ fn shortcut_callbacks_release_the_mode_after_work_settles() {
             let runs = Rc::new(RefCell::new(Vec::new()));
             let world = built(directory, Vec::new());
             let owners = owners(&world);
-            register(&owners[0], shortcut("ctrl+q", &runs, json!("ran"), None));
+            register(&owners[0], "ctrl+q", shortcut(&runs, json!("ran"), None));
             let world = started(world).await;
 
             let World {
