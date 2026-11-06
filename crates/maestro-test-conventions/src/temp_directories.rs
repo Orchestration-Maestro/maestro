@@ -1,51 +1,25 @@
 //! Test-owned temporary directory checks.
 
+use crate::graph::policy;
 use crate::source::Member;
-
-/// Crates whose test directories have moved onto the disposable-directory owner.
-///
-/// A later migration batch adds the crates it converts; the batch that finishes the
-/// migration removes this scope so the check covers every crate.
-const MIGRATED_CRATES: &[&str] = &[
-    "maestro-daemon",
-    "maestro-session",
-    "maestro-watch",
-    "maestro-detection",
-    "maestro-extensions-wasmtime",
-    "maestro-terminal",
-    "maestro-models",
-    "maestro-app",
-    "maestro-packages",
-    "maestro-catalog",
-    "maestro-process",
-    "maestro-tooling",
-    "maestro-tui-crossterm",
-    "maestro-ipc",
-    "maestro-lock",
-    "maestro-listing",
-    "maestro-realpath",
-    "maestro-tui",
-    "maestro-workspace",
-    "maestro-credentials",
-    "maestro-tools",
-    "maestro-resources",
-    "maestro-chat",
-    "maestro-test-process",
-];
 
 /// Spelling that names the platform temporary directory.
 const PLATFORM_DIRECTORY: &str = "temp_dir";
 
 /// Whether the member's test code is checked for the platform temporary directory.
-pub(crate) fn migrated(member: &Member) -> bool {
-    MIGRATED_CRATES.contains(&member.name.as_str())
+///
+/// The walk sees every source of a `maestro-test-` member as test code, so the owner alone is
+/// outside the check: its `temporary_root` accessor is the one place that reads the platform
+/// directory.
+pub(crate) fn checked(member: &Member) -> bool {
+    member.name != policy::TEST_DIRECTORY
 }
 
-/// Reject a platform temporary directory that migrated-crate test code names itself.
+/// Reject a platform temporary directory that test code names itself.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = members
         .iter()
-        .filter(|member| migrated(member))
+        .filter(|member| checked(member))
         .flat_map(member_diagnostics)
         .collect::<Vec<_>>();
     if diagnostics.is_empty() {

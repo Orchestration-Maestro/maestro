@@ -33,7 +33,7 @@ pub(crate) struct Walk {
     pub(crate) time_limits: Vec<((usize, usize), time_limits::Diagnostic)>,
     /// Production function bodies as block byte offsets with their signature lines.
     pub(crate) bodies: Vec<(usize, usize)>,
-    /// Sorted lines naming the platform temporary directory, for migrated crates.
+    /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
     /// Sorted lines resolving a real path outside its owner, in production code.
     pub(crate) real_paths: Vec<usize>,
@@ -102,7 +102,7 @@ struct Walker<'a> {
     calls: time_limits::Calls<'a>,
     /// Production function bodies.
     bodies: duplicates::Bodies,
-    /// Platform temporary directory references, for migrated crates.
+    /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
     /// Real-path resolution outside its owner, for every other crate.
     resolutions: Option<real_paths::Resolutions>,
@@ -129,7 +129,7 @@ impl<'a> Walker<'a> {
             layout: repetition::TestLayout::new(member, source),
             calls: time_limits::Calls::new(member),
             bodies: duplicates::Bodies::default(),
-            references: temp_directories::migrated(member)
+            references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
             resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
             reads: test_input_routes::Reads::default(),
