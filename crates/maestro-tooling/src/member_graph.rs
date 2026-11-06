@@ -32,11 +32,11 @@ pub(crate) fn member_roots(members: &[&Package]) -> HashMap<PathBuf, usize> {
         .collect()
 }
 
-/// For each member, the path dependencies that `keep` accepts.
+/// For each member, the path dependencies that `keep` accepts of it.
 pub(crate) fn dependency_edges_where(
     members: &[&Package],
     roots: &HashMap<PathBuf, usize>,
-    keep: impl Fn(&Dependency) -> bool,
+    keep: impl Fn(&Package, &Dependency) -> bool,
 ) -> Vec<Vec<usize>> {
     members
         .iter()
@@ -44,7 +44,7 @@ pub(crate) fn dependency_edges_where(
             package
                 .dependencies
                 .iter()
-                .filter(|dependency| keep(dependency))
+                .filter(|dependency| keep(package, dependency))
                 .filter_map(|dependency| dependency.path.as_deref())
                 .filter_map(|path| roots.get(&normalize_native(path.as_std_path())).copied())
                 .collect()
