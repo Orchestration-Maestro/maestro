@@ -32,6 +32,9 @@ const CLIPS: [Option<[f64; 4]>; 6] = [
     Some([700.0, 400.0, 800.0, 500.0]),
 ];
 
+/// The last authored viewport placement the export observes.
+const LAST_VIEWPORT: usize = 8;
+
 /// Export selectors whose paint must reach the selected brand role inside the final clip.
 const EXPORT_ROLES: [(&str, &str); 19] = [
     ("p", "text"),
@@ -122,7 +125,12 @@ impl Page<'_> {
             "offline-tool-card-roles" => tool_card_roles(self).await,
             _ => match (scene.strip_prefix("viewport-"), neighbor(scene)) {
                 (Some(index), _) => {
-                    viewport(self, scene, index.parse().map_err(io::Error::other)?).await
+                    let index = index
+                        .parse()
+                        .ok()
+                        .filter(|index| *index <= LAST_VIEWPORT)
+                        .ok_or_else(|| io::Error::other(format!("unknown paint scene {scene}")))?;
+                    viewport(self, scene, index).await
                 }
                 (None, Some(selector)) => neighbors(self, scene, selector).await,
                 (None, None) => Err(io::Error::other(format!("unknown paint scene {scene}"))),
@@ -529,6 +537,6 @@ async fn tool_card_roles(page: &mut Page<'_>) -> io::Result<()> {
     // The browser skips decoration lines on leading and trailing spaces
     // (`text-decoration-skip-spaces: start end`), so an all-space run paints only its background.
     require(background > 0, "supplied spaces keep their background")?;
-    page.observed(scene, "space-decoration", background);
+    page.observed(scene, "space-background", background);
     Ok(())
 }

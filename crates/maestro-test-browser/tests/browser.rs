@@ -414,18 +414,46 @@ fn inventory_requires_every_callable_export() {
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
 fn reading_paint_fails_when_the_painted_output_differs() {
-    for (scene, colour, shadow, passes) in [
-        ("neighbors-generic", "black", "none", true),
-        ("neighbors-generic", "transparent", "none", false),
-        ("neighbors-generic", "black", "0 0 0 9px black", false),
-        ("unknown", "black", "none", false),
+    for (scene, colour, shadow, failure) in [
+        ("neighbors-generic", "black", "none", None),
+        (
+            "neighbors-generic",
+            "transparent",
+            "none",
+            Some("literal native text must actually paint"),
+        ),
+        (
+            "neighbors-generic",
+            "black",
+            "0 0 0 9px black",
+            Some("neighbors must gain no outer frame shadow"),
+        ),
+        (
+            "unknown",
+            "black",
+            "none",
+            Some("unknown paint scene unknown"),
+        ),
+        (
+            "viewport-99",
+            "black",
+            "none",
+            Some("unknown paint scene viewport-99"),
+        ),
     ] {
         let result = run(fixture(&[], async |browser, origin| {
             browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{document.body.innerHTML='<div class=\"maestro-reading-frame\" style=\"margin:20px;box-shadow:{shadow}\"><div class=\"maestro-generic-artifact\"><p style=\"color:{colour}\">painted text</p></div></div>';return await readingPaint('{scene}');}})()")).await
         }));
         match result {
-            Ok(value) => assert!(passes && value == json!(true), "{scene} {colour} {shadow}"),
-            Err(error) => assert!(!passes, "{scene} {colour} {shadow}: {error}"),
+            Ok(value) => assert!(
+                failure.is_none() && value == json!(true),
+                "{scene} {colour} {shadow}: expected {}",
+                failure.unwrap_or("an accepted scene")
+            ),
+            Err(error) => assert!(
+                failure.is_some_and(|failure| error.to_string().contains(failure)),
+                "{scene} {colour} {shadow}: {error}"
+            ),
         }
     }
 }
