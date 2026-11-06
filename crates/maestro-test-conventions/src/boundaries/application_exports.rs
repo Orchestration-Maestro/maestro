@@ -13,7 +13,7 @@ use crate::source::{Member, Source, imports::flatten};
 const DOMAINS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-markdown"];
 
 /// Binding paths with their visibility scopes; `None` means unrestricted visibility.
-type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
+pub(crate) type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
 
 /// Reject crate aliases, module exports and wildcard escapes from domain crates.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -21,8 +21,8 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     let sources: Vec<_> = members
         .iter()
         .filter(|member| member.name == "maestro-app")
-        .flat_map(|member| member.sources.iter().map(move |source| (member, source)))
-        .filter_map(|(member, source)| Some((source, source.walk(member).imports.as_ref()?)))
+        .flat_map(|member| &member.sources)
+        .filter_map(|source| Some((source, source.walk.as_ref()?.imports.as_ref()?)))
         .collect();
     let imports: Vec<_> = sources.iter().flat_map(|(_, imports)| *imports).collect();
     let aliases = aliases(&imports, &modules);
@@ -78,7 +78,7 @@ pub(crate) struct Uses {
 impl Uses {
     /// Start collecting the imports of an application source below its source root, if it is one.
     pub(crate) fn new(member: &Member, source: &Source) -> Option<Self> {
-        if member.name != "maestro-app" || source.syntax.is_none() {
+        if member.name != "maestro-app" {
             return None;
         }
         let relative = source
@@ -321,29 +321,47 @@ fn module_path(relative: &Path) -> Vec<String> {
     path
 }
 
+/// Whether a member is the application or one of the bounded domain crates.
+fn surface(member: &Member) -> bool {
+    member.name == "maestro-app" || DOMAINS.contains(&member.name.as_str())
+}
+
+/// Logical root of a member's modules: empty for the application, the crate name for a domain.
+fn root(member: &Member) -> Vec<String> {
+    (member.name != "maestro-app")
+        .then(|| member.name.replace('-', "_"))
+        .into_iter()
+        .collect()
+}
+
 /// Discover domain and application module paths from source layout and inline declarations.
 fn modules(members: &[Member]) -> Scopes {
     let mut modules = BTreeMap::new();
-    for member in members
-        .iter()
-        .filter(|member| member.name == "maestro-app" || DOMAINS.contains(&member.name.as_str()))
-    {
-        let root: Vec<_> = (member.name != "maestro-app")
-            .then(|| member.name.replace('-', "_"))
-            .into_iter()
-            .collect();
-        modules.insert(root.clone(), None);
-        for source in &member.sources {
-            let Ok(relative) = source.path.strip_prefix(member.directory.join("src")) else {
-                continue;
-            };
-            let Some(syntax) = &source.syntax else {
-                continue;
-            };
-            let mut path = root.clone();
-            path.extend(module_path(relative));
-            module_items(&syntax.items, &mut path, &mut modules);
+    for member in members.iter().filter(|member| surface(member)) {
+        modules.insert(root(member), None);
+        for walk in member
+            .sources
+            .iter()
+            .filter_map(|source| source.walk.as_ref())
+        {
+            modules.extend(walk.modules.clone());
         }
+    }
+    modules
+}
+
+/// Module declarations of an application or domain source below its source root.
+///
+/// The shared syntax walk records them, so the module index needs no parsed file.
+pub(crate) fn file_modules(member: &Member, source: &Source, file: &syn::File) -> Scopes {
+    let mut modules = Scopes::new();
+    if !surface(member) {
+        return modules;
+    }
+    if let Ok(relative) = source.path.strip_prefix(member.directory.join("src")) {
+        let mut path = root(member);
+        path.extend(module_path(relative));
+        module_items(&file.items, &mut path, &mut modules);
     }
     modules
 }
