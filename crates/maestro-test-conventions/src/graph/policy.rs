@@ -167,6 +167,9 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
 /// Generated crate that unifies native dependency features and exposes no API.
 pub(crate) const UNIFIER: &str = "maestro-dependencies";
 
+/// Owner of mutual exclusion over files and shared in-memory state.
+pub(crate) const LOCK: &str = "maestro-lock";
+
 /// Report whether `from` may reach `to` as the checked child launcher's only edge to
 /// the directory owner: the launcher declares that owner normally, so its fixtures
 /// read the platform directory it hands to its cleared children through that edge.

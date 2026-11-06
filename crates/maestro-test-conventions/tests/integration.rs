@@ -16,6 +16,7 @@ mod json_dependencies;
 mod message_renderer_ownership;
 mod package_crates;
 mod platform_opener;
+mod poison;
 mod quality;
 mod repetition;
 mod rpc_ownership;

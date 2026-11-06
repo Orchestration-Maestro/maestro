@@ -28,6 +28,8 @@ mod graph;
 mod integration_tests;
 /// Native platform viewer ownership.
 mod platform_opener;
+/// Shared-state acquisition ownership.
+mod poison;
 /// Scoped worker threads for per-source and per-check work.
 mod pool;
 /// Source-size and protected-lint checks.
@@ -126,6 +128,13 @@ mod time_limits;
 /// the application's platform opener. The whole-file token check includes fragments
 /// and nested groups; editor and clipboard process policies stay with their callers.
 ///
+/// Production code may not define its own poison-tolerant lock acquisition. A free
+/// function, an inherent accessor, a closure and a macro argument that acquire a
+/// `Mutex` or `RwLock` and recover with `PoisonError::into_inner` are reported with
+/// their file and line. Calls to `maestro_lock::lock`, `maestro_lock::read` or
+/// `maestro_lock::write` pass, discarded results included, and test code keeps its
+/// own helpers.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -141,6 +150,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| integration_tests::check(&members),
         &|| boundaries::check(&members),
         &|| platform_opener::check(&members),
+        &|| poison::check(&members),
         &|| comments::check(&members),
         &|| repetition::check(&members),
         &|| quality::check(root, &members),
