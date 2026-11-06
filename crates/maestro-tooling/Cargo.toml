@@ -16,6 +16,7 @@ sha2.workspace = true
 toml = "=1.1.6"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 
 [lints]
@@ -24,6 +25,12 @@ workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
+
+[[example]]
+name = "child_toolchain_probe"
+path = "tests/fixtures/child_toolchain_probe.rs"
+harness = false
+test = false
 
 [[test]]
 name = "integration"

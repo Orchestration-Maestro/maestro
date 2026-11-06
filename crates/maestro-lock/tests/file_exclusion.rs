@@ -26,6 +26,20 @@ fn write_lock_sits_beside_its_target_and_is_removed_on_release() {
 }
 
 #[test]
+fn write_lock_names_its_target_as_the_caller_spells_the_directory() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let existing = root.path().join("settings.json");
+    let missing = root.path().join("new.json");
+    fs::write(&existing, b"{}").unwrap();
+
+    let existing_holder = maestro_lock::acquire_write(&existing, true).unwrap();
+    let missing_holder = maestro_lock::acquire_write(&missing, true).unwrap();
+
+    assert_eq!(existing_holder.path(), existing);
+    assert_eq!(missing_holder.path(), missing);
+}
+
+#[test]
 fn bounded_acquisition_reports_contention_after_ten_attempts() {
     let root = maestro_test_directory::Scratch::new().unwrap();
     let target = root.path().join("settings.json");

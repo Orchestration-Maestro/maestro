@@ -12,15 +12,23 @@ use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
 /// Independently controlled raw text and failure phase.
-struct Backend {
+pub(super) struct Backend {
     /// Text changes only after a successful replacement.
-    raw: RefCell<Option<String>>,
+    pub(super) raw: RefCell<Option<String>>,
     /// Failure before update, after update, or no failure.
-    failure: RefCell<&'static str>,
+    pub(super) failure: RefCell<&'static str>,
     /// Present only when final callback ownership is observed.
     _capture: Option<Capture>,
 }
 impl Backend {
+    /// A backend that starts with the supplied document and no release capture.
+    pub(super) fn stored(raw: &str) -> Self {
+        Self {
+            raw: RefCell::new(Some(raw.into())),
+            failure: RefCell::new(""),
+            _capture: None,
+        }
+    }
     /// Acquisition failures prevent the native update from running.
     fn current(&self) -> ExtensionResult<Option<String>> {
         let failure = *self.failure.borrow();
@@ -64,13 +72,9 @@ fn key(value: &str) -> AuthCredential {
 
 /// Records ordered errors and accepted state before recovery from each failed persistence.
 pub(super) async fn control(api: &ExtensionAPI) -> ExtensionResult<Value> {
-    let backend = Rc::new(Backend {
-        raw: RefCell::new(Some(
-            r#"{"old":{"type":"api_key","key":"original"}}"#.into(),
-        )),
-        failure: RefCell::new(""),
-        _capture: None,
-    });
+    let backend = Rc::new(Backend::stored(
+        r#"{"old":{"type":"api_key","key":"original"}}"#,
+    ));
     let owner = AuthStorage::from_storage(api, backend.clone())?;
     let catalog = ModelRegistry::in_memory(api, owner.clone())?;
     let alias = catalog.auth_storage()?;
@@ -202,51 +206,4 @@ pub(super) async fn composition(api: &ExtensionAPI, request: &str) -> ExtensionR
     let result = json!({"keys":keys,"errors":errors,"drained":owner.drain_errors()?,"raw":backend.raw.borrow().clone(),"fallback":fallback});
     OWNER.with(|slot| slot.replace(Some(owner)));
     Ok(result)
-}
-
-/// Observes login's accepted state, backend text and drainable write failures separately.
-#[cfg(target_arch = "wasm32")]
-pub(super) async fn login(
-    api: &ExtensionAPI,
-    mode: &str,
-    callbacks: Rc<maestro_extensions_wasm::OAuthLoginCallbacks>,
-) -> ExtensionResult<Value> {
-    let backend = Rc::new(Backend {
-        raw: RefCell::new(Some(r#"{"neighbor":[null,false]}"#.into())),
-        failure: RefCell::new(""),
-        _capture: None,
-    });
-    let owner = AuthStorage::from_storage(api, backend.clone())?;
-    let alias = ModelRegistry::in_memory(api, owner.clone())?.auth_storage()?;
-    if mode == "write-failure" {
-        backend.failure.replace("write-login");
-    }
-    let provider = if mode == "unknown" {
-        "missing-component-login"
-    } else {
-        "component-login"
-    };
-    let result = match owner.login(provider, callbacks).await {
-        Ok(()) => json!({"ok":true}),
-        Err(error) => json!({"error":error}),
-    };
-    let accepted = alias.get("component-login")?;
-    let raw: Value = serde_json::from_str(
-        backend
-            .raw
-            .borrow()
-            .as_deref()
-            .ok_or("missing backend text")?,
-    )
-    .map_err(|error| error.to_string())?;
-    let errors = alias
-        .drain_errors()?
-        .into_iter()
-        .map(|error| error.message)
-        .collect::<Vec<_>>();
-    backend.failure.replace("");
-    alias.reload()?;
-    Ok(
-        json!({"result":result,"accepted":accepted,"raw":raw,"errors":errors,"reloaded":owner.get("component-login")?}),
-    )
 }

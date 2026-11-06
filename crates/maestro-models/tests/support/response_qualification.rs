@@ -458,8 +458,11 @@ pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) ->
     for row in owned {
         cases.push((row, environment(&[row], &all)?));
     }
-    let group =
-        maestro_test_process::run_per_environment(&full_name, cases, |(_, env)| env.clone())?;
+    let group = maestro_test_process::run_per_environment(&full_name, cases, |(_, env)| {
+        env.iter()
+            .map(|(key, value)| (*key, Some(*value)))
+            .collect()
+    })?;
     let Some(group) = group else {
         return Ok(());
     };

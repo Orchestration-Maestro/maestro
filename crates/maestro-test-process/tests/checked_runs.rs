@@ -595,7 +595,10 @@ fn adapter_route_does_not_discard_os_configuration() {
 }
 
 /// Variables the environment probe reports.
-const VARS: &str = "LLVM_PROFILE_FILE,MTP_AMBIENT,MTP_SET,MTP_OTHER,PATH";
+const VARS: &str = "LLVM_PROFILE_FILE,XDG_CACHE_HOME,MTP_AMBIENT,MTP_SET,MTP_OTHER,PATH";
+
+/// The compiled-code cache home the outer child hands its cleared descendants.
+const CACHE_HOME: &str = "/controlled/cache";
 
 /// Report `process`'s view of [`VARS`].
 fn view(process: TestProcess) -> BTreeMap<String, String> {
@@ -612,6 +615,7 @@ fn check_edits(profile: Option<&str>) {
     assert_eq!(inherited["PATH"], hex("outer-path"));
     let kept = profile.map_or_else(|| "-".to_owned(), hex);
     assert_eq!(inherited["LLVM_PROFILE_FILE"], kept);
+    assert_eq!(inherited["XDG_CACHE_HOME"], hex(CACHE_HOME));
     let cleared = view(plain(&name).env_clear());
     assert_eq!(cleared["PATH"], "-");
     assert_eq!(
@@ -621,6 +625,7 @@ fn check_edits(profile: Option<&str>) {
         ),
         ("-", kept.as_str())
     );
+    assert_eq!(cleared["XDG_CACHE_HOME"], hex(CACHE_HOME));
     let overridden = view(plain(&name).env_clear().env("LLVM_PROFILE_FILE", "x%p"));
     assert_eq!(overridden["LLVM_PROFILE_FILE"], hex("x%p"));
     let removed = view(plain(&name).env_clear().env_remove("LLVM_PROFILE_FILE"));
@@ -643,7 +648,7 @@ fn check_edits(profile: Option<&str>) {
 }
 
 #[test]
-fn environment_edits_keep_order_profile_bytes_and_parent_state() {
+fn environment_edits_keep_order_profile_bytes_cache_home_and_parent_state() {
     if is_outer() {
         check_edits(std::env::var("LLVM_PROFILE_FILE").ok().as_deref());
         return;
@@ -651,10 +656,12 @@ fn environment_edits_keep_order_profile_bytes_and_parent_state() {
     let scratch = Scratch::new().unwrap();
     let profile = format!("{}/prof-%p-%m.profraw", scratch.path().display());
     for ambient in [Some(profile.as_str()), None] {
-        let mut command = outer("environment_edits_keep_order_profile_bytes_and_parent_state");
+        let mut command =
+            outer("environment_edits_keep_order_profile_bytes_cache_home_and_parent_state");
         command
             .env("MTP_AMBIENT", "outer")
-            .env("PATH", "outer-path");
+            .env("PATH", "outer-path")
+            .env("XDG_CACHE_HOME", CACHE_HOME);
         match ambient {
             Some(profile) => command.env("LLVM_PROFILE_FILE", profile),
             None => command.env_remove("LLVM_PROFILE_FILE"),

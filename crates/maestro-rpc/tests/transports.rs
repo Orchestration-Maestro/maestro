@@ -1,7 +1,7 @@
 //! The standard-stream adapter against the application's connection runner over memory,
 //! with managed output, workspace commands and framing.
 #![cfg(unix)]
-use crate::support::{Child, Served, options, runtime, serve};
+use crate::support::{Child, Served, on_local, options, runtime, serve};
 use maestro_app::rpc_mode::{JsonlLineReader, RpcLine, RpcOutput};
 use maestro_app::rpc_types::workspace_schema::{ErrorBody, EventData, ResponseResult};
 use maestro_app::{ExtensionFactory, Local, RpcConnectionOutcome, run_rpc_connection};
@@ -28,15 +28,27 @@ fn serve_when_child(served: impl FnOnce() -> Served) {
     }
 }
 
+/// The memory runtime stores its credentials in the test's directory, so a run leaves nothing
+/// in the checkout.
+#[test]
+fn the_memory_runtime_keeps_its_agent_directory_in_the_test_directory() {
+    let agent_dir = Scratch::new().unwrap();
+    on_local(async |local| {
+        let _runtime = runtime(&local, agent_dir.path(), Vec::new()).await;
+        let stored = agent_dir.path().join("auth.json");
+        assert!(
+            stored.is_file(),
+            "the runtime writes its credentials into the test's directory: {}",
+            stored.display()
+        );
+    });
+}
+
 /// The lines the connection runner writes for `input` over memory, and how it ended.
 fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
-    let local = Rc::new(LocalSet::new());
-    let executor = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    executor.block_on(local.run_until(async {
-        let runtime = runtime(&local, Vec::new()).await;
+    on_local(async |local| {
+        let agent_dir = Scratch::new().unwrap();
+        let runtime = runtime(&local, agent_dir.path(), Vec::new()).await;
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
         let output = RpcOutput::synchronous(Rc::new(move |line: &RpcLine| {
@@ -57,7 +69,7 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
             .map(|line| line.trim_end().to_owned())
             .collect();
         (lines, outcome.unwrap())
-    }))
+    })
 }
 
 /// Signal registration that delivers nothing, for a connection inside the test process.

@@ -426,6 +426,90 @@ fn configured_key_does_not_mask_fallback_error() {
         };
         assert!(actual == case.expected, "recorded presence failure");
     }
+    let interleaved = r#"[{"test":"x","input":1,"expected":null},
+        {"test":"y","input":2,"expected":"dropped"},
+        {"test":"x","input":3,"expected":{"kept":true}}]"#;
+    let rows = maestro_test_fixtures::cases::<serde_json::Value>(interleaved, "x").unwrap();
+    let inputs: Vec<_> = rows.iter().map(|row| row.input.clone()).collect();
+    assert_eq!(inputs, [serde_json::json!(1), serde_json::json!(3)]);
+    assert_eq!(rows[0].expected, serde_json::Value::Null);
+    assert_eq!(rows[1].expected, serde_json::json!({"kept": true}));
+    assert!(
+        maestro_test_fixtures::cases::<serde_json::Value>(interleaved, "X").is_err(),
+        "a differently cased test name selects nothing"
+    );
+    assert!(
+        maestro_test_fixtures::cases::<serde_json::Value>(
+            r#"[{"test":"x","input":1,"expected":null,"extra":true}]"#,
+            "x"
+        )
+        .is_err(),
+        "an extra outer field fails the whole array"
+    );
+    assert!(
+        maestro_test_fixtures::cases::<u32>(
+            r#"[{"test":"x","input":1,"expected":null},{"test":"y","input":"wrong"}]"#,
+            "x"
+        )
+        .is_err(),
+        "an unselected row still decodes"
+    );
+    assert_fixture_records_reject_unsound_arrays();
+    let error = maestro_test_fixtures::cases::<serde_json::Value>(
+        include_str!("fixtures/fallback_failures.json"),
+        "ConfiguredKeyDoesNotMaskFallbackError",
+    )
+    .err()
+    .expect("the fixture group must be rejected");
+    assert_eq!(
+        error.to_string(),
+        "empty fixture group: ConfiguredKeyDoesNotMaskFallbackError"
+    );
+}
+
+/// Prove one unsound array fails whole, and every expected value kind survives unchanged.
+fn assert_fixture_records_reject_unsound_arrays() {
+    for (source, why) in [
+        (
+            r#"[{"test":"x","input":1,"expected":null},"#,
+            "malformed JSON",
+        ),
+        (
+            r#"{"test":"x","input":1,"expected":null}"#,
+            "a non-array root",
+        ),
+        (r#"[{"input":1,"expected":null}]"#, "a missing test name"),
+        (
+            r#"[{"test":null,"input":1,"expected":null}]"#,
+            "a null test name",
+        ),
+        (
+            r#"[{"test":2,"input":1,"expected":null}]"#,
+            "a non-string test name",
+        ),
+        (r#"[{"test":"x","expected":null}]"#, "a missing input"),
+        (r#"[{"test":"x","input":1}]"#, "a missing expected"),
+    ] {
+        assert!(
+            maestro_test_fixtures::cases::<serde_json::Value>(source, "x").is_err(),
+            "{why}"
+        );
+    }
+    let kinds = r#"[{"test":"x","input":null,"expected":[]},
+        {"test":"x","input":true,"expected":false},
+        {"test":"x","input":1,"expected":2.5},
+        {"test":"x","input":"s","expected":{"a":"kept"}}]"#;
+    let rows = maestro_test_fixtures::cases::<serde_json::Value>(kinds, "x").unwrap();
+    let expected: Vec<_> = rows.into_iter().map(|row| row.expected).collect();
+    assert_eq!(
+        expected,
+        [
+            serde_json::json!([]),
+            serde_json::json!(false),
+            serde_json::json!(2.5),
+            serde_json::json!({"a":"kept"})
+        ]
+    );
 }
 #[test]
 fn provider_status_does_not_mask_fallback_failure() {

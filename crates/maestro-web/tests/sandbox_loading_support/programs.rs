@@ -1,7 +1,7 @@
 //! Public preparation and production-mounted frame witnesses.
 use super::native::{equal, equal_json, program_sources};
 use super::{Provider, adapter};
-use crate::browser_fixture_support::{get, global, invoke, object};
+use crate::browser_fixture_support::{get, global, invoke, object, post_from};
 use crate::contributions_support::settle;
 use maestro_app::SharedHandle;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
@@ -306,11 +306,11 @@ fn load(
     let loaded = if url {
         let installed = reported(window, frame, "sandbox-installed");
         let ready = reported(window, frame, "sandbox-ready");
-        let (frame, html) = (frame.clone(), html.to_owned());
+        let (host, frame, html) = (window.clone(), frame.clone(), html.to_owned());
         let send = Closure::once_into_js(move |_: JsValue| {
             let message = object(&[("type", &"sandbox-load".into()), ("code", &html.into())]);
-            let window = frame.content_window().unwrap();
-            window.post_message(&message, "*").unwrap();
+            // Production sends from the frame's parent, which here is the host.
+            post_from(&host, &frame.content_window().unwrap(), &message);
         });
         invoke(&ready, "then", &[&send]).unwrap();
         installed

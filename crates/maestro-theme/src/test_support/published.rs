@@ -53,7 +53,7 @@ const KEYS: [&str; 45] = [
     "bashMode",
 ];
 
-/// Theme whose key at position `i` of [`KEYS`] has palette index `offset + i + 1`.
+/// Theme whose foreground key at zero-based position `i` has palette index `offset + i + 1`.
 ///
 /// # Errors
 /// Returns failures from the supplied values or collaborators.

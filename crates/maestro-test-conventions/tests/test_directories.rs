@@ -28,10 +28,10 @@ fn chosen_temporary_parent_is_canonical_and_errors_stay_native() {
             }
             "missing" => {
                 assert_eq!(Scratch::new().unwrap_err().kind(), io::ErrorKind::NotFound);
-                assert!(!std::env::temp_dir().exists());
+                assert!(!maestro_test_directory::temporary_root().exists());
             }
             "file" => {
-                let parent = std::env::temp_dir();
+                let parent = maestro_test_directory::temporary_root();
                 let expected = fs::create_dir(parent.join("probe")).unwrap_err().kind();
                 assert_eq!(Scratch::new().unwrap_err().kind(), expected);
                 assert_eq!(fs::read_to_string(parent).unwrap(), "unchanged");

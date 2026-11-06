@@ -5,15 +5,15 @@ use std::{
     path::Path,
 };
 
-use syn::{ext::IdentExt, visit::Visit};
+use syn::ext::IdentExt;
 
-use crate::source::{Member, imports::flatten};
+use crate::source::{Member, Source, imports::flatten};
 
 /// Domain crates whose frontend surface is selected by the application.
 const DOMAINS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-markdown"];
 
 /// Binding paths with their visibility scopes; `None` means unrestricted visibility.
-type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
+pub(crate) type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
 
 /// Reject crate aliases, module exports and wildcard escapes from domain crates.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
@@ -21,26 +21,13 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     let sources: Vec<_> = members
         .iter()
         .filter(|member| member.name == "maestro-app")
-        .flat_map(|member| member.sources.iter().map(move |source| (member, source)))
-        .filter_map(|(member, source)| {
-            let syntax = source.syntax.as_ref()?;
-            let relative = source
-                .path
-                .strip_prefix(member.directory.join("src"))
-                .or_else(|_| source.path.strip_prefix(&member.directory))
-                .ok()?;
-            let mut uses = Uses {
-                module: module_path(relative),
-                ..Uses::default()
-            };
-            uses.visit_file(syntax);
-            Some((source, uses))
-        })
+        .flat_map(|member| &member.sources)
+        .filter_map(|source| Some((source, source.walk.as_ref()?.imports.as_ref()?)))
         .collect();
-    let imports: Vec<_> = sources.iter().flat_map(|(_, uses)| &uses.imports).collect();
+    let imports: Vec<_> = sources.iter().flat_map(|(_, imports)| *imports).collect();
     let aliases = aliases(&imports, &modules);
-    for (source, uses) in sources {
-        for import in uses.imports {
+    for (source, imports) in sources {
+        for import in imports {
             let path = resolve(&import.path, &import.module, &aliases);
             if import.scope.is_none()
                 && domain(&path)
@@ -64,7 +51,7 @@ fn domain(path: &[String]) -> bool {
 }
 
 /// One import in its logical module scope.
-struct Import {
+pub(crate) struct Import {
     /// Import path with a trailing grouped `self` removed.
     path: Vec<String>,
     /// Bound identifier, absent for a wildcard.
@@ -79,23 +66,44 @@ struct Import {
     line: usize,
 }
 
-/// Imports found throughout a parsed source, including inline namespaces.
-#[derive(Default)]
-struct Uses {
+/// Imports found throughout a parsed application source by the shared syntax walk,
+/// including inline namespaces.
+pub(crate) struct Uses {
     /// Flattened uses and external-crate aliases.
-    imports: Vec<Import>,
+    pub(crate) imports: Vec<Import>,
     /// Logical module currently being visited.
     module: Vec<String>,
 }
 
-impl<'ast> Visit<'ast> for Uses {
-    fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
+impl Uses {
+    /// Start collecting the imports of an application source below its source root, if it is one.
+    pub(crate) fn new(member: &Member, source: &Source) -> Option<Self> {
+        if member.name != "maestro-app" {
+            return None;
+        }
+        let relative = source
+            .path
+            .strip_prefix(member.directory.join("src"))
+            .or_else(|_| source.path.strip_prefix(&member.directory))
+            .ok()?;
+        Some(Self {
+            imports: Vec::new(),
+            module: module_path(relative),
+        })
+    }
+
+    /// Enter an inline or out-of-line module declaration.
+    pub(crate) fn enter(&mut self, item: &syn::ItemMod) {
         self.module.push(item.ident.unraw().to_string());
-        syn::visit::visit_item_mod(self, item);
+    }
+
+    /// Leave the module declaration entered last.
+    pub(crate) fn leave(&mut self) {
         self.module.pop();
     }
 
-    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
+    /// Record every binding of one use declaration.
+    pub(crate) fn item_use(&mut self, item: &syn::ItemUse) {
         for import in flatten(&item.tree) {
             let mut path: Vec<_> = import
                 .path
@@ -116,7 +124,8 @@ impl<'ast> Visit<'ast> for Uses {
         }
     }
 
-    fn visit_item_extern_crate(&mut self, item: &'ast syn::ItemExternCrate) {
+    /// Record an external-crate declaration and its alias.
+    pub(crate) fn extern_crate(&mut self, item: &syn::ItemExternCrate) {
         let binding = item.rename.as_ref().map_or(&item.ident, |(_, name)| name);
         self.imports.push(Import {
             path: vec![item.ident.unraw().to_string()],
@@ -312,29 +321,47 @@ fn module_path(relative: &Path) -> Vec<String> {
     path
 }
 
+/// Whether a member is the application or one of the bounded domain crates.
+fn surface(member: &Member) -> bool {
+    member.name == "maestro-app" || DOMAINS.contains(&member.name.as_str())
+}
+
+/// Logical root of a member's modules: empty for the application, the crate name for a domain.
+fn root(member: &Member) -> Vec<String> {
+    (member.name != "maestro-app")
+        .then(|| member.name.replace('-', "_"))
+        .into_iter()
+        .collect()
+}
+
 /// Discover domain and application module paths from source layout and inline declarations.
 fn modules(members: &[Member]) -> Scopes {
     let mut modules = BTreeMap::new();
-    for member in members
-        .iter()
-        .filter(|member| member.name == "maestro-app" || DOMAINS.contains(&member.name.as_str()))
-    {
-        let root: Vec<_> = (member.name != "maestro-app")
-            .then(|| member.name.replace('-', "_"))
-            .into_iter()
-            .collect();
-        modules.insert(root.clone(), None);
-        for source in &member.sources {
-            let Ok(relative) = source.path.strip_prefix(member.directory.join("src")) else {
-                continue;
-            };
-            let Some(syntax) = &source.syntax else {
-                continue;
-            };
-            let mut path = root.clone();
-            path.extend(module_path(relative));
-            module_items(&syntax.items, &mut path, &mut modules);
+    for member in members.iter().filter(|member| surface(member)) {
+        modules.insert(root(member), None);
+        for walk in member
+            .sources
+            .iter()
+            .filter_map(|source| source.walk.as_ref())
+        {
+            modules.extend(walk.modules.clone());
         }
+    }
+    modules
+}
+
+/// Module declarations of an application or domain source below its source root.
+///
+/// The shared syntax walk records them, so the module index needs no parsed file.
+pub(crate) fn file_modules(member: &Member, source: &Source, file: &syn::File) -> Scopes {
+    let mut modules = Scopes::new();
+    if !surface(member) {
+        return modules;
+    }
+    if let Ok(relative) = source.path.strip_prefix(member.directory.join("src")) {
+        let mut path = root(member);
+        path.extend(module_path(relative));
+        module_items(&file.items, &mut path, &mut modules);
     }
     modules
 }

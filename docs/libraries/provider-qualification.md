@@ -22,7 +22,7 @@ Native Amazon Bedrock conversations in `maestro-models` use `aws-sdk-bedrockrunt
 `sso` and `credentials-login`) for credential lookup, signing, retries and event decoding, plus
 `aws-sdk-signin =1.22.0` (default features off) only for the typed token-refresh error that
 decides whether a failed login refresh ends the chain, plus `aws-smithy-runtime-api
-=1.19.0` (`client`, `http-1x`) and `aws-smithy-types =1.8.1` (`http-body-1-x`) for the transport
+=1.19.2` (`client`, `http-1x`) and `aws-smithy-types =1.9.1` (`http-body-1-x`) for the transport
 bridge that sends through the shared HTTP seam, and `aws-credential-types =1.3.0` (default
 features off) for the typed credential errors and futures that compose the selected-profile
 sources. All six are Apache-2.0 and are declared only for non-browser targets; the browser
@@ -32,10 +32,12 @@ adds no package to the lockfile.
 Native connector tests enable `aws-smithy-runtime-api`'s `test-util` feature only through a
 same-version dev-dependency, for its runtime-component builder.
 
-The resolved lockfile gains 42 packages: 22 under Apache-2.0, 19 under MIT or Apache-2.0
+The resolved lockfile gains 42 packages: 23 under Apache-2.0, 18 under MIT or Apache-2.0
 expressions (or MIT alone) and `ryu =1.0.23` under Apache-2.0 OR BSL-1.0, used under
 Apache-2.0. The AWS bridge uses the existing `hyper` byte and frame types; tests encode their own
-event-stream frames.
+event-stream frames. The resolved transport crates are `aws-smithy-http =0.64.3` and
+`aws-smithy-runtime =1.16.2`, which resolves `aws-smithy-schema =1.1.2` (Apache-2.0) beside the
+SDK's `aws-smithy-schema =0.2.1`.
 
 The login source adds 24 packages to the lockfile. `aws-sdk-signin =1.22.0` is Apache-2.0. Under
 MIT or Apache-2.0 (either alone or as alternatives) are `base16ct =0.2.0`, `base64ct =1.8.3`,

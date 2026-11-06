@@ -1,23 +1,14 @@
 //! Identifier spellings in the renderer check.
 
-use std::path::PathBuf;
-
 use super::{SPELLINGS, check};
-use crate::source::{Member, Source};
+use crate::source::Member;
 
 /// An ordinary production source with paths, method calls and a closure.
 const ORDINARY: &str = "use std::fmt::Display;\nfn show(items: &[u8], value: &dyn Display) -> String {\n    items.iter().map(|item| usize::from(*item)).sum::<usize>().to_string() + &value.to_string()\n}\n";
 
 #[test]
 fn renderer_check_spells_names_only_in_frontend_production() {
-    let member = |name: &str| Member {
-        name: name.into(),
-        directory: PathBuf::from("crate"),
-        sources: vec![Source::new(
-            PathBuf::from("crate/src/lib.rs"),
-            ORDINARY.into(),
-        )],
-    };
+    let member = |name: &str| Member::with_sources(name, "crate", [("crate/src/lib.rs", ORDINARY)]);
     SPELLINGS.set(0);
     assert_eq!(check(&[member("maestro-models")]), Ok(()));
     let other = SPELLINGS.get();

@@ -489,8 +489,24 @@ const FULL_QUEUE_ERROR: io::ErrorKind = if cfg!(target_vendor = "apple") {
     io::ErrorKind::TimedOut
 };
 
-/// Fills an unaccepted listener, which remains available for a controlled interval.
-fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
+/// A listener whose full accept queue stays saturated until the test releases it.
+struct Saturated {
+    /// Announces that the saturated interval has ended.
+    release: Sender<()>,
+    /// Takes the queued connections once released, then removes the socket path.
+    peer: JoinHandle<()>,
+}
+
+impl Saturated {
+    /// Takes the queued connections and removes the socket path, so the test can wait for both.
+    fn finish(self) {
+        drop(self.release);
+        self.peer.join().unwrap();
+    }
+}
+
+/// Fills an unaccepted listener and keeps the queue full until [`Saturated::finish`].
+fn saturate_endpoint(path: &Path) -> Saturated {
     use maestro_ipc::local_socket::connect_local_stream_until;
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     let listener = UnixListener::bind(path).unwrap();
@@ -507,16 +523,19 @@ fn saturated_endpoint(path: &Path) -> JoinHandle<()> {
         clients.push(stream);
     };
     assert_eq!(ended, Some(FULL_QUEUE_ERROR));
+    let (release, released) = channel();
     let path = path.to_owned();
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(300));
+    let peer = std::thread::spawn(move || {
+        // The recv ends when the test drops the release, including when an assertion unwinds.
+        let _ = released.recv();
         for _ in &clients {
             listener.accept().unwrap();
         }
         drop(listener);
         drop(clients);
         std::fs::remove_file(path).unwrap();
-    })
+    });
+    Saturated { release, peer }
 }
 
 #[test]
@@ -524,11 +543,12 @@ fn saturated_initial_connections_keep_the_stop_deadline() {
     let root = Scratch::new_socket().unwrap();
     let selection = named(&root, "full");
     let api = Path::new(&selection.api_socket_path);
-    let peer = saturated_endpoint(api);
+    let saturated = saturate_endpoint(api);
     let start = Instant::now();
     let result = stop_with_timeout(&selection, SHORT);
     let elapsed = start.elapsed();
-    peer.join().unwrap();
+    // The queue stays full until the stop has returned, so only the deadline decides its outcome.
+    saturated.finish();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
     if cfg!(target_vendor = "apple") {
         // The refusal is all the kernel reports, so the daemon reads as unreachable.
@@ -554,14 +574,15 @@ fn saturated_client_probes_keep_the_stop_deadline() {
         Some(Answer::Bytes(STOPPED)),
         Some(0),
     );
-    let peer = saturated_endpoint(&selection.client_socket_path);
+    let saturated = saturate_endpoint(&selection.client_socket_path);
     request_stop(&selection, Instant::now() + EXCHANGE).unwrap();
     // Joining the endpoint is the signal that it has removed the API socket.
     assert_eq!(api.finish().request, STOP_LINE);
     let start = Instant::now();
     let result = await_shutdown(&selection, Instant::now() + SHORT, SHORT);
     let elapsed = start.elapsed();
-    peer.join().unwrap();
+    // The client stays saturated until the probes have returned, so they all see one state.
+    saturated.finish();
     assert!(elapsed < SHORT + Duration::from_millis(150), "{elapsed:?}");
     if cfg!(target_vendor = "apple") {
         // The refused client socket reads as shut down.

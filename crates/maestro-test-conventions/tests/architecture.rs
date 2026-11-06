@@ -2707,12 +2707,10 @@ const FIXTURES: &str = "maestro-test-fixtures";
 
 /// Independently declared fixture consumers.
 const FIXTURE_CALLERS: &[&str] = &[
-    "maestro-agent",
     "maestro-models",
     "maestro-request",
     "maestro-catalog",
     "maestro-chat",
-    "maestro-credentials",
     "maestro-tools",
     "maestro-export",
 ];
@@ -2777,7 +2775,43 @@ const DIRECTORY_CALLERS: &[&str] = &[
 
 #[test]
 fn directory_support_edges_are_native_development_only() {
-    support_declarations_match_owner(DIRECTORY, DIRECTORY_CALLERS);
+    let without_launcher = DIRECTORY_CALLERS
+        .iter()
+        .copied()
+        .filter(|name| *name != "maestro-test-process")
+        .collect::<Vec<_>>();
+    support_declarations_match_owner(DIRECTORY, &without_launcher);
+}
+
+#[test]
+fn child_launcher_reaches_the_directory_owner_normally() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-test-process", DIRECTORY]);
+    let normal_table = "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies";
+    let wrong = "maestro-test-process: maestro-test-directory must be a native, non-optional normal dependency";
+    for (kind, extra, failure) in [
+        (normal_table, "", None),
+        ("dependencies", "", Some(wrong)),
+        ("dependencies", ", optional = true", Some(wrong)),
+        (NATIVE_DEV, "", Some(wrong)),
+        ("dev-dependencies", "", Some(wrong)),
+        ("build-dependencies", "", Some(wrong)),
+        (
+            "target.'cfg(target_os = \"none\")'.dependencies",
+            "",
+            Some(wrong),
+        ),
+    ] {
+        let declaration = format!(
+            "[{kind}]\ndirectory = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\"{extra} }}\n"
+        );
+        let expected = failure.map_or(Ok(()), |wrong| Err(wrong.to_owned()));
+        assert_eq!(
+            caller_declares(&workspace, "maestro-test-process", &declaration),
+            expected,
+            "{kind}{extra}"
+        );
+    }
 }
 
 #[test]
@@ -2835,8 +2869,51 @@ fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
 #[test]
 fn directory_support_owner_has_no_domain_dependencies() {
     support_owner_has_no_domain_dependencies(FIXTURES);
-    support_owner_has_no_domain_dependencies(DIRECTORY);
 }
+
+/// The directory owner resolves its roots through the real-path owner and depends on no
+/// other workspace crate.
+#[test]
+fn directory_support_owner_depends_only_on_the_real_path_owner() {
+    let targets = ["maestro-text", "maestro-path", "maestro-tooling"];
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        DIRECTORY, REALPATH, targets[0], targets[1], targets[2], UNIFIER,
+    ]);
+    for target in targets {
+        for (table, refusal) in [
+            ("dependencies", "forbidden production dependency"),
+            ("build-dependencies", "forbidden production dependency"),
+            (
+                "dev-dependencies",
+                "internal dev dependency requires declared dependency-free test support",
+            ),
+        ] {
+            workspace.member(
+                DIRECTORY,
+                DIRECTORY,
+                &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!("{refusal}: {DIRECTORY} -> {target}")),
+                "{table}"
+            );
+        }
+    }
+    workspace.member(
+        DIRECTORY,
+        DIRECTORY,
+        &format!(
+            "{}{REALPATH} = {{ path = \"../{REALPATH}\" }}\n",
+            unifier_declaration(&[], NATIVE, "unified", "")
+        ),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+/// Owner of native real-path resolution.
+const REALPATH: &str = "maestro-realpath";
 
 #[test]
 fn tracing_support_owner_has_no_domain_dependencies() {

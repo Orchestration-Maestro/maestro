@@ -92,7 +92,9 @@ Duplicate assertions are a review judgement.
 Conventions reject a platform temporary directory that test code in a migrated
 crate names itself through `std::env::temp_dir()`, as a call, a value, a macro
 argument or an import under any alias; a method named `temp_dir` is the
-receiver's own API and is accepted, while its arguments stay checked. Tests that
+receiver's own API and is accepted, while its arguments stay checked, and a
+declaration's own `temp_dir` name is accepted the same way with its body and
+arguments staying checked. Tests that
 observe it use `maestro-test-directory::temporary_root`, and the diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
@@ -170,9 +172,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   inheritance (lint inheritance and the workspace precision entry still apply).
   Never hand-edit its generated manifest section.
 - `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
-  `maestro-lock` depends only on `maestro-path` for final-link resolution and uses
-  the existing external `sha2 =0.11.0` to shorten lock and record names for long
-  file names. Only theme/application may depend on watch; only
+  `maestro-lock` depends only on `maestro-path` for final-link resolution and
+  `maestro-realpath` for canonical targets, and uses the existing external
+  `sha2 =0.11.0` to shorten lock and record names for long file names. Only
+  theme/application may depend on watch; only
   settings/credentials/workspace/detection/session/application may depend on lock, and
   the composed executable crate only as a native development dependency so its
   tests serialize one shared native fixture.
@@ -204,6 +207,17 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   kind filtering, name decoding and further ordering. Guest-authoring examples may
   also use it through a portable development dependency from `maestro-extensions-wasm`,
   never a normal or build dependency.
+- `maestro-realpath` is a declared core leaf below layer 0 depending only on
+  `maestro-path`. It resolves a native path to its real path; on Windows it
+  returns the ordinary form (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes
+  `\\s\sh\x`) through the lexical conversion in `maestro_path::win32`. Only the
+  application, daemon, detection, lock, models, packages, terminal, tools,
+  workspace, repository tooling, browser qualification, the conventions checker
+  and the test-directory owner may depend on it, on native targets; theme's
+  browser author example uses a native development edge. Callers keep their own
+  fallback and error policy. Conventions reject `std::fs::canonicalize`,
+  `tokio::fs::canonicalize` and the `canonicalize` method in production code
+  outside this leaf.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
@@ -279,7 +293,8 @@ conventions checker, terminal scenario harness, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
+no internal dependencies apart from `maestro-realpath`, the optional utility and
+the unifier. Sparse workspaces need
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
@@ -302,7 +317,9 @@ development edge for component tests of the native schema validator,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
 development edge for the product's one engine configuration, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
-executable's file-trigger test on the shared host fixture,
+executable's file-trigger test on the shared host fixture, the native-only,
+non-optional `maestro-theme` to `maestro-realpath` development edge for the
+browser author example's watched roots,
 and the native, non-optional dev-dependencies
 of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -313,13 +330,16 @@ the required toolkit/text set. The scenario harness reexports the recording term
 `maestro-tui::test_support`. The harness itself remains a native development
 dependency of `maestro-cli` only.
 
-The dedicated `maestro-test-directory` native leaf owns exclusive disposable-root
-creation and cleanup. It has no internal edge except the native unifier, and no
-foundation utility permission. Only the crates its [directory
+The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
+creation and cleanup. Its only internal edges are the native unifier and
+`maestro-realpath`, and it has no foundation utility permission. Only the
+crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
-as a non-optional native development dependency when used. `Scratch::new`
-canonicalizes its chosen root, without the Windows verbatim drive prefix;
-`Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
+as a non-optional native development dependency when used; the checked child
+launcher declares it instead, and alone, as a native normal dependency, whose
+launch route reads `temporary_root` for its cleared children. `Scratch::new`
+resolves its chosen root through `maestro-realpath`, in the ordinary Windows
+form; `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working
 directory, and `deny(path, mode)` sets a mode and
 returns its restoring guard, or `None` when the process is not refused, as in a
@@ -330,11 +350,11 @@ premise the host can exercise.
 Both graph cycle checks still apply.
 
 The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared test
-fixture operations. Only agent, models, request, catalog, chat, credentials, tools
-and export may declare it as a development dependency, portable or target-specific;
-models, request, catalog, chat and credentials use portable declarations, while
-agent, tools and export use native declarations. It has no product or utility
-edge, only the native unifier exception. Both cycle checks apply. See the
+fixture operations. Only models, request, catalog, chat, tools and export may declare
+it as a development dependency, portable or target-specific; models, request, catalog
+and chat use portable declarations, while tools and export use native declarations. It
+has no product or utility edge, only the native unifier exception. Both cycle checks
+apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a

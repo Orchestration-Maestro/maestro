@@ -48,7 +48,7 @@ pub(crate) fn running_admission() -> Option<Arc<Admission>> {
 /// parent directory does not exist or a parent is not a directory. Other failures are returned.
 fn queue_key(file_path: &str) -> io::Result<PathBuf> {
     let resolved = PathBuf::from(resolve_path(&[file_path])?);
-    match std::fs::canonicalize(&resolved) {
+    match maestro_realpath::canonicalize(&resolved) {
         Err(error)
             if matches!(
                 error.kind(),

@@ -1034,20 +1034,6 @@ fn diagnostic(error: &maestro_theme::ThemeError) -> maestro_models::DiagnosticEr
     maestro_models::DiagnosticErrorInfo::error(error.to_string())
 }
 
-/// A theme whose `toolOutput` colour is palette `index`.
-fn themed_palette(index: u8) -> maestro_theme::Theme {
-    maestro_theme::Theme::new(
-        [(
-            maestro_theme::ThemeColor::ToolOutput,
-            maestro_theme::ColorValue::Index(index),
-        )],
-        [],
-        maestro_theme::ColorMode::Color256,
-        maestro_theme::ThemeOptions::default(),
-    )
-    .unwrap()
-}
-
 /// Render `tool` through an HTML renderer over `theme`.
 fn themed_renderer(
     tool: &maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32>,
@@ -1338,7 +1324,9 @@ fn published_theme_reaches_callbacks_and_is_reread_when_republished() {
     });
     let live = state.theme();
     state
-        .set_theme_instance(Rc::new(themed_palette(2)))
+        .set_theme_instance(Rc::new(
+            maestro_test_fixtures::tool_output_theme!(2).unwrap(),
+        ))
         .unwrap();
     let tool = theme_reading_definition();
     let renderer = themed_renderer(&tool, live);
@@ -1348,7 +1336,9 @@ fn published_theme_reaches_callbacks_and_is_reread_when_republished() {
         .unwrap();
     assert!(first.contains(&maestro_theme::ansi256_to_hex(2)));
     state
-        .set_theme_instance(Rc::new(themed_palette(5)))
+        .set_theme_instance(Rc::new(
+            maestro_test_fixtures::tool_output_theme!(5).unwrap(),
+        ))
         .unwrap();
     let second = renderer
         .render_call("id", "custom", Some(&json!({})))
