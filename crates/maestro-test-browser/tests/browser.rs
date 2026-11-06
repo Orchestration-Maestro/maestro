@@ -411,7 +411,7 @@ fn inventory_requires_every_callable_export() {
 
 /// The console scenes answer from real screenshots: resting lines, the hovered summary and the
 /// focused follow control pass only while they paint their roles, and a wrong role, a missing
-/// outline, a pointer elsewhere and focus elsewhere each fail.
+/// outline, a pointer elsewhere, focus elsewhere and a summary off the page each fail.
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
 fn console_scenes_require_their_painted_roles() {
@@ -425,6 +425,12 @@ fn console_scenes_require_their_painted_roles() {
             ("#808080", "#fff", ring),
             "",
             Some(".maestro-artifact-log paints muted"),
+        ),
+        (
+            "console-rest",
+            ("#ffff00", "#fff", ring),
+            "document.querySelector('.maestro-artifact-summary').style.transform='translateX(-2000px)';",
+            Some(".maestro-artifact-summary must be visible"),
         ),
         ("console-hover", ("#ffff00", "#fff", ring), hover, None),
         (

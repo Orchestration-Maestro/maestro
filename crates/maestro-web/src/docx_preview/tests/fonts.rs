@@ -30,9 +30,15 @@ fn an_obfuscated_face_decodes_to_its_original_font() {
         .unwrap()
         .render(&options);
     let face = markup(&rendering.resource_styles[0]);
-    let encoded = face.split("base64,").nth(1).unwrap().split(')').next();
+    let encoded = face
+        .split("base64,")
+        .nth(1)
+        .unwrap()
+        .split(')')
+        .next()
+        .unwrap();
     assert_eq!(
-        STANDARD.decode(encoded.unwrap()).unwrap(),
+        STANDARD.decode(encoded).unwrap(),
         include_bytes!("../../../assets/katex/fonts/KaTeX_Typewriter-Regular.woff2")
     );
 }

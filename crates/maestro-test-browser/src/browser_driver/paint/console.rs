@@ -80,7 +80,8 @@ pub(super) async fn hovered(page: &mut Page<'_>) -> io::Result<()> {
 /// The keyboard-focused follow control paints its accent fill and on-accent glyph, and its
 /// accent outline covers more than a quarter of the band along each edge, so no edge is
 /// missing or clipped away. Each band stops short of the rounded corners by the outline's
-/// reach, so only the straight part of an edge counts.
+/// reach, so only the straight part of an edge counts. A quarter, not a half, because a device
+/// pixel ratio above one antialiases the outer edge against the page.
 pub(super) async fn focused(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "console-focus";
     let selector = ".maestro-artifact-follow";
