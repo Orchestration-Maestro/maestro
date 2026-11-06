@@ -28,6 +28,8 @@ mod graph;
 mod integration_tests;
 /// Native platform viewer ownership.
 mod platform_opener;
+/// Scoped worker threads for per-source and per-check work.
+mod pool;
 /// Source-size and protected-lint checks.
 mod quality;
 /// Real-path resolution outside its owner.
@@ -78,7 +80,9 @@ mod time_limits;
 /// Native fixture setup selection must match the declared test-process callers plus their owner.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
-/// for metadata. Emits no output. Legal included fragments are counted without
+/// for metadata. Emits no output. Sources load, and the source checks run, on
+/// one thread per available core; when several checks fail, the first in a
+/// fixed order is reported. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
 ///
 /// The feature unifier `maestro-dependencies` is dedicated, has no workspace dependencies and may be
@@ -133,20 +137,24 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     let (metadata, packages) = graph::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
-    graph::packages::check(&metadata, &members, &packages)?;
-    child_tests::check(&members)?;
-    integration_tests::check(&members)?;
-    boundaries::check(&members)?;
-    platform_opener::check(&members)?;
-    comments::check(&members)?;
-    repetition::check(&members)?;
-    quality::check(root, &members)?;
-    time_limits::check(&members)?;
-    duplicates::check(&members)?;
-    example_helpers::check(&members)?;
-    temp_directories::check(&members)?;
-    real_paths::check(&members)?;
-    test_input_routes::check(root, &members)
+    let checks: &[&(dyn Fn() -> Result<(), String> + Sync)] = &[
+        &|| graph::packages::check(&metadata, &members, &packages),
+        &|| child_tests::check(&members),
+        &|| integration_tests::check(&members),
+        &|| boundaries::check(&members),
+        &|| platform_opener::check(&members),
+        &|| comments::check(&members),
+        &|| repetition::check(&members),
+        &|| quality::check(root, &members),
+        &|| time_limits::check(&members),
+        &|| duplicates::check(&members),
+        &|| example_helpers::check(&members),
+        &|| temp_directories::check(&members),
+        &|| real_paths::check(&members),
+        &|| test_input_routes::check(root, &members),
+    ];
+    // The source checks only read the loaded members, so they run at once and report in order.
+    pool::map(checks, |check| check())?.into_iter().collect()
 }
 
 /// Validate a workspace's declared dependency graph from a supplied metadata document.

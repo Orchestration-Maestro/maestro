@@ -31,9 +31,9 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .flat_map(|member| {
             member.sources.iter().flat_map(|source| {
                 source
-                    .walk(member)
-                    .real_paths
+                    .walk
                     .iter()
+                    .flat_map(|walk| &walk.real_paths)
                     .map(|line| (source.path.display().to_string(), *line))
             })
         })

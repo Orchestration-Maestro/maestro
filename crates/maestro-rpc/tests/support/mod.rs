@@ -112,15 +112,17 @@ fn runtime_factory(
     })
 }
 
-/// A runtime over an in-memory session in the process's working directory.
+/// A runtime over an in-memory session in the process's working directory, keeping its
+/// credentials and catalog in `agent_dir`.
 pub async fn runtime(
     local: &Rc<LocalSet>,
+    agent_dir: &Path,
     factories: Vec<ExtensionFactory<Local>>,
 ) -> AgentSessionRuntime {
     let cwd = std::env::current_dir().unwrap().display().to_string();
     let manager = SessionManager::in_memory(Some(&cwd)).unwrap();
     let options = CreateAgentSessionRuntimeOptions {
-        agent_dir: format!("{cwd}/agent"),
+        agent_dir: agent_dir.display().to_string(),
         cwd,
         session_manager: Rc::new(RefCell::new(manager)),
         session_start_event: None,
@@ -169,17 +171,24 @@ fn inferred<T: Default>() -> T {
     T::default()
 }
 
-/// Serves a fresh runtime over this process's standard streams after writing the process
-/// identifier to standard error; the server exits the process.
-pub fn serve(served: Served) -> ! {
-    eprintln!("{}", std::process::id());
+/// The value `body` produces on a fresh current-thread runtime and local task set.
+pub fn on_local<T>(body: impl AsyncFnOnce(Rc<LocalSet>) -> T) -> T {
     let local = Rc::new(LocalSet::new());
     let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    let failure = executor.block_on(local.run_until(async {
-        let runtime = runtime(&local, served.factories).await;
+    let future = body(Rc::clone(&local));
+    executor.block_on(local.run_until(future))
+}
+
+/// Serves a fresh runtime over this process's standard streams after writing the process
+/// identifier to standard error; the server exits the process.
+pub fn serve(served: Served) -> ! {
+    eprintln!("{}", std::process::id());
+    let failure = on_local(async move |local| {
+        let agent_dir = maestro_test_directory::Scratch::new().unwrap();
+        let runtime = runtime(&local, agent_dir.path(), served.factories).await;
         let runtime = Rc::new(runtime);
         let running = Rc::clone(&local);
         let runner: maestro_app::presentation_data::mode_dispatch::RpcModeRunner =
@@ -188,7 +197,7 @@ pub fn serve(served: Served) -> ! {
                 Box::pin(async move { match run_rpc_mode(options).await? {} })
             });
         runner(runtime).await.unwrap_err()
-    }));
+    });
     panic!("the server failed: {failure}");
 }
 

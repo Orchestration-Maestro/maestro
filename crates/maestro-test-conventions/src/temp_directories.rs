@@ -44,9 +44,9 @@ fn member_diagnostics(member: &Member) -> Vec<(String, usize)> {
         .iter()
         .flat_map(|source| {
             source
-                .walk(member)
-                .temp_directories
+                .walk
                 .iter()
+                .flat_map(|walk| &walk.temp_directories)
                 .map(|line| (source.path.display().to_string(), *line))
         })
         .collect()
