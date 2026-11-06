@@ -238,7 +238,7 @@ pub fn target_directories() -> Vec<PathBuf> {
 
 /// The compile jobs of one lane: the caller's job cap, or every core without one, shared between
 /// the lanes, at least one each. Every lane can build at once, so the lanes together ask for no
-/// more jobs than the run has cores.
+/// more jobs than the run has cores, beyond one job each when the run has fewer cores than lanes.
 fn lane_jobs() -> String {
     let cores = std::env::var("CARGO_BUILD_JOBS")
         .ok()

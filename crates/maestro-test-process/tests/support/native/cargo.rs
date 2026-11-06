@@ -89,12 +89,10 @@ impl Build {
 /// each append their operation to the `sources` log.
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
     match args.first().and_then(|value| value.to_str()) {
-        Some(operation @ ("fetch" | "vendor")) => {
-            super::tooling_sources::append("sources", operation)?;
-            if operation == "vendor" {
-                super::tooling_sources::vendor(args)?;
-            }
-            Ok(())
+        Some("fetch") => super::tooling_sources::append("sources", "fetch"),
+        Some("vendor") => {
+            super::tooling_sources::append("sources", "vendor")?;
+            super::tooling_sources::vendor(args)
         }
         Some("build") if args.iter().any(|arg| arg == "--config") => {
             super::tooling_sources::append("sources", "build")?;

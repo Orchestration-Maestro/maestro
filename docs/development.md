@@ -1443,10 +1443,10 @@ The manifest records the directory of the sources the seed was compiled against,
 registry unit's fingerprint includes its source path and a seed serves only those sources.
 A shard's setup vendors the sources, then copies the bundle's seed beside them when their
 directory is the recorded one. The directories match when the checkout path and the
-dependency key do, and then no registry crate compiles before the shard's first test. When a member manifest
-that the cache key does not name changes, a bundle restored from the cache can hold a seed
-for another key. The setup then builds the seed itself, as a run without a bundle does,
-once per key.
+dependency key do, and then no registry crate compiles before the shard's first test.
+When a member manifest that the cache key does not name changes, a bundle restored from
+the cache can hold a seed for another key. The setup then builds the seed itself, as a run
+without a bundle does, once per key.
 
 The cold recipe uses `fixture_command` to keep its private home out of the
 compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
