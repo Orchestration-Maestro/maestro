@@ -532,12 +532,7 @@ async fn growth(console: &Console, root: &DomRoot, view: &DomView) {
 /// Native row paint and finished control transitions paint the selected mode's roles.
 async fn assert_console_roles(root: &DomRoot, view: &DomView, mode: maestro_theme::BrandMode) {
     let presentation = view.pack.presentation(mode).unwrap();
-    js_sys::Reflect::set(
-        &js_sys::global(),
-        &"colors".into(),
-        &serde_json::to_string(&presentation.colors).unwrap().into(),
-    )
-    .unwrap();
+    crate::support::reading_paint::publish_colors(&presentation.colors);
     let summary = select(&root.node, ".maestro-artifact-summary");
     driver("driverPointer", "[0,0,false]").await;
     crate::contributions_support::page::finish(&summary);
