@@ -1,8 +1,6 @@
 //! Load-time inputs offered by base package factories.
-use crate::{
-    EventError, ExtensionAPI, ExtensionExecution,
-    types::{ExtensionRuntime, read, write},
-};
+use crate::{EventError, ExtensionAPI, ExtensionExecution, types::ExtensionRuntime};
+use maestro_lock::{read, write};
 use serde_json::Value;
 use std::collections::HashSet;
 

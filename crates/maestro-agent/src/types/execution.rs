@@ -190,7 +190,7 @@ impl AgentExecution for $mode {
     }
     fn default_converter<C: CustomAgentMessages>() -> ConvertToLlm<C, Self> {
         $ptr::new(|history| {
-            let messages = crate::agent::read(&history)
+            let messages = maestro_lock::read(&history)
                 .iter()
                 .filter_map(AgentMessage::to_message)
                 .collect();
@@ -210,13 +210,13 @@ impl AgentExecution for $mode {
             let progress = update.map(|update| {
                 $ptr::new(move |result| match super::tools::encode_result(result) {
                     Ok(result) => update(result),
-                    Err(error) => *crate::agent::write(&progress_failure) = Some(error),
+                    Err(error) => *maestro_lock::write(&progress_failure) = Some(error),
                 }) as AgentToolUpdateCallback<D, Self>
             });
             let result = execute(id, parameters, signal, progress);
             Box::pin(async move {
                 let result = result.await?;
-                if let Some(error) = crate::agent::write(&failure).take() {
+                if let Some(error) = maestro_lock::write(&failure).take() {
                     return Err(error);
                 }
                 super::tools::encode_result(result)

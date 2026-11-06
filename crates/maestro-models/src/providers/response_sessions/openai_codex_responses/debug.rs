@@ -2,7 +2,7 @@
 
 use crate::{DiagnosticInput, format_thrown_value};
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::Mutex;
 #[cfg(not(target_arch = "wasm32"))]
 use {
     super::continuation::Request,
@@ -60,11 +60,6 @@ static DEBUG: Mutex<DebugState> = Mutex::new(DebugState {
     completed: BTreeSet::new(),
 });
 
-/// Lock the debug state; a poisoned lock is used as it is.
-fn lock() -> MutexGuard<'static, DebugState> {
-    DEBUG.lock().unwrap_or_else(PoisonError::into_inner)
-}
-
 /// Count one selected request attempt before it is sent.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn count_request<E: crate::ProviderExecution>(
@@ -75,7 +70,7 @@ pub(super) fn count_request<E: crate::ProviderExecution>(
     let Some(id) = options.session_id.as_deref().filter(|id| !id.is_empty()) else {
         return;
     };
-    let mut guard = lock();
+    let mut guard = maestro_lock::lock(&DEBUG);
     let stats = guard.stats.entry(id.to_owned()).or_default();
     stats.requests += 1;
     stats.connections_reused += u64::from(reused);
@@ -104,13 +99,13 @@ pub(super) fn count_request<E: crate::ProviderExecution>(
 pub fn get_openai_codex_web_socket_debug_stats(
     session_id: &str,
 ) -> Option<OpenAICodexWebSocketDebugStats> {
-    lock().stats.get(session_id).cloned()
+    maestro_lock::lock(&DEBUG).stats.get(session_id).cloned()
 }
 
 /// Clear statistics, fallback state and completion records for one session or all sessions.
 /// An absent or empty session identity selects all sessions. Connections are not touched.
 pub fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
-    let mut state = lock();
+    let mut state = maestro_lock::lock(&DEBUG);
     if let Some(id) = session_id.filter(|id| !id.is_empty()) {
         state.stats.remove(id);
         state.fallback.remove(id);
@@ -126,7 +121,7 @@ pub fn reset_openai_codex_web_socket_debug_stats(session_id: Option<&str>) {
 pub(crate) fn is_web_socket_sse_fallback_active(session_id: Option<&str>) -> bool {
     session_id
         .filter(|id| !id.is_empty())
-        .is_some_and(|id| lock().fallback.contains(id))
+        .is_some_and(|id| maestro_lock::lock(&DEBUG).fallback.contains(id))
 }
 
 /// Count a fallback and copy the session's current fallback state, which may be false.
@@ -134,7 +129,7 @@ pub(crate) fn record_web_socket_sse_fallback(session_id: Option<&str>) {
     let Some(id) = session_id.filter(|id| !id.is_empty()) else {
         return;
     };
-    let mut guard = lock();
+    let mut guard = maestro_lock::lock(&DEBUG);
     let DebugState {
         stats, fallback, ..
     } = &mut *guard;
@@ -149,7 +144,7 @@ pub(crate) fn record_web_socket_completion(session_id: Option<&str>) {
     let Some(id) = session_id.filter(|id| !id.is_empty()) else {
         return;
     };
-    lock().completed.insert(id.to_owned());
+    maestro_lock::lock(&DEBUG).completed.insert(id.to_owned());
 }
 
 /// Record the failure text and activate the session's fallback, unless its socket already
@@ -159,7 +154,7 @@ pub(crate) fn record_web_socket_failure(session_id: Option<&str>, error: Diagnos
         return;
     };
     let text = format_thrown_value(error);
-    let mut guard = lock();
+    let mut guard = maestro_lock::lock(&DEBUG);
     let DebugState {
         stats,
         fallback,
