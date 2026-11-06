@@ -28,8 +28,8 @@ fn serve_when_child(served: impl FnOnce() -> Served) {
     }
 }
 
-/// The memory runtime keeps its credentials and catalog in the test's directory, so a run
-/// leaves nothing in the checkout.
+/// The memory runtime stores its credentials in the test's directory, so a run leaves nothing
+/// in the checkout.
 #[test]
 fn the_memory_runtime_keeps_its_agent_directory_in_the_test_directory() {
     let local = Rc::new(LocalSet::new());
@@ -39,11 +39,12 @@ fn the_memory_runtime_keeps_its_agent_directory_in_the_test_directory() {
         .unwrap();
     let agent_dir = Scratch::new().unwrap();
     executor.block_on(local.run_until(async {
-        let runtime = runtime(&local, agent_dir.path(), Vec::new()).await;
-        let selected = runtime.services().agent_dir.clone();
+        let _runtime = runtime(&local, agent_dir.path(), Vec::new()).await;
+        let stored = agent_dir.path().join("auth.json");
         assert!(
-            std::path::Path::new(&selected).starts_with(agent_dir.path()),
-            "the runtime's agent directory is the test's own: {selected}"
+            stored.is_file(),
+            "the runtime writes its credentials into the test's directory: {}",
+            stored.display()
         );
     }));
 }
