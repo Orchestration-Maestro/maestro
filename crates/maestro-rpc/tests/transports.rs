@@ -28,6 +28,26 @@ fn serve_when_child(served: impl FnOnce() -> Served) {
     }
 }
 
+/// The memory runtime keeps its credentials and catalog in the test's directory, so a run
+/// leaves nothing in the checkout.
+#[test]
+fn the_memory_runtime_keeps_its_agent_directory_in_the_test_directory() {
+    let local = Rc::new(LocalSet::new());
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let agent_dir = Scratch::new().unwrap();
+    executor.block_on(local.run_until(async {
+        let runtime = runtime(&local, agent_dir.path(), Vec::new()).await;
+        let selected = runtime.services().agent_dir.clone();
+        assert!(
+            std::path::Path::new(&selected).starts_with(agent_dir.path()),
+            "the runtime's agent directory is the test's own: {selected}"
+        );
+    }));
+}
+
 /// The lines the connection runner writes for `input` over memory, and how it ended.
 fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
     let local = Rc::new(LocalSet::new());
@@ -36,7 +56,8 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
         .build()
         .unwrap();
     executor.block_on(local.run_until(async {
-        let runtime = runtime(&local, Vec::new()).await;
+        let agent_dir = Scratch::new().unwrap();
+        let runtime = runtime(&local, agent_dir.path(), Vec::new()).await;
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
         let output = RpcOutput::synchronous(Rc::new(move |line: &RpcLine| {

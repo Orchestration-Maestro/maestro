@@ -112,15 +112,17 @@ fn runtime_factory(
     })
 }
 
-/// A runtime over an in-memory session in the process's working directory.
+/// A runtime over an in-memory session in the process's working directory, keeping its
+/// credentials and catalog in `agent_dir`.
 pub async fn runtime(
     local: &Rc<LocalSet>,
+    agent_dir: &Path,
     factories: Vec<ExtensionFactory<Local>>,
 ) -> AgentSessionRuntime {
     let cwd = std::env::current_dir().unwrap().display().to_string();
     let manager = SessionManager::in_memory(Some(&cwd)).unwrap();
     let options = CreateAgentSessionRuntimeOptions {
-        agent_dir: format!("{cwd}/agent"),
+        agent_dir: agent_dir.display().to_string(),
         cwd,
         session_manager: Rc::new(RefCell::new(manager)),
         session_start_event: None,
@@ -179,7 +181,8 @@ pub fn serve(served: Served) -> ! {
         .build()
         .unwrap();
     let failure = executor.block_on(local.run_until(async {
-        let runtime = runtime(&local, served.factories).await;
+        let agent_dir = maestro_test_directory::Scratch::new().unwrap();
+        let runtime = runtime(&local, agent_dir.path(), served.factories).await;
         let runtime = Rc::new(runtime);
         let running = Rc::clone(&local);
         let runner: maestro_app::presentation_data::mode_dispatch::RpcModeRunner =

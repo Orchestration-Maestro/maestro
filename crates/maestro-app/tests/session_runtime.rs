@@ -19,7 +19,7 @@ use maestro_models::{Local, StopReason};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{Presence, SessionManager};
 use serde_json::{Value, json};
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 
 /// The recorded runtime case `name`.
 fn expected(name: &str) -> Value {
@@ -379,10 +379,10 @@ fn rechecks_the_stored_working_directory_when_switching() {
     });
 }
 
-/// The file of a session stored beside the runtime's sessions in `cwd`.
+/// The file of a session stored in the test's directory and kept for `cwd`.
 fn stored_file(h: &Harness, cwd: &str) -> String {
     let root = h.scratch.path().display().to_string();
-    let manager = stored_in(cwd, &format!("{cwd}/sessions"), &root);
+    let manager = stored_in(cwd, &format!("{root}/stored"), &root);
     manager.get_session_file().unwrap().to_owned()
 }
 
@@ -479,6 +479,10 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
             .get_cwd()
             .to_owned();
         let target = stored_file(&h, &cwd);
+        assert!(
+            Path::new(&target).starts_with(h.scratch.path()),
+            "the switched session is stored in the test's directory: {target}"
+        );
         let switched = (actions.operations().switch_session)(target.clone(), None)
             .await
             .unwrap();
