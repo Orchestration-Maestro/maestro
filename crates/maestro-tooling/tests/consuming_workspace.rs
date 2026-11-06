@@ -207,7 +207,7 @@ fn prepared_bundle(root: &Path, rev: &str) -> PathBuf {
     for name in [EXECUTABLE, "prepare_author_component"] {
         fs::write(bundle.join(name), "").unwrap();
     }
-    let inputs = serde_json::json!({"paths": [], "locked": [], "digest": EMPTY});
+    let inputs = serde_json::json!({"paths": [], "locked": [], "manifests": [], "digest": EMPTY});
     let manifest = serde_json::json!({
         "shared": inputs,
         "tool": inputs,

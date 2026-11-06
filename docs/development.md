@@ -1103,10 +1103,17 @@ Other runs reuse an existing manifest, rejecting stale or incomplete files; with
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. The manifest records one
 digest per artifact instead of one for the whole bundle. All components share one digest over
-the WebAssembly closure of `maestro-extensions-wasm` (its dependencies and development
-dependencies, without the edges gated to native targets), the lock entries of the registry
-packages that closure uses, the workspace manifest, Cargo configuration and the toolchain;
-each component adds a digest of the example files Cargo reports it read, so a helper module
+the WebAssembly closure of `maestro-extensions-wasm` (its dependencies, without the edges
+gated to native targets), the lock entries of the registry packages that closure uses, the
+workspace manifest, Cargo configuration and the toolchain. `cargo build` compiles the
+development dependencies of the crates it builds and of no crate they depend on, so the
+digest follows development dependencies for the built crates only. For every crate in the
+closure it leaves out `tests/` and the unit test files (`src/**/tests.rs` and
+`src/**/tests/`); for every crate it does not build, it also leaves out the
+`[dev-dependencies]` tables of the manifest. A test-only change in a crate the components
+only depend on keeps every component, while a change to its source or to another manifest
+entry rebuilds them all. A change to the workspace manifest rebuilds them all as well.
+Each component adds a digest of the example files Cargo reports it read, so a helper module
 that several components share is part of each of them. The setup example and the development
 tool, and the browser graph, each hash the closure of their own packages with the examples,
 assets, locked dependencies and toolchain they read. A shard's `author-component` setup checks
