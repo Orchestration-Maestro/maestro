@@ -84,7 +84,8 @@ impl AgentSessionRuntime {
     }
 
     /// The history a persisted session forks into: a new file whose parent is the current
-    /// one, or the current file's branch up to `target_leaf_id` written to a new file.
+    /// one, or the current file's branch up to `target_leaf_id` in the manager that created
+    /// it, whose file appears with the first assistant reply the branch keeps.
     fn persisted_fork(
         &self,
         target_leaf_id: Option<&str>,
@@ -111,13 +112,13 @@ impl AgentSessionRuntime {
                 manager
             }
             Some(leaf) => {
-                let mut source = SessionManager::open(&current_file, Some(&session_dir), None)
+                let mut manager = SessionManager::open(&current_file, Some(&session_dir), None)
                     .map_err(thrown)?;
-                let forked = source
+                manager
                     .create_branched_session(leaf)
                     .map_err(thrown)?
                     .ok_or_else(|| DiagnosticErrorInfo::error("Failed to create forked session"))?;
-                SessionManager::open(&forked, Some(&session_dir), None).map_err(thrown)?
+                manager
             }
         };
         Ok(Rc::new(RefCell::new(manager)))

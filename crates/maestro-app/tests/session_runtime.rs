@@ -625,6 +625,67 @@ fn refuses_an_unknown_fork_entry() {
     });
 }
 
+/// A persisted runtime over an imported history whose only retained entry is a user message,
+/// and that working directory.
+async fn user_only_session(label: &str) -> (Harness, AgentSessionRuntime, String) {
+    let (h, runtime, _recorded) = runtime_for(label, Vec::new()).await;
+    let root = h.scratch.path().display().to_string();
+    let cwd = runtime.cwd();
+    let stamp = "2026-01-01T00:00:00.000Z";
+    let header = json!({
+        "type": "session",
+        "version": maestro_session::CURRENT_SESSION_VERSION,
+        "id": "imported",
+        "timestamp": stamp,
+        "cwd": cwd,
+    });
+    let user = json!({
+        "type": "message",
+        "id": "user-1",
+        "parentId": null,
+        "timestamp": stamp,
+        "message": {"role": "user", "content": "kept", "timestamp": 0},
+    });
+    let source = format!("{root}/user-only.jsonl");
+    std::fs::write(&source, format!("{header}\n{user}\n")).unwrap();
+    let imported = runtime.import_from_jsonl(&source, None).await.unwrap();
+    assert!(!imported.cancelled);
+    (h, runtime, cwd)
+}
+
+#[test]
+fn forks_at_a_user_message_with_no_assistant_reply_in_the_source_directory() {
+    on_task_set(|_| async {
+        let (_h, runtime, cwd) = user_only_session("fork-user-only").await;
+        let outcome = runtime
+            .fork(
+                "user-1",
+                ForkOptions {
+                    position: Some(ForkPosition::At),
+                    with_session: None,
+                },
+            )
+            .await
+            .unwrap();
+        assert!(!outcome.cancelled);
+        let session = runtime.session();
+        let manager = session.session_manager().borrow();
+        let file = manager.get_session_file().unwrap().to_owned();
+        let id = manager.get_session_id().to_owned();
+        assert!(
+            file.ends_with(&format!("_{id}.jsonl")),
+            "the fork keeps the branch identity: {file} names {id}"
+        );
+        assert_eq!(
+            manager.get_cwd(),
+            cwd,
+            "the fork keeps the source directory"
+        );
+        drop(manager);
+        assert_eq!(runtime.cwd(), cwd, "the fork keeps the source directory");
+    });
+}
+
 #[test]
 fn reports_a_missing_import_file() {
     let expected = expected("runtime_import_jsonl");
