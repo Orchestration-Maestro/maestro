@@ -4,6 +4,8 @@
 //! The cold browser build resolves the whole workspace instead. Both sets retain stable source
 //! paths while their dependency inputs stay unchanged. The complete set also carries the compiled
 //! registry units of the cold browser bootstrap, so that build compiles only Maestro's crates.
+//! The test preparation builds those units once and stages them in the bundle; a shard installs
+//! them beside the sources it vendors, or builds them when the bundle compiled them elsewhere.
 
 use std::ffi::OsString;
 use std::io;
@@ -12,12 +14,15 @@ use std::process::{Command, ExitCode};
 
 use sha2::{Digest, Sha256};
 
-use super::{cargo, export};
+use super::export;
 use crate::copy_assets::copy_tree;
 use crate::test_setup::hex;
 
 /// Compile and prune the registry units of the cold browser bootstrap.
 mod seed;
+
+/// The bundle directory that holds the staged seed.
+pub(crate) const STAGED: &str = "workspace-sources";
 
 /// The directory of the tooling fixtures, from the checkout root.
 const FIXTURES: &str = "crates/maestro-tooling/tests/fixtures";
@@ -31,33 +36,66 @@ pub(super) enum Scope {
     Workspace,
 }
 
-/// Reuse or vendor the selected closure, then export and print its source configuration.
+impl Scope {
+    /// The directory below `target` that holds the closure, and the variable that exports its
+    /// source configuration.
+    fn names(self) -> (&'static str, &'static str) {
+        match self {
+            Self::Fixtures => ("fixture-sources", "MAESTRO_TEST_CARGO_SOURCES"),
+            Self::Workspace => ("workspace-sources", "MAESTRO_TEST_WORKSPACE_CARGO_SOURCES"),
+        }
+    }
+}
+
+/// Reuse or vendor the selected closure with the Cargo executable `cargo`, then export and print
+/// its source configuration.
 ///
 /// # Errors
-/// Returns a failed copy or write, or the log of a failed `cargo vendor`.
-pub(super) fn run(checkout: &Path, scope: Scope) -> io::Result<ExitCode> {
-    let (name, variable) = match scope {
-        Scope::Fixtures => ("fixture-sources", "MAESTRO_TEST_CARGO_SOURCES"),
-        Scope::Workspace => ("workspace-sources", "MAESTRO_TEST_WORKSPACE_CARGO_SOURCES"),
-    };
+/// Returns a failed copy, write or seed build, or the log of a failed `cargo vendor`.
+pub(super) fn run(cargo: &Path, checkout: &Path, scope: Scope) -> io::Result<ExitCode> {
+    let config = prepare(cargo, checkout, scope)?;
+    let mut entry = OsString::from(format!("{}=", scope.names().1));
+    entry.push(&config);
+    export(&entry)?;
+    println!("{}", config.display());
+    Ok(ExitCode::SUCCESS)
+}
+
+/// Prepare the complete workspace sources and the seed in `checkout`, then stage the seed in the
+/// bundle `output`, and return the directory of those sources, which the seed was compiled
+/// against.
+///
+/// # Errors
+/// Returns a failed copy, write or seed build, or the log of a failed `cargo vendor`.
+pub(crate) fn stage(cargo: &Path, checkout: &Path, output: &Path) -> io::Result<PathBuf> {
+    let config = prepare(cargo, checkout, Scope::Workspace)?;
+    let directory = config
+        .parent()
+        .ok_or_else(|| io::Error::other("the source configuration has no directory"))?;
+    seed::stage(directory, &output.join(STAGED))?;
+    Ok(directory.to_path_buf())
+}
+
+/// Reuse or vendor the selected closure, with the seed of the workspace closure, and return the
+/// path of its source configuration.
+fn prepare(cargo: &Path, checkout: &Path, scope: Scope) -> io::Result<PathBuf> {
     let key = key(checkout, scope)?;
-    let directory = checkout.join("target").join(name).join(&key[..16]);
+    let directory = checkout
+        .join("target")
+        .join(scope.names().0)
+        .join(&key[..16]);
     let config = directory.join("config.toml");
     if !config.is_file() {
         if directory.exists() {
             std::fs::remove_dir_all(&directory)?;
         }
         std::fs::create_dir_all(&directory)?;
-        vendor(checkout, &directory, scope)?;
+        vendor(cargo, checkout, &directory, scope)?;
     }
     if matches!(scope, Scope::Workspace) {
-        seed::ensure(checkout, &directory, &config)?;
+        seed::ensure(cargo, checkout, &directory, &config)?;
     }
-    let mut entry = OsString::from(format!("{variable}="));
-    entry.push(&config);
-    export(&entry)?;
-    println!("{}", config.display());
-    Ok(ExitCode::SUCCESS)
+    Ok(config)
 }
 
 /// Hash names and contents of the files that determine the selected dependency set.
@@ -101,9 +139,9 @@ fn member_manifests(checkout: &Path) -> io::Result<Vec<PathBuf>> {
 }
 
 /// Stage one source set and publish its configuration only after Cargo succeeds.
-fn vendor(checkout: &Path, directory: &Path, scope: Scope) -> io::Result<()> {
+fn vendor(cargo: &Path, checkout: &Path, directory: &Path, scope: Scope) -> io::Result<()> {
     let fixtures = checkout.join(FIXTURES);
-    let mut command = Command::new(cargo());
+    let mut command = Command::new(cargo);
     command.current_dir(checkout).args(["vendor", "--offline"]);
     let manifest = match scope {
         Scope::Fixtures => {

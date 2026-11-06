@@ -89,7 +89,7 @@ async fn assert_second(runner: &ExtensionRunner<Local>) {
 }
 
 /// Creates a real loader instance with an independently observable final admission.
-async fn load(
+pub(super) async fn load(
     events: maestro_extensions::EventBus<Local>,
     cwd: &str,
 ) -> (

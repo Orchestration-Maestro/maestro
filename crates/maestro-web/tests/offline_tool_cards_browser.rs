@@ -129,17 +129,7 @@ mod tests {
                     format!("{pending}{success}{error}{count}{diff}{custom}"),
                 );
                 let presentation = slots.pack.presentation(mode).unwrap();
-                let colors: serde_json::Map<String, Value> = presentation
-                    .colors
-                    .iter()
-                    .map(|(k, v)| ((*k).to_owned(), (*v).into()))
-                    .collect();
-                js_sys::Reflect::set(
-                    &js_sys::global(),
-                    &"colors".into(),
-                    &Value::Object(colors).to_string().into(),
-                )
-                .unwrap();
+                support::reading_paint::publish_colors(&presentation.colors);
                 support::reading_paint::observe("offline-tool-card-roles").await;
             }
         }

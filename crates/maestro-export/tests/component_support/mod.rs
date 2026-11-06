@@ -381,5 +381,4 @@ const STEP_MEMBERS: [&str; 14] = [
     "count",
 ];
 
-#[allow(dead_code)]
 pub mod bindings;

@@ -119,6 +119,10 @@ mod registrations;
 mod retained;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/retention.rs"]
+mod retention;
+
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/signals.rs"]
 mod signals;
 
@@ -326,6 +330,10 @@ fn context_command(
         if args == "clock wait" {
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Err("clock waited".into());
+        }
+        if let Some(request) = args.strip_prefix("retention ") {
+            let request = request.to_owned();
+            return retention::command(&context, &request).await;
         }
         if args == "retain-suspended" {
             return retained::observe(api, context).await;

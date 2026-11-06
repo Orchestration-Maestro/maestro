@@ -127,7 +127,6 @@ fn main() {}
 #[cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "../tests/support/runtime.rs"]
-#[allow(dead_code, reason = "These tests use only the I/O runtime.")]
 mod runtime;
 
 #[cfg(test)]

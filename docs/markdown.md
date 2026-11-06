@@ -96,9 +96,9 @@ resumption admits the item again. Item text answers the setext underline
 question by classifying only the lines its answer needs, starting from the
 resume offset when a caller token stopped inside a line, so a settled answer
 costs the item's prefix rather than its whole body. An item's semantic body and
-raw spelling join the pieces they admitted once, when a reader asks for the whole
-value. Semantic text can change spelling or be empty without erasing raw
-consumption.
+raw spelling extend one piece while the lines they admit stay adjacent in one
+source, and join their pieces once, when a reader asks for the whole value.
+Semantic text can change spelling or be empty without erasing raw consumption.
 Code continuations reuse one indentation-removal operation; definitions
 continuing paragraph or item text stay literal instead of entering the reference
 index.
@@ -116,11 +116,20 @@ terminal render rows, browser markup and the documentation checks - use explicit
 worklists.
 
 Depth costs work: each level reads its own operand again, so the cost grows with
-the square of the nesting depth. A single line of 1,000 quotes parses in about a
-second in a development build, 2,000 in about four, and 4,000 in about fifteen.
-Item admission keeps the constant small: the stop rules are consulted only where
-their alternatives can begin, and neither an item's classification nor its joined
-body grows with the levels above it.
+the square of the nesting depth. In a development build, a single line of 1,000
+quotes parses in about 0.1 s, 2,000 in about 0.3 s and 4,000 in about 1.3 s. A
+reply that reopens a quoted list on every repeat goes three containers deeper
+each time; in a release build it reaches depth 385 in about 0.1 s and depth 769
+in about 0.4 s.
+
+The constant stays small. Quote recognition copies each operand byte once while
+its prefix grows, and each growth step matches again only from the start of the
+last quoted unit of the previous match. An item's body extends one piece while
+its lines stay adjacent in the source its level already holds, so the
+level below reads those bytes in place instead of copying them. The stop rules
+run only on a line whose first byte after at most three spaces can begin one of
+them. Neither an item's classification nor its joined body grows with the
+levels above it.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and
