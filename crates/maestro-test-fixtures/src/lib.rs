@@ -51,8 +51,9 @@ pub fn literals_round_trip<T: DeserializeOwned + serde::Serialize>(
 ) -> serde_json::Result<bool> {
     let mut matched = true;
     for literal in literals {
-        let record: T = serde_json::from_value(serde_json::json!(literal))?;
-        matched &= serde_json::to_value(record)? == serde_json::json!(literal);
+        let encoded = serde_json::Value::from(*literal);
+        let record: T = serde_json::from_value(encoded.clone())?;
+        matched &= serde_json::to_value(record)? == encoded;
     }
     Ok(matched)
 }

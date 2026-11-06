@@ -965,13 +965,12 @@ timer, retry limit or ownership-transfer API.
 fixture records, wire-literal round trips and single-color theme construction.
 It has no product dependencies or foundation utility edge; its only internal
 normal dependency is the native feature unifier.
-Fixture development callers are `maestro-agent`, `maestro-models`, `maestro-request`,
-`maestro-catalog`, `maestro-chat`, `maestro-credentials`, `maestro-tools` and
-`maestro-export`; declarations may be portable or target-specific, including aliases.
-Models, request, catalog, chat and credentials use portable development declarations;
-agent, tools and export use native development declarations. No normal or build
-edge to this owner is permitted. Both production and test cycle checks apply.
-The policy and inventory admit this owner before its first member exists.
+Fixture development callers are `maestro-models`, `maestro-request`, `maestro-catalog`,
+`maestro-chat`, `maestro-tools` and `maestro-export`; declarations may be portable or
+target-specific, including aliases. Models, request, catalog and chat use portable
+development declarations; tools and export use native development declarations. No
+normal or build edge to this owner is permitted. Both production and test cycle
+checks apply.
 
 ### Test tracing owner
 

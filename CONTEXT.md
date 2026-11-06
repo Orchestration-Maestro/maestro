@@ -353,7 +353,7 @@ From `docs/specs/tool-additions.md`.
 
 - **Test fixtures:** The dedicated, unpublished, portable `maestro-test-fixtures`
   leaf for shared fixture records, wire-literal round trips and single-color
-  theme construction. Its eight callers use development edges only;
+  theme construction. Its six callers use development edges only;
   it has no product or utility dependency. See the
   [contract](docs/specs/maestro-port.md#test-fixture-owner).
 - **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`

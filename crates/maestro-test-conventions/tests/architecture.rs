@@ -2707,12 +2707,10 @@ const FIXTURES: &str = "maestro-test-fixtures";
 
 /// Independently declared fixture consumers.
 const FIXTURE_CALLERS: &[&str] = &[
-    "maestro-agent",
     "maestro-models",
     "maestro-request",
     "maestro-catalog",
     "maestro-chat",
-    "maestro-credentials",
     "maestro-tools",
     "maestro-export",
 ];
