@@ -82,8 +82,8 @@ impl State {
     /// so a signal that outlives the extension retains none of them. An abort on another thread wakes
     /// the retained waiter, which aborts the signal again here so the observer runs on this
     /// owner; the waiter ends when the observer is released, by removal or after it ran.
-    /// A failed guest listener is not reported yet; abort still returns and later
-    /// observers still run.
+    /// A failed guest listener is reported through its extension's bus; abort still
+    /// returns and later observers still run.
     fn subscribe(
         &self,
         signal: &Cancellation,
@@ -96,7 +96,7 @@ impl State {
         let remove: Rc<dyn Fn()> = Rc::from(signal.subscribe(Rc::new(move || {
             let _ = &registered;
             if let Some(state) = pump.upgrade() {
-                let _ = state.notify_abort(&listener, api);
+                state.notify_abort(&listener, api);
             }
         })));
         let capability = Capability::SignalSubscription(Rc::clone(&remove));
@@ -115,21 +115,27 @@ impl State {
 impl State {
     /// Runs one abort listener through the original extension's bus and a fresh invocation
     /// frame, while this pump and its Store are live.
-    fn notify_abort(&self, listener: &Observer, api: u64) -> Result<(), String> {
+    fn notify_abort(&self, listener: &Observer, api: u64) {
         let capability = self.registry.capability(api);
         let Some(Capability::Api(api)) = capability.as_deref() else {
-            return Err("extension API resource ended".to_owned());
+            return;
         };
-        let listener = listener
-            .handle(self.registry.admission()?)
-            .ok_or("extension Store owner ended")?;
-        crate::compact_calls::notify(
+        let Ok(admission) = self.registry.admission() else {
+            return;
+        };
+        let Some(listener) = listener.handle(admission) else {
+            return;
+        };
+        if let Err(message) = crate::compact_calls::notify(
             &listener,
             &self.registry,
             &api.events,
             SynchronousKind::Abort,
             String::new(),
-        )
+        ) {
+            api.events
+                .report_error("abort", &std::io::Error::other(message));
+        }
     }
 }
 
