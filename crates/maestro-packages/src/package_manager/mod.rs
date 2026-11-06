@@ -35,7 +35,19 @@ use maestro_settings::SettingsManager;
 pub use operations::NativePackageOperations;
 pub use operations::{CommandCaptureOptions, CommandOutput, PackageOperations};
 pub use progress::{ProgressAction, ProgressCallback, ProgressEvent, ProgressEventType};
-use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
+use std::{cell::RefCell, future::Future, io, path::Path, path::PathBuf, pin::Pin, rc::Rc};
+
+/// Resolves a path to its real path through the owner that carries the file system.
+#[cfg(not(target_arch = "wasm32"))]
+fn real_path(path: &Path) -> io::Result<PathBuf> {
+    maestro_realpath::canonicalize(path)
+}
+
+/// The browser build has no file system, so the lexical path is the real path.
+#[cfg(target_arch = "wasm32")]
+fn real_path(path: &Path) -> io::Result<PathBuf> {
+    Ok(path.to_path_buf())
+}
 pub use update::{PackageUpdate, PackageUpdateType};
 
 /// An object-safe fallible asynchronous operation.
