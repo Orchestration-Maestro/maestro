@@ -117,8 +117,8 @@ fn pinned_search_rejects_non_utf8_path() {
 
     assert_eq!(executable_text("fd", &executable), Err(rejection.clone()));
 
-    // A volume that refuses the byte spelling cannot hold the fixture, so the resolved path
-    // reaches the same rejection without one.
+    // Only a volume that stores the byte spelling can hold the fixture for the full resolution;
+    // the conversion above proves the rejection on every host.
     if root
         .keeps_distinct(&[OsStr::from_bytes(b"invalid-\xff")])
         .unwrap()
