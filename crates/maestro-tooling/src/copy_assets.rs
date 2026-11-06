@@ -167,9 +167,9 @@ fn not_regular(source: &Path) -> io::Error {
 ///
 /// Readings and writes are separate calls: a source failure names the source path,
 /// while a destination failure keeps the operating system's own error. The destination
-/// is created only after the source is opened and checked as a regular file, and it
-/// carries the source's own restrictions before a byte is written, and its modification time
-/// once the last byte is.
+/// is created only after the source is opened and checked as a regular file. It carries
+/// the source's own restrictions before a byte is written, and the source's modification
+/// time once the last byte is.
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     let mut reader = fs::File::open(source).map_err(|error| match fs::metadata(source) {
         // Windows refuses to open a directory, so the entry's kind names that refusal.

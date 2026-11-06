@@ -1356,10 +1356,9 @@ build at once, so the lanes split the run's compile jobs: each recipe and helper
 caller's `CARGO_BUILD_JOBS`, or the core count without one, divided by the number of lanes,
 and at least one job. Every recipe still slows while the other lane builds: on a four-job run
 three lanes of one job each flagged six browser tests slow and finished the group later,
-where two lanes flag none. A
-test outside the group, or a run without the setup, takes the first lane and waits on its
-lock, so plain Cargo tests still run the browser tests one at a time. Each lane past the
-first costs one copy of the graph before the first test starts.
+where two lanes flag none. A test outside the group, or a run without the setup, takes the
+first lane and waits on its lock, so plain Cargo tests still run the browser tests one at a
+time. Each lane past the first costs one copy of the graph before the first test starts.
 
 `browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
 unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
@@ -1448,9 +1447,9 @@ publishes the result as `seed` beside the configuration. A failed build leaves n
 and the next run continues it. The cold test copies the seed into its empty Cargo target
 directory and checks that it holds compiled units but none of a workspace member's. The
 recipes then compile Maestro's crates and the WebAssembly fixture from nothing, and
-every registry crate is already built. The test keeps the root manifest's per-package
-optimization levels, since the seed holds the optimized parsers. The test never pays for
-the seed.
+every registry crate the seed holds is already built. The test keeps the root manifest's
+per-package optimization levels, since the seed holds the optimized parsers. The test
+never pays for the seed.
 
 Cargo rebuilds a unit when a dependency's outputs are newer than its own, so every copy of
 the seed keeps each file's modification time: the copy that stages it in the bundle, the one

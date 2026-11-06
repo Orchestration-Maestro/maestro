@@ -2062,12 +2062,7 @@ fn maestro_tree_copy_keeps_modification_times() {
         let path = source.join(name);
         fs::write(&path, name).unwrap();
         let time = std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds);
-        fs::File::options()
-            .write(true)
-            .open(&path)
-            .unwrap()
-            .set_modified(time)
-            .unwrap();
+        set_modified(&path, time);
         (name, time)
     });
     let destination = fixture.root.path().join("copy");
@@ -3511,7 +3506,6 @@ const AUTHOR_SETUP_SOURCES: [&str; 8] = [
 ];
 
 /// Gives `path` the modification time `time`.
-#[cfg(unix)]
 fn set_modified(path: &Path, time: std::time::SystemTime) {
     fs::File::options()
         .write(true)
