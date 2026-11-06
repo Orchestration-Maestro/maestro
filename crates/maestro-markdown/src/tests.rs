@@ -111,8 +111,6 @@ pub(crate) struct Work {
     pub(crate) frame_bytes: usize,
     /// Whether a witness asked for that frame measurement.
     pub(crate) track_frame: bool,
-    /// Retained-state walks taken for the frame measurement.
-    pub(crate) frame_scans: usize,
     /// Payload the settled output of the level a caller just finished charged.
     pub(crate) closed_settled: usize,
     /// Last reentry's mapped end before preserving already consumed chunks.

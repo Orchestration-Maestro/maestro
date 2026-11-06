@@ -113,7 +113,6 @@ impl ListState {
                 let mut retained = crate::tests::Retained::default();
                 self.retained(&mut retained);
                 work.frame_bytes = work.frame_bytes.max(retained.bytes);
-                work.frame_scans += 1;
             });
         }
         let following = self.completed.len();

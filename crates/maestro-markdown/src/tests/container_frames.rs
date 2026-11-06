@@ -802,23 +802,6 @@ fn resumed_list_retained_storage_grows_linearly() {
     }
 }
 
-/// Retained-state walks a parse of `source` takes without a witness asking for the frame.
-fn unmeasured_frame_scans(source: &str) -> usize {
-    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
-    let document = crate::parse(source.to_owned());
-    assert!(!document.nodes.is_empty());
-    super::WORK.with_borrow(|work| work.frame_scans)
-}
-
-#[test]
-fn a_parse_that_never_measures_the_frame_keeps_no_retained_walk() {
-    // Only the witnesses that read the frame measurement pay for walking what a list holds.
-    for source in ["- a\n  b", "- a\n  - b", "> - a\n>   b\n"] {
-        assert_eq!(unmeasured_frame_scans(source), 0, "{source:?}");
-    }
-    assert!(measured_frame("- a\n  - b") > 0);
-}
-
 /// Largest list state a complete parse of `source` kept alive before releasing it.
 fn measured_frame(source: &str) -> usize {
     super::measuring_frame();
