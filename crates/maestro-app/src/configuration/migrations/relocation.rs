@@ -61,9 +61,9 @@ fn observe(
     let Some(std::path::Component::Normal(name)) = components.next_back() else {
         if path.ends_with("..") {
             let parent = observe(components.as_path(), sources, dependencies)?;
-            return fs::canonicalize(parent.join(".."));
+            return maestro_realpath::canonicalize(parent.join(".."));
         }
-        return fs::canonicalize(path);
+        return maestro_realpath::canonicalize(path);
     };
     let parent = observe(
         path.parent().unwrap_or(Path::new(".")),
@@ -76,7 +76,7 @@ fn observe(
     }
     match fs::read_link(&entry) {
         Ok(payload) => observe(&parent.join(payload), sources, dependencies),
-        Err(_) => fs::canonicalize(entry),
+        Err(_) => maestro_realpath::canonicalize(entry),
     }
 }
 
@@ -106,7 +106,7 @@ enum Publication {
 /// Prove an unchanged binding using native resolution, never absolute syntax alone.
 fn stable_binding(payload: &Path, target: &Path, referent: &Path) -> bool {
     target.parent().is_some_and(|parent| {
-        fs::canonicalize(parent.join(payload)).is_ok_and(|actual| actual == referent)
+        maestro_realpath::canonicalize(parent.join(payload)).is_ok_and(|actual| actual == referent)
     })
 }
 
@@ -335,7 +335,7 @@ fn move_referents(
     for (i, entry) in entries.iter().enumerate() {
         if entry.referent.is_none() && !batch.held[i] {
             if fs::rename(&entry.path, &entry.target).is_ok()
-                && fs::canonicalize(&entry.target).is_ok_and(|p| p == entry.target)
+                && maestro_realpath::canonicalize(&entry.target).is_ok_and(|p| p == entry.target)
             {
                 actual.insert(entry.path.clone(), entry.target.clone());
                 count += 1;
@@ -366,7 +366,7 @@ fn verify(
             } else {
                 &entry.target
             };
-            if !batch.held[i] && fs::canonicalize(observed).ok() != expected {
+            if !batch.held[i] && maestro_realpath::canonicalize(observed).ok() != expected {
                 batch.hold(i, entries, links);
             }
         }
@@ -399,7 +399,7 @@ fn settle(
             remove_link_entry(&entry.path)
         };
         if retired.is_ok()
-            && fs::canonicalize(&entry.target).ok()
+            && maestro_realpath::canonicalize(&entry.target).ok()
                 == entry
                     .referent
                     .as_ref()

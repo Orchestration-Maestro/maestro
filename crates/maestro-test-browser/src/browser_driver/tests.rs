@@ -142,7 +142,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
             ("execution", 27),
             ("loading", 64),
             ("contributions", 194),
-            ("canvas", 69)
+            ("canvas", 77)
         ]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
@@ -234,10 +234,6 @@ fn inventory_matches_authored_exports() {
         .iter()
         .flat_map(|file| source_exports(&root.join(file)))
         .collect::<Vec<_>>();
-    for export in SCREENSHOT_EXPORTS {
-        assert!(names.iter().any(|name| name == export), "{export}");
-    }
-    names.retain(|name| !SCREENSHOT_EXPORTS.contains(&name.as_str()));
     names.sort();
     let mut selected = inventory.families[3].1.clone();
     selected.sort();
@@ -259,18 +255,6 @@ const CANVAS_SOURCES: &[&str] = &[
     "artifact_elements_browser.rs",
     "tool_renderers_browser.rs",
     "offline_tool_cards_browser.rs",
-];
-
-/// Canvas exports that also await the screenshot observation the driver does not supply.
-const SCREENSHOT_EXPORTS: &[&str] = &[
-    "header_trailing_spacing_precedes_following_widget",
-    "reading_viewport_keeps_content_and_occluders_clipped",
-    "reading_frame_neighbors_keep_existing_paint",
-    "export_rendering_uses_the_selected_brand_roles",
-    "copy_link_native_slot_composition_preserves_reading_selection",
-    "generic_guidance_is_literal_selectable_and_localized",
-    "tool_card_image_and_diff_layout_uses_native_content",
-    "tool_cards_use_selected_brand_roles_without_changing_custom_html",
 ];
 
 /// Authored source modules supplying the contribution inventory.
