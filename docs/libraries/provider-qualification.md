@@ -32,12 +32,12 @@ adds no package to the lockfile.
 Native connector tests enable `aws-smithy-runtime-api`'s `test-util` feature only through a
 same-version dev-dependency, for its runtime-component builder.
 
-The resolved lockfile gains 42 packages, each under Apache-2.0 or under MIT or Apache-2.0 terms
-(or MIT alone), with `ryu =1.0.23` under Apache-2.0 OR BSL-1.0, used under
+The resolved lockfile gains 42 packages: 23 under Apache-2.0, 18 under MIT or Apache-2.0
+expressions (or MIT alone) and `ryu =1.0.23` under Apache-2.0 OR BSL-1.0, used under
 Apache-2.0. The AWS bridge uses the existing `hyper` byte and frame types; tests encode their own
 event-stream frames. The resolved transport crates are `aws-smithy-http =0.64.3` and
-`aws-smithy-runtime =1.16.2`; neither depends on `pin-utils`, which the registry marks
-unmaintained.
+`aws-smithy-runtime =1.16.2`, which resolves `aws-smithy-schema =1.1.2` (Apache-2.0) beside the
+SDK's `aws-smithy-schema =0.2.1`.
 
 The login source adds 24 packages to the lockfile. `aws-sdk-signin =1.22.0` is Apache-2.0. Under
 MIT or Apache-2.0 (either alone or as alternatives) are `base16ct =0.2.0`, `base64ct =1.8.3`,
