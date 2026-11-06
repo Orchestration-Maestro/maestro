@@ -408,9 +408,9 @@ impl<E> Lexer<'_, E> {
             return None;
         }
         let (raw, matched) = quote_prefix(source, rules::block_blockquote(self.options)?)?;
-        self.undecided |= !source.settled_after(matched.end());
+        self.undecided |= !source.settled_after(matched);
         let view = raw.view(0..raw.text.len());
-        let limit = view.text[matched.range()].trim_end_matches('\n').len();
+        let limit = view.text[..matched].trim_end_matches('\n').len();
         let body = view.select(std::iter::once(0..limit)).into();
         Some(QuoteEntry { raw, body })
     }
@@ -495,14 +495,18 @@ fn deliver<E>(frames: &mut Vec<Frame>, done: Done, lexer: &mut Lexer<'_, E>) {
     }
 }
 
-/// Materialize line-bounded prefixes whose length doubles until a complete line follows
-/// the grammar's match or the operand ends; there the match equals the whole operand's.
-fn quote_prefix(
-    source: &Segmented,
-    rule: &regress::Regex,
-) -> Option<(ScopeSource, regress::Match)> {
+/// Grow one materialized line-bounded prefix, doubling its length, until a complete line
+/// follows the grammar's match or the operand ends; there the match equals the whole
+/// operand's, and its end is returned. Each growth step copies only the bytes it adds.
+///
+/// The grammar repeats one quoted unit, and a unit's verdict reads no further than the line
+/// after it, so every unit before the match's last one is already the whole operand's.
+/// Each step therefore matches again only from the start of that last unit.
+fn quote_prefix(source: &Segmented, rule: &regress::Regex) -> Option<(ScopeSource, usize)> {
     let mut lines = rules::lines::Cursor::default();
+    let mut prefix = source.prefix();
     let mut end = 0;
+    let mut settled = 0;
     loop {
         let target = (2 * end).max(1);
         while end < target {
@@ -511,13 +515,16 @@ fn quote_prefix(
                 break;
             }
         }
-        let raw = source.select(0..end).materialize();
+        prefix.extend(end);
+        let text = prefix.text();
         #[cfg(test)]
-        crate::tests::block_operand(&raw.text);
-        let matched = rule.find(&raw.text)?;
-        if end == source.len() || raw.text[matched.end()..].contains('\n') {
-            return Some((raw, matched));
+        crate::tests::block_operand(&text[settled..]);
+        let matched = rule.find(&text[settled..])?;
+        let matched_end = settled + matched.end();
+        if end == source.len() || text[matched_end..].contains('\n') {
+            return Some((prefix.finish(), matched_end));
         }
+        settled += matched.group(1).map_or(0, |unit| unit.start);
     }
 }
 

@@ -157,15 +157,19 @@ fn deep_dash_markers_stay_one_thematic_break() {
     assert_eq!(nested, (4, 4));
 }
 
+/// The repeated resumption message: each repeat resumes the list a quote left, three
+/// container levels deeper.
+fn resumption_message(repeats: usize) -> String {
+    let mut source = String::from("> intro\nlazy\n");
+    for _ in 0..repeats {
+        source.push_str("> - a\n    cont\n> \n> para\n> \n");
+    }
+    source
+}
+
 /// Container depth and node count of the repeated resumption message.
 fn resumption(repeats: usize, options: MarkedOptions) -> (usize, usize) {
-    let case = move || {
-        let mut source = String::from("> intro\nlazy\n");
-        for _ in 0..repeats {
-            source.push_str("> - a\n    cont\n> \n> para\n> \n");
-        }
-        shape(&parse_with_options(source, options))
-    };
+    let case = move || shape(&parse_with_options(resumption_message(repeats), options));
     on_small_stack(case)
 }
 
@@ -370,6 +374,30 @@ fn deep_item_stop_rules_stay_proportional_to_the_source() {
     assert!(
         stays_proportional(measured),
         "item stop rule bytes per authored byte {measured:?}"
+    );
+}
+
+/// Work one fresh parse of the repeated resumption message charges, with its authored size.
+fn resumption_work(repeats: usize) -> (super::Work, usize) {
+    let source = resumption_message(repeats);
+    let bytes = source.len();
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let document = parse_with_options(source, MarkedOptions::Terminal);
+    assert_eq!(shape(&document).0, 3 * repeats + 1);
+    (super::WORK.with_borrow(|work| *work), bytes)
+}
+
+#[test]
+fn deep_resumed_items_copy_in_proportion_to_the_source() {
+    // Every resumed item admits the rest of the message as lazy lines, one level deeper, so
+    // a level that copied what the level above it already holds copies the square.
+    let copied = [32, 128].map(|repeats| {
+        let (work, bytes) = resumption_work(repeats);
+        (work.source_bytes + work.joined_bytes, bytes)
+    });
+    assert!(
+        stays_proportional(copied),
+        "authored bytes copied per authored byte {copied:?}"
     );
 }
 

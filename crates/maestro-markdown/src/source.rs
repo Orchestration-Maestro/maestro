@@ -217,6 +217,21 @@ impl ScopeSource {
         output.materialize()
     }
 
+    /// Extend this selection over `next` when `next` adds nothing or continues it in the
+    /// same allocation and map, reporting whether it did.
+    pub(crate) fn adjoin(&mut self, next: &Self) -> bool {
+        if next.text.is_empty() && next.units.is_empty() {
+            return true;
+        }
+        let continues = Arc::ptr_eq(&self.text.bytes, &next.text.bytes)
+            && Arc::ptr_eq(&self.units, &next.units)
+            && self.text.range.end == next.text.range.start;
+        if continues {
+            self.text.range.end = next.text.range.end;
+        }
+        continues
+    }
+
     /// Source extent of a local selection, including an empty boundary.
     pub(crate) fn extent(&self, range: Range<usize>) -> Range<usize> {
         self.native(&range).unwrap_or_else(|| {
