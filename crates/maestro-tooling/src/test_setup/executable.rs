@@ -99,7 +99,7 @@ pub(crate) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
 /// # Errors
 /// Returns a missing bundle executable, one installed from another source, or a stale one.
 fn prepared(source: &Source, output: &Path) -> io::Result<PathBuf> {
-    let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
+    let output = maestro_realpath::canonicalize(output).map_err(|error| at(output, &error))?;
     let staged = read_manifest(&output)?
         .executable
         .ok_or_else(|| at(&output, "the bundle holds no executable"))?;

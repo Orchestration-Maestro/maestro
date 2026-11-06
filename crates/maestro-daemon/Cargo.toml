@@ -27,6 +27,7 @@ maestro-tui = { path = "../maestro-tui" }
 maestro-terminal = { path = "../maestro-terminal" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-process = { path = "../maestro-process" }
 maestro-dependencies.workspace = true
 
