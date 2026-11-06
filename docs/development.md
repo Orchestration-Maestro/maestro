@@ -406,8 +406,8 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 ### Screenshot evidence
 
 Eight canvas exports and one contribution export check the pixels the page
-paints. Each one draws a state and
-awaits `support::reading_paint::observe(scene)`, which calls the page's
+paints. Each one draws a state and awaits
+`support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
 with `Page.captureScreenshot`, decodes the image with the browser's own decoder
 and keeps the pixels in the page, so only counts cross the protocol. It then
@@ -416,9 +416,8 @@ authored `style` attributes. A role pixel is an opaque pixel with exactly the
 role's RGB channels, the same rule the tool report witness uses. A scene that
 counts a role by name reads the colours the export publishes first with
 `support::reading_paint::publish_colors`. The call resolves `true` when every
-check holds.
-Otherwise it rejects with the failed check's message, which fails the export and
-the job:
+check holds. Otherwise it rejects with the failed check's message, which fails
+the export and the job:
 
 | Scene | Export | What the screenshots must show |
 | --- | --- | --- |
@@ -436,8 +435,8 @@ job log records the paint every check measured. The driver regression
 itself: painted text passes, while transparent text, an outer frame shadow and an
 unknown scene each fail. `control_focus_requires_an_unclipped_accent_ring` does
 the same for the focus scene: an inset accent ring passes, while a missing ring,
-an outer ring the group clips, a group that clips one edge and a page with no
-focused control each fail.
+an outer ring, a group that clips one edge and a page with no focused control
+each fail.
 
 ### Prove a browser test on a branch
 

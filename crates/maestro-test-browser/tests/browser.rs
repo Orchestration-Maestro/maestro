@@ -458,9 +458,9 @@ fn reading_paint_fails_when_the_painted_output_differs() {
     }
 }
 
-/// The focus scene passes only for an accent ring painted along every edge of the focused
-/// control: a missing ring, an outer ring its group clips, a group clipping one edge and an
-/// unfocused page each fail.
+/// The focus scene passes only for an inset accent ring painted along every edge of the focused
+/// control: a missing ring, an outer ring, a group clipping one edge and an unfocused page each
+/// fail.
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
 fn control_focus_requires_an_unclipped_accent_ring() {
