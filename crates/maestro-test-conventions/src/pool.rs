@@ -19,6 +19,7 @@ where
     let drain = || {
         let mut done = Vec::new();
         loop {
+            // Relaxed: the counter only claims indexes, and the sort below orders the results.
             let index = next.fetch_add(1, Ordering::Relaxed);
             let Some(item) = items.get(index) else {
                 return done;
