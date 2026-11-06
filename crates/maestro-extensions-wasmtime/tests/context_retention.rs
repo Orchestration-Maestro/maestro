@@ -45,7 +45,7 @@ async fn loaded(
     let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
     let (session, history) = super::session::runner_session(cwd);
     *session.model_registry.get_all().write().unwrap() =
-        vec![super::model_support::model("captured model")];
+        vec![super::model_support::model("registry model")];
     let (_, runner, _) = super::retained_components::loaded_in(bus.for_extension(), session).await;
     (runner, history)
 }
@@ -154,7 +154,10 @@ fn command_actions(
 fn retained_context_reads_stay_lazy_and_reject_staleness() {
     local(async {
         let (runner, history) = loaded("/retained-lazy").await;
-        let model = super::model_support::model("captured model");
+        let models = (
+            super::model_support::model("captured model"),
+            super::model_support::model("rebound model"),
+        );
         let bindings = Bindings {
             first: json!({"isIdle":false,"signal":false,"hasPendingMessages":true,
                 "getContextUsage":1.5,"getSystemPrompt":"prompt one"}),
@@ -165,7 +168,7 @@ fn retained_context_reads_stay_lazy_and_reject_staleness() {
         runner
             .bind_core(
                 Local::unbound_actions(),
-                base_actions(&model, &bindings.first),
+                base_actions(&models.0, &bindings.first),
                 maestro_extensions::types::ProviderActions::default(),
             )
             .unwrap();
@@ -185,20 +188,16 @@ fn retained_context_reads_stay_lazy_and_reject_staleness() {
             .handler;
         let command = handler("retention lazy".into(), runner.create_command_context());
         let (answer, ()) = futures_util::future::join(command, async {
-            for phase in 0..3 {
+            for phase in 0..4 {
                 let release = releases.recv().await.unwrap();
-                rebind(&runner, &bindings, &model, phase, entered.clone());
+                rebind(&runner, &bindings, &models, phase, entered.clone());
                 release.send(()).unwrap();
             }
         })
         .await;
         let report: Value = serde_json::from_str(&answer.unwrap_err().to_string()).unwrap();
-        check_phases(
-            &report,
-            &super::model_support::model("captured model"),
-            &history,
-        );
-        assert_eq!(bindings.calls.get(), 15, "every stale read rejected early");
+        check_phases(&report, &history);
+        assert_eq!(bindings.calls.get(), 20, "every stale read rejected early");
     });
 }
 
@@ -206,7 +205,10 @@ fn retained_context_reads_stay_lazy_and_reject_staleness() {
 fn rebind(
     runner: &ExtensionRunner<Local>,
     bindings: &Bindings,
-    model: &Arc<RwLock<maestro_models::Model>>,
+    models: &(
+        Arc<RwLock<maestro_models::Model>>,
+        Arc<RwLock<maestro_models::Model>>,
+    ),
     phase: usize,
     entered: tokio::sync::mpsc::UnboundedSender<tokio::sync::oneshot::Sender<()>>,
 ) {
@@ -215,7 +217,7 @@ fn rebind(
             runner
                 .bind_core(
                     Local::unbound_actions(),
-                    base_actions(model, &bindings.second),
+                    base_actions(&models.1, &bindings.second),
                     maestro_extensions::types::ProviderActions::default(),
                 )
                 .unwrap();
@@ -226,23 +228,31 @@ fn rebind(
             false,
             suspended(entered),
         ))),
+        2 => {
+            runner
+                .bind_core(
+                    Local::unbound_actions(),
+                    base_actions(&models.0, &bindings.first),
+                    maestro_extensions::types::ProviderActions::default(),
+                )
+                .unwrap();
+            runner.set_ui_context(Some(maestro_extensions::ExtensionUIContext::new(Rc::new(
+                Ui,
+            ))));
+        }
         _ => runner.invalidate(None),
     }
 }
 
 /// Checks every phase's per-member and per-operation result.
-fn check_phases(
-    report: &Value,
-    model: &Arc<RwLock<maestro_models::Model>>,
-    history: &Rc<RefCell<maestro_session::SessionManager>>,
-) {
+fn check_phases(report: &Value, history: &Rc<RefCell<maestro_session::SessionManager>>) {
     use maestro_session::session_manager::ReadonlySessionManager;
     let history = history.borrow();
     let id = history.get_session_id();
     let phases = report.as_array().unwrap();
-    assert_eq!(phases.len(), 4);
+    assert_eq!(phases.len(), 5);
     let identity = json!({"cwd":"/retained-lazy","id":id});
-    let registry = json!([model.read().unwrap().id]);
+    let registry = json!(["registry model"]);
     let first_members = json!([
         {"name":"ui","ok":null}, {"name":"hasUI","ok":true},
         {"name":"cwd","ok":"/retained-lazy"},
@@ -254,6 +264,8 @@ fn check_phases(
         {"name":"getContextUsage","ok":1.5},
         {"name":"getSystemPrompt","ok":"prompt one"},
     ]);
+    // The model reader is the one captured at creation, so the second binding's
+    // model never appears, while every other bound reader follows it.
     let second_members = json!([
         {"name":"ui","ok":null}, {"name":"hasUI","ok":false},
         {"name":"cwd","ok":"/retained-lazy"},
@@ -268,11 +280,13 @@ fn check_phases(
     assert_eq!(phases[0]["members"], first_members, "phase one");
     assert_eq!(phases[1]["members"], second_members, "phase two");
     assert_eq!(phases[2]["members"], second_members, "phase three");
+    assert_eq!(phases[3]["members"], first_members, "phase four");
     assert!(operations(&phases[0], true), "first commands");
     assert!(operations(&phases[1], true), "rebound base");
     assert!(operations(&phases[2], false), "rebound commands");
-    assert_eq!(stale_members(&phases[3]), json!(true), "stale members");
-    assert_eq!(phases[3]["wait"], json!(STALE), "stale wait");
+    assert!(operations(&phases[3], false), "rebound base again");
+    assert_eq!(stale_members(&phases[4]), json!(true), "stale members");
+    assert_eq!(phases[4]["wait"], json!(STALE), "stale wait");
 }
 
 /// Checks one phase's five operation results against the bound cancellation.

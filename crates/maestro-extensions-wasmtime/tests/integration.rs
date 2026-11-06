@@ -52,6 +52,7 @@ mod provider_catalog;
 mod replacement_callbacks;
 mod retained_components;
 mod retained_contexts;
+mod runtime_retention;
 mod startup;
 mod summarize_example;
 mod synchronous_reentry;

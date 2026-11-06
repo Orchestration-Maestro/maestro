@@ -67,8 +67,8 @@ which session an application continuation selects after an await.
 
 [Path loading and discovery](loading.md) take the module loader from the caller,
 so the domain never evaluates a module itself.
-A setup failure stops its continuation, and a continuation failure keeps the
-effects it already completed; both reach the awaiting command unchanged.
+A setup failure stops its continuation, and a continuation failure leaves the
+effects it already completed in place; both reach the awaiting command unchanged.
 
 Component execution, faults, resource disposal and pending stream work belong to
 the [component runtime](https://github.com/Orchestration-Maestro/maestro/issues/206).

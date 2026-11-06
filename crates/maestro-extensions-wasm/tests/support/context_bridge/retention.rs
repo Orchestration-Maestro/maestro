@@ -33,9 +33,66 @@ pub(super) async fn command(
         "fork" => fork(context, detail).await?,
         "switch" => switch(context, detail).await?,
         "errors" => errors(context, detail).await?,
+        "chain" => chain(context).await?,
         _ => return Err(format!("unknown retention request: {member}")),
     };
     Err(report.to_string())
+}
+
+/// Starts a second replacement from a continuation that still retains its own target.
+async fn chain(context: &ExtensionCommandContext) -> ExtensionResult<Value> {
+    let inner: WithSession = Box::new(|replaced| {
+        Box::pin(async move {
+            let before = cwd_label(&replaced);
+            REPLACED.with(|slot| *slot.borrow_mut() = Some(replaced.clone()));
+            let nested = replaced
+                .new_session(Some(NewSessionCommandOptions {
+                    setup: None,
+                    data: NewSessionCommandData {
+                        parent_session: None,
+                    },
+                    with_session: Some(nested_continuation()),
+                }))
+                .await;
+            let after = cwd_label(&replaced);
+            note(format!("outer:before={before}:after={after}"));
+            nested.map(|result| note(format!("nested:{}", result.cancelled)))
+        })
+    });
+    let resolved = completed(
+        context
+            .new_session(Some(NewSessionCommandOptions {
+                setup: None,
+                data: NewSessionCommandData {
+                    parent_session: None,
+                },
+                with_session: Some(inner),
+            }))
+            .await,
+    );
+    let retained = REPLACED.with(|slot| slot.borrow_mut().take());
+    Ok(json!({
+        "resolved": resolved,
+        "retained": retained.as_ref().map_or_else(|| "none".to_owned(), cwd_label),
+    }))
+}
+
+/// Reads a replacement context's own directory or the guidance that rejects the read.
+fn cwd_label(replaced: &ReplacedSessionContext) -> String {
+    match replaced.cwd() {
+        Ok(cwd) => format!("cwd={cwd}"),
+        Err(error) => format!("err={error}"),
+    }
+}
+
+/// Reads the second target from its own continuation.
+fn nested_continuation() -> WithSession {
+    Box::new(|replaced| {
+        Box::pin(async move {
+            note(format!("nested-continuation:{}", cwd_label(&replaced)));
+            Ok(())
+        })
+    })
 }
 
 /// Notes one ordered observation so later assertions see the real callback order.
@@ -142,7 +199,7 @@ async fn phase(context: &ExtensionCommandContext) -> Value {
 /// Reports each suspension separately so supplied bindings can change between them.
 async fn lazy(context: &ExtensionCommandContext) -> ExtensionResult<Value> {
     let mut phases = vec![phase(context).await];
-    for _ in 0..2 {
+    for _ in 0..3 {
         context.wait_for_idle().await?;
         phases.push(phase(context).await);
     }
