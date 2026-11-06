@@ -411,7 +411,9 @@ awaits `support::reading_paint::observe(scene)`, which calls the page's
 with `Page.captureScreenshot`, decodes the image with the browser's own decoder
 and keeps the pixels in the page, so only counts cross the protocol. It then
 changes only the decoration under test, captures again and restores the exact
-authored `style` attributes. The call resolves `true` when every check holds.
+authored `style` attributes. A role pixel is an opaque pixel with exactly the
+role's RGB channels, the same rule the tool report witness uses. The call
+resolves `true` when every check holds.
 Otherwise it rejects with the failed check's message, which fails the export and
 the job:
 
