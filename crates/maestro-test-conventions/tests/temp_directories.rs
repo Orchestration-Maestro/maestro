@@ -182,10 +182,20 @@ fn production_temporary_directory_is_accepted() {
 }
 
 #[test]
-fn unmigrated_crate_keeps_its_own_directories_until_its_batch() {
+fn every_member_outside_the_owner_is_checked() {
     check(
-        "maestro-cli",
-        "tests/package_command_checks.rs",
+        "maestro-dependencies",
+        "tests/generated_entries.rs",
+        SEEDED,
+        &[4],
+    );
+}
+
+#[test]
+fn owner_member_reads_the_platform_directory() {
+    check(
+        "maestro-test-directory",
+        "tests/directory_roots.rs",
         SEEDED,
         &[],
     );
@@ -324,7 +334,7 @@ fn packages_reads_the_platform_directory_into_a_setting() {
     );
 }
 
-/// Platform directory spellings in the crates added to the migrated scope.
+/// Platform directory spellings in members the migration converted.
 const ADDED: &[(&str, &str, &str, &[usize])] = &[
     (
         "maestro-test-process",
