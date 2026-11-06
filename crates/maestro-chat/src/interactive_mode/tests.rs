@@ -50,11 +50,11 @@ use maestro_app::presentation_data::footer_data_provider::{
 };
 use maestro_app::{
     AgentSessionRuntime, AuthStorage, ContextFile, CreateAgentSessionRuntimeFactory,
-    DefaultEventBus, Extension, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
-    LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, Local,
-    PromptTemplate, RegisteredCommand, ResourceDiagnostic, ResourceExtensionPaths, ResourceLoader,
-    SettingsManager, Skill, SourceInfo, SourceOrigin, SourceScope, create_extension_runtime,
-    load_extension_from_factory, strip_ansi,
+    DefaultEventBus, Extension, ExtensionAPI, ExtensionCommandContext, ExtensionFactory,
+    ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult,
+    LoadThemesResult, Local, PromptTemplate, RegisteredCommandOptions, ResourceDiagnostic,
+    ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo, SourceOrigin,
+    SourceScope, create_extension_runtime, load_extension_from_factory, strip_ansi,
 };
 use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
 use maestro_test_process::{IsolatedSetup, TestProcess};
@@ -358,8 +358,8 @@ fn extension(path: String, source_info: SourceInfo) -> Rc<RwLock<Extension<Local
     Rc::new(RwLock::new(Extension::new(path.clone(), path, source_info)))
 }
 
-/// One local project extension at `path` registering the command `name`, as the
-/// extension registration interface stores it.
+/// One local project extension at `path` registering the command `name` through the
+/// interface an extension registers through.
 fn commanding(name: &str, path: &str) -> Rc<RwLock<Extension<Local>>> {
     let source_info = SourceInfo {
         path: path.to_owned(),
@@ -370,22 +370,23 @@ fn commanding(name: &str, path: &str) -> Rc<RwLock<Extension<Local>>> {
     };
     let owner = extension(path.to_owned(), source_info);
     let handler: CommandHandler = Rc::new(|_, _| Box::pin(async { Ok(()) }));
-    let command = {
-        let owner = owner.read().unwrap();
-        RegisteredCommand {
-            name: name.to_owned(),
-            source_info: Arc::clone(&owner.source_info),
+    let local = Rc::new(tokio::task::LocalSet::new());
+    let events = <Local as DefaultEventBus>::default_event_bus(&local).for_extension();
+    ExtensionAPI::new(
+        &owner,
+        create_extension_runtime::<Local>(),
+        events,
+        "/workspace".into(),
+    )
+    .register_command(
+        name.to_owned(),
+        RegisteredCommandOptions {
             description: None,
             get_argument_completions: None,
             handler,
-        }
-    };
-    let command = Rc::new(RwLock::new(command));
-    owner
-        .write()
-        .unwrap()
-        .commands
-        .insert(name.to_owned(), command);
+        },
+    )
+    .unwrap();
     owner
 }
 
