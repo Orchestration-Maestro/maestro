@@ -1,5 +1,5 @@
 //! Native widget and status calls through the retained UI host.
-use super::extension_ui::port;
+use super::extension_ui::{Original, is_original, port};
 use super::{Setup, World, isolated, started};
 use maestro_app::{
     ExtensionAPI, ExtensionComponent, ExtensionFactory, ExtensionWidgetOptions, Local,
@@ -283,16 +283,6 @@ fn widgets_replacement_reorders_moves_and_disposes() {
     );
 }
 
-/// An error whose allocation identity survives host forwarding.
-#[derive(Debug)]
-struct Original(std::sync::Arc<()>);
-impl std::fmt::Display for Original {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("widget callback failed")
-    }
-}
-impl std::error::Error for Original {}
-
 /// Builds the two original-error branches with their ordered disposal/factory trace.
 fn failing_factories(
     api: &ExtensionAPI<Local>,
@@ -305,7 +295,7 @@ fn failing_factories(
     let dispose = api.ui_callback(move |(), _| {
         disposed.borrow_mut().push("dispose-old");
         if dispose_fails {
-            Err(Box::new(Original(failure.clone())))
+            Err(Box::new(Original::new("widget callback failed", &failure)))
         } else {
             Ok(())
         }
@@ -322,7 +312,7 @@ fn failing_factories(
     let failure = returned.clone();
     let new = api.ui_callback(move |_, _| {
         called.borrow_mut().push("new-factory");
-        Err(Box::new(Original(failure.clone())))
+        Err(Box::new(Original::new("widget callback failed", &failure)))
     });
     vec![WidgetContent::Factory(old), WidgetContent::Factory(new)]
 }
@@ -348,10 +338,7 @@ fn widget_failures_preserve_original_error_and_prior_effects() {
                 let error = ui
                     .set_widget("a".into(), callbacks.next(), None)
                     .unwrap_err();
-                assert!(std::sync::Arc::ptr_eq(
-                    &error.downcast_ref::<Original>().unwrap().0,
-                    &identity
-                ));
+                assert!(is_original(error.as_ref(), &identity));
                 assert_eq!(
                     world.mode.extension_widgets_above.contains_key("a"),
                     dispose_fails

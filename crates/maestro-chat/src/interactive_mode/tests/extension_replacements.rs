@@ -1,5 +1,5 @@
 //! Extension headers and footers replacing the built-in ones through the retained host.
-use super::extension_ui::port;
+use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{Setup, World, isolated};
 use crate::interactive_mode::startup::ExpandableText;
@@ -275,7 +275,10 @@ fn failing(
         dispose: Some(api.ui_callback(move |(), _| {
             disposed.borrow_mut().push("dispose-old".into());
             if phase == "dispose" {
-                return Err(Box::new(Original(failure.clone())));
+                return Err(Box::new(Original::new(
+                    "replacement callback failed",
+                    &failure,
+                )));
             }
             Ok(())
         })),
@@ -284,7 +287,10 @@ fn failing(
     let (called, failure) = (trace.clone(), error.clone());
     let fail = move || -> Result<ExtensionComponent, maestro_app::EventError> {
         called.borrow_mut().push("new-factory".into());
-        Err(Box::new(Original(failure.clone())))
+        Err(Box::new(Original::new(
+            "replacement callback failed",
+            &failure,
+        )))
     };
     if side == "header" {
         vec![
@@ -310,16 +316,6 @@ fn install(
     }
 }
 
-/// An error whose allocation identity survives host forwarding.
-#[derive(Debug)]
-struct Original(std::sync::Arc<()>);
-impl std::fmt::Display for Original {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("replacement callback failed")
-    }
-}
-impl std::error::Error for Original {}
-
 #[test]
 fn replacement_failures_keep_disposal_and_removal_phase() {
     isolated(
@@ -344,10 +340,7 @@ fn replacement_failures_keep_disposal_and_removal_phase() {
                 world.runtime.settle().unwrap();
                 let result = install(&ui, factories.next().unwrap());
                 let error = result.unwrap_err();
-                assert!(std::sync::Arc::ptr_eq(
-                    &error.downcast_ref::<Original>().unwrap().0,
-                    &identity
-                ));
+                assert!(is_original(error.as_ref(), &identity));
                 assert_eq!(world.runtime.pending(), 0);
                 let expected: &[&str] = if phase == "dispose" {
                     &["dispose-old"]

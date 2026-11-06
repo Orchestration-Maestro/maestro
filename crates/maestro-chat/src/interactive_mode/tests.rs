@@ -96,7 +96,7 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
     if maestro_test_process::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
         let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
-        on_tasks(body(Path::new(&directory), Path::new(&package)));
+        maestro_test_process::executor::run(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
     let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
@@ -188,7 +188,7 @@ pub(super) fn isolated_output(
         let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-            on_tasks(body(Path::new(&directory)));
+            maestro_test_process::executor::run(body(Path::new(&directory)));
         }
         return None;
     }
@@ -1383,14 +1383,18 @@ async fn await_work(future: maestro_tui::tui::LocalFuture, errors: &Failures) {
     }
 }
 
-/// Runs `body` inside a current-thread runtime and task set, where the mode's work and the
-/// session's own tasks make progress.
-pub(super) fn on_tasks<T>(body: impl Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, body)
+/// The emulated terminal effects a tap collected.
+pub(super) type Effects = Rc<RefCell<Vec<String>>>;
+
+/// Collects the effects the terminal is asked to emulate from now on; an emulated effect,
+/// such as a title or a progress request, is not recorded as a frame write.
+pub(super) fn tap(world: &World) -> Effects {
+    let effects: Effects = Rc::default();
+    let collect = Rc::clone(&effects);
+    world
+        .terminal
+        .set_tap(move |effect| collect.borrow_mut().push(effect.to_owned()));
+    effects
 }
 
 /// Submits `text` through the editor's installed submission.

@@ -1,6 +1,6 @@
 //! Extension custom views shown inline or as overlays through the retained host.
 use super::extension_editors::{Knobs, probe_factory};
-use super::extension_ui::port;
+use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{World, isolated};
 use maestro_app::{
@@ -145,16 +145,6 @@ pub(super) struct Bound {
     pub(super) on_handle: UIHostCall<Handle, ()>,
 }
 
-/// An error whose allocation identity survives host forwarding.
-#[derive(Debug)]
-struct Original(Arc<()>);
-impl std::fmt::Display for Original {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("custom view failed")
-    }
-}
-impl std::error::Error for Original {}
-
 impl Views {
     /// A fresh witness whose resolver returns a width of 21.
     pub(super) fn new() -> Rc<Self> {
@@ -177,13 +167,11 @@ impl Views {
     }
     /// The witness's original failure.
     fn failure(&self) -> EventError {
-        Box::new(Original(self.error.clone()))
+        Box::new(Original::new("custom view failed", &self.error))
     }
     /// Whether `error` carries this witness's original failure.
     fn is_original(&self, error: &(dyn std::error::Error + 'static)) -> bool {
-        error
-            .downcast_ref::<Original>()
-            .is_some_and(|error| Arc::ptr_eq(&error.0, &self.error))
+        is_original(error, &self.error)
     }
     /// The `index`th view built, while it is alive.
     fn view(&self, index: usize) -> Rc<View> {

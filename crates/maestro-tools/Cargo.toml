@@ -46,6 +46,7 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt", "fs",
 rustix = { workspace = true, features = ["std", "fs"] }
 
 [dev-dependencies]
+maestro-models = { path = "../maestro-models", features = ["test-support"] }
 maestro-tools = { path = ".", features = ["test-support"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

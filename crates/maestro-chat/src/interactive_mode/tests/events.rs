@@ -6,7 +6,7 @@ use super::transcript::{
     Definition, assistant, call, history, kind_value, message, pending, recorded, registering,
     replay, text, tool, tool_params,
 };
-use super::{Setup, World, cases, isolated, started};
+use super::{Effects, Setup, World, cases, isolated, started, tap};
 use crate::ToolExecutionComponent;
 use maestro_app::configuration::config::APP_TITLE;
 use maestro_app::messages::CustomAgentMessages;
@@ -108,20 +108,6 @@ enum Expected {
     },
     /// The rows and registrations shown.
     Shown(Presentation),
-}
-
-/// The collected emulated terminal effects.
-type Effects = Rc<RefCell<Vec<String>>>;
-
-/// Collects the effects the terminal is asked to emulate from now on; a title is emulated
-/// rather than recorded as a frame write.
-fn tap(world: &World) -> Effects {
-    let effects: Effects = Rc::default();
-    let collect = Rc::clone(&effects);
-    world
-        .terminal
-        .set_tap(move |effect| collect.borrow_mut().push(effect.to_owned()));
-    effects
 }
 
 /// The titles `effects` holds, with their terminal framing removed.
