@@ -1101,10 +1101,11 @@ the WebAssembly closure of `maestro-extensions-wasm` (its dependencies, without 
 gated to native targets), the lock entries of the registry packages that closure uses, the
 workspace manifest, Cargo configuration and the toolchain. `cargo build` compiles the
 development dependencies of the crates it builds and of no crate they depend on, so the
-digest follows development dependencies for the built crates only. For every other crate in
-the closure it leaves out `tests/`, the unit test files (`src/**/tests.rs` and
-`src/**/tests/`) and the `[dev-dependencies]` tables of the manifest. A test-only change in
-such a crate keeps every component, while a change to its source or to another manifest
+digest follows development dependencies for the built crates only. For every crate in the
+closure it leaves out `tests/` and the unit test files (`src/**/tests.rs` and
+`src/**/tests/`); for every crate it does not build, it also leaves out the
+`[dev-dependencies]` tables of the manifest. A test-only change in a crate the components
+only depend on keeps every component, while a change to its source or to another manifest
 entry rebuilds them all. A change to the workspace manifest rebuilds them all as well.
 Each component adds a digest of the example files Cargo reports it read, so a helper module
 that several components share is part of each of them. The setup example and the development

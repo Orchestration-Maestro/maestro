@@ -118,7 +118,8 @@ fn remove_development(table: &mut toml::Table) {
 }
 
 /// The manifest at `path` without its development dependencies, which a build of the package
-/// as a dependency never compiles. A missing manifest reads as empty.
+/// as a dependency never compiles, and without the target tables that leaves empty. A missing
+/// manifest reads as empty.
 fn without_development(path: &Path) -> io::Result<String> {
     let text = match std::fs::read_to_string(path) {
         Ok(text) => text,

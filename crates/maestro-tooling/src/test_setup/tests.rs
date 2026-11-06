@@ -290,6 +290,9 @@ fn component_digest_ignores_tests_and_development_dependencies_of_dependencies()
 
     std::fs::write(root.join("crates/library/tests/it.rs"), "// after\n").unwrap();
     std::fs::write(root.join("crates/library/src/tests.rs"), "// after\n").unwrap();
+    let unit = root.join("crates/library/src/tests/one.rs");
+    std::fs::create_dir_all(unit.parent().unwrap()).unwrap();
+    std::fs::write(unit, "// after\n").unwrap();
     std::fs::write(
         root.join("crates/library/Cargo.toml"),
         "[package]\nname = \"library\"\nversion = \"0.1.0\"\n\
