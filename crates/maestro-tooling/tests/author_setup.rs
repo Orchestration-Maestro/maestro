@@ -1241,18 +1241,29 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .output()
             .unwrap(),
     );
-    let line = fs::read_to_string(&environment).unwrap();
+    let environment_text = fs::read_to_string(&environment).unwrap();
+    for variable in ["MAESTRO_NATIVE_FIXTURE", "MAESTRO_CHILD_TOOLCHAIN_PROBE"] {
+        let path = environment_text
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
+            .unwrap();
+        assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(&moved));
+    }
     let artifact = Path::new(
-        line.trim_end()
-            .strip_prefix("MAESTRO_NATIVE_FIXTURE=")
+        environment_text
+            .lines()
+            .find_map(|line| line.strip_prefix("MAESTRO_NATIVE_FIXTURE="))
             .unwrap(),
     );
-    assert!(artifact.is_absolute() && artifact.starts_with(&moved));
     let alias = root.join("installed");
     maestro_test_process::install_executable(artifact, &alias).unwrap();
     assert_eq!(fs::read(alias).unwrap(), fs::read(artifact).unwrap());
     assert_eq!(
         fs::read_to_string(root.join("native-builds")).unwrap(),
+        "build\n"
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("probe-builds")).unwrap(),
         "build\n"
     );
 }

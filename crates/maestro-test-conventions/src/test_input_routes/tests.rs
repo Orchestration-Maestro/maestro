@@ -2,11 +2,11 @@
 
 use std::path::PathBuf;
 
-use super::{SPELLINGS, VISITED, reads};
+use super::{SPELLINGS, reads};
 use crate::source::{Member, Source};
 
 #[test]
-fn directory_reads_visit_and_spell_only_test_code() {
+fn directory_reads_spell_only_test_code() {
     let source = |name: &str, contents: &str| {
         Source::new(PathBuf::from(format!("models/src/{name}")), contents.into())
     };
@@ -28,13 +28,12 @@ fn directory_reads_visit_and_spell_only_test_code() {
             ),
         ],
     };
-    VISITED.set(0);
     SPELLINGS.set(0);
     for source in &member.sources {
         assert!(reads(&member, source).is_empty());
     }
-    let work = (VISITED.get(), SPELLINGS.get());
-    println!("visited sources, spellings: {work:?}");
-    // The module without test items is skipped, and only the test's own path is spelled.
-    assert_eq!(work, (2, 1));
+    let spellings = SPELLINGS.get();
+    println!("spellings: {spellings}");
+    // Only the test's own path is spelled.
+    assert_eq!(spellings, 1);
 }

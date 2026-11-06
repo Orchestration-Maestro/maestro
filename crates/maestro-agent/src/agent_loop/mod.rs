@@ -1,9 +1,10 @@
 //! Awaited and observable conversation turns.
 use crate::types::{AgentContextRecord, AgentExecution, AgentLoopConfigRecord, Threaded};
 
+use crate::agent::{read, write};
 use crate::{AgentEvent, AgentMessage, AgentSpawner, CustomAgentMessages, StreamFn};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, EventStream};
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, RwLock};
 
 /// Caller-owned stream submission.
 mod submission;
@@ -27,18 +28,6 @@ pub struct AgentLoopOptionsRecord<E: AgentExecution = Threaded> {
     pub signal: Option<Cancellation>,
     /// Replacement stream construction; absence selects the model adapter.
     pub stream_fn: Option<StreamFn<E>>,
-}
-/// Read retained state even after an unrelated panic poisoned its lock.
-fn read<T>(value: &RwLock<T>) -> RwLockReadGuard<'_, T> {
-    value
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-/// Write retained state even after an unrelated panic poisoned its lock.
-fn write<T>(value: &RwLock<T>) -> RwLockWriteGuard<'_, T> {
-    value
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 /// Apply prompt copying or continuation admission before shared execution.
 pub(crate) async fn run_for<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>>(

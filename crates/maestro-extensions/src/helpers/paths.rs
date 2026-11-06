@@ -295,7 +295,10 @@ mod tests {
     fn shorten_path_abbreviates_only_home_and_descendants() {
         let test = "shorten_path_abbreviates_only_home_and_descendants";
         let home = || {
-            std::collections::BTreeMap::from([("HOME", "/home/al"), ("USERPROFILE", "/home/al")])
+            std::collections::BTreeMap::from([
+                ("HOME", Some("/home/al")),
+                ("USERPROFILE", Some("/home/al")),
+            ])
         };
         let selected = maestro_test_process::run_per_environment(test, ["home"], |_| home());
         if selected.unwrap().is_none() {

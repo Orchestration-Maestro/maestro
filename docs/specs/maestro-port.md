@@ -406,7 +406,7 @@ The SDK examples, the RPC client demo, the browser chat example and the other-la
 
 Tests are black-box. They use Maestro's public crates and programs and the same recorded corpora, never the guest crate's private test host. Name every assertion with no public-host equivalent, and agree it before dropping it.
 
-**Test preparation.** maestro-packages runs Maestro's development tool at the locked commit. `development prepare-test-setup` builds the example components and installs the executable and the native test child once per CI run. Nextest setups then export their paths: `MAESTRO_<NAME>_COMPONENT`, `MAESTRO_EXECUTABLE`, `MAESTRO_NATIVE_FIXTURE` and `MAESTRO_GUIDE_COMPONENT`. The tool works in the workspace it runs in:
+**Test preparation.** maestro-packages runs Maestro's development tool at the locked commit. `development prepare-test-setup` builds the example components and installs the executable and the native test children once per CI run. Nextest setups then export their paths: `MAESTRO_<NAME>_COMPONENT`, `MAESTRO_EXECUTABLE`, `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE` and `MAESTRO_GUIDE_COMPONENT`. The tool works in the workspace it runs in:
 
 - the checkout is the workspace root of the working directory;
 - the component crate is the workspace member whose manifest holds the generated example region;
@@ -879,9 +879,11 @@ handler and a new session. The parent carries the request and keeps its own mode
 limits, session and environment, and a refused effect stops the child before its
 body. The owner uses the approved `rustix` stdio and process operations for
 descriptor replacement and those effects, and the locked `signal-hook` flag
-registration for the file-size handler. It has no workspace dependencies except the native feature unifier and
-one native development edge to the disposable directory owner for its own child
-fixtures, and it is excluded from the foundation utility permission. Its only
+registration for the file-size handler. It has no workspace dependencies except the native feature unifier and one
+native, non-optional normal dependency on the disposable directory owner: its
+own child fixtures and its launcher reach the owner through that edge to read
+the platform directory it hands to its cleared children. It is excluded from
+the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
@@ -904,8 +906,9 @@ one-test prologue through their own transport, followed by product readiness and
 completion. `output_with` uses this same selection operation and additionally
 checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
-`TEMP` on Windows. A cleared child of `run_per_environment` keeps the parent's
-temporary directory unless its case sets one. `user_cache_home()` names the directory a
+`TEMP` on Windows. The launcher observes the parent's directory through the
+owner's `temporary_root`, so a cleared child of `run_per_environment` keeps the
+parent's temporary directory unless its case sets one. `user_cache_home()` names the directory a
 child passes as `XDG_CACHE_HOME` to keep this process's user cache when it replaces
 `HOME` on Linux, the only platform whose cache location follows that variable. `local_zone_follows_tz()` states the
 premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
@@ -927,7 +930,11 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-test-conventions`, `maestro-test-process`, `maestro-theme`, `maestro-tooling`, `maestro-tools`,
 `maestro-tui`, `maestro-tui-crossterm`, `maestro-watch` and
 `maestro-workspace`; a caller
-declares it only when it uses it. Aliases follow the same rules. Normal, build,
+declares it only when it uses it. The checked child launcher is the one
+exception to that development form: it declares the owner as a native normal
+dependency, and its launcher code reads `temporary_root`. Every other caller
+declares the development edge.
+Aliases follow the same rules. Build,
 optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
