@@ -220,13 +220,15 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     pub mod pdf;
     #[cfg(not(target_arch = "wasm32"))]
+    mod plain_runtimes;
+    #[cfg(unix)]
+    pub use plain_runtimes::paused_io_runtime;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use plain_runtimes::run;
+    #[cfg(not(target_arch = "wasm32"))]
     pub mod rpc_connection;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod runtime_fixtures;
-    #[cfg(unix)]
-    pub use runtime_fixtures::paused_io_runtime;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use runtime_fixtures::run;
     pub mod session_harness;
     #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;
