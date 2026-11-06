@@ -43,7 +43,7 @@ pub(crate) struct Walk {
     pub(crate) layout: Option<String>,
     /// Located test-owned timer, polling and capture findings in source order.
     pub(crate) time_limits: Vec<((usize, usize), time_limits::Diagnostic)>,
-    /// Production function bodies as block byte offsets with their signature lines.
+    /// Function bodies as block byte offsets with their signature lines.
     pub(crate) bodies: Vec<(usize, usize)>,
     /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
@@ -121,7 +121,7 @@ struct Walker<'a> {
     layout: repetition::TestLayout<'a>,
     /// Test-owned timers, polling and captures.
     calls: time_limits::Calls<'a>,
-    /// Production function bodies.
+    /// Function bodies.
     bodies: duplicates::Bodies,
     /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
@@ -221,13 +221,6 @@ impl<'a> Walker<'a> {
         }
     }
 
-    /// Record a production function body for the duplicate check.
-    fn body(&mut self, signature: &syn::Signature, block: &syn::Block) {
-        if self.context.gate < Some(Gate::Associated) {
-            self.bodies.function(signature, block);
-        }
-    }
-
     /// Finish every state into the source's owned findings.
     fn finish(mut self) -> Walk {
         self.test_spans.sort_unstable_by_key(|span| span.start);
@@ -318,7 +311,7 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_item_fn(&mut self, function: &'a syn::ItemFn) {
         self.declaring(&function.sig.ident);
         self.ignored.item_fn(function);
-        self.body(&function.sig, &function.block);
+        self.bodies.function(&function.sig, &function.block);
         if !self.testing() {
             self.poison.body(&function.block);
         }
@@ -327,7 +320,7 @@ impl<'a> Visit<'a> for Walker<'a> {
 
     fn visit_impl_item_fn(&mut self, function: &'a syn::ImplItemFn) {
         self.declaring(&function.sig.ident);
-        self.body(&function.sig, &function.block);
+        self.bodies.function(&function.sig, &function.block);
         if !self.testing() {
             self.poison.body(&function.block);
         }
@@ -337,7 +330,7 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_trait_item_fn(&mut self, function: &'a syn::TraitItemFn) {
         self.declaring(&function.sig.ident);
         if let Some(block) = &function.default {
-            self.body(&function.sig, block);
+            self.bodies.function(&function.sig, block);
             if !self.testing() {
                 self.poison.body(block);
             }

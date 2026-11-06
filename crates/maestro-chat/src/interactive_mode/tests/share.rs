@@ -171,7 +171,9 @@ fn run(
     if maestro_test_process::selection().is_child() {
         if maestro_test_process::selection().runs_case(case) {
             let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
-            super::on_tasks(body(Path::new(&std::env::var(&*ENV_AGENT_DIR).unwrap())));
+            maestro_test_process::executor::run(body(Path::new(
+                &std::env::var(&*ENV_AGENT_DIR).unwrap(),
+            )));
         }
         return None;
     }

@@ -32,6 +32,40 @@ use std::{
     time::Duration,
 };
 
+/// An extension failure whose allocation identity survives host forwarding.
+#[derive(Debug)]
+pub(super) struct Original {
+    /// The identity a witness compares forwarded failures with.
+    identity: Arc<()>,
+    /// The failure's message.
+    message: &'static str,
+}
+
+impl Original {
+    /// A failure reading `message` that carries `identity`.
+    pub(super) fn new(message: &'static str, identity: &Arc<()>) -> Self {
+        Self {
+            identity: Arc::clone(identity),
+            message,
+        }
+    }
+}
+
+impl std::fmt::Display for Original {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.message)
+    }
+}
+
+impl std::error::Error for Original {}
+
+/// Whether `error` is an original failure carrying `identity`.
+pub(super) fn is_original(error: &(dyn std::error::Error + 'static), identity: &Arc<()>) -> bool {
+    error
+        .downcast_ref::<Original>()
+        .is_some_and(|error| Arc::ptr_eq(&error.identity, identity))
+}
+
 /// Every recorded host case.
 const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_extension_ui.json");
 
