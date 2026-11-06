@@ -238,16 +238,17 @@ fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
 fn still_named(_file: &File, _path: &Path) -> io::Result<bool> {
     Ok(true)
 }
+
 /// Resolves a path to its real path through the owner that carries the file system.
 #[cfg(not(target_arch = "wasm32"))]
 fn real_path(path: &Path) -> io::Result<PathBuf> {
     maestro_realpath::canonicalize(path)
 }
 
-/// The browser build has no file system, so the lexical path is the real path.
+/// wasm32 has no file system, so no real path exists to resolve.
 #[cfg(target_arch = "wasm32")]
-fn real_path(path: &Path) -> io::Result<PathBuf> {
-    Ok(path.to_path_buf())
+fn real_path(_path: &Path) -> io::Result<PathBuf> {
+    Err(io::ErrorKind::Unsupported.into())
 }
 
 /// Canonicalizes the selected entry, retaining any missing suffix.
