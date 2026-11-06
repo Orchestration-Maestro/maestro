@@ -92,9 +92,6 @@ mod tests {
     /// Variable the probe sets to a value that is not UTF-8.
     #[cfg(unix)]
     const PROBE: &str = "MAESTRO_TUI_ENVIRONMENT_PROBE";
-    /// Variable that marks the child this test re-runs itself in.
-    #[cfg(unix)]
-    const CHILD: &str = "MAESTRO_TUI_ENVIRONMENT_CHILD";
 
     /// The reader keeps a value the platform cannot decode as text, with replacement
     /// characters, instead of dropping it.
@@ -102,7 +99,7 @@ mod tests {
     #[test]
     fn environment_decodes_non_utf8_values_with_replacement_characters() {
         const TEST: &str = "environment_decodes_non_utf8_values_with_replacement_characters";
-        if std::env::var_os(CHILD).is_some() {
+        if maestro_test_process::selection().is_child() {
             assert_eq!(environment(PROBE).as_deref(), Some("A\u{fffd}B"));
             return;
         }
@@ -110,7 +107,7 @@ mod tests {
             .unwrap()
             .env_clear()
             .env(PROBE, std::ffi::OsStr::from_bytes(b"A\xffB"))
-            .env(CHILD, "1")
+            .case("child")
             .output()
             .unwrap();
         assert!(
