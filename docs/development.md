@@ -1327,129 +1327,15 @@ of its size. The bundle manifest records whether it holds a graph; a build that 
 it out and the shards build it themselves. A shard's `nextest-setup browser-author` replaces
 `target/browser-author` with the staged graph, after checking that the checkout still holds
 the files the bundle was prepared from, and gives every file of it one modification time
-taken when it installs. Cargo rebuilds a unit when a source or an output it builds on is
-newer than its fingerprint, so a graph that is newer than the checkout and has no output
-newer than another leaves the recipes nothing to compile.
-
-The setup runs before the first browser author test of a run, and only on a shard that runs
-one. Without a bundle it pays the whole cost itself. It lints
-`maestro-web` for `wasm32-unknown-unknown` as `browser-check` does, without the
-formatting repair that would rewrite sources, then runs `browser-example-check`,
-`browser-library-build` and `browser-debug-build` in the checkout. It removes the
-runner's coverage flags and profile path from those commands and restores the compiler
-wrapper that preceded coverage, as the tests do for their own children. It builds in
-`target/browser-author`, the first lane, copies the graph into `target/browser-author-1`
-with one new modification time, and exports both targets as
-`MAESTRO_BROWSER_TARGET_DIRS`, in the platform's path-list syntax. A copy at
-another path serves the recipes as the original does: a recipe in a copied lane compiles
-only what it compiles in the original. Output built for one checkout path serves another,
-so each test's copy of the checkout reuses it.
-
-The tests change sources and rebuild, and Trunk writes its binding and optimizer outputs
-outside Cargo's build lock, so two tests never build in one target at once. Each test takes
-a lane instead. The `browser-author` test group in `.config/nextest.toml` admits two tests
-at once, and nextest numbers them from 0 in `NEXTEST_TEST_GROUP_SLOT`. `Browser` gives every
-recipe and helper the lane with that number and holds a lock file inside it while the
-fixture lives. The group's `max-threads` equals `LANES` in the setup's browser graph module;
-`browser_author_group_admits_one_test_per_lane` fails when the two differ. Every lane can
-build at once, so the lanes split the run's compile jobs: each recipe and helper gets the
-caller's `CARGO_BUILD_JOBS`, or the core count without one, divided by the number of lanes,
-and at least one job. Every recipe still slows while the other lane builds, and a third lane
-would take the longest browser tests past the 30-second slow flag on a four-core runner. A
-test outside the group, or a run without the setup, takes the first lane and waits on its
-lock, so plain Cargo tests still run the browser tests one at a time. Each lane past the
-first costs one copy of the graph before the first test starts.
-
-`browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
-unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
-crates compile in it: the workspace-sources setup below provides the registry units. The
-test reserves every core with `threads-required`, so other tests do not stretch its
-compiler jobs past the hang limit. The test checks one cold build and its outputs.
-Rebuilds after a change to an included file, a source error and its repair belong to
-`browser_author_included_files_rebuild_without_source_changes` and
-`browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup
-prints a warning and does not stop the run; the setup then announces the first lane alone,
-and the tests run the same recipes in turn and report the failure. Plain Cargo tests, and
-nextest runs without the setup, use the test build's own target directory as their only
-lane.
-
-### Cargo state of tooling fixtures
-
-Cargo locks the package cache of its home while it resolves, even with
-`--offline`, so two tests that start `cargo` in one home wait for each other.
-Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
-`toolchain_support::fixture_command` creates beside the fixture. The recipe
-tool build, every `Workspace` command, the consumer workspaces and their hook
-runs, the standalone asset and wasm probe fixtures, and lock generation and
-metadata queries on the browser fixture manifest use one.
-
-The instrumented child-toolchain probe is a `maestro-tooling` example target that
-preparation builds once, so no test and no test shard compiles it. Preparation
-stages it, and the `native-fixture` setup validates and exports it as
-`MAESTRO_CHILD_TOOLCHAIN_PROBE` alongside the native fixture; a test launches the
-exported path directly.
-
-A test shard starts from an extracted test archive, which carries test executables
-and never Cargo's build records. A probe that a test compiled would therefore
-recompile its dependency closure cold in every shard. Preparation compiles it
-once instead, into the run's target directory with the dev profile:
-
-```sh
-cargo rustc --locked -p maestro-tooling --example child_toolchain_probe \
-    --profile dev --target-dir <run target> -- -C instrument-coverage
-```
-
-Preparation always passes `-C instrument-coverage`, so the staged parent records
-counters in every run, not only in a coverage run.
-
-A fixture that resolves registry crates reads one offline source configuration.
-The nextest setup `nextest-setup fixture-sources` vendors the crates
-named by `fixtures/registry_sources/Cargo.toml`, at the versions the workspace
-lock selects, together with the browser fixture's crates. It runs once per run,
-writes `target/fixture-sources/<hash>/`, and reuses that directory while the
-inputs stay unchanged. The set stays small because Cargo reads every vendored
-package on each run; a test checks that every registry crate the tooling crates
-declare is named in that manifest. Keep an anonymous import for each declared
-crate in `fixtures/registry_sources/src/lib.rs`. The dependency scan checks this
-standalone fixture too. The setup exports the configuration path as
-`MAESTRO_TEST_CARGO_SOURCES`; outside nextest the first test that needs it runs
-the same command. A fixture opts in with `Workspace::use_prepared_sources` or
-`Browser::cargo`, which copy the configuration into its private home. A fixture
-without registry dependencies copies nothing.
-
-The Unix-only cold browser test uses `nextest-setup fixture-sources workspace`,
-which prepares the whole workspace's locked dependencies before the test. Its
-source-preparation helper is also Unix-only; Windows compiles the shared fixture
-helpers without the browser tests. The setup exports
-`MAESTRO_TEST_WORKSPACE_CARGO_SOURCES` from `target/workspace-sources/<hash>/`.
-This uses the same vendor operation with a wider dependency set, including Git
-sources. The key covers the workspace and member manifests, the browser manifest, both
-lockfiles and `rust-toolchain.toml`. Dependency or toolchain changes select a new
-directory; Rust-only edits reuse it because workspace sources are read from the
-checkout. Outside nextest, the first cold-source caller runs the same setup. The browser
-shared-home isolation test prepares both source sets in its parent and forwards their
-configuration paths to the child before making the shared Cargo home unusable. The cold
-test copies only the source configuration into its initially empty Cargo home.
-
-The setup also runs for the test that proves source preparation works without nextest's
-exports: that test clears the exported paths and reruns the isolation test as a child, so
-the child prepares the sources itself. That preparation vendored every package and built
-the seed from nothing, which spent most of the test's time. The setup runs before the
-tests, so the child's repeated preparation finds the directory for the same key and
-returns it at once. The setup still pays for the vendoring, once per run.
-
-The same setup also builds the cold bootstrap's native targets once per key, with the
-commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
-units of registry crates and deletes the units and outputs of workspace members, the
-examples and `debug/incremental`. A member's binary has a name no package spells, so its
-output in `deps` goes with the fingerprint that shares its hash. The setup then
-publishes the result as `seed` beside the configuration. A failed build leaves no seed
-and the next run continues it. The cold test copies the seed into its empty Cargo target
-directory and checks that it holds compiled units but none of a workspace member's. The
-recipes then compile Maestro's crates and the WebAssembly fixture from nothing, and
-every registry crate is already built. The test keeps the root manifest's per-package
-optimization levels, since the seed holds the optimized parsers. The test never pays for
-the seed.
+taken when it installs. Cargo rebuilds a unit when a dependency's outputs are newer than its own, so every copy of
+the seed keeps each file's modification time: the copy that stages it in the bundle, the one
+that installs it beside the sources and the test's own. A copy that stamps files in name
+order makes dependencies look newer than their dependents, and the cold test then compiles
+registry crates the seed already holds. On a four-job run that took 59 s and 53 registry
+packages, against 25 s and 12 with the times kept. The test records the seed copy's time,
+the library build's time and the registry packages and workspace members the build
+compiled, in its transcript and on its standard error. A registry count in the dozens means
+Cargo rejected the seed.
 
 The test preparation builds the seed once per bundle. It fetches every locked package so
 that the offline vendoring finds them all, prepares the workspace sources and the seed in
