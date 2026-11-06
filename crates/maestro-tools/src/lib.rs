@@ -1,6 +1,6 @@
 //! Tool definitions, the `read`, `write`, `edit`, `ls`, `find`, `grep` and native `bash` tools,
 //! the file mutation queue, output and inline-image helpers and word-level edit diff rendering
-//! for Maestro tools. Native [tools] factories select individual tools and ordered presets.
+//! for Maestro tools. Native `tools` factories select individual tools and ordered presets.
 //!
 //! Native bash definitions retain `BashRenderState` for call/result timing and
 //! five-row visual previews. [`truncate_to_visual_lines`] also selects wrapped
