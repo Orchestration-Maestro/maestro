@@ -25,6 +25,12 @@ workspace = true
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
+[[example]]
+name = "child_toolchain_probe"
+path = "tests/fixtures/child_toolchain_probe.rs"
+harness = false
+test = false
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"

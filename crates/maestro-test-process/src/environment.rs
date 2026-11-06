@@ -55,7 +55,7 @@ where
         let mut child = TestProcess::named(name.as_str())?
             .nocapture()
             .env_clear()
-            .temp_dir(std::env::temp_dir());
+            .temp_dir(maestro_test_directory::temporary_root());
         for (key, value) in edits {
             child = match value {
                 Some(value) => child.env(key, value),
