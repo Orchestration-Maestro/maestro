@@ -51,6 +51,19 @@ fn check(fixtures: &[Fixture]) -> Result<(), String> {
     })
 }
 
+/// Assert one diagnostic reports the shared body and both authored sites on every host.
+fn assert_pair(error: &str, first: &str, second: &str) {
+    assert!(
+        error.starts_with("exact duplicate body (30 tokens): "),
+        "{error}"
+    );
+    assert!(error.contains(&support::native_path_text(first)), "{error}");
+    assert!(
+        error.contains(&support::native_path_text(second)),
+        "{error}"
+    );
+}
+
 /// Build two authored functions with the same interior.
 fn copied(body: &str) -> String {
     format!("fn first() {{{body}}}\nfn second() {{{body}}}")
@@ -207,7 +220,8 @@ fn lookalike_literals_stay_duplicates() {
     )) {
         let error = check(&[member("maestro-settings", &[(path, source)])]).unwrap_err();
         assert!(
-            error.starts_with("exact duplicate body") && error.contains(path),
+            error.starts_with("exact duplicate body")
+                && error.contains(&support::native_path_text(path)),
             "{path} {error}"
         );
     }
@@ -345,16 +359,11 @@ fn test_bodies_compare_across_workspace_packages() {
         ),
     ])
     .unwrap_err();
-    assert!(
-        error.starts_with("exact duplicate body (30 tokens): "),
-        "{error}"
+    assert_pair(
+        &error,
+        "crates/maestro-json/tests/case.rs:1",
+        "crates/maestro-settings/tests/case.rs:1",
     );
-    assert!(error.contains(&support::native_path_text(
-        "crates/maestro-json/tests/case.rs:1"
-    )));
-    assert!(error.contains(&support::native_path_text(
-        "crates/maestro-settings/tests/case.rs:1"
-    )));
     // One changed body plus a shared owner with delegating callers stays accepted.
     assert_eq!(
         check(&[
@@ -395,16 +404,11 @@ fn production_beside_test_file() {
         ),
     ])
     .unwrap_err();
-    assert!(
-        error.starts_with("exact duplicate body (30 tokens): "),
-        "{error}"
+    assert_pair(
+        &error,
+        "crates/maestro-json/src/lib.rs:1",
+        "crates/maestro-models/tests/case.rs:1",
     );
-    assert!(error.contains(&support::native_path_text(
-        "crates/maestro-json/src/lib.rs:1"
-    )));
-    assert!(error.contains(&support::native_path_text(
-        "crates/maestro-models/tests/case.rs:1"
-    )));
 }
 
 /// Ordinary production code beside inline test code, with the packages reversed.
@@ -424,16 +428,11 @@ fn production_beside_inline_test_code() {
         ),
     ])
     .unwrap_err();
-    assert!(
-        error.starts_with("exact duplicate body (30 tokens): "),
-        "{error}"
+    assert_pair(
+        &error,
+        "crates/maestro-json/src/own.rs:2",
+        "crates/maestro-models/src/ordinary.rs:1",
     );
-    assert!(error.contains(&support::native_path_text(
-        "crates/maestro-json/src/own.rs:2"
-    )));
-    assert!(error.contains(&support::native_path_text(
-        "crates/maestro-models/src/ordinary.rs:1"
-    )));
 }
 
 /// A test-support library beside another package's test, then reversed.
@@ -454,16 +453,11 @@ fn support_beside_another_package_test() {
             ),
         ])
         .unwrap_err();
-        assert!(
-            error.starts_with("exact duplicate body (30 tokens): "),
-            "{error}"
+        assert_pair(
+            &error,
+            &format!("crates/{support_member}/src/lib.rs:1"),
+            &format!("crates/{test_member}/tests/case.rs:1"),
         );
-        assert!(error.contains(&support::native_path_text(&format!(
-            "crates/{support_member}/src/lib.rs:1"
-        ))));
-        assert!(error.contains(&support::native_path_text(&format!(
-            "crates/{test_member}/tests/case.rs:1"
-        ))));
     }
 }
 
