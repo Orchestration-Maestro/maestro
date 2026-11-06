@@ -181,7 +181,7 @@ fn prepare_session(path: &Path) -> io::Result<Option<PreparedSession>> {
     };
     let referent = fs::read_link(&path)
         .ok()
-        .map(|_| fs::canonicalize(&path))
+        .map(|_| maestro_realpath::canonicalize(&path))
         .transpose()?;
     Ok(Some(PreparedSession {
         path,
@@ -192,8 +192,10 @@ fn prepare_session(path: &Path) -> io::Result<Option<PreparedSession>> {
 
 /// Normalize a directory identity without following the final entry's link.
 fn canonical_entry_path(path: &Path) -> io::Result<PathBuf> {
-    Ok(fs::canonicalize(path.parent().unwrap_or(Path::new(".")))?
-        .join(path.file_name().unwrap_or_default()))
+    Ok(
+        maestro_realpath::canonicalize(path.parent().unwrap_or(Path::new(".")))?
+            .join(path.file_name().unwrap_or_default()),
+    )
 }
 
 /// Decoration selected for one logical console line.
@@ -267,7 +269,7 @@ fn migrate_tools_to_bin(output: &mut MigrationOutput<'_>) -> io::Result<()> {
         .into_iter()
         .filter_map(|name| {
             let path = canonical_entry_path(&tools.join(name)).ok()?;
-            let identity = fs::canonicalize(&path).ok()?;
+            let identity = maestro_realpath::canonicalize(&path).ok()?;
             let referent = fs::read_link(&path).ok().map(|_| identity);
             Some(PreparedMove {
                 path,

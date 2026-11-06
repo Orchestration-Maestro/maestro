@@ -1,7 +1,7 @@
 //! Effective keyboard help through the current mode and its containing transcript.
 use super::extensions::{idle, owners, register};
 use super::{Setup, World, cases, isolated};
-use maestro_app::ExtensionShortcut;
+use maestro_app::ExtensionShortcutOptions;
 use maestro_tui::Component;
 use serde::Deserialize;
 use std::{collections::BTreeMap, path::Path, rc::Rc};
@@ -50,10 +50,9 @@ fn configured(
     for (owner, (key, entry)) in owners(&world).into_iter().skip(1).zip(entries) {
         register(
             &owner,
-            ExtensionShortcut {
-                shortcut: key,
+            &key,
+            ExtensionShortcutOptions {
                 description: entry.description,
-                extension_path: entry.extension_path,
                 handler: Rc::new(|_| Box::pin(std::future::ready(Ok(())))),
             },
         );

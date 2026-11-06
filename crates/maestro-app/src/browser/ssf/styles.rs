@@ -1,7 +1,7 @@
 //! Package metadata and number-format selection.
 use super::super::docx_preview::{OpenXmlPackage, XmlParser};
 use super::{Ssf, WorkbookError, unescapexml::unescapexml};
-use crate::utils::lock::write;
+use maestro_lock::write;
 /// Package access retaining the supplied workbook name at failure boundaries.
 pub(super) struct Package<'a> {
     /// Shared indexed archive owner.

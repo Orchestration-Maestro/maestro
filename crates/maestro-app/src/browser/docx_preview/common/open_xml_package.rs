@@ -1,6 +1,6 @@
 //! One indexed ZIP owner for Word parts and resource bytes.
 use super::super::{DocxError, Options, Relationship, XmlParser, parse_xml_string, utils};
-use crate::utils::lock::lock;
+use maestro_lock::lock;
 use std::{
     io::{Cursor, Read},
     sync::Mutex,

@@ -37,6 +37,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
     ("maestro", "maestro-lock"),
+    ("maestro-theme", "maestro-realpath"),
 ];
 
 /// Whether the policy permits this internal development edge between the two crates.
@@ -166,6 +167,9 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
 
 /// Generated crate that unifies native dependency features and exposes no API.
 pub(crate) const UNIFIER: &str = "maestro-dependencies";
+
+/// Owner of mutual exclusion over files and shared in-memory state.
+pub(crate) const LOCK: &str = "maestro-lock";
 
 /// Report whether `from` may reach `to` as the checked child launcher's only edge to
 /// the directory owner: the launcher declares that owner normally, so its fixtures

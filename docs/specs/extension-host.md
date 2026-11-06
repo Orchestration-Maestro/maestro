@@ -64,7 +64,7 @@ In-place saves preserve native file identity, hard links, ownership and ACLs. Un
 
 `atomic_replace` and its workspace/detection callers remain unchanged. Their unlocked readers still receive whole old or new files; this is not the component-save contract.
 
-Evidence: existing recoverable publication in [locking](../locking.md). The native application-to-lock edge already exists. No new crate, library, feature or dependency edge is required. The guest facade is delivered with [Linux native file checks](../extensions/host_io.md#native-file-checks). Windows/macOS qualification remains undelivered.
+Evidence: existing recoverable publication in [locking](../locking.md). The application's edge to the lock owner already exists and is portable, while its file publication stays native. No new crate, library, feature or dependency edge is required. The guest facade is delivered with [Linux native file checks](../extensions/host_io.md#native-file-checks). Windows/macOS qualification remains undelivered.
 
 ### One terminal admission path
 

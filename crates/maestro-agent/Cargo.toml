@@ -16,6 +16,7 @@ maestro-json = { path = "../maestro-json" }
 serde_json.workspace = true
 
 serde = { workspace = true, features = ["rc"] }
+maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-process.workspace = true

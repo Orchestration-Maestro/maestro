@@ -10,16 +10,11 @@ use maestro_app::{
     ContextFile, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, PromptTemplate,
     ReadonlySessionManager, Skill, SourceInfo, SourceScope, home_directory, is_whitespace_scalar,
 };
+use maestro_lock::read;
 use maestro_path::{Cwd, is_absolute, relative};
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Spacer;
-use std::{
-    collections::HashMap,
-    error::Error,
-    io,
-    rc::Rc,
-    sync::{PoisonError, RwLock, RwLockReadGuard},
-};
+use std::{collections::HashMap, error::Error, io, rc::Rc};
 
 mod diagnostics;
 mod labels;
@@ -130,11 +125,6 @@ fn build_scope_groups<'a>(
         .into_iter()
         .filter(|group| !group.paths.is_empty() || !group.packages.is_empty())
         .collect()
-}
-
-/// Reads `lock`, whose writers never leave it inconsistent.
-fn read<T>(lock: &RwLock<T>) -> RwLockReadGuard<'_, T> {
-    lock.read().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// Displays `path` with the home prefix abbreviated, looking the home directory up now.

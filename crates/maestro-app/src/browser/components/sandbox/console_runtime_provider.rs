@@ -17,8 +17,8 @@ use super::sandbox_runtime_provider::{
     RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use crate::browser::components::sandboxed_iframe::{SandboxError, SandboxValue};
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
+use maestro_lock::{read, write};
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use std::sync::{Arc, RwLock};
 

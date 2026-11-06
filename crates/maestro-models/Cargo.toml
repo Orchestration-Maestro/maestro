@@ -35,6 +35,7 @@ percent-encoding = "=2.3.2"
 idna = "=1.1.0"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+maestro-lock = { path = "../maestro-lock" }
 
 [features]
 test-support = ["maestro-request/test-support"]
@@ -53,6 +54,7 @@ wasm-bindgen-futures = "=0.4.79"
 getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
 if-addrs = { version = "=0.15.0", default-features = false, features = ["link-local"] }

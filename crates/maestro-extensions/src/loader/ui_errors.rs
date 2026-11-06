@@ -1,8 +1,8 @@
 //! Retained UI failures use their original extension identity and runner listener owner.
 use crate::{
-    EventError, ExtensionAPI, ExtensionExecution, ExtensionUIContext,
-    types::{UIErrorReporter, read},
+    EventError, ExtensionAPI, ExtensionExecution, ExtensionUIContext, types::UIErrorReporter,
 };
+use maestro_lock::read;
 use std::rc::Rc;
 
 impl<E: ExtensionExecution> ExtensionAPI<E> {

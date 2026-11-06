@@ -45,9 +45,7 @@ struct State {
 impl Shared {
     /// Locks the delivery state, recovering it if the reader panicked.
     fn lock(&self) -> MutexGuard<'_, State> {
-        self.state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        maestro_lock::lock(&self.state)
     }
 
     /// Waits until a subscriber wants input, or the reader is released.

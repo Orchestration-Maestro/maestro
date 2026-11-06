@@ -84,9 +84,8 @@ fn browser_manifest_resolves_inheritance_features_paths_and_patches() {
     run(scratch.path(), "prepare", output.to_str().unwrap()).unwrap();
     let manifest: toml::Value =
         toml::from_str(&fs::read_to_string(output.join("Cargo.toml")).unwrap()).unwrap();
-    let canonical = scratch.path().canonicalize().unwrap();
-    assert_dependencies(&manifest["dependencies"], &canonical);
-    assert_library(&manifest, &canonical);
+    assert_dependencies(&manifest["dependencies"], scratch.path());
+    assert_library(&manifest, scratch.path());
     for file in ["Cargo.lock", "rust-toolchain.toml"] {
         assert_eq!(
             fs::read(output.join(file)).unwrap(),

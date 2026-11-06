@@ -248,8 +248,8 @@ fn configuration(
     prepared: &Prepared,
 ) -> io::Result<()> {
     let inputs = &prepared.inputs;
-    let fixture = checkout.join(FIXTURE).canonicalize()?;
-    let authored = fixture.join("Trunk.json").canonicalize()?;
+    let fixture = maestro_realpath::canonicalize(checkout.join(FIXTURE))?;
+    let authored = maestro_realpath::canonicalize(fixture.join("Trunk.json"))?;
     let directory = authored
         .parent()
         .ok_or_else(|| io::Error::other("Trunk configuration has no parent"))?;

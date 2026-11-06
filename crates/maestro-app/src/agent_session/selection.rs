@@ -3,10 +3,10 @@ use super::{
     AgentSession, AgentSessionEvent, CycleDirection, ModelCycleResult, decisions::SelectionError,
     state::thrown,
 };
-use crate::utils::lock::{read, write};
 use maestro_agent::QueueMode;
 use maestro_catalog::DEFAULT_THINKING_LEVEL;
 use maestro_extensions::{ExtensionExecution, ModelSelectEvent, ThinkingLevelSelectEvent};
+use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, Model, ModelThinkingLevel, Transport, clamp_thinking_level,
     extension_events::selection_events::ModelSelectSource, get_supported_thinking_levels,

@@ -1,8 +1,9 @@
 //! Retains early provider operations until their ordinary extension position.
 use crate::{
     EventError, ExtensionExecution,
-    types::{ExtensionRuntime, PendingProviderRegistration, read, write},
+    types::{ExtensionRuntime, PendingProviderRegistration},
 };
+use maestro_lock::{read, write};
 
 /// An early factory's provider operation, before queue admission or cancellation.
 pub(crate) enum DeferredProviderOperation {

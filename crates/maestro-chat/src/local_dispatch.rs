@@ -1,6 +1,7 @@
 //! Work a sendable producer hands to the local owners it updates.
 
 use maestro_app::DiagnosticErrorInfo;
+use maestro_lock::lock;
 use maestro_tui::tui::TuiRuntime;
 use std::{
     any::Any,
@@ -9,7 +10,7 @@ use std::{
     marker::PhantomData,
     rc::Rc,
     sync::{
-        Arc, Mutex, MutexGuard, PoisonError,
+        Arc, Mutex,
         atomic::{AtomicU64, Ordering},
         mpsc as sync,
     },
@@ -59,11 +60,6 @@ impl State {
         self.failure.get_or_insert_with(|| error.clone());
         self.closed = true;
     }
-}
-
-/// Locks the shared state; a poisoned lock still holds a consistent admission record.
-fn lock(state: &Mutex<State>) -> MutexGuard<'_, State> {
-    state.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// One admitted item and whether its producer waits for the update.

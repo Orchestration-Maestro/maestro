@@ -16,8 +16,10 @@ use super::{
 };
 use crate::boundaries::{application_exports, message_renderers};
 use crate::graph::packages::{self, Exports};
-use crate::{child_tests, duplicates, generated, integration_tests, quality, repetition};
-use crate::{temp_directories, test_input_routes, time_limits};
+use crate::{
+    child_tests, duplicates, generated, integration_tests, poison, quality, real_paths, repetition,
+    temp_directories, test_input_routes, time_limits,
+};
 
 /// Every check's findings for one parsed source.
 pub(crate) struct Walk {
@@ -45,6 +47,8 @@ pub(crate) struct Walk {
     pub(crate) bodies: Vec<(usize, usize)>,
     /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
+    /// Sorted lines resolving a real path outside its owner, in production code.
+    pub(crate) real_paths: Vec<usize>,
     /// Located repository-directory reads by test code.
     pub(crate) reads: BTreeSet<(usize, String)>,
     /// Imports of an application source in its logical module.
@@ -53,6 +57,8 @@ pub(crate) struct Walk {
     pub(crate) guest: Option<generated::Attributes>,
     /// Literal extension exports outside test-gated items.
     pub(crate) exports: usize,
+    /// Located independent recovery helpers in production code.
+    pub(crate) poison: Vec<usize>,
 }
 
 /// Walk a member's parsed source once and gather every check's findings.
@@ -119,6 +125,8 @@ struct Walker<'a> {
     bodies: duplicates::Bodies,
     /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
+    /// Real-path resolution outside its owner, for every other crate.
+    resolutions: Option<real_paths::Resolutions>,
     /// Repository-directory reads by test code.
     reads: test_input_routes::Reads,
     /// Application imports, for application sources.
@@ -127,6 +135,8 @@ struct Walker<'a> {
     attributes: Option<generated::Attributes>,
     /// Extension exports, for production sources that spell the export macro.
     exports: Option<Exports<'a>>,
+    /// Independent recovery helpers.
+    poison: poison::Definitions,
 }
 
 impl<'a> Walker<'a> {
@@ -150,10 +160,12 @@ impl<'a> Walker<'a> {
             bodies: duplicates::Bodies::default(),
             references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
+            resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
             reads: test_input_routes::Reads::default(),
             uses: application_exports::Uses::new(member, source),
             attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
             exports: Exports::new(source, scope),
+            poison: poison::Definitions::default(),
         }
     }
 
@@ -235,10 +247,15 @@ impl<'a> Walker<'a> {
                 .references
                 .map(temp_directories::References::finish)
                 .unwrap_or_default(),
+            real_paths: self
+                .resolutions
+                .map(real_paths::Resolutions::finish)
+                .unwrap_or_default(),
             reads: self.reads.finish(),
             imports: self.uses.map(|uses| uses.imports),
             guest: self.attributes,
             exports: self.exports.map_or(0, Exports::finish),
+            poison: self.poison.finish(),
         }
     }
 }
@@ -302,12 +319,18 @@ impl<'a> Visit<'a> for Walker<'a> {
         self.declaring(&function.sig.ident);
         self.ignored.item_fn(function);
         self.body(&function.sig, &function.block);
+        if !self.testing() {
+            self.poison.body(&function.block);
+        }
         syn::visit::visit_item_fn(self, function);
     }
 
     fn visit_impl_item_fn(&mut self, function: &'a syn::ImplItemFn) {
         self.declaring(&function.sig.ident);
         self.body(&function.sig, &function.block);
+        if !self.testing() {
+            self.poison.body(&function.block);
+        }
         syn::visit::visit_impl_item_fn(self, function);
     }
 
@@ -315,8 +338,19 @@ impl<'a> Visit<'a> for Walker<'a> {
         self.declaring(&function.sig.ident);
         if let Some(block) = &function.default {
             self.body(&function.sig, block);
+            if !self.testing() {
+                self.poison.body(block);
+            }
         }
         syn::visit::visit_trait_item_fn(self, function);
+    }
+
+    /// A closure body that only acquires a lock is the same helper as a function.
+    fn visit_expr_closure(&mut self, closure: &'a syn::ExprClosure) {
+        if !self.testing() {
+            self.poison.closure(closure);
+        }
+        syn::visit::visit_expr_closure(self, closure);
     }
 
     /// A foreign function declares its name the same way; its remaining names stay visited.
@@ -343,6 +377,9 @@ impl<'a> Visit<'a> for Walker<'a> {
             }
         } else {
             self.guard.raw(&call.method);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.method(&call.method);
+            }
         }
         self.nested(
             |context| context.method_parts = true,
@@ -375,6 +412,9 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_item_use(&mut self, item: &'a syn::ItemUse) {
         if !self.testing() {
             self.guard.item_use(item);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.use_tree(&item.tree);
+            }
         }
         self.calls.item_use(item);
         if let Some(exports) = &mut self.exports {
@@ -394,6 +434,8 @@ impl<'a> Visit<'a> for Walker<'a> {
         }
         if self.testing() {
             self.calls.macro_tokens(invocation);
+        } else if let Some(resolutions) = &mut self.resolutions {
+            resolutions.macro_tokens(invocation);
         }
         if self.reading() {
             self.reads.macro_tokens(invocation);
@@ -403,12 +445,18 @@ impl<'a> Visit<'a> for Walker<'a> {
         {
             exports.invocation(invocation);
         }
+        if !self.testing() {
+            self.poison.macro_tokens(invocation);
+        }
         syn::visit::visit_macro(self, invocation);
     }
 
     fn visit_path(&mut self, path: &'a syn::Path) {
         if !self.testing() {
             self.guard.path(path);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.path(path);
+            }
         }
         syn::visit::visit_path(self, path);
     }

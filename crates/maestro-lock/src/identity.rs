@@ -238,6 +238,19 @@ fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
 fn still_named(_file: &File, _path: &Path) -> io::Result<bool> {
     Ok(true)
 }
+
+/// Resolves a path to its real path through the owner that carries the file system.
+#[cfg(not(target_arch = "wasm32"))]
+fn real_path(path: &Path) -> io::Result<PathBuf> {
+    maestro_realpath::canonicalize(path)
+}
+
+/// wasm32 has no file system, so no real path exists to resolve.
+#[cfg(target_arch = "wasm32")]
+fn real_path(_path: &Path) -> io::Result<PathBuf> {
+    Err(io::ErrorKind::Unsupported.into())
+}
+
 /// Canonicalizes the selected entry, retaining any missing suffix.
 fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
     let target = if follow {
@@ -246,7 +259,7 @@ fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
         path.to_path_buf()
     };
     match fs::symlink_metadata(&target) {
-        Ok(meta) if !meta.file_type().is_symlink() => return fs::canonicalize(&target),
+        Ok(meta) if !meta.file_type().is_symlink() => return real_path(&target),
         Ok(_) => (),
         Err(error) if error.kind() == io::ErrorKind::NotFound => (),
         Err(error) => return Err(error),
@@ -258,7 +271,7 @@ fn canonical_target(path: &Path, follow: bool) -> io::Result<PathBuf> {
         } else {
             ancestor
         };
-        match fs::canonicalize(directory) {
+        match real_path(directory) {
             Ok(canonical) => {
                 return Ok(canonical.join(target.strip_prefix(ancestor).map_err(io::Error::other)?));
             }

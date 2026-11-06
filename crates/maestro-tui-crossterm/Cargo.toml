@@ -10,6 +10,7 @@ repository.workspace = true
 maestro-listeners.workspace = true
 maestro-text = { path = "../maestro-text" }
 maestro-tui = { path = "../maestro-tui" }
+maestro-lock = { path = "../maestro-lock" }
 
 [lints]
 workspace = true

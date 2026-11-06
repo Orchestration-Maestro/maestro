@@ -1,10 +1,10 @@
 //! Drive tool progress futures alongside execution without spawning tasks.
 use super::Driver;
-use crate::agent::lock;
 use crate::{
     AgentEvent, AgentToolResult, AgentToolUpdateCallback, CustomAgentMessages, ExecuteTool,
 };
 use futures_util::{StreamExt, future::join};
+use maestro_lock::lock;
 use maestro_models::{DiagnosticErrorInfo, EventStream, ToolCall};
 use std::sync::{Arc, Mutex};
 

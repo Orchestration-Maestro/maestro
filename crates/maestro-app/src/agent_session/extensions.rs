@@ -1,7 +1,6 @@
 //! The session operations a runner binds behind the extension API and every context.
 use super::AgentSession;
 use super::state::thrown;
-use crate::utils::lock::read;
 use maestro_extensions::types::{
     AppendEntryHandler, CompactOptions, ExtensionActions, ExtensionContextActions, ProviderActions,
     SendMessageHandler, SendUserMessageHandler, SetLabelHandler, SetModelHandler,
@@ -9,6 +8,7 @@ use maestro_extensions::types::{
 use maestro_extensions::{
     EventError, ExtensionError, ExtensionRunner, SlashCommandInfo, SlashCommandSource,
 };
+use maestro_lock::read;
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
 use maestro_session::Presence;
 use std::future::Future;
@@ -102,7 +102,7 @@ impl AgentSession<Local> {
         if let Some(refreshed) = self.model_registry.find(&provider, &id)
             && !Arc::ptr_eq(&refreshed, &current)
         {
-            crate::utils::lock::write(self.agent.state()).model = refreshed;
+            maestro_lock::write(self.agent.state()).model = refreshed;
         }
     }
 }
