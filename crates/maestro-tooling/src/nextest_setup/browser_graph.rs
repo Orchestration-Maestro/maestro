@@ -33,8 +33,10 @@ pub(crate) const TARGET: &str = "target/browser-author";
 /// The browser author tests that run at once, each in a lane of its own.
 ///
 /// The `browser-author` test group of `.config/nextest.toml` admits as many tests at once.
-/// Each lane past the first costs one copy of the graph before the first test starts.
-pub(crate) const LANES: usize = 3;
+/// Each lane past the first costs one copy of the graph before the first test starts. Every
+/// recipe a test runs slows while other lanes build, so a third lane takes the longest tests
+/// past nextest's 30-second slow flag on a four-core runner.
+pub(crate) const LANES: usize = 2;
 
 /// The bundle directory that holds the staged graph.
 pub(crate) const STAGED: &str = "browser-author";

@@ -157,7 +157,7 @@ impl Browser {
         let mut command = super::toolchain_support::command("just");
         command.arg(recipe);
         self.configure(&mut command);
-        command.env("CARGO_BUILD_JOBS", "3");
+        command.env("CARGO_BUILD_JOBS", lane_jobs());
         command
     }
 
@@ -177,7 +177,7 @@ impl Browser {
         command
             .args(["browser-author", operation])
             .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"))
-            .env("CARGO_BUILD_JOBS", "3");
+            .env("CARGO_BUILD_JOBS", lane_jobs());
         self.configure(&mut command);
         if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
             command.env("LLVM_PROFILE_FILE", profile);
@@ -234,6 +234,17 @@ pub fn target_directories() -> Vec<PathBuf> {
         },
         |targets| std::env::split_paths(&targets).collect(),
     )
+}
+
+/// The compile jobs of one lane: the caller's job cap, or every core without one, shared between
+/// the lanes, at least one each. Every lane can build at once, so the lanes together ask for no
+/// more jobs than the run has cores.
+fn lane_jobs() -> String {
+    let cores = std::env::var("CARGO_BUILD_JOBS")
+        .ok()
+        .and_then(|jobs| jobs.parse::<usize>().ok())
+        .unwrap_or_else(|| std::thread::available_parallelism().unwrap().get());
+    (cores / target_directories().len()).max(1).to_string()
 }
 
 /// The Cargo target directory `command` builds in.

@@ -288,7 +288,7 @@ fn browser_setup_copies_the_graph_into_every_lane() {
 
     assert_success(&browser_command(root, true).output().unwrap());
 
-    let lanes: Vec<_> = ["", "-1", "-2"]
+    let lanes: Vec<_> = ["", "-1"]
         .map(|suffix| root.join(format!("target/browser-author{suffix}")))
         .into();
     assert_eq!(

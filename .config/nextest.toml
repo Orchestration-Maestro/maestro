@@ -118,7 +118,7 @@ test-group = "oauth-callback"
 # prepared graph. Each test takes the lane its group slot numbers, so `max-threads` is the lane
 # count `LANES` of the setup's browser graph module.
 [test-groups.browser-author]
-max-threads = 3
+max-threads = 2
 
 [[profile.default.overrides]]
 filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"

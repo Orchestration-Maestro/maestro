@@ -796,6 +796,11 @@ fn browser_assets_follow_relative_selected_identity() {
             assert_identity_wasm(&browser, "library", pack, mode, body);
         }
     }
+}
+
+#[test]
+fn browser_library_build_fails_while_identity_inputs_are_missing_or_malformed() {
+    let browser = Browser::cached();
     for path in [
         browser.path("assets/brand/brand.json"),
         browser.path("assets/brand/mark.svg"),
@@ -1786,11 +1791,13 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     );
 }
 
-/// The warm recipes and the native helper cap Cargo's compile jobs; the cold recipe leaves the
-/// variable to the caller, so a job cap set by the build host reaches it and no cap at all means
-/// every core.
+/// The cold recipe leaves Cargo's compile jobs to the caller, so a job cap set by the build host
+/// reaches it and no cap at all means every core. The warm recipes and the native helper split
+/// that cap evenly between the lanes, at least one job each: the browser tests that build at
+/// once never ask for more jobs than the run has, and no lane leaves a whole job of its share
+/// unused.
 #[test]
-fn browser_cold_recipes_inherit_the_job_cap_and_warm_recipes_keep_three() {
+fn browser_cold_recipes_inherit_the_job_cap_and_warm_lanes_share_it() {
     let browser = Browser::cold();
     let jobs = |command: &std::process::Command| {
         command
@@ -1798,9 +1805,26 @@ fn browser_cold_recipes_inherit_the_job_cap_and_warm_recipes_keep_three() {
             .find(|(name, _)| *name == "CARGO_BUILD_JOBS")
             .map(|(_, value)| value.map(std::ffi::OsStr::to_owned))
     };
-    assert_eq!(jobs(&browser.cold_command("recipe")), None);
-    for command in [browser.command("recipe"), browser.native_command("build")] {
-        assert_eq!(jobs(&command), Some(Some("3".into())));
+    let cores = std::env::var("CARGO_BUILD_JOBS")
+        .ok()
+        .and_then(|jobs| jobs.parse::<usize>().ok())
+        .unwrap_or_else(|| std::thread::available_parallelism().unwrap().get());
+    let lanes = browser_support::target_directories().len();
+
+    let cold = jobs(&browser.cold_command("recipe"));
+    let warm = [browser.command("recipe"), browser.native_command("build")].map(|command| {
+        jobs(&command)
+            .flatten()
+            .and_then(|share| share.to_str()?.parse::<usize>().ok())
+            .unwrap()
+    });
+
+    assert_eq!(cold, None);
+    for share in warm {
+        assert!(
+            share >= 1 && share * lanes <= cores.max(lanes) && (share + 1) * lanes > cores,
+            "{share} compile jobs in each of {lanes} lanes of {cores}"
+        );
     }
 }
 
