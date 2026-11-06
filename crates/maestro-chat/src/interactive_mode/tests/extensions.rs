@@ -267,10 +267,10 @@ fn extension_shortcut_input_consumes_only_the_first_match() {
                 "only the first selected match starts its handler"
             );
 
-            // Replacing the first match's key keeps its slot, and a later claim on the
-            // second reorders neither of them.
+            // Replacing the first match's key keeps its slot, so the earlier claim decides
+            // the input even though its handler changed.
             runs.borrow_mut().clear();
-            reclaim(&world, &owners[0], &runs, "TAB", "replaced tab");
+            reclaim(&world, &owners[0], &runs, "tab", "replaced tab");
             press(&world, "\t");
             assert_eq!(
                 *runs.borrow(),
@@ -278,13 +278,15 @@ fn extension_shortcut_input_consumes_only_the_first_match() {
                 "the replaced key keeps its original slot"
             );
 
+            // A later claim spelled another way fills the first claim's slot, so neither the
+            // owner's order nor the selection's reorders.
             runs.borrow_mut().clear();
-            reclaim(&world, &owners[0], &runs, "ctrl+i", "replaced ctrl+i");
+            reclaim(&world, &owners[0], &runs, "TAB", "later tab");
             press(&world, "\t");
             assert_eq!(
                 *runs.borrow(),
-                [json!("replaced tab")],
-                "a later claim does not reorder the selection"
+                [json!("later tab")],
+                "a later claim on the same key reorders nothing"
             );
 
             runs.borrow_mut().clear();
