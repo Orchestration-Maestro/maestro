@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use maestro_test_directory::Scratch;
+#[cfg(unix)]
+use maestro_tui::tui::TuiRuntime as _;
 use maestro_tui::{TUI, TerminalImage};
 
 use crate::support::components::Probe;
@@ -18,7 +20,12 @@ const RENDER_DIRECTORY: &str = "/tmp/tui";
 
 /// Where the writer keeps `name` below the home's agent directory, joined natively.
 fn agent_log(home: &Path, name: &str) -> PathBuf {
-    home.join(".maestro").join("agent").join(name)
+    agent_directory(home).join(name)
+}
+
+/// The home's agent directory, which the writer creates only when it writes a file.
+fn agent_directory(home: &Path) -> PathBuf {
+    home.join(".maestro").join("agent")
 }
 
 /// The text the writer logged in `path`, or nothing when it wrote no file.
@@ -50,9 +57,8 @@ struct Rig {
 }
 
 impl Rig {
-    /// Creates the writer; nothing is drawn yet.
+    /// Creates the writer; nothing is drawn yet and no log directory exists.
     fn new(home: &Path, lines: &[&str]) -> Self {
-        std::fs::create_dir_all(home.join(".maestro").join("agent")).unwrap();
         let terminal = RecordingTerminal::new(COLUMNS, 3);
         let runtime = ManualRuntime::with_home(home.to_path_buf());
         let tui = TUI::new(
@@ -163,6 +169,7 @@ fn redraw_log_reasons_keep_exact_messages() {
         "redraw_log_reasons_keep_exact_messages",
         &[("MAESTRO_DEBUG_REDRAW", "1")],
         |home| {
+            std::fs::create_dir_all(agent_directory(home)).unwrap();
             for reason in redraw_reasons() {
                 let rig = Rig::new(home, &FIVE);
                 if reason.name != "first" {
@@ -179,6 +186,29 @@ fn redraw_log_reasons_keep_exact_messages() {
                 assert_eq!(rig.redraw_log()[mark..], logged, "{}", reason.name);
                 assert_eq!(rig.tui.full_redraws(), reason.redraws, "{}", reason.name);
             }
+        },
+    );
+}
+
+#[test]
+fn redraw_log_append_requires_its_directory() {
+    in_home(
+        "redraw_log_append_requires_its_directory",
+        &[("MAESTRO_DEBUG_REDRAW", "1")],
+        |home| {
+            let rig = Rig::new(home, &FIVE);
+            rig.tui.start().unwrap();
+            rig.tui.request_render(false);
+            let error = rig.runtime.settle().unwrap_err();
+            assert_eq!(
+                error.kind(),
+                std::io::ErrorKind::NotFound,
+                "the append reports the missing directory"
+            );
+            assert!(
+                !agent_directory(home).exists(),
+                "the append creates no directory"
+            );
         },
     );
 }
@@ -208,10 +238,13 @@ fn differential_debug_file_keeps_order_and_json() {
                 === newLines ===\n[\n  \"new\\u001b[0m\\u001b]8;;\\u0007\"\n]\n\n\
                 === previousLines ===\n[\n  \"old\\u001b[0m\\u001b]8;;\\u0007\"\n]\n\n\
                 === buffer ===\n\"\\u001b[?2026h\\r\\u001b[2Knew\\u001b[0m\\u001b]8;;\\u0007\\u001b[?2026l\"";
-            let record = Path::new(RENDER_DIRECTORY).join("render-1767323045006-i.log");
+            let record = Path::new(RENDER_DIRECTORY).join(format!(
+                "render-{}-{}.log",
+                rig.runtime.log_context().unix_ms,
+                rig.runtime.log_context().nonce
+            ));
             let written = std::fs::read_to_string(&record).expect("the record is written");
             let _ = std::fs::remove_file(&record);
-            let _ = std::fs::remove_dir(RENDER_DIRECTORY);
             assert_eq!(written, expected);
         },
     );
@@ -240,6 +273,10 @@ fn overflow_reports_lines_then_restores_terminal() {
         &[],
         |home| {
             let rig = Rig::new(home, &["old"]);
+            assert!(
+                !agent_directory(home).exists(),
+                "the crash report finds no directory"
+            );
             rig.show(&["old"]).unwrap();
             rig.terminal.clear_writes();
             let error = rig.show(&["01234567890"]).unwrap_err();
@@ -327,10 +364,8 @@ fn settings_description_rows_fit_the_frame_viewport() {
                 runtime.settle().unwrap_or_else(|error| {
                     panic!("description must fit the frame at width {width}: {error}")
                 });
-                assert_eq!(
-                    std::fs::read_dir(home.join(".maestro").join("agent"))
-                        .map_or(0, Iterator::count),
-                    0,
+                assert!(
+                    !agent_directory(home).exists(),
                     "no diagnostic file at width {width}"
                 );
                 assert!(!terminal.writes().is_empty());

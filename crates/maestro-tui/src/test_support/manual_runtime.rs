@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::future::Future;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::rc::{Rc, Weak};
 use std::task::{Context, Poll, Waker};
@@ -44,6 +44,8 @@ pub struct ManualRuntime {
     state: Rc<RefCell<State>>,
     /// The home directory [`log_context`](TuiRuntime::log_context) reports.
     home: PathBuf,
+    /// The file name nonce [`log_context`](TuiRuntime::log_context) reports.
+    nonce: String,
 }
 
 impl Default for ManualRuntime {
@@ -91,11 +93,16 @@ impl ManualRuntime {
     }
 
     /// Creates a host at time zero whose diagnostic log paths sit below `home`.
+    ///
+    /// The file name nonce is `home`'s own name, so runs sharing a log directory write
+    /// separate records.
     #[must_use]
     pub fn with_home(home: PathBuf) -> Self {
+        let nonce = nonce(&home);
         Self {
             state: Rc::new(RefCell::new(State::default())),
             home,
+            nonce,
         }
     }
 
@@ -262,7 +269,23 @@ impl TuiRuntime for ManualRuntime {
             home: self.home.clone(),
             iso_time: "2026-01-02T03:04:05.006Z".to_owned(),
             unix_ms: 1_767_323_045_006,
-            nonce: "i".to_owned(),
+            nonce: self.nonce.clone(),
         }
+    }
+}
+
+/// The name of `home` in lowercase alphanumerics, which keeps concurrent records apart.
+fn nonce(home: &Path) -> String {
+    let name = home.file_name().map_or_else(String::new, |name| {
+        name.to_string_lossy()
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .map(|character| character.to_ascii_lowercase())
+            .collect()
+    });
+    if name.is_empty() {
+        "i".to_owned()
+    } else {
+        name
     }
 }
