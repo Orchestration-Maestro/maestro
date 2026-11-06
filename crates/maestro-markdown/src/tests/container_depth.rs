@@ -171,17 +171,20 @@ fn resumption(repeats: usize, options: MarkedOptions) -> (usize, usize) {
 
 #[test]
 fn repeated_quote_list_resumption_keeps_reference_depth() {
-    // Every grammar resumes to the same container depth; each keeps its own node count.
+    // Every grammar resumes to the same container depth, and the terminal grammar keeps the
+    // node count the reference gives each depth.
     for options in OPTIONS {
-        let measured = resumption(64, options);
-        assert_eq!(measured.0, 193, "{options:?} at 64");
-        let measured = resumption(128, options);
-        assert_eq!(measured.0, 385, "{options:?} at 128");
+        let shallow = resumption(64, options);
+        assert_eq!(shallow.0, 193, "{options:?} at 64");
+        let deep = resumption(128, options);
+        assert_eq!(deep.0, 385, "{options:?} at 128");
+        if matches!(options, MarkedOptions::Terminal) {
+            assert_eq!(shallow, (193, 578), "{options:?} at 64");
+            assert_eq!(deep, (385, 1_154), "{options:?} at 128");
+        }
     }
-    for (repeats, expected) in [(64, (193, 578)), (128, (385, 1_154)), (256, (769, 2_306))] {
-        let measured = resumption(repeats, MarkedOptions::Terminal);
-        assert_eq!(measured, expected, "repeats {repeats}");
-    }
+    let deepest = resumption(256, MarkedOptions::Terminal);
+    assert_eq!(deepest, (769, 2_306), "repeats 256");
 }
 
 #[test]
