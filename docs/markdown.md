@@ -123,12 +123,13 @@ each time; in a release build it reaches depth 385 in about 0.1 s and depth 769
 in about 0.4 s.
 
 The constant stays small. Quote recognition copies each operand byte once while
-its prefix grows, and each growth step matches again only from the last quoted
-line of the previous match. An item's body extends one piece while its lines stay
-adjacent in the source its level already holds, so the level below reads those
-bytes in place instead of copying them. The stop rules run only on a line whose
-first byte after at most three spaces can begin one of them. Neither an item's
-classification nor its joined body grows with the levels above it.
+its prefix grows, and each growth step matches again only from the start of the
+last quoted unit of the previous match. An item's body extends one piece while
+its lines stay adjacent in the source its level already holds, so the
+level below reads those bytes in place instead of copying them. The stop rules
+run only on a line whose first byte after at most three spaces can begin one of
+them. Neither an item's classification nor its joined body grows with the
+levels above it.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and

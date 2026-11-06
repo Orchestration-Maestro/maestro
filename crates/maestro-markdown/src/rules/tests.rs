@@ -2,10 +2,10 @@
 use super::{ItemStops, item_stops, rule_matches};
 use crate::{MarkedOptions, tests::WORK};
 
-/// Lines that open with every printable ASCII byte and one non-ASCII scalar after zero to
-/// four spaces.
+/// Lines that open with every printable ASCII byte, a tab and one non-ASCII scalar after
+/// zero to four spaces.
 fn lines() -> Vec<String> {
-    let openers = (0x20..0x7f).map(char::from).chain(['é']);
+    let openers = (0x20..0x7f).map(char::from).chain(['\t', 'é']);
     let mut lines = Vec::new();
     for opener in openers {
         for rest in ["", "\n", "--", "``\n", " b", "-!-- c -->", "div>x"] {
@@ -29,11 +29,14 @@ fn admit(stops: &ItemStops, line: &str) -> (bool, bool, usize) {
 /// with a quote marker or a letter gives the grammar no bytes.
 fn check(stops: &ItemStops, line: &str) {
     let (interrupts, lazy, consulted) = admit(stops, line);
-    let text = line.trim_start_matches(' ');
-    let spaces = line.len() - text.len();
-    let grammar = |rule| spaces <= 3 && rule_matches(rule, line);
+    let text = line.trim_start_matches([' ', '\t']);
+    let columns = line[..line.len() - text.len()]
+        .chars()
+        .map(|scalar| if scalar == '\t' { 4 } else { 1 })
+        .sum::<usize>();
+    let grammar = |rule| rule_matches(rule, line);
     assert_eq!(interrupts, grammar(stops.interrupts.as_ref()), "{line:?}");
-    let code = spaces >= 4 && !text.is_empty();
+    let code = columns >= 4 && !text.is_empty();
     assert_eq!(lazy, code || grammar(stops.lazy.as_ref()), "{line:?}");
     if text.starts_with(|scalar: char| scalar == '>' || scalar.is_alphabetic()) {
         assert_eq!(consulted, 0, "{line:?}");
