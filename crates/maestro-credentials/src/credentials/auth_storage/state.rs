@@ -6,7 +6,7 @@ use super::types::{
 use maestro_models::OAuthError;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 /// A key lookup consulted after stored and environment keys.
 pub(super) trait FallbackResolver:
@@ -90,7 +90,7 @@ impl AuthStorage {
 
     /// Lock the accepted state for one short step.
     pub(super) fn state(&self) -> MutexGuard<'_, State> {
-        self.state.lock().unwrap_or_else(PoisonError::into_inner)
+        maestro_lock::lock(&self.state)
     }
 
     /// Adopt any readable stored document without clearing a recorded load failure.

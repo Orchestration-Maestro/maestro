@@ -80,9 +80,7 @@ pub(crate) struct Replies(Arc<Mutex<State>>);
 impl Replies {
     /// Recovers state even if a panicking Store owner abandoned its lock.
     fn state(&self) -> MutexGuard<'_, State> {
-        self.0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        maestro_lock::lock(&self.0)
     }
     /// Retains the original asynchronous sender in the lifecycle, never in an export.
     pub(crate) fn reply<T: Send + 'static>(&self) -> Result<(Reply<T>, Response<T>), String> {
