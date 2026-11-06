@@ -42,6 +42,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-json",
             "maestro-text",
+            "maestro-lock",
         ],
     ),
     // Common text operations include CSS string serialization for brand and application callers.
@@ -73,6 +74,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-json",
             "maestro-brand",
             "maestro-listeners",
+            "maestro-lock",
         ],
     ),
     (
@@ -116,6 +118,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tool",
             "maestro-listeners",
             "maestro-json",
+            "maestro-lock",
         ],
     ),
     (
@@ -160,6 +163,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-process",
             "maestro-listeners",
+            "maestro-lock",
         ],
     ),
     (
@@ -200,6 +204,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-process",
             "maestro-listing",
             "maestro-resources",
+            "maestro-lock",
         ],
     ),
     (
@@ -226,6 +231,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-resources",
             "maestro-listeners",
+            "maestro-lock",
         ],
     ),
     (
@@ -258,7 +264,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-listeners",
         ],
     ),
-    ("maestro-extensions-wasmtime", &["maestro-extensions"]),
+    (
+        "maestro-extensions-wasmtime",
+        &["maestro-extensions", "maestro-lock"],
+    ),
     (
         "maestro-chat",
         &[
@@ -266,6 +275,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-tui-crossterm",
             "maestro-theme",
+            "maestro-lock",
         ],
     ),
     (
@@ -275,6 +285,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-tui-crossterm",
             "maestro-theme",
+            "maestro-lock",
         ],
     ),
     (

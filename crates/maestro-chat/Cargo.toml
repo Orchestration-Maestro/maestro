@@ -17,6 +17,7 @@ ryu-js.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["macros", "sync"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"] }
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
+maestro-lock = { path = "../maestro-lock" }
 
 [dev-dependencies]
 maestro-test-fixtures.workspace = true
