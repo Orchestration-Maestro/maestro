@@ -12,6 +12,8 @@ use std::{
     rc::Rc,
 };
 
+use super::{components::local, retained_components::report};
+
 /// Everything the supplied host observed while it drove one replacement operation.
 #[derive(Default)]
 struct Host {
@@ -23,14 +25,6 @@ struct Host {
     continuations: Rc<Cell<usize>>,
 }
 
-/// Runs one authored request through the real command frame of a loaded component.
-fn local<T>(work: impl std::future::Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, work)
-}
-
 /// Loads the component, binds the supplied operations and returns them.
 async fn loaded() -> (ExtensionRunner<Local>, Rc<Host>) {
     let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
@@ -40,20 +34,6 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<Host>) {
     *host.history.borrow_mut() = Some(history);
     bind(&runner, &host);
     (runner, host)
-}
-
-/// Runs one authored request that answers with its own JSON either way.
-async fn report(runner: &ExtensionRunner<Local>, request: &str) -> Value {
-    let handler = runner
-        .get_command("bridge-observe")
-        .unwrap()
-        .command
-        .handler;
-    let answer = handler(request.into(), runner.create_command_context())
-        .await
-        .expect_err("retained request")
-        .to_string();
-    serde_json::from_str(&answer).unwrap_or_else(|error| panic!("{error}: {answer}"))
 }
 
 /// Supplies the replacement operations the authored requests consume.
