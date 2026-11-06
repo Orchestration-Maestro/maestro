@@ -114,6 +114,7 @@ fn bundle_export_installs_the_native_example() {
         shared: inputs.clone(),
         tool: inputs.clone(),
         browser: inputs,
+        workspace_sources: None,
         components,
         example: digest(b"native example"),
         compiled: None,

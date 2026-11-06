@@ -3,7 +3,10 @@
 //! The cold bootstrap proves that Maestro's own crates build from empty state. Compiling every
 //! registry crate beside them repeats work no Maestro change affects, so the setup builds the
 //! bootstrap's native targets once per dependency key and keeps only what the registry crates
-//! produced: the test copies that into its empty target directory.
+//! produced: the test copies that into its empty target directory. A compiled unit records the
+//! path of the source it was built from, so a seed serves only the sources it was compiled
+//! against: a shard takes the bundle's seed when the bundle compiled it beside the same
+//! directory, and builds its own otherwise.
 
 use std::collections::HashSet;
 use std::io;
@@ -12,29 +15,41 @@ use std::process::Stdio;
 
 use super::member_manifests;
 use crate::browser_author::bootstrap_commands;
-use crate::nextest_setup::{browser_graph::isolate, cargo};
-use crate::test_setup::remove_directory;
+use crate::copy_assets::copy_tree;
+use crate::nextest_setup::{browser_graph::isolate, prepared_bundle};
+use crate::test_setup::{install_seed, remove_directory};
 
 /// The published seed, beside the source configuration it was built against.
 const SEED: &str = "seed";
 
-/// The target directory the seed is built in, kept across a failed attempt.
+/// The target directory the seed is built or installed in, kept across a failed build.
 const BUILDING: &str = "seed-target";
 
 /// The directories of a profile directory that hold compiled units.
 const UNITS: [&str; 3] = [".fingerprint", "build", "deps"];
 
-/// Build the seed in `directory` against the source configuration `sources`, unless it exists.
+/// Install the bundle's seed in `directory`, or build it there with `cargo` against the source
+/// configuration `sources`, unless it exists.
 ///
 /// # Errors
-/// Returns the failed build command or a failed prune.
-pub(super) fn ensure(checkout: &Path, directory: &Path, sources: &Path) -> io::Result<()> {
+/// Returns an unreadable bundle, a failed copy, the failed build command or a failed prune.
+pub(super) fn ensure(
+    cargo: &Path,
+    checkout: &Path,
+    directory: &Path,
+    sources: &Path,
+) -> io::Result<()> {
     let seed = directory.join(SEED);
     if seed.is_dir() {
         return Ok(());
     }
     let building = directory.join(BUILDING);
-    for mut build in bootstrap_commands(Path::new(&cargo()), checkout) {
+    if let Some(bundle) = prepared_bundle(checkout)
+        && install_seed(&bundle, directory, &building)?
+    {
+        return std::fs::rename(building, seed);
+    }
+    for mut build in bootstrap_commands(cargo, checkout) {
         isolate(&mut build, &building);
         let status = build
             .arg("--config")
@@ -49,6 +64,15 @@ pub(super) fn ensure(checkout: &Path, directory: &Path, sources: &Path) -> io::R
     }
     prune(&building.join("debug"), &members(checkout)?)?;
     std::fs::rename(building, seed)
+}
+
+/// Copy the seed of `directory` into the bundle directory `staged`.
+///
+/// # Errors
+/// Returns a failed removal or copy.
+pub(super) fn stage(directory: &Path, staged: &Path) -> io::Result<()> {
+    remove_directory(staged)?;
+    copy_tree(&directory.join(SEED), staged)
 }
 
 /// The crate names of the workspace members, as their compiled units spell them.

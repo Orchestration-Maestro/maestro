@@ -11,35 +11,65 @@ pub const FIXTURE: &str = "crates/maestro-tooling/tests/fixtures/browser_author"
 
 pub struct Browser {
     pub workspace: Workspace,
-    // Trunk writes binding/optimizer intermediates outside Cargo's build lock.
-    _build_lock: Option<fs::File>,
+    /// The lane whose target the warm recipes build in, held while the fixture lives.
+    lane: Option<Lane>,
 }
 
-impl Browser {
-    pub fn new() -> Self {
-        record("phase: browser setup / lock open");
-        let lock_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-tests.lock");
+/// One prepared Cargo target that a single browser fixture builds in at a time: tests change
+/// sources and rebuild, and Trunk writes its outputs outside Cargo's build lock.
+struct Lane {
+    /// The lane's position among the announced targets.
+    index: usize,
+    /// The Cargo target directory.
+    target: PathBuf,
+    /// The lock that holds the lane.
+    _lock: fs::File,
+}
+
+impl Lane {
+    /// Hold the lane of this test's group slot, waiting while another fixture holds it.
+    ///
+    /// Nextest numbers the browser author tests that run at once from zero, so each takes a lane
+    /// of its own; a test outside the group, or a run outside nextest, takes the first lane.
+    fn take() -> Self {
+        let mut targets = target_directories();
+        let slot = std::env::var("NEXTEST_TEST_GROUP_SLOT")
+            .ok()
+            .and_then(|slot| slot.parse::<usize>().ok())
+            .unwrap_or(0);
+        let index = slot % targets.len();
+        let target = targets.swap_remove(index);
+        fs::create_dir_all(&target).unwrap();
         let lock = fs::OpenOptions::new()
             .create(true)
             .truncate(false)
             .write(true)
-            .open(lock_path)
+            .open(target.join("browser-author-tests.lock"))
             .unwrap();
-        record("phase: browser lock waiting");
+        record(format!("phase: browser lane {index} waiting"));
         lock.lock().unwrap();
-        record("phase: browser lock acquired");
-        Self::prepare(Some(lock))
+        record(format!("phase: browser lane {index} acquired"));
+        Self {
+            index,
+            target,
+            _lock: lock,
+        }
+    }
+}
+
+impl Browser {
+    pub fn new() -> Self {
+        Self::prepare(Some(Lane::take()))
     }
 
-    /// Prepare isolated inputs without locking the shared Trunk build output.
+    /// Prepare isolated inputs without taking a lane.
     /// Every build command must supply its own Cargo target directory.
     pub fn cold() -> Self {
         Self::prepare(None)
     }
 
-    /// Copy authored inputs while retaining any shared-output lock.
-    fn prepare(lock: Option<fs::File>) -> Self {
+    /// Copy authored inputs while holding any lane.
+    fn prepare(lane: Option<Lane>) -> Self {
         record("phase: browser fixture copy");
         let mut workspace = Workspace::new();
         let renamed = workspace.path().with_file_name(format!(
@@ -74,21 +104,21 @@ impl Browser {
                     .success()
             );
         }
-        let browser = Self {
-            workspace,
-            _build_lock: lock,
-        };
+        let browser = Self { workspace, lane };
         record("phase: workspace source preparation");
         browser.workspace_sources();
         record("phase: browser setup complete");
         browser
     }
 
-    /// Recreate inputs at a locked cache path so Cargo retains workspace package identities.
+    /// Recreate inputs at the lane's cache path so Cargo retains workspace package identities.
     pub fn cached() -> Self {
-        let mut browser = Self::new();
-        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../target/Maestro's browser 東京 checkout");
+        let lane = Lane::take();
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../target/Maestro's browser 東京 checkout {}",
+            lane.index
+        ));
+        let mut browser = Self::prepare(Some(lane));
         browser.workspace.cache_at(&path);
         // Restored mutable sources must be newer than any compiled edited version.
         for source in [
@@ -127,7 +157,7 @@ impl Browser {
         let mut command = super::toolchain_support::command("just");
         command.arg(recipe);
         self.configure(&mut command);
-        command.env("CARGO_BUILD_JOBS", "3");
+        command.env("CARGO_BUILD_JOBS", lane_jobs());
         command
     }
 
@@ -147,7 +177,7 @@ impl Browser {
         command
             .args(["browser-author", operation])
             .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"))
-            .env("CARGO_BUILD_JOBS", "3");
+            .env("CARGO_BUILD_JOBS", lane_jobs());
         self.configure(&mut command);
         if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
             command.env("LLVM_PROFILE_FILE", profile);
@@ -155,11 +185,19 @@ impl Browser {
         command
     }
 
+    /// The Cargo target the warm recipes build in: the lane the fixture holds, or the first lane.
+    pub fn target(&self) -> PathBuf {
+        self.lane.as_ref().map_or_else(
+            || target_directories().swap_remove(0),
+            |lane| lane.target.clone(),
+        )
+    }
+
     /// Share output ownership and native tool settings between recipe and helper calls.
     fn configure(&self, command: &mut Command) {
         command
             .current_dir(self.workspace.path())
-            .env("CARGO_TARGET_DIR", target_directory())
+            .env("CARGO_TARGET_DIR", self.target())
             .env("TRUNK_SKIP_VERSION_CHECK", "true")
             // Trunk's completion emoji depends on LANG, even with piped output.
             .env("LANG", "C.UTF-8");
@@ -180,19 +218,44 @@ impl Browser {
     }
 }
 
-/// The target directory every browser build shares: the run's prepared one when nextest supplies
-/// it, otherwise the one the test build wrote.
-pub fn target_directory() -> PathBuf {
-    std::env::var_os("MAESTRO_BROWSER_TARGET_DIR").map_or_else(
+/// The lanes' target directories: the run's prepared ones when nextest's setup announces them,
+/// otherwise the one the test build wrote, as the only lane.
+pub fn target_directories() -> Vec<PathBuf> {
+    std::env::var_os("MAESTRO_BROWSER_TARGET_DIRS").map_or_else(
         || {
-            Path::new(env!("CARGO_BIN_EXE_development"))
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .to_path_buf()
+            vec![
+                Path::new(env!("CARGO_BIN_EXE_development"))
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .to_path_buf(),
+            ]
         },
-        PathBuf::from,
+        |targets| std::env::split_paths(&targets).collect(),
+    )
+}
+
+/// The compile jobs of one lane: the caller's job cap, or every core without one, shared between
+/// the lanes, at least one each. Every lane can build at once, so the lanes together ask for no
+/// more jobs than the run has cores, beyond one job each when the run has fewer cores than lanes.
+fn lane_jobs() -> String {
+    let cores = std::env::var("CARGO_BUILD_JOBS")
+        .ok()
+        .and_then(|jobs| jobs.parse::<usize>().ok())
+        .unwrap_or_else(|| std::thread::available_parallelism().unwrap().get());
+    (cores / target_directories().len()).max(1).to_string()
+}
+
+/// The Cargo target directory `command` builds in.
+pub fn cargo_target(command: &Command) -> PathBuf {
+    PathBuf::from(
+        command
+            .get_envs()
+            .find(|(key, _)| *key == "CARGO_TARGET_DIR")
+            .unwrap()
+            .1
+            .unwrap(),
     )
 }
 

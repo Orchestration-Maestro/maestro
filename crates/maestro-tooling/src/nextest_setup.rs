@@ -19,10 +19,10 @@ const BUNDLE: &str = "target/test-setup";
 
 /// Prepare and launch the component-discovery example.
 mod author_component;
-/// Prepare the browser build the browser author tests share.
+/// Prepare the browser build the browser author tests build on, one copy per lane.
 pub(crate) mod browser_graph;
 /// Vendor locked dependencies for tooling fixtures or the complete workspace.
-mod fixture_sources;
+pub(crate) mod fixture_sources;
 /// Align the modification times of the executables the example warms code for.
 mod normalize;
 
@@ -41,7 +41,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
                 Some("workspace") if args.len() == 2 => fixture_sources::Scope::Workspace,
                 _ => return Err(io::Error::other("unknown fixture source scope")),
             };
-            fixture_sources::run(&checkout, scope)
+            fixture_sources::run(Path::new(&cargo()), &checkout, scope)
         }
         Some("native-fixture") => native(&checkout),
         Some("cargo-checks") => checks(&checkout),
