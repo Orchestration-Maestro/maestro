@@ -2,9 +2,9 @@
 use super::super::state::{message_records, thrown};
 use super::super::{AgentSession, AgentSessionEvent, CompactionReason};
 use super::BeforeCompaction;
-use crate::utils::lock::read;
 use indexmap::IndexMap;
 use maestro_extensions::ExtensionExecution;
+use maestro_lock::read;
 use maestro_models::{
     AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
 };

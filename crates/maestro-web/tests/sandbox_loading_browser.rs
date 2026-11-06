@@ -1,5 +1,6 @@
 //! Actual browser document, event-source and subscription lifetime witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::sandbox_bootstrap_support::{Bundle, loader_document};
 use crate::sandbox_loading_support;
 use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
@@ -488,6 +489,147 @@ pub async fn html_artifacts_keep_head_policies_at_each_insertion_point() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn marker_looking_payloads_survive_preparation_and_completion() {
     sandbox_loading_support::programs::marker_witness().await;
+}
+
+/// Select the packaged writer page for URL loads, or srcdoc.
+fn writer(sandbox: &maestro_web::SandboxIframe, url: bool) {
+    let provider = url.then(crate::contributions_support::sandbox_url);
+    drop(sandbox.sandbox_url_provider.replace(provider));
+}
+
+/// Head script that reports the document has started, ahead of the loader.
+const STARTING: &str = "parent.postMessage({type:'bootstrap-starting'},'*')";
+
+/// Removal at each point of the bootstrap loader's startup settles the host once.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_removal_during_startup_settles_once() {
+    let bundle = Bundle::load().await;
+    let fixture = Fixture::default();
+    fixture.begin();
+    let sandbox = adapter();
+    // Before the host reads readiness, after it replies, before the served glue and after writing.
+    // For `url-pending` the fixture arms before loading, so its listener runs ahead of the host's.
+    for (phase, signal) in [
+        ("url-pending", "sandbox-ready"),
+        ("url-replied", "sandbox-ready"),
+        ("srcdoc-starting", "bootstrap-starting"),
+        ("url-installed", "sandbox-installed"),
+    ] {
+        let url = phase.starts_with("url");
+        writer(&sandbox, url);
+        let boot = if url {
+            bundle.inline(&bundle.wasm)
+        } else {
+            Bundle::served(&bundle.wasm)
+        };
+        let html = loader_document(STARTING, boot, "");
+        if phase == "url-pending" {
+            fixture.arm(signal);
+        }
+        sandbox.load_content(phase, &html, vec![], vec![]).unwrap();
+        if phase != "url-pending" {
+            fixture.arm(signal);
+        }
+        fixture.waited().await;
+        sandbox.remove().unwrap();
+        sandbox.remove().unwrap();
+        fixture.route_check("empty").await;
+    }
+    writer(&sandbox, false);
+    fixture.arm("loaded");
+    sandbox
+        .load_content("recovered", &Fixture::content(), vec![], vec![])
+        .unwrap();
+    fixture.waited().await;
+    sandbox.remove().unwrap();
+    fixture.closed(0);
+    fixture.end();
+    Fixture::finish();
+}
+
+/// Head script recording the loader's uncaught error without reporting it.
+const REFUSAL: &str = "addEventListener('error',e=>{self.refused=e.error.name;e.preventDefault()})";
+/// Body script reporting the installed helper and any refusal.
+const LOADED: &str =
+    "parent.postMessage({type:'loaded',first:typeof listAttachments,refused:self.refused},'*')";
+
+/// Started and refused loader startups hold only the host's registrations and release them.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_outcomes_release_host_registrations() {
+    let bundle = Bundle::load().await;
+    let fixture = Fixture::default();
+    fixture.begin();
+    let sandbox = adapter();
+    for (wasm, outcome) in [
+        (&bundle.wasm[..], [Some("function"), None]),
+        (&[0][..], [Some("undefined"), Some("CompileError")]),
+    ] {
+        fixture.arm("loaded");
+        sandbox
+            .load_content(
+                "outcome",
+                &loader_document(REFUSAL, Bundle::served(wasm), LOADED),
+                vec![],
+                vec![],
+            )
+            .unwrap();
+        let loaded = fixture.waited().await;
+        let field = |key: &str| {
+            js_sys::Reflect::get(&loaded, &key.into())
+                .unwrap()
+                .as_string()
+        };
+        assert_eq!(
+            [field("first"), field("refused")],
+            outcome.map(|value| value.map(str::to_owned))
+        );
+        fixture.closed(2);
+        sandbox.remove().unwrap();
+        fixture.route_check("empty").await;
+    }
+    fixture.end();
+    Fixture::finish();
+}
+
+/// Written-document script that replays readiness and an error, then answers a flush.
+const REPLAY: &str = "addEventListener('message',e=>{const d=e.data;if(d?.type==='sandbox-load')parent.postMessage({type:'code-received',id:d.sandboxId,code:d.code},'*');if(d?.type==='flush')parent.postMessage({type:'flushed'},'*')});parent.postMessage({type:'sandbox-ready'},'*');parent.postMessage({type:'sandbox-error',error:'late',stack:'late'},'*');parent.postMessage({type:'replayed',first:typeof listAttachments},'*')";
+
+/// The current frame's ready or error handshake settles once, ignoring replays and a replaced frame.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_url_handshake_settles_once() {
+    let bundle = Bundle::load().await;
+    let fixture = Fixture::default();
+    fixture.begin();
+    let sandbox = adapter();
+    writer(&sandbox, true);
+    for load in ["first", "replacement"] {
+        fixture.arm("replayed");
+        sandbox
+            .load_content(
+                &format!("handshake-{load}"),
+                &loader_document("", bundle.inline(&bundle.wasm), REPLAY),
+                vec![],
+                vec![SharedHandle::new(Consumer(fixture.clone()))],
+            )
+            .unwrap();
+        if load == "replacement" {
+            fixture.dispatch("sandbox-error", "previous");
+        }
+        let replayed = fixture.waited().await;
+        assert_eq!(
+            js_sys::Reflect::get(&replayed, &"first".into())
+                .unwrap()
+                .as_string()
+                .as_deref(),
+            Some("function")
+        );
+        fixture.dispatch("sandbox-ready", "current");
+        fixture.route_check("replayed").await;
+    }
+    sandbox.remove().unwrap();
+    fixture.closed(0);
+    fixture.end();
+    Fixture::finish();
 }
 
 /// Prepare only the provider failure selected by the existing native fixture.

@@ -1,0 +1,55 @@
+//! Scoped worker threads that apply one operation to every item of a slice.
+
+use std::num::NonZero;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Apply `work` to every item on one scoped thread per available core, in item order.
+///
+/// Each thread takes the next unclaimed item, so one slow item delays only its own thread.
+///
+/// # Errors
+///
+/// Returns a message when a worker thread panicked.
+pub(crate) fn map<T, R>(items: &[T], work: impl Fn(&T) -> R + Sync) -> Result<Vec<R>, String>
+where
+    T: Sync,
+    R: Send,
+{
+    let next = AtomicUsize::new(0);
+    let drain = || {
+        let mut done = Vec::new();
+        loop {
+            // Relaxed: the counter only claims indexes, and the sort below orders the results.
+            let index = next.fetch_add(1, Ordering::Relaxed);
+            let Some(item) = items.get(index) else {
+                return done;
+            };
+            done.push((index, work(item)));
+        }
+    };
+    let threads = std::thread::available_parallelism()
+        .map_or(1, NonZero::get)
+        .min(items.len());
+    std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads).map(|_| scope.spawn(drain)).collect();
+        let mut results = Vec::with_capacity(items.len());
+        // Every handle joins before the error returns: the scope panics on a
+        // panicked worker it still has to join, so an early return turns a
+        // second panic into a scope panic.
+        let mut panicked = false;
+        for worker in workers {
+            match worker.join() {
+                Ok(done) => results.extend(done),
+                Err(_) => panicked = true,
+            }
+        }
+        if panicked {
+            return Err("a worker thread panicked".to_owned());
+        }
+        results.sort_unstable_by_key(|(index, _)| *index);
+        Ok(results.into_iter().map(|(_, result)| result).collect())
+    })
+}
+
+#[cfg(test)]
+mod tests;

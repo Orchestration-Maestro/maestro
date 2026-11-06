@@ -486,14 +486,19 @@ impl Fixture {
         } else {
             "bootstrap-waiting"
         };
-        // The bootstrap document runs inside the isolated frame and loads what it receives.
-        let document = include_str!("bootstrap.html")
-            .trim_end()
-            .replace("__TYPE__", &serde_json::Value::from(signal).to_string());
+        let document = Self::bootstrap_document(signal);
         format!(
             "data:text/html,{}",
             String::from(js_sys::encode_uri_component(&document))
         )
+    }
+    /// Bootstrap document that announces itself to its parent with `signal`.
+    #[must_use]
+    pub(crate) fn bootstrap_document(signal: &str) -> String {
+        // The document writes the code of a load message only when its parent sent it.
+        include_str!("bootstrap.html")
+            .trim_end()
+            .replace("__TYPE__", &serde_json::Value::from(signal).to_string())
     }
     /// Dispatch a handshake message carrying the bootstrap diagnostic, from the current frame
     /// or else from the page itself.

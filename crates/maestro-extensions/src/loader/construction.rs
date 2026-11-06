@@ -1,8 +1,9 @@
 //! Application-supplied defaults used only when an author omits a file path.
-use crate::types::{ExtensionAPI, ExtensionRuntime, read, write};
+use crate::types::{ExtensionAPI, ExtensionRuntime};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{AuthStorage, ModelRegistry, SharedHandle};
 use crate::{ConfigValues, ExtensionExecution};
+use maestro_lock::{read, write};
 use std::sync::Arc;
 
 /// Lazy file defaults and credential-command effects available during factory loading.

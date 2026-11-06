@@ -3,7 +3,6 @@
 use super::held::heard_while_held;
 use super::state::{Gate, SharedAgentEvent, thrown};
 use super::{AgentSession, AgentSessionEvent};
-use crate::utils::lock::{read, write};
 use futures_util::FutureExt;
 use maestro_agent::{AgentEvent, AgentListener, AgentMessage};
 use maestro_extensions::{
@@ -11,6 +10,7 @@ use maestro_extensions::{
     MessageStartEvent, MessageUpdateEvent, NativeAgentMessage, ToolExecutionEndEvent,
     ToolExecutionStartEvent, ToolExecutionUpdateEvent, TurnEndEvent, TurnStartEvent,
 };
+use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, Local, StopReason, UserContent, UserMessage, timestamp_now,
 };

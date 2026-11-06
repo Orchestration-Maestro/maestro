@@ -97,7 +97,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         let loaded: HashSet<_> = extensions
             .extensions
             .iter()
-            .map(|owner| crate::utils::lock::read(owner).path.clone())
+            .map(|owner| maestro_lock::read(owner).path.clone())
             .collect();
         let mut publisher = None;
         let mut packages = Vec::new();

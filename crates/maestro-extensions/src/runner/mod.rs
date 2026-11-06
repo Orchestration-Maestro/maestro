@@ -18,11 +18,12 @@ mod transforms;
 mod ui;
 use crate::{
     ErrorReporter, ExtensionCommandContextActions, ExtensionExecution,
-    types::{ActivityGuard, ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
+    types::{ActivityGuard, ExtensionCollection, ExtensionRuntime, ExtensionUIContext},
 };
 pub(crate) use binding::ContextBinding;
 pub use binding::ExtensionRunnerSession;
 use maestro_listeners::Listeners;
+use maestro_lock::read;
 use maestro_models::Threaded;
 use maestro_resources::ResourceDiagnostic;
 use maestro_theme::LiveTheme;

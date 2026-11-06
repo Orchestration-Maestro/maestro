@@ -2,18 +2,32 @@
 use maestro_test_process::toolchain as toolchain_support;
 
 use std::env;
+use std::process::ExitCode;
 
 /// Build the child while retaining every inherited parent variable.
-fn main() {
+fn main() -> ExitCode {
+    let Some(cargo) = env::var_os("MAESTRO_PROBE_CARGO") else {
+        eprintln!("the probe needs MAESTRO_PROBE_CARGO");
+        return ExitCode::FAILURE;
+    };
     let before: Vec<_> = env::vars_os().collect();
-    let output = toolchain_support::command(env::var_os("MAESTRO_PROBE_CARGO").unwrap())
+    let output = match toolchain_support::command(cargo)
         .args(["build", "--locked", "--target", "wasm32-unknown-unknown"])
         .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert!(env::vars_os().collect::<Vec<_>>() == before, "parent environment changed");
+    {
+        Ok(output) => output,
+        Err(error) => {
+            eprintln!("the probe could not run the child build: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    if !output.status.success() {
+        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+        return ExitCode::FAILURE;
+    }
+    if env::vars_os().collect::<Vec<_>>() != before {
+        eprintln!("parent environment changed");
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
 }

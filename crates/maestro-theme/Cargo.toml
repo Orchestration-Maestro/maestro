@@ -30,6 +30,7 @@ maestro-listing = { path = "../maestro-listing" }
 maestro-text = { path = "../maestro-text", features = ["collation", "date-time-format"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "time", "sync"] }

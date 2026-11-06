@@ -19,6 +19,7 @@ path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-test-directory.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt"] }
 
 [target.'cfg(unix)'.dependencies]
@@ -27,7 +28,6 @@ signal-hook.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 serde.workspace = true
-maestro-test-directory.workspace = true
 serde_json.workspace = true
 
 [lints]

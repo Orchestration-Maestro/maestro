@@ -26,6 +26,38 @@ fn callers_of_shared_ci_use_the_default_concurrency_key() {
     assert!(callers >= 1, "the full-suite caller exists");
 }
 
+/// The shared workflow deletes superseded cache entries in jobs of its own, and GitHub checks
+/// every nested job's permissions against the call's grant when the run starts, so each call
+/// grants Actions write; the nearest Actions permission above a call is the one it grants.
+#[test]
+fn callers_of_shared_ci_grant_cache_pruning() {
+    let workflows = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows");
+    let mut callers = 0;
+    for entry in std::fs::read_dir(workflows).unwrap() {
+        let path = entry.unwrap().path();
+        let text = std::fs::read_to_string(&path).unwrap();
+        let lines: Vec<&str> = text.lines().map(str::trim).collect();
+        for (index, line) in lines.iter().enumerate() {
+            if line.starts_with(
+                "uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@",
+            ) {
+                callers += 1;
+                let grant = lines[..index]
+                    .iter()
+                    .rev()
+                    .find_map(|line| line.strip_prefix("actions:"));
+                assert_eq!(
+                    grant.map(|value| value.split('#').next().unwrap_or_default().trim()),
+                    Some("write"),
+                    "{} grants the shared workflow's cache pruning",
+                    path.display()
+                );
+            }
+        }
+    }
+    assert!(callers >= 1, "the full-suite caller exists");
+}
+
 /// The value of the first line of a workflow that sets the named key.
 fn value_of<'a>(workflow: &'a str, key: &str) -> &'a str {
     workflow

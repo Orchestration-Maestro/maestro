@@ -5,10 +5,11 @@ use super::continuation::Continuation;
 use super::websocket::close_now;
 use futures_util::{FutureExt, StreamExt};
 use indexmap::IndexMap;
+use maestro_lock::lock;
 use std::collections::BTreeMap;
 use std::future::{Future, poll_fn};
 use std::pin::{Pin, pin};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
+use std::sync::{Arc, Mutex, Weak};
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::sync::watch;
@@ -26,11 +27,6 @@ const IDLE_TTL: Duration = Duration::from_millis(300_000);
 
 /// Cached entries by session.
 static ENTRIES: Mutex<BTreeMap<String, Arc<Entry>>> = Mutex::new(BTreeMap::new());
-
-/// Lock a mutex whose protected values are replaced in single steps.
-pub(super) fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(PoisonError::into_inner)
-}
 
 /// Why a socket is closed; the text is the close frame's reason.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

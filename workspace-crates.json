@@ -30,6 +30,7 @@
   "maestro-pattern": "core",
   "maestro-process": "core",
   "maestro-protocol": "core",
+  "maestro-realpath": "core",
   "maestro-request": "core",
   "maestro-resources": "core",
   "maestro-rpc": "core",

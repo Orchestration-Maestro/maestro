@@ -1,7 +1,7 @@
 //! Real-path resolution that follows the JavaScript runtime's link walk.
 
 use crate::paths::resolve;
-use maestro_path::{SEP, dirname};
+use maestro_path::{SEP, dirname, win32};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::{borrow::Cow, io};
@@ -100,7 +100,7 @@ impl Walk {
         }
         let target = std::fs::read_link(link)?.to_string_lossy().into_owned();
         let target = if cfg!(windows) {
-            plain_link_target(&target)
+            win32::ordinary(&target)
         } else {
             Cow::Borrowed(target.as_str())
         };
@@ -128,53 +128,5 @@ fn root_len(path: &str) -> usize {
             return root.len();
         }
         root = parent;
-    }
-}
-
-/// Drop the verbatim prefix from a drive or share target, as the runtime's link reader does.
-///
-/// Any other target, including a verbatim volume or a drive colon followed by
-/// other text, is returned unchanged.
-fn plain_link_target(target: &str) -> Cow<'_, str> {
-    let Some(rest) = target.strip_prefix(r"\\?\") else {
-        return Cow::Borrowed(target);
-    };
-    let is_drive = matches!(
-        rest.as_bytes(),
-        [letter, b':'] | [letter, b':', b'\\', ..] if letter.is_ascii_alphabetic()
-    );
-    if is_drive {
-        return Cow::Borrowed(rest);
-    }
-    match rest.split_at_checked(4) {
-        Some((unc, share)) if unc.eq_ignore_ascii_case(r"UNC\") => {
-            Cow::Owned(format!(r"\\{share}"))
-        }
-        _ => Cow::Borrowed(target),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::plain_link_target;
-
-    /// Drive and share roots lose the verbatim prefix; every other target is kept.
-    #[test]
-    fn verbatim_link_targets_return_the_plain_form() {
-        for (reported, plain) in [
-            (r"\\?\C:\Users\skills", r"C:\Users\skills"),
-            (r"\\?\c:", "c:"),
-            (r"\\?\UNC\server\share\skills", r"\\server\share\skills"),
-            (r"\\?\unc\server\share", r"\\server\share"),
-            (r"\\?\C:skills", r"\\?\C:skills"),
-            (r"\\?\Volume{1}\skills", r"\\?\Volume{1}\skills"),
-            (r"\\?\UNCserver", r"\\?\UNCserver"),
-            (r"C:\Users\skills", r"C:\Users\skills"),
-            (r"\\server\share", r"\\server\share"),
-            (r"..\skills", r"..\skills"),
-            ("", ""),
-        ] {
-            assert_eq!(plain_link_target(reported), plain, "{reported}");
-        }
     }
 }

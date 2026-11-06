@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use syn::punctuated::Punctuated;
-use syn::visit::Visit;
 
 use crate::source::{Member, Source, read_manifest as read};
 
@@ -83,42 +82,61 @@ fn levels(group: Option<&toml::Value>) -> BTreeMap<String, Level> {
 }
 
 /// One lint attribute: its level and the lints it names.
-struct LintAttribute {
+pub(crate) struct LintAttribute {
     /// Attribute level such as `allow` or `forbid`.
     level: String,
     /// Lint paths named by the attribute.
     lints: Vec<String>,
 }
 
-/// Collects every lint-level attribute of a file.
-#[derive(Default)]
-struct Attributes(Vec<LintAttribute>);
+/// Lint-level attributes and root layout of one guest file, gathered by the shared syntax walk.
+pub(crate) struct Attributes {
+    /// Every lint-level attribute, in source order.
+    levels: Vec<LintAttribute>,
+    /// Whether the file declares modules and re-exports only, with no crate-wide lint level.
+    wiring_only: bool,
+    /// Whether the file's own attributes forbid exactly the lowered lints again.
+    restores_forbid: bool,
+}
 
-impl<'ast> Visit<'ast> for Attributes {
-    fn visit_attribute(&mut self, attribute: &'ast syn::Attribute) {
-        let Some(level) = attribute.path().get_ident().map(ToString::to_string) else {
-            return;
-        };
-        if !matches!(
-            level.as_str(),
-            "allow" | "warn" | "deny" | "forbid" | "expect"
-        ) {
-            return;
+impl Attributes {
+    /// Start the collection of one parsed file with its root layout.
+    pub(crate) fn new(file: &syn::File) -> Self {
+        Self {
+            levels: Vec::new(),
+            wiring_only: wiring_only(file),
+            restores_forbid: restores_forbid(file),
         }
-        let lints = attribute
-            .parse_args_with(Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated)
-            .map(|metas| {
-                metas
-                    .iter()
-                    .filter_map(|meta| match meta {
-                        syn::Meta::Path(path) => Some(path_text(path)),
-                        _ => None,
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        self.0.push(LintAttribute { level, lints });
     }
+
+    /// Record one attribute when it sets a lint level.
+    pub(crate) fn attribute(&mut self, attribute: &syn::Attribute) {
+        self.levels.extend(lint_attribute(attribute));
+    }
+}
+
+/// The level and lint paths of an attribute that sets a lint level.
+fn lint_attribute(attribute: &syn::Attribute) -> Option<LintAttribute> {
+    let level = attribute.path().get_ident()?.to_string();
+    if !matches!(
+        level.as_str(),
+        "allow" | "warn" | "deny" | "forbid" | "expect"
+    ) {
+        return None;
+    }
+    let lints = attribute
+        .parse_args_with(Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated)
+        .map(|metas| {
+            metas
+                .iter()
+                .filter_map(|meta| match meta {
+                    syn::Meta::Path(path) => Some(path_text(path)),
+                    _ => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    Some(LintAttribute { level, lints })
 }
 
 /// A path written with `::` separators.
@@ -136,16 +154,15 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
         .path
         .strip_prefix(&member.directory)
         .map_err(|error| error.to_string())?;
-    let file = source
-        .syntax
+    let attributes = source
+        .walk
         .as_ref()
+        .and_then(|walk| walk.guest.as_ref())
         .ok_or_else(|| format!("{}: cannot parse a guest source", source.path.display()))?;
-    let mut collected = Attributes::default();
-    collected.visit_file(file);
-    let attributes = collected.0;
     let at = source.path.display();
     if bindings_source(member, source) {
         let widened = attributes
+            .levels
             .iter()
             .any(|attribute| attribute.level != "allow" || attribute.lints != [ALLOWED]);
         return if widened {
@@ -157,9 +174,15 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
         };
     }
     if relative == Path::new("src/lib.rs") {
-        return wiring_only(&source.path, file);
+        return if attributes.wiring_only {
+            Ok(())
+        } else {
+            Err(format!(
+                "{at}: the guest root may only declare modules and re-exports"
+            ))
+        };
     }
-    if !crate_or_module_root(relative) || restores_forbid(file) {
+    if !crate_or_module_root(relative) || attributes.restores_forbid {
         Ok(())
     } else {
         Err(format!(
@@ -187,42 +210,30 @@ fn crate_or_module_root(relative: &Path) -> bool {
 
 /// Whether a file starts by forbidding exactly the lowered lints again.
 fn restores_forbid(file: &syn::File) -> bool {
-    file.attrs.iter().any(|attribute| {
-        let mut inner = Attributes::default();
-        inner.visit_attribute(attribute);
-        inner.0.iter().any(|attribute| {
-            let mut lints = attribute.lints.clone();
-            lints.sort();
+    file.attrs
+        .iter()
+        .filter_map(lint_attribute)
+        .any(|mut attribute| {
+            attribute.lints.sort();
             attribute.level == "forbid"
-                && lints
+                && attribute.lints
                     == [
                         "clippy::excessive_nesting",
                         "clippy::pedantic",
                         "clippy::too_many_arguments",
                     ]
         })
-    })
 }
 
-/// The root of the guest declares modules and re-exports only, with no crate-wide lint level.
-fn wiring_only(path: &Path, file: &syn::File) -> Result<(), String> {
-    let declares = file.items.iter().all(|item| {
+/// Whether the guest root declares modules and re-exports only, with no crate-wide lint level.
+fn wiring_only(file: &syn::File) -> bool {
+    file.items.iter().all(|item| {
         matches!(item, syn::Item::Mod(module) if module.content.is_none())
             || matches!(item, syn::Item::Use(_) | syn::Item::ExternCrate(_))
-    });
-    if declares
-        && file
-            .attrs
-            .iter()
-            .all(|attribute| attribute.path().is_ident("doc"))
-    {
-        Ok(())
-    } else {
-        Err(format!(
-            "{}: the guest root may only declare modules and re-exports",
-            path.display()
-        ))
-    }
+    }) && file
+        .attrs
+        .iter()
+        .all(|attribute| attribute.path().is_ident("doc"))
 }
 
 /// Identify generated catalog source with the existing owner and path rule.

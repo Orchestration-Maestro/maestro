@@ -312,7 +312,7 @@ type Handler = Rc<
     ) -> Pin<Box<dyn Future<Output = Result<(), EventError>>>>,
 >;
 
-/// The registration one recorded extension command describes.
+/// The resolved command record one recorded extension command describes.
 fn registered(
     record: &ExtensionRecord,
     completions: Option<Completions>,
@@ -406,7 +406,7 @@ fn base_world(directory: &Path, input: &Recorded) -> World {
     .build(directory)
 }
 
-/// The extension records one recorded base case registers.
+/// The resolved command records one recorded base case supplies.
 fn base_records(input: &Recorded) -> Vec<ResolvedCommand<Local>> {
     input
         .extensions

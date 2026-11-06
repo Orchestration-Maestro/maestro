@@ -1,8 +1,5 @@
-use std::path::Path;
-
 use maestro_markdown::{Kind, MarkedOptions, Node, parse_with_options};
 use ra_ap_rustc_lexer::TokenKind;
-use syn::visit::Visit;
 
 use crate::source::{Member, Source, cfg_test, test_layout};
 
@@ -18,7 +15,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
         for source in &member.sources {
             let generated_bindings = crate::generated::bindings_source(member, source);
             documentation(source, generated_bindings)?;
-            check_test_layout(source, &member.directory)?;
+            check_test_layout(member, source)?;
         }
     }
     Ok(())
@@ -148,37 +145,49 @@ fn code_ranges(nodes: &[Node], ranges: &mut Vec<std::ops::Range<usize>>) {
 }
 
 /// Validate the layout used to exclude test sources from production line counts.
-fn check_test_layout(source: &Source, directory: &Path) -> Result<(), String> {
-    let mut visitor = TestLayout {
-        source,
-        in_src: source.path.starts_with(directory.join("src")),
-        error: None,
+fn check_test_layout(member: &Member, source: &Source) -> Result<(), String> {
+    let Some(walk) = &source.walk else {
+        return Ok(());
     };
-    if let Some(syntax) = &source.syntax {
-        visitor.visit_file(syntax);
-        visitor.error.take().map_or(Ok(()), Err)?;
-        if visitor.in_src && cfg_test(&syntax.attrs) && !test_layout(&source.path, directory) {
-            return Err(format!(
-                "{}:1: test file convention: use tests.rs or a tests directory for #![cfg(test)]",
-                source.path.display()
-            ));
-        }
+    if let Some(error) = &walk.layout {
+        return Err(error.clone());
     }
-    visitor.error.map_or(Ok(()), Err)
+    if in_src(member, source) && walk.gated && !test_layout(&source.path, &member.directory) {
+        return Err(format!(
+            "{}:1: test file convention: use tests.rs or a tests directory for #![cfg(test)]",
+            source.path.display()
+        ));
+    }
+    Ok(())
 }
 
-/// Validate source-local test module declarations throughout the syntax tree.
-struct TestLayout<'a> {
+/// Whether a source lies under its member's `src` directory, where test modules follow the convention.
+fn in_src(member: &Member, source: &Source) -> bool {
+    source.path.starts_with(member.directory.join("src"))
+}
+
+/// Validate source-local test module declarations during the shared syntax walk.
+pub(crate) struct TestLayout<'a> {
     /// File used to attach locations to diagnostics.
     source: &'a Source,
     /// Whether source-local module declarations must follow the convention.
     in_src: bool,
     /// First convention violation, if any.
-    error: Option<String>,
+    pub(crate) error: Option<String>,
 }
 
-impl<'ast> Visit<'ast> for TestLayout<'_> {
-    fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
+impl<'a> TestLayout<'a> {
+    /// Start the layout check of one member's source.
+    pub(crate) fn new(member: &Member, source: &'a Source) -> Self {
+        Self {
+            source,
+            in_src: in_src(member, source),
+            error: None,
+        }
+    }
+
+    /// Check one module declaration, inline or out of line.
+    pub(crate) fn item_mod(&mut self, item: &syn::ItemMod) {
         let configured = cfg_test(&item.attrs);
         let named = item.ident == "tests";
         if self.in_src
@@ -193,7 +202,6 @@ impl<'ast> Visit<'ast> for TestLayout<'_> {
                 item.ident.span().start().line,
             ));
         }
-        syn::visit::visit_item_mod(self, item);
     }
 }
 

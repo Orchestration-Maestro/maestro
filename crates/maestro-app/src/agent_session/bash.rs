@@ -1,9 +1,9 @@
 //! Direct shell commands and their recorded transcript.
 use super::state::thrown;
 use super::{AgentSession, BashChunkCallback, BashRunOptions};
-use crate::utils::lock::write;
 use maestro_agent::AgentMessage;
 use maestro_extensions::{ExtensionExecution, NativeAgentMessage};
+use maestro_lock::write;
 use maestro_models::{Cancellation, DiagnosticErrorInfo, timestamp_now};
 use maestro_session::Presence;
 use maestro_session::messages::{BashExecutionMessage, CustomAgentMessages};

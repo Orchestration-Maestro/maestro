@@ -55,9 +55,9 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     }
 }
 
-/// Export the validated host fixture, building only during local repository setup.
+/// Export the validated host fixtures, building only during local repository setup.
 fn native(checkout: &Path) -> io::Result<ExitCode> {
-    let path = if let Some(bundle) = prepared_bundle(checkout) {
+    let paths = if let Some(bundle) = prepared_bundle(checkout) {
         native_fixture::prepared(checkout, &bundle)?
     } else {
         let cargo = Path::new(&cargo()).to_path_buf();
@@ -69,9 +69,11 @@ fn native(checkout: &Path) -> io::Result<ExitCode> {
             &checkout.join("target/native-fixture"),
         )?
     };
-    let mut entry = OsString::from(format!("{}=", native_fixture::VARIABLE));
-    entry.push(path);
-    export(&entry)?;
+    for (variable, path) in paths {
+        let mut entry = OsString::from(format!("{variable}="));
+        entry.push(path);
+        export(&entry)?;
+    }
     Ok(ExitCode::SUCCESS)
 }
 

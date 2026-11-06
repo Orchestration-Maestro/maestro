@@ -5,13 +5,7 @@ pub use maestro_credentials::test_support::fallback_support::errors;
 use serde::Deserialize;
 use serde_json::Value;
 /// One recorded transaction.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Case {
-    pub test: String,
-    pub input: Input,
-    pub expected: Value,
-}
+pub type Case = maestro_test_fixtures::Case<Input>;
 /// Complete caller input domains for the two selectors.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -34,11 +28,7 @@ pub struct Input {
 }
 /// All recorded transactions owned by a named public witness.
 pub fn cases(test: &str) -> Vec<Case> {
-    let rows: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/fallback_failures.json")).unwrap();
-    let rows: Vec<_> = rows.into_iter().filter(|row| row.test == test).collect();
-    assert!(!rows.is_empty());
-    rows
+    maestro_test_fixtures::cases(include_str!("../fixtures/fallback_failures.json"), test).unwrap()
 }
 /// Observe a boxed native callback failure without rebuilding it.
 #[cfg(not(target_arch = "wasm32"))]

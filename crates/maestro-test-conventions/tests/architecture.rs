@@ -1432,7 +1432,6 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&s
         .iter()
         .enumerate()
         .filter(|(_, target)| from != "maestro" || !required_targets(from).contains(target))
-        .filter(|(_, target)| !(from == "maestro-app" && **target == "maestro-lock"))
         .collect();
     for optional in [false, true] {
         let mut declarations = String::new();
@@ -1452,24 +1451,11 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&s
                 append_required_root_wiring(&mut declarations, from, kind);
             }
         }
-        append_application_lock(&mut declarations, from, targets);
         workspace.member(from, from, &declarations);
         assert_eq!(
             check_workspace(workspace.root.path()),
             Ok(()),
             "{from} -> {targets:?} (optional: {optional})"
-        );
-    }
-}
-
-/// Keep the application's publication edge native in broad valid-graph fixtures.
-fn append_application_lock(declarations: &mut String, from: &str, targets: &[&str]) {
-    if from == "maestro-app" && targets.contains(&"maestro-lock") {
-        declarations.push_str(
-            r#"
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-publication = { package = "maestro-lock", path = "../maestro-lock" }
-"#,
         );
     }
 }
@@ -2126,7 +2112,6 @@ fn complete_permitted_graph_is_acyclic() {
                 .copied()
                 .chain(utility)
                 .filter(|target| from != "maestro" || !required_targets(from).contains(target))
-                .filter(|target| !(from == "maestro-app" && *target == "maestro-lock"))
                 .enumerate()
             {
                 writeln!(
@@ -2136,7 +2121,6 @@ fn complete_permitted_graph_is_acyclic() {
                 .unwrap();
             }
             append_required_root_wiring(&mut declarations, from, kind);
-            append_application_lock(&mut declarations, from, targets);
             workspace.member(from, from, &declarations);
         }
         assert_eq!(
@@ -2612,20 +2596,14 @@ fn extension_and_rpc_test_edges_are_native() {
 }
 
 #[test]
-fn application_lock_edge_keeps_publication_native_owned() {
+fn application_lock_edge_serves_browser_callers() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-app", "maestro-lock"]);
-    for (table, permitted) in [
-        (
-            "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies",
-            true,
-        ),
-        (
-            "target.'cfg(not(target_arch = \"wasm32\"))'.build-dependencies",
-            true,
-        ),
-        ("dependencies", false),
-        ("target.'cfg(target_arch = \"wasm32\")'.dependencies", false),
+    for table in [
+        "dependencies",
+        "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dependencies",
+        "build-dependencies",
     ] {
         workspace.member(
             "maestro-app",
@@ -2637,32 +2615,25 @@ publication = {{ package = "maestro-lock", path = "../maestro-lock" }}"#
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            if permitted {
-                Ok(())
-            } else {
-                Err("maestro-app: maestro-lock must be a native dependency".into())
-            }
+            Ok(()),
+            "{table} must admit the shared lock owner"
         );
     }
-    for from in ["maestro-extensions-wasmtime", "maestro-extensions-wasm"] {
-        let workspace = Workspace::new();
-        workspace.foundation(&[from, "maestro-lock"]);
-        for (kind, extra) in DECLARATIONS {
-            workspace.member(
-                from,
-                from,
-                &format!(
-                    r#"[{kind}]
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-lock"]);
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-extensions-wasm",
+            "maestro-extensions-wasm",
+            &format!(
+                r#"[{kind}]
 alias = {{ package = "maestro-lock", path = "../maestro-lock"{extra} }}"#
-                ),
-            );
-            assert_eq!(
-                check_workspace(workspace.root.path()),
-                Err(format!(
-                    "forbidden production dependency: {from} -> maestro-lock"
-                ))
-            );
-        }
+            ),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err("forbidden production dependency: maestro-extensions-wasm -> maestro-lock".into())
+        );
     }
 }
 
@@ -2673,16 +2644,26 @@ fn session_lock_edge_is_scoped() {
     check_permitted_declarations(&workspace, "maestro-session", &["maestro-lock"]);
 
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-models", "maestro-lock"]);
+    workspace.foundation(&["maestro-web", "maestro-lock"]);
+    let required =
+        required_targets("maestro-web")
+            .iter()
+            .fold(String::new(), |mut declarations, target| {
+                writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+                declarations
+            });
     for (kind, extra) in DECLARATIONS {
-        workspace.member(
-            "maestro-models",
-            "maestro-models",
-            &format!("[{kind}]\nalias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}"),
-        );
+        let alias =
+            format!("alias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}");
+        let declarations = if *kind == "dependencies" {
+            format!("[{kind}]\n{required}{alias}")
+        } else {
+            format!("[dependencies]\n{required}[{kind}]\n{alias}")
+        };
+        workspace.member("maestro-web", "maestro-web", &declarations);
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-models -> maestro-lock".into()),
+            Err("forbidden production dependency: maestro-web -> maestro-lock".into()),
             "{kind}{extra}"
         );
     }
@@ -2707,12 +2688,10 @@ const FIXTURES: &str = "maestro-test-fixtures";
 
 /// Independently declared fixture consumers.
 const FIXTURE_CALLERS: &[&str] = &[
-    "maestro-agent",
     "maestro-models",
     "maestro-request",
     "maestro-catalog",
     "maestro-chat",
-    "maestro-credentials",
     "maestro-tools",
     "maestro-export",
 ];
@@ -2777,7 +2756,43 @@ const DIRECTORY_CALLERS: &[&str] = &[
 
 #[test]
 fn directory_support_edges_are_native_development_only() {
-    support_declarations_match_owner(DIRECTORY, DIRECTORY_CALLERS);
+    let without_launcher = DIRECTORY_CALLERS
+        .iter()
+        .copied()
+        .filter(|name| *name != "maestro-test-process")
+        .collect::<Vec<_>>();
+    support_declarations_match_owner(DIRECTORY, &without_launcher);
+}
+
+#[test]
+fn child_launcher_reaches_the_directory_owner_normally() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-test-process", DIRECTORY]);
+    let normal_table = "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies";
+    let wrong = "maestro-test-process: maestro-test-directory must be a native, non-optional normal dependency";
+    for (kind, extra, failure) in [
+        (normal_table, "", None),
+        ("dependencies", "", Some(wrong)),
+        ("dependencies", ", optional = true", Some(wrong)),
+        (NATIVE_DEV, "", Some(wrong)),
+        ("dev-dependencies", "", Some(wrong)),
+        ("build-dependencies", "", Some(wrong)),
+        (
+            "target.'cfg(target_os = \"none\")'.dependencies",
+            "",
+            Some(wrong),
+        ),
+    ] {
+        let declaration = format!(
+            "[{kind}]\ndirectory = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\"{extra} }}\n"
+        );
+        let expected = failure.map_or(Ok(()), |wrong| Err(wrong.to_owned()));
+        assert_eq!(
+            caller_declares(&workspace, "maestro-test-process", &declaration),
+            expected,
+            "{kind}{extra}"
+        );
+    }
 }
 
 #[test]
@@ -2835,8 +2850,51 @@ fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
 #[test]
 fn directory_support_owner_has_no_domain_dependencies() {
     support_owner_has_no_domain_dependencies(FIXTURES);
-    support_owner_has_no_domain_dependencies(DIRECTORY);
 }
+
+/// The directory owner resolves its roots through the real-path owner and depends on no
+/// other workspace crate.
+#[test]
+fn directory_support_owner_depends_only_on_the_real_path_owner() {
+    let targets = ["maestro-text", "maestro-path", "maestro-tooling"];
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        DIRECTORY, REALPATH, targets[0], targets[1], targets[2], UNIFIER,
+    ]);
+    for target in targets {
+        for (table, refusal) in [
+            ("dependencies", "forbidden production dependency"),
+            ("build-dependencies", "forbidden production dependency"),
+            (
+                "dev-dependencies",
+                "internal dev dependency requires declared dependency-free test support",
+            ),
+        ] {
+            workspace.member(
+                DIRECTORY,
+                DIRECTORY,
+                &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!("{refusal}: {DIRECTORY} -> {target}")),
+                "{table}"
+            );
+        }
+    }
+    workspace.member(
+        DIRECTORY,
+        DIRECTORY,
+        &format!(
+            "{}{REALPATH} = {{ path = \"../{REALPATH}\" }}\n",
+            unifier_declaration(&[], NATIVE, "unified", "")
+        ),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+/// Owner of native real-path resolution.
+const REALPATH: &str = "maestro-realpath";
 
 #[test]
 fn tracing_support_owner_has_no_domain_dependencies() {

@@ -57,6 +57,8 @@ first-line session header with a nonempty string cwd selects the existing
 [session directory encoding](../sessions/session_manager.md). The original entry
 is relocated using its native basename; transcript bytes are not rewritten.
 The scan captures headers and final link referents before moving any entry.
+Referents, sources and destinations are real paths in the ordinary Windows form,
+so settlement compares them with the spelling of the configuration root.
 Links are prepared without consuming their sources. Batch-local dependencies
 include traversed links and moved-directory ancestors. Failed preparation pins
 the entries needed to keep the original source readable; independent direct

@@ -1,8 +1,9 @@
 //! Action methods of the extension API, delegating to the shared runtime.
 use crate::{
     EventError, ExtensionExecution,
-    types::{ExtensionAPI, ExtensionActions, ProviderConfig, read},
+    types::{ExtensionAPI, ExtensionActions, ProviderConfig},
 };
+use maestro_lock::read;
 use maestro_models::{
     Model, ModelThinkingLevel as ThinkingLevel, SharedHandle, ToolInfo, UserContent,
 };

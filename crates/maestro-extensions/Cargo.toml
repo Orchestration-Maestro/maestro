@@ -21,6 +21,7 @@ maestro-session = { path = "../maestro-session" }
 maestro-theme = { path = "../maestro-theme" }
 maestro-tui = { path = "../maestro-tui" }
 serde_json.workspace = true
+maestro-lock = { path = "../maestro-lock" }
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

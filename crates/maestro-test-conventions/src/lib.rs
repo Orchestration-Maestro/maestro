@@ -28,8 +28,14 @@ mod graph;
 mod integration_tests;
 /// Native platform viewer ownership.
 mod platform_opener;
+/// Shared-state acquisition ownership.
+mod poison;
+/// Scoped worker threads for per-source and per-check work.
+mod pool;
 /// Source-size and protected-lint checks.
 mod quality;
+/// Real-path resolution outside its owner.
+mod real_paths;
 /// Repeated documentation and test source layout checks.
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
@@ -76,7 +82,9 @@ mod time_limits;
 /// Native fixture setup selection must match the declared test-process callers plus their owner.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
-/// for metadata. Emits no output. Legal included fragments are counted without
+/// for metadata. Emits no output. Sources load, and the source checks run, on
+/// one thread per available core; when several checks fail, the first in a
+/// fixed order is reported. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
 ///
 /// The feature unifier `maestro-dependencies` is dedicated, has no workspace dependencies and may be
@@ -102,13 +110,13 @@ mod time_limits;
 /// writes the decode or the release walk inline is reported with its file and
 /// line, wherever the copy sits.
 ///
-/// Test code in the crates the temporary-directory migration has reached may not
-/// name the platform temporary directory itself: not as a call, a value or a macro
-/// argument inside test-owned code, and not as an import anywhere in the crate,
-/// whatever the alias. Diagnostics name `TEST_DIRECTORY_CALLERS`; the owner's
-/// `temporary_root` accessor, the owner parent and an uncreated socket path remain
-/// accepted. The scope grows with each migration batch and disappears when every
-/// crate uses the owner.
+/// Test code in every member may not name the platform temporary directory
+/// itself: not as a call, a value or a macro argument inside test-owned code, and
+/// not as an import anywhere in the crate, whatever the alias. Diagnostics name
+/// `TEST_DIRECTORY_CALLERS`; the owner's `temporary_root` accessor, the owner
+/// parent, an uncreated socket path and a declaration's own `temp_dir` name remain
+/// accepted. `maestro-test-directory` is the only member outside the check: its
+/// accessor is the one place that reads the platform directory itself.
 ///
 /// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
 /// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
@@ -122,6 +130,13 @@ mod time_limits;
 /// the application's platform opener. The whole-file token check includes fragments
 /// and nested groups; editor and clipboard process policies stay with their callers.
 ///
+/// Production code may not define its own poison-tolerant lock acquisition. A free
+/// function, an inherent accessor, a closure and a macro argument that acquire a
+/// `Mutex` or `RwLock` and recover with `PoisonError::into_inner` are reported with
+/// their file and line. Calls to `maestro_lock::lock`, `maestro_lock::read` or
+/// `maestro_lock::write` pass, discarded results included, and test code keeps its
+/// own helpers.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -131,19 +146,25 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     let (metadata, packages) = graph::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
-    graph::packages::check(&metadata, &members, &packages)?;
-    child_tests::check(&members)?;
-    integration_tests::check(&members)?;
-    boundaries::check(&members)?;
-    platform_opener::check(&members)?;
-    comments::check(&members)?;
-    repetition::check(&members)?;
-    quality::check(root, &members)?;
-    time_limits::check(&members)?;
-    duplicates::check(&members)?;
-    example_helpers::check(&members)?;
-    temp_directories::check(&members)?;
-    test_input_routes::check(root, &members)
+    let checks: &[&(dyn Fn() -> Result<(), String> + Sync)] = &[
+        &|| graph::packages::check(&metadata, &members, &packages),
+        &|| child_tests::check(&members),
+        &|| integration_tests::check(&members),
+        &|| boundaries::check(&members),
+        &|| platform_opener::check(&members),
+        &|| poison::check(&members),
+        &|| comments::check(&members),
+        &|| repetition::check(&members),
+        &|| quality::check(root, &members),
+        &|| time_limits::check(&members),
+        &|| duplicates::check(&members),
+        &|| example_helpers::check(&members),
+        &|| temp_directories::check(&members),
+        &|| real_paths::check(&members),
+        &|| test_input_routes::check(root, &members),
+    ];
+    // The source checks only read the loaded members, so they run at once and report in order.
+    pool::map(checks, |check| check())?.into_iter().collect()
 }
 
 /// Validate a workspace's declared dependency graph from a supplied metadata document.

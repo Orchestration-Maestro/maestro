@@ -104,10 +104,9 @@ impl<'a> Prefix<'a> {
 
 /// Report whether a relative, deviceless path would read as a drive or device
 /// after normalization: a colon that ends a component, or a tail that opens
-/// with a drive letter and colon.
+/// with a drive prefix.
 fn reads_as_drive(path: &str, tail: &str) -> bool {
-    let tail = tail.as_bytes();
-    (tail.len() >= 2 && tail[0].is_ascii_alphabetic() && tail[1] == b':')
+    has_drive_prefix(tail)
         || path
             .match_indices(':')
             .any(|(colon, _)| path[colon + 1..].chars().next().is_none_or(is_separator))
@@ -316,4 +315,58 @@ pub fn basename(path: &str, suffix: Option<&str>) -> String {
 #[must_use]
 pub fn is_absolute(path: &str) -> bool {
     Root::parse(path).is_absolute()
+}
+
+/// Return the ordinary spelling of a verbatim drive or UNC path.
+///
+/// Windows reports real paths in the verbatim form, which programs and users do
+/// not write: `\\?\D:\x` is `D:\x` and `\\?\UNC\server\share\x` is
+/// `\\server\share\x`. A bare drive colon is the drive's current directory and
+/// loses the prefix too, and the `UNC` word is read in any case. Any other path,
+/// including a verbatim path without a drive prefix or a share, is returned as
+/// written.
+///
+/// # Examples
+///
+/// ```
+/// use maestro_path::win32;
+///
+/// assert_eq!(win32::ordinary(r"\\?\D:\work"), r"D:\work");
+/// assert_eq!(win32::ordinary(r"\\?\UNC\server\share"), r"\\server\share");
+/// assert_eq!(win32::ordinary(r"D:\work"), r"D:\work");
+/// ```
+#[must_use]
+pub fn ordinary(path: &str) -> Cow<'_, str> {
+    let Some(rest) = path.strip_prefix(r"\\?\") else {
+        return path.into();
+    };
+    if let Some((word, share)) = rest.split_at_checked(4)
+        && word.eq_ignore_ascii_case(r"UNC\")
+        && !share.is_empty()
+    {
+        return format!(r"\\{share}").into();
+    }
+    if has_drive_prefix(rest) && rest.as_bytes().get(2).is_none_or(|byte| *byte == b'\\') {
+        return rest.into();
+    }
+    path.into()
+}
+
+/// Report whether `path` opens with a drive letter and its colon.
+///
+/// `C:`, `C:\work` and `C:notes` have a drive prefix; `\C:\work`, `CC:` and `C`
+/// do not. The test is lexical, so it says nothing about the drive existing.
+///
+/// # Examples
+///
+/// ```
+/// use maestro_path::win32;
+///
+/// assert!(win32::has_drive_prefix("C:\\work"));
+/// assert!(win32::has_drive_prefix("d:notes"));
+/// assert!(!win32::has_drive_prefix("\\C:\\work"));
+/// ```
+#[must_use]
+pub fn has_drive_prefix(path: &str) -> bool {
+    matches!(path.as_bytes(), [letter, b':', ..] if letter.is_ascii_alphabetic())
 }

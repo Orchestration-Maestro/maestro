@@ -1,10 +1,8 @@
 //! Effective shortcut classification and ordered owner selection.
 use super::ExtensionRunner;
-use crate::{
-    ExtensionExecution,
-    types::{ExtensionShortcut, read, write},
-};
+use crate::{ExtensionExecution, types::ExtensionShortcut};
 use indexmap::{IndexMap, IndexSet};
+use maestro_lock::{read, write};
 use maestro_resources::{DiagnosticType, ResourceDiagnostic};
 use maestro_tui::{KeyId, KeybindingKeys, KeybindingsConfig};
 use std::sync::{Arc, RwLock};

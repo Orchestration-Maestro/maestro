@@ -1,8 +1,9 @@
 //! Competing-reader FIFO with an independently retained terminal result.
 
+use maestro_lock::lock;
 use std::collections::VecDeque;
 use std::future::{Future, poll_fn};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::task::{Poll, Waker};
 
 use super::types::{Execution, Local, Threaded};
@@ -68,13 +69,6 @@ impl<T, R, E: StreamExecution<T, R>> Clone for EventStream<T, R, E> {
             extract_result: self.extract_result.clone(),
         }
     }
-}
-
-/// Acquire stream state even after a prior lock holder panicked.
-fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 impl<T: 'static, R: Clone + 'static> EventStream<T, R> {

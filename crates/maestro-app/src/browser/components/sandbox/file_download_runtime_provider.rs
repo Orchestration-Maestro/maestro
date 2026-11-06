@@ -1,6 +1,6 @@
 //! Returned-file records preserving raw host values.
 use crate::browser::components::sandboxed_iframe::SandboxFile;
-use crate::utils::lock::{read, write};
+use maestro_lock::{read, write};
 
 /// A returned file whose content and metadata retain their original values.
 pub type DownloadableFile<V = serde_json::Value> = SandboxFile<V, V>;

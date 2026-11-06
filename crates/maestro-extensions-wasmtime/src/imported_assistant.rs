@@ -47,9 +47,7 @@ pub(crate) fn stream(
 impl Port {
     /// Recover the final cache without running callbacks or author destructors under its guard.
     fn state(&self) -> MutexGuard<'_, Final> {
-        self.final_value
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        maestro_lock::lock(&self.final_value)
     }
     /// Preserve the first decoded terminal even when a later Store operation fails.
     fn cache(&self, message: SharedAssistantMessage) -> SharedAssistantMessage {
