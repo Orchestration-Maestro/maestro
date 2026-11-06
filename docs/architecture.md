@@ -500,6 +500,12 @@ application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
 
+`check_workspace` reads each Rust source once. A file is parsed, lexed and walked a
+single time; the checks read what the walk recorded, and no parsed syntax outlives
+loading. Files load on one thread per available core, and the source checks then
+run side by side over the loaded members. When several checks fail, the first in a
+fixed order is reported, so a run that fails reports the same failure every time.
+
 Checked test selection and direct native fixtures belong to `maestro-test-process`.
 Its one harness-free example receives literal native operands; its installer copies
 aliases through that same artifact without writable executable handles in the test

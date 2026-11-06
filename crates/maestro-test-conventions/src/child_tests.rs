@@ -35,19 +35,26 @@ fn browser(member: &Member, source: &Source) -> bool {
 
 /// Check parsed attributes through the existing workspace source model.
 fn ignore_ownership(member: &Member, source: &Source) -> Result<(), String> {
-    if source.syntax.is_none() {
+    let Some(walk) = &source.walk else {
         return Ok(());
-    }
-    if let Some((line, message)) = source.walk(member).ignored {
+    };
+    if let Some((line, message)) = walk.ignored {
         return Err(format!("{}:{line}: {message}", source.path.display()));
     }
-    if browser(member, source) && !member.sources.iter().any(|source| {
-        source.path == member.directory.join("tests/integration.rs")
-            && source.syntax.as_ref().is_some_and(|syntax| syntax.items.iter().any(|item| {
-                matches!(item, syn::Item::Mod(module) if module.ident == "browser" && module.content.is_none())
-            }))
-    }) {
-        return Err(format!("{}: browser tests require registration in tests/integration.rs", source.path.display()));
+    if browser(member, source)
+        && !member.sources.iter().any(|source| {
+            source.path == member.directory.join("tests/integration.rs")
+                && source.walk.as_ref().is_some_and(|walk| {
+                    walk.root_modules
+                        .iter()
+                        .any(|module| module.name == "browser" && module.out_of_line)
+                })
+        })
+    {
+        return Err(format!(
+            "{}: browser tests require registration in tests/integration.rs",
+            source.path.display()
+        ));
     }
     Ok(())
 }
