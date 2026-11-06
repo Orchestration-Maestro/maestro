@@ -44,6 +44,7 @@ fn context(args: &Value, theme: Rc<Theme>) -> ToolRenderContext<'_, EditRenderSt
         }),
     }
 }
+
 /// Caught preview failure.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
