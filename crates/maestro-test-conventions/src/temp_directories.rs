@@ -29,6 +29,7 @@ const MIGRATED_CRATES: &[&str] = &[
     "maestro-tools",
     "maestro-resources",
     "maestro-chat",
+    "maestro-test-process",
 ];
 
 /// Spelling that names the platform temporary directory.
@@ -79,21 +80,35 @@ fn member_diagnostics(member: &Member) -> Vec<(String, usize)> {
 /// Platform-directory references of one file, gathered by the shared syntax walk.
 ///
 /// The walk passes identifiers and macros of test-owned code and of `use` imports; it skips
-/// method names, the receiver's own API rather than a platform-directory spelling: the
-/// standard function is always a call through a path. It also skips a method call's
-/// attributes, which never name a call.
+/// method names and a declared function's own name, its builder API rather than a
+/// platform-directory spelling: the standard function is always a call through a path. It
+/// also skips a method call's attributes, which never name a call.
 #[derive(Default)]
 pub(crate) struct References {
+    /// Byte ranges of the declarations whose own name never names the platform function.
+    declared: Vec<std::ops::Range<usize>>,
     /// Located reference lines.
     lines: Vec<usize>,
 }
 
 impl References {
+    /// Record the byte range of one declaration's own name so `ident` skips it.
+    pub(crate) fn skip(&mut self, ident: &proc_macro2::Ident) {
+        self.declared.push(ident.span().byte_range());
+    }
+
     /// Record one identifier that names the platform temporary directory.
     pub(crate) fn ident(&mut self, ident: &proc_macro2::Ident) {
-        if ident == PLATFORM_DIRECTORY {
-            self.lines.push(ident.span().start().line);
+        let range = ident.span().byte_range();
+        if ident != PLATFORM_DIRECTORY
+            || self
+                .declared
+                .iter()
+                .any(|skipped| skipped.start <= range.start && range.end <= skipped.end)
+        {
+            return;
         }
+        self.lines.push(ident.span().start().line);
     }
 
     /// Record the platform-directory identifiers inside a macro's tokens.

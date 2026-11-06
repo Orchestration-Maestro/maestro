@@ -92,7 +92,9 @@ Duplicate assertions are a review judgement.
 Conventions reject a platform temporary directory that test code in a migrated
 crate names itself through `std::env::temp_dir()`, as a call, a value, a macro
 argument or an import under any alias; a method named `temp_dir` is the
-receiver's own API and is accepted, while its arguments stay checked. Tests that
+receiver's own API and is accepted, while its arguments stay checked, and a
+declaration's own `temp_dir` name is accepted the same way with its body and
+arguments staying checked. Tests that
 observe it use `maestro-test-directory::temporary_root`, and the diagnostic names
 `TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
@@ -317,7 +319,9 @@ The dedicated `maestro-test-directory` native leaf owns exclusive disposable-roo
 creation and cleanup. It has no internal edge except the native unifier, and no
 foundation utility permission. Only the crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
-as a non-optional native development dependency when used. `Scratch::new`
+as a non-optional native development dependency when used; the checked child
+launcher declares it instead, and alone, as a native normal dependency, whose
+launch route reads `temporary_root` for its cleared children. `Scratch::new`
 canonicalizes its chosen root, without the Windows verbatim drive prefix;
 `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working

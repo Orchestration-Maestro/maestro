@@ -377,7 +377,9 @@ inherited `cfg(test)` context, closures and macro arguments included; the
 tokens, and its import is rejected anywhere in the crate, whatever the alias. A
 method named `temp_dir` is the receiver's own API, never the platform spelling,
 so a call on a receiver is accepted while every member of its arguments stays
-checked. The check follows no bindings or data flow. Tests that observe the
+checked, and a declaration's own `temp_dir` name is accepted the same way with
+its body and arguments staying checked. The check follows no bindings or data
+flow. Tests that observe the
 platform directory, name an uncreated socket path under it or pass it as the
 owner's parent read it through `maestro_test_directory::temporary_root`, and
 directory creation and removal go through `Scratch`. The check covers the
