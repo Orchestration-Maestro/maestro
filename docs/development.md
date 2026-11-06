@@ -405,17 +405,19 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports check the pixels the page paints. Each one draws a state and
-awaits `support::reading_paint::observe(scene)`, which calls the page's
+Eight canvas exports and one contribution export check the pixels the page
+paints. Each one draws a state and awaits
+`support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
 with `Page.captureScreenshot`, decodes the image with the browser's own decoder
 and keeps the pixels in the page, so only counts cross the protocol. It then
 changes only the decoration under test, captures again and restores the exact
 authored `style` attributes. A role pixel is an opaque pixel with exactly the
-role's RGB channels, the same rule the tool report witness uses. The call
-resolves `true` when every check holds.
-Otherwise it rejects with the failed check's message, which fails the export and
-the job:
+role's RGB channels, the same rule the tool report witness uses. A scene that
+counts a role by name reads the colours the export publishes first with
+`support::reading_paint::publish_colors`. The call resolves `true` when every
+check holds. Otherwise it rejects with the failed check's message, which fails
+the export and the job:
 
 | Scene | Export | What the screenshots must show |
 | --- | --- | --- |
@@ -424,13 +426,17 @@ the job:
 | `viewport-0` to `viewport-8` | `reading_viewport_keeps_content_and_occluders_clipped` | The full viewport keeps its placement. Content, the outside sentinel and the outer decoration stay inside the viewport, the ancestor clip, the canvas and the control holes, and native hit testing agrees. |
 | `export-roles` | `export_rendering_uses_the_selected_brand_roles` | Each export element paints its brand role inside the final clip, for both packs in both modes. Borders paint exactly their role. Hover, expansion and underline change pixels. |
 | `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background. The browser draws no underline on a run of only spaces, so the underline is checked on the export's text. |
+| `control-focus` | `artifact_controls_dom_paint_tokens_and_keyboard_actions` | The control that keyboard focus reached paints the accent ring over more than half of each 2-pixel edge band, so no edge is missing or clipped away by its group. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
 job log records the paint every check measured. The driver regression
 `reading_paint_fails_when_the_painted_output_differs` tests the observation
 itself: painted text passes, while transparent text, an outer frame shadow and an
-unknown scene each fail.
+unknown scene each fail. `control_focus_requires_an_unclipped_accent_ring` does
+the same for the focus scene: an inset accent ring passes, while a missing ring,
+an outer ring, a group that clips one edge and a page with no focused control
+each fail.
 
 ### Prove a browser test on a branch
 

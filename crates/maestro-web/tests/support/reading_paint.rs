@@ -1,5 +1,14 @@
 //! Await painted observations while the caller retains the real native owner.
+use std::collections::BTreeMap;
 use wasm_bindgen::{JsCast as _, JsValue};
+
+/// Publish the selected colour roles that scenes counting role pixels resolve by name.
+/// # Panics
+/// Panics when the roles cannot be encoded or published.
+pub fn publish_colors(colors: &BTreeMap<&str, &str>) {
+    let colors = serde_json::to_string(colors).unwrap();
+    js_sys::Reflect::set(&js_sys::global(), &"colors".into(), &colors.into()).unwrap();
+}
 
 /// Require the manual browser driver's screenshot-derived observation.
 /// # Panics

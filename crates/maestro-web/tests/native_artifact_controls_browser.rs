@@ -977,11 +977,9 @@ async fn assert_keyboard(view: &DomView) {
     let recorder = Recorder::group(&group);
     driver("driverPress", "Tab").await;
     assert!(focused(view, &preview), "the first control takes focus");
-    let accent = rgb(view.pack.presentation(view.mode).unwrap().colors["accent"]);
-    assert!(
-        computed(&preview, "box-shadow").contains(&accent),
-        "a focused control paints the pack's accent ring"
-    );
+    let presentation = view.pack.presentation(view.mode).unwrap();
+    crate::support::reading_paint::publish_colors(&presentation.colors);
+    crate::support::reading_paint::observe("control-focus").await;
     driver("driverPress", "Tab").await;
     assert!(focused(view, &code));
     driver("driverPress", "Shift+Tab").await;
