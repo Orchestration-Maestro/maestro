@@ -3,9 +3,9 @@
 use super::prompting::{custom_message, split_command, user_message};
 use super::state::thrown;
 use super::{AgentSession, AgentSessionEvent, PromptOptions, QueueTexts};
-use crate::utils::lock::{read, write};
 use maestro_agent::{AgentEvent, AgentMessage, PromptInput};
 use maestro_extensions::{ExtensionExecution, InputSource, NativeAgentMessage};
+use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, ImageContent, SharedAssistantMessage, ToolResultMessage, UserBlock,
     UserContent,

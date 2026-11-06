@@ -1,9 +1,9 @@
 //! Executable document download and text extraction.
 use super::prompts::EXTRACT_DOCUMENT_DESCRIPTION;
 use crate::browser::utils::attachment_utils::{Attachment, AttachmentSource, load_attachment};
-use crate::utils::lock::read;
 use futures_util::TryStreamExt;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
+use maestro_lock::read;
 use maestro_models::SharedHandle;
 use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, Tool,

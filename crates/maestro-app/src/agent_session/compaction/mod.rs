@@ -2,9 +2,9 @@
 use super::navigation::presence;
 use super::state::{agent_messages, thrown};
 use super::{AgentSession, AgentSessionEvent, CompactionReason};
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_extensions::{ExtensionExecution, SessionBeforeCompactEvent, SessionCompactEvent};
+use maestro_lock::{read, write};
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
 use maestro_session::compaction::{
     CompactionPreparation, CompactionResult, CompactionSettings, SummaryOptions, prepare_compaction,

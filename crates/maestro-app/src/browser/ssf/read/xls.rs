@@ -114,7 +114,7 @@ fn workbook(data: &[u8], ssf: &Ssf) -> Result<WorkBook> {
             .ok_or(ParseError::Invalid("sheet position"))?;
         sheets.insert(name, Ok(sheet.finish()));
     }
-    let table = crate::utils::lock::read(&ssf.table).clone();
+    let table = maestro_lock::read(&ssf.table).clone();
     Ok(WorkBook {
         sheets,
         date1904: reader.date1904,

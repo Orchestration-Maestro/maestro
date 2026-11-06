@@ -1,12 +1,12 @@
 //! Path and inline extension loading, conflict diagnostics, extension provenance and the
 //! default event bus.
 use super::{DefaultResourceLoader, overrides::apply};
-use crate::utils::lock::{read, write};
 use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionLoadError, LoadExtensionsResult,
     create_event_bus_for, create_extension_runtime, load_extension_from_factory,
     load_extensions_with_runtime,
 };
+use maestro_lock::{read, write};
 use maestro_models::{Execution, Local, Threaded};
 use maestro_resources::{canonicalize_path, is_local_path};
 use std::{

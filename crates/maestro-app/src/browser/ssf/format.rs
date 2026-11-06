@@ -7,7 +7,7 @@ use super::{
     general::is_general,
     split_fmt::split_fmt,
 };
-use crate::utils::lock::{read, write};
+use maestro_lock::{read, write};
 use std::{
     collections::BTreeMap,
     sync::{Arc, RwLock},

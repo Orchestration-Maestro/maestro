@@ -3,8 +3,8 @@ use super::super::{
     DocxError, OwnedXmlElement, document_parser::comments::parse_comments, utils::key_by,
 };
 use super::WmlComment;
-use crate::utils::lock::read;
 use indexmap::IndexMap;
+use maestro_lock::read;
 use std::sync::{Arc, RwLock};
 /// Prepared comments with source-order records and snapshot lookup keys.
 #[derive(Debug, Default)]

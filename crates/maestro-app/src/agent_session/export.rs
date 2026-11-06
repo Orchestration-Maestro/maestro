@@ -1,6 +1,5 @@
 //! HTML and JSONL exports of the session.
 use super::{AgentSession, state::thrown};
-use crate::utils::lock::read;
 use chrono::{SecondsFormat, Utc};
 use maestro_agent::agent_loop::tool_definitions;
 use maestro_export::{
@@ -8,6 +7,7 @@ use maestro_export::{
     export_session_to_html,
 };
 use maestro_extensions::ExtensionExecution;
+use maestro_lock::read;
 use maestro_models::{DiagnosticErrorInfo, Local, Tool};
 use maestro_session::{CURRENT_SESSION_VERSION, session_manager::ReadonlySessionManager};
 use maestro_tools::ToolRenderEnvironment;

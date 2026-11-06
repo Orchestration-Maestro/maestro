@@ -4,7 +4,6 @@ use super::{
     state::{agent_messages, content_text, thrown},
 };
 use crate::configuration::config::get_docs_path;
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_catalog::ResolvedRequestAuth;
 use maestro_credentials::format_no_api_key_found_message;
@@ -12,6 +11,7 @@ use maestro_extensions::{
     ExtensionExecution, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
     TreePreparation,
 };
+use maestro_lock::{read, write};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
     BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
