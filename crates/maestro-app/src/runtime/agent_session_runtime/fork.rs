@@ -85,7 +85,7 @@ impl AgentSessionRuntime {
 
     /// The history a persisted session forks into: a new file whose parent is the current
     /// one, or the current file's branch up to `target_leaf_id` in the manager that created
-    /// it, whose file appears with the first assistant reply the branch keeps.
+    /// it; that branch file is written at once only when the branch keeps an assistant reply.
     fn persisted_fork(
         &self,
         target_leaf_id: Option<&str>,

@@ -679,10 +679,14 @@ fn forks_at_a_user_message_with_no_assistant_reply_in_the_source_directory() {
         assert_eq!(
             manager.get_cwd(),
             cwd,
-            "the fork keeps the source directory"
+            "the fork's manager keeps the source directory"
         );
         drop(manager);
-        assert_eq!(runtime.cwd(), cwd, "the fork keeps the source directory");
+        assert_eq!(
+            runtime.cwd(),
+            cwd,
+            "the fork's runtime keeps the source directory"
+        );
     });
 }
 
