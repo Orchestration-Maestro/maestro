@@ -157,7 +157,7 @@ fn new_session_forwards_parent_setup_and_continuation() {
                 _ => json!({
                     "parent": parent,
                     "setup": setup_ran(trace),
-                    "with": withs(trace) == 1,
+                    "with": continuation_count(trace) == 1,
                 }),
             };
             assert_eq!(
@@ -165,7 +165,11 @@ fn new_session_forwards_parent_setup_and_continuation() {
                 vec![json!({ "type": "newSession", "options": record })],
                 "{combo}"
             );
-            assert_eq!(host.continuations.get(), withs(trace), "{combo}");
+            assert_eq!(
+                host.continuations.get(),
+                continuation_count(trace),
+                "{combo}"
+            );
             assert_eq!(
                 setup_name(&host),
                 setup_ran(trace).then(|| "literal setup name".to_owned()),
@@ -197,7 +201,7 @@ fn presence_cases() -> Vec<(&'static str, &'static str, Value)> {
 }
 
 /// Counts the continuations a presence case runs.
-fn withs(trace: &str) -> usize {
+fn continuation_count(trace: &str) -> usize {
     usize::from(matches!(trace, "with" | "both" | "full"))
 }
 
