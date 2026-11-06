@@ -135,6 +135,10 @@ fn without_development(path: &Path) -> io::Result<String> {
             .iter_mut()
             .filter_map(|(_, target)| target.as_table_mut())
             .for_each(remove_development);
+        targets.retain(|_, target| target.as_table().is_none_or(|table| !table.is_empty()));
+        if targets.is_empty() {
+            manifest.remove("target");
+        }
     }
     Ok(manifest.to_string())
 }

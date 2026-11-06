@@ -293,7 +293,8 @@ fn component_digest_ignores_tests_and_development_dependencies_of_dependencies()
     std::fs::write(
         root.join("crates/library/Cargo.toml"),
         "[package]\nname = \"library\"\nversion = \"0.1.0\"\n\
-         [dev-dependencies]\nspare = { path = \"../spare\" }\n",
+         [dev-dependencies]\nspare = { path = \"../spare\" }\n\
+         [target.'cfg(unix)'.dev-dependencies]\nspare = { path = \"../spare\" }\n",
     )
     .unwrap();
     assert_eq!(shared_digest(root), before);
