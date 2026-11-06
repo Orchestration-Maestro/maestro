@@ -522,8 +522,10 @@ the callback's earlier effects stay in place.
   directory is gone.
 - `fork` forks before a user message, returning its text, or at any entry.
   `Invalid entry ID for forking` refuses an unknown entry or, before, an entry
-  that is not a user message. A stored session forks into a new file; an
-  in-memory one branches its own history.
+  that is not a user message. A stored session forks into a new file in its
+  session directory and keeps the source working directory and the new session
+  identity, whether or not the branch file is written yet; an in-memory one
+  branches its own history.
 - `import_from_jsonl` copies a file into the session directory unless it is
   already there, then resumes it. A missing file fails with
   `AgentSessionRuntimeError::SessionImportFileNotFound` and `File not found:
