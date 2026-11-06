@@ -334,11 +334,11 @@ premise the host can exercise.
 Both graph cycle checks still apply.
 
 The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared test
-fixture operations. Only agent, models, request, catalog, chat, credentials, tools
-and export may declare it as a development dependency, portable or target-specific;
-models, request, catalog, chat and credentials use portable declarations, while
-agent, tools and export use native declarations. It has no product or utility
-edge, only the native unifier exception. Both cycle checks apply. See the
+fixture operations. Only models, request, catalog, chat, tools and export may declare
+it as a development dependency, portable or target-specific; models, request, catalog
+and chat use portable declarations, while tools and export use native declarations. It
+has no product or utility edge, only the native unifier exception. Both cycle checks
+apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a

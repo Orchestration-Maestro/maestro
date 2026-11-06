@@ -3966,6 +3966,7 @@ dependencies = [
  "maestro-pattern",
  "maestro-request",
  "maestro-test-directory",
+ "maestro-test-fixtures",
  "maestro-test-process",
  "maestro-text",
  "owo-colors",
@@ -3987,6 +3988,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-test-directory",
+ "maestro-test-fixtures",
  "maestro-test-process",
  "maestro-theme",
  "maestro-tui",
@@ -4206,6 +4208,7 @@ dependencies = [
  "maestro-path",
  "maestro-session",
  "maestro-test-directory",
+ "maestro-test-fixtures",
  "maestro-text",
  "maestro-theme",
  "maestro-tools",
@@ -4393,6 +4396,7 @@ dependencies = [
  "maestro-path",
  "maestro-request",
  "maestro-test-directory",
+ "maestro-test-fixtures",
  "maestro-test-process",
  "maestro-test-tracing",
  "maestro-text",
@@ -4532,6 +4536,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-json",
  "maestro-request",
+ "maestro-test-fixtures",
  "serde",
  "serde_json",
 ]
@@ -4699,6 +4704,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-test-fixtures"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-test-process"
 version = "0.1.0"
 dependencies = [
@@ -4819,6 +4833,7 @@ dependencies = [
  "maestro-process",
  "maestro-resources",
  "maestro-test-directory",
+ "maestro-test-fixtures",
  "maestro-test-process",
  "maestro-text",
  "maestro-theme",
