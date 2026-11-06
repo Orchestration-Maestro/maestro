@@ -6,10 +6,11 @@ use crate::{
     types::{
         ActivityGuard, Extension, ExtensionAPI, ExtensionFlag, ExtensionFlagOptions,
         ExtensionHandle, ExtensionRuntimeState, ExtensionShortcut, ExtensionShortcutOptions,
-        FlagValue, MessageRenderer, RegisteredCommand, RegisteredCommandOptions, read, write,
+        FlagValue, MessageRenderer, RegisteredCommand, RegisteredCommandOptions,
     },
 };
 use indexmap::IndexMap;
+use maestro_lock::{read, write};
 use maestro_tui::KeyId;
 use serde::{Serialize, de::DeserializeOwned};
 use std::sync::{Arc, RwLock};

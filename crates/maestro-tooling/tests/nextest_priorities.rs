@@ -113,6 +113,34 @@ fn fixed_port_wrapper_covers_every_callback_group_test() {
     assert_eq!(wrapper["filter"], group["filter"]);
 }
 
+/// The run prepares browser workspace sources for every browser test that reads them.
+#[test]
+fn browser_workspace_source_tests_receive_the_workspace_sources_setup() {
+    let config: toml::Table =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let filter = config["profile"]["default"]["scripts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|rule| rule.get("setup").and_then(toml::Value::as_str) == Some("workspace-sources"))
+        .and_then(|rule| rule["filter"].as_str())
+        .unwrap();
+    for test in [
+        "browser_author_bootstraps_from_empty_build_state",
+        "browser_resolution_never_reaches_the_shared_cargo_home",
+        "browser_resolution_prepares_sources_outside_nextest",
+    ] {
+        assert!(
+            include_str!("browser_author_build.rs").contains(&format!("fn {test}()")),
+            "{test} is not a browser author test"
+        );
+        assert!(
+            filter.contains(&format!("test({test})")),
+            "{filter} omits {test}"
+        );
+    }
+}
+
 /// Run one-worker nextest and retain completion order, including the intentional failure.
 /// A private Cargo home avoids registry-cache locks held by unrelated builds.
 fn run_nextest(root: &Path, config: &Path, partition: Option<&str>) -> Vec<String> {

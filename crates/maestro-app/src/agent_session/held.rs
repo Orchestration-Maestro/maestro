@@ -1,8 +1,8 @@
 //! What session listeners hear of an agent event while unchecked assistant text, thinking and
 //! partial tool output are withheld.
 use super::state::SharedAgentEvent;
-use crate::utils::lock::read;
 use maestro_agent::{AgentEvent, AgentMessage, AgentToolResult};
+use maestro_lock::read;
 use maestro_models::{
     AssistantContent, AssistantMessageEvent, SharedAssistantMessage, TextContent, ThinkingContent,
 };

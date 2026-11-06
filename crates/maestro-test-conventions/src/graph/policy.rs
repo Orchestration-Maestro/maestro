@@ -37,6 +37,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
     ("maestro", "maestro-lock"),
+    ("maestro-theme", "maestro-realpath"),
 ];
 
 /// Whether the policy permits this internal development edge between the two crates.
@@ -146,12 +147,10 @@ pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
 
 /// Declared consumers of portable fixture support.
 pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
-    "maestro-agent",
     "maestro-models",
     "maestro-request",
     "maestro-catalog",
     "maestro-chat",
-    "maestro-credentials",
     "maestro-tools",
     "maestro-export",
 ];
@@ -170,6 +169,16 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
 
 /// Generated crate that unifies native dependency features and exposes no API.
 pub(crate) const UNIFIER: &str = "maestro-dependencies";
+
+/// Owner of mutual exclusion over files and shared in-memory state.
+pub(crate) const LOCK: &str = "maestro-lock";
+
+/// Report whether `from` may reach `to` as the checked child launcher's only edge to
+/// the directory owner: the launcher declares that owner normally, so its fixtures
+/// read the platform directory it hands to its cleared children through that edge.
+pub(crate) fn directory_observation(from: &str, to: &str) -> bool {
+    from == TEST_PROCESS && to == TEST_DIRECTORY
+}
 
 /// Report whether a crate may declare the foundation utility as a production dependency.
 pub(crate) fn uses_utility(name: &str) -> bool {

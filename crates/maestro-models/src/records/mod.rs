@@ -21,7 +21,7 @@ macro_rules! platform_store_accessor {
         fn $name<T>(operation: impl FnOnce(&mut $state) -> T) -> T {
             #[cfg(not(target_arch = "wasm32"))]
             {
-                operation(&mut $store.lock().unwrap_or_else(std::sync::PoisonError::into_inner))
+                operation(&mut maestro_lock::lock(&$store))
             }
             #[cfg(target_arch = "wasm32")]
             {

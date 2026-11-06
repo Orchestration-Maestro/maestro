@@ -11,7 +11,7 @@ fn cloudflare_availability_requires_ids_without_resolving_key() {
     let Some(_) = maestro_test_process::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
-        |()| std::collections::BTreeMap::<String, String>::new(),
+        |()| std::collections::BTreeMap::<String, Option<String>>::new(),
     )
     .unwrap() else {
         return;
@@ -59,7 +59,7 @@ fn cloudflare_request_auth_names_missing_gateway() {
     let Some(_) = maestro_test_process::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
-        |()| std::collections::BTreeMap::<String, String>::new(),
+        |()| std::collections::BTreeMap::<String, Option<String>>::new(),
     )
     .unwrap() else {
         return;
@@ -95,8 +95,8 @@ fn cloudflare_auth_materializes_descriptor_without_mutation() {
         [()],
         |()| {
             [
-                ("CLOUDFLARE_ACCOUNT_ID", "environment-account"),
-                ("CLOUDFLARE_GATEWAY_ID", "environment-gateway"),
+                ("CLOUDFLARE_ACCOUNT_ID", Some("environment-account")),
+                ("CLOUDFLARE_GATEWAY_ID", Some("environment-gateway")),
             ]
             .into_iter()
             .collect()
@@ -135,7 +135,7 @@ fn cloudflare_availability_requires_nonempty_key() {
     let Some(_) = maestro_test_process::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
-        |()| std::collections::BTreeMap::<String, String>::new(),
+        |()| std::collections::BTreeMap::<String, Option<String>>::new(),
     )
     .unwrap() else {
         return;
@@ -193,8 +193,8 @@ fn cloudflare_oauth_availability_defers_ids_and_refresh_until_request() {
         |&complete| {
             if complete {
                 [
-                    ("CLOUDFLARE_ACCOUNT_ID", "account"),
-                    ("CLOUDFLARE_GATEWAY_ID", "gateway"),
+                    ("CLOUDFLARE_ACCOUNT_ID", Some("account")),
+                    ("CLOUDFLARE_GATEWAY_ID", Some("gateway")),
                 ]
                 .into_iter()
                 .collect()

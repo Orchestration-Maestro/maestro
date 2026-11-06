@@ -11,7 +11,7 @@ use std::{collections::HashMap, io};
 
 /// Correlates responses while nested binding operations service the same socket.
 pub(super) struct Dispatcher {
-    /// Sole browser-control transport, absent once the connection ends.
+    /// Browser-control transport, absent once the connection ends.
     connection: Option<Connection<CdpEventMessage>>,
     /// Browser-close command awaiting acknowledgement.
     closing: Option<CallId>,

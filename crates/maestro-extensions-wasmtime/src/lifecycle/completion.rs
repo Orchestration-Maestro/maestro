@@ -30,9 +30,7 @@ impl Completion {
     }
     /// Recovers the operand owner if a previous user abandoned its guard.
     fn operands(&self) -> MutexGuard<'_, Option<Operands>> {
-        self.0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        maestro_lock::lock(&self.0)
     }
     /// Moves callback strength out of the task's actual invocation operands.
     pub(super) fn callback(&self, handle: Handle) -> Callback {

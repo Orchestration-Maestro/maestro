@@ -35,12 +35,14 @@ percent-encoding = "=2.3.2"
 idna = "=1.1.0"
 icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+maestro-lock = { path = "../maestro-lock" }
 
 [features]
 test-support = ["maestro-request/test-support"]
 
 [dev-dependencies]
 maestro-request = { path = "../maestro-request", features = ["test-support"] }
+maestro-test-fixtures.workspace = true
 
 [lints]
 workspace = true
@@ -52,6 +54,7 @@ wasm-bindgen-futures = "=0.4.79"
 getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
 if-addrs = { version = "=0.15.0", default-features = false, features = ["link-local"] }
@@ -65,8 +68,8 @@ aws-sdk-bedrockruntime = { version = "=1.148.0", default-features = false, featu
 aws-config = { version = "=1.12.0", default-features = false, features = ["behavior-version-latest", "default-https-client", "rt-tokio", "credentials-process", "sso", "credentials-login"] }
 aws-sdk-signin = { version = "=1.22.0", default-features = false }
 aws-credential-types = { version = "=1.3.0", default-features = false }
-aws-smithy-runtime-api = { version = "=1.19.0", features = ["client", "http-1x"] }
-aws-smithy-types = { version = "=1.8.1", features = ["http-body-1-x"] }
+aws-smithy-runtime-api = { version = "=1.19.2", features = ["client", "http-1x"] }
+aws-smithy-types = { version = "=1.9.1", features = ["http-body-1-x"] }
 
 hyper = { version = "=1.11.1", default-features = false, features = ["server", "client", "http1"] }
 hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }
@@ -82,7 +85,7 @@ maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 maestro-test-tracing.workspace = true
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
-aws-smithy-runtime-api = { version = "=1.19.0", features = ["test-util"] }
+aws-smithy-runtime-api = { version = "=1.19.2", features = ["test-util"] }
 icu_collator = "=2.3.1"
 tokio = { version = "=1.53.3", features = ["rt", "time", "test-util"] }
 

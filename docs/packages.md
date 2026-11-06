@@ -75,6 +75,11 @@ paths. Missing checkouts or unavailable refs have absent commits and are never
 clean. Changes include the index, working tree, ignored files and other untracked
 files. Inspection does not fetch or change contents.
 
+The comparison loads the pinned commit into a private index in a staging
+directory beside the checkout, so a sparse checkout's skipped files are not
+reported as changes. Git receives the index as an absolute real path in the
+ordinary form; Git refuses a Windows verbatim path as a lock location.
+
 `restore_pin(source, scope)` resets to the exact pinned commit and removes all
 untracked contents, including nested repositories, even when HEAD already matches.
 Read the status first to retain the paths for a restoration notice. Command

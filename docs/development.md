@@ -246,10 +246,18 @@ and lock stay unchanged. Build outputs remain in Cargo's resolved target directo
 Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then awaits each export in a fresh page:
-26 execution exports, 57 loading exports, 194 contribution exports and 69 canvas
-exports. Packaging also builds the two runtime-module fixtures, each from its own
-manifest and lock with its own binding glue, into a copy of the fixture package.
+inventory before invoking assertions, then checks each family in pairs:
+27 execution exports, 64 loading exports, 194 contribution exports and 77 canvas
+exports. Both exports of a pair run at once, each in a fresh page of its own
+driver, and the pair settles before the next starts. A failing export closes its
+own page and the run continues; the browser and the server close once every
+family has run. Two drivers connect to the one launched browser, and each keeps
+one connection, which its exports share across pairs. Every export still gets
+its own disposable browser context, page lifecycle and policy-error accounting.
+Each driver records its exports' diagnostics, so completion logs within a pair
+can arrive out of order, and an odd last export runs alone. Packaging also
+builds the two runtime-module fixtures, each from its own manifest and lock with
+its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
 (`--target no-modules`), for the bootstrap qualification exports; the
 [sandbox runtime contract](specs/browser-sandbox-runtime.md#bootstrap-qualification-receipt)
@@ -261,7 +269,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 346/346` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 362/362` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -327,7 +335,9 @@ stay JavaScript or HTML files beside their tests:
   constructor.
 - `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
   probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap.
+- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
+  driver's served `/sandbox.html`, it writes a load message's code only when the
+  frame's parent sent it.
 - `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
   and authored documents the program witnesses prepare, plus the generated carrier
   bootstraps their policies admit by hash.
@@ -380,23 +390,9 @@ both.
 The canvas family covers every export that reads the page's `#canvas`: the
 session-header, reading, PDF, Markdown and SVG artifact, artifact panel,
 spreadsheet, text and image, generic file, tool renderer, offline tool card,
-expandable-output, session-link and session-download exports. Eight of them
-compile but do not run: each also awaits the screenshot observation
-(`readingPaint`), which the driver does not supply yet.
-[The screenshot test issue](https://github.com/Orchestration-Maestro/maestro/issues/2613)
-tracks it:
-
-- `header_trailing_spacing_precedes_following_widget`
-- `reading_viewport_keeps_content_and_occluders_clipped`
-- `reading_frame_neighbors_keep_existing_paint`
-- `export_rendering_uses_the_selected_brand_roles`
-- `copy_link_native_slot_composition_preserves_reading_selection`
-- `generic_guidance_is_literal_selectable_and_localized`
-- `tool_card_image_and_diff_layout_uses_native_content`
-- `tool_cards_use_selected_brand_roles_without_changing_custom_html`
-
-The driver's inventory test fails when an export in those source files is in
-neither the canvas family nor this list. Transcript execution is tracked separately
+expandable-output, session-link and session-download exports. The driver's
+inventory test fails when an export in those source files is outside the canvas
+family. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
@@ -406,6 +402,35 @@ dispatch runs it on a named ref; pull requests and advisory-only runs skip it.
 Native package selection and the coverage floor stay unchanged.
 See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
+
+### Screenshot evidence
+
+Eight canvas exports check the pixels the page paints. Each one draws a state and
+awaits `support::reading_paint::observe(scene)`, which calls the page's
+`readingPaint(scene)`. The driver answers the call: it captures the visible page
+with `Page.captureScreenshot`, decodes the image with the browser's own decoder
+and keeps the pixels in the page, so only counts cross the protocol. It then
+changes only the decoration under test, captures again and restores the exact
+authored `style` attributes. A role pixel is an opaque pixel with exactly the
+role's RGB channels, the same rule the tool report witness uses. The call
+resolves `true` when every check holds.
+Otherwise it rejects with the failed check's message, which fails the export and
+the job:
+
+| Scene | Export | What the screenshots must show |
+| --- | --- | --- |
+| `neighbors-header`, `neighbors-generic`, `neighbors-error` | `header_trailing_spacing_precedes_following_widget`, `generic_guidance_is_literal_selectable_and_localized`, `reading_frame_neighbors_keep_existing_paint` | Text paints inside the root: making it transparent changes pixels. Removing the reading frame's shadow changes none. |
+| `neighbors-artifact` | `reading_frame_neighbors_keep_existing_paint` | The padding paints the caller's background role, the page shadows paint, and the frame gains no outer shadow. |
+| `viewport-0` to `viewport-8` | `reading_viewport_keeps_content_and_occluders_clipped` | The full viewport keeps its placement. Content, the outside sentinel and the outer decoration stay inside the viewport, the ancestor clip, the canvas and the control holes, and native hit testing agrees. |
+| `export-roles` | `export_rendering_uses_the_selected_brand_roles` | Each export element paints its brand role inside the final clip, for both packs in both modes. Borders paint exactly their role. Hover, expansion and underline change pixels. |
+| `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background. The browser draws no underline on a run of only spaces, so the underline is checked on the export's text. |
+| `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
+
+Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
+job log records the paint every check measured. The driver regression
+`reading_paint_fails_when_the_painted_output_differs` tests the observation
+itself: painted text passes, while transparent text, an outer frame shadow and an
+unknown scene each fail.
 
 ### Prove a browser test on a branch
 
@@ -423,7 +448,9 @@ the declaration check and the Chromium job run. The workflow file is read from
 one queue: a newer one replaces a queued proof and never cancels a running one.
 This repository keeps the default concurrency key the caller contract requires, so
 a proof joins the shared `main` group and names its artifacts `root`. A proof
-restores the compile cache but never publishes it.
+restores the compile cache but never publishes it. Its call grants
+`actions: write` only because GitHub checks the shared pruning jobs against the
+grant when the run starts; those jobs skip on a dispatch.
 
 The job saves the recipe's output as `browser-test.log` in the artifact
 `browser-test-root-<attempt>`, whether the recipe passes or fails:
@@ -565,15 +592,17 @@ watch-test child lines, setup command lines and blocking-operation phases to
 per-test files in `MAESTRO_TEST_DIAGNOSTICS_DIR`, or
 `target/browser-author-diagnostics/` when it is unset, outside disposable fixtures
 and isolated home directories. Set the variable to an absolute path; a relative
-one resolves against `crates/maestro-tooling`. The harness does not capture
-commands whose output a test reads only after they exit. A forced-kill
-test checks both directory routes and verifies that child lines survive termination
-while still reaching stderr and the watch consumer. There are no exact build counts
-or negative observation windows. Their watch processes share a test-owned
-process group, stopped on completion or panic. Before starting a watch-test
-process group, the harness directs its LLVM profiles into that fixture's target
-directory, outside the merged coverage profile set, because cleanup can forcibly
-stop its descendants.
+one resolves against `crates/maestro-tooling`. Each line starts with the seconds
+since the first record in the process, and every recipe records its start and its
+exit status, so one file shows where a slow attempt spent its time. The harness
+does not capture commands whose output a test reads only after they exit. A
+forced-kill test checks both directory routes and verifies that child lines survive
+termination while still reaching stderr and the watch consumer. There are no exact
+build counts or negative observation windows. Their watch processes share a
+test-owned process group, stopped on completion or panic. Before starting a
+watch-test process group, the harness directs its LLVM profiles into that fixture's
+target directory, outside the merged coverage profile set, because cleanup can
+forcibly stop its descendants.
 
 Browser author tests keep the checked-in full fixture and its independent lock
 unchanged. Pipeline-only tests use disposable copies with the minimal bootstrap
@@ -1035,6 +1064,8 @@ documentation changes no staged file, so no pattern names it. The command runs t
 component-discovery example from a separate build directory, then stages the
 component files, the compiled code the example left in the engine's cache, that built example,
 the browser graph described under [Browser author build](#browser-author-build), the
+registry units of the cold browser bootstrap described under
+[Cargo state of tooling fixtures](#cargo-state-of-tooling-fixtures), the
 development tool itself, the [prepared Cargo checks](#prepared-cargo-checks) and a content
 manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
@@ -1267,7 +1298,8 @@ executable is the step that skips: a workspace holding that package builds it
 instead, and one that neither holds nor locks it stages nothing.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
-`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
+`MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
+`MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
 and `MAESTRO_EXECUTABLE`. Declare them in the workspace's own
 `.config/nextest.toml`; Maestro's file declares the setups this repository uses.
 
@@ -1306,11 +1338,27 @@ formatting repair that would rewrite sources, then runs `browser-example-check`,
 `browser-library-build` and `browser-debug-build` in the checkout. It removes the
 runner's coverage flags and profile path from those commands and restores the compiler
 wrapper that preceded coverage, as the tests do for their own children. It builds in
-`target/browser-author` and exports that path as `MAESTRO_BROWSER_TARGET_DIR`, which
-`Browser` gives to every recipe and helper. Cargo records the spelling of the target
-directory in what it compiles, so the setup and the tests must name the same one: a
-test that built into a differently spelled directory recompiled every dependency. Output
-built for one checkout path serves another, so each test's copy of the checkout reuses it.
+`target/browser-author`, the first lane, copies the graph into `target/browser-author-1`
+with one new modification time, and exports both targets as
+`MAESTRO_BROWSER_TARGET_DIRS`, in the platform's path-list syntax. A copy at
+another path serves the recipes as the original does: a recipe in a copied lane compiles
+only what it compiles in the original. Output built for one checkout path serves another,
+so each test's copy of the checkout reuses it.
+
+The tests change sources and rebuild, and Trunk writes its binding and optimizer outputs
+outside Cargo's build lock, so two tests never build in one target at once. Each test takes
+a lane instead. The `browser-author` test group in `.config/nextest.toml` admits two tests
+at once, and nextest numbers them from 0 in `NEXTEST_TEST_GROUP_SLOT`. `Browser` gives every
+recipe and helper the lane with that number and holds a lock file inside it while the
+fixture lives. The group's `max-threads` equals `LANES` in the setup's browser graph module;
+`browser_author_group_admits_one_test_per_lane` fails when the two differ. Every lane can
+build at once, so the lanes split the run's compile jobs: each recipe and helper gets the
+caller's `CARGO_BUILD_JOBS`, or the core count without one, divided by the number of lanes,
+and at least one job. Every recipe still slows while the other lane builds, and a third lane
+would take the longest browser tests past the 30-second slow flag on a four-core runner. A
+test outside the group, or a run without the setup, takes the first lane and waits on its
+lock, so plain Cargo tests still run the browser tests one at a time. Each lane past the
+first costs one copy of the graph before the first test starts.
 
 `browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
 unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
@@ -1320,9 +1368,10 @@ compiler jobs past the hang limit. The test checks one cold build and its output
 Rebuilds after a change to an included file, a source error and its repair belong to
 `browser_author_included_files_rebuild_without_source_changes` and
 `browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup
-prints a warning and does not stop the run; the tests run the same recipes and report
-the failure. Plain Cargo tests, and nextest runs without the setup, use the test build's
-own target directory.
+prints a warning and does not stop the run; the setup then announces the first lane alone,
+and the tests run the same recipes in turn and report the failure. Plain Cargo tests, and
+nextest runs without the setup, use the test build's own target directory as their only
+lane.
 
 ### Cargo state of tooling fixtures
 
@@ -1333,6 +1382,25 @@ Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
 tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
+
+The instrumented child-toolchain probe is a `maestro-tooling` example target that
+preparation builds once, so no test and no test shard compiles it. Preparation
+stages it, and the `native-fixture` setup validates and exports it as
+`MAESTRO_CHILD_TOOLCHAIN_PROBE` alongside the native fixture; a test launches the
+exported path directly.
+
+A test shard starts from an extracted test archive, which carries test executables
+and never Cargo's build records. A probe that a test compiled would therefore
+recompile its dependency closure cold in every shard. Preparation compiles it
+once instead, into the run's target directory with the dev profile:
+
+```sh
+cargo rustc --locked -p maestro-tooling --example child_toolchain_probe \
+    --profile dev --target-dir <run target> -- -C instrument-coverage
+```
+
+Preparation always passes `-C instrument-coverage`, so the staged parent records
+counters in every run, not only in a coverage run.
 
 A fixture that resolves registry crates reads one offline source configuration.
 The nextest setup `nextest-setup fixture-sources` vendors the crates
@@ -1363,6 +1431,13 @@ shared-home isolation test prepares both source sets in its parent and forwards 
 configuration paths to the child before making the shared Cargo home unusable. The cold
 test copies only the source configuration into its initially empty Cargo home.
 
+The setup also runs for the test that proves source preparation works without nextest's
+exports: that test clears the exported paths and reruns the isolation test as a child, so
+the child prepares the sources itself. That preparation vendored every package and built
+the seed from nothing, which spent most of the test's time. The setup runs before the
+tests, so the child's repeated preparation finds the directory for the same key and
+returns it at once. The setup still pays for the vendoring, once per run.
+
 The same setup also builds the cold bootstrap's native targets once per key, with the
 commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
 units of registry crates and deletes the units and outputs of workspace members, the
@@ -1373,22 +1448,34 @@ and the next run continues it. The cold test copies the seed into its empty Carg
 directory and checks that it holds compiled units but none of a workspace member's. The
 recipes then compile Maestro's crates and the WebAssembly fixture from nothing, and
 every registry crate is already built. The test keeps the root manifest's per-package
-optimization levels, since the seed holds the optimized parsers. A shard that runs the
-cold test builds the seed in the setup, once while the key stays the same; the test
-never pays for it.
+optimization levels, since the seed holds the optimized parsers. The test never pays for
+the seed.
+
+The test preparation builds the seed once per bundle. It fetches every locked package so
+that the offline vendoring finds them all, prepares the workspace sources and the seed in
+the checkout as the setup does, and stages the seed in the bundle as `workspace-sources`.
+The manifest records the directory of the sources the seed was compiled against, because a
+registry unit's fingerprint includes its source path and a seed serves only those sources.
+A shard's setup vendors the sources, then copies the bundle's seed beside them when their
+directory is the recorded one. The directories match when the checkout path and the
+dependency key do, and then no registry crate compiles before the shard's first test.
+When a member manifest that the cache key does not name changes, a bundle restored from
+the cache can hold a seed for another key. The setup then builds the seed itself, as a run
+without a bundle does, once per key.
 
 The cold recipe uses `fixture_command` to keep its private home out of the
 compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
 by the build host applies, and with none Cargo compiles with every core the test reserves.
-The other recipe tests keep three jobs.
+The warm recipes and the native helper split the same cap between the lanes, as
+[Browser author build](#browser-author-build) describes.
 
-Cargo builds that share one target directory with other builds, the test build's or the
-one the browser author setup prepares, keep the shared home.
+Cargo builds that share one target directory with other builds, the test build's or a
+lane the browser author setup prepares, keep the shared home.
 A registry crate's fingerprint includes its source path, so a private home with
 vendored sources recompiles every registry dependency in that target, and going
 back to the shared home recompiles them again. The browser recipe and native
-builds (`Browser::command` and `Browser::native_command`) are such builds; the
-`browser-author` group and the browser file lock already run them one at a time.
+builds (`Browser::command` and `Browser::native_command`) are such builds; each runs alone
+in the lane its test holds.
 Queries of the whole workspace, tests in other crates that build it, and the
 in-process `maestro_tooling::run` calls on dependency-free fixtures also keep the
 shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in one
@@ -1470,7 +1557,8 @@ is [Rust test children](specs/test-processes.md).
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
-`maestro-test-process` and every crate the crate graph allows to depend on it.
+`maestro-test-process` and every crate the crate graph allows to depend on it, and
+the instrumented parent `MAESTRO_CHILD_TOOLCHAIN_PROBE` to `maestro-tooling`.
 To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
 add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
 `.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
@@ -1597,7 +1685,11 @@ standard error. A cleared child needs `MAESTRO_NATIVE_FIXTURE` passed on, becaus
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
 and stages native copies of both preparation examples. It also reports the two
-finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
+finite WebAssembly artifacts used by the Cargo-check preparation fixtures. For the
+workspace sources it records each fetch, vendor run and seed build (a build that passes
+`--config`) in a `sources` file in its working directory. A vendor run creates its
+directory and prints the source configuration; a seed build leaves the same units as the
+`tooling-sources` `sources` record.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
 
@@ -2292,8 +2384,9 @@ mode type before applying it.
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
 selected test starts; callers still check its exit status and scenario output.
-`env_clear()` preserves the inherited coverage profile destination, and later
-caller edits can override or remove it. Live protocols retain `CheckedChild` and
+`env_clear()` preserves the inherited coverage profile destination and the
+compiled-code cache home the run's setup exports, and later caller edits can
+override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. Settings
@@ -2311,18 +2404,23 @@ capture child does so for the rows that overflow, so the capture stops a waiting
 child, never an exiting one.
 
 Cases that read process variables go through `run_per_environment(test, cases,
-environment)`. It groups the cases by the variables `environment` returns and
-reruns the test once per group, in a child that holds exactly those variables
-after `env_clear()`, plus the parent's temporary directory unless the case sets
-one. In the parent, `run_per_environment` returns `None` once every child
-passes, and repeats each passing child's standard error as it goes, so a case that
-left one out keeps its reason. A run shows those lines when it asks for child
-output, as `--nocapture` does, or when the test fails. In a child it returns that
-group's cases in their original order, and the test checks them. Cases that share
-variables therefore share one child and one fixture parse, so don't spawn a child
-per case yourself. A case that needs a fresh process for other state, such as a
-process-wide counter or files created per case, keeps its own child. Use
-`TestProcess::case(id)` to select that case. Set a
+environment)`. It groups the cases by the edits `environment` returns and
+reruns the test once per group, in a child that applies exactly those edits
+after `env_clear()`, plus the compiled-code cache home the run's setup exports
+and the parent's temporary directory, unless the case sets one. That directory
+comes from `maestro-test-directory::temporary_root`. A value of
+`Some` sets its variable and `None` removes it, so a case that names a kept
+variable as `None` reaches its child without it. A group child
+that loads a component therefore reuses the compiled code the run prepared
+instead of compiling it again. In the parent, `run_per_environment` returns
+`None` once every child passes, and repeats each passing child's standard error
+as it goes, so a case that left one out keeps its reason. A run shows those lines
+when it asks for child output, as `--nocapture` does, or when the test fails. In
+a child it returns that group's cases in their original order, and the test
+checks them. Cases that share variables therefore share one child and one fixture
+parse, so don't spawn a child per case yourself. A case that needs a fresh process
+for other state, such as a process-wide counter or files created per case, keeps
+its own child. Use `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
@@ -2373,10 +2471,14 @@ even when the merge queue selected fewer crates. Later pushes do not cancel
 or replace queued landing runs. This is separate from required merge checks.
 
 Push runs never read a coverage baseline: the lookup runs only for merge
-groups. The suite caller still grants `actions: read`, because the
-shared declaration job declares it and a caller that grants less makes the run
-fail to start. The suite caller, the reporter caller and the guards caller pin
-the released shared CI commit that the organization rulesets require. Each pin
+groups. The suite job grants `actions: write`. After each shared job that saves
+a cache, a pruning job deletes the entries that save replaced, so the cache
+keeps one entry per prefix instead of filling its 10 GiB limit. Those pruning
+jobs are the only ones that take write access, and they run no repository code.
+GitHub checks every called job's permissions when the run starts, so a caller
+that grants less makes the run fail to start. The suite caller, the reporter
+caller and the guards caller pin the released shared CI commit that the
+organization rulesets require. Each pin
 moves with every shared-CI release re-pin
 ([Orchestration-Maestro/.github#231](https://github.com/Orchestration-Maestro/.github/issues/231)).
 

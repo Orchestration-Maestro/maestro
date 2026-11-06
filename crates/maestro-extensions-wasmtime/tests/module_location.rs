@@ -165,9 +165,9 @@ fn component_location_is_isolated_and_reserved() {
         "component_location_is_isolated_and_reserved",
         cases,
         |supplied| {
-            let mut environment = BTreeMap::from([(COMPONENT, component.as_str())]);
+            let mut environment = BTreeMap::from([(COMPONENT, Some(component.as_str()))]);
             if let Some(value) = supplied {
-                environment.insert(LOCATION, value);
+                environment.insert(LOCATION, Some(value));
             }
             environment
         },

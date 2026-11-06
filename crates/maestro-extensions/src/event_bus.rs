@@ -1,5 +1,6 @@
 //! Ordered channels shared by independently identified extensions.
-use crate::{ExtensionExecution, types::lock};
+use crate::ExtensionExecution;
+use maestro_lock::lock;
 use maestro_models::{Execution, Threaded};
 use serde_json::Value;
 use std::{

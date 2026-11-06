@@ -143,15 +143,16 @@ fn sources(
         write_stderr(message.as_bytes())?;
         leave(1);
     }
-    if building {
-        build()
-    } else {
-        let destination = args
-            .last()
-            .ok_or_else(|| io::Error::other("missing vendor directory"))?;
-        std::fs::create_dir_all(destination)?;
-        write_stdout(SOURCES)
-    }
+    if building { build() } else { vendor(args) }
+}
+
+/// Create the vendor directory the last operand names and print the source configuration.
+pub(super) fn vendor(args: &[OsString]) -> io::Result<()> {
+    let destination = args
+        .last()
+        .ok_or_else(|| io::Error::other("missing vendor directory"))?;
+    std::fs::create_dir_all(destination)?;
+    write_stdout(SOURCES)
 }
 
 /// Copy the stylesheet, report the hook's operand and environment, end with `MAESTRO_HOOK_STATUS`.
@@ -276,7 +277,7 @@ fn resolve(cargo: &Path, args: &[OsString]) -> io::Result<()> {
 }
 
 /// Append `text` and a newline, creating the log when it is absent.
-fn append(path: impl AsRef<Path>, text: &str) -> io::Result<()> {
+pub(super) fn append(path: impl AsRef<Path>, text: &str) -> io::Result<()> {
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
@@ -296,7 +297,7 @@ fn required(name: &str) -> io::Result<String> {
 }
 
 /// Leave the units of a build in the profile directory of `CARGO_TARGET_DIR`.
-fn build() -> io::Result<()> {
+pub(super) fn build() -> io::Result<()> {
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .ok_or_else(|| io::Error::other("CARGO_TARGET_DIR is unset"))?;
     let profile = Path::new(&target).join("debug");

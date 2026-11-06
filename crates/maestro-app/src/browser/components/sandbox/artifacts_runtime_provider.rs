@@ -12,12 +12,12 @@ use crate::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
 };
 use crate::browser::utils::attachment_utils::SharedAttachment;
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::agent::Native;
 use maestro_agent::{
     AgentExecution, AgentMessage, AgentState, CustomAgentMessages as CustomMessage,
 };
+use maestro_lock::{read, write};
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
 use std::sync::{Arc, RwLock};
 

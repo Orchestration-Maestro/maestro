@@ -10,7 +10,7 @@ pub fn in_child(test: &str, environment: &[(&str, &str)], body: impl FnOnce()) {
     let cases = match maestro_test_process::run_per_environment(test, [()], |()| {
         environment
             .iter()
-            .map(|(key, value)| (*key, *value))
+            .map(|(key, value)| (*key, Some(*value)))
             .collect::<std::collections::BTreeMap<_, _>>()
     }) {
         Ok(Some(cases)) => cases,

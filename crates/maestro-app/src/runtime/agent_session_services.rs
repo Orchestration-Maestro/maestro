@@ -13,7 +13,6 @@ use crate::sdk::{
     CreateAgentSessionOptions, CreateAgentSessionResult, NoTools, SessionResources,
     create_agent_session,
 };
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_catalog::{ConfigValues, ModelRegistry, ScopedModel};
 use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
@@ -22,6 +21,7 @@ use maestro_extensions::{
     ExtensionExecution, LoadExtensionsResult,
     types::{FlagType, FlagValue},
 };
+use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, SharedHandle, Threaded,
 };

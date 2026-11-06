@@ -4,9 +4,8 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use proc_macro2::{TokenStream, TokenTree};
-use syn::visit::Visit;
 
-use crate::source::{Member, Source, inherit_test_context, test_scope};
+use crate::source::{Member, Source};
 
 /// Repository directories whose changes select only the packages that read them.
 const DIRECTORIES: [&str; 3] = ["docs", "examples", "assets"];
@@ -61,8 +60,7 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
                 .map(move |source| (member, source))
         })
         .flat_map(|(member, source)| {
-            reads(member, source)
-                .into_iter()
+            reads(source)
                 .filter(|(_, directory)| !routed(&configuration, directory, &member.name))
                 .map(move |(line, directory)| {
                     format!(
@@ -80,42 +78,21 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
 }
 
 /// The located directory reads of one source, as `(line, "docs/")` pairs.
-fn reads(member: &Member, source: &Source) -> BTreeSet<(usize, String)> {
-    let Some(file) = source.syntax.as_ref() else {
-        return BTreeSet::new();
-    };
-    let testing = test_scope(member, source);
-    // Every read is test code, so a source without any is not visited.
-    if !testing && source.test_spans().is_empty() {
-        return BTreeSet::new();
-    }
-    #[cfg(test)]
-    VISITED.set(VISITED.get() + 1);
-    let mut visitor = Reads {
-        testing,
-        climbs: false,
-        direct: BTreeSet::new(),
-        joined: BTreeSet::new(),
-    };
-    visitor.visit_file(file);
-    if visitor.climbs {
-        visitor.direct.append(&mut visitor.joined);
-    }
-    visitor.direct
+fn reads(source: &Source) -> impl Iterator<Item = &(usize, String)> {
+    source.walk.iter().flat_map(|walk| &walk.reads)
 }
 
 #[cfg(test)]
 thread_local! {
-    /// Sources whose syntax this check visits on the current test thread.
-    static VISITED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// String values and names spelled by this check on the current test thread.
     static SPELLINGS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-/// Directory reads found in one file.
-struct Reads {
-    /// Whether the current item inherits test ownership.
-    testing: bool,
+/// Directory reads found in one file by the shared syntax walk.
+///
+/// The walk passes test-owned syntax outside attributes alone.
+#[derive(Default)]
+pub(crate) struct Reads {
     /// Whether the file climbs out of its crate directory, by `..` segments or `ancestors`.
     climbs: bool,
     /// Reads whose literal itself climbs into the directory.
@@ -127,7 +104,7 @@ struct Reads {
 impl Reads {
     /// Record a string literal found in test-owned code.
     fn literal(&mut self, value: &str, line: usize) {
-        if !self.testing || !path_like(value) {
+        if !path_like(value) {
             return;
         }
         let segments: Vec<_> = value.split('/').collect();
@@ -143,9 +120,6 @@ impl Reads {
 
     /// Record a test-owned use of `name` when it is a package-directory resolver.
     fn resolver(&mut self, name: &str, line: usize) {
-        if !self.testing {
-            return;
-        }
         for (resolver, directories) in RESOLVERS {
             if resolver == name {
                 self.direct.extend(
@@ -160,7 +134,7 @@ impl Reads {
     /// Record the literal that a path-joining call appends.
     fn joined(&mut self, value: &str, line: usize) {
         let first = value.split('/').next().unwrap_or_default();
-        if self.testing && path_like(value) && direct_name(first) {
+        if path_like(value) && direct_name(first) {
             self.joined.insert((line, format!("{first}/")));
         }
     }
@@ -183,7 +157,7 @@ impl Reads {
                 }
             }
             TokenTree::Ident(name) => {
-                self.climbs |= self.testing && name == "ancestors";
+                self.climbs |= name == "ancestors";
                 #[cfg(test)]
                 SPELLINGS.set(SPELLINGS.get() + 1);
                 self.resolver(&name.to_string(), name.span().start().line);
@@ -232,23 +206,19 @@ fn string_value(literal: &proc_macro2::Literal) -> Option<String> {
         .map(|literal| literal.value())
 }
 
-impl<'ast> Visit<'ast> for Reads {
-    fn visit_attribute(&mut self, _attribute: &'ast syn::Attribute) {}
-
-    fn visit_expr_lit(&mut self, expression: &'ast syn::ExprLit) {
-        if self.testing
-            && let syn::Lit::Str(literal) = &expression.lit
-        {
+impl Reads {
+    /// Record a test-owned string literal expression.
+    pub(crate) fn lit(&mut self, expression: &syn::ExprLit) {
+        if let syn::Lit::Str(literal) = &expression.lit {
             #[cfg(test)]
             SPELLINGS.set(SPELLINGS.get() + 1);
             self.literal(&literal.value(), literal.span().start().line);
         }
     }
 
-    fn visit_expr_path(&mut self, expression: &'ast syn::ExprPath) {
-        if self.testing
-            && let Some(segment) = expression.path.segments.last()
-        {
+    /// Record a test-owned path expression that may name a package-directory resolver.
+    pub(crate) fn path(&mut self, expression: &syn::ExprPath) {
+        if let Some(segment) = expression.path.segments.last() {
             #[cfg(test)]
             SPELLINGS.set(SPELLINGS.get() + 1);
             self.resolver(
@@ -256,28 +226,23 @@ impl<'ast> Visit<'ast> for Reads {
                 segment.ident.span().start().line,
             );
         }
-        syn::visit::visit_expr_path(self, expression);
     }
 
-    fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-        if self.testing && call.method == "ancestors" {
+    /// Record a test-owned ancestor walk or a literal joined onto a path.
+    pub(crate) fn method_call(&mut self, call: &syn::ExprMethodCall) {
+        if call.method == "ancestors" {
             self.climbs = true;
         }
-        if self.testing
-            && (call.method == "join" || call.method == "push")
+        if (call.method == "join" || call.method == "push")
             && let Some(syn::Expr::Lit(expression)) = call.args.first()
             && let syn::Lit::Str(literal) = &expression.lit
         {
             self.joined(&literal.value(), literal.span().start().line);
         }
-        syn::visit::visit_expr_method_call(self, call);
     }
 
-    fn visit_macro(&mut self, invocation: &'ast syn::Macro) {
-        // Macro tokens hold no syntax to visit, and only test code reads directories.
-        if !self.testing {
-            return;
-        }
+    /// Record the reads inside a test-owned macro's tokens, unless it includes at compile time.
+    pub(crate) fn macro_tokens(&mut self, invocation: &syn::Macro) {
         #[cfg(test)]
         SPELLINGS.set(SPELLINGS.get() + 1);
         let compiled = invocation
@@ -290,9 +255,13 @@ impl<'ast> Visit<'ast> for Reads {
         }
     }
 
-    inherit_test_context!(visit_item, Item, item_attributes);
-    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
-    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
+    /// The file's reads; joined literals count once the file climbs out of its crate.
+    pub(crate) fn finish(mut self) -> BTreeSet<(usize, String)> {
+        if self.climbs {
+            self.direct.append(&mut self.joined);
+        }
+        self.direct
+    }
 }
 
 #[cfg(test)]

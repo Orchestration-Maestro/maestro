@@ -214,9 +214,14 @@ pub fn group(name: &str) {
     }
     let selected: Vec<_> = cases.iter().filter(|c| c.test == name).collect();
     assert!(!selected.is_empty());
-    let groups =
-        maestro_test_process::run_per_environment(name, selected, |case| case.input.env.clone())
-            .expect("the environment groups run");
+    let groups = maestro_test_process::run_per_environment(name, selected, |case| {
+        case.input
+            .env
+            .iter()
+            .map(|(key, value)| (key.clone(), Some(value.clone())))
+            .collect()
+    })
+    .expect("the environment groups run");
     let Some(group) = groups else {
         return;
     };

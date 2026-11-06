@@ -2,20 +2,15 @@
 
 use super::check;
 use crate::source::{Member, Source};
-use std::path::PathBuf;
 
 /// A source with its caller-supplied package identity and directory.
 fn member(name: &str, directory: &str, path: &str, contents: &str) -> Member {
-    Member {
-        name: name.into(),
-        directory: PathBuf::from(directory),
-        sources: vec![Source::new(PathBuf::from(path), contents.into())],
-    }
+    Member::with_sources(name, directory, [(path, contents)])
 }
 
 /// Locate the first exact-selector string token in one loaded source.
 fn exact_offset(contents: &str) -> Option<usize> {
-    super::exact_offset(&Source::new(PathBuf::new(), contents.into()))
+    super::exact_offset(&member("example", "", "", contents).sources[0])
 }
 
 /// Decode all Rust string spellings before comparing the complete value.
@@ -166,10 +161,12 @@ fn browser_tests_require_the_pinned_execution_owner() {
         "browser/tests/browser.rs",
         "#[test] #[ignore = \"runs in the pinned Chromium job\"] fn browser() {}",
     );
-    browser.sources.push(Source::new(
+    let root = Source::new(
+        &browser,
         "browser/tests/integration.rs".into(),
         "mod browser;".into(),
-    ));
+    );
+    browser.sources.push(root);
     assert!(check(&[browser]).is_ok());
 }
 

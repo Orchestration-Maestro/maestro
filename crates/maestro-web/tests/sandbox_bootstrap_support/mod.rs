@@ -1,5 +1,6 @@
 //! Prototype bootstrap documents, policies and isolated-frame observations.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::browser_fixture_support::{construct, object, post_from};
 use crate::contributions_support::fetch_text;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use js_sys::{Function, Object, Promise, Reflect, Uint8Array};
@@ -152,6 +153,18 @@ impl Runtime {
             providers,
         }
     }
+}
+
+/// Authored document carrying the `head` script, the loader with one attachment selection, then
+/// the `body` script.
+pub(crate) fn loader_document(head: &str, boot: Boot, body: &str) -> String {
+    let id = "bootstrap-loader";
+    let config =
+        serde_json::json!({"sandboxId":id,"globals":{"attachments":[]},"runtime":["attachments"]});
+    format!(
+        "<html><head><script>{head}</script>{}</head><body><script>{body}</script></body></html>",
+        Runtime::new(boot, &config, id, &[]).markup
+    )
 }
 
 /// Encode text for an SVG script carrier.
@@ -307,6 +320,50 @@ pub(crate) async fn observe(html: &str, options: Mount<'_>) -> (serde_json::Valu
     (state, mounted.staged)
 }
 
+/// Mount a bootstrap at the page origin, where its `attribute` is `value`, beside a sibling
+/// frame; once it sends `signal`, check it ignores a load from the sibling and writes one
+/// from its parent.
+pub(crate) async fn loads_only_from_parent(attribute: &str, value: &str, signal: &str) {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let body = document.body().unwrap();
+    let sibling: HtmlIFrameElement = document.create_element("iframe").unwrap().unchecked_into();
+    body.append_child(&sibling).unwrap();
+    let frame: HtmlIFrameElement = document.create_element("iframe").unwrap().unchecked_into();
+    frame.set_attribute(attribute, value).unwrap();
+    let announced = message(&window, &frame, signal, None);
+    body.append_child(&frame).unwrap();
+    announced.await.unwrap();
+    let foreign = sibling.content_window().unwrap();
+    assert!(!writes_load(&frame, &foreign), "load from a sibling window");
+    assert!(writes_load(&frame, &window), "load from the parent window");
+    frame.remove();
+    sibling.remove();
+}
+
+/// Deliver a load message from `source` to the frame and report whether it wrote the code.
+fn writes_load(frame: &HtmlIFrameElement, source: &Window) -> bool {
+    let data =
+        js_sys::JSON::parse(r#"{"type":"sandbox-load","code":"<p id=\"written\"></p>"}"#).unwrap();
+    let event = construct(
+        "MessageEvent",
+        &[
+            &"message".into(),
+            &object(&[("data", &data), ("source", source.as_ref())]),
+        ],
+    );
+    frame
+        .content_window()
+        .unwrap()
+        .dispatch_event(event.unchecked_ref())
+        .unwrap();
+    frame
+        .content_document()
+        .unwrap()
+        .get_element_by_id("written")
+        .is_some()
+}
+
 impl Mounted {
     /// Read the frame's retained probe state through the driver.
     pub(crate) async fn inspect(&self) -> serde_json::Value {
@@ -353,7 +410,7 @@ fn message(
     let (frame, kind, reply) = (frame.clone(), kind.to_owned(), reply.cloned());
     let window = window.clone();
     JsFuture::from(Promise::new(&mut |resolve, _| {
-        let (frame, kind, reply, target) =
+        let (frame, kind, reply, host) =
             (frame.clone(), kind.clone(), reply.clone(), window.clone());
         let listener = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
             let source = frame.content_window();
@@ -367,12 +424,13 @@ fn message(
                 return;
             }
             if let (Some(reply), Some(source)) = (&reply, source) {
-                source.post_message(reply, "*").unwrap();
+                // A real host replies from its own realm, the frame's parent.
+                post_from(&host, &source, reply);
             } else {
                 resolve.call1(&JsValue::UNDEFINED, &data).unwrap();
             }
         });
-        target
+        window
             .add_event_listener_with_callback("message", listener.as_ref().unchecked_ref())
             .unwrap();
         // The harness never removes this listener; it lives as long as the test page.

@@ -6,7 +6,6 @@ use super::{AgentSession, ExtensionBindings};
 use crate::resources::resource_loader::{
     ResourceExtensionPath, ResourceExtensionPaths, ResourceLoader, report,
 };
-use crate::utils::lock::write;
 use indexmap::IndexMap;
 use maestro_catalog::ModelRegistry;
 use maestro_extensions::runner::{
@@ -16,6 +15,7 @@ use maestro_extensions::{
     ExtensionRunner, ResourcesDiscoverReason, SessionShutdownEvent, SessionShutdownReason,
     SessionStartReason, types::FlagValue,
 };
+use maestro_lock::write;
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
 use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};
 use maestro_session::{Presence, SessionManager};

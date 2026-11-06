@@ -189,7 +189,7 @@ fn check_with_home_spelling(test: &str, ids: &[&str], spelling: &str) {
         },
         |scratch| scratch.path().display().to_string(),
     );
-    let home = |id: &&str| BTreeMap::from([("HOME", format!("{base}/{id}/{spelling}"))]);
+    let home = |id: &&str| BTreeMap::from([("HOME", Some(format!("{base}/{id}/{spelling}")))]);
     let selected = maestro_test_process::run_per_environment(test, ids.iter().copied(), home);
     for id in selected.unwrap().into_iter().flatten() {
         run_case(&format!("{base}/{id}"), &case(id));

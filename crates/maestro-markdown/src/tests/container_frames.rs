@@ -770,7 +770,7 @@ fn reply_quote_retained_bytes_grow_linearly_symptom_witness() {
 #[test]
 fn resumed_list_retained_storage_grows_linearly() {
     let samples = [32, 64, 128].map(|n| {
-        super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+        super::measuring_frame();
         let document = crate::parse(format!("> - a\n{}e", "      p\n> [s]: /y\n".repeat(n)));
         let Kind::Quote(children, _) = &document.nodes[0].kind else {
             panic!("quote")
@@ -804,7 +804,7 @@ fn resumed_list_retained_storage_grows_linearly() {
 
 /// Largest list state a complete parse of `source` kept alive before releasing it.
 fn measured_frame(source: &str) -> usize {
-    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    super::measuring_frame();
     let document = crate::parse(source.to_owned());
     assert!(!document.nodes.is_empty());
     super::WORK.with_borrow(|work| work.frame_bytes)
@@ -827,18 +827,23 @@ fn item_frame_charges_a_quotes_settled_descendants() {
     assert!(nested > plain + plain / 4, "plain={plain} nested={nested}");
 }
 
+/// Largest list state a complete parse of `source` kept alive, with the payload that
+/// state's item outputs published.
+fn published_frame(source: &str) -> (usize, usize) {
+    let frame = measured_frame(source);
+    (frame, super::WORK.with_borrow(|work| work.published_bytes))
+}
+
 #[test]
 fn quote_resumed_nested_list_frame_charges_each_allocation_once() {
     // A blank line closes the nested level, so the next marker resumes the list it left.
     let source = |n: usize| "> - a\n".to_owned() + &">   - b\n> \n>   c\n> \n".repeat(n);
-    let sizes = [32, 64, 128];
-    let frame = sizes.map(|n| measured_frame(&source(n)));
-    let payload = sizes.map(|n| retained_document(&crate::parse(source(n))).bytes);
-    for (frame, payload) in frame.iter().zip(payload) {
-        assert!(*frame <= 2 * payload, "frame={frame:?} payload={payload:?}");
+    for n in [32, 64, 128] {
+        let (frame, payload) = published_frame(&source(n));
+        assert!(frame <= 2 * payload, "frame={frame:?} payload={payload:?}");
         // A frame below nine tenths of the payload it publishes lost a charge it still holds.
         assert!(
-            *frame * 10 >= payload * 9,
+            frame * 10 >= payload * 9,
             "undercounted frame={frame:?} payload={payload:?}"
         );
     }

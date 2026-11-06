@@ -1,6 +1,7 @@
 //! Application-supplied owners used by native built-in factories.
-use crate::types::{ExtensionAPI, ExtensionRuntime, read, write};
+use crate::types::{ExtensionAPI, ExtensionRuntime};
 use crate::{ExtensionExecution, ToolsManager};
+use maestro_lock::{read, write};
 use std::sync::Arc;
 
 /// Existing application tool services, shared rather than rediscovered by extensions.

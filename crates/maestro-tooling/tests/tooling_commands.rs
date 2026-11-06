@@ -257,7 +257,8 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
         "pub fn value() -> u32 { 7 }\n",
     )
     .unwrap();
-    let binary = compile_toolchain_probe(&fixture);
+    let binary = prepared_probe();
+    generate_private_lock(fixture.root.path());
     let home = fixture.root.path().join("cargo-home");
     fs::remove_dir_all(&home).unwrap();
     let profile = fixture.root.path().join("parent.profraw");
@@ -306,83 +307,11 @@ fn generate_private_lock(root: &Path) {
     );
 }
 
-/// Compile an instrumented parent independently of the integration runner's instrumentation.
-fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
-    generate_private_lock(fixture.root.path());
-    let parent = fixture.root.path().join("parent");
-    fs::create_dir(&parent).unwrap();
-    let owner = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-test-process");
-    let manifest = format!(
-        "[package]\nname = 'toolchain-probe'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n[dependencies.maestro-test-process]\npath = {}\n[[bin]]\nname = 'parent'\npath = 'parent.rs'\n",
-        toml::Value::String(owner.to_str().unwrap().to_owned())
-    );
-    fs::write(parent.join("Cargo.toml"), manifest).unwrap();
-    fs::write(
-        parent.join("Cargo.lock"),
-        include_bytes!("../../../Cargo.lock"),
-    )
-    .unwrap();
-    fs::write(
-        parent.join("parent.rs"),
-        include_str!("fixtures/child_toolchain_probe.rs"),
-    )
-    .unwrap();
-    probe_profiles(&parent);
-    let native = Path::new(env!("CARGO_BIN_EXE_development"))
-        .parent()
-        .unwrap();
-    let profile = native.file_name().unwrap().to_str().unwrap();
-    let profile = if profile == "debug" { "dev" } else { profile };
-    let compile = toolchain_support::command(env!("CARGO"))
-        .current_dir(&parent)
-        .args([
-            "rustc",
-            "--profile",
-            profile,
-            "--bin",
-            "parent",
-            "--target-dir",
-        ])
-        .arg(native.parent().unwrap())
-        .args(["--", "-C", "instrument-coverage"])
-        .output()
-        .unwrap();
-    assert!(
-        compile.status.success(),
-        "{}",
-        String::from_utf8_lossy(&compile.stderr)
-    );
-    native.join(format!("parent{}", std::env::consts::EXE_SUFFIX))
-}
-
-/// Match the prepared native build's profiles for the probe's dependency closure.
-fn probe_profiles(parent: &Path) {
-    let output = toolchain_support::command(env!("CARGO"))
-        .current_dir(parent)
-        .args(["metadata", "--format-version", "1"])
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    let names: std::collections::BTreeSet<_> = metadata["packages"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|package| package["name"].as_str().unwrap())
-        .collect();
-    let mut workspace: toml::Table = toml::from_str(include_str!("../../../Cargo.toml")).unwrap();
-    workspace["profile"]["dev"]["package"]
-        .as_table_mut()
-        .unwrap()
-        .retain(|name, _| name == "*" || names.contains(name));
-    let path = parent.join("Cargo.toml");
-    let mut manifest: toml::Table = toml::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
-    manifest.insert("profile".into(), workspace.remove("profile").unwrap());
-    fs::write(path, toml::to_string(&manifest).unwrap()).unwrap();
+/// Take the instrumented parent that repository preparation stages.
+fn prepared_probe() -> PathBuf {
+    std::env::var_os("MAESTRO_CHILD_TOOLCHAIN_PROBE")
+        .map(PathBuf::from)
+        .expect("nextest native-fixture setup supplies the prepared probe")
 }
 
 /// Inspect actual parent counters after the instrumented process exits normally.

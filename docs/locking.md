@@ -1,4 +1,4 @@
-# File locking
+# Locking
 
 ## Quick start
 
@@ -8,6 +8,25 @@ For a read-update-write transaction, acquire a `WriteLock`, read its `path()`,
 then publish through its consuming `replace` method. Use the holder's consuming
 `append` method to add bytes without replacement. Do not acquire a second lock for
 the same target while holding the first.
+
+Use `maestro_lock::read`, `maestro_lock::write` or `maestro_lock::lock` to take
+state held in memory behind an `RwLock` or a `Mutex`.
+
+## Shared in-memory state
+
+Each of the three operations takes the lock and returns the guard for it, so the
+guard lives exactly as long as the caller holds it and borrowed state keeps
+working. `read` and `write` suit an `RwLock`; `lock` suits a `Mutex`.
+
+A holder that panics leaves its value in the lock. The next acquisition reads that
+value and carries on: neither the poison marker nor the data is cleared or reset,
+so a record is seen as the panicking holder left it. Callers keep their own lock
+scope, drop order and error policy, and an operation that means to report a poison
+error keeps its own code.
+
+Do not write a local copy of that acquisition. The workspace conventions report a
+production function, accessor, closure or macro whose whole body acquires a lock
+and recovers the poison error, and point at these three operations instead.
 
 ## Acquisition
 
@@ -126,6 +145,15 @@ ACLs are not preserved. Lock acquisition completes any pending recovery record
 before atomic publication begins; the new atomic write does not stage one.
 
 ## Examples
+
+A read of retained state holds its guard for exactly the work that reads it:
+
+```rust,ignore
+let sessions = maestro_lock::read(&self.sessions);
+if sessions.is_empty() {
+    return;
+}
+```
 
 Settings and credential transactions use bounded acquisition to read fresh text
 before an update. A session rewrite waits for exclusion, compares the current

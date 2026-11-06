@@ -46,17 +46,24 @@ fn check_file(member: &Member, source: &Source) -> Result<(), String> {
     Ok(())
 }
 
+/// End line of a file's last item when that item is test-gated, recorded by the shared syntax walk.
+pub(crate) fn test_end(file: &syn::File) -> Option<usize> {
+    file.items
+        .last()
+        .filter(|item| cfg_test(item_attributes(item)))
+        .map(|item| item.span().end().line)
+}
+
 /// Count lines with non-whitespace characters outside documentation tokens and test-only spans.
 fn production_lines(source: &Source) -> usize {
     let contents = &source.contents;
     let testing = source.test_spans();
     let documentation = documentation_spans(source);
     let end = source
-        .syntax
+        .walk
         .as_ref()
-        .and_then(|syntax| syntax.items.last())
-        .filter(|item| cfg_test(item_attributes(item)))
-        .map_or(contents.lines().count(), |item| item.span().end().line);
+        .and_then(|walk| walk.test_end)
+        .unwrap_or_else(|| contents.lines().count());
     contents
         .lines()
         .take(end)

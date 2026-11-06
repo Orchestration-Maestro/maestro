@@ -1,9 +1,11 @@
-//! File-write exclusion and durable byte publication.
+//! Mutual exclusion: file-write exclusion, durable byte publication and shared state.
 
 mod atomic;
 mod identity;
 mod names;
 pub use atomic::{Symlinks, Temporary, atomic_replace};
+mod poison;
+pub use poison::{lock, read, write};
 mod recovery;
 mod replace;
 pub use identity::{acquire_write, acquire_write_bounded, try_acquire_write};

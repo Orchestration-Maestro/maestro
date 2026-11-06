@@ -1,7 +1,7 @@
 //! Extended comment links and shared lookup records.
 use super::super::{XmlElement, XmlParser, utils::key_by};
-use crate::utils::lock::read;
 use indexmap::IndexMap;
+use maestro_lock::read;
 use std::sync::{Arc, RwLock};
 /// Raw paragraph links and an optional completion token.
 #[derive(Debug, Default)]

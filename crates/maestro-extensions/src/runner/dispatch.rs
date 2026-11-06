@@ -1,6 +1,7 @@
 //! Typed dispatch over live extension registrations.
 use super::ExtensionRunner;
-use crate::{ExtensionExecution, types::read};
+use crate::ExtensionExecution;
+use maestro_lock::read;
 
 use crate::{
     EventError, ExtensionContext, ExtensionHandler,

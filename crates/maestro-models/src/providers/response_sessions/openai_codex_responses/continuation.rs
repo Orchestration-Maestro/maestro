@@ -1,11 +1,11 @@
 //! Full-versus-delta request selection and the context a cached connection retains.
 
 use super::CodexError;
-use super::sessions::lock;
 use super::websocket::{wire_body, wire_members};
 use crate::providers::json_text::{BorrowedJson, compact_json, compact_members};
 use crate::providers::responses::openai_responses_shared::messages::convert_assistant;
 use crate::{AssistantMessage, DiagnosticErrorInfo, Model, SharedAssistantMessage, StopReason};
+use maestro_lock::lock;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::{Mutex, PoisonError};

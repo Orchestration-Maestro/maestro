@@ -157,11 +157,34 @@ impl Segmented {
 
     /// Materialize one explicitly admitted contiguous operand with its whole-body map.
     pub(crate) fn materialize(&self) -> ScopeSource {
-        if let Some((Projection::Source(source), window)) = self.projection.leaf() {
-            return source.select(std::iter::once(window));
+        let mut prefix = self.prefix();
+        prefix.extend(self.len());
+        prefix.finish()
+    }
+
+    /// Start an empty contiguous prefix that a grammar grows over this operand.
+    pub(crate) fn prefix(&self) -> Prefix<'_> {
+        match self.projection.leaf() {
+            Some((Projection::Source(source), window)) => {
+                Prefix::Leaf(source, window.start..window.start)
+            }
+            _ => Prefix::Copied {
+                source: self,
+                text: String::new(),
+                units: Vec::new(),
+            },
         }
-        let mut units = Vec::new();
-        let mut pending = vec![(&self.projection, 0..self.len(), 0)];
+    }
+
+    /// Append one logical window's bytes and native map to a contiguous copy that already
+    /// holds every byte before it.
+    fn copy(
+        &self,
+        range: Range<usize>,
+        text: &mut String,
+        units: &mut Vec<(Range<usize>, Range<usize>)>,
+    ) {
+        let mut pending = vec![(&self.projection, range.clone(), text.len())];
         while let Some((source, range, offset)) = pending.pop() {
             #[cfg(test)]
             crate::tests::WORK.with_borrow_mut(|work| work.projections += 1);
@@ -170,7 +193,7 @@ impl Segmented {
                     value,
                     window.start + range.start..window.start + range.end,
                     offset,
-                    &mut units,
+                    units,
                 );
             } else {
                 pending.extend(
@@ -182,13 +205,59 @@ impl Segmented {
             }
         }
         #[cfg(test)]
-        crate::tests::WORK.with_borrow_mut(|work| work.source_bytes += self.len());
-        ScopeSource {
-            text: SourceText {
-                bytes: Arc::new(self.text.to_owned_string()),
-                range: 0..self.len(),
+        crate::tests::WORK.with_borrow_mut(|work| work.source_bytes += range.len());
+        text.reserve_exact(range.len());
+        text.extend(self.chunks_in(range));
+    }
+}
+
+/// A contiguous prefix of one operand that grows without copying any byte twice.
+pub(crate) enum Prefix<'a> {
+    /// A window of the operand's single contiguous leaf, selected without copying.
+    Leaf(&'a ScopeSource, Range<usize>),
+    /// Bytes and native map copied from a spliced operand.
+    Copied {
+        /// Operand the prefix grows over.
+        source: &'a Segmented,
+        /// Bytes copied so far.
+        text: String,
+        /// Native map of the copied bytes.
+        units: Vec<(Range<usize>, Range<usize>)>,
+    },
+}
+
+impl Prefix<'_> {
+    /// Grow the prefix through logical byte `end`, copying only the bytes it adds.
+    pub(crate) fn extend(&mut self, end: usize) {
+        match self {
+            Self::Leaf(_, window) => window.end = window.start + end,
+            Self::Copied {
+                source,
+                text,
+                units,
+            } => source.copy(text.len()..end, text, units),
+        }
+    }
+
+    /// Borrow the prefix's bytes.
+    pub(crate) fn text(&self) -> &str {
+        match self {
+            Self::Leaf(source, window) => &source.text[window.clone()],
+            Self::Copied { text, .. } => text,
+        }
+    }
+
+    /// Publish the prefix with its native map.
+    pub(crate) fn finish(self) -> ScopeSource {
+        match self {
+            Self::Leaf(source, window) => source.select(std::iter::once(window)),
+            Self::Copied { text, units, .. } => ScopeSource {
+                text: SourceText {
+                    range: 0..text.len(),
+                    bytes: Arc::new(text),
+                },
+                units: Arc::new(units),
             },
-            units: Arc::new(units),
         }
     }
 }

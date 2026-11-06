@@ -1,6 +1,5 @@
 //! The shared extension runtime: unbound stubs, the provider queue and the bound route.
 use super::provider_order::DeferredProviderOperation;
-use crate::types::{read, write};
 use crate::{
     EventError, ExtensionExecution,
     types::{
@@ -10,6 +9,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use maestro_catalog::ModelRegistry;
+use maestro_lock::{read, write};
 use maestro_models::SharedHandle;
 #[cfg(target_arch = "wasm32")]
 use std::rc::Weak;

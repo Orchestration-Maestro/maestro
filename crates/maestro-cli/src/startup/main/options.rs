@@ -6,9 +6,10 @@ use maestro_app::{
     NoTools, ResolveCliModelOptions, ScopedModel, SettingsManager, ThinkingLevel,
     resolve_cli_model,
 };
+use maestro_lock::read;
 use std::cmp::Ordering;
 use std::io;
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, RwLock};
 
 /// The observations one session-option selection reads.
 #[derive(Clone, Copy)]
@@ -58,11 +59,6 @@ fn diagnostic(
     r#type: AgentSessionRuntimeDiagnosticType,
 ) -> AgentSessionRuntimeDiagnostic {
     AgentSessionRuntimeDiagnostic { r#type, message }
-}
-
-/// The shared descriptor read under its own lock.
-fn read(model: &RwLock<Model>) -> std::sync::RwLockReadGuard<'_, Model> {
-    model.read().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// The saved default model of the scope, when the catalog holds it.

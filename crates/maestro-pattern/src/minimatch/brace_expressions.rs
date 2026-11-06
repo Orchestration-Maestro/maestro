@@ -305,7 +305,7 @@ fn take_scalar(tail: &mut &str) -> Option<char> {
 pub(super) fn parse_ignore_class(pattern: &str) -> (ParsedClass, usize) {
     let (parsed, consumed) = parse_class_mode(pattern, true);
     let parsed = match parsed {
-        ParsedClass::Class(class) => class.canonicalize(),
+        ParsedClass::Class(class) => class.into_folded(),
         other => other,
     };
     (parsed, consumed)
@@ -313,7 +313,7 @@ pub(super) fn parse_ignore_class(pattern: &str) -> (ParsedClass, usize) {
 
 impl Class {
     /// Expands normalized original intervals once, before case conversion.
-    fn canonicalize(mut self) -> ParsedClass {
+    fn into_folded(mut self) -> ParsedClass {
         self.fold_ordinary_case();
         ParsedClass::Class(self)
     }
