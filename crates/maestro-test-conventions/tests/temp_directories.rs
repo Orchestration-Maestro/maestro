@@ -182,7 +182,7 @@ fn production_temporary_directory_is_accepted() {
 }
 
 #[test]
-fn member_never_listed_in_a_scope_is_checked() {
+fn every_member_outside_the_owner_is_checked() {
     check(
         "maestro-dependencies",
         "tests/generated_entries.rs",
@@ -334,7 +334,7 @@ fn packages_reads_the_platform_directory_into_a_setting() {
     );
 }
 
-/// Platform directory spellings in the crates added to the migrated scope.
+/// Platform directory spellings in members the migration converted.
 const ADDED: &[(&str, &str, &str, &[usize])] = &[
     (
         "maestro-test-process",
@@ -418,12 +418,6 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         "maestro-chat",
         "tests/extension_editor.rs",
         "//! Extension editor fixtures.\n\n#[test]\nfn the_editor_reads_its_handoff_file() {\n    let path = std::env::temp_dir().join(\"maestro-extension-editor.md\");\n    std::fs::write(&path, b\"draft\").unwrap();\n}\n",
-        &[5],
-    ),
-    (
-        "maestro-test-conventions",
-        "tests/test_directories.rs",
-        "//! Checked-child proof.\n\n#[test]\nfn a_child_reports_the_platform_parent() {\n    let parent = std::env::temp_dir();\n    assert!(!parent.join(\"probe\").exists());\n}\n",
         &[5],
     ),
 ];
