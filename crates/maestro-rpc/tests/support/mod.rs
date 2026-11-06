@@ -171,16 +171,22 @@ fn inferred<T: Default>() -> T {
     T::default()
 }
 
-/// Serves a fresh runtime over this process's standard streams after writing the process
-/// identifier to standard error; the server exits the process.
-pub fn serve(served: Served) -> ! {
-    eprintln!("{}", std::process::id());
+/// The value `body` produces on a fresh current-thread runtime and local task set.
+pub fn on_local<T>(body: impl AsyncFnOnce(Rc<LocalSet>) -> T) -> T {
     let local = Rc::new(LocalSet::new());
     let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    let failure = executor.block_on(local.run_until(async {
+    let future = body(Rc::clone(&local));
+    executor.block_on(local.run_until(future))
+}
+
+/// Serves a fresh runtime over this process's standard streams after writing the process
+/// identifier to standard error; the server exits the process.
+pub fn serve(served: Served) -> ! {
+    eprintln!("{}", std::process::id());
+    let failure = on_local(async move |local| {
         let agent_dir = maestro_test_directory::Scratch::new().unwrap();
         let runtime = runtime(&local, agent_dir.path(), served.factories).await;
         let runtime = Rc::new(runtime);
@@ -191,7 +197,7 @@ pub fn serve(served: Served) -> ! {
                 Box::pin(async move { match run_rpc_mode(options).await? {} })
             });
         runner(runtime).await.unwrap_err()
-    }));
+    });
     panic!("the server failed: {failure}");
 }
 

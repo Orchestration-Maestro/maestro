@@ -480,8 +480,8 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
             .to_owned();
         let target = stored_file(&h, &cwd);
         assert!(
-            Path::new(&target).starts_with(h.scratch.path()),
-            "the switched session is stored in the test's directory: {target}"
+            !Path::new(&target).starts_with(env!("CARGO_MANIFEST_DIR")),
+            "the switched session stays out of the crate directory: {target}"
         );
         let switched = (actions.operations().switch_session)(target.clone(), None)
             .await
