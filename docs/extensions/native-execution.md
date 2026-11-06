@@ -52,6 +52,20 @@ retained view render, input, key-release and invalidate methods, and compaction
 notifications. Returned values reach their native consumer unchanged; prepared
 arguments pass model argument validation before the tool executes. A returned view
 keeps its state, outlives a replaced renderer and is released by its last owner.
+Dropping the renderer call that produced a view does not end that view: render,
+input, invalidate and key-release preference keep working from the handles you
+retained, and a replacement view stays independent of them.
+
+A retained command context reads its runner's bindings each time it is called, so
+rebinding the runner changes what later reads return. The model reader is the one
+exception: a context keeps the model reader bound at creation, and a later binding
+does not replace it. Invalidating the runner makes every guarded read and every
+session operation reject with the stale-context message, and leaves an independent
+runner alone. A replacement context reached through `with_session` keeps its two
+message callbacks pointed at the session they describe after that runner is
+invalidated, while its guarded reads reject like the rest. A setup or continuation
+failure reaches the awaiting command as the error you returned, and a failed setup
+stops its continuation.
 Removing a subscription leaves an admitted tail and its captures running until
 the tail settles.
 
