@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod directory_observations;
+mod drive_prefix;
 mod path_behavior;
 mod tilde;
 mod verbatim_spelling;
