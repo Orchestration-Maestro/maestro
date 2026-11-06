@@ -42,13 +42,7 @@ fn parse_file_uri_cwd(uri: &str) -> Option<PathBuf> {
 #[cfg(any(windows, test))]
 pub(super) fn windows_uri_path(path: &str) -> String {
     let path = match path.strip_prefix('/') {
-        Some(below)
-            if below.len() >= 2
-                && below.as_bytes()[1] == b':'
-                && below.as_bytes()[0].is_ascii_alphabetic() =>
-        {
-            below
-        }
+        Some(below) if maestro_path::win32::has_drive_prefix(below) => below,
         _ => path,
     };
     path.replace('/', "\\")
