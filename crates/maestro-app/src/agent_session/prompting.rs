@@ -3,12 +3,12 @@
 use super::state::{last_assistant_message, thrown};
 use super::{AgentSession, AgentSessionEvent, PromptOptions};
 use crate::configuration::config::get_docs_path;
-use crate::utils::lock::{read, write};
 use maestro_agent::{AgentMessage, PromptInput};
 use maestro_credentials::format_no_api_key_found_message;
 use maestro_extensions::{
     ExtensionError, ExtensionExecution, InputEventResult, InputSource, NativeAgentMessage,
 };
+use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, ImageContent, StopReason, TextContent, UserBlock, UserContent,
     UserMessage, timestamp_now,

@@ -2,15 +2,17 @@
 //!
 //! `prepare` runs the component-discovery example in a separate build and stages its component
 //! files, the code it compiled, the built example, the browser graph the browser author tests
-//! share, this command and a content manifest. The manifest records the inputs of each artifact
-//! on its own, so a change reaches only the artifacts that read it. The first earlier bundle in the
-//! path list `TEST_PREPARE_BASE` that fits supplies every component whose inputs are unchanged, and
-//! its compiled code, so only the rest are built.
+//! share, the registry units the cold browser bootstrap starts from, this command and a content
+//! manifest. The manifest records the inputs of each artifact on its own, so a change reaches
+//! only the artifacts that read it. The first earlier bundle in the path list
+//! `TEST_PREPARE_BASE` that fits supplies every component whose inputs are unchanged, and its
+//! compiled code, so only the rest are built.
 //! `install` stages this command alone, for runs without a bundle. The staged command's
 //! `author-component` setup validates the components and the example against the checkout,
 //! installs the example beside the extracted test executables and the compiled code in the
 //! user cache, and writes the component paths for nextest. The `browser-author` setup validates
-//! and installs the browser graph.
+//! and installs the browser graph, and the `workspace-sources` setup installs the registry units
+//! beside the sources they were compiled against.
 
 use std::collections::BTreeMap;
 use std::env::consts::EXE_EXTENSION;
@@ -24,12 +26,14 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::argument;
+use super::copy_assets::copy_tree;
 use super::example_files::{EXAMPLE_PACKAGE, FIXED_COMPONENTS, Fixed, validate_variable};
-use super::nextest_setup::browser_graph;
+use super::nextest_setup::{browser_graph, fixture_sources};
 use super::workspace::Workspace;
 use base::{Base, Supplied};
 use compiled_code::CompiledCode;
 use inputs::Inputs;
+use maestro_path::normalize_native;
 use plan::{Artifacts, component_inputs};
 use program::{Program, Source, Target};
 
@@ -58,6 +62,8 @@ const BASE: &str = "TEST_PREPARE_BASE";
 const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 /// The packages the browser graph is built from.
 const BROWSER_PACKAGES: [&str; 2] = ["maestro-web", "maestro-tooling"];
+/// The package whose cold browser bootstrap test starts from the staged seed.
+const SEED_PACKAGE: &str = "maestro-tooling";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
 /// the Cargo configuration.
 const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"];
@@ -77,6 +83,10 @@ struct Manifest {
     tool: Inputs,
     /// The inputs of the browser graph.
     browser: Inputs,
+    /// The directory of the workspace sources the staged cold bootstrap seed was compiled
+    /// against, when the workspace holds the package whose test starts from it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    workspace_sources: Option<PathBuf>,
     /// Each component file, by the variable that exports it.
     components: BTreeMap<String, Component>,
     /// Digest of the staged setup example.
@@ -183,24 +193,16 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         output,
         &target.join("cargo-checks"),
     )?;
-    stage_browser_graph(cargo, checkout, output)?;
+    let workspace_sources = stage_browser(cargo, checkout, &workspace, output)?;
     let executable = executable::stage(cargo, checkout, &workspace, output, target)?;
-    let mut unchanged = artifacts.is_current(checkout)?;
-    for component in components.values() {
-        unchanged &= component.inputs.is_current(checkout)?;
-    }
-    if !unchanged {
-        return Err(io::Error::other(format!(
-            "inputs changed during preparation: {}",
-            output.display()
-        )));
-    }
+    check_unchanged(checkout, output, &artifacts, &components)?;
     let (staged, compiled) = stage_example(output, &example, &cache_directory, seeded.as_deref())?;
     stage_tool(output)?;
     let manifest = Manifest {
         shared: artifacts.shared,
         tool: artifacts.tool,
         browser: artifacts.browser,
+        workspace_sources,
         components,
         example: digest(&std::fs::read(&staged)?),
         compiled,
@@ -208,6 +210,31 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
     writeln!(io::stdout(), "components: {reused} reused, {built} built")
+}
+
+/// Check that `checkout` still holds what every artifact and component staged in `output` was
+/// prepared from.
+///
+/// # Errors
+/// Returns inputs that changed while the preparation ran, or a failed listing or read.
+fn check_unchanged(
+    checkout: &Path,
+    output: &Path,
+    artifacts: &Artifacts,
+    components: &BTreeMap<String, Component>,
+) -> io::Result<()> {
+    let mut unchanged = artifacts.is_current(checkout)?;
+    for component in components.values() {
+        unchanged &= component.inputs.is_current(checkout)?;
+    }
+    if unchanged {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
+            "inputs changed during preparation: {}",
+            output.display()
+        )))
+    }
 }
 
 /// Stage the compiled code the example produced and the example itself in `output`.
@@ -282,15 +309,35 @@ fn stage_components(
     Ok(components)
 }
 
-/// Build the browser graph in the checkout and stage it in `output`.
+/// Build the browser graph in the checkout and stage it in `output`, then stage the cold
+/// bootstrap seed when the workspace holds its package, and return the directory of the
+/// workspace sources the seed was compiled against.
 ///
 /// # Errors
-/// Returns the build commands that failed, so no shard has to build the graph again.
-fn stage_browser_graph(cargo: &Path, checkout: &Path, output: &Path) -> io::Result<()> {
+/// Returns the build commands that failed, so no shard has to build the graph or the seed again.
+fn stage_browser(
+    cargo: &Path,
+    checkout: &Path,
+    workspace: &Workspace,
+    output: &Path,
+) -> io::Result<Option<PathBuf>> {
     let staged = output.join(browser_graph::STAGED);
     remove_directory(&staged)?;
     browser_graph::build(checkout, cargo.as_os_str())?;
-    browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)
+    browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)?;
+    if workspace.member(SEED_PACKAGE).is_none() {
+        return Ok(None);
+    }
+    // The sources are vendored offline, from the packages a shard's job fetches before its tests.
+    let fetched = Command::new(cargo)
+        .current_dir(checkout)
+        .args(["fetch", "--locked"])
+        .status()?;
+    if !fetched.success() {
+        return Err(io::Error::other(format!("cargo fetch failed: {fetched}")));
+    }
+    let directory = fixture_sources::stage(cargo, checkout, output)?;
+    Ok(Some(normalize_native(&directory)))
 }
 
 /// Copy this command into `output`, where the nextest setup entries run it.
@@ -451,7 +498,7 @@ fn export(
     directory: &Path,
     environment: &Path,
 ) -> io::Result<()> {
-    let output = std::fs::canonicalize(output).map_err(|error| at(output, &error))?;
+    let output = maestro_realpath::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
     }
@@ -505,6 +552,20 @@ pub(crate) fn install_browser_graph(
 ) -> io::Result<()> {
     read_manifest(output)?.browser.verify(checkout, output)?;
     browser_graph::install(&output.join(browser_graph::STAGED), target)
+}
+
+/// Copy the cold bootstrap seed of the bundle in `output` to `seed` when the bundle compiled it
+/// against the workspace sources in `directory`, and report whether it did.
+///
+/// # Errors
+/// Returns an unreadable manifest or a failed copy.
+pub(crate) fn install_seed(output: &Path, directory: &Path, seed: &Path) -> io::Result<bool> {
+    if read_manifest(output)?.workspace_sources != Some(normalize_native(directory)) {
+        return Ok(false);
+    }
+    remove_directory(seed)?;
+    copy_tree(&output.join(fixture_sources::STAGED), seed)?;
+    Ok(true)
 }
 
 /// Read the manifest of the bundle in `output`.

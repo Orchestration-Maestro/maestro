@@ -21,11 +21,11 @@ serde_json.workspace = true
 serde.workspace = true
 futures-util.workspace = true
 indexmap = "=2.14.2"
+maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 maestro-listing = { path = "../maestro-listing" }
-maestro-lock = { path = "../maestro-lock" }
 sha2 = { version = "=0.11.0", default-features = false }
 maestro-resources = { path = "../maestro-resources" }
 tokio = { version = "=1.53.3", default-features = false, features = ["fs", "rt"] }

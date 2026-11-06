@@ -63,8 +63,8 @@ impl ModelItem {
         if current.is_some_and(|current| Arc::ptr_eq(current, &self.model)) {
             return true;
         }
-        let current = current.map(|m| m.read().unwrap_or_else(PoisonError::into_inner));
-        let model = self.model.read().unwrap_or_else(PoisonError::into_inner);
+        let current = current.map(|m| maestro_lock::read(m));
+        let model = maestro_lock::read(&self.model);
         models_are_equal(current.as_deref(), Some(&model))
     }
 }

@@ -5,9 +5,9 @@ use crate::browser::components::sandboxed_iframe::{
     SandboxEnvironment, SandboxExecution, SandboxFile, SandboxFileContent, SandboxHost,
     SandboxResult, SandboxUrlProvider, SandboxValue,
 };
-use crate::utils::lock::read;
 use base64::Engine;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
+use maestro_lock::read;
 use maestro_models::SharedHandle;
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Tool};
 use maestro_text::is_whitespace_scalar;

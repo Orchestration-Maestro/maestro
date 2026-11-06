@@ -1,7 +1,7 @@
 //! Runner state shared with its contexts, and the operations that bind it.
 use super::ExtensionRunner;
 use crate::loader::runtime::BoundProviders;
-use crate::types::{ExtensionActions, ProviderActions, write};
+use crate::types::{ExtensionActions, ProviderActions};
 use crate::{
     EventError, ExtensionExecution,
     types::{
@@ -10,6 +10,7 @@ use crate::{
     },
 };
 use maestro_catalog::ModelRegistry;
+use maestro_lock::write;
 use maestro_models::SharedHandle;
 use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::RefCell, rc::Rc};

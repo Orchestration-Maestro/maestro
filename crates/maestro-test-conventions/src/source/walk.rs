@@ -2,7 +2,8 @@
 //!
 //! Each check keeps its own visitor state and rules; the walker owns the traversal and
 //! the test context each state inherits, so a source's syntax tree is visited once for
-//! all checks.
+//! all checks. The walk also records the file-level facts checks read from the parsed
+//! file, so no syntax outlives it.
 
 use std::collections::BTreeSet;
 use std::ops::Range;
@@ -10,17 +11,28 @@ use std::ops::Range;
 use syn::{spanned::Spanned, visit::Visit};
 
 use super::{
-    Member, Source, cfg_test, impl_item_attributes, item_attributes, test_scope,
+    Member, Source, cfg_test, impl_item_attributes, item_attributes, test_file,
     trait_item_attributes,
 };
 use crate::boundaries::{application_exports, message_renderers};
-use crate::graph::packages::Exports;
-use crate::{child_tests, duplicates, generated, repetition, temp_directories};
-use crate::{test_input_routes, time_limits};
+use crate::graph::packages::{self, Exports};
+use crate::{
+    child_tests, duplicates, generated, integration_tests, poison, quality, real_paths, repetition,
+    temp_directories, test_input_routes, time_limits,
+};
 
 /// Every check's findings for one parsed source.
-#[derive(Default)]
 pub(crate) struct Walk {
+    /// Whether the file's inner attributes gate it on the test configuration.
+    pub(crate) gated: bool,
+    /// End line of the last item when that item is test-gated.
+    pub(crate) test_end: Option<usize>,
+    /// Whether a production source's top-level items declare or re-export the public factory.
+    pub(crate) factory: bool,
+    /// Module declarations of an application or domain source, with their visibility scopes.
+    pub(crate) modules: application_exports::Scopes,
+    /// Top-level module declarations of a member's integration-test root.
+    pub(crate) root_modules: Vec<integration_tests::Module>,
     /// Disjoint spans of the test-gated items, sorted by start.
     pub(crate) test_spans: Vec<Range<(usize, usize)>>,
     /// First ignore-attribute ownership violation, with its line.
@@ -33,26 +45,27 @@ pub(crate) struct Walk {
     pub(crate) time_limits: Vec<((usize, usize), time_limits::Diagnostic)>,
     /// Production function bodies as block byte offsets with their signature lines.
     pub(crate) bodies: Vec<(usize, usize)>,
-    /// Sorted lines naming the platform temporary directory, for migrated crates.
+    /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
+    /// Sorted lines resolving a real path outside its owner, in production code.
+    pub(crate) real_paths: Vec<usize>,
     /// Located repository-directory reads by test code.
     pub(crate) reads: BTreeSet<(usize, String)>,
     /// Imports of an application source in its logical module.
     pub(crate) imports: Option<Vec<application_exports::Import>>,
-    /// Lint-level attributes of a guest source.
-    pub(crate) lint_attributes: Vec<generated::LintAttribute>,
+    /// Lint-level attributes and root layout of a guest source.
+    pub(crate) guest: Option<generated::Attributes>,
     /// Literal extension exports outside test-gated items.
     pub(crate) exports: usize,
+    /// Located independent recovery helpers in production code.
+    pub(crate) poison: Vec<usize>,
 }
 
 /// Walk a member's parsed source once and gather every check's findings.
-pub(super) fn walk(member: &Member, source: &Source) -> Walk {
-    let Some(syntax) = &source.syntax else {
-        return Walk::default();
-    };
+pub(super) fn walk(member: &Member, source: &Source, syntax: &syn::File) -> Walk {
     #[cfg(test)]
     super::SYNTAX_WALKS.set(super::SYNTAX_WALKS.get() + 1);
-    let mut walker = Walker::new(member, source);
+    let mut walker = Walker::new(member, source, syntax);
     walker.visit_file(syntax);
     walker.finish()
 }
@@ -88,6 +101,16 @@ struct Walker<'a> {
     context: Context,
     /// Whether the whole source belongs to tests.
     scope: bool,
+    /// Whether the file's inner attributes gate it on the test configuration.
+    gated: bool,
+    /// End line of a test-gated last item.
+    test_end: Option<usize>,
+    /// Whether a production source exposes the public factory.
+    factory: bool,
+    /// Application or domain module declarations.
+    modules: application_exports::Scopes,
+    /// Top-level module declarations, for an integration-test root.
+    root_modules: Vec<integration_tests::Module>,
     /// Outermost test-gated item spans in source order.
     test_spans: Vec<Range<(usize, usize)>>,
     /// Ignore-attribute ownership.
@@ -100,8 +123,10 @@ struct Walker<'a> {
     calls: time_limits::Calls<'a>,
     /// Production function bodies.
     bodies: duplicates::Bodies,
-    /// Platform temporary directory references, for migrated crates.
+    /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
+    /// Real-path resolution outside its owner, for every other crate.
+    resolutions: Option<real_paths::Resolutions>,
     /// Repository-directory reads by test code.
     reads: test_input_routes::Reads,
     /// Application imports, for application sources.
@@ -110,27 +135,37 @@ struct Walker<'a> {
     attributes: Option<generated::Attributes>,
     /// Extension exports, for production sources that spell the export macro.
     exports: Option<Exports<'a>>,
+    /// Independent recovery helpers.
+    poison: poison::Definitions,
 }
 
 impl<'a> Walker<'a> {
-    /// Prepare the states that serve this member's source.
-    fn new(member: &'a Member, source: &'a Source) -> Self {
-        let scope = test_scope(member, source);
+    /// Record the file-level facts and prepare the states that serve this member's source.
+    fn new(member: &'a Member, source: &'a Source, file: &syn::File) -> Self {
+        let gated = cfg_test(&file.attrs);
+        let scope = test_file(member, &source.path) || gated;
         Self {
             context: Context::default(),
             scope,
+            gated,
+            test_end: quality::test_end(file),
+            factory: !scope && packages::factory(file),
+            modules: application_exports::file_modules(member, source, file),
+            root_modules: integration_tests::modules(member, source, file),
             test_spans: Vec::new(),
             ignored: child_tests::Ignored::new(member, source),
             guard: message_renderers::Guard::new(member, source),
             layout: repetition::TestLayout::new(member, source),
             calls: time_limits::Calls::new(member),
             bodies: duplicates::Bodies::default(),
-            references: temp_directories::migrated(member)
+            references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
+            resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
             reads: test_input_routes::Reads::default(),
             uses: application_exports::Uses::new(member, source),
-            attributes: (member.name == generated::GUEST).then(generated::Attributes::default),
+            attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
             exports: Exports::new(source, scope),
+            poison: poison::Definitions::default(),
         }
     }
 
@@ -179,6 +214,13 @@ impl<'a> Walker<'a> {
         );
     }
 
+    /// Exempt a declaration's own name from the reference scan; its body stays visited.
+    fn declaring(&mut self, ident: &proc_macro2::Ident) {
+        if let Some(references) = &mut self.references {
+            references.skip(ident);
+        }
+    }
+
     /// Record a production function body for the duplicate check.
     fn body(&mut self, signature: &syn::Signature, block: &syn::Block) {
         if self.context.gate < Some(Gate::Associated) {
@@ -190,6 +232,11 @@ impl<'a> Walker<'a> {
     fn finish(mut self) -> Walk {
         self.test_spans.sort_unstable_by_key(|span| span.start);
         Walk {
+            gated: self.gated,
+            test_end: self.test_end,
+            factory: self.factory,
+            modules: self.modules,
+            root_modules: self.root_modules,
             test_spans: self.test_spans,
             ignored: self.ignored.error,
             renderers: self.guard.finish(),
@@ -200,13 +247,15 @@ impl<'a> Walker<'a> {
                 .references
                 .map(temp_directories::References::finish)
                 .unwrap_or_default(),
+            real_paths: self
+                .resolutions
+                .map(real_paths::Resolutions::finish)
+                .unwrap_or_default(),
             reads: self.reads.finish(),
             imports: self.uses.map(|uses| uses.imports),
-            lint_attributes: self
-                .attributes
-                .map(|attributes| attributes.0)
-                .unwrap_or_default(),
+            guest: self.attributes,
             exports: self.exports.map_or(0, Exports::finish),
+            poison: self.poison.finish(),
         }
     }
 }
@@ -267,21 +316,47 @@ impl<'a> Visit<'a> for Walker<'a> {
     }
 
     fn visit_item_fn(&mut self, function: &'a syn::ItemFn) {
+        self.declaring(&function.sig.ident);
         self.ignored.item_fn(function);
         self.body(&function.sig, &function.block);
+        if !self.testing() {
+            self.poison.body(&function.block);
+        }
         syn::visit::visit_item_fn(self, function);
     }
 
     fn visit_impl_item_fn(&mut self, function: &'a syn::ImplItemFn) {
+        self.declaring(&function.sig.ident);
         self.body(&function.sig, &function.block);
+        if !self.testing() {
+            self.poison.body(&function.block);
+        }
         syn::visit::visit_impl_item_fn(self, function);
     }
 
     fn visit_trait_item_fn(&mut self, function: &'a syn::TraitItemFn) {
+        self.declaring(&function.sig.ident);
         if let Some(block) = &function.default {
             self.body(&function.sig, block);
+            if !self.testing() {
+                self.poison.body(block);
+            }
         }
         syn::visit::visit_trait_item_fn(self, function);
+    }
+
+    /// A closure body that only acquires a lock is the same helper as a function.
+    fn visit_expr_closure(&mut self, closure: &'a syn::ExprClosure) {
+        if !self.testing() {
+            self.poison.closure(closure);
+        }
+        syn::visit::visit_expr_closure(self, closure);
+    }
+
+    /// A foreign function declares its name the same way; its remaining names stay visited.
+    fn visit_foreign_item_fn(&mut self, function: &'a syn::ForeignItemFn) {
+        self.declaring(&function.sig.ident);
+        syn::visit::visit_foreign_item_fn(self, function);
     }
 
     fn visit_ident(&mut self, ident: &'a proc_macro2::Ident) {
@@ -302,6 +377,9 @@ impl<'a> Visit<'a> for Walker<'a> {
             }
         } else {
             self.guard.raw(&call.method);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.method(&call.method);
+            }
         }
         self.nested(
             |context| context.method_parts = true,
@@ -334,6 +412,9 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_item_use(&mut self, item: &'a syn::ItemUse) {
         if !self.testing() {
             self.guard.item_use(item);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.use_tree(&item.tree);
+            }
         }
         self.calls.item_use(item);
         if let Some(exports) = &mut self.exports {
@@ -353,6 +434,8 @@ impl<'a> Visit<'a> for Walker<'a> {
         }
         if self.testing() {
             self.calls.macro_tokens(invocation);
+        } else if let Some(resolutions) = &mut self.resolutions {
+            resolutions.macro_tokens(invocation);
         }
         if self.reading() {
             self.reads.macro_tokens(invocation);
@@ -362,12 +445,18 @@ impl<'a> Visit<'a> for Walker<'a> {
         {
             exports.invocation(invocation);
         }
+        if !self.testing() {
+            self.poison.macro_tokens(invocation);
+        }
         syn::visit::visit_macro(self, invocation);
     }
 
     fn visit_path(&mut self, path: &'a syn::Path) {
         if !self.testing() {
             self.guard.path(path);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.path(path);
+            }
         }
         syn::visit::visit_path(self, path);
     }

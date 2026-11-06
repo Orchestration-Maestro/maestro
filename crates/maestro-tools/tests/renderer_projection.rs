@@ -906,20 +906,6 @@ fn check_prepared_raw_case(details: Option<&serde_json::Value>, flag: Option<boo
     assert_eq!(calls.get(), 2);
 }
 
-/// A theme whose `toolOutput` colour is palette `index`.
-fn single_color_theme(index: u8) -> maestro_theme::Theme {
-    maestro_theme::Theme::new(
-        [(
-            maestro_theme::ThemeColor::ToolOutput,
-            maestro_theme::ColorValue::Index(index),
-        )],
-        [],
-        maestro_theme::ColorMode::Color256,
-        maestro_theme::ThemeOptions::default(),
-    )
-    .unwrap()
-}
-
 /// A definition whose call and result renderers colour their row from the theme.
 fn themed_definition() -> maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32>
 {
@@ -977,7 +963,9 @@ fn projected_renderers_resolve_the_live_theme_per_invocation() {
             "Theme not initialized. Call initTheme() first."
         );
         state
-            .set_theme_instance(Rc::new(single_color_theme(2)))
+            .set_theme_instance(Rc::new(
+                maestro_test_fixtures::tool_output_theme!(2).unwrap(),
+            ))
             .unwrap();
         assert!(
             call(None, &live, &row)
@@ -987,7 +975,9 @@ fn projected_renderers_resolve_the_live_theme_per_invocation() {
                 .contains("38;5;2m")
         );
         state
-            .set_theme_instance(Rc::new(single_color_theme(5)))
+            .set_theme_instance(Rc::new(
+                maestro_test_fixtures::tool_output_theme!(5).unwrap(),
+            ))
             .unwrap();
         assert!(
             call(None, &live, &row)

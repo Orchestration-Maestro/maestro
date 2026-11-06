@@ -114,6 +114,7 @@ fn bundle_export_installs_the_native_example() {
         shared: inputs.clone(),
         tool: inputs.clone(),
         browser: inputs,
+        workspace_sources: None,
         components,
         example: digest(b"native example"),
         compiled: None,
@@ -330,6 +331,7 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             "crates/maestro-package",
             "crates/maestro-request",
             "crates/maestro-subagents",
+            "crates/maestro-test-fixtures",
             "crates/maestro-text",
             "crates/maestro-tool"
         ]

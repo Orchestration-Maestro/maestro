@@ -1,7 +1,7 @@
 //! Retrying a failed response with a visible, cancellable backoff.
 use super::{AgentSession, AgentSessionEvent};
-use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
+use maestro_lock::read;
 use maestro_models::{
     AssistantMessage, Cancellation, DiagnosticErrorInfo, StopReason, is_context_overflow,
 };

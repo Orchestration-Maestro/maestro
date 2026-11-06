@@ -1,8 +1,8 @@
 //! Admission of session selections before their state and persistence effects.
 
 use super::{AgentSession, selection::saved_level};
-use crate::utils::lock::read;
 use maestro_extensions::ExtensionExecution;
+use maestro_lock::read;
 use maestro_models::{DiagnosticErrorInfo, Model, ModelThinkingLevel, clamp_thinking_level};
 use maestro_settings::{
     DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsEdit, SettingsScope,

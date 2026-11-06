@@ -19,10 +19,10 @@ const BUNDLE: &str = "target/test-setup";
 
 /// Prepare and launch the component-discovery example.
 mod author_component;
-/// Prepare the browser build the browser author tests share.
+/// Prepare the browser build the browser author tests build on, one copy per lane.
 pub(crate) mod browser_graph;
 /// Vendor locked dependencies for tooling fixtures or the complete workspace.
-mod fixture_sources;
+pub(crate) mod fixture_sources;
 /// Align the modification times of the executables the example warms code for.
 mod normalize;
 
@@ -41,7 +41,7 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
                 Some("workspace") if args.len() == 2 => fixture_sources::Scope::Workspace,
                 _ => return Err(io::Error::other("unknown fixture source scope")),
             };
-            fixture_sources::run(&checkout, scope)
+            fixture_sources::run(Path::new(&cargo()), &checkout, scope)
         }
         Some("native-fixture") => native(&checkout),
         Some("cargo-checks") => checks(&checkout),
@@ -55,9 +55,9 @@ pub(crate) fn run(args: &[OsString]) -> io::Result<ExitCode> {
     }
 }
 
-/// Export the validated host fixture, building only during local repository setup.
+/// Export the validated host fixtures, building only during local repository setup.
 fn native(checkout: &Path) -> io::Result<ExitCode> {
-    let path = if let Some(bundle) = prepared_bundle(checkout) {
+    let paths = if let Some(bundle) = prepared_bundle(checkout) {
         native_fixture::prepared(checkout, &bundle)?
     } else {
         let cargo = Path::new(&cargo()).to_path_buf();
@@ -69,9 +69,11 @@ fn native(checkout: &Path) -> io::Result<ExitCode> {
             &checkout.join("target/native-fixture"),
         )?
     };
-    let mut entry = OsString::from(format!("{}=", native_fixture::VARIABLE));
-    entry.push(path);
-    export(&entry)?;
+    for (variable, path) in paths {
+        let mut entry = OsString::from(format!("{variable}="));
+        entry.push(path);
+        export(&entry)?;
+    }
     Ok(ExitCode::SUCCESS)
 }
 

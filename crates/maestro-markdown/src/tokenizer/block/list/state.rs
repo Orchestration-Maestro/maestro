@@ -51,6 +51,9 @@ struct Accumulated {
     value: Segmented,
     /// Admitted pieces awaiting that join.
     pending: Cursor,
+    /// Trailing admitted piece, which a following piece extends while it continues the
+    /// same selection, so adjacent lines of one allocation stay one piece.
+    last: Option<ScopeSource>,
 }
 
 impl From<Segmented> for Accumulated {
@@ -58,29 +61,44 @@ impl From<Segmented> for Accumulated {
         Self {
             value,
             pending: Cursor::default(),
+            last: None,
         }
     }
 }
 
 impl From<ScopeSource> for Accumulated {
     fn from(source: ScopeSource) -> Self {
-        Self::from(Segmented::from(source))
+        Self {
+            value: ScopeSource::identity("").into(),
+            pending: Cursor::default(),
+            last: Some(source),
+        }
     }
 }
 
 impl Accumulated {
-    /// Retain one admitted piece without joining it to the pieces before it.
-    fn push(&mut self, piece: Segmented) {
-        self.pending.segmented(piece);
+    /// Retain one admitted piece, extending the trailing piece when it continues it.
+    fn push(&mut self, piece: ScopeSource) {
+        if let Some(last) = &mut self.last
+            && last.adjoin(&piece)
+        {
+            return;
+        }
+        if let Some(last) = self.last.replace(piece) {
+            self.pending.append(last);
+        }
     }
 
     /// Logical bytes accumulated so far.
     fn len(&self) -> usize {
-        self.value.len() + self.pending.len()
+        self.value.len() + self.pending.len() + self.last.as_ref().map_or(0, |last| last.text.len())
     }
 
     /// The whole value, joining the admitted pieces at most once.
     fn value(&mut self) -> &Segmented {
+        if let Some(last) = self.last.take() {
+            self.pending.append(last);
+        }
         if !self.pending.is_empty() {
             let pending = std::mem::take(&mut self.pending);
             self.value.append(&pending.seal());
@@ -194,7 +212,7 @@ impl ItemLines {
         if matches!(self.trimmed.padding, Padding::Expanded) {
             padding = padding.replace("\t", "    ");
         }
-        self.body.push(padding.into());
+        self.body.push(padding);
         self.tail = separator;
         self.blank = self.trimmed.blank;
         self.previous_stops = self.trimmed.previous_stops;
@@ -239,7 +257,7 @@ impl ItemLines {
         let start = truncate_utf16(&measured.text, self.indent).len();
         if let Some(last) = self.tail.text.len().checked_sub(1) {
             self.body
-                .push(self.tail.select(std::iter::once(last..last + 1)).into());
+                .push(self.tail.select(std::iter::once(last..last + 1)));
         }
         let content = if aligned {
             measured.select(std::iter::once(start..measured.text.len()))
@@ -247,7 +265,7 @@ impl ItemLines {
             original
         };
         let body_end = self.body.len() + content.text.trim_end_matches(is_whitespace_scalar).len();
-        self.body.push(content.into());
+        self.body.push(content);
         self.previous_stops = self.rules.ends_lazy(&measured.text[start..]);
         self.blank |= empty;
         self.phase = Phase::Open;
@@ -280,7 +298,7 @@ impl ItemLines {
         self.suffix.swap(0, 1);
         self.suffix[1] = source.clone();
         self.tail = source.clone();
-        self.raw.push(source.into());
+        self.raw.push(source);
     }
 
     /// Charge the unique source this item keeps alive while its list is open.

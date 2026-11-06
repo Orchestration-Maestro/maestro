@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use maestro_test_directory::Scratch;
 
-use super::{install, set_tree_time, stage};
+use super::{LANES, install, set_tree_time, stage};
 
 /// The build script of the workspace's feature unifier, which every native workspace crate builds
 /// on, so the fixture's dependency runs the script a real graph runs.
@@ -40,6 +40,19 @@ fn write_checkout(root: &Path) {
         "pub fn two() -> u8 { dependency::one() + 1 }\n",
     )
     .unwrap();
+}
+
+/// Nextest runs as many browser author tests at once as the setup prepares lanes, so no test
+/// waits for a lane and no lane is copied for nothing.
+#[test]
+fn browser_author_group_admits_one_test_per_lane() {
+    let config: toml::Table = include_str!("../../../../../.config/nextest.toml")
+        .parse()
+        .unwrap();
+
+    let admitted = config["test-groups"]["browser-author"]["max-threads"].as_integer();
+
+    assert_eq!(admitted, Some(i64::try_from(LANES).unwrap()));
 }
 
 /// Build the package at `root` into `target` and return Cargo's report.

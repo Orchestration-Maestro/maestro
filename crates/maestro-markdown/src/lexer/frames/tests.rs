@@ -1,7 +1,7 @@
 //! Container release and retained quote resumption state.
-use super::{QuoteFrame, Resume, forget};
+use super::{QuoteFrame, Resume, forget, quote_prefix};
 use crate::lexer::{BlockTokens, Level, blocks::tests::lexer};
-use crate::source::{Cursor, ScopeSource};
+use crate::source::{Cursor, ScopeSource, Segmented};
 use crate::tests::{REDUCED_STACK, on_stack};
 use crate::{Kind, MarkedOptions, parse_with_options};
 use std::collections::HashMap;
@@ -38,4 +38,49 @@ fn quote_reentry_truncates_at_the_authored_container_start() {
         Some(Resume::Quote(_))
     ));
     assert_eq!(frame.text.mapped().to_owned_string(), "lead\n\n");
+}
+
+/// A spliced operand: one quoted line, then `rest` from a second allocation.
+fn spliced_quote(rest: &str) -> Segmented {
+    let mut source: Segmented = ScopeSource::identity("> a\n").into();
+    source.append(&ScopeSource::identity(rest).into());
+    source
+}
+
+#[test]
+fn quote_prefix_growth_copies_each_spliced_byte_once() {
+    let rule = crate::rules::block_blockquote(MarkedOptions::Terminal).unwrap();
+    for rest in [
+        "> b\n".repeat(1_000),
+        "> b\n".repeat(100) + &"\nplain\n".repeat(1_000),
+        "> b\nlazy\n".repeat(500),
+        "> b\n".to_owned(),
+    ] {
+        let source = spliced_quote(&rest);
+        let whole = source.materialize();
+        crate::tests::WORK.with_borrow_mut(|work| *work = crate::tests::Work::default());
+
+        let (raw, matched) = quote_prefix(&source, rule).unwrap();
+
+        let (copied, recognized) =
+            crate::tests::WORK.with_borrow(|work| (work.source_bytes, work.block_recognizer_bytes));
+        assert_eq!(copied, raw.text.len(), "{}", &rest[..10.min(rest.len())]);
+        // Rematching only from the last unit keeps the bytes read under 1.5 times the prefix.
+        assert!(
+            2 * recognized <= 3 * raw.text.len(),
+            "recognized {recognized} for {} bytes",
+            raw.text.len()
+        );
+        assert_eq!(&*raw.text, &whole.text[..raw.text.len()]);
+        // Units are collected across growth steps, so the map must match one straight pass.
+        for end in 0..=raw.text.len() {
+            assert_eq!(
+                raw.native(&(0..end)),
+                whole.native(&(0..end)),
+                "map at {end} of {} bytes",
+                raw.text.len()
+            );
+        }
+        assert_eq!(matched, rule.find(&whole.text).unwrap().end());
+    }
 }

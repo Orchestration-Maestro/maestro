@@ -1,8 +1,8 @@
 //! Awaited and observable conversation turns.
 use crate::types::{AgentContextRecord, AgentExecution, AgentLoopConfigRecord, Threaded};
 
-use crate::agent::{read, write};
 use crate::{AgentEvent, AgentMessage, AgentSpawner, CustomAgentMessages, StreamFn};
+use maestro_lock::{read, write};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, EventStream};
 use std::sync::{Arc, RwLock};
 

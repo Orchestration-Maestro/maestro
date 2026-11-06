@@ -14,7 +14,7 @@ const MARKER: &str = "MTP_MARKER";
 fn marker(test: &str) -> PathBuf {
     std::env::var_os(MARKER).map_or_else(
         || {
-            let path = std::env::temp_dir().join(format!(
+            let path = maestro_test_directory::temporary_root().join(format!(
                 "maestro-test-process-{}-{test}",
                 std::process::id()
             ));
@@ -210,13 +210,16 @@ fn cleared_children_keep_the_temporary_directory() {
     }
     // The wildcard child runs under the directory its parent chose; its cleared group
     // child must see the same one.
-    let expected = std::env::temp_dir();
+    let expected = maestro_test_directory::temporary_root();
     let selected = run_per_environment(test, [()], |()| {
         BTreeMap::from([("MTP_EXPECTED_TEMP", Some(expected.clone()))])
     });
     if selected.unwrap().is_some() {
         let expected = std::env::var_os("MTP_EXPECTED_TEMP").unwrap();
-        assert_eq!(std::env::temp_dir(), PathBuf::from(expected));
+        assert_eq!(
+            maestro_test_directory::temporary_root(),
+            PathBuf::from(expected)
+        );
     }
 }
 

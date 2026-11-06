@@ -8,10 +8,10 @@ use super::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
     artifacts_tool_description,
 };
-use crate::utils::lock::{read, write};
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
+use maestro_lock::{read, write};
 use maestro_models::{
     BoxFuture, Execution, SharedHandle, StringEnumOptions, Threaded, Tool, present, string_enum,
 };

@@ -2,11 +2,9 @@
 use super::{ExtensionRunner, dispatch::HandlerCursor};
 use crate::{
     EventError, ExtensionExecution,
-    types::{
-        events::{ResourcesDiscoverEvent, ResourcesDiscoverReason, ResourcesDiscoverResult},
-        read,
-    },
+    types::events::{ResourcesDiscoverEvent, ResourcesDiscoverReason, ResourcesDiscoverResult},
 };
+use maestro_lock::read;
 use maestro_session::Presence;
 
 /// One authored resource path and its current emitting extension path.

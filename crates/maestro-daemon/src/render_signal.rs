@@ -109,9 +109,7 @@ impl RenderSignal {
 
     /// Recovers owned render state if a previous caller unwound while holding it.
     fn lock(&self) -> MutexGuard<'_, RenderSignalState> {
-        self.state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        maestro_lock::lock(&self.state)
     }
 }
 

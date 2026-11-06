@@ -30,8 +30,8 @@ pub(super) fn refresh(
     let (Some(crate_root), Some(guest)) = (guide, guest) else {
         return Ok(());
     };
-    let checkout = checkout.canonicalize()?;
-    let guest = guest.canonicalize()?;
+    let checkout = maestro_realpath::canonicalize(checkout)?;
+    let guest = maestro_realpath::canonicalize(guest)?;
     let fixture = crate_root.join(GUIDE);
     let project = Project::new()?;
     let manifest = fs::read_to_string(fixture.join("Cargo.toml.in"))?.replace(

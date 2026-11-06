@@ -87,13 +87,13 @@ fn check_exports(member: &Member, library: &Path) -> Result<(), String> {
         if test_scope(member, source) {
             continue;
         }
-        let Some(syntax) = &source.syntax else {
+        let Some(walk) = &source.walk else {
             continue;
         };
         if source.path == library {
-            factory = syntax.items.iter().any(public_factory);
+            factory = walk.factory;
         }
-        let exports = source.walk(member).exports;
+        let exports = walk.exports;
         if exports > 0 && source.path != member.directory.join("src/component.rs") {
             return Err(format!(
                 "{}: export_extension belongs only in src/component.rs",
@@ -128,6 +128,11 @@ fn nested_exports(tokens: TokenStream, names: &BTreeSet<String>) -> usize {
         }
     }
     count
+}
+
+/// Whether a file's top-level items declare or re-export the public factory, for the shared walk.
+pub(crate) fn factory(file: &syn::File) -> bool {
+    file.items.iter().any(public_factory)
 }
 
 /// Explicit public factory declarations include reexports under the exposed name.

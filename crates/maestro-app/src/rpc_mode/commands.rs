@@ -9,10 +9,10 @@ use crate::rpc_types::{
     RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcSessionCommand,
     RpcSessionState, RpcThinkingLevel, workspace, workspace_schema,
 };
-use crate::utils::lock::read;
 use maestro_daemon::{api::request_changes_ui, logging};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};
+use maestro_lock::read;
 use maestro_models::ImageContent;
 use maestro_session::Presence;
 use maestro_session::messages::UserMessageDelivery;

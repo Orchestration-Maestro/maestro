@@ -1,8 +1,8 @@
 //! Browser conversation records and model projection.
 use crate::browser::utils::attachment_utils::{AttachmentType, SharedAttachment};
-use crate::utils::lock::read;
 use crate::{ImageContent, Message, TextContent, UserBlock, UserContent};
 use maestro_agent::{AgentMessage, CustomAgentMessages as CustomMessage};
+use maestro_lock::read;
 
 /// Convert images and nonempty document text into ordered model blocks.
 #[must_use]

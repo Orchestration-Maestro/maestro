@@ -2,7 +2,7 @@
 use super::{
     ContextFactory, ExtensionContext, ToolDefinitionInput, ToolExecution, ToolRendererBinding,
 };
-use crate::types::read;
+use maestro_lock::read;
 use maestro_models::Local;
 use serde::{Serialize, de::DeserializeOwned};
 use std::sync::RwLock;

@@ -49,6 +49,9 @@ pub use maestro_extensions::{
     EventBus, EventBusController, ExtensionShortcut, RegisteredCommand, ResolvedCommand,
 };
 
+/// The option records of the shortcut and command registrations.
+pub use maestro_extensions::types::{ExtensionShortcutOptions, RegisteredCommandOptions};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::discover_and_load_extensions;
 

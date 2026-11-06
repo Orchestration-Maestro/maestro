@@ -184,7 +184,7 @@ fn browser_setup_builds_in_its_own_target_without_instrumentation() {
         );
         assert_eq!(
             fs::read_to_string(root.join("nextest-env")).unwrap(),
-            format!("MAESTRO_BROWSER_TARGET_DIR={}\n", target.display())
+            format!("MAESTRO_BROWSER_TARGET_DIRS={}\n", target.display())
         );
     }
 }
@@ -268,7 +268,8 @@ fn run_setup(root: &Path, wrapper: Option<&str>) -> String {
     fs::read_to_string(calls).unwrap()
 }
 
-/// Browser builds use the target directory the setup announces, and the test build's own without it.
+/// Browser builds use the target directories the setup announces, and the test build's own without
+/// them.
 #[test]
 fn browser_builds_follow_the_announced_target_directory() {
     let selection = selection();
@@ -280,8 +281,8 @@ fn browser_builds_follow_the_announced_target_directory() {
                     .case(case)
                     .nocapture();
             let process = match case {
-                "announced" => process.env("MAESTRO_BROWSER_TARGET_DIR", "/announced/target"),
-                _ => process.env_remove("MAESTRO_BROWSER_TARGET_DIR"),
+                "announced" => process.env("MAESTRO_BROWSER_TARGET_DIRS", "/announced/target"),
+                _ => process.env_remove("MAESTRO_BROWSER_TARGET_DIRS"),
             };
             let output = process.output().unwrap();
             assert!(
@@ -303,5 +304,40 @@ fn browser_builds_follow_the_announced_target_directory() {
             .unwrap()
             .to_path_buf()
     };
-    assert_eq!(browser_support::target_directory(), expected);
+    assert_eq!(browser_support::target_directories(), [expected]);
+}
+
+/// The lanes the browser builds use in the test cases below.
+const LANES: [&str; 3] = ["lane-0", "lane-1", "lane-2"];
+
+/// Browser tests that nextest runs at once hold distinct group slots, and each builds in the
+/// announced lane its slot numbers, so no two of them share a Cargo target.
+#[test]
+fn browser_builds_take_the_lane_of_their_group_slot() {
+    let selection = selection();
+    if !selection.is_child() {
+        let scratch = Scratch::new().unwrap();
+        let lanes = std::env::join_paths(LANES.map(|lane| scratch.path().join(lane))).unwrap();
+        for slot in 0..LANES.len() {
+            let output = TestProcess::current("browser_builds_take_the_lane_of_their_group_slot")
+                .unwrap()
+                .case(slot.to_string())
+                .nocapture()
+                .env("MAESTRO_BROWSER_TARGET_DIRS", &lanes)
+                .env("NEXTEST_TEST_GROUP_SLOT", slot.to_string())
+                .output()
+                .unwrap();
+            browser_support::success(&output);
+        }
+        return;
+    }
+    let slot: usize = std::env::var("NEXTEST_TEST_GROUP_SLOT")
+        .unwrap()
+        .parse()
+        .unwrap();
+    let browser = browser_support::Browser::new();
+
+    let target = browser_support::cargo_target(&browser.command("browser-library-build"));
+
+    assert_eq!(target.file_name().unwrap(), LANES[slot]);
 }

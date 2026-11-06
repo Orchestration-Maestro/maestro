@@ -119,6 +119,14 @@ const NEXT_BULLET: &str = r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))";
 /// Reference thematic-break test that stops a list item before its line is dedented.
 const HR_BEGIN: &str = r"((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)";
 
+/// First bytes the item stop alternatives begin with: a fence, a heading, an HTML opener, a
+/// neighbor marker or a thematic break.
+const STOP_OPENERS: &[u8] = b"`~#<*+-_0123456789";
+
+/// First bytes the stops that also end lazy continuation begin with: a fence, a heading or a
+/// thematic break.
+const LAZY_OPENERS: &[u8] = b"`~#*-_";
+
 /// Item lookahead rules shared by every item of one indentation and caller grammar.
 pub(crate) struct ItemStops {
     /// Fences, headings, neighbor markers, rules and HTML openers.
@@ -130,7 +138,7 @@ pub(crate) struct ItemStops {
 impl ItemStops {
     /// A current line can end framing before it is dedented.
     pub(crate) fn interrupts(&self, line: &str) -> bool {
-        Self::within_prefix(line) && rule_matches(self.interrupts.as_ref(), line)
+        Self::opens(line, STOP_OPENERS) && rule_matches(self.interrupts.as_ref(), line)
     }
 
     /// A previous code line or block opener cannot admit another lazy line.
@@ -144,15 +152,21 @@ impl ItemStops {
                     .sum::<usize>()
                     >= 4
             });
-        code || (Self::within_prefix(line) && rule_matches(self.lazy.as_ref(), line))
+        code || (Self::opens(line, LAZY_OPENERS) && rule_matches(self.lazy.as_ref(), line))
     }
 
-    /// Whether the line's first non-space byte lies where every stop alternative starts.
+    /// Whether the line's first non-space byte lies where every stop alternative starts and
+    /// is one that an alternative begins with.
     ///
-    /// Each alternative begins with at most three spaces, so a deeper line cannot match
-    /// and does not need the grammar.
-    fn within_prefix(line: &str) -> bool {
-        line.bytes().take_while(|byte| *byte == b' ').count() <= 3
+    /// Each alternative begins with at most three spaces and then one of `openers`, so any
+    /// other line cannot match and does not need the grammar.
+    fn opens(line: &str, openers: &[u8]) -> bool {
+        let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
+        spaces <= 3
+            && line
+                .as_bytes()
+                .get(spaces)
+                .is_some_and(|byte| openers.contains(byte))
     }
 }
 
@@ -160,6 +174,8 @@ impl ItemStops {
 fn rule_matches(rule: Option<&Regex>, line: &str) -> bool {
     #[cfg(test)]
     crate::tests::block_operand(line);
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.item_stop_bytes += line.len());
     rule.is_some_and(|rule| rule.find(line).is_some())
 }
 
@@ -466,3 +482,6 @@ pub(crate) fn block_blockquote(options: MarkedOptions) -> Option<&'static Regex>
         BLOCK_BLOCKQUOTE.as_ref()
     }
 }
+
+#[cfg(test)]
+mod tests;

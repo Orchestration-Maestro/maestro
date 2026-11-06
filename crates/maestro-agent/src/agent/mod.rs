@@ -6,6 +6,7 @@ use crate::{
     TransformContext,
 };
 use maestro_listeners::Listeners;
+use maestro_lock::{lock, read, write};
 use maestro_models::{OnPayload, OnResponse, ThinkingBudgets, Transport};
 use std::sync::Mutex;
 /// Prompt normalization and owned execution.
@@ -260,19 +261,6 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
 
 #[cfg(test)]
 mod tests;
-
-/// Read a retained lock, recovering its value after poisoning.
-pub(super) fn read<T>(v: &RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
-    v.read().unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-/// Write a retained lock, recovering its value after poisoning.
-pub(super) fn write<T>(v: &RwLock<T>) -> std::sync::RwLockWriteGuard<'_, T> {
-    v.write().unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-/// Acquire internal ownership, recovering after poisoning.
-pub(super) fn lock<T>(v: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    v.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
-}
 #[cfg(not(target_arch = "wasm32"))]
 /// Target-specific bounds for owned execution.
 pub trait Native: Send + Sync {}

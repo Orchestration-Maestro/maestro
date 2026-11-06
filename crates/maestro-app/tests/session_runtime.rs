@@ -19,7 +19,7 @@ use maestro_models::{Local, StopReason};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{Presence, SessionManager};
 use serde_json::{Value, json};
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 
 /// The recorded runtime case `name`.
 fn expected(name: &str) -> Value {
@@ -379,10 +379,10 @@ fn rechecks_the_stored_working_directory_when_switching() {
     });
 }
 
-/// The file of a session stored beside the runtime's sessions in `cwd`.
+/// The file of a session stored in the test's directory and kept for `cwd`.
 fn stored_file(h: &Harness, cwd: &str) -> String {
     let root = h.scratch.path().display().to_string();
-    let manager = stored_in(cwd, &format!("{cwd}/sessions"), &root);
+    let manager = stored_in(cwd, &format!("{root}/stored"), &root);
     manager.get_session_file().unwrap().to_owned()
 }
 
@@ -479,6 +479,10 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
             .get_cwd()
             .to_owned();
         let target = stored_file(&h, &cwd);
+        assert!(
+            !Path::new(&target).starts_with(env!("CARGO_MANIFEST_DIR")),
+            "the switched session stays out of the crate directory: {target}"
+        );
         let switched = (actions.operations().switch_session)(target.clone(), None)
             .await
             .unwrap();
@@ -618,6 +622,71 @@ fn refuses_an_unknown_fork_entry() {
             panic!("the fork was expected to fail");
         };
         assert_eq!(json!({"invalid": {"error": error.to_string()}}), expected);
+    });
+}
+
+/// A persisted runtime over an imported history whose only retained entry is a user message,
+/// and that working directory.
+async fn user_only_session(label: &str) -> (Harness, AgentSessionRuntime, String) {
+    let (h, runtime, _recorded) = runtime_for(label, Vec::new()).await;
+    let root = h.scratch.path().display().to_string();
+    let cwd = runtime.cwd();
+    let stamp = "2026-01-01T00:00:00.000Z";
+    let header = json!({
+        "type": "session",
+        "version": maestro_session::CURRENT_SESSION_VERSION,
+        "id": "imported",
+        "timestamp": stamp,
+        "cwd": cwd,
+    });
+    let user = json!({
+        "type": "message",
+        "id": "user-1",
+        "parentId": null,
+        "timestamp": stamp,
+        "message": {"role": "user", "content": "kept", "timestamp": 0},
+    });
+    let source = format!("{root}/user-only.jsonl");
+    std::fs::write(&source, format!("{header}\n{user}\n")).unwrap();
+    let imported = runtime.import_from_jsonl(&source, None).await.unwrap();
+    assert!(!imported.cancelled);
+    (h, runtime, cwd)
+}
+
+#[test]
+fn forks_at_a_user_message_with_no_assistant_reply_in_the_source_directory() {
+    on_task_set(|_| async {
+        let (_h, runtime, cwd) = user_only_session("fork-user-only").await;
+        let outcome = runtime
+            .fork(
+                "user-1",
+                ForkOptions {
+                    position: Some(ForkPosition::At),
+                    with_session: None,
+                },
+            )
+            .await
+            .unwrap();
+        assert!(!outcome.cancelled);
+        let session = runtime.session();
+        let manager = session.session_manager().borrow();
+        let file = manager.get_session_file().unwrap().to_owned();
+        let id = manager.get_session_id().to_owned();
+        assert!(
+            file.ends_with(&format!("_{id}.jsonl")),
+            "the fork keeps the branch identity: {file} names {id}"
+        );
+        assert_eq!(
+            manager.get_cwd(),
+            cwd,
+            "the fork's manager keeps the source directory"
+        );
+        drop(manager);
+        assert_eq!(
+            runtime.cwd(),
+            cwd,
+            "the fork's runtime keeps the source directory"
+        );
     });
 }
 
