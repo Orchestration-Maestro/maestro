@@ -473,6 +473,7 @@ pub fn seed_target(target: &Path) {
         seed.display()
     );
     record(format!("phase: copy registry seed {}", seed.display()));
+    let copying = std::time::Instant::now();
     let mut source = seed.into_os_string();
     source.push("/.");
     assert!(
@@ -504,6 +505,34 @@ pub fn seed_target(target: &Path) {
         "the seed holds a workspace binary: {outputs:?}"
     );
     assert!(!target.join("debug/incremental").exists());
+    let phase = format!(
+        "phase: registry seed copied in {:.3}s, {} units",
+        copying.elapsed().as_secs_f64(),
+        units.len()
+    );
+    eprintln!("{phase}");
+    record(phase);
+}
+
+/// Record how long a Cargo build took and how many registry packages and workspace members it
+/// compiled, so a seed that Cargo rejects shows as registry packages compiled again.
+pub fn record_build(started: std::time::Instant, stderr: &[u8]) {
+    let (mut registry, mut members) = (0, 0);
+    for line in String::from_utf8_lossy(stderr).lines() {
+        if let Some(package) = line.trim_start().strip_prefix("Compiling ") {
+            if package.ends_with(')') {
+                members += 1;
+            } else {
+                registry += 1;
+            }
+        }
+    }
+    let phase = format!(
+        "phase: library build took {:.3}s, compiled {registry} registry packages and {members} workspace members",
+        started.elapsed().as_secs_f64()
+    );
+    eprintln!("{phase}");
+    record(phase);
 }
 
 /// Wait for the native rejected pipeline, which may leave its watcher running.
