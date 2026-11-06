@@ -60,7 +60,7 @@ fn signal(signal: &str) {
 async fn interrupt() {
     let mut interrupts = tokio::signal::unix::signal(SignalKind::interrupt()).unwrap();
     signal("-INT");
-    interrupts.recv().await;
+    interrupts.recv().await.unwrap();
 }
 
 /// What a child printed after each `PROBE ` marker, which can follow the harness's own
