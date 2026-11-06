@@ -18,6 +18,7 @@ mod package_crates;
 mod platform_opener;
 mod poison;
 mod quality;
+mod real_paths;
 mod repetition;
 mod rpc_ownership;
 mod support;

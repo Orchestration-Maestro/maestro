@@ -359,7 +359,15 @@
     "copy_button_direct_failure_stays_idle",
     "console_block_preserves_literal_output_and_error_variant",
     "native_reading_grows_a_horizontal_caption_line",
-    "tool_card_disclosures_keep_selection_and_independent_roots"
+    "tool_card_disclosures_keep_selection_and_independent_roots",
+    "header_trailing_spacing_precedes_following_widget",
+    "reading_viewport_keeps_content_and_occluders_clipped",
+    "reading_frame_neighbors_keep_existing_paint",
+    "export_rendering_uses_the_selected_brand_roles",
+    "copy_link_native_slot_composition_preserves_reading_selection",
+    "generic_guidance_is_literal_selectable_and_localized",
+    "tool_card_image_and_diff_layout_uses_native_content",
+    "tool_cards_use_selected_brand_roles_without_changing_custom_html"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

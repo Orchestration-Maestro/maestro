@@ -28,6 +28,7 @@ maestro-terminal = { path = "../maestro-terminal" }
 maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-process = { path = "../maestro-process" }
 maestro-dependencies.workspace = true
 

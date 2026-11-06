@@ -4,13 +4,14 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-cancellation", &["maestro-listeners"]),
     ("maestro-request", &["maestro-json"]),
     ("maestro-watch", &[]),
-    ("maestro-lock", &["maestro-path"]),
+    ("maestro-lock", &["maestro-path", "maestro-realpath"]),
     ("maestro-process", &["maestro-text"]),
     ("maestro-listing", &[]),
+    ("maestro-realpath", &["maestro-path"]),
     ("maestro-listeners", &[]),
     ("maestro-protocol", &[]),
     ("maestro-ipc", &[]),
-    ("maestro-terminal", &["maestro-text"]),
+    ("maestro-terminal", &["maestro-text", "maestro-realpath"]),
     (
         "maestro-workspace",
         &[
@@ -18,6 +19,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-json",
             "maestro-text",
             "maestro-lock",
+            "maestro-realpath",
         ],
     ),
     (
@@ -27,6 +29,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-process",
             "maestro-lock",
+            "maestro-realpath",
         ],
     ),
     (
@@ -43,6 +46,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-json",
             "maestro-text",
             "maestro-lock",
+            "maestro-realpath",
         ],
     ),
     // Common text operations include CSS string serialization for brand and application callers.
@@ -75,6 +79,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-brand",
             "maestro-listeners",
             "maestro-lock",
+            "maestro-realpath",
         ],
     ),
     (
@@ -91,13 +96,19 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-settings",
         &["maestro-lock", "maestro-json", "maestro-resources"],
     ),
-    ("maestro-test-browser", &["maestro-tooling"]),
-    ("maestro-test-conventions", &["maestro-markdown"]),
+    (
+        "maestro-test-browser",
+        &["maestro-tooling", "maestro-realpath"],
+    ),
+    (
+        "maestro-test-conventions",
+        &["maestro-markdown", "maestro-realpath"],
+    ),
     ("maestro-test-process", &[]),
-    ("maestro-test-directory", &[]),
+    ("maestro-test-directory", &["maestro-realpath"]),
     ("maestro-test-fixtures", &[]),
     ("maestro-test-tracing", &[]),
-    ("maestro-tooling", &[]),
+    ("maestro-tooling", &["maestro-realpath"]),
     (
         "maestro-tui",
         &[
@@ -141,6 +152,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
             "maestro-json",
             "maestro-process",
+            "maestro-realpath",
         ],
     ),
     ("maestro-test-terminal", &["maestro-tui"]),
@@ -205,6 +217,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-listing",
             "maestro-resources",
             "maestro-lock",
+            "maestro-realpath",
         ],
     ),
     (
@@ -262,6 +275,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-process",
             "maestro-listing",
             "maestro-listeners",
+            "maestro-realpath",
         ],
     ),
     (

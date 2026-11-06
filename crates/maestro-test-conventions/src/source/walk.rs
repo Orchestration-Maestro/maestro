@@ -16,9 +16,10 @@ use super::{
 };
 use crate::boundaries::{application_exports, message_renderers};
 use crate::graph::packages::{self, Exports};
-use crate::poison;
-use crate::{child_tests, duplicates, generated, integration_tests, quality, repetition};
-use crate::{temp_directories, test_input_routes, time_limits};
+use crate::{
+    child_tests, duplicates, generated, integration_tests, poison, quality, real_paths, repetition,
+    temp_directories, test_input_routes, time_limits,
+};
 
 /// Every check's findings for one parsed source.
 pub(crate) struct Walk {
@@ -46,6 +47,8 @@ pub(crate) struct Walk {
     pub(crate) bodies: Vec<(usize, usize)>,
     /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
+    /// Sorted lines resolving a real path outside its owner, in production code.
+    pub(crate) real_paths: Vec<usize>,
     /// Located repository-directory reads by test code.
     pub(crate) reads: BTreeSet<(usize, String)>,
     /// Imports of an application source in its logical module.
@@ -122,6 +125,8 @@ struct Walker<'a> {
     bodies: duplicates::Bodies,
     /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
+    /// Real-path resolution outside its owner, for every other crate.
+    resolutions: Option<real_paths::Resolutions>,
     /// Repository-directory reads by test code.
     reads: test_input_routes::Reads,
     /// Application imports, for application sources.
@@ -155,6 +160,7 @@ impl<'a> Walker<'a> {
             bodies: duplicates::Bodies::default(),
             references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
+            resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
             reads: test_input_routes::Reads::default(),
             uses: application_exports::Uses::new(member, source),
             attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
@@ -240,6 +246,10 @@ impl<'a> Walker<'a> {
             temp_directories: self
                 .references
                 .map(temp_directories::References::finish)
+                .unwrap_or_default(),
+            real_paths: self
+                .resolutions
+                .map(real_paths::Resolutions::finish)
                 .unwrap_or_default(),
             reads: self.reads.finish(),
             imports: self.uses.map(|uses| uses.imports),
@@ -367,6 +377,9 @@ impl<'a> Visit<'a> for Walker<'a> {
             }
         } else {
             self.guard.raw(&call.method);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.method(&call.method);
+            }
         }
         self.nested(
             |context| context.method_parts = true,
@@ -399,6 +412,9 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_item_use(&mut self, item: &'a syn::ItemUse) {
         if !self.testing() {
             self.guard.item_use(item);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.use_tree(&item.tree);
+            }
         }
         self.calls.item_use(item);
         if let Some(exports) = &mut self.exports {
@@ -418,6 +434,8 @@ impl<'a> Visit<'a> for Walker<'a> {
         }
         if self.testing() {
             self.calls.macro_tokens(invocation);
+        } else if let Some(resolutions) = &mut self.resolutions {
+            resolutions.macro_tokens(invocation);
         }
         if self.reading() {
             self.reads.macro_tokens(invocation);
@@ -436,6 +454,9 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_path(&mut self, path: &'a syn::Path) {
         if !self.testing() {
             self.guard.path(path);
+            if let Some(resolutions) = &mut self.resolutions {
+                resolutions.path(path);
+            }
         }
         syn::visit::visit_path(self, path);
     }

@@ -176,7 +176,7 @@ fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
 fn staged(output: &Path, name: String, record: &Staged) -> io::Result<PathBuf> {
     let path = output.join(name);
     verify(&path, &record.file)?;
-    let path = std::fs::canonicalize(&path)?;
+    let path = maestro_realpath::canonicalize(&path)?;
     if path
         .as_os_str()
         .as_encoded_bytes()

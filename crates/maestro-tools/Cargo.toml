@@ -29,6 +29,7 @@ maestro-lock = { path = "../maestro-lock" }
 workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 globset.workspace = true
 regex-syntax.workspace = true

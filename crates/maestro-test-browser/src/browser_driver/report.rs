@@ -1,11 +1,6 @@
 //! Real painting observations for the committed tool report.
 
-use super::{
-    Browser, assets, cleanup,
-    page::{Page, string},
-    report_scripts,
-    server::Server,
-};
+use super::{Browser, assets, cleanup, page::Page, report_scripts, server::Server};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{io, path::Path};
@@ -253,15 +248,11 @@ async fn painted(page: &mut Page<'_>, selector: &str) -> io::Result<Painted> {
         json!(selector)
     );
     let clip = page.evaluate(&expression).await?;
-    let png = page
-        .execute(
-            "Page.captureScreenshot",
-            json!({"format":"png","clip":clip}),
-        )
-        .await?;
-    let source = format!("data:image/png;base64,{}", string(&png, "data")?);
     let decoded = page
-        .evaluate(&format!("({})({})", report_scripts::DECODE, json!(source)))
+        .screenshot(
+            Some(clip),
+            "({data, width}) => ({pixels: [...data], width})",
+        )
         .await?;
     serde_json::from_value(decoded).map_err(io::Error::other)
 }

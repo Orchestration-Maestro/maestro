@@ -2840,8 +2840,51 @@ fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
 #[test]
 fn directory_support_owner_has_no_domain_dependencies() {
     support_owner_has_no_domain_dependencies(FIXTURES);
-    support_owner_has_no_domain_dependencies(DIRECTORY);
 }
+
+/// The directory owner resolves its roots through the real-path owner and depends on no
+/// other workspace crate.
+#[test]
+fn directory_support_owner_depends_only_on_the_real_path_owner() {
+    let targets = ["maestro-text", "maestro-path", "maestro-tooling"];
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        DIRECTORY, REALPATH, targets[0], targets[1], targets[2], UNIFIER,
+    ]);
+    for target in targets {
+        for (table, refusal) in [
+            ("dependencies", "forbidden production dependency"),
+            ("build-dependencies", "forbidden production dependency"),
+            (
+                "dev-dependencies",
+                "internal dev dependency requires declared dependency-free test support",
+            ),
+        ] {
+            workspace.member(
+                DIRECTORY,
+                DIRECTORY,
+                &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!("{refusal}: {DIRECTORY} -> {target}")),
+                "{table}"
+            );
+        }
+    }
+    workspace.member(
+        DIRECTORY,
+        DIRECTORY,
+        &format!(
+            "{}{REALPATH} = {{ path = \"../{REALPATH}\" }}\n",
+            unifier_declaration(&[], NATIVE, "unified", "")
+        ),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+/// Owner of native real-path resolution.
+const REALPATH: &str = "maestro-realpath";
 
 #[test]
 fn tracing_support_owner_has_no_domain_dependencies() {
