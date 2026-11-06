@@ -428,8 +428,11 @@ contexts inherit these methods. Getter and action failures are recoverable
 thread that owns the extension, when the signal is aborted. An abort that comes before the
 subscription is not replayed, so read `aborted()` as well. The returned `Subscription`
 removes the listener when you call `unsubscribe()`; dropping it does not. The listener
-receives a `CallbackEmitter` and may subscribe or unsubscribe other listeners while it
-runs.
+receives a `CallbackEmitter` and may subscribe or unsubscribe other listeners, read host
+getters and emit events while it runs. A listener that returns an error does not stop the
+abort: the host reports it to the bus reporter as one line,
+`Event handler error (abort): <text>`, and still runs the listeners that follow. That is
+the [shared event-bus failure](event_bus.md) path, channel `abort`.
 
 `ExtensionUIContext`, `ModelRegistry` and `AbortSignal` retain their acquired host
 resource independently of the context. Cloning shares the owner; its final alias

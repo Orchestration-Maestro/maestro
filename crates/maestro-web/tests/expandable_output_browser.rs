@@ -303,17 +303,7 @@ pub(crate) mod tests {
                 let root = export_mount::mount(&mut slots, html.clone());
                 let presentation = slots.pack.presentation(mode).unwrap();
                 assert_typography(&root, &presentation);
-                let colors: serde_json::Map<String, serde_json::Value> = presentation
-                    .colors
-                    .iter()
-                    .map(|(k, v)| ((*k).to_owned(), (*v).into()))
-                    .collect();
-                js_sys::Reflect::set(
-                    &js_sys::global(),
-                    &"colors".into(),
-                    &serde_json::Value::Object(colors).to_string().into(),
-                )
-                .unwrap();
+                support::reading_paint::publish_colors(&presentation.colors);
                 assert_eq!(js(&root, "const cells=[...value.querySelectorAll('th')];return cells.every((e,i)=>{const r=e.ownerDocument.createRange();r.selectNodeContents(e);const t=r.getBoundingClientRect(),b=e.getBoundingClientRect();return i<2?t.left-b.left<12:i===2?Math.abs(t.left+t.right-b.left-b.right)<2:b.right-t.right<12})").as_bool(), Some(true));
                 assert_eq!(js(&root, "const p=value.querySelector('.plain-row'),a=value.querySelector('.ansi-line');return p.getBoundingClientRect().height>a.getBoundingClientRect().height&&a.scrollWidth>a.clientWidth&&getComputedStyle(a).whiteSpace==='pre'").as_bool(), Some(true));
                 support::reading_paint::observe("export-roles").await;

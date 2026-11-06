@@ -121,16 +121,9 @@ pub fn theme(colors: &Value, backgrounds: &Value) -> Theme {
 pub fn palette(shift: u64) -> Theme {
     palette_except(shift, None)
 }
-/// The corpus palette without one selected role.
-#[allow(
-    dead_code,
-    reason = "Only the integration program uses it; the library render tests include this corpus too."
-)]
-pub fn without(role: &str) -> Theme {
-    palette_except(0, Some(role))
-}
 /// Build the same palette while omitting only the requested role.
-fn palette_except(shift: u64, omit: Option<&str>) -> Theme {
+#[cfg(not(target_arch = "wasm32"))]
+pub fn palette_except(shift: u64, omit: Option<&str>) -> Theme {
     let corpus: Corpus =
         serde_json::from_str(include_str!("../fixtures/edit-render-cases.json")).unwrap();
     let shifted = |map: BTreeMap<String, Value>| -> Value {
@@ -152,17 +145,6 @@ pub struct Details {
     pub diff: String,
     /// First modified line.
     pub first_changed_line: Option<usize>,
-}
-/// Caught preview failure.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[allow(
-    dead_code,
-    reason = "Only the library render tests use it; the integration program includes this corpus too."
-)]
-pub struct Failure {
-    /// Original error text.
-    pub error: String,
 }
 /// A typed result fixture.
 #[cfg(not(target_arch = "wasm32"))]

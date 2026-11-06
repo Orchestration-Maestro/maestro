@@ -26,6 +26,7 @@ mod component_loading;
 
 mod components;
 mod context_bridge;
+mod context_retention;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
@@ -48,8 +49,10 @@ mod overlay_qa_tests_example;
 mod overlay_test_example;
 mod project_rules_example;
 mod provider_catalog;
+mod replacement_callbacks;
 mod retained_components;
 mod retained_contexts;
+mod runtime_retention;
 mod startup;
 mod summarize_example;
 mod synchronous_reentry;

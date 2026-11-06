@@ -260,10 +260,19 @@ fn returned_components_outlive_renderer_registration() {
             .unwrap()
             .unwrap();
         let retained = render(&original, &message("old"), false).unwrap().unwrap();
+        drop(original);
         assert_eq!(first.try_render(3).unwrap(), ["keep:v1:3"]);
         assert_eq!(alias.try_render(4).unwrap(), ["keep:v1:4"]);
         assert_eq!(replacement.try_render(5).unwrap(), ["keep:v2:5"]);
         assert_eq!(retained.try_render(6).unwrap(), ["old:v1:6"]);
+        alias
+            .input_handler()
+            .unwrap()
+            .handle_input("retained input");
+        alias.invalidate();
+        assert_eq!(alias.try_render(8).unwrap(), ["keep:v1:8"]);
+        assert!(alias.wants_key_release());
+        assert!(retained.wants_key_release());
         drop(first);
         pair.a.barrier().await;
         assert!(!pair.a.released("keep:v1"));

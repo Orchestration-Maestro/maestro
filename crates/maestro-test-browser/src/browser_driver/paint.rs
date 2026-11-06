@@ -38,6 +38,9 @@ const CLIPS: [Option<[f64; 4]>; 6] = [
 /// The last authored viewport placement the export observes.
 const LAST_VIEWPORT: usize = 8;
 
+/// Width of the accent ring a focused control draws inside its edges, in CSS pixels.
+const RING: f64 = 2.0;
+
 /// Export selectors whose paint must reach the selected brand role inside the final clip.
 const EXPORT_ROLES: [(&str, &str); 19] = [
     ("p", "text"),
@@ -126,6 +129,7 @@ impl Page<'_> {
             "export-roles" => export_roles(self).await,
             "offline-tool-card-layout" => tool_card_layout(self).await,
             "offline-tool-card-roles" => tool_card_roles(self).await,
+            "control-focus" => control_focus(self).await,
             "console-rest" => console::resting(self).await,
             "console-hover" => console::hovered(self).await,
             "console-focus" => console::focused(self).await,
@@ -544,5 +548,27 @@ async fn tool_card_roles(page: &mut Page<'_>) -> io::Result<()> {
     // (`text-decoration-skip-spaces: start end`), so an all-space run paints only its background.
     require(background > 0, "supplied spaces keep their background")?;
     page.observed(scene, "space-background", background);
+    Ok(())
+}
+
+/// The focused control's accent ring covers more than half of each edge band, so no ancestor
+/// clips it away on any side.
+async fn control_focus(page: &mut Page<'_>) -> io::Result<()> {
+    let scene = "control-focus";
+    let focused = "document.activeElement";
+    require(
+        page.read(&format!("{focused}!==document.body")).await?,
+        "a control must hold focus",
+    )?;
+    reveal(page, focused).await?;
+    page.shot(scene).await?;
+    let edges: [[u64; 2]; 4] = page.read(&format!("(() => {{const [l,t,r,b]=__maestroPaint.box({focused}),w={RING},d=devicePixelRatio,accent=__maestroPaint.colour('accent');return [[l,t,r,t+w],[r-w,t,r,b],[l,b-w,r,b],[l,t,l+w,b]].map(e=>[__maestroPaint.count({},e,accent),Math.round((e[2]-e[0])*(e[3]-e[1])*d*d)]);}})()", json!(scene))).await?;
+    for (edge, [pixels, area]) in ["top", "right", "bottom", "left"].into_iter().zip(edges) {
+        require(
+            pixels * 2 > area,
+            &format!("the focus ring paints accent along the {edge} edge"),
+        )?;
+        page.observed(scene, edge, pixels);
+    }
     Ok(())
 }

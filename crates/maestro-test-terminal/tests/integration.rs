@@ -1,10 +1,6 @@
 //! Terminal scenarios compiled as one integration-test program.
 
 use maestro_tui::test_support::input_support;
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test scenarios."
-)]
 mod support;
 
 mod cancellable_loading;

@@ -30,7 +30,8 @@ impl Drop for Released {
     }
 }
 
-/// Runs a labeled subscription, failing listener, explicit removal or remover drop.
+/// Runs a labeled subscription, failing listener, reentrant listener, explicit removal
+/// or remover drop.
 pub(super) fn command(
     api: &ExtensionAPI,
     context: &ExtensionCommandContext,
@@ -47,6 +48,20 @@ pub(super) fn command(
         return Ok(format!("dropped {label}"));
     }
     let signal = context.signal()?.ok_or("missing signal")?;
+    if action == "reenter" {
+        let observed = signal.clone();
+        let announced = label.to_owned();
+        let subscription = signal.subscribe(Rc::new(move |emitter| {
+            let aborted = observed.aborted();
+            emitter.emit(
+                "abort-reentered",
+                serde_json::json!({"label": announced, "aborted": aborted}),
+            )?;
+            Ok(())
+        }))?;
+        KEPT.with_borrow_mut(|kept| kept.insert(label.to_owned(), (signal, subscription)));
+        return Ok(format!("reentered {label}"));
+    }
     let capture = Released(api.clone(), label.to_owned());
     let (failing, label) = (action == "fail", label.to_owned());
     let observed = label.clone();

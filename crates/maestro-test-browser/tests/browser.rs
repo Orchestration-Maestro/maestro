@@ -519,6 +519,42 @@ fn reading_paint_fails_when_the_painted_output_differs() {
     }
 }
 
+/// The focus scene passes only for an inset accent ring painted along every edge of the focused
+/// control: a missing ring, an outer ring, a group clipping one edge and an unfocused page each
+/// fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn control_focus_requires_an_unclipped_accent_ring() {
+    let inset = "inset 0 0 0 2px #ff0000";
+    for (group, shadow, focus, failure) in [
+        ("80px", inset, true, None),
+        ("80px", "none", true, Some("accent along the top edge")),
+        (
+            "80px",
+            "0 0 0 2px #ff0000",
+            true,
+            Some("accent along the top edge"),
+        ),
+        ("76px", inset, true, Some("accent along the right edge")),
+        ("80px", inset, false, Some("a control must hold focus")),
+    ] {
+        let result = run(fixture(&[], async |browser, origin| {
+            browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{globalThis.colors=JSON.stringify({{accent:'#ff0000'}});document.body.innerHTML='<div style=\"display:inline-flex;overflow:hidden;margin:20px;width:{group}\"><button style=\"flex:none;border:0;outline:none;width:80px;height:28px;background:white;box-shadow:{shadow}\">x</button></div>';if({focus})document.querySelector('button').focus();return await readingPaint('control-focus');}})()")).await
+        }));
+        match result {
+            Ok(value) => assert!(
+                failure.is_none() && value == json!(true),
+                "{group} {shadow} {focus}: expected {}",
+                failure.unwrap_or("an accepted scene")
+            ),
+            Err(error) => assert!(
+                failure.is_some_and(|failure| error.to_string().contains(failure)),
+                "{group} {shadow} {focus}: {error}"
+            ),
+        }
+    }
+}
+
 /// Suppressed native input and a synthetic click cannot satisfy the selected-child receipt.
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
