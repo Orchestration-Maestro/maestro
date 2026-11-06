@@ -79,6 +79,8 @@ pub(crate) struct Work {
     pub(crate) cursor_label_operands: usize,
     /// Bytes supplied to block recognizers, including failed admission.
     pub(crate) block_recognizer_bytes: usize,
+    /// Bytes of the lines supplied to the item stop rules.
+    pub(crate) item_stop_bytes: usize,
     /// Bytes supplied to the definition grammar, including failed admission.
     pub(crate) definition_bytes: usize,
     /// Bytes supplied to retained paragraph predicates.
@@ -109,6 +111,8 @@ pub(crate) struct Work {
     pub(crate) joined_bytes: usize,
     /// Largest unique source payload a list state kept alive until its release.
     pub(crate) frame_bytes: usize,
+    /// Payload the item outputs of that largest list state published.
+    pub(crate) published_bytes: usize,
     /// Whether a witness asked for that frame measurement.
     pub(crate) track_frame: bool,
     /// Payload the settled output of the level a caller just finished charged.
@@ -162,6 +166,22 @@ pub(crate) fn measuring_frame() {
     WORK.with_borrow_mut(|work| {
         *work = Work::default();
         work.track_frame = true;
+    });
+}
+
+/// Record a list state's frame when it is the largest so far, with the payload its item
+/// outputs publish.
+pub(crate) fn record_frame(bytes: usize, outputs: &[crate::lexer::BlockTokens]) {
+    if bytes <= WORK.with_borrow(|work| work.frame_bytes) {
+        return;
+    }
+    let mut published = Retained::default();
+    for output in outputs {
+        output.retained(&mut published);
+    }
+    WORK.with_borrow_mut(|work| {
+        work.frame_bytes = bytes;
+        work.published_bytes = published.bytes;
     });
 }
 
