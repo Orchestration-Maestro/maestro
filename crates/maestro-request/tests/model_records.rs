@@ -186,10 +186,10 @@ mod tests {
     }
 
     fn assert_literals<T: serde::de::DeserializeOwned + serde::Serialize>(literals: &[&str]) {
-        for literal in literals {
-            let record: T = serde_json::from_value(json!(literal)).unwrap();
-            assert_eq!(serde_json::to_value(record).unwrap(), json!(literal));
-        }
+        assert!(
+            maestro_test_fixtures::literals_round_trip::<T>(literals).unwrap(),
+            "{literals:?}"
+        );
     }
 
     fn option_and_reason_contracts() {

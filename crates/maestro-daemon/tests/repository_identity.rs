@@ -67,7 +67,7 @@ async fn check_admitted_repository(args: &[String]) {
     assert_eq!(workspace.branch().as_deref(), Some("main"));
     assert_eq!(
         workspace.cached_git_status_key,
-        std::fs::canonicalize(&root).unwrap()
+        maestro_realpath::canonicalize(&root).unwrap()
     );
     for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {
         runtime.shutdown().await;

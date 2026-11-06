@@ -16,15 +16,9 @@ fn chosen_root_is_canonical_and_keeps_written_files() {
     );
 }
 
-/// The canonical spelling of `path`, which on Windows drops the verbatim drive prefix.
+/// The real path of `path`, in the ordinary form on Windows.
 fn canonical(path: &std::path::Path) -> std::io::Result<std::ffi::OsString> {
-    let canonical = fs::canonicalize(path)?.into_os_string();
-    #[cfg(windows)]
-    let canonical = canonical
-        .to_string_lossy()
-        .strip_prefix(r"\\?\")
-        .map_or_else(|| canonical.clone(), Into::into);
-    Ok(canonical)
+    maestro_realpath::canonicalize(path).map(std::path::PathBuf::into_os_string)
 }
 
 #[test]

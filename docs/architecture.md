@@ -131,12 +131,11 @@ follows the same checks with its own five callers; see the
 [tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
 reexports the recording terminal and manual runtime from
 `maestro-tui::test_support`; the harness itself admits only `maestro-cli` under
-the same native development rules. The portable fixture owner has the eight
-exact development callers in its
+the same native development rules. The portable fixture owner has six exact
+development callers, listed in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
 be portable or target-specific; normal/build edges and outgoing domain or utility
-edges are forbidden. The policy admits the owner before its member exists.
-Both production
+edges are forbidden. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 
@@ -241,6 +240,29 @@ status. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
 checks permitted table and utility edges. Dev-dependencies on the utility,
 dependencies from the utility, and cycles are rejected like any other internal edge.
+
+## Real paths
+
+`maestro-realpath` is the one crate that resolves a native path to its real path
+through the file system: links followed, `.` and `..` resolved. It depends only
+on `maestro-path`. Windows reports a real path in the verbatim form,
+`\\?\D:\work` or `\\?\UNC\server\share\work`. `maestro_realpath::canonicalize`
+returns the ordinary form instead, `D:\work` or `\\server\share\work`, through
+the lexical `maestro_path::win32::ordinary`. A real path then compares equal to
+the spelling users, settings and test directories hold, and Git, Cargo and the
+other programs Maestro starts receive a path they accept. Other platforms get
+the native real path unchanged. A Windows real path that is not Unicode text
+keeps the verbatim form, because the conversion works on text.
+
+Callers keep their own policy. The file mutation queue keys a file that does not
+exist yet by its lexical path, and the write lock resolves the nearest existing
+ancestor of a missing target. Workspace discovery falls back to the path it was
+given. Each caller maps the error to its own kind.
+
+Like every caller, `maestro-lock` and `maestro-packages` declare the owner only
+on native targets. Their browser build reports `io::ErrorKind::Unsupported` for
+a real path, the failure a missing file system gives, so the containment checks
+in those two crates refuse there rather than admitting a lexical path.
 
 ## Bounded ownership checks
 
@@ -388,6 +410,17 @@ outside it, because its `temporary_root` accessor is the one place that reads th
 platform directory. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a crate
 asks for the owner.
 
+Conventions reject real-path resolution in production code outside
+`maestro-realpath`, with the file and line. There the name `canonicalize` is
+accepted only as the qualified path `maestro_realpath::canonicalize`. The check
+rejects `std::fs::canonicalize` and `tokio::fs::canonicalize`; the `canonicalize`
+method on any receiver; a path such as `Path::canonicalize` used as a value; an
+import of the name from anywhere, under any alias; and the name in macro tokens
+without the owner's crate in front. The scan reads names, not types, so a crate's
+own method needs another name. It skips test code as the other checks define it:
+test layouts, items inside an inherited `cfg(test)` context and the
+`maestro-test-*` crates.
+
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
@@ -499,6 +532,12 @@ Removing the dependency passes. An otherwise empty CLI fixture instead reports
 application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
+
+`check_workspace` reads each Rust source once. A file is parsed, lexed and walked a
+single time; the checks read what the walk recorded, and no parsed syntax outlives
+loading. Files load on one thread per available core, and the source checks then
+run side by side over the loaded members. When several checks fail, the first in a
+fixed order is reported, so a run that fails reports the same failure every time.
 
 Checked test selection and direct native fixtures belong to `maestro-test-process`.
 Its one harness-free example receives literal native operands; its installer copies

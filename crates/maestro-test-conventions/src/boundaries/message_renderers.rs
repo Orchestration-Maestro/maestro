@@ -31,14 +31,12 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members {
         for source in &member.sources {
-            if source.syntax.is_none() {
+            let Some(walk) = &source.walk else {
                 continue;
-            }
+            };
             let path = source.path.display().to_string();
             diagnostics.extend(
-                source
-                    .walk(member)
-                    .renderers
+                walk.renderers
                     .iter()
                     .map(|(position, message)| (path.clone(), *position, message.clone())),
             );

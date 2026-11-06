@@ -35,6 +35,7 @@ mod native_git_command;
 mod native_support;
 mod npm_root_checks;
 mod pattern_reexport_checks;
+mod pin_index_checks;
 mod pin_integrity_checks;
 mod pin_safety_checks;
 mod pinned_manifest_checks;

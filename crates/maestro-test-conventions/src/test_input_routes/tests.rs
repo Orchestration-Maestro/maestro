@@ -1,36 +1,32 @@
 //! Directory-read detection inspects test code alone.
 
-use std::path::PathBuf;
-
 use super::{SPELLINGS, reads};
-use crate::source::{Member, Source};
+use crate::source::Member;
 
 #[test]
 fn directory_reads_spell_only_test_code() {
-    let source = |name: &str, contents: &str| {
-        Source::new(PathBuf::from(format!("models/src/{name}")), contents.into())
-    };
-    let member = Member {
-        name: "maestro-models".into(),
-        directory: PathBuf::from("models"),
-        sources: vec![
-            source(
-                "plain.rs",
+    // The shared walk gathers the reads while the sources load.
+    SPELLINGS.set(0);
+    let member = Member::with_sources(
+        "maestro-models",
+        "models",
+        [
+            (
+                "models/src/plain.rs",
                 "pub fn label() -> String {\n    \"plain\".trim().to_owned() + &String::from(\"x\")\n}\n",
             ),
-            source(
-                "lib.rs",
+            (
+                "models/src/lib.rs",
                 "pub fn total(items: &[u8]) -> usize {\n    items.iter().map(|item| usize::from(*item)).sum()\n}\n\n#[cfg(test)]\nmod tests;\n",
             ),
-            source(
-                "tests.rs",
+            (
+                "models/src/tests.rs",
                 "#[test]\nfn sums() {\n    super::total(&[1]);\n}\n",
             ),
         ],
-    };
-    SPELLINGS.set(0);
+    );
     for source in &member.sources {
-        assert!(reads(&member, source).is_empty());
+        assert_eq!(reads(source).count(), 0);
     }
     let spellings = SPELLINGS.get();
     println!("spellings: {spellings}");

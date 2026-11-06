@@ -33,7 +33,12 @@ impl Server {
     /// # Errors
     /// Returns root-resolution or loopback binding failures.
     pub async fn start(root: &Path) -> io::Result<Self> {
-        let root = Arc::new(tokio::fs::canonicalize(root).await?);
+        let root = root.to_path_buf();
+        let root = Arc::new(
+            tokio::task::spawn_blocking(move || maestro_realpath::canonicalize(root))
+                .await
+                .map_err(io::Error::other)??,
+        );
         let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
         let origin = format!("http://{}", listener.local_addr()?);
         let (stop, mut stopped) = oneshot::channel();
