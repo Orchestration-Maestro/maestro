@@ -165,10 +165,10 @@ impl<'a> Root<'a> {
             [first, ..] if win32::is_separator(char::from(*first)) => {
                 Self::unc(path).unwrap_or(Self::Rooted)
             }
-            [letter, b':', rest @ ..] if letter.is_ascii_alphabetic() => Self::Drive {
+            _ if win32::has_drive_prefix(path) => Self::Drive {
                 prefix: &path[..2],
-                absolute: rest
-                    .first()
+                absolute: bytes
+                    .get(2)
                     .is_some_and(|byte| win32::is_separator(char::from(*byte))),
             },
             _ => Self::Relative,

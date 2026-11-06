@@ -1,5 +1,8 @@
 //! Native path requests reuse the existing lexical and filesystem owner.
+
 use super::{decode, encode};
+use maestro_path::win32;
+
 /// Runs one path operation without interpreting its spelling in the adapter.
 pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
     if operation == "paths.make_temp_dir" {
@@ -93,9 +96,9 @@ fn win32_guest_path(path: &str) -> String {
         .strip_prefix("//?/")
         .or_else(|| path.strip_prefix("//./"))
     {
-        Some(local) if is_drive(local) => format!("/{local}"),
+        Some(local) if win32::has_drive_prefix(local) => format!("/{local}"),
         Some(verbatim) => format!("/?/{verbatim}"),
-        None if is_drive(&path) => format!("/{path}"),
+        None if win32::has_drive_prefix(&path) => format!("/{path}"),
         None => match path.strip_prefix("//") {
             Some(share) => format!("/?/UNC/{share}"),
             None => path,
@@ -119,18 +122,13 @@ fn win32_native_path(path: &str) -> String {
         format!(r"\\{share}")
     } else if let Some(verbatim) = below.strip_prefix(r"?\") {
         format!(r"\\?\{verbatim}")
-    } else if is_drive(below) && below.len() == 2 {
+    } else if win32::has_drive_prefix(below) && below.len() == 2 {
         format!(r"{below}\")
-    } else if is_drive(below) {
+    } else if win32::has_drive_prefix(below) {
         below.to_owned()
     } else {
         path
     }
-}
-
-/// Whether a path starts with a Windows drive letter and its colon.
-fn is_drive(path: &str) -> bool {
-    matches!(path.as_bytes(), [letter, b':', ..] if letter.is_ascii_alphabetic())
 }
 
 #[cfg(test)]
