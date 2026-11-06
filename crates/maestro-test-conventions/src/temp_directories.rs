@@ -1,20 +1,18 @@
 //! Test-owned temporary directory checks.
 
+use crate::graph::policy;
 use crate::source::Member;
-
-/// The member that owns the platform temporary directory.
-///
-/// Its `temporary_root` accessor is the one place that reads the platform directory, and the
-/// walk sees every source of a `maestro-test-` member as test code, so this member alone is
-/// outside the check.
-const OWNER: &str = "maestro-test-directory";
 
 /// Spelling that names the platform temporary directory.
 const PLATFORM_DIRECTORY: &str = "temp_dir";
 
 /// Whether the member's test code is checked for the platform temporary directory.
+///
+/// The walk sees every source of a `maestro-test-` member as test code, so the owner alone is
+/// outside the check: its `temporary_root` accessor is the one place that reads the platform
+/// directory.
 pub(crate) fn checked(member: &Member) -> bool {
-    member.name != OWNER
+    member.name != policy::TEST_DIRECTORY
 }
 
 /// Reject a platform temporary directory that test code names itself.
