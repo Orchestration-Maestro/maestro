@@ -33,12 +33,17 @@ where
     std::thread::scope(|scope| {
         let workers: Vec<_> = (0..threads).map(|_| scope.spawn(drain)).collect();
         let mut results = Vec::with_capacity(items.len());
+        // Every handle joins before the error returns: the scope panics on a panicked
+        // worker it still has to join, so one early return would hide the rest.
+        let mut panicked = false;
         for worker in workers {
-            results.extend(
-                worker
-                    .join()
-                    .map_err(|_| "a worker thread panicked".to_owned())?,
-            );
+            match worker.join() {
+                Ok(done) => results.extend(done),
+                Err(_) => panicked = true,
+            }
+        }
+        if panicked {
+            return Err("a worker thread panicked".to_owned());
         }
         results.sort_unstable_by_key(|(index, _)| *index);
         Ok(results.into_iter().map(|(_, result)| result).collect())
