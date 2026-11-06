@@ -29,10 +29,6 @@ impl TuiRuntime for ExportHost {
 
     fn spawn_local(&self, _future: LocalFuture) {}
 
-    fn environment(&self, _key: &str) -> Option<String> {
-        None
-    }
-
     fn log_context(&self) -> LogContext {
         LogContext {
             home: Path::new("").to_path_buf(),
@@ -41,22 +37,6 @@ impl TuiRuntime for ExportHost {
             nonce: String::new(),
         }
     }
-
-    fn append_log(&self, path: &Path, _contents: &str) -> io::Result<()> {
-        Err(no_log_file(path))
-    }
-
-    fn write_log(&self, path: &Path, _contents: &str) -> io::Result<()> {
-        Err(no_log_file(path))
-    }
-}
-
-/// The failure an export sees when the host keeps no log file at `path`.
-fn no_log_file(path: &Path) -> io::Error {
-    io::Error::new(
-        io::ErrorKind::Unsupported,
-        format!("no log file at {}", path.display()),
-    )
 }
 
 /// Export assets whose template is the payload alone, with recorded theme lookups.

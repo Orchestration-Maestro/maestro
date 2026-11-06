@@ -79,6 +79,7 @@ fn stop_restores_cursor_after_last_content() {
 
 #[test]
 fn hardware_cursor_defaults_and_override() {
+    const TEST: &str = "hardware_cursor_defaults_and_override";
     let cases = [
         (None, None, false),
         (None, Some(false), false),
@@ -93,11 +94,19 @@ fn hardware_cursor_defaults_and_override() {
         (Some("true"), Some(false), false),
         (Some("true"), Some(true), true),
     ];
+    let cases = match maestro_test_process::run_per_environment(TEST, cases, |case| {
+        case.0
+            .map(|value| {
+                std::collections::BTreeMap::from([("MAESTRO_HARDWARE_CURSOR", Some(value))])
+            })
+            .unwrap_or_default()
+    }) {
+        Ok(Some(group)) => group,
+        Ok(None) => return,
+        Err(error) => panic!("{error}"),
+    };
     for (environment, explicit, expected) in cases {
         let runtime = ManualRuntime::new();
-        if let Some(value) = environment {
-            runtime.set_environment("MAESTRO_HARDWARE_CURSOR", value);
-        }
         let terminal = RecordingTerminal::new(10, 3);
         let tui = TUI::new(
             terminal.handle(),
@@ -115,16 +124,26 @@ fn hardware_cursor_defaults_and_override() {
 
 #[test]
 fn clear_on_shrink_defaults_to_off() {
-    for (environment, expected) in [
+    const TEST: &str = "clear_on_shrink_defaults_to_off";
+    let cases = [
         (None, false),
         (Some("0"), false),
         (Some("1"), true),
         (Some("true"), false),
-    ] {
+    ];
+    let cases = match maestro_test_process::run_per_environment(TEST, cases, |case| {
+        case.0
+            .map(|value| {
+                std::collections::BTreeMap::from([("MAESTRO_CLEAR_ON_SHRINK", Some(value))])
+            })
+            .unwrap_or_default()
+    }) {
+        Ok(Some(group)) => group,
+        Ok(None) => return,
+        Err(error) => panic!("{error}"),
+    };
+    for (environment, expected) in cases {
         let runtime = ManualRuntime::new();
-        if let Some(value) = environment {
-            runtime.set_environment("MAESTRO_CLEAR_ON_SHRINK", value);
-        }
         let terminal = RecordingTerminal::new(10, 3);
         let tui = TUI::new(
             terminal.handle(),

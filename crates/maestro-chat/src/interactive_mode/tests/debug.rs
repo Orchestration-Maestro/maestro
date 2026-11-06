@@ -2,13 +2,12 @@
 //! global debug key.
 use super::info::{cases, expected, seed_messages, text_rows};
 use super::{World, isolated, started};
-use crate::components::session_selector::list::tests::session_picker::manual_runtime::FileEffect;
 use maestro_app::configuration::config::{get_agent_dir, paths::get_debug_log_path};
 use maestro_tui::tui::TuiRuntime;
 use maestro_tui::{Component, EditorComponent};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{cell::RefCell, io, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, io, path::Path, rc::Rc};
 
 /// The toolkit's global debug key, as a terminal reports Shift+Ctrl+D.
 const DEBUG_KEY: &str = "\x1b[100;6u";
@@ -71,7 +70,7 @@ impl Component for Lines {
 }
 
 /// The configured debug log path, inside the disposable agent directory.
-fn debug_path(directory: &std::path::Path) -> String {
+fn debug_path(directory: &Path) -> String {
     let path = get_debug_log_path(&get_agent_dir().unwrap());
     assert!(path.starts_with(directory.to_str().unwrap()));
     path
@@ -110,10 +109,7 @@ async fn debug_case(
     let log = expected
         .log
         .replace("<time>", &world.runtime.log_context().iso_time);
-    assert_eq!(
-        world.runtime.files(),
-        [FileEffect::Write(PathBuf::from(&path), log)]
-    );
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), log);
     let notice = expected.notice.replace("<debug-path>", &path);
     let transcript = &world.mode.chat_container;
     assert_eq!(transcript.children().borrow().len(), expected.children);
@@ -154,31 +150,31 @@ fn debug_write_failure_has_no_success_notice() {
         assert_eq!(kind, "file-path-is-directory");
         let expected: DebugFailureExpected = expected(observed);
         let world = started(directory).await;
-        world
-            .runtime
-            .set_write_error(Some(error_kind(&expected.code)));
+        let path = debug_path(directory);
+        std::fs::create_dir(&path).unwrap();
         let error = world.mode.handle_debug_command().unwrap_err();
         let error = error.downcast_ref::<io::Error>().unwrap();
         assert_eq!(error.kind(), error_kind(&expected.code));
         let transcript = &world.mode.chat_container;
         assert_eq!(transcript.children().borrow().len(), expected.children);
-        assert!(world.runtime.files().is_empty());
+        assert!(std::fs::metadata(&path).unwrap().is_dir());
         assert_eq!(world.runtime.pending(), 0);
     });
 }
 
-/// The text of the one log write the host received.
-pub(super) fn only_log(world: &World) -> String {
-    let files = world.runtime.files();
-    let [FileEffect::Write(_, log)] = files.as_slice() else {
-        panic!("one log write");
-    };
-    log.clone()
+/// The path of the debug log this child writes.
+fn log_path() -> String {
+    get_debug_log_path(&get_agent_dir().unwrap())
 }
 
-/// The write effects of the debug log so far.
-fn writes(world: &World) -> usize {
-    world.runtime.files().len()
+/// The text of the debug log the child wrote last.
+pub(super) fn only_log() -> String {
+    std::fs::read_to_string(log_path()).unwrap()
+}
+
+/// Whether a debug log file stands where the command writes one.
+fn written() -> bool {
+    Path::new(&log_path()).is_file()
 }
 
 #[test]
@@ -189,12 +185,12 @@ fn global_debug_runs_outside_editor_focus_without_retaining_mode() {
             let world = started(directory).await;
             world.mode.ui.set_focus(None);
             world.terminal.send_input(DEBUG_KEY);
-            assert_eq!(writes(&world), 1);
+            assert!(written());
             assert_eq!(world.mode.chat_container.children().borrow().len(), 2);
             assert_eq!(world.mode.editor.get_text(), "");
-            world
-                .runtime
-                .set_write_error(Some(io::ErrorKind::PermissionDenied));
+            let path = log_path();
+            std::fs::remove_file(&path).unwrap();
+            std::fs::create_dir(&path).unwrap();
             world.terminal.send_input(DEBUG_KEY);
             assert_eq!(world.mode.chat_container.children().borrow().len(), 2);
             let errors = world.runtime.drain_futures();
@@ -202,8 +198,9 @@ fn global_debug_runs_outside_editor_focus_without_retaining_mode() {
                 panic!("one reported failure");
             };
             let error = error.downcast_ref::<io::Error>().unwrap();
-            assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
-            world.runtime.set_write_error(None);
+            assert_eq!(error.kind(), io::ErrorKind::IsADirectory);
+            std::fs::remove_dir(&path).unwrap();
+            std::fs::write(&path, "sentinel").unwrap();
             let World {
                 mode,
                 terminal,
@@ -216,7 +213,7 @@ fn global_debug_runs_outside_editor_focus_without_retaining_mode() {
             drop(mode);
             assert!(weak.upgrade().is_none());
             terminal.send_input(DEBUG_KEY);
-            assert_eq!(runtime.files().len(), 1);
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), "sentinel");
             assert!(runtime.drain_futures().is_empty());
             drop((ui, editor));
         },
@@ -269,7 +266,7 @@ fn debug_uses_current_session_and_pre_notice_frame() {
             world.runtime.settle().unwrap();
             world.terminal.clear_writes();
             world.mode.handle_debug_command().unwrap();
-            let log = only_log(&world);
+            let log = only_log();
             assert!(log.contains("Session name: Replacement"));
             assert!(log.contains("replacement question"));
             assert!(!log.contains("Debug log written"));

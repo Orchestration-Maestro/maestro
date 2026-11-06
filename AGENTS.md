@@ -326,7 +326,7 @@ executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the
 browser author example's watched roots,
 and the native, non-optional dev-dependencies
-of the twenty-seven declared callers on `maestro-test-process`, the owner of
+of the twenty-eight declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build

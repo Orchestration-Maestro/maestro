@@ -1,7 +1,6 @@
-//! A host whose clock, deferred callbacks, environment and log files a test controls.
+//! A host whose clock and deferred callbacks a test controls.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -11,15 +10,6 @@ use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 
 use crate::tui::{LogContext, RenderCallback, RenderTimer, TuiRuntime};
-
-/// A log file effect the writer asked for.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum FileEffect {
-    /// Text appended to an existing file.
-    Append(PathBuf, String),
-    /// A file replaced after its directory was created.
-    Write(PathBuf, String),
-}
 
 /// A callback waiting for its due time.
 struct Pending {
@@ -43,21 +33,25 @@ struct State {
     next_id: u64,
     /// Callbacks that have not run or been cancelled.
     pending: Vec<Pending>,
-    /// Environment variables that are set.
-    environment: HashMap<String, String>,
-    /// Log effects in the order requested.
-    files: Vec<FileEffect>,
     /// Futures handed over and not yet finished.
     futures: Vec<Local>,
-    /// The failure every file replacement returns, when set.
-    write_error: Option<io::ErrorKind>,
 }
 
 /// Shared handle to the controlled host; clones observe the same world.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct ManualRuntime {
     /// State shared by every clone.
     state: Rc<RefCell<State>>,
+    /// The home directory [`log_context`](TuiRuntime::log_context) reports.
+    home: PathBuf,
+    /// The file name nonce [`log_context`](TuiRuntime::log_context) reports.
+    nonce: String,
+}
+
+impl Default for ManualRuntime {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Cancels one callback of a [`ManualRuntime`].
@@ -92,10 +86,24 @@ impl ManualRuntime {
         std::mem::take(&mut self.state.borrow_mut().futures)
     }
 
-    /// Creates a host at time zero with an empty environment.
+    /// Creates a host at time zero that reports the placeholder home `/home/fixture`.
     #[must_use]
     pub fn new() -> Self {
-        Self::default()
+        Self::with_home(PathBuf::from("/home/fixture"))
+    }
+
+    /// Creates a host at time zero whose diagnostic log paths sit below `home`.
+    ///
+    /// The file name nonce is `home`'s own name, so runs sharing a log directory write
+    /// separate records.
+    #[must_use]
+    pub fn with_home(home: PathBuf) -> Self {
+        let nonce = nonce(&home);
+        Self {
+            state: Rc::new(RefCell::new(State::default())),
+            home,
+            nonce,
+        }
     }
 
     /// The host as the writer receives it.
@@ -108,14 +116,6 @@ impl ManualRuntime {
     #[must_use]
     pub fn millis(&self) -> u64 {
         u64::try_from(self.state.borrow().now.as_millis()).unwrap_or(u64::MAX)
-    }
-
-    /// Sets an environment variable.
-    pub fn set_environment(&self, key: &str, value: &str) {
-        self.state
-            .borrow_mut()
-            .environment
-            .insert(key.to_owned(), value.to_owned());
     }
 
     /// Callbacks that have neither run nor been cancelled.
@@ -147,17 +147,6 @@ impl ManualRuntime {
             .iter()
             .map(|entry| entry.due)
             .min()
-    }
-
-    /// Makes every later file replacement fail with `kind`, without an effect, or succeed again.
-    pub fn set_write_error(&self, kind: Option<io::ErrorKind>) {
-        self.state.borrow_mut().write_error = kind;
-    }
-
-    /// Log effects in the order requested.
-    #[must_use]
-    pub fn files(&self) -> Vec<FileEffect> {
-        self.state.borrow().files.clone()
     }
 
     /// Moves the clock to `target` and runs every callback due by then, earliest first.
@@ -275,31 +264,28 @@ impl TuiRuntime for ManualRuntime {
         self.state.borrow_mut().futures.push(future);
     }
 
-    fn environment(&self, key: &str) -> Option<String> {
-        self.state.borrow().environment.get(key).cloned()
-    }
-
     fn log_context(&self) -> LogContext {
         LogContext {
-            home: PathBuf::from("/home/fixture"),
+            home: self.home.clone(),
             iso_time: "2026-01-02T03:04:05.006Z".to_owned(),
             unix_ms: 1_767_323_045_006,
-            nonce: "i".to_owned(),
+            nonce: self.nonce.clone(),
         }
     }
+}
 
-    fn append_log(&self, path: &Path, contents: &str) -> io::Result<()> {
-        let effect = FileEffect::Append(path.to_path_buf(), contents.to_owned());
-        self.state.borrow_mut().files.push(effect);
-        Ok(())
-    }
-
-    fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
-        if let Some(kind) = self.state.borrow().write_error {
-            return Err(kind.into());
-        }
-        let effect = FileEffect::Write(path.to_path_buf(), contents.to_owned());
-        self.state.borrow_mut().files.push(effect);
-        Ok(())
+/// The name of `home` in lowercase alphanumerics, which keeps concurrent records apart.
+fn nonce(home: &Path) -> String {
+    let name = home.file_name().map_or_else(String::new, |name| {
+        name.to_string_lossy()
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .map(|character| character.to_ascii_lowercase())
+            .collect()
+    });
+    if name.is_empty() {
+        "i".to_owned()
+    } else {
+        name
     }
 }

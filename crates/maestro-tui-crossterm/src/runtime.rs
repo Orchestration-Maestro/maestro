@@ -1,9 +1,8 @@
 //! The production host of the terminal toolkit on a caller-driven Tokio [`LocalSet`].
 
 use std::error::Error;
-use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -34,9 +33,8 @@ use crate::output_errors::{FailureSource, OutputErrors};
 /// on standard error is released.
 ///
 /// [`log_context`](TuiRuntime::log_context) reports the process's home directory (empty when
-/// the platform has none), the current UTC time and a random lowercase hexadecimal nonce.
-/// The log operations act on the given path as the operating system resolves it, so the
-/// errors they return are the operating system's.
+/// the platform has none), the current UTC time and a random lowercase hexadecimal nonce;
+/// the frame writer's diagnostic logs are its own file-system calls.
 ///
 /// ```no_run
 /// # #[cfg(unix)] {
@@ -133,10 +131,6 @@ impl TuiRuntime for ProcessTuiRuntime {
         }));
     }
 
-    fn environment(&self, key: &str) -> Option<String> {
-        std::env::var_os(key).map(|value| value.to_string_lossy().into_owned())
-    }
-
     fn log_context(&self) -> LogContext {
         let unix_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -149,24 +143,6 @@ impl TuiRuntime for ProcessTuiRuntime {
             unix_ms,
             nonce: format!("{:x}", rand::random::<u64>()),
         }
-    }
-
-    fn append_log(&self, path: &Path, contents: &str) -> io::Result<()> {
-        OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)?
-            .write_all(contents.as_bytes())
-    }
-
-    fn write_log(&self, path: &Path, contents: &str) -> io::Result<()> {
-        if let Some(parent) = path
-            .parent()
-            .filter(|parent| !parent.as_os_str().is_empty())
-        {
-            fs::create_dir_all(parent)?;
-        }
-        fs::write(path, contents)
     }
 
     fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {

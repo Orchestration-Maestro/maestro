@@ -1,17 +1,15 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-//! The native host's clock, timers, local futures, environment and log files.
+//! The native host's clock, timers, local futures and log context.
 
 use std::error::Error;
 use std::fmt;
-use std::fs::{self, OpenOptions};
 use std::io;
 use std::path::Path;
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::runtime_support::{is_child, rerun, run_set};
-use maestro_test_directory::Scratch;
 use maestro_tui::tui::{LogContext, RenderCallback, TuiRuntime};
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use tokio::sync::mpsc::error::TryRecvError;
@@ -351,57 +349,6 @@ fn dropping_local_set_releases_pending_work() {
     );
 }
 
-#[test]
-fn environment_returns_values_without_normalization() {
-    const VALUES: [(&str, &str); 7] = [
-        ("MAESTRO_RUNTIME_EMPTY", ""),
-        ("MAESTRO_RUNTIME_ONE", "1"),
-        ("MAESTRO_RUNTIME_ZERO", "0"),
-        ("MAESTRO_RUNTIME_TRUE", "true"),
-        ("MAESTRO_RUNTIME_SPACES", "  padded  "),
-        ("MAESTRO_RUNTIME_MARKS", "\u{feff}\u{85}"),
-        ("MAESTRO_RUNTIME_UNICODE", "é日本🦀"),
-    ];
-    #[cfg(unix)]
-    const BYTES: [(&str, &[u8], &str); 3] = [
-        ("MAESTRO_RUNTIME_INVALID", b"A\xffB", "A\u{fffd}B"),
-        ("MAESTRO_RUNTIME_TRUNCATED", b"\xe2\x82", "\u{fffd}"),
-        (
-            "MAESTRO_RUNTIME_SURROGATE",
-            b"\xed\xa0\x80",
-            "\u{fffd}\u{fffd}\u{fffd}",
-        ),
-    ];
-    if is_child() {
-        run_set(true, |local| async move {
-            let host = ProcessTuiRuntime::new(local);
-            for (key, value) in VALUES {
-                assert_eq!(host.environment(key).as_deref(), Some(value), "{key}");
-            }
-            assert_eq!(host.environment("MAESTRO_RUNTIME_MISSING"), None);
-            #[cfg(unix)]
-            for (key, _, lossy) in BYTES {
-                assert_eq!(host.environment(key).as_deref(), Some(lossy), "{key}");
-            }
-        });
-        return;
-    }
-    rerun(
-        "environment_returns_values_without_normalization",
-        |process| {
-            let process = process.env_remove("MAESTRO_RUNTIME_MISSING").envs(VALUES);
-            #[cfg(unix)]
-            let process = process.envs(BYTES.map(|(key, bytes, _)| {
-                (
-                    key,
-                    <std::ffi::OsStr as std::os::unix::ffi::OsStrExt>::from_bytes(bytes),
-                )
-            }));
-            process
-        },
-    );
-}
-
 /// Checks the clock, text and nonce of a fresh context against actual wall time.
 fn checked_context(host: &ProcessTuiRuntime) -> LogContext {
     let now_ms = || {
@@ -476,142 +423,6 @@ fn log_context_uses_native_home_and_current_wall_time() {
             },
         );
     }
-}
-
-/// A host for the file operations, which never use the set.
-fn file_host() -> ProcessTuiRuntime {
-    ProcessTuiRuntime::new(Rc::new(LocalSet::new()))
-}
-
-#[test]
-fn append_log_preserves_bytes_without_creating_parents() {
-    run_set(true, |_| async {
-        let scratch = Scratch::new().unwrap();
-        let host = file_host();
-        let missing = scratch.path().join("absent/out.log");
-        let error = host.append_log(&missing, "x").unwrap_err();
-        assert_eq!(error.kind(), io::ErrorKind::NotFound);
-        assert!(
-            !scratch.path().join("absent").exists(),
-            "the parent is not created"
-        );
-
-        let file = scratch.path().join("out.log");
-        host.append_log(&file, "first\r\n").unwrap();
-        host.append_log(&file, "é\n").unwrap();
-        assert_eq!(fs::read(&file).unwrap(), "first\r\né\n".as_bytes());
-
-        host.append_log(&file, "").unwrap();
-        assert_eq!(
-            fs::read(&file).unwrap(),
-            "first\r\né\n".as_bytes(),
-            "an empty append keeps the seeded contents"
-        );
-
-        let empty = scratch.path().join("empty.log");
-        host.append_log(&empty, "").unwrap();
-        assert_eq!(fs::read(&empty).unwrap(), b"");
-    });
-}
-
-#[test]
-fn write_log_creates_parents_and_replaces_bytes() {
-    run_set(true, |_| async {
-        let scratch = Scratch::new().unwrap();
-        let host = file_host();
-        let nested = scratch.path().join("a/b/out.log");
-        host.write_log(&nested, "old content\r\n").unwrap();
-        host.write_log(&nested, "new").unwrap();
-        assert_eq!(fs::read(&nested).unwrap(), b"new");
-        host.write_log(&nested, "").unwrap();
-        assert_eq!(fs::read(&nested).unwrap(), b"");
-
-        let bare = format!("maestro-runtime-bare-{}.log", std::process::id());
-        host.write_log(Path::new(&bare), "bare").unwrap();
-        let written = fs::read(&bare);
-        let _ = fs::remove_file(&bare);
-        assert_eq!(written.unwrap(), b"bare");
-    });
-}
-
-/// Asserts that `error` is the operating system's `native` error for the same failure.
-fn assert_native(error: &io::Error, native: &io::Error) {
-    assert!(error.raw_os_error().is_some(), "{error:?} is the system's");
-    assert_eq!(error.raw_os_error(), native.raw_os_error());
-    assert_eq!(error.kind(), native.kind());
-}
-
-/// The error the operating system gives for appending to `path`.
-fn native_append_error(path: &Path) -> io::Error {
-    OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .unwrap_err()
-}
-
-#[test]
-fn log_failures_keep_native_errors_and_failure_order() {
-    run_set(true, |_| async {
-        let scratch = Scratch::new().unwrap();
-        let host = file_host();
-        let directory = scratch.path().join("dir");
-        fs::create_dir(&directory).unwrap();
-        assert_native(
-            &host.append_log(&directory, "x").unwrap_err(),
-            &native_append_error(&directory),
-        );
-        assert_native(
-            &host.write_log(&directory, "x").unwrap_err(),
-            &fs::write(&directory, "x").unwrap_err(),
-        );
-
-        let blocker = scratch.path().join("blocker");
-        fs::write(&blocker, "decoy").unwrap();
-        let below = blocker.join("sub/out.log");
-        assert_native(
-            &host.write_log(&below, "x").unwrap_err(),
-            &fs::create_dir_all(blocker.join("sub")).unwrap_err(),
-        );
-        assert_eq!(
-            fs::read(&blocker).unwrap(),
-            b"decoy",
-            "the decoy is untouched"
-        );
-        let beneath = blocker.join("out.log");
-        assert_native(
-            &host.append_log(&beneath, "x").unwrap_err(),
-            &native_append_error(&beneath),
-        );
-        assert_eq!(fs::read(&blocker).unwrap(), b"decoy");
-    });
-}
-
-#[cfg(unix)]
-#[test]
-fn authored_log_paths_preserve_symlink_traversal() {
-    run_set(true, |_| async {
-        let scratch = Scratch::new().unwrap();
-        let host = file_host();
-        fs::create_dir_all(scratch.path().join("real/sub")).unwrap();
-        std::os::unix::fs::symlink(scratch.path().join("real/sub"), scratch.path().join("link"))
-            .unwrap();
-        let through = scratch.path().join("link/../out.log");
-        host.write_log(&through, "written").unwrap();
-        assert_eq!(
-            fs::read(scratch.path().join("real/out.log")).unwrap(),
-            b"written"
-        );
-        host.append_log(&through, "+appended").unwrap();
-        assert_eq!(
-            fs::read(scratch.path().join("real/out.log")).unwrap(),
-            b"written+appended"
-        );
-        assert!(
-            !scratch.path().join("out.log").exists(),
-            "no lexically normalized decoy"
-        );
-    });
 }
 
 #[test]

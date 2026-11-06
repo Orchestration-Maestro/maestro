@@ -303,10 +303,7 @@ impl InteractiveMode {
         let offline = self.runtime_host.services().offline;
         if offline.unwrap_or_else(|| {
             maestro_app::configuration::flag_is_set(
-                self.tool_environment
-                    .runtime
-                    .environment("MAESTRO_OFFLINE")
-                    .as_deref(),
+                crate::environment::variable("MAESTRO_OFFLINE").as_deref(),
             )
         }) {
             return Vec::new();
@@ -339,9 +336,8 @@ impl InteractiveMode {
 impl InteractiveMode {
     /// Queries both options before choosing the first applicable keyboard warning.
     pub(super) async fn check_tmux_keyboard_setup(&self) -> Option<String> {
-        if !maestro_app::configuration::flag_is_set(
-            self.tool_environment.runtime.environment("TMUX").as_deref(),
-        ) {
+        if !maestro_app::configuration::flag_is_set(crate::environment::variable("TMUX").as_deref())
+        {
             return None;
         }
         let keys = self.run_tmux_show("extended-keys");

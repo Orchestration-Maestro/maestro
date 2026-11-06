@@ -79,9 +79,6 @@ fn scenarios(test: &str) -> Vec<Scenario> {
 fn draw(scenario: &Scenario) -> Vec<Frame> {
     let terminal = RecordingTerminal::new(COLUMNS, ROWS);
     let runtime = ManualRuntime::new();
-    if scenario.options.mobile {
-        runtime.set_environment("TERMUX_VERSION", "test");
-    }
     let probe = Probe::shared(&[]);
     probe.set_lines(&scenario.initial);
     let tui = TUI::new(
@@ -262,9 +259,22 @@ fn maestro_frames_triggers_full_re_render_when_terminal_height_changes() {
 
 #[test]
 fn maestro_frames_retains_mobile_height_resize_behavior() {
-    assert_frames("mobile_height_change_keeps_history");
+    crate::support::in_child(
+        "maestro_frames_retains_mobile_height_resize_behavior",
+        &[("TERMUX_VERSION", "1")],
+        || {
+            for scenario in scenarios("mobile_height_change_keeps_history") {
+                assert!(scenario.options.mobile, "the corpus marks it mobile");
+                assert_eq!(draw(&scenario), scenario.frames);
+            }
+            mobile_height_change_keeps_history();
+        },
+    );
+}
+
+/// The recorded mobile height resizes after the corpus replay.
+fn mobile_height_change_keeps_history() {
     let scene = Scene::new(40, 10);
-    scene.runtime.set_environment("TERMUX_VERSION", "1");
     let lines: Vec<String> = (0..20).map(|row| format!("Line {row}")).collect();
     let lines: Vec<&str> = lines.iter().map(String::as_str).collect();
     scene.start(&lines);
