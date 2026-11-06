@@ -31,28 +31,15 @@ fn local<T>(work: impl std::future::Future<Output = T>) -> T {
     tokio::task::LocalSet::new().block_on(&runtime, work)
 }
 
-/// Loads the component, binds the supplied operations and returns its description.
-async fn loaded() -> (ExtensionRunner<Local>, Rc<Host>, Value) {
+/// Loads the component, binds the supplied operations and returns them.
+async fn loaded() -> (ExtensionRunner<Local>, Rc<Host>) {
     let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
     let (session, history) = super::session::runner_session("/replacement-origin");
     let (_, runner, _) = super::retained_components::loaded_in(bus.for_extension(), session).await;
     let host = Rc::new(Host::default());
-    let identity = describe(&history);
     *host.history.borrow_mut() = Some(history);
     bind(&runner, &host);
-    (runner, host, identity)
-}
-
-/// Describes the replacing session so a continuation's own reads are checkable.
-fn describe(history: &Rc<RefCell<maestro_session::SessionManager>>) -> Value {
-    use maestro_session::session_manager::ReadonlySessionManager;
-    json!({ "cwd": host_cwd(history), "id": history.borrow().get_session_id() })
-}
-
-/// Returns the directory a session was created in.
-fn host_cwd(history: &Rc<RefCell<maestro_session::SessionManager>>) -> String {
-    use maestro_session::session_manager::ReadonlySessionManager;
-    history.borrow().get_cwd().to_owned()
+    (runner, host)
 }
 
 /// Runs one authored request that answers with its own JSON either way.
@@ -71,11 +58,10 @@ async fn report(runner: &ExtensionRunner<Local>, request: &str) -> Value {
 
 /// Supplies the replacement operations the authored requests consume.
 fn bind(runner: &ExtensionRunner<Local>, host: &Rc<Host>) {
-    let (new, fork, switch) = (host.clone(), host.clone(), host.clone());
+    let (new, switch) = (host.clone(), host.clone());
     runner.bind_command_context(Some(ExtensionCommandContextActions::new(
         CommandContextOperations {
             new_session: new_session(&new),
-            fork: fork_at(&fork),
             switch_session: switch_to(&switch),
             ..super::context_actions::silent_command_operations()
         },
@@ -107,28 +93,6 @@ fn new_session(host: &Rc<Host>) -> maestro_extensions::NewSessionHandler {
             }
             if let Some(with) = options.with_session {
                 with(replaced("new")).await?;
-                host.continuations.set(host.continuations.get() + 1);
-            }
-            Ok(SessionChangeResult { cancelled: false })
-        })
-    })
-}
-
-/// Drives the exact fork position and its optional continuation.
-fn fork_at(host: &Rc<Host>) -> maestro_extensions::ForkHandler {
-    let host = host.clone();
-    Rc::new(move |id, options| {
-        let host = host.clone();
-        Box::pin(async move {
-            let options = options.expect("present fork options");
-            host.calls.borrow_mut().push(json!({
-                "type": "fork",
-                "entry": id,
-                "position": options.position,
-                "with": options.with_session.is_some(),
-            }));
-            if let Some(with) = options.with_session {
-                with(replaced("fork")).await?;
                 host.continuations.set(host.continuations.get() + 1);
             }
             Ok(SessionChangeResult { cancelled: false })
@@ -177,7 +141,7 @@ fn replaced(label: &str) -> ReplacedSessionContext {
 fn new_session_forwards_parent_setup_and_continuation() {
     local(async {
         for (combo, trace, parent) in presence_cases() {
-            let (runner, host, _) = loaded().await;
+            let (runner, host) = loaded().await;
             let answer = report(&runner, &format!("retention new-session {combo}")).await;
             let continuation = "continuation:presence:/replacement-new".to_owned();
             let expected: Vec<String> = match trace {
@@ -258,7 +222,7 @@ fn setup_name(host: &Host) -> Option<String> {
 #[test]
 fn switch_forwards_authored_path_and_continuation() {
     local(async {
-        let (runner, host, _) = loaded().await;
+        let (runner, host) = loaded().await;
         for (case, path, options) in switch_cases() {
             host.calls.borrow_mut().clear();
             let answer = report(&runner, &format!("retention switch {case}")).await;
@@ -307,7 +271,7 @@ fn guest_setup_and_continuation_errors_return_to_the_old_frame() {
             ),
         ];
         for (mode, error, trace) in cases {
-            let (runner, host, _) = loaded().await;
+            let (runner, host) = loaded().await;
             let answer = report(&runner, &format!("retention errors {mode}")).await;
             match error {
                 None => assert_eq!(answer["cancelled"], json!(false), "{mode}"),

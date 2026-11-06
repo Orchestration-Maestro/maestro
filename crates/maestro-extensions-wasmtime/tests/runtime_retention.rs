@@ -5,10 +5,10 @@ use maestro_extensions::{
     NewSessionHandler, ReplacedSessionContext, create_event_bus_for, types::SessionChangeResult,
 };
 use serde_json::{Value, json};
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
+
+/// The stale guidance every retired read reports.
+const STALE: &str = super::retained_contexts::STALE;
 
 /// Every replacement target this run supplied, in arrival order.
 struct Host {
@@ -16,8 +16,6 @@ struct Host {
     targets: RefCell<Vec<Rc<ExtensionRunner<Local>>>>,
     /// Whether the second call retires the first target before its continuation.
     retire: bool,
-    /// Retirements applied to the first target.
-    retirements: Cell<usize>,
 }
 
 /// Runs one retained-runtime case on one current-thread runtime.
@@ -82,7 +80,6 @@ fn overlapping_continuations_keep_distinct_target_owners() {
         let host = Rc::new(Host {
             targets: RefCell::default(),
             retire: false,
-            retirements: Cell::default(),
         });
         runner.bind_command_context(Some(ExtensionCommandContextActions::new(
             CommandContextOperations {
@@ -101,7 +98,6 @@ fn overlapping_continuations_keep_distinct_target_owners() {
             ])
         );
         assert_eq!(answer["retained"], json!("cwd=/target-a"));
-        assert_eq!(host.retirements.get(), 0, "nothing was retired");
         assert_eq!(host.targets.borrow().len(), 2);
     });
 }
@@ -113,7 +109,6 @@ fn second_replacement_stales_only_the_retired_target() {
         let host = Rc::new(Host {
             targets: RefCell::default(),
             retire: true,
-            retirements: Cell::default(),
         });
         runner.bind_command_context(Some(ExtensionCommandContextActions::new(
             CommandContextOperations {
@@ -133,7 +128,6 @@ fn second_replacement_stales_only_the_retired_target() {
             ])
         );
         assert_eq!(answer["retained"], json!(stale));
-        assert_eq!(host.retirements.get(), 2, "a retired target stays retired");
     });
 }
 
@@ -149,7 +143,7 @@ fn handler(host: &Rc<Host>) -> NewSessionHandler {
             };
             if host.retire && label == "b" {
                 let first = host.targets.borrow()[0].clone();
-                retire(&host, &first);
+                retire(&first);
             }
             let replaced = target(&host, label);
             let continuation = options
@@ -161,16 +155,12 @@ fn handler(host: &Rc<Host>) -> NewSessionHandler {
     })
 }
 
-/// Retires the first target again, counting each retirement.
-fn retire(host: &Host, first: &ExtensionRunner<Local>) {
+/// Retires the first target twice, which a target keeps handling once stale.
+fn retire(first: &ExtensionRunner<Local>) {
     for _ in 0..2 {
         first.invalidate(None);
-        host.retirements.set(host.retirements.get() + 1);
     }
 }
-
-/// The stale guidance every retired read reports.
-const STALE: &str = super::retained_contexts::STALE;
 
 #[test]
 fn origin_and_target_aliases_release_without_cycles() {
@@ -193,18 +183,12 @@ fn origin_and_target_aliases_release_without_cycles() {
         drop((origin_owner, origin_runner, origin_events, origin_bus));
         assert_eq!(origin.cwd().unwrap(), "/alias-origin");
         assert_eq!(target.cwd().unwrap(), "/alias-target");
-        assert!(
-            origin_teardown.await.is_ok(),
-            "the origin store released once"
-        );
+        origin_teardown.await.unwrap();
         drop(origin);
         target_bus.clear();
         drop((target_owner, target_runner, target_events, target_bus));
         assert_eq!(target.cwd().unwrap(), "/alias-target");
-        assert!(
-            target_teardown.await.is_ok(),
-            "the target store released once"
-        );
+        target_teardown.await.unwrap();
         drop(target);
     });
 }

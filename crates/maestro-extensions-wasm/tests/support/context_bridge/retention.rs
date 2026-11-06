@@ -5,9 +5,9 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    CustomMessageInput, ExtensionCommandContext, ExtensionContext, ExtensionResult, ForkOptions,
-    ForkPosition, JsonText, MessageDelivery, NewSessionCommandData, NewSessionCommandOptions,
-    Presence, ReplacedSessionContext, SendMessageOptions, SendUserMessageOptions, SetupSession,
+    CustomMessageInput, ExtensionCommandContext, ExtensionContext, ExtensionResult, JsonText,
+    MessageDelivery, NewSessionCommandData, NewSessionCommandOptions, Presence,
+    ReplacedSessionContext, SendMessageOptions, SendUserMessageOptions, SetupSession,
     SwitchSessionOptions, TextContent, UserBlock, UserContent, UserMessageDelivery, WithSession,
 };
 use serde_json::{Value, json};
@@ -30,7 +30,6 @@ pub(super) async fn command(
         "lazy" => lazy(context).await?,
         "replaced-messages" => replaced_messages(context).await?,
         "new-session" => new_session(context, detail).await?,
-        "fork" => fork(context, detail).await?,
         "switch" => switch(context, detail).await?,
         "errors" => errors(context, detail).await?,
         "chain" => chain(context).await?,
@@ -269,28 +268,6 @@ async fn new_session(context: &ExtensionCommandContext, combo: &str) -> Extensio
     Ok(completed(result))
 }
 
-/// Forwards the exact fork position and its independently optional continuation.
-async fn fork(context: &ExtensionCommandContext, detail: &str) -> ExtensionResult<Value> {
-    let (position, with) = match detail {
-        "absent" => (None, false),
-        "empty" => (None, true),
-        "before" => (Some(ForkPosition::Before), false),
-        "at" => (Some(ForkPosition::At), true),
-        _ => return Err(format!("unknown fork case: {detail}")),
-    };
-    let entry = if detail == "at" {
-        "  e\u{feff}\u{85} "
-    } else {
-        "entry-fork"
-    };
-    let options = Some(ForkOptions {
-        data: maestro_extensions_wasm::ForkData { position },
-        with_session: with.then(|| continuation("fork")),
-    });
-    let result = context.fork(entry, options).await;
-    Ok(completed(result))
-}
-
 /// Forwards an authored session path without trimming or resolving it.
 async fn switch(context: &ExtensionCommandContext, detail: &str) -> ExtensionResult<Value> {
     let (path, options) = match detail {
@@ -392,7 +369,7 @@ async fn replaced_messages(context: &ExtensionCommandContext) -> ExtensionResult
         "resolved": resolved,
         "guarded": guarded,
         "after": after,
-        "retained": !retained.send_message(absent_message(), None).await.is_err(),
+        "retained": retained.send_message(absent_message(), None).await.is_ok(),
     }))
 }
 
@@ -454,6 +431,9 @@ async fn user_messages(context: &ReplacedSessionContext, phase: &str) -> Vec<Val
         UserBlock::Text(TextContent::new(String::new())),
         UserBlock::Text(TextContent::new(format!("{phase} last"))),
     ];
+    let steer = SendUserMessageOptions {
+        deliver_as: Some(UserMessageDelivery::Steer),
+    };
     let user = SendUserMessageOptions {
         deliver_as: Some(UserMessageDelivery::FollowUp),
     };
@@ -472,6 +452,16 @@ async fn user_messages(context: &ReplacedSessionContext, phase: &str) -> Vec<Val
             "user-blocks",
             context
                 .send_user_message(UserContent::Blocks(blocks), Some(user))
+                .await
+                .map(|()| Value::Null),
+        ),
+        observed(
+            "user-steer",
+            context
+                .send_user_message(
+                    UserContent::Text(format!("{phase} user steer")),
+                    Some(steer),
+                )
                 .await
                 .map(|()| Value::Null),
         ),

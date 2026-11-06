@@ -15,7 +15,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-pub(super) use crate::retained_contexts::STALE;
+use crate::retained_contexts::STALE;
 
 /// Live values the supplied base and command bindings answer with.
 struct Bindings {
@@ -285,7 +285,7 @@ fn check_phases(report: &Value, history: &Rc<RefCell<maestro_session::SessionMan
     assert!(operations(&phases[1], true), "rebound base");
     assert!(operations(&phases[2], false), "rebound commands");
     assert!(operations(&phases[3], false), "rebound base again");
-    assert_eq!(stale_members(&phases[4]), json!(true), "stale members");
+    assert!(stale_members(&phases[4]), "stale members");
     assert_eq!(phases[4]["wait"], json!(STALE), "stale wait");
 }
 
@@ -311,18 +311,16 @@ fn operations(phase: &Value, cancelled: bool) -> bool {
 }
 
 /// Checks that every guarded member reports the branded stale guidance.
-fn stale_members(phase: &Value) -> Value {
+fn stale_members(phase: &Value) -> bool {
     let members = phase["members"].as_array().unwrap();
     let report = members
         .iter()
         .all(|member| member["err"] == json!(STALE) && member.get("ok").is_none());
     let operations = phase["operations"].as_array().unwrap();
-    json!(
-        report
-            && operations
-                .iter()
-                .all(|member| member["err"] == json!(STALE))
-    )
+    report
+        && operations
+            .iter()
+            .all(|member| member["err"] == json!(STALE))
 }
 
 /// Records the replacement messages a supplied session receives.
@@ -447,7 +445,7 @@ fn replaced_messages_retain_their_session_after_invalidation() {
 /// Checks the receiver's content, options, details domain and numeric sign.
 fn check_received(received: &Received, after: &Value) {
     let calls = received.calls.borrow();
-    assert_eq!(calls.len(), 18, "both phases plus the retained probe");
+    assert_eq!(calls.len(), 20, "both phases plus the retained probe");
     check_domains(&calls);
     check_user_messages(&calls, after);
 }
@@ -463,7 +461,7 @@ fn check_domains(calls: &[Value]) {
         if index != 5 {
             let offset = if index > 5 { index - 1 } else { index };
             assert_eq!(
-                calls[9 + offset],
+                calls[10 + offset],
                 sent("after", index, details),
                 "after {index}"
             );
@@ -477,10 +475,12 @@ fn check_domains(calls: &[Value]) {
 fn check_user_messages(calls: &[Value], after: &Value) {
     assert_eq!(calls[7], sent_user("before"));
     assert_eq!(calls[8], sent_blocks("before"));
-    assert_eq!(calls[15], sent_user("after"));
-    assert_eq!(calls[16], sent_blocks("after"));
+    assert_eq!(calls[9], sent_steer("before"));
+    assert_eq!(calls[16], sent_user("after"));
+    assert_eq!(calls[17], sent_blocks("after"));
+    assert_eq!(calls[18], sent_steer("after"));
     assert_eq!(
-        calls[17]["message"],
+        calls[19]["message"],
         json!({"customType":"retained-probe","content":"retained probe","display":false})
     );
     assert_eq!(
@@ -490,6 +490,7 @@ fn check_user_messages(calls: &[Value], after: &Value) {
     assert_eq!(after[0], json!({"name":"message0","ok":null}));
     assert_eq!(after[7], json!({"name":"user-text","ok":null}));
     assert_eq!(after[8], json!({"name":"user-blocks","ok":null}));
+    assert_eq!(after[9], json!({"name":"user-steer","ok":null}));
 }
 
 /// The details domains every accepted value set is exercised through.
@@ -539,4 +540,9 @@ fn sent_blocks(phase: &str) -> Value {
         ],
         "options": {"deliverAs":"followUp"},
     })
+}
+
+/// Builds the wire record of the authored steered user message.
+fn sent_steer(phase: &str) -> Value {
+    json!({ "message": format!("{phase} user steer"), "options": {"deliverAs":"steer"} })
 }

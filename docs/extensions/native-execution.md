@@ -58,7 +58,7 @@ retained, and a replacement view stays independent of them.
 
 A retained command context reads its runner's bindings each time it is called, so
 rebinding the runner changes what later reads return. The model reader is the one
-exception: a context keeps the model bound when it was created, and a later binding
+exception: a context keeps the model reader bound at creation, and a later binding
 does not replace it. Invalidating the runner makes every guarded read and every
 session operation reject with the stale-context message, and leaves an independent
 runner alone. A replacement context reached through `with_session` keeps its two
