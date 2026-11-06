@@ -1459,8 +1459,9 @@ order makes dependencies look newer than their dependents, and the cold test the
 registry crates the seed already holds. On a four-job run that took 59 s and 53 registry
 packages, against 25 s and 12 with the times kept. The test records the seed copy's time,
 the library build's time and the registry packages and workspace members the build
-compiled, in its transcript and on its standard error. A registry count in the dozens means
-Cargo rejected the seed.
+compiled, in its transcript and on its standard error. The 12 registry packages that remain
+are the fixture's own `wasm-bindgen` packages, which the seed does not hold. A count in the
+dozens means Cargo rejected the seed.
 
 The test preparation builds the seed once per bundle. It fetches every locked package so
 that the offline vendoring finds them all, prepares the workspace sources and the seed in
