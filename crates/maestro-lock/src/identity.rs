@@ -233,10 +233,10 @@ fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
     }
 }
 
-/// Other platforms retain their native locking behaviour.
+/// wasm32 has no file system, so a live lock name cannot be verified.
 #[cfg(not(any(unix, windows)))]
 fn still_named(_file: &File, _path: &Path) -> io::Result<bool> {
-    Ok(true)
+    Err(io::ErrorKind::Unsupported.into())
 }
 
 /// Resolves a path to its real path through the owner that carries the file system.

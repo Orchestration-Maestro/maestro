@@ -48,6 +48,8 @@ system releases a dead holder's lock, and the next holder reuses any file left
 behind. Unix holders compare the locked file's device and inode with the lock
 path before proceeding. Windows holders use delete sharing and delete-on-close,
 then reopen the path after locking to reject a file already being deleted.
+A browser build has no file system, so file acquisition reports `Unsupported`
+there.
 A symbolic link at the lock path is refused with `InvalidInput` before opening
 it. A sharing violation or an access denial while the file exists counts as
 contention. A directory at the lock path fails immediately. An access denial with
