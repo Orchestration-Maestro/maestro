@@ -247,7 +247,7 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then checks each family in pairs:
-27 execution exports, 64 loading exports, 194 contribution exports and 69 canvas
+27 execution exports, 64 loading exports, 194 contribution exports and 77 canvas
 exports. Both exports of a pair run at once, each in a fresh page of its own
 driver, and the pair settles before the next starts. A failing export closes its
 own page and the run continues; the browser and the server close once every
@@ -269,7 +269,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 354/354` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 362/362` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -390,23 +390,9 @@ both.
 The canvas family covers every export that reads the page's `#canvas`: the
 session-header, reading, PDF, Markdown and SVG artifact, artifact panel,
 spreadsheet, text and image, generic file, tool renderer, offline tool card,
-expandable-output, session-link and session-download exports. Eight of them
-compile but do not run: each also awaits the screenshot observation
-(`readingPaint`), which the driver does not supply yet.
-[The screenshot test issue](https://github.com/Orchestration-Maestro/maestro/issues/2613)
-tracks it:
-
-- `header_trailing_spacing_precedes_following_widget`
-- `reading_viewport_keeps_content_and_occluders_clipped`
-- `reading_frame_neighbors_keep_existing_paint`
-- `export_rendering_uses_the_selected_brand_roles`
-- `copy_link_native_slot_composition_preserves_reading_selection`
-- `generic_guidance_is_literal_selectable_and_localized`
-- `tool_card_image_and_diff_layout_uses_native_content`
-- `tool_cards_use_selected_brand_roles_without_changing_custom_html`
-
-The driver's inventory test fails when an export in those source files is in
-neither the canvas family nor this list. Transcript execution is tracked separately
+expandable-output, session-link and session-download exports. The driver's
+inventory test fails when an export in those source files is outside the canvas
+family. Transcript execution is tracked separately
 in [the transcript test issue](https://github.com/Orchestration-Maestro/maestro/issues/801).
 Browser execution is separate from native tests and coverage. `.github/ci.toml`
 requests the shared Chromium job with
@@ -416,6 +402,33 @@ dispatch runs it on a named ref; pull requests and advisory-only runs skip it.
 Native package selection and the coverage floor stay unchanged.
 See the [shared caller contract](https://github.com/Orchestration-Maestro/maestro-rust-workflows/blob/v0.19.14/docs/caller-checks.md#chromium-browser-tests).
 A local pass is not hosted-CI proof; activation requires a successful shared job.
+
+### Screenshot evidence
+
+Eight canvas exports check what the page actually paints. Each draws a state, then
+awaits `support::reading_paint::observe(scene)`, which calls the page's
+`readingPaint(scene)`. The driver answers that call. It captures the visible page
+with `Page.captureScreenshot` and decodes the image with the browser's own
+decoder, keeping the pixels in the page so only counts cross the protocol. Then
+it changes only the decoration under test, captures again and puts back the exact
+authored `style` attributes. The call resolves `true` when every check holds. It
+rejects with the failed check's message otherwise, and that fails the export and
+the job:
+
+| Scene | Export | What the screenshots must show |
+| --- | --- | --- |
+| `neighbors-header`, `neighbors-generic`, `neighbors-error` | `header_trailing_spacing_precedes_following_widget`, `generic_guidance_is_literal_selectable_and_localized`, `reading_frame_neighbors_keep_existing_paint` | Text paints inside the root: making it transparent changes pixels. Removing the reading frame's shadow changes none. |
+| `neighbors-artifact` | `reading_frame_neighbors_keep_existing_paint` | The padding paints the caller's background role, the page shadows paint, and the frame gains no outer shadow. |
+| `viewport-0` to `viewport-8` | `reading_viewport_keeps_content_and_occluders_clipped` | The full viewport keeps its placement. Content, the outside sentinel and the outer decoration stay inside the viewport, the ancestor clip, the canvas and the control holes, and native hit testing agrees. |
+| `export-roles` | `export_rendering_uses_the_selected_brand_roles` | Each export element paints its brand role inside the final clip, for both packs in both modes. Borders paint exactly their role. Hover, expansion and underline change pixels. |
+| `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background and underline. |
+| `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
+
+Every passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
+job log records how much paint each one measured. The driver regression
+`reading_paint_fails_when_the_painted_output_differs` checks the observation
+itself. Painted text passes, while transparent text, an outer frame shadow and an
+unknown scene each fail.
 
 ### Prove a browser test on a branch
 

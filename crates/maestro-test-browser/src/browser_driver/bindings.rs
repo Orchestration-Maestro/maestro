@@ -99,6 +99,10 @@ impl Page<'_> {
                 Ok(Value::Null)
             }
             "driverAria" => self.aria(&root, argument).await.map(Value::String),
+            "readingPaint" => self
+                .reading_paint(argument)
+                .await
+                .map(|()| Value::Bool(true)),
             other => Err(io::Error::other(format!("unknown browser binding {other}"))),
         }
     }
@@ -162,6 +166,17 @@ impl Page<'_> {
 
     /// Dispatch a native click at the element's renderer-relative content quad.
     pub(super) async fn click(&mut self, context: &Context, expression: &str) -> io::Result<()> {
+        self.point(context, expression, true).await
+    }
+
+    /// Move the native pointer onto the element's root-renderer content quad.
+    pub(super) async fn hover(&mut self, expression: &str) -> io::Result<()> {
+        let root = self.root_context()?;
+        self.point(&root, expression, false).await
+    }
+
+    /// Move to, and optionally click, the centre of the element's first content quad.
+    async fn point(&mut self, context: &Context, expression: &str, click: bool) -> io::Result<()> {
         let object = self.evaluate_in(context, expression, false).await?;
         let handle = string(&object, "objectId")?;
         let result = async {
@@ -186,7 +201,7 @@ impl Page<'_> {
                 .collect::<io::Result<Vec<_>>>()?;
             let x = coordinates.iter().step_by(2).sum::<f64>() / 4.0;
             let y = coordinates.iter().skip(1).step_by(2).sum::<f64>() / 4.0;
-            self.pointer(context, (x, y), true).await
+            self.pointer(context, (x, y), click).await
         }
         .await;
         let released = self

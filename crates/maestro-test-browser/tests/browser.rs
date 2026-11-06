@@ -409,6 +409,27 @@ fn inventory_requires_every_callable_export() {
     }
 }
 
+/// A paint scene answers from real screenshots: text that paints nothing, an outer frame shadow
+/// and an unknown scene each fail, and only the painted, unshadowed reading root passes.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn reading_paint_fails_when_the_painted_output_differs() {
+    for (scene, colour, shadow, passes) in [
+        ("neighbors-generic", "black", "none", true),
+        ("neighbors-generic", "transparent", "none", false),
+        ("neighbors-generic", "black", "0 0 0 9px black", false),
+        ("unknown", "black", "none", false),
+    ] {
+        let result = run(fixture(&[], async |browser, origin| {
+            browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{document.body.innerHTML='<div class=\"maestro-reading-frame\" style=\"margin:20px;box-shadow:{shadow}\"><div class=\"maestro-generic-artifact\"><p style=\"color:{colour}\">painted text</p></div></div>';return await readingPaint('{scene}');}})()")).await
+        }));
+        match result {
+            Ok(value) => assert!(passes && value == json!(true), "{scene} {colour} {shadow}"),
+            Err(error) => assert!(!passes, "{scene} {colour} {shadow}: {error}"),
+        }
+    }
+}
+
 /// Suppressed native input and a synthetic click cannot satisfy the selected-child receipt.
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
