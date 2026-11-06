@@ -10,7 +10,7 @@ pub(super) const BINDINGS: &str = r"(() => {
     callbacks.delete(id);
     if (error) pending.reject(new Error(error)); else pending.resolve(value);
   };
-  for (const name of ['inspectSandbox','sandboxDriverPhase','driverPress','driverAria','driverPointer']) {
+  for (const name of ['inspectSandbox','sandboxDriverPhase','driverPress','driverAria','driverPointer','readingPaint']) {
     globalThis[name] = (...args) => new Promise((resolve, reject) => {
       const id = ++next; callbacks.set(id, {resolve,reject});
       __maestroDriver(JSON.stringify({id,name,args}));
