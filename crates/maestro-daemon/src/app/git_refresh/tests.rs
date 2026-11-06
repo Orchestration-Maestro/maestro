@@ -133,7 +133,7 @@ fn workspaces_in_one_repository_share_one_refresh_job() {
     assert_eq!(output.cache_updates.len(), 1);
     assert_eq!(
         output.cache_updates[0].0,
-        std::fs::canonicalize(&repo).unwrap()
+        maestro_realpath::canonicalize(&repo).unwrap()
     );
     let workspaces: Vec<_> = output
         .results

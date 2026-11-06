@@ -105,6 +105,32 @@ fn mutation_queue_serializes_existing_symlink_aliases() {
     );
 }
 
+#[test]
+fn mutation_queue_keeps_one_queue_for_a_file_its_running_write_created() {
+    let dir = Scratch::new().unwrap();
+    let path = format!("{}/new.txt", dir.text());
+    let journal = Journal::default();
+    let (open_a, gate_a) = Gate::new();
+    let created = path.clone();
+    let mut a = queue(&path, move || {
+        Box::pin(async move {
+            std::fs::write(created, b"a").unwrap();
+            gate_a.await.unwrap();
+            Ok(())
+        }) as BoxFuture<_>
+    });
+    assert!(a.as_mut().now_or_never().is_none());
+
+    let mut b = queue(&path, tracked(&journal, "b", None));
+
+    assert!(b.as_mut().now_or_never().is_none());
+    assert!(journal.entries().is_empty());
+    open_a.open();
+    ready(&mut a).unwrap();
+    ready(&mut b).unwrap();
+    assert_eq!(journal.entries(), ["b:start", "b:end"]);
+}
+
 /// Names the raw-identity rows spell inside the test directory; the others stay relative.
 const IN_DIRECTORY: [&str; 5] = [
     "target.txt",

@@ -41,7 +41,7 @@ impl Fixture {
         PreparedMove {
             referent: fs::read_link(&path)
                 .ok()
-                .map(|_| fs::canonicalize(&path).unwrap()),
+                .map(|_| maestro_realpath::canonicalize(&path).unwrap()),
             path,
             target: self.0.path().join("new").join(name),
         }
@@ -393,7 +393,7 @@ fn assert_changed_bindings(fixture: &Fixture, attempts: &[PathBuf], reverse: boo
     ] {
         let target = fixture.0.path().join("new").join(name);
         assert_eq!(
-            fs::canonicalize(&target).unwrap(),
+            maestro_realpath::canonicalize(&target).unwrap(),
             fixture.0.path().join(identity)
         );
         assert_eq!(fs::read(&target).unwrap(), bytes);
@@ -419,7 +419,7 @@ fn assert_ready_files(fixture: &Fixture, names: &[&str], blocked: bool) {
             .join(name);
         assert_eq!(fs::read(&path).unwrap(), b"shared");
         assert_eq!(
-            fs::canonicalize(&path).unwrap(),
+            maestro_realpath::canonicalize(&path).unwrap(),
             fixture
                 .0
                 .path()

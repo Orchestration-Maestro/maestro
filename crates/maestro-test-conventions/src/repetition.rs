@@ -146,16 +146,13 @@ fn code_ranges(nodes: &[Node], ranges: &mut Vec<std::ops::Range<usize>>) {
 
 /// Validate the layout used to exclude test sources from production line counts.
 fn check_test_layout(member: &Member, source: &Source) -> Result<(), String> {
-    let Some(syntax) = &source.syntax else {
+    let Some(walk) = &source.walk else {
         return Ok(());
     };
-    if let Some(error) = &source.walk(member).layout {
+    if let Some(error) = &walk.layout {
         return Err(error.clone());
     }
-    if in_src(member, source)
-        && cfg_test(&syntax.attrs)
-        && !test_layout(&source.path, &member.directory)
-    {
+    if in_src(member, source) && walk.gated && !test_layout(&source.path, &member.directory) {
         return Err(format!(
             "{}:1: test file convention: use tests.rs or a tests directory for #![cfg(test)]",
             source.path.display()

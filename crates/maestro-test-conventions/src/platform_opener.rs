@@ -32,7 +32,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             strings(
                 tokens,
                 &BTreeSet::new(),
-                source.test_spans(member),
+                source.test_spans(),
                 &BTreeMap::new(),
                 &mut literals,
             );

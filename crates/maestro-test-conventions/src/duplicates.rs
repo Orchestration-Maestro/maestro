@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ra_ap_rustc_lexer::TokenKind;
 use syn::spanned::Spanned;
 
-use crate::source::{Member, Source, cfg_test, test_layout};
+use crate::source::{Member, Source, test_layout};
 
 /// Exact lexical identity, with nested delimiters represented by interned children.
 #[derive(PartialEq, Eq, Hash)]
@@ -142,25 +142,21 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut sites = HashMap::new();
     for member in members {
         for source in &member.sources {
-            let Some(syntax) = &source.syntax else {
+            let Some(walk) = &source.walk else {
                 continue;
             };
             if test_layout(&source.path, &member.directory)
-                || cfg_test(&syntax.attrs)
+                || walk.gated
                 || crate::generated::catalog_source(member, source)
                 || crate::generated::bindings_source(member, source)
             {
                 continue;
             }
             let blocks = tokens.blocks(source);
-            let bodies = source
-                .walk(member)
-                .bodies
-                .iter()
-                .filter_map(|(start, line)| {
-                    let &(id, count) = blocks.get(start)?;
-                    (count >= 30).then_some((id, count, line))
-                });
+            let bodies = walk.bodies.iter().filter_map(|(start, line)| {
+                let &(id, count) = blocks.get(start)?;
+                (count >= 30).then_some((id, count, line))
+            });
             for (id, count, line) in bodies {
                 sites
                     .entry(id)

@@ -1,4 +1,3 @@
-use std::cell::OnceCell;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 
@@ -20,7 +19,31 @@ pub(crate) struct Member {
     pub(crate) sources: Vec<Source>,
 }
 
-/// Source text with the lexer tokens and syntax that every check reads.
+#[cfg(test)]
+impl Member {
+    /// A member of the given identity holding each supplied source, loaded as its own in order.
+    pub(crate) fn with_sources<P: Into<PathBuf>, C: Into<String>>(
+        name: &str,
+        directory: impl Into<PathBuf>,
+        sources: impl IntoIterator<Item = (P, C)>,
+    ) -> Self {
+        let mut member = Self {
+            name: name.into(),
+            directory: directory.into(),
+            sources: Vec::new(),
+        };
+        for (path, contents) in sources {
+            let source = Source::new(&member, path.into(), contents.into());
+            member.sources.push(source);
+        }
+        member
+    }
+}
+
+/// Source text with the lexer tokens and the syntax findings that every check reads.
+///
+/// The parsed syntax lives only while the shared walk runs, so a source holds owned data
+/// alone and loads on any thread.
 pub(crate) struct Source {
     /// Source file path used in diagnostics.
     pub(crate) path: PathBuf,
@@ -28,15 +51,15 @@ pub(crate) struct Source {
     pub(crate) contents: String,
     /// Lexer tokens other than whitespace, in source order, with their byte ranges.
     pub(crate) tokens: Vec<(TokenKind, Range<usize>)>,
-    /// Parsed file syntax, absent for fragments or invalid source.
-    pub(crate) syntax: Option<syn::File>,
-    /// Findings of the shared syntax walk, gathered on first use.
-    walk: OnceCell<walk::Walk>,
+    /// Every check's findings from the shared syntax walk, absent for fragments or invalid source.
+    pub(crate) walk: Option<walk::Walk>,
 }
 
 impl Source {
-    /// Parse and lex normalized source text once for every check.
-    pub(crate) fn new(path: PathBuf, mut contents: String) -> Self {
+    /// Parse, lex and walk normalized source text once for every check.
+    ///
+    /// The member is the one that holds this source; it decides which checks the walk serves.
+    pub(crate) fn new(member: &Member, path: PathBuf, mut contents: String) -> Self {
         let syntax = syn::parse_file(&contents).ok();
         if let Some(shebang) = syntax.as_ref().and_then(|file| file.shebang.as_ref()) {
             // Syn retains the newline but removes the shebang before assigning spans.
@@ -45,56 +68,63 @@ impl Source {
         let tokens = tokens(&contents)
             .filter(|(kind, _)| *kind != TokenKind::Whitespace)
             .collect();
-        Self {
+        let mut source = Self {
             path,
             contents,
             tokens,
-            syntax,
-            walk: OnceCell::new(),
-        }
-    }
-
-    /// Every check's findings for this source, from one syntax walk on first use.
-    ///
-    /// The member is the one that holds this source; it decides which checks the walk serves.
-    pub(crate) fn walk(&self, member: &Member) -> &walk::Walk {
-        self.walk.get_or_init(|| walk::walk(member, self))
+            walk: None,
+        };
+        source.walk = syntax.map(|syntax| walk::walk(member, &source, &syntax));
+        source
     }
 
     /// Disjoint spans of the parsed test-gated items in source order.
-    pub(crate) fn test_spans(&self, member: &Member) -> &[Range<(usize, usize)>] {
-        &self.walk(member).test_spans
+    pub(crate) fn test_spans(&self) -> &[Range<(usize, usize)>] {
+        self.walk
+            .as_ref()
+            .map_or(&[], |walk| walk.test_spans.as_slice())
     }
 }
 
 /// Load each workspace member's Rust files with normalized source text.
+///
+/// Sources load on the worker pool; members and their sources keep path order.
 pub(crate) fn load(metadata: &Metadata) -> Result<Vec<Member>, String> {
-    crate::graph::metadata::members(metadata)
-        .map(|package| {
-            let directory = package
-                .manifest_path
-                .parent()
-                .ok_or("manifest has no parent")?
-                .as_std_path();
-            let sources = files(directory)?
+    let mut members = Vec::new();
+    let mut paths = Vec::new();
+    for package in crate::graph::metadata::members(metadata) {
+        let directory = package
+            .manifest_path
+            .parent()
+            .ok_or("manifest has no parent")?
+            .as_std_path();
+        paths.extend(
+            files(directory)?
                 .into_iter()
-                .map(|path| {
-                    let contents = std::fs::read_to_string(&path)
-                        .map_err(|error| format!("{}: {error}", path.display()))?;
-                    let contents = contents
-                        .strip_prefix('\u{feff}')
-                        .unwrap_or(&contents)
-                        .replace("\r\n", "\n");
-                    Ok(Source::new(path, contents))
-                })
-                .collect::<Result<_, String>>()?;
-            Ok(Member {
-                name: package.name.to_string(),
-                directory: directory.into(),
-                sources,
-            })
-        })
-        .collect()
+                .map(|path| (members.len(), path)),
+        );
+        members.push(Member {
+            name: package.name.to_string(),
+            directory: directory.into(),
+            sources: Vec::new(),
+        });
+    }
+    let sources = crate::pool::map(&paths, |(member, path)| read(&members[*member], path))?;
+    for ((member, _), source) in paths.iter().zip(sources) {
+        members[*member].sources.push(source?);
+    }
+    Ok(members)
+}
+
+/// Read one member's Rust file as normalized source text and load it.
+fn read(member: &Member, path: &Path) -> Result<Source, String> {
+    let contents =
+        std::fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let contents = contents
+        .strip_prefix('\u{feff}')
+        .unwrap_or(&contents)
+        .replace("\r\n", "\n");
+    Ok(Source::new(member, path.to_owned(), contents))
 }
 
 /// Find Rust files recursively while excluding build and Git directories.
@@ -205,12 +235,12 @@ pub(crate) fn test_layout(path: &Path, directory: &Path) -> bool {
 
 /// Recognize a source that belongs to tests: a test-only crate, a test layout or a test gate.
 pub(crate) fn test_scope(member: &Member, source: &Source) -> bool {
-    member.name.starts_with("maestro-test-")
-        || test_layout(&source.path, &member.directory)
-        || source
-            .syntax
-            .as_ref()
-            .is_some_and(|syntax| cfg_test(&syntax.attrs))
+    test_file(member, &source.path) || source.walk.as_ref().is_some_and(|walk| walk.gated)
+}
+
+/// Recognize a file that belongs to tests by its crate or its layout alone.
+fn test_file(member: &Member, path: &Path) -> bool {
+    member.name.starts_with("maestro-test-") || test_layout(path, &member.directory)
 }
 
 /// Access attributes on supported Rust item variants.
