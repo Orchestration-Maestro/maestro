@@ -278,8 +278,8 @@ fn extension_shortcut_input_consumes_only_the_first_match() {
                 "the replaced key keeps its original slot"
             );
 
-            // A later claim spelled another way fills the first claim's slot, so neither the
-            // owner's order nor the selection's reorders.
+            // A later claim spelled another way fills the first claim's slot in the
+            // selection, so the order does not change.
             runs.borrow_mut().clear();
             reclaim(&world, &owners[0], &runs, "TAB", "later tab");
             press(&world, "\t");
@@ -344,8 +344,8 @@ fn shortcut_context_rejects_stale_handles_and_uses_the_current_runner() {
             press(&world, "\x11");
             let frame = painted(&world);
             assert!(
-                !frame.contains("Error: "),
-                "the current runner answers: {frame:?}"
+                frame.is_empty(),
+                "the current runner answers without painting a notice: {frame:?}"
             );
             assert_eq!(
                 *log.borrow(),
