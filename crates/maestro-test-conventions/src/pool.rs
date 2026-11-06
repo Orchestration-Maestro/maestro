@@ -33,8 +33,9 @@ where
     std::thread::scope(|scope| {
         let workers: Vec<_> = (0..threads).map(|_| scope.spawn(drain)).collect();
         let mut results = Vec::with_capacity(items.len());
-        // Every handle joins before the error returns: the scope panics on a panicked
-        // worker it still has to join, so one early return would hide the rest.
+        // Every handle joins before the error returns: the scope panics on a
+        // panicked worker it still has to join, so an early return turns a
+        // second panic into a scope panic.
         let mut panicked = false;
         for worker in workers {
             match worker.join() {
