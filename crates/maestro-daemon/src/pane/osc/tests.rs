@@ -1,6 +1,7 @@
 //! Retained title, progress, directory and debug evidence cases.
 
 use super::*;
+use crate::pane::osc::cwd::windows_uri_path;
 
 fn enabled_osc_debug_tracker() -> OscDebugTracker {
     OscDebugTracker::new(true)
@@ -43,6 +44,20 @@ fn pane_reported_cwd_rejects_invalid_or_empty_values() {
     assert_eq!(parse_reported_cwd(b""), None);
     assert_eq!(parse_reported_cwd(b"\xff"), None);
     assert_eq!(parse_reported_cwd(b"file://remote/tmp"), None);
+}
+
+#[test]
+fn pane_file_uri_drive_path_loses_its_leading_slash() {
+    for (uri_path, native) in [
+        ("/C:/Users/maestro/src", r"C:\Users\maestro\src"),
+        ("/d:/data", r"d:\data"),
+        ("/C:", "C:"),
+        ("/tmp/x", r"\tmp\x"),
+        ("/CC:/Users", r"\CC:\Users"),
+        ("C:/Users", r"C:\Users"),
+    ] {
+        assert_eq!(windows_uri_path(uri_path), native, "{uri_path}");
+    }
 }
 
 #[test]

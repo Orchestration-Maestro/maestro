@@ -263,6 +263,15 @@ exist yet by its lexical path, and the write lock resolves the nearest existing
 ancestor of a missing target. Workspace discovery falls back to the path it was
 given. Each caller maps the error to its own kind.
 
+The drive prefix and the verbatim spelling have one copy each.
+`maestro_path::win32::has_drive_prefix` answers whether a path opens with a
+drive letter and its colon, and `maestro_path::win32::ordinary` converts the
+verbatim form; the skill, extension and pane owners call them instead of testing
+the bytes themselves, and the Windows root parser reads a drive root through the
+same test. Each keeps its own policy: the skill walk converts a link target, the
+extension adapter maps a component spelling, and the pane drops the leading
+slash of a file-URI drive path.
+
 Like every caller, `maestro-lock` and `maestro-packages` declare the owner only
 on native targets. Their browser build reports `io::ErrorKind::Unsupported` for
 a real path, the failure a missing file system gives, so the containment checks
