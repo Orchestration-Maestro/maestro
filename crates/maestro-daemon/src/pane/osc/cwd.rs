@@ -30,19 +30,28 @@ fn parse_file_uri_cwd(uri: &str) -> Option<PathBuf> {
 
     #[cfg(windows)]
     {
-        let mut path = path;
-        if path.len() >= 3
-            && path.as_bytes()[0] == b'/'
-            && path.as_bytes()[2] == b':'
-            && path.as_bytes()[1].is_ascii_alphabetic()
-        {
-            path.remove(0);
-        }
-        Some(PathBuf::from(path.replace('/', "\\")))
+        Some(PathBuf::from(windows_uri_path(&path)))
     }
 
     #[cfg(not(windows))]
     Some(PathBuf::from(path))
+}
+
+/// Spell a file-URI path as Windows reads it: a drive path loses the leading
+/// slash that stands before its letter, and every `/` becomes `\`.
+#[cfg(any(windows, test))]
+pub(super) fn windows_uri_path(path: &str) -> String {
+    let path = match path.strip_prefix('/') {
+        Some(below)
+            if below.len() >= 2
+                && below.as_bytes()[1] == b':'
+                && below.as_bytes()[0].is_ascii_alphabetic() =>
+        {
+            below
+        }
+        _ => path,
+    };
+    path.replace('/', "\\")
 }
 
 /// Decode percent escapes without accepting invalid bytes.
