@@ -62,8 +62,15 @@ fn quote_prefix_growth_copies_each_spliced_byte_once() {
 
         let (raw, matched) = quote_prefix(&source, rule).unwrap();
 
-        let copied = crate::tests::WORK.with_borrow(|work| work.source_bytes);
+        let (copied, recognized) =
+            crate::tests::WORK.with_borrow(|work| (work.source_bytes, work.block_recognizer_bytes));
         assert_eq!(copied, raw.text.len(), "{}", &rest[..10.min(rest.len())]);
+        // Matching every doubled prefix from its start reads each byte about twice.
+        assert!(
+            2 * recognized <= 3 * raw.text.len(),
+            "recognized {recognized} for {} bytes",
+            raw.text.len()
+        );
         assert_eq!(&*raw.text, &whole.text[..raw.text.len()]);
         assert_eq!(matched, rule.find(&whole.text).unwrap().end());
     }
