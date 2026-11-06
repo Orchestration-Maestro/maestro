@@ -30,6 +30,10 @@ mod launch;
 mod package;
 /// Native page and frame operations.
 mod page;
+/// Real screenshot observations for authored reading paint scenes.
+mod paint;
+/// Browser-native screenshot decoding and pixel predicates.
+mod paint_scripts;
 /// Committed report painting observations.
 mod report;
 /// Browser-native painting and completion expressions.
