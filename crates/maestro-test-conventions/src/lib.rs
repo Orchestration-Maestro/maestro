@@ -98,11 +98,13 @@ mod time_limits;
 /// workspace feature; test feature unification can hide missing normal precision.
 /// The unifier's own direct `serde_json` entries are exempt from member inheritance.
 ///
-/// Token-identical production function bodies with at least 30 interior tokens
-/// are rejected, with every file/signature-line site reported. Only whitespace
-/// and comments are ignored. Parsed test scopes, test layouts and the existing
-/// generated catalog/binding sources are excluded. Macros are not expanded and
-/// unparsed fragments add no candidates; no suppression or baseline is supported.
+/// Token-identical function bodies with at least 30 interior tokens are
+/// rejected, with every file/signature-line site reported. Production code and
+/// authored test code in `tests/` files, test layouts and parsed test scopes share
+/// one identity index across packages. Only whitespace and comments are ignored,
+/// and only the existing generated catalog/binding sources are excluded. Macros
+/// are not expanded and unparsed fragments add no candidates; no suppression or
+/// baseline is supported.
 ///
 /// The shipped extension example tests decode a document member and release every
 /// registration through the example support module, whose release also asserts the
