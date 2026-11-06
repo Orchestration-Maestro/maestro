@@ -81,8 +81,8 @@ fn entry() -> u8 {
 }
 ";
 
-/// A macro that declares a recovering accessor.
-const MACRO_ARGUMENT: &str = r"//! Agent.
+/// A macro definition that declares a recovering accessor.
+const MACRO_DEFINITION: &str = r"//! Agent.
 
 /// Declares an accessor for one retained store.
 macro_rules! accessor {
@@ -94,6 +94,23 @@ macro_rules! accessor {
 }
 
 accessor!(locked);
+";
+
+/// An ordinary macro invoked with a recovering accessor among its arguments.
+const MACRO_ARGUMENT: &str = r"//! Agent.
+
+/// Emits the supplied items.
+macro_rules! register {
+    ($($item:item)*) => {
+        $($item)*
+    };
+}
+
+register! {
+    fn locked(store: &std::sync::Mutex<u8>) -> u8 {
+        *store.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+}
 ";
 
 #[test]
@@ -113,7 +130,12 @@ fn recovering_closure_is_rejected() {
 
 #[test]
 fn recovery_helper_declared_by_a_macro_is_rejected() {
-    check("src/store.rs", MACRO_ARGUMENT, &[7]);
+    check("src/store.rs", MACRO_DEFINITION, &[7]);
+}
+
+#[test]
+fn recovery_helper_passed_to_a_macro_is_rejected() {
+    check("src/register.rs", MACRO_ARGUMENT, &[12]);
 }
 
 #[test]

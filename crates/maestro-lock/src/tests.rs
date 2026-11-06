@@ -86,56 +86,68 @@ impl std::fmt::Display for Payload {
 }
 impl std::error::Error for Payload {}
 
-/// Poison `shared` by panicking while a writer holds its write guard.
+/// Replace `shared`'s value with 9 and poison it by panicking on a write guard.
 fn poison_rwlock(shared: &std::sync::Arc<std::sync::RwLock<i32>>) {
     let writer = std::sync::Arc::clone(shared);
     let _ = std::thread::spawn(move || {
-        let _guard = writer.write().unwrap();
+        let mut guard = writer.write().unwrap();
+        *guard = 9;
         panic!("writer panics while holding the write guard");
     })
     .join();
 }
 
-/// Poison `shared` by panicking while a holder owns its mutex guard.
+/// Replace `shared`'s value with 9 and poison it by panicking on its mutex guard.
 fn poison_mutex(shared: &std::sync::Arc<std::sync::Mutex<i32>>) {
     let holder = std::sync::Arc::clone(shared);
     let _ = std::thread::spawn(move || {
-        let _guard = holder.lock().unwrap();
+        let mut guard = holder.lock().unwrap();
+        *guard = 9;
         panic!("holder panics while holding the mutex guard");
     })
     .join();
 }
 
-/// A read finds the value the panicked writer retained.
+/// A read finds the value the panicked writer retained and leaves the marker set.
 #[test]
 fn read_finds_the_value_a_panicking_writer_left() {
     let shared = std::sync::Arc::new(std::sync::RwLock::new(7));
     assert_eq!(*read(&shared), 7);
+    assert!(!shared.is_poisoned());
     poison_rwlock(&shared);
-    assert_eq!(*read(&shared), 7);
+    assert!(shared.is_poisoned());
+    assert_eq!(*read(&shared), 9);
+    assert!(shared.is_poisoned());
 }
 
-/// A write after a panicked writer lands for the next read.
+/// A write after a panicked writer lands for the next read and leaves the marker set.
 #[test]
 fn write_lands_after_a_panicking_writer() {
     let shared = std::sync::Arc::new(std::sync::RwLock::new(1));
     *write(&shared) = 2;
     assert_eq!(*read(&shared), 2);
     poison_rwlock(&shared);
-    assert_eq!(*write(&shared), 2);
+    assert!(shared.is_poisoned());
+    assert_eq!(*write(&shared), 9);
+    assert!(shared.is_poisoned());
     *write(&shared) = 3;
     assert_eq!(*read(&shared), 3);
+    assert!(shared.is_poisoned());
 }
 
-/// A lock finds the value the panicked holder retained and can replace it.
+/// A lock finds what the panicked holder left, leaves the marker set and can replace it.
 #[test]
 fn lock_finds_the_value_a_panicking_holder_left() {
     let shared = std::sync::Arc::new(std::sync::Mutex::new(3));
     assert_eq!(*lock(&shared), 3);
+    assert!(!shared.is_poisoned());
     poison_mutex(&shared);
-    assert_eq!(*lock(&shared), 3);
+    assert!(shared.is_poisoned());
+    assert_eq!(*lock(&shared), 9);
+    assert!(shared.is_poisoned());
     *lock(&shared) = 4;
     assert_eq!(*lock(&shared), 4);
+    assert!(shared.is_poisoned());
 }
 
 /// Every operation accepts state that borrows from its caller.

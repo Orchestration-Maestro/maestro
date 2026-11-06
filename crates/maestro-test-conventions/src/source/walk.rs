@@ -445,7 +445,7 @@ impl<'a> Visit<'a> for Walker<'a> {
         {
             exports.invocation(invocation);
         }
-        if !self.testing() && defines_helper(invocation) {
+        if !self.testing() {
             self.poison.macro_tokens(invocation);
         }
         syn::visit::visit_macro(self, invocation);
@@ -520,15 +520,6 @@ impl<'a> Visit<'a> for Walker<'a> {
         }
         syn::visit::visit_expr_path(self, expression);
     }
-}
-
-/// Whether a macro invocation declares items, which is where a helper body hides.
-fn defines_helper(invocation: &syn::Macro) -> bool {
-    invocation
-        .path
-        .segments
-        .last()
-        .is_some_and(|segment| segment.ident == "macro_rules")
 }
 
 /// Convert a syntax span into comparable line and character coordinates.

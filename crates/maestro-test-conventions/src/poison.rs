@@ -62,7 +62,7 @@ impl Definitions {
     pub(crate) fn closure(&mut self, closure: &syn::ExprClosure) {
         let recovered = match &*closure.body {
             syn::Expr::Block(block) => recovered_body(&block.block),
-            body => recovering(body).then(|| body.span().line()),
+            body => recovering(body).then(|| body.span().start().line),
         };
         if let Some(line) = recovered {
             self.lines.push(line);
@@ -89,7 +89,7 @@ fn recovered_body(block: &syn::Block) -> Option<usize> {
     let [syn::Stmt::Expr(expression, None)] = block.stmts.as_slice() else {
         return None;
     };
-    recovering(expression).then(|| expression.span().line())
+    recovering(expression).then(|| expression.span().start().line)
 }
 
 /// Recognize `<lock>.lock()`, `<lock>.read()` or `<lock>.write()` followed by recovery.
@@ -130,11 +130,11 @@ fn names_poison(expression: &syn::Expr) -> bool {
     }
 }
 
-/// Recognize a generated helper body inside a macro definition.
+/// Recognize the acquisition shape in a macro's unparsed tokens.
 ///
 /// A macro's tokens parse as no function, so the check reads the single-expression
-/// block a generated helper's body is written as. Statements of a larger body, and
-/// arguments of another macro call, are not helper bodies.
+/// block a generated or passed-in helper's body is written as. A statement-bearing
+/// body is not a helper body.
 fn token_recovery(tokens: &proc_macro2::TokenStream) -> Option<usize> {
     for tree in tokens.clone() {
         let proc_macro2::TokenTree::Group(group) = tree else {
@@ -169,7 +169,8 @@ fn shape_recovery(trees: &[proc_macro2::TokenTree]) -> Option<usize> {
         let following = |offset: usize| trees.get(index + offset);
         let called = matches!(following(1), Some(proc_macro2::TokenTree::Group(group)) if group.stream().is_empty());
         let recovered = matches!(following(2), Some(proc_macro2::TokenTree::Punct(punct)) if punct.as_char() == '.')
-            && matches!(following(3), Some(proc_macro2::TokenTree::Ident(name)) if name == "unwrap_or_else");
+            && matches!(following(3), Some(proc_macro2::TokenTree::Ident(name)) if name == "unwrap_or_else")
+            && matches!(following(4), Some(proc_macro2::TokenTree::Group(group)) if recovers(group));
         if called && recovered {
             return Some(acquiring.span().start().line);
         }
@@ -177,14 +178,10 @@ fn shape_recovery(trees: &[proc_macro2::TokenTree]) -> Option<usize> {
     None
 }
 
-/// Report the located line of one syntax span.
-trait SpanLine {
-    /// One-based line where this span starts.
-    fn line(&self) -> usize;
-}
-
-impl SpanLine for proc_macro2::Span {
-    fn line(&self) -> usize {
-        self.start().line
-    }
+/// Recognize recovery of the poison error inside an argument's tokens.
+fn recovers(argument: &proc_macro2::Group) -> bool {
+    argument
+        .stream()
+        .into_iter()
+        .any(|tree| matches!(tree, proc_macro2::TokenTree::Ident(name) if name == "into_inner"))
 }

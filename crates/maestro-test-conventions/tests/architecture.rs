@@ -2645,12 +2645,22 @@ fn session_lock_edge_is_scoped() {
 
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-web", "maestro-lock"]);
+    let required =
+        required_targets("maestro-web")
+            .iter()
+            .fold(String::new(), |mut declarations, target| {
+                writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+                declarations
+            });
     for (kind, extra) in DECLARATIONS {
-        workspace.member(
-            "maestro-web",
-            "maestro-web",
-            &format!("[{kind}]\nalias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}"),
-        );
+        let alias =
+            format!("alias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}");
+        let declarations = if *kind == "dependencies" {
+            format!("[{kind}]\n{required}{alias}")
+        } else {
+            format!("[dependencies]\n{required}[{kind}]\n{alias}")
+        };
+        workspace.member("maestro-web", "maestro-web", &declarations);
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err("forbidden production dependency: maestro-web -> maestro-lock".into()),
