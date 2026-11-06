@@ -125,7 +125,10 @@ mod tests {
         assert_eq!(message.diagnostics, Some(vec![diagnostic, second]));
     }
     fn assert_literals<T: serde::de::DeserializeOwned + serde::Serialize>(literals: &[&str]) {
-        assert!(maestro_test_fixtures::literals_round_trip::<T>(literals).unwrap());
+        assert!(
+            maestro_test_fixtures::literals_round_trip::<T>(literals).unwrap(),
+            "{literals:?}"
+        );
     }
 
     /// Record whose decode accepts every string and whose encode writes another one.

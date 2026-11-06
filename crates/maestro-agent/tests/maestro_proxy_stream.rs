@@ -1117,24 +1117,18 @@ async fn proxy_adapter_receives_unmodified_request_and_signal_case() {
 /// The recorded header lookup keeps the first exact name and borrows its value.
 fn assert_recorded_header_lookup() {
     let empty: Vec<(String, String)> = Vec::new();
-    assert_eq!(maestro_test_process::loopback::header(&empty, "x"), None);
+    assert_eq!(loopback::header(&empty, "x"), None);
     let recorded = vec![
         ("x".to_owned(), "first".to_owned()),
         ("x".to_owned(), "last".to_owned()),
         ("empty".to_owned(), String::new()),
     ];
-    assert_eq!(maestro_test_process::loopback::header(&recorded, "X"), None);
-    assert_eq!(
-        maestro_test_process::loopback::header(&recorded, "absent"),
-        None
-    );
-    let kept = maestro_test_process::loopback::header(&recorded, "x").unwrap();
+    assert_eq!(loopback::header(&recorded, "X"), None);
+    assert_eq!(loopback::header(&recorded, "absent"), None);
+    let kept = loopback::header(&recorded, "x").unwrap();
     assert_eq!(kept, "first");
     assert!(std::ptr::eq(kept, recorded[0].1.as_str()));
-    assert_eq!(
-        maestro_test_process::loopback::header(&recorded, "empty"),
-        Some("")
-    );
+    assert_eq!(loopback::header(&recorded, "empty"), Some(""));
 }
 
 /// Known discriminants decode, unknown members are ignored, and wrong field types fail natively.
