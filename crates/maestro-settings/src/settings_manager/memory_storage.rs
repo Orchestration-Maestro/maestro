@@ -42,9 +42,7 @@ impl InMemorySettingsStorage {
 
     /// Locks the state for a single read or write, never across caller code.
     fn locked(&self) -> MutexGuard<'_, State> {
-        self.state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+        maestro_lock::lock(&self.state)
     }
 }
 

@@ -4,9 +4,9 @@ use super::{
     created_content, definition, edited_content,
 };
 use crate::browser::components::messages::{ArtifactAction, ArtifactMessage, CustomAgentMessages};
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::{AgentMessage, CustomAgentMessages as CustomMessage};
+use maestro_lock::{read, write};
 use maestro_models::{AssistantContent, Tool, ToolCall, validate_tool_arguments};
 use serde::Deserialize;
 use std::collections::HashMap;

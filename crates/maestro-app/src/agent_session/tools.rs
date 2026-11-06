@@ -2,11 +2,11 @@
 use super::{AgentSession, ToolDefinitionHandle, state::thrown};
 use crate::resources::resource_loader::ResourceLoader;
 use crate::resources::system_prompt::{BuildSystemPromptOptions, build_system_prompt};
-use crate::utils::lock::{read, write};
 use indexmap::{IndexMap, IndexSet};
 use maestro_extensions::{
     ExtensionExecution, ExtensionRunner, RegisteredTool, wrap_registered_tool,
 };
+use maestro_lock::{read, write};
 use maestro_models::{DiagnosticErrorInfo, ToolInfo};
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::Presence;

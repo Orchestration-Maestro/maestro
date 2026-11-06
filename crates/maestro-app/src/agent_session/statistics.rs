@@ -3,9 +3,9 @@ use super::{
     AgentSession, SessionStats, SessionStatsTokens,
     state::{message_records, thrown},
 };
-use crate::utils::lock::read;
 use maestro_agent::AgentMessage;
 use maestro_extensions::{ContextUsage, ExtensionExecution};
+use maestro_lock::read;
 use maestro_models::{AssistantContent, DiagnosticErrorInfo, StopReason};
 use maestro_session::{
     estimate_context_tokens, get_last_assistant_usage, get_latest_compaction_entry,

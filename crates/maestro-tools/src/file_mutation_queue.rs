@@ -8,7 +8,7 @@ use std::{
     io,
     path::PathBuf,
     sync::{
-        Arc, LazyLock, Mutex, MutexGuard, PoisonError,
+        Arc, LazyLock, Mutex, MutexGuard,
         atomic::{AtomicU64, Ordering},
     },
 };
@@ -30,7 +30,7 @@ static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
 /// Lock the queues; a panic in another caller never leaves them half edited.
 fn queues() -> MutexGuard<'static, HashMap<PathBuf, VecDeque<Waiter>>> {
-    QUEUES.lock().unwrap_or_else(PoisonError::into_inner)
+    maestro_lock::lock(&QUEUES)
 }
 
 tokio::task_local! {

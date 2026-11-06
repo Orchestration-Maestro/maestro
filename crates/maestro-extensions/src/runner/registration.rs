@@ -4,12 +4,10 @@ use crate::types::registration::tools::RetainedDefinition;
 use crate::{ExtensionContext, types::RegisteredTool};
 use crate::{
     ExtensionExecution,
-    types::{
-        ExtensionFlag, FlagValue, MessageRenderer, MessageRendererCall, ResolvedCommand, read,
-        write,
-    },
+    types::{ExtensionFlag, FlagValue, MessageRenderer, MessageRendererCall, ResolvedCommand},
 };
 use indexmap::{IndexMap, IndexSet};
+use maestro_lock::{read, write};
 use maestro_models::Local;
 use serde::{Serialize, de::DeserializeOwned};
 use std::sync::{Arc, RwLock};

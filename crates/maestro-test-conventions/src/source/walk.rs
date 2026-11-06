@@ -17,7 +17,7 @@ use super::{
 use crate::boundaries::{application_exports, message_renderers};
 use crate::graph::packages::{self, Exports};
 use crate::{
-    child_tests, duplicates, generated, integration_tests, quality, real_paths, repetition,
+    child_tests, duplicates, generated, integration_tests, poison, quality, real_paths, repetition,
     temp_directories, test_input_routes, time_limits,
 };
 
@@ -57,6 +57,8 @@ pub(crate) struct Walk {
     pub(crate) guest: Option<generated::Attributes>,
     /// Literal extension exports outside test-gated items.
     pub(crate) exports: usize,
+    /// Located independent recovery helpers in production code.
+    pub(crate) poison: Vec<usize>,
 }
 
 /// Walk a member's parsed source once and gather every check's findings.
@@ -133,6 +135,8 @@ struct Walker<'a> {
     attributes: Option<generated::Attributes>,
     /// Extension exports, for production sources that spell the export macro.
     exports: Option<Exports<'a>>,
+    /// Independent recovery helpers.
+    poison: poison::Definitions,
 }
 
 impl<'a> Walker<'a> {
@@ -161,6 +165,7 @@ impl<'a> Walker<'a> {
             uses: application_exports::Uses::new(member, source),
             attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
             exports: Exports::new(source, scope),
+            poison: poison::Definitions::default(),
         }
     }
 
@@ -250,6 +255,7 @@ impl<'a> Walker<'a> {
             imports: self.uses.map(|uses| uses.imports),
             guest: self.attributes,
             exports: self.exports.map_or(0, Exports::finish),
+            poison: self.poison.finish(),
         }
     }
 }
@@ -313,12 +319,18 @@ impl<'a> Visit<'a> for Walker<'a> {
         self.declaring(&function.sig.ident);
         self.ignored.item_fn(function);
         self.body(&function.sig, &function.block);
+        if !self.testing() {
+            self.poison.body(&function.block);
+        }
         syn::visit::visit_item_fn(self, function);
     }
 
     fn visit_impl_item_fn(&mut self, function: &'a syn::ImplItemFn) {
         self.declaring(&function.sig.ident);
         self.body(&function.sig, &function.block);
+        if !self.testing() {
+            self.poison.body(&function.block);
+        }
         syn::visit::visit_impl_item_fn(self, function);
     }
 
@@ -326,8 +338,19 @@ impl<'a> Visit<'a> for Walker<'a> {
         self.declaring(&function.sig.ident);
         if let Some(block) = &function.default {
             self.body(&function.sig, block);
+            if !self.testing() {
+                self.poison.body(block);
+            }
         }
         syn::visit::visit_trait_item_fn(self, function);
+    }
+
+    /// A closure body that only acquires a lock is the same helper as a function.
+    fn visit_expr_closure(&mut self, closure: &'a syn::ExprClosure) {
+        if !self.testing() {
+            self.poison.closure(closure);
+        }
+        syn::visit::visit_expr_closure(self, closure);
     }
 
     /// A foreign function declares its name the same way; its remaining names stay visited.
@@ -421,6 +444,9 @@ impl<'a> Visit<'a> for Walker<'a> {
             && let Some(exports) = &mut self.exports
         {
             exports.invocation(invocation);
+        }
+        if !self.testing() {
+            self.poison.macro_tokens(invocation);
         }
         syn::visit::visit_macro(self, invocation);
     }

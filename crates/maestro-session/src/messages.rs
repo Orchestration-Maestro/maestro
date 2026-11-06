@@ -1,6 +1,7 @@
 //! Formatting and projection of application conversation messages.
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone};
 use maestro_agent::AgentMessage;
+use maestro_lock::read;
 use maestro_models::{Message, TextContent, UserBlock, UserContent, UserMessage};
 pub use maestro_request::messages::{
     BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage, CustomMessage,
@@ -292,13 +293,6 @@ fn project_custom<T, C>(message: &CustomAgentMessages<T, C>) -> Option<Message> 
         }
         CustomAgentMessages::BashExecution(_) | CustomAgentMessages::Other(_) => None,
     }
-}
-
-/// Borrow a retained entry, recovering its data after poisoning.
-fn read<T>(entry: &std::sync::RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
-    entry
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 /// Select only summary-visible fields from historical model messages.

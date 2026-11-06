@@ -175,15 +175,20 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `maestro-lock` depends only on `maestro-path` for final-link resolution and
   `maestro-realpath` for canonical targets, and uses the existing external
   `sha2 =0.11.0` to shorten lock and record names for long file names. Only
-  theme/application may depend on watch; only
-  settings/credentials/workspace/detection/session/application may depend on lock, and
-  the composed executable crate only as a native development dependency so its
-  tests serialize one shared native fixture.
+  theme/application may depend on watch. Every crate that holds
+  shared state behind a mutex or read-write lock may depend on lock: settings,
+  credentials, workspace, detection, session, models, agent, tools, extensions,
+  application, the daemon, the runtime adapter, the terminal adapter, the
+  interactive frontend and the command-line frontend, and the composed executable
+  crate only as a native development dependency so its tests serialize one shared
+  native fixture. The edge is portable, so the shared-state operations serve
+  browser callers; file exclusion stays native.
   Application uses maestro-lock for recoverable in-place file publication, on native targets only. Follow the
   [shared filesystem effect contract](docs/specs/maestro-port.md#crates-and-delivery-order):
   watch owns creation/close helpers, injected watch/timer interfaces and native
-  notifications; lock owns waiting, bounded and single-attempt acquisition plus
-  recoverable in-place byte publication. Workspace owns snapshot serialization and link-following policy.
+  notifications; lock owns waiting, bounded and single-attempt acquisition,
+  recoverable in-place byte publication and poison-tolerant acquisition of in-memory
+  shared state. Workspace owns snapshot serialization and link-following policy.
   Feature policies remain with their owners, including asynchronous credential
   acquisition. Add no common background runtime, scheduler or listener framework;
   existing theme paths may re-export moved types, not duplicate implementations.

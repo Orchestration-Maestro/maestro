@@ -112,7 +112,7 @@ impl AgentSessionRuntime {
                 .build_session_context()
                 .map_err(thrown)?;
             let messages = crate::agent_session::agent_messages(context.messages)?;
-            crate::utils::lock::write(session.state()).set_messages(messages);
+            maestro_lock::write(session.state()).set_messages(messages);
         }
         self.finish_session_replacement(&session, options.with_session.as_ref())
             .await?;

@@ -3,8 +3,8 @@ use super::sandbox_runtime_provider::{RuntimeProviderValue, SandboxRuntimeProvid
 use crate::browser::{
     tools::prompts::ATTACHMENTS_RUNTIME_DESCRIPTION, utils::attachment_utils::SharedAttachment,
 };
-use crate::utils::lock::read;
 use indexmap::IndexMap;
+use maestro_lock::read;
 use maestro_models::DiagnosticErrorInfo;
 use std::{
     marker::PhantomData,

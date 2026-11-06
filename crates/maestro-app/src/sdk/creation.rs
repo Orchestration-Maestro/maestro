@@ -12,12 +12,12 @@ use crate::configuration::config::{
     paths::{get_auth_path, get_bin_dir, get_models_path},
 };
 use crate::runtime::agent_session_services::{default_resource_loader, native_config_values};
-use crate::utils::lock::{read, write};
 use maestro_catalog::{
     DEFAULT_THINKING_LEVEL, FindInitialModelOptions, ModelRegistry, find_initial_model,
     model_id_comparator, restore_saved_model,
 };
 use maestro_credentials::{AuthStorage, format_no_models_available_message};
+use maestro_lock::{read, write};
 use maestro_models::{DiagnosticErrorInfo, Model, ModelThinkingLevel, clamp_thinking_level};
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};

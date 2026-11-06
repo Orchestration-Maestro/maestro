@@ -262,7 +262,7 @@ impl maestro_tools::ReadContext for ExtensionContext {
     /// The current model read through the captured reader; a stale context knows none.
     fn model(&self) -> Option<Arc<Model>> {
         let model = ExtensionContext::model(self).ok().flatten()?;
-        let model = crate::types::read(&model).clone();
+        let model = maestro_lock::read(&model).clone();
         Some(Arc::new(model))
     }
 }

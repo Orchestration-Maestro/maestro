@@ -2,8 +2,8 @@
 use super::super::{
     IndexConfig, SessionData, SessionMetadata, Store, StoreConfig, TransactionMode,
 };
-use crate::utils::lock::read;
 use maestro_agent::CustomAgentMessages;
+use maestro_lock::read;
 use serde::{Serialize, de::DeserializeOwned};
 use std::io;
 /// Typed access to full histories and indexed metadata.

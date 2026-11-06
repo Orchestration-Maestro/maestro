@@ -1,13 +1,13 @@
 //! The agent's tool hooks and the built-in tool definitions the runtime builds on.
 use super::state::thrown;
 use super::{AgentSession, ToolDefinitionHandle};
-use crate::utils::lock::{read, write};
 use indexmap::IndexMap;
 use maestro_agent::{
     AfterToolCallContext, AfterToolCallResult, Agent, AgentLoopTurnUpdate, AgentToolRecord,
     BeforeToolCallContext, BeforeToolCallResult, PrepareNextTurnContext, SharedAgentTool,
 };
 use maestro_extensions::{ExtensionExecution, RegisteredToolInput, ToolCallEvent, ToolResultEvent};
+use maestro_lock::{read, write};
 use maestro_models::{DiagnosticErrorInfo, Local};
 use maestro_session::{Presence, messages::CustomAgentMessages};
 use maestro_settings::SettingsManager;

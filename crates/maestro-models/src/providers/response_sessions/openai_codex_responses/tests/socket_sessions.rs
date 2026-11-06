@@ -9,7 +9,7 @@ use super::super::debug::{
 use super::super::headers::build_web_socket_headers;
 use super::super::sessions::{
     Claim, CloseReason, Identity, Lease, Socket, acquire, cached_entry, claim,
-    close_openai_codex_web_socket_sessions as close, lock, publish,
+    close_openai_codex_web_socket_sessions as close, publish,
 };
 use super::super::websocket::{
     WebSocketOutput, process_web_socket_stream, resolve_codex_web_socket_url,
@@ -25,6 +25,7 @@ use base64::Engine as _;
 use futures_util::future::{Either, join, join3, select as select_first};
 use futures_util::{FutureExt, SinkExt};
 use indexmap::IndexMap;
+use maestro_lock::lock;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt as _;

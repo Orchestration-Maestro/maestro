@@ -1,6 +1,5 @@
 //! Message and provider-payload replacement chains.
 use super::{ExtensionRunner, dispatch::HandlerCursor};
-use crate::types::read;
 use crate::{
     EventError, ExtensionExecution,
     types::events::{
@@ -9,6 +8,7 @@ use crate::{
     },
 };
 use maestro_agent::{AgentMessage, CustomAgentMessages};
+use maestro_lock::read;
 use maestro_session::Presence;
 use serde_json::Value;
 use std::sync::{Arc, RwLock};

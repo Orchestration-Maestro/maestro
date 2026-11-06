@@ -157,11 +157,15 @@ may depend directly on it.
 The [shared filesystem effect contract](specs/maestro-port.md#crates-and-delivery-order)
 declares watch below layer 0 without workspace dependencies. Lock depends only
 on path for final-link resolution, using the existing `sha2 =0.11.0` to shorten
-lock and record names for long file names. Only theme/application may consume watch;
-only settings/credentials/workspace/detection/session/application may consume lock.
-The lock owner provides waiting, bounded and single-attempt acquisition plus
-recoverable in-place byte publication. See [file locking](locking.md) for the durable
-copy and replay order.
+lock and record names for long file names. Only theme/application may consume watch.
+These crates may consume lock: workspace, detection, settings, credentials, session,
+models, agent, tools, extensions, application, the daemon, the runtime adapter, the
+terminal adapter, the interactive frontend and the command-line frontend, plus the
+executable crate as a native development dependency. The edge is portable so browser
+callers reach the same operations. The lock owner provides
+waiting, bounded and single-attempt acquisition, recoverable in-place byte publication
+and poison-tolerant acquisition of shared state. See [locking](locking.md) for the
+durable copy, replay order and shared-state contract.
 Feature owners retain serialization, symbolic-link policy and scheduling.
 
 The process owner `maestro-process` is declared core below layer 0 and depends only

@@ -88,9 +88,10 @@ impl From<ToolCall> for FauxAssistantContent {
 mod streaming;
 /// Prompt projection and disjoint session-cache accounting.
 mod usage;
+use maestro_lock::lock;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{
-    Arc, Mutex, MutexGuard,
+    Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
 
@@ -223,12 +224,6 @@ struct Registration {
     pending: Mutex<Pending>,
     /// Normalized chunk sizes and optional rate.
     pacing: streaming::Pacing,
-}
-/// Acquire registration state, recovering poisoned ownership.
-fn lock<T>(value: &Mutex<T>) -> MutexGuard<'_, T> {
-    value
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 /// Registered models and their scripted response queue.
 pub struct FauxProviderRegistration {

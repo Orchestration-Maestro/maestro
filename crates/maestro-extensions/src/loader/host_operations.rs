@@ -1,6 +1,6 @@
 //! Factory-time settings and package operations supplied by the application.
-use crate::types::{read, write};
 use crate::{ExtensionAPI, ExtensionExecution};
+use maestro_lock::{read, write};
 use serde_json::Value;
 
 /// Scope of an installed source or raw preference document.
