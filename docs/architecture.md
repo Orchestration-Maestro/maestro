@@ -260,10 +260,10 @@ exist yet by its lexical path, and the write lock resolves the nearest existing
 ancestor of a missing target. Workspace discovery falls back to the path it was
 given. Each caller maps the error to its own kind.
 
-`maestro-lock` and `maestro-packages` declare the owner only on native
-targets. Their browser build reports `io::ErrorKind::Unsupported` for a real
-path, the failure a missing file system gives, so the containment checks in
-those two crates refuse there rather than admitting a lexical path.
+Like every caller, `maestro-lock` and `maestro-packages` declare the owner only
+on native targets. Their browser build reports `io::ErrorKind::Unsupported` for
+a real path, the failure a missing file system gives, so the containment checks
+in those two crates refuse there rather than admitting a lexical path.
 
 ## Bounded ownership checks
 
