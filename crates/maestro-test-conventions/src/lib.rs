@@ -108,9 +108,9 @@ mod time_limits;
 /// name the platform temporary directory itself: not as a call, a value or a macro
 /// argument inside test-owned code, and not as an import anywhere in the crate,
 /// whatever the alias. Diagnostics name `TEST_DIRECTORY_CALLERS`; the owner's
-/// `temporary_root` accessor, the owner parent and an uncreated socket path remain
-/// accepted. The scope grows with each migration batch and disappears when every
-/// crate uses the owner.
+/// `temporary_root` accessor, the owner parent, an uncreated socket path and a
+/// declaration's own `temp_dir` name remain accepted. The scope grows with each
+/// migration batch and disappears when every crate uses the owner.
 ///
 /// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
 /// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
