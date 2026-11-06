@@ -1,4 +1,4 @@
-//! Builds the browser graph the browser author tests share, once per run.
+//! Builds the browser graph the browser author tests build on, once per run.
 //!
 //! A shard starts with an empty target directory and no compile cache. Without this setup the
 //! first browser test of the shard compiles the native bootstrap and the WebAssembly fixture
@@ -7,10 +7,14 @@
 //! bundle; a shard installs it and gives it one modification time newer than its checkout, so
 //! the recipes find nothing to rebuild. A run without a bundle builds the graph itself. The
 //! recipes run in this checkout with the runner's instrumentation removed, as the tests remove
-//! it from their own children, and in the target directory the tests are told to use, spelled
-//! the same way because Cargo records that spelling in what it compiles. A recipe that fails in
-//! a shard only loses the saving: the tests run the same recipes and report their own failures.
-//! The preparation, which builds the graph for every shard, fails instead.
+//! it from their own children. A recipe that fails in a shard only loses the saving: the tests
+//! run the same recipes and report their own failures. The preparation, which builds the graph
+//! for every shard, fails instead.
+//!
+//! The tests change sources and rebuild, and Trunk writes its outputs outside Cargo's build
+//! lock, so two tests never build in one target at once. The setup copies the graph into one
+//! target per lane, and each test holds a lane while it runs; a copy at another path serves
+//! the recipes as the original does.
 
 use std::ffi::{OsStr, OsString};
 use std::io;
@@ -23,8 +27,14 @@ use super::{cargo, export, nonempty, prepared_bundle};
 use crate::copy_assets::copy_tree;
 use crate::test_setup::{install_browser_graph, remove_directory};
 
-/// The checkout directory the graph is built in and the tests are told to use.
+/// The checkout directory the graph is built in, which is also the first lane.
 pub(crate) const TARGET: &str = "target/browser-author";
+
+/// The browser author tests that run at once, each in a lane of its own.
+///
+/// The `browser-author` test group of `.config/nextest.toml` admits as many tests at once.
+/// Each lane past the first costs one copy of the graph before the first test starts.
+pub(crate) const LANES: usize = 3;
 
 /// The bundle directory that holds the staged graph.
 pub(crate) const STAGED: &str = "browser-author";
@@ -52,22 +62,30 @@ const RECIPES: [&str; 3] = [
     "browser-debug-build",
 ];
 
-/// Install the bundle's graph when a run has one, then build whatever is still missing and
-/// export where the graph is.
+/// Install the bundle's graph when a run has one, build whatever is still missing, copy the
+/// graph into each further lane and export the lanes' targets.
 ///
 /// # Errors
-/// Returns a stale bundle, a failed install or a failed export. A failed build only prints a
-/// warning.
+/// Returns a stale bundle, a failed install or copy, or a failed export. A failed build only
+/// prints a warning, and the tests then take turns in the first lane.
 pub(super) fn run(checkout: &Path) -> io::Result<ExitCode> {
     let target = checkout.join(TARGET);
     if let Some(bundle) = prepared_bundle(checkout) {
         install_browser_graph(checkout, &bundle, &target)?;
     }
-    if let Err(error) = build(checkout, &cargo()) {
-        eprintln!("warning: {error}; the browser tests report it themselves");
+    let mut lanes = vec![target.clone()];
+    match build(checkout, &cargo()) {
+        Ok(()) => {
+            for lane in 1..LANES {
+                let copy = checkout.join(format!("{TARGET}-{lane}"));
+                install(&target, &copy)?;
+                lanes.push(copy);
+            }
+        }
+        Err(error) => eprintln!("warning: {error}; the browser tests report it themselves"),
     }
-    let mut entry = OsString::from("MAESTRO_BROWSER_TARGET_DIR=");
-    entry.push(&target);
+    let mut entry = OsString::from("MAESTRO_BROWSER_TARGET_DIRS=");
+    entry.push(std::env::join_paths(lanes).map_err(io::Error::other)?);
     export(&entry)?;
     Ok(ExitCode::SUCCESS)
 }

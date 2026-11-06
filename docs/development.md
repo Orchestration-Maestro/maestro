@@ -1049,6 +1049,8 @@ documentation changes no staged file, so no pattern names it. The command runs t
 component-discovery example from a separate build directory, then stages the
 component files, the compiled code the example left in the engine's cache, that built example,
 the browser graph described under [Browser author build](#browser-author-build), the
+registry units of the cold browser bootstrap described under
+[Cargo state of tooling fixtures](#cargo-state-of-tooling-fixtures), the
 development tool itself, the [prepared Cargo checks](#prepared-cargo-checks) and a content
 manifest. The compiled code is the one cache
 namespace the engine named for the example's modification time; preparation fails on a
@@ -1321,11 +1323,23 @@ formatting repair that would rewrite sources, then runs `browser-example-check`,
 `browser-library-build` and `browser-debug-build` in the checkout. It removes the
 runner's coverage flags and profile path from those commands and restores the compiler
 wrapper that preceded coverage, as the tests do for their own children. It builds in
-`target/browser-author` and exports that path as `MAESTRO_BROWSER_TARGET_DIR`, which
-`Browser` gives to every recipe and helper. Cargo records the spelling of the target
-directory in what it compiles, so the setup and the tests must name the same one: a
-test that built into a differently spelled directory recompiled every dependency. Output
-built for one checkout path serves another, so each test's copy of the checkout reuses it.
+`target/browser-author`, the first lane, copies the graph into `target/browser-author-1`
+and `target/browser-author-2` with one new modification time each, and exports the three
+targets as `MAESTRO_BROWSER_TARGET_DIRS`, in the platform's path-list syntax. A copy at
+another path serves the recipes as the original does: a recipe in a copied lane compiles
+only what it compiles in the original. Output built for one checkout path serves another,
+so each test's copy of the checkout reuses it.
+
+The tests change sources and rebuild, and Trunk writes its binding and optimizer outputs
+outside Cargo's build lock, so two tests never build in one target at once. Each test takes
+a lane. The `browser-author` test group in `.config/nextest.toml` admits three tests at
+once, and nextest numbers them from 0 in `NEXTEST_TEST_GROUP_SLOT`; `Browser` gives every
+recipe and helper the lane that number names and holds a lock file inside that lane while
+the fixture lives. The group's `max-threads` equals `LANES` in the setup's browser graph
+module, and `browser_author_group_admits_one_test_per_lane` fails when the two differ. A
+test outside the group, or a run without the setup, takes the first lane and waits on its
+lock, so plain Cargo tests still run the browser tests one at a time. Each lane past the
+first costs one copy of the graph before the first test starts.
 
 `browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
 unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
@@ -1335,9 +1349,10 @@ compiler jobs past the hang limit. The test checks one cold build and its output
 Rebuilds after a change to an included file, a source error and its repair belong to
 `browser_author_included_files_rebuild_without_source_changes` and
 `browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup
-prints a warning and does not stop the run; the tests run the same recipes and report
-the failure. Plain Cargo tests, and nextest runs without the setup, use the test build's
-own target directory.
+prints a warning and does not stop the run; the setup then announces the first lane alone,
+and the tests run the same recipes in turn and report the failure. Plain Cargo tests, and
+nextest runs without the setup, use the test build's own target directory as their only
+lane.
 
 ### Cargo state of tooling fixtures
 
@@ -1402,8 +1417,7 @@ exports: that test clears the exported paths and reruns the isolation test as a 
 the child prepares the sources itself. That preparation vendored every package and built
 the seed from nothing, which spent most of the test's time. The setup runs before the
 tests, so the child's repeated preparation finds the directory for the same key and
-returns it at once. The vendoring keeps its cost, paid once per run by the setup, and a
-shard that runs only these tests still builds the seed it does not read.
+returns it at once. The vendoring keeps its cost, paid once per run by the setup.
 
 The same setup also builds the cold bootstrap's native targets once per key, with the
 commands the recipes run, in `target/workspace-sources/<hash>/seed-target`. It keeps the
@@ -1415,22 +1429,33 @@ and the next run continues it. The cold test copies the seed into its empty Carg
 directory and checks that it holds compiled units but none of a workspace member's. The
 recipes then compile Maestro's crates and the WebAssembly fixture from nothing, and
 every registry crate is already built. The test keeps the root manifest's per-package
-optimization levels, since the seed holds the optimized parsers. A shard that runs the
-cold test builds the seed in the setup, once while the key stays the same; the test
-never pays for it.
+optimization levels, since the seed holds the optimized parsers. The test never pays for
+the seed.
+
+The test preparation builds the seed once per bundle. It fetches every locked package, so
+the offline vendoring finds them all, prepares the workspace sources and the seed in the
+checkout as the setup does, and stages the seed in the bundle as `workspace-sources`. The
+manifest records the directory of the sources the seed was compiled against. A registry
+unit's fingerprint includes its source path, so a seed serves only those sources. A shard's
+setup vendors the sources and copies the bundle's seed beside them when their directory is
+the recorded one. That holds when the checkout path and the dependency key match, and then
+no registry crate compiles before the shard's first test. A bundle restored from the cache
+can hold a seed for another key, after a member manifest that the cache key does not name
+changes. The setup then builds the seed itself, as a run without a bundle does, once while
+the key stays the same.
 
 The cold recipe uses `fixture_command` to keep its private home out of the
 compiler wrapper's cache keys. It also leaves `CARGO_BUILD_JOBS` to the caller: a cap set
 by the build host applies, and with none Cargo compiles with every core the test reserves.
 The other recipe tests keep three jobs.
 
-Cargo builds that share one target directory with other builds, the test build's or the
-one the browser author setup prepares, keep the shared home.
+Cargo builds that share one target directory with other builds, the test build's or a
+lane the browser author setup prepares, keep the shared home.
 A registry crate's fingerprint includes its source path, so a private home with
 vendored sources recompiles every registry dependency in that target, and going
 back to the shared home recompiles them again. The browser recipe and native
-builds (`Browser::command` and `Browser::native_command`) are such builds; the
-`browser-author` group and the browser file lock already run them one at a time.
+builds (`Browser::command` and `Browser::native_command`) are such builds; each runs in
+the lane its test holds, alone.
 Queries of the whole workspace, tests in other crates that build it, and the
 in-process `maestro_tooling::run` calls on dependency-free fixtures also keep the
 shared home. A watch recipe starts `cargo run` and, beneath it, `cargo build` in one
@@ -1640,7 +1665,11 @@ standard error. A cleared child needs `MAESTRO_NATIVE_FIXTURE` passed on, becaus
 The preparation tests use a `tooling-cargo` record with the real Cargo path and
 an author-record template path. It forwards metadata, accepts the Clippy probe
 and stages native copies of both preparation examples. It also reports the two
-finite WebAssembly artifacts used by the Cargo-check preparation fixtures.
+finite WebAssembly artifacts used by the Cargo-check preparation fixtures. For the
+workspace sources it records each fetch, vendor run and seed build, one that passes
+`--config`, in a `sources` file in its working directory; a vendor run creates its
+directory and prints the source configuration, and a seed build leaves the units the
+`tooling-sources` `sources` record leaves.
 On Unix, metadata replaces the fixture process, keeping its native PID and signal
 delivery.
 

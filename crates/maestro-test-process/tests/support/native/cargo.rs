@@ -85,9 +85,21 @@ impl Build {
 }
 
 /// Forward real metadata unchanged; stage the two finite example targets and the locked
-/// installs for other calls.
+/// installs for other calls. A fetch, a vendor run and a seed build, which passes `--config`,
+/// each append their operation to the `sources` log.
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
     match args.first().and_then(|value| value.to_str()) {
+        Some(operation @ ("fetch" | "vendor")) => {
+            super::tooling_sources::append("sources", operation)?;
+            if operation == "vendor" {
+                super::tooling_sources::vendor(args)?;
+            }
+            Ok(())
+        }
+        Some("build") if args.iter().any(|arg| arg == "--config") => {
+            super::tooling_sources::append("sources", "build")?;
+            super::tooling_sources::build()
+        }
         Some("metadata") => {
             let mut command = Command::new(&record.cargo);
             command.args(args);

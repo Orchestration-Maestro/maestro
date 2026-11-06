@@ -25,8 +25,9 @@ fn ci_declares_every_setup_that_reads_the_prepared_bundle() {
             let command = command
                 .as_str()
                 .unwrap_or_else(|| command["command-line"].as_str().unwrap());
-            // browser-author reads the bundle but runs debug/development instead of the staged tool.
-            command.contains("target/test-setup/development") || *name == "browser-author"
+            // These read the bundle but run debug/development instead of the staged tool.
+            command.contains("target/test-setup/development")
+                || ["browser-author", "workspace-sources"].contains(&name.as_str())
         })
         .map(|(name, _)| name.as_str())
         .collect();

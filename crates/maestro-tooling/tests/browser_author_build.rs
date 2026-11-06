@@ -1742,19 +1742,11 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     let browser = Browser::new();
     drop(Browser::cold());
     browser_support::bootstrap_source(&browser);
-    let command = browser.command("browser-debug-build");
-    let target = std::path::PathBuf::from(
-        command
-            .get_envs()
-            .find(|(key, _)| *key == "CARGO_TARGET_DIR")
-            .unwrap()
-            .1
-            .unwrap(),
-    );
+    let target = browser_support::cargo_target(&browser.command("browser-debug-build"));
     assert_eq!(
         target,
-        browser_support::target_directory(),
-        "warm browser recipes must reuse the run's shared Cargo target"
+        browser.target(),
+        "warm browser recipes must build in the fixture's lane"
     );
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();

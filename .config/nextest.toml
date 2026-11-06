@@ -71,13 +71,15 @@ setup = "fixture-sources"
 command = { command-line = "debug/development nextest-setup fixture-sources workspace", relative-to = "target" }
 
 [[profile.default.scripts]]
+# Vendors the complete workspace sources and installs the bundle's compiled registry units
+# beside them, or builds the units when the bundle compiled them against other sources.
 # The resolution test repeats the preparation without the exports the setup gives its child, so
 # the warmed directory must already exist: the preparation reuses it instead of vendoring again.
 filter = "package(maestro-tooling) & (test(browser_author_bootstraps_from_empty_build_state) | test(browser_resolution_never_reaches_the_shared_cargo_home) | test(browser_resolution_prepares_sources_outside_nextest))"
 setup = "workspace-sources"
 
-# Installs the bundle's browser graph the browser author tests share, or builds it when the run has
-# no bundle, once before the first of them.
+# Installs the bundle's browser graph the browser author tests build on, or builds it when the run
+# has no bundle, once before the first of them, then copies it into one target per lane.
 # The cold-start test prepares dependency sources and the compiled registry units its target
 # starts from; Maestro's own crates compile from empty.
 # The `browser-author` test group below selects the same tests with the same filter; change
@@ -112,9 +114,11 @@ max-threads = 1
 filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
-# Same filter as the `browser-author` setup rule above: the tests that share the prepared target.
+# Same filter as the `browser-author` setup rule above: the tests that build in a lane of the
+# prepared graph. Each test takes the lane its group slot numbers, so `max-threads` is the lane
+# count `LANES` of the setup's browser graph module.
 [test-groups.browser-author]
-max-threads = 1
+max-threads = 3
 
 [[profile.default.overrides]]
 filter = "package(maestro-tooling) & test(/^browser_author_build::/) & !test(browser_author_bootstraps_from_empty_build_state)"

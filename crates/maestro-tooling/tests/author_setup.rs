@@ -275,13 +275,35 @@ fn browser_setup_installs_the_prepared_graph_before_the_recipes() {
         fs::read_to_string(root.join("recipes.log")).unwrap(),
         "built\ninstalled\n"
     );
+}
+
+/// The setup gives each lane its own copy of the installed graph and announces every lane, so
+/// browser tests that run at once never build in one target.
+#[test]
+fn browser_setup_copies_the_graph_into_every_lane() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+
+    assert_success(&browser_command(root, true).output().unwrap());
+
+    let lanes: Vec<_> = ["", "-1", "-2"]
+        .map(|suffix| root.join(format!("target/browser-author{suffix}")))
+        .into();
     assert_eq!(
         fs::read_to_string(root.join("nextest-env")).unwrap(),
         format!(
-            "MAESTRO_BROWSER_TARGET_DIR={}\n",
-            root.join("target/browser-author").display()
+            "MAESTRO_BROWSER_TARGET_DIRS={}\n",
+            std::env::join_paths(&lanes).unwrap().display()
         )
     );
+    for lane in lanes {
+        assert_eq!(
+            fs::read_to_string(lane.join("debug/graph")).unwrap(),
+            "graph\n"
+        );
+    }
 }
 
 /// A bundle prepared from other sources than the checkout holds installs nothing.
@@ -303,6 +325,90 @@ fn browser_setup_refuses_a_graph_prepared_from_other_sources() {
         fs::read_to_string(root.join("recipes.log")).unwrap(),
         "built\n"
     );
+}
+
+/// A registry unit the fixture Cargo leaves in every seed it builds.
+const SEED_UNIT: &str = "debug/deps/libserde-0123456789abcdef.rlib";
+
+/// The bundle carries the registry units of the cold browser bootstrap, compiled against the
+/// workspace sources the preparation fetched and vendored.
+#[test]
+fn prepared_bundle_carries_the_cold_bootstrap_seed() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+
+    prepare(root);
+
+    assert_eq!(source_calls(root), ["fetch", "vendor", "build", "build"]);
+    assert!(
+        root.join("target/test-setup/workspace-sources")
+            .join(SEED_UNIT)
+            .is_file()
+    );
+}
+
+/// A shard installs the bundle's seed beside the sources it vendors, so no registry crate
+/// compiles before its first test.
+#[test]
+fn workspace_sources_setup_installs_the_prepared_seed_without_building() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    fs::remove_dir_all(root.join("target/workspace-sources")).unwrap();
+
+    let config = workspace_sources(root);
+
+    assert_eq!(
+        source_calls(root),
+        ["fetch", "vendor", "build", "build", "vendor"]
+    );
+    assert!(config.with_file_name("seed").join(SEED_UNIT).is_file());
+}
+
+/// A seed the bundle compiled for other dependency inputs is left out, and the shard builds
+/// its own.
+#[test]
+fn workspace_sources_setup_builds_when_the_prepared_seed_has_other_inputs() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let manifest = root.join("crates/unrelated/Cargo.toml");
+    let text = fs::read_to_string(&manifest).unwrap();
+    fs::write(&manifest, format!("{text}description = \"edited\"\n")).unwrap();
+
+    let config = workspace_sources(root);
+
+    assert_eq!(
+        source_calls(root),
+        [
+            "fetch", "vendor", "build", "build", "vendor", "build", "build"
+        ]
+    );
+    assert!(config.with_file_name("seed").join(SEED_UNIT).is_file());
+}
+
+/// The workspace-sources calls the fixture Cargo recorded, in order.
+fn source_calls(root: &Path) -> Vec<String> {
+    fs::read_to_string(root.join("sources"))
+        .unwrap()
+        .lines()
+        .map(str::to_owned)
+        .collect()
+}
+
+/// Run a shard's workspace-sources setup from the fixture checkout and return the source
+/// configuration it printed.
+fn workspace_sources(root: &Path) -> PathBuf {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command.args(["nextest-setup", "fixture-sources", "workspace"]);
+    let output = shard_command(command, root, &root.join("target/test-setup"), true)
+        .output()
+        .unwrap();
+    assert_success(&output);
+    PathBuf::from(String::from_utf8(output.stdout).unwrap().trim_end())
 }
 
 /// A run with no bundle at all builds the graph itself.
@@ -994,6 +1100,11 @@ fn workspace(root: &Path) {
          [[package]]\nname = \"unrelated\"\nversion = \"0.0.0\"\n",
     )
     .unwrap();
+    // The browser author fixture the cold bootstrap's workspace sources are keyed on.
+    let browser = root.join("crates/maestro-tooling/tests/fixtures/browser_author");
+    fs::create_dir_all(&browser).unwrap();
+    fs::write(browser.join("Cargo.toml"), "browser manifest").unwrap();
+    fs::write(browser.join("Cargo.lock"), "browser lock").unwrap();
     for (name, dependency) in [
         (
             "maestro-extensions-wasm",
