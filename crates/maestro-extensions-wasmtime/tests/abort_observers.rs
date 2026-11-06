@@ -294,12 +294,12 @@ fn native_abort_observers_release_at_the_last_consumer() {
     });
 }
 
-/// Runs one abort inside an active callback and returns the marks of its walk.
+/// Runs one abort inside an active callback and checks the marks of its walk.
 async fn reentrant_abort(
     runner: &ExtensionRunner<Local>,
     events: &EventBus<Local>,
     signal: &Cancellation,
-) -> Trace {
+) {
     let walked = Trace::default();
     let (payloads, mut announced) = witness(events, &walked);
     bind(runner, signal);
@@ -334,7 +334,6 @@ async fn reentrant_abort(
         [json!({"label": "first", "aborted": true})]
     );
     drop((keep_before, keep_after));
-    walked
 }
 
 /// Reports one failing listener and still runs the healthy listener that follows it.
@@ -405,8 +404,7 @@ fn component_abort_observer_reentry_uses_the_shared_dispatcher() {
             super::retained_components::loaded_on(bus.for_extension()).await;
         let (observations, mut seen) = observe(&events);
 
-        let walked = reentrant_abort(&runner, &events, &Cancellation::new()).await;
-        assert_eq!(walked.borrow().len(), 3);
+        reentrant_abort(&runner, &events, &Cancellation::new()).await;
         failing_observer(&runner, &observations, &mut seen).await;
         assert_eq!(
             errors.borrow().as_slice(),
