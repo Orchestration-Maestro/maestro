@@ -9,8 +9,9 @@ use crate::read_support;
 use crate::runtime;
 
 use display_support::{Env, NoLanguages, Setup, context};
-use edit_render_support::{Details, ResultRecord, cases, palette, theme};
+use edit_render_support::{Details, ResultRecord, cases, palette, palette_except, theme};
 use maestro_agent::AgentToolResult;
+use maestro_theme::Theme;
 use maestro_tools::{
     EditRenderState, EditToolDetails, EditToolInput, EditToolOptions, ToolDefinition,
     ToolRenderContext, ToolRenderResultOptions, create_edit_tool_definition,
@@ -25,6 +26,10 @@ use std::{
     sync::Arc,
 };
 
+/// The corpus palette without one selected role.
+fn without(role: &str) -> Theme {
+    palette_except(0, Some(role))
+}
 /// Definition under test.
 type Tool = ToolDefinition<(), EditToolInput, EditToolDetails, EditRenderState>;
 /// One row with a controlled runtime and local file.
@@ -734,7 +739,7 @@ async fn selected_preview_theme_error(missing: &str) {
     let input = args("beta");
     let call = row.call(&input, None);
     row.finish().await;
-    let selected = Rc::new(edit_render_support::without(missing));
+    let selected = Rc::new(without(missing));
     row.env
         .state
         .set_theme_instance(Rc::clone(&selected))
@@ -758,7 +763,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
     for missing in ["error", "toolTitle", "accent", "toolPendingBg"] {
         let row = Row::new();
         let input = args("beta");
-        let selected = Rc::new(edit_render_support::without(missing));
+        let selected = Rc::new(without(missing));
         row.env
             .state
             .set_theme_instance(Rc::clone(&selected))
@@ -783,7 +788,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
     });
     let row = Row::new();
     let input = json!({"path":"file"});
-    let selected = Rc::new(edit_render_support::without("toolDiffAdded"));
+    let selected = Rc::new(without("toolDiffAdded"));
     row.env
         .state
         .set_theme_instance(Rc::clone(&selected))
