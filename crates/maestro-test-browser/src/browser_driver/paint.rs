@@ -320,12 +320,13 @@ async fn placement(page: &mut Page<'_>, index: usize) -> io::Result<Value> {
     )
 }
 
-/// Count `colour` pixels of the first `selector` match within its final export clip.
+/// Count pixels of `colour`, a brand role name or literal RGB channels, painted by the first
+/// `selector` match within its final export clip.
 async fn role_paint(
     page: &mut Page<'_>,
     scene: &str,
     selector: &str,
-    colour: &str,
+    colour: &Value,
 ) -> io::Result<()> {
     let element = format!(
         "document.querySelector('.maestro-export').querySelector({})",
@@ -341,7 +342,7 @@ async fn role_paint(
     page.shot(selector).await?;
     let pixels: u64 = page
         .read(&format!(
-            "__maestroPaint.count({},{rect},{colour})",
+            "__maestroPaint.count({},{rect},__maestroPaint.colour({colour}))",
             json!(selector)
         ))
         .await?;
@@ -399,11 +400,10 @@ async fn output_hover(page: &mut Page<'_>, scene: &str, element: &str) -> io::Re
 async fn export_roles(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "export-roles";
     for (selector, role) in EXPORT_ROLES {
-        let colour = format!("__maestroPaint.role({})", json!(role));
         if matches!(selector, "hr" | "td") {
             border_role(page, selector, role).await?;
         } else {
-            role_paint(page, scene, selector, &colour).await?;
+            role_paint(page, scene, selector, &json!(role)).await?;
         }
     }
     let output = "document.querySelector('.maestro-export .tool-output.expandable')";
@@ -470,7 +470,7 @@ async fn border_role(page: &mut Page<'_>, selector: &str, role: &str) -> io::Res
 /// The decoded image and the unwrapped diff text paint real pixels.
 async fn tool_card_layout(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "offline-tool-card-layout";
-    role_paint(page, scene, ".tool-image", "[0,0,0]").await?;
+    role_paint(page, scene, ".tool-image", &json!([0, 0, 0])).await?;
     let diff = "document.querySelector('.maestro-export .tool-diff')";
     page.evaluate(&format!(
         "__maestroPaint.element({diff}).scrollIntoView({{block:'nearest',inline:'nearest'}})"
@@ -491,17 +491,16 @@ async fn tool_card_layout(page: &mut Page<'_>) -> io::Result<()> {
     Ok(())
 }
 
-/// Tool-card roles paint, output hover changes opacity and supplied spaces keep decoration.
+/// Tool-card roles paint, output hover changes opacity and supplied spaces keep their background.
 async fn tool_card_roles(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "offline-tool-card-roles";
     for (selector, role) in TOOL_CARD_ROLES {
-        let colour = format!("__maestroPaint.role({})", json!(role));
-        role_paint(page, scene, selector, &colour).await?;
+        role_paint(page, scene, selector, &json!(role)).await?;
     }
     let output = "[...document.querySelectorAll('.maestro-export .tool-output.expandable')].at(-1)";
     output_hover(page, scene, output).await?;
     let custom = ".ansi-rendered span";
-    role_paint(page, scene, custom, "[18,52,86]").await?;
+    role_paint(page, scene, custom, &json!([18, 52, 86])).await?;
     let custom = "document.querySelector('.maestro-export .ansi-rendered span')";
     let decoration = without(
         page,
@@ -510,10 +509,9 @@ async fn tool_card_roles(page: &mut Page<'_>) -> io::Result<()> {
         "suppressed",
     )
     .await?;
+    // The browser skips decoration lines on leading and trailing spaces
+    // (`text-decoration-skip-spaces: start end`), so an all-space run paints only its background.
     require(decoration > 0, "supplied spaces contribute decoration")?;
     page.observed(scene, "space-decoration", decoration);
-    let underline = without(page, custom, ";text-decoration:none", "unlined").await?;
-    require(underline > 0, "underline on spaces paints")?;
-    page.observed(scene, "space-underline", underline);
     Ok(())
 }

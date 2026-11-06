@@ -39,7 +39,7 @@ pub(super) const PAINT: &str = r"(() => {
     element,
     box: selector => { const r = element(selector).getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; },
     rgb: value => value.match(/[a-f0-9]{2}/gi).slice(0, 3).map(hex => parseInt(hex, 16)),
-    role: name => __maestroPaint.rgb(JSON.parse(globalThis.colors)[name]),
+    colour: value => typeof value === 'string' ? __maestroPaint.rgb(JSON.parse(globalThis.colors)[value]) : value,
     count: (label, rect, colour) => {
       let n = 0;
       scan(label, (x, y, data, i) => { if (inside(x, y, rect) && colour.every((v, k) => Math.abs(data[i + k] - v) <= 1)) n++; });
