@@ -370,21 +370,23 @@ lent. A per-example test beside it that writes the decode or the release walk
 inline is rejected with its file and line, wherever the copy sits: a bare call, a
 macro argument, a closure or a method.
 
-Conventions reject a platform temporary directory that migrated-crate test code
+Conventions reject a platform temporary directory that any member's test code
 names itself. Test-owned code is a test file layout and every item inside an
 inherited `cfg(test)` context, closures and macro arguments included; the
 `temp_dir` spelling is rejected there as a call, as a value or inside macro
 tokens, and its import is rejected anywhere in the crate, whatever the alias. A
 method named `temp_dir` is the receiver's own API, never the platform spelling,
 so a call on a receiver is accepted while every member of its arguments stays
-checked. The check follows no bindings or data flow. Tests that observe the
+checked, and a declaration's own `temp_dir` name is accepted the same way with
+its body and arguments staying checked. The check follows no bindings or data
+flow. Tests that observe the
 platform directory, name an uncreated socket path under it or pass it as the
 owner's parent read it through `maestro_test_directory::temporary_root`, and
 directory creation and removal go through `Scratch`. The check covers every
-member except `maestro-test-process`, whose own builder declaration and
-child-environment passthrough are still open; the batch that converts it removes
-the scope. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a new crate asks
-for the owner.
+member, so a new crate is checked on arrival; `maestro-test-directory` alone is
+outside it, because its `temporary_root` accessor is the one place that reads the
+platform directory. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a crate
+asks for the owner.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.

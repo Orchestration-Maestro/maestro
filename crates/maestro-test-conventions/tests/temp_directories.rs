@@ -182,10 +182,20 @@ fn production_temporary_directory_is_accepted() {
 }
 
 #[test]
-fn unmigrated_crate_keeps_its_own_directories_until_its_batch() {
+fn member_never_listed_in_a_scope_is_checked() {
     check(
-        "maestro-test-process",
-        "tests/environment_groups.rs",
+        "maestro-dependencies",
+        "tests/generated_entries.rs",
+        SEEDED,
+        &[4],
+    );
+}
+
+#[test]
+fn owner_member_reads_the_platform_directory() {
+    check(
+        "maestro-test-directory",
+        "tests/directory_roots.rs",
         SEEDED,
         &[],
     );
@@ -255,6 +265,56 @@ fn test_process_builder_method_call_is_accepted() {
 }
 
 #[test]
+fn builder_declaration_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nstruct Child;\n\nimpl Child {\n    /// Point the child at one directory.\n    pub fn temp_dir(self, path: &std::path::Path) -> Self {\n        self\n    }\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declared_item_fn_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nfn temp_dir() -> std::path::PathBuf {\n    maestro_test_directory::temporary_root()\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declared_trait_fn_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\ntrait Landable {\n    fn temp_dir(&self) -> std::path::PathBuf;\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declared_foreign_fn_name_is_accepted() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nextern \"C\" {\n    fn temp_dir() -> std::path::PathBuf;\n}\n",
+        &[],
+    );
+}
+
+#[test]
+fn declaration_name_does_not_exempt_a_same_line_call() {
+    check(
+        "maestro-app",
+        "tests/support/harness.rs",
+        "//! Session harness support.\n\nfn temp_dir() -> std::path::PathBuf { std::env::temp_dir().join(\"maestro-harness\") }\n",
+        &[3],
+    );
+}
+
+#[test]
 fn platform_directory_passed_to_a_method_call_is_rejected() {
     check(
         "maestro-app",
@@ -276,6 +336,12 @@ fn packages_reads_the_platform_directory_into_a_setting() {
 
 /// Platform directory spellings in the crates added to the migrated scope.
 const ADDED: &[(&str, &str, &str, &[usize])] = &[
+    (
+        "maestro-test-process",
+        "tests/environment_groups.rs",
+        "//! Group fixtures.\n\nfn marker(test: &str) -> std::path::PathBuf {\n    let path = std::env::temp_dir().join(format!(\"maestro-groups-{test}\"));\n    std::fs::write(&path, \"\").unwrap();\n    path\n}\n",
+        &[4],
+    ),
     (
         "maestro-catalog",
         "tests/support/common.rs",

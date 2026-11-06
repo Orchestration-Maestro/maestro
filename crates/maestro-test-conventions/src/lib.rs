@@ -102,13 +102,13 @@ mod time_limits;
 /// writes the decode or the release walk inline is reported with its file and
 /// line, wherever the copy sits.
 ///
-/// Test code in the crates the temporary-directory migration has reached may not
-/// name the platform temporary directory itself: not as a call, a value or a macro
-/// argument inside test-owned code, and not as an import anywhere in the crate,
-/// whatever the alias. Diagnostics name `TEST_DIRECTORY_CALLERS`; the owner's
-/// `temporary_root` accessor, the owner parent and an uncreated socket path remain
-/// accepted. The scope covers every member except `maestro-test-process`, and it
-/// disappears when that crate uses the owner.
+/// Test code in every member may not name the platform temporary directory
+/// itself: not as a call, a value or a macro argument inside test-owned code, and
+/// not as an import anywhere in the crate, whatever the alias. Diagnostics name
+/// `TEST_DIRECTORY_CALLERS`; the owner's `temporary_root` accessor, the owner
+/// parent, an uncreated socket path and a declaration's own `temp_dir` name remain
+/// accepted. `maestro-test-directory` is the only member outside the check: its
+/// accessor is the one place that reads the platform directory itself.
 ///
 /// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
 /// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal

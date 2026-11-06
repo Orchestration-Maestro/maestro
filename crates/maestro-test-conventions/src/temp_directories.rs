@@ -2,80 +2,26 @@
 
 use crate::source::Member;
 
-/// Crates whose test directories have moved onto the disposable-directory owner.
+/// The member that owns the platform temporary directory.
 ///
-/// `maestro-test-process` is the only member still outside this scope, because its
-/// own builder declaration and its child-environment passthrough are resolved
-/// separately. The batch that converts it removes this scope so the check covers
-/// every crate.
-const MIGRATED_CRATES: &[&str] = &[
-    "maestro-daemon",
-    "maestro-session",
-    "maestro-watch",
-    "maestro-detection",
-    "maestro-extensions-wasmtime",
-    "maestro-terminal",
-    "maestro-models",
-    "maestro-app",
-    "maestro-packages",
-    "maestro-catalog",
-    "maestro-process",
-    "maestro-tooling",
-    "maestro-tui-crossterm",
-    "maestro-ipc",
-    "maestro-lock",
-    "maestro-listing",
-    "maestro-tui",
-    "maestro-workspace",
-    "maestro-credentials",
-    "maestro-tools",
-    "maestro-resources",
-    "maestro-chat",
-    "maestro",
-    "maestro-agent",
-    "maestro-brand",
-    "maestro-cancellation",
-    "maestro-cli",
-    "maestro-entry",
-    "maestro-export",
-    "maestro-extensions",
-    "maestro-extensions-wasm",
-    "maestro-json",
-    "maestro-listeners",
-    "maestro-markdown",
-    "maestro-multiplexer",
-    "maestro-package",
-    "maestro-path",
-    "maestro-pattern",
-    "maestro-protocol",
-    "maestro-request",
-    "maestro-rpc",
-    "maestro-settings",
-    "maestro-subagents",
-    "maestro-test-browser",
-    "maestro-test-conventions",
-    "maestro-test-fixtures",
-    "maestro-test-terminal",
-    "maestro-test-tracing",
-    "maestro-text",
-    "maestro-theme",
-    "maestro-tool",
-    "maestro-web",
-];
+/// Its `temporary_root` accessor is the one place that reads the platform directory, and the
+/// walk sees every source of a `maestro-test-` member as test code, so this member alone is
+/// outside the check.
+const OWNER: &str = "maestro-test-directory";
 
 /// Spelling that names the platform temporary directory.
 const PLATFORM_DIRECTORY: &str = "temp_dir";
 
 /// Whether the member's test code is checked for the platform temporary directory.
-pub(crate) fn migrated(member: &Member) -> bool {
-    MIGRATED_CRATES.contains(&member.name.as_str())
+pub(crate) fn checked(member: &Member) -> bool {
+    member.name != OWNER
 }
 
-/// Reject a platform temporary directory that migrated-crate test code names itself.
+/// Reject a platform temporary directory that test code names itself.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = members
         .iter()
-        .filter(|member| migrated(member))
+        .filter(|member| checked(member))
         .flat_map(member_diagnostics)
         .collect::<Vec<_>>();
     if diagnostics.is_empty() {
@@ -111,21 +57,35 @@ fn member_diagnostics(member: &Member) -> Vec<(String, usize)> {
 /// Platform-directory references of one file, gathered by the shared syntax walk.
 ///
 /// The walk passes identifiers and macros of test-owned code and of `use` imports; it skips
-/// method names, the receiver's own API rather than a platform-directory spelling: the
-/// standard function is always a call through a path. It also skips a method call's
-/// attributes, which never name a call.
+/// method names and a declared function's own name, its builder API rather than a
+/// platform-directory spelling: the standard function is always a call through a path. It
+/// also skips a method call's attributes, which never name a call.
 #[derive(Default)]
 pub(crate) struct References {
+    /// Byte ranges of the declarations whose own name never names the platform function.
+    declared: Vec<std::ops::Range<usize>>,
     /// Located reference lines.
     lines: Vec<usize>,
 }
 
 impl References {
+    /// Record the byte range of one declaration's own name so `ident` skips it.
+    pub(crate) fn skip(&mut self, ident: &proc_macro2::Ident) {
+        self.declared.push(ident.span().byte_range());
+    }
+
     /// Record one identifier that names the platform temporary directory.
     pub(crate) fn ident(&mut self, ident: &proc_macro2::Ident) {
-        if ident == PLATFORM_DIRECTORY {
-            self.lines.push(ident.span().start().line);
+        let range = ident.span().byte_range();
+        if ident != PLATFORM_DIRECTORY
+            || self
+                .declared
+                .iter()
+                .any(|skipped| skipped.start <= range.start && range.end <= skipped.end)
+        {
+            return;
         }
+        self.lines.push(ident.span().start().line);
     }
 
     /// Record the platform-directory identifiers inside a macro's tokens.

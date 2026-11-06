@@ -33,7 +33,7 @@ pub(crate) struct Walk {
     pub(crate) time_limits: Vec<((usize, usize), time_limits::Diagnostic)>,
     /// Production function bodies as block byte offsets with their signature lines.
     pub(crate) bodies: Vec<(usize, usize)>,
-    /// Sorted lines naming the platform temporary directory, for migrated crates.
+    /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
     /// Located repository-directory reads by test code.
     pub(crate) reads: BTreeSet<(usize, String)>,
@@ -100,7 +100,7 @@ struct Walker<'a> {
     calls: time_limits::Calls<'a>,
     /// Production function bodies.
     bodies: duplicates::Bodies,
-    /// Platform temporary directory references, for migrated crates.
+    /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
     /// Repository-directory reads by test code.
     reads: test_input_routes::Reads,
@@ -125,7 +125,7 @@ impl<'a> Walker<'a> {
             layout: repetition::TestLayout::new(member, source),
             calls: time_limits::Calls::new(member),
             bodies: duplicates::Bodies::default(),
-            references: temp_directories::migrated(member)
+            references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
             reads: test_input_routes::Reads::default(),
             uses: application_exports::Uses::new(member, source),
@@ -177,6 +177,13 @@ impl<'a> Walker<'a> {
             },
             visit,
         );
+    }
+
+    /// Exempt a declaration's own name from the reference scan; its body stays visited.
+    fn declaring(&mut self, ident: &proc_macro2::Ident) {
+        if let Some(references) = &mut self.references {
+            references.skip(ident);
+        }
     }
 
     /// Record a production function body for the duplicate check.
@@ -267,21 +274,30 @@ impl<'a> Visit<'a> for Walker<'a> {
     }
 
     fn visit_item_fn(&mut self, function: &'a syn::ItemFn) {
+        self.declaring(&function.sig.ident);
         self.ignored.item_fn(function);
         self.body(&function.sig, &function.block);
         syn::visit::visit_item_fn(self, function);
     }
 
     fn visit_impl_item_fn(&mut self, function: &'a syn::ImplItemFn) {
+        self.declaring(&function.sig.ident);
         self.body(&function.sig, &function.block);
         syn::visit::visit_impl_item_fn(self, function);
     }
 
     fn visit_trait_item_fn(&mut self, function: &'a syn::TraitItemFn) {
+        self.declaring(&function.sig.ident);
         if let Some(block) = &function.default {
             self.body(&function.sig, block);
         }
         syn::visit::visit_trait_item_fn(self, function);
+    }
+
+    /// A foreign function declares its name the same way; its remaining names stay visited.
+    fn visit_foreign_item_fn(&mut self, function: &'a syn::ForeignItemFn) {
+        self.declaring(&function.sig.ident);
+        syn::visit::visit_foreign_item_fn(self, function);
     }
 
     fn visit_ident(&mut self, ident: &'a proc_macro2::Ident) {
