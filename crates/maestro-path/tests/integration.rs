@@ -4,5 +4,6 @@
 mod directory_observations;
 mod path_behavior;
 mod tilde;
+mod verbatim_spelling;
 
 mod final_links;

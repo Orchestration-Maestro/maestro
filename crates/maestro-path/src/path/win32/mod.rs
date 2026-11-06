@@ -317,3 +317,33 @@ pub fn basename(path: &str, suffix: Option<&str>) -> String {
 pub fn is_absolute(path: &str) -> bool {
     Root::parse(path).is_absolute()
 }
+
+/// Return the ordinary spelling of a verbatim drive or UNC path.
+///
+/// Windows reports real paths in the verbatim form, which programs and users do
+/// not write: `\\?\D:\x` is `D:\x` and `\\?\UNC\server\share\x` is
+/// `\\server\share\x`. Any other path, including a verbatim path without a drive
+/// root or a share, is returned as written.
+///
+/// # Examples
+///
+/// ```
+/// use maestro_path::win32;
+///
+/// assert_eq!(win32::ordinary(r"\\?\D:\work"), r"D:\work");
+/// assert_eq!(win32::ordinary(r"\\?\UNC\server\share"), r"\\server\share");
+/// assert_eq!(win32::ordinary(r"D:\work"), r"D:\work");
+/// ```
+#[must_use]
+pub fn ordinary(path: &str) -> Cow<'_, str> {
+    let Some(rest) = path.strip_prefix(r"\\?\") else {
+        return path.into();
+    };
+    if let Some(share) = rest.strip_prefix(r"UNC\").filter(|share| !share.is_empty()) {
+        return format!(r"\\{share}").into();
+    }
+    match rest.as_bytes() {
+        [letter, b':', b'\\', ..] if letter.is_ascii_alphabetic() => rest.into(),
+        _ => path.into(),
+    }
+}

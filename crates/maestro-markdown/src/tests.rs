@@ -109,6 +109,8 @@ pub(crate) struct Work {
     pub(crate) joined_bytes: usize,
     /// Largest unique source payload a list state kept alive until its release.
     pub(crate) frame_bytes: usize,
+    /// Whether a witness asked for that frame measurement.
+    pub(crate) track_frame: bool,
     /// Payload the settled output of the level a caller just finished charged.
     pub(crate) closed_settled: usize,
     /// Last reentry's mapped end before preserving already consumed chunks.
@@ -153,6 +155,14 @@ pub(crate) struct Work {
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
     pub(crate) static WORK: RefCell<Work> = RefCell::default();
+}
+
+/// Clear the counters and ask for the retained frame measurement.
+pub(crate) fn measuring_frame() {
+    WORK.with_borrow_mut(|work| {
+        *work = Work::default();
+        work.track_frame = true;
+    });
 }
 
 /// Charge the exact operand supplied to one block recognizer.
