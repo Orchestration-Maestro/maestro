@@ -315,6 +315,7 @@ pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module:
     providers(&root, &mut artifact);
     retarget(&root, &artifact, &reads, &header).await;
     parent.remove();
+    address_before_connection().await;
 }
 /// A counting address provider for `path` below the page origin.
 fn address(path: &'static str, reads: &Rc<Cell<u32>>) -> maestro_app::SandboxUrlProvider {
@@ -323,6 +324,34 @@ fn address(path: &'static str, reads: &Rc<Cell<u32>>) -> maestro_app::SandboxUrl
         reads.set(reads.get() + 1);
         Ok(format!("{}{path}", crate::contributions_support::origin()))
     })
+}
+/// An address changed while the body is detached reaches the body through an update, and its
+/// first load runs at that address, whose page delivers the log through the body's consumer.
+async fn address_before_connection() {
+    let view = view();
+    let (first, changed) = (Rc::default(), Rc::default());
+    let mut artifact = HtmlArtifact::new();
+    artifact.filename = "early.html".to_owned();
+    artifact.sandbox_url_provider = Some(address("/sandbox.html?first", &first));
+    artifact.set_content(LOGGING.to_owned()).unwrap();
+    let root = artifact.mount(&view).unwrap();
+    artifact.sandbox_url_provider = Some(address("/sandbox.html?changed", &changed));
+    artifact.update(&root, &view).unwrap();
+    let parent = container();
+    parent.append_child(&root.node).unwrap();
+    assert_eq!(
+        (frame(&root).unwrap().src(), first.get(), changed.get()),
+        (
+            format!(
+                "{}/sandbox.html?changed",
+                crate::contributions_support::origin()
+            ),
+            0,
+            1
+        )
+    );
+    logged(&root, &artifact, &view.i18n, "[log] one").await;
+    parent.remove();
 }
 /// Configured, changed, absent, frame-direct and failing addresses.
 async fn addresses(root: &DomRoot, artifact: &mut HtmlArtifact) {
@@ -815,7 +844,7 @@ fn shows_source(root: &DomRoot) -> bool {
         preview.has_attribute("hidden"),
         !source.has_attribute("hidden")
     );
-    crate::contributions_support::computed(&preview, "display") == "none"
+    preview.get_bounding_client_rect().width() <= 0.0
 }
 /// Header selections switch the presentation of one body while its frame, listing,
 /// selection, scroll and single load stay in place.
@@ -841,40 +870,31 @@ pub async fn html_artifact_dom_keeps_frame_across_mode_changes(import_module: js
     // The load and the header's standalone preparation each read the provider once.
     assert_eq!(reads.get(), 2);
     let loaded = frame(&root).unwrap();
-    let node: &Element = root.node.unchecked_ref();
-    let source = select(node, ".maestro-html-source");
-    assert_eq!(
-        crate::contributions_support::computed(node, "overflow"),
-        "hidden"
-    );
-    assert_eq!(
-        crate::contributions_support::computed(&source, "overflow-y"),
-        "auto"
-    );
     assert!(!shows_source(&root));
     let (preview_button, source_button) = toggles(&header);
     source_button.click();
     assert!(shows_source(&root));
     assert!(frame(&root).unwrap().is_same_node(Some(&loaded)));
     source_mode(&root, &mut artifact);
+    source_paint(&parent).await;
     preview_button.focus().unwrap();
     crate::contributions_support::driver("driverPress", "Enter").await;
     assert!(!shows_source(&root));
     assert!(frame(&root).unwrap().is_same_node(Some(&loaded)));
+    source_button.click();
+    assert!(shows_source(&root));
+    crate::support::reading_paint::observe("html-source-again").await;
+    preview_button.click();
+    assert!(!shows_source(&root));
     assert_eq!(reads.get(), 2, "changing the presentation never loads");
     sibling_modes(&view, &root);
     parent.remove();
 }
-/// The shown listing paints the selected brand background, scrolls inside the bounded body, and
-/// keeps its nodes, selection and scroll through an unrelated update.
+/// The shown listing scrolls inside the bounded body and keeps its nodes, selection and scroll
+/// through an unrelated update.
 fn source_mode(root: &DomRoot, artifact: &mut HtmlArtifact) {
     let view = view();
     let source = select(&root.node, ".maestro-html-source");
-    let background = view.pack.presentation(view.mode).unwrap().colors["background"];
-    assert_eq!(
-        crate::contributions_support::computed(&source, "background-color"),
-        crate::contributions_support::rgb(background)
-    );
     source.set_scroll_top(40);
     let scrolled = source.scroll_top();
     assert!(scrolled > 0, "the bounded listing scrolls");
@@ -889,6 +909,24 @@ fn source_mode(root: &DomRoot, artifact: &mut HtmlArtifact) {
     assert!(code(root).is_same_node(Some(&listing)));
     assert!(crate::contributions_support::page::selection(&listing).1);
     assert_eq!(source.scroll_top(), scrolled);
+}
+/// In both brand modes, the shown listing paints its background role over its box and keeps its
+/// scrolled text inside the bounded body.
+async fn source_paint(parent: &Element) {
+    let view = view();
+    crate::contributions_support::page::deselect();
+    for mode in [
+        maestro_theme::BrandMode::Dark,
+        maestro_theme::BrandMode::Light,
+    ] {
+        let presentation = view.pack.presentation(mode).unwrap();
+        let style = parent.unchecked_ref::<web_sys::HtmlElement>().style();
+        for (key, value) in presentation.css_properties() {
+            style.set_property(&key, &value).unwrap();
+        }
+        crate::support::reading_paint::publish_colors(&presentation.colors);
+        crate::support::reading_paint::observe("html-source").await;
+    }
 }
 /// A differently named sibling switches only its own presentation.
 fn sibling_modes(view: &DomView, first: &DomRoot) {
@@ -1016,7 +1054,7 @@ async fn mounted_download(
     let view = view();
     let reads = Rc::new(Cell::new(0));
     artifact.runtime_providers.push(marker("saved", &reads));
-    artifact.set_content(LOGGING.to_owned()).unwrap();
+    artifact.set_content(MARKING.to_owned()).unwrap();
     let root = artifact.mount(&view).unwrap();
     let parent = container();
     parent.append_child(&root.node).unwrap();
@@ -1027,7 +1065,7 @@ async fn mounted_download(
     let standalone = adapter
         .prepare_html_document(
             "artifact-literal$&雪.html",
-            LOGGING,
+            MARKING,
             &artifact.runtime_providers,
             Some(
                 maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
@@ -1039,7 +1077,7 @@ async fn mounted_download(
         .unwrap();
     assert_eq!(
         authored(&standalone),
-        LOGGING,
+        MARKING,
         "the saved source has no completion"
     );
     assert!(!standalone.contains("sendRuntimeMessage"));
@@ -1051,6 +1089,7 @@ async fn mounted_download(
             "literal$&雪.html",
         )
         .await;
+    standalone_runs(&standalone).await;
     // The connection, both standalone preparations and the changed source each read once.
     artifact.set_content(QUIET.to_owned()).unwrap();
     artifact.update(&root, &view).unwrap();
@@ -1064,6 +1103,53 @@ async fn mounted_download(
     assert_eq!(
         artifact.get_logs(&view.i18n).unwrap(),
         "No logs for literal$&雪.html"
+    );
+    parent.remove();
+}
+/// A source that writes one log line and marks its own page when it runs.
+const MARKING: &str = "<html><body>proof<script>console.log(\"one\");document.body.append(\" ran\")</script></body></html>";
+/// The saved standalone document runs on its own when a browser opens it: its globals and
+/// provider runtime run with its sandbox name, and its authored script marks the page.
+async fn standalone_runs(saved: &str) {
+    let bytes = js_sys::Array::of1(&saved.into());
+    let options = web_sys::BlobPropertyBag::new();
+    // A browser opening a saved file that declares no encoding detects it from the bytes; the
+    // page states the UTF-8 they were saved in, which an object URL would not detect.
+    options.set_type("text/html;charset=utf-8");
+    let blob = web_sys::Blob::new_with_str_sequence_and_options(&bytes, &options).unwrap();
+    let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+    let opened: web_sys::HtmlIFrameElement = document()
+        .create_element("iframe")
+        .unwrap()
+        .unchecked_into();
+    let loaded = crate::sandbox_loading_support::native::loaded(&opened);
+    opened.set_src(&url);
+    let parent = container();
+    parent.append_child(&opened).unwrap();
+    loaded.await;
+    web_sys::Url::revoke_object_url(&url).unwrap();
+    let window = crate::sandbox_loading_support::native::window_of(&opened);
+    let global = |name: &str| js_sys::Reflect::get(&window, &name.into()).unwrap();
+    let observed = (
+        global("sandboxId").as_string(),
+        global("saved").as_string(),
+        global("runtime_saved").as_bool(),
+        opened
+            .content_document()
+            .unwrap()
+            .body()
+            .unwrap()
+            .inner_text(),
+    );
+    assert_eq!(
+        observed,
+        (
+            Some("artifact-literal$&雪.html".to_owned()),
+            Some("saved".to_owned()),
+            Some(true),
+            "proof ran".to_owned()
+        ),
+        "the saved document runs on its own"
     );
     parent.remove();
 }
