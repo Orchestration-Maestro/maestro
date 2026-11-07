@@ -607,6 +607,9 @@ fn view(process: TestProcess) -> BTreeMap<String, String> {
 }
 
 /// Check each ordered edit against the ambient values the raw outer child supplied.
+///
+/// The overridden profile destination is a disposable root: an instrumented child writes
+/// its counters beside the working directory, which is this crate's directory.
 fn check_edits(profile: Option<&str>) {
     let name = left_name();
     let before: Vec<_> = std::env::vars_os().collect();
@@ -626,8 +629,17 @@ fn check_edits(profile: Option<&str>) {
         ("-", kept.as_str())
     );
     assert_eq!(cleared["XDG_CACHE_HOME"], hex(CACHE_HOME));
-    let overridden = view(plain(&name).env_clear().env("LLVM_PROFILE_FILE", "x%p"));
-    assert_eq!(overridden["LLVM_PROFILE_FILE"], hex("x%p"));
+    let profile_root = Scratch::new().unwrap();
+    let overridden_destination = profile_root.path().join("overridden-%p");
+    let overridden = view(
+        plain(&name)
+            .env_clear()
+            .env("LLVM_PROFILE_FILE", &overridden_destination),
+    );
+    assert_eq!(
+        overridden["LLVM_PROFILE_FILE"],
+        hex(&overridden_destination.to_string_lossy())
+    );
     let removed = view(plain(&name).env_clear().env_remove("LLVM_PROFILE_FILE"));
     assert_eq!(removed["LLVM_PROFILE_FILE"], "-");
     let reset = view(plain(&name).env_remove("MTP_SET").env("MTP_SET", "2"));
