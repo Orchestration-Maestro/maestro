@@ -15,14 +15,15 @@ const ALONE: &str = "MAESTRO_TEST_ALONE";
 /// in the isolated process, where the test body runs. Call it before the body starts any
 /// child whose pipes the test closes.
 ///
-/// A passing run repeats what the body wrote to standard error on this process's standard
-/// error, such as why it skipped a case, so the run shows it even while the test passes; its
-/// standard output stays hidden.
+/// A passing run repeats what the body wrote to standard error, such as why it skipped a
+/// case, through the standard error handle rather than the print macros the harness keeps, so
+/// `cargo test` writes that line to the terminal and a runner that captures the test process
+/// shows it on a failure or when asked. Its standard output stays hidden.
 ///
 /// # Errors
 ///
 /// Fails when `test` is not the running test, the isolated process does not start exactly
-/// this test, or the test fails there.
+/// this test, the test fails there, or the isolated run's standard error cannot be repeated.
 pub fn run_alone(test: &str) -> Result<bool, TestProcessError> {
     let process = TestProcess::current(test)?;
     if std::env::var_os(ALONE).is_some() {

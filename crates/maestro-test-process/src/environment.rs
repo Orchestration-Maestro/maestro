@@ -25,14 +25,16 @@ const SETTINGS_ZONE_PREMISE: &str =
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
 /// other than the environment keep one child each. A passing child's standard error is
-/// repeated here, such as the premise that left one of its cases out, so the run shows it even
-/// while the test passes; its standard output stays hidden.
+/// repeated here through the standard error handle rather than the print macros the harness
+/// keeps, such as the premise that left one of its cases out, so `cargo test` writes that line
+/// to the terminal and a runner that captures the test process shows it on a failure or when
+/// asked. Its standard output stays hidden.
 ///
 /// # Errors
 ///
 /// Fails when `test` is not the running test, a child does not start exactly this test,
-/// a child fails, or a child selects a group that does not exist. A failed child's
-/// streams are kept.
+/// a child fails, a child selects a group that does not exist, or a passing child's standard
+/// error cannot be repeated. A failed child's streams are kept.
 pub fn run_per_environment<C, K, V>(
     test: &str,
     cases: impl IntoIterator<Item = C>,

@@ -2416,7 +2416,10 @@ a live pipe end must first call `run_alone(test)` and return when it returns
 `true`: the transaction then runs in a fresh process with no sibling tests that
 could fork and inherit its pipe ends. A passing isolated run writes what its body
 wrote to standard error onto the run's own standard error, such as the premise that
-left a case out, so a skipped premise stays visible while the test passes. `status`
+left a case out, through the stream handle rather than the print macros the harness
+keeps: `cargo test` writes that line to the terminal, and a runner that captures the
+test process, as `just test` does, shows it on a failure or when asked for a passing
+test's output. `status`
 replays captured streams afterwards and is not a live route. `status_with_stdout`
 requires an empty regular file with its cursor at zero, sends standard output
 there and checks the prefix through that same open file. Nonempty files or nonzero
@@ -2466,10 +2469,11 @@ variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
 instead of compiling it again. In the parent, `run_per_environment` returns
 `None` once every child passes, and repeats each passing child's standard error
-as it goes, so a case that left one out keeps its reason. The owner writes those
-lines through the standard error handle instead of the print macros the harness
-keeps, so a passing test states why it skipped a case in a run that shows test
-output as it goes or asks for a passing test's output. In a child it returns that
+as it goes, so a case that left one out keeps its reason. `run_per_environment`
+writes those lines through the standard error handle instead of the print macros the
+harness keeps: `cargo test` writes them to the terminal, and a runner that captures
+the test process, as `just test` does, shows them on a failure or when asked for a
+passing test's output. In a child it returns that
 group's cases in their original order, and the test checks them. Cases that share
 variables therefore share one child and one fixture parse, so don't spawn a child
 per case yourself. A case that needs a fresh process for other state, such as a
