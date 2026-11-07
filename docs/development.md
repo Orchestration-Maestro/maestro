@@ -41,12 +41,16 @@ Browser smoke runs when the browser entry is present and a staged crate owns a
 browser compile witness, guarding targets outside native Clippy.
 
 For changed crates, run `just _check -p <package>` with repeated `-p` arguments
-for multiple crates. `_check` verifies feature unification, runs native Clippy
-followed by Windows-GNU Clippy, builds strict public documentation and checks
-workspace conventions. Both Clippy passes use the same package selection with
-`--all-targets --locked -- -D warnings`; they add no reverse dependents.
+for multiple crates. `_check` verifies feature unification, runs native Clippy,
+Windows-GNU Clippy and the browser-target lint, builds strict public
+documentation and checks workspace conventions. The native and Windows-GNU passes
+use the same package selection with `--all-targets --locked -- -D warnings`; they
+add no reverse dependents. The browser-target lint reads `wasm_crates` from
+`.github/ci.toml` and follows the same selection, so a local check and shared CI
+lint one crate list. It lints library targets only, because an integration test
+may name a crate that exists on native targets alone.
 CI checks dependents and workspace-wide inputs. `just check` explicitly selects
-`--workspace` for both passes on every development host. The commit hook stays
+`--workspace` for every pass on every development host. The commit hook stays
 native-only.
 
 The pinned `rust-toolchain.toml` provisions `x86_64-pc-windows-gnu`. To repair a
@@ -64,10 +68,11 @@ qualification remain in place.
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
 Cargo's dependency graph. See [catalog generation](models/generation.md). `check`
-formats hand-written Rust, verifies feature unification, runs native and
-Windows-GNU Clippy, builds strict public documentation and verifies workspace
-conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`, `build`
-and `check`; it never publishes. `clean` removes Cargo outputs, not source files.
+formats hand-written Rust, verifies feature unification, runs native, Windows-GNU
+and browser-target Clippy, builds strict public documentation and verifies
+workspace conventions. `ci` runs `check`, then `test`. `prepublish` runs `clean`,
+`build` and `check`; it never publishes. `clean` removes Cargo outputs, not source
+files.
 
 The conventions check requires `workspace.dependencies.serde_json` to name
 `serde_json` and explicitly enable `float_roundtrip`. Normal member dependencies,
@@ -138,7 +143,9 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
   --tests --examples --keep-going --message-format=json
 ```
 
-Lint each changed browser crate separately, including all test and example targets:
+`just _check` lints the declared browser crates for `wasm32-unknown-unknown` in
+library targets only. Lint one crate's test and example targets directly where
+they compile for the browser target:
 
 ```sh
 ~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
@@ -146,7 +153,8 @@ Lint each changed browser crate separately, including all test and example targe
 ```
 
 `clippy --all-targets -D warnings` also rejects unused native-only helpers that
-`check --tests` leaves as warnings.
+`check --tests` leaves as warnings. A crate whose integration tests name native-only
+test crates refuses that target; lint its library target instead.
 
 A browser compile witness, an example target whose body only compiles for the
 browser target, is not covered by native Clippy. `just check-browser-smoke`

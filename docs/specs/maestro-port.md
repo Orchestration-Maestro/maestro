@@ -334,8 +334,11 @@ CI must be equal or stronger step by step. Install rg and fd and require real-bi
 The private `_check` recipe runs native Clippy followed by Clippy for
 `x86_64-pc-windows-gnu`, forwarding the same explicit Cargo package selection to
 both passes with `--all-targets --locked -- -D warnings`. It adds no reverse
-dependents or workspace fallback. `just check` explicitly selects the workspace
-for both passes on every development host. The pinned toolchain target list
+dependents or workspace fallback. It then lints the same selection for
+`wasm32-unknown-unknown` over the browser crates `.github/ci.toml` declares,
+library targets only, so a local check and shared CI read one crate list.
+`just check` explicitly selects the workspace for every pass on every
+development host. The pinned toolchain target list
 includes the Windows-GNU standard library; hosts also need a working MinGW-w64
 C toolchain. Missing prerequisites fail the check, without a native-only fallback.
 The staged-crate commit hook remains native-only. Windows-GNU checks platform
