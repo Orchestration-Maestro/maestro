@@ -121,13 +121,12 @@ fn a_passing_child_reports_the_premise_it_skipped_a_case_for() {
     let output = TestProcess::current(test)
         .unwrap()
         .case("*")
-        .nocapture()
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
     assert!(
         String::from_utf8_lossy(&output.stderr).contains(PREMISE),
-        "a passing group child's premise never reached the caller: {output:?}"
+        "a passing group child's premise never passed the harness capture: {output:?}"
     );
 }
 

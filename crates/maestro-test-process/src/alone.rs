@@ -1,5 +1,6 @@
 //! Isolation of a live pipe transaction in a process that runs only that test.
 
+use crate::child::repeat_stderr;
 use crate::{TestProcess, TestProcessError};
 
 /// Variable that marks the process [`run_alone`] started.
@@ -15,12 +16,14 @@ const ALONE: &str = "MAESTRO_TEST_ALONE";
 /// child whose pipes the test closes.
 ///
 /// A passing run repeats what the body wrote to standard error, such as why it skipped a
-/// case; its standard output stays hidden.
+/// case, through the standard error handle rather than the print macros the harness keeps, so
+/// `cargo test` writes that line to the terminal and a runner that captures the test process
+/// shows it on a failure or when asked. Its standard output stays hidden.
 ///
 /// # Errors
 ///
 /// Fails when `test` is not the running test, the isolated process does not start exactly
-/// this test, or the test fails there.
+/// this test, the test fails there, or the isolated run's standard error cannot be repeated.
 pub fn run_alone(test: &str) -> Result<bool, TestProcessError> {
     let process = TestProcess::current(test)?;
     if std::env::var_os(ALONE).is_some() {
@@ -29,7 +32,7 @@ pub fn run_alone(test: &str) -> Result<bool, TestProcessError> {
     let name = process.name().to_owned();
     let output = process.env(ALONE, "1").nocapture().output()?;
     if output.status.success() {
-        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        repeat_stderr(&name, &output.stderr)?;
         return Ok(true);
     }
     Err(TestProcessError::new(
