@@ -218,7 +218,9 @@ A refused link shows its label without an anchor, and a refused image shows its
 alternative text. With escaping on, a refused angle autolink keeps its source as
 literal text. The spreadsheet preview uses the same link rule.
 The selected pack's error role colors formula errors when painted, and the
-matching math stylesheet and fonts are inserted once per document.
+matching math stylesheet and fonts are inserted once per document. The fonts join
+the document's font set straight from their embedded bytes, not as font URLs, so
+math keeps its fonts on a page whose content policy allows only `'self'`.
 
 Each code block is a native listing: a language label and a canvas copy control in
 a header outside the body, whose own scroller is at most 24 rem tall. The first

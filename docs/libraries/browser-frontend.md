@@ -140,6 +140,12 @@ attributes need no additional binding features. Document preparation embeds only
 the runtime and navigation programs required by the sandbox, not a JavaScript
 frontend. See [retained HTML loading](../browser/sandbox.md#retained-html-loading).
 
+Math typesetting additionally enables `web-sys/FontFace`,
+`web-sys/FontFaceDescriptors` and `web-sys/FontFaceSet` on the same locked version,
+with no added package or licence. The embedded math fonts join the document's font
+set as faces built from their bytes, so a page content policy that refuses font
+URLs still lets math keep its fonts.
+
 Message links directly declare the already-locked percent-encoding library and
 add only `web-sys/HtmlTextAreaElement`. Its implied Element, EventTarget,
 HtmlElement and Node features were already enabled. Clipboard discovery, Promise
