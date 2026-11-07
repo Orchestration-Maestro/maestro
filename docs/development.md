@@ -1614,6 +1614,12 @@ prepared `native_fixture` example when a backend launches a program by name with
 literal operands, or when its protocol requires raw bytes. The complete contract
 is [Rust test children](specs/test-processes.md).
 
+The package re-pin matrix shares one native Git history per repository layout.
+Before each reference form, it restores the original HEAD selection, revision and
+in-memory settings, then clears dependency observations. The matrix covers failed
+acquisition, successful retries, missing refs and unchanged revisions without
+recreating or republishing the history for each form.
+
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
