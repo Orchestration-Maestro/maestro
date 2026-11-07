@@ -75,6 +75,29 @@ pub fn is_whitespace_char(api: &ExtensionAPI, text: &str) -> ExtensionResult<boo
     api.helper("is_whitespace_char", &(text,))
 }
 
+/// Trims both edges while the host classifies each edge scalar as whitespace.
+///
+/// Interior whitespace, newlines included, stays as it is, and the returned slice borrows
+/// `text`.
+///
+/// # Errors
+/// Returns the host's whitespace-classification failure.
+pub fn trim<'a>(api: &ExtensionAPI, mut text: &'a str) -> ExtensionResult<&'a str> {
+    while let Some(ch) = text.chars().next() {
+        if !is_whitespace_char(api, &ch.to_string())? {
+            break;
+        }
+        text = &text[ch.len_utf8()..];
+    }
+    while let Some(ch) = text.chars().next_back() {
+        if !is_whitespace_char(api, &ch.to_string())? {
+            break;
+        }
+        text = &text[..text.len() - ch.len_utf8()];
+    }
+    Ok(text)
+}
+
 /// Reports whether any supplied scalar is in the host punctuation set.
 ///
 /// # Errors

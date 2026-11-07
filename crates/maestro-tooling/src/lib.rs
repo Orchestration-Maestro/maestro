@@ -21,6 +21,8 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Browser-target Clippy over the declared browser crates.
+mod browser_clippy;
 /// Temporary browser-export manifest preparation and lock checks.
 mod browser_export_setup;
 /// The locked packages and the dependency graph between them.
@@ -129,6 +131,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             run_source::Mode::Windows,
         )),
         Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
+        Some("browser-clippy") => browser_clippy::run(args, cargo, checkout),
         Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {

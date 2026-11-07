@@ -9,7 +9,7 @@ use maestro_extensions_wasm::{
     CallbackEmitter, Component, ComponentView, CustomDone, CustomFactoryOutcome, Editor,
     EditorOptions, EditorTheme, ExtensionAPI, ExtensionComponent, ExtensionContext,
     ExtensionResult, SelectListTheme, Style, TUI, Theme, matches_key,
-    utils::{TruncateOptions, is_whitespace_char, truncate_to_width},
+    utils::{TruncateOptions, trim, truncate_to_width},
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -39,23 +39,9 @@ struct QuestionView {
     done: CustomDone<Option<Selection>>,
 }
 impl QuestionView {
-    /// Uses the shared whitespace definition while preserving the interior text.
+    /// Trims the host's whitespace, then records the answer or clears the editor.
     fn submit(&self, text: &str) -> ExtensionResult<()> {
-        let mut start = 0;
-        for (index, ch) in text.char_indices() {
-            if !is_whitespace_char(&self.api, &ch.to_string())? {
-                break;
-            }
-            start = index + ch.len_utf8();
-        }
-        let mut end = text.len();
-        for (index, ch) in text[start..].char_indices().rev() {
-            if !is_whitespace_char(&self.api, &ch.to_string())? {
-                break;
-            }
-            end = start + index;
-        }
-        let answer = &text[start..end.max(start)];
+        let answer = trim(&self.api, text)?;
         if answer.is_empty() {
             self.state.borrow_mut().editing = false;
             self.editor.set_text("")?;

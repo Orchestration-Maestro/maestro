@@ -8,6 +8,7 @@ use crate::{
     component_adapter::{Exports, ToolCapabilities},
 };
 use serde_json::{Value, json};
+
 #[path = "../../../../examples/extensions/question.rs"]
 mod question;
 /// The shipped factory, without an alternate implementation.

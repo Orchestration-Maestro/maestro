@@ -3,7 +3,7 @@ use super::{Answer, Question, QuestionnaireResult};
 use maestro_extensions_wasm::{
     CallbackEmitter, Component, ComponentView, CustomDone, CustomFactoryOutcome, Editor,
     EditorOptions, EditorTheme, ExtensionAPI, ExtensionComponent, ExtensionContext,
-    ExtensionResult, SelectListTheme, Style, TUI, Theme, matches_key,
+    ExtensionResult, SelectListTheme, Style, TUI, Theme, matches_key, utils::trim,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -77,21 +77,7 @@ impl Questionnaire {
         let Some(id) = self.state.borrow_mut().input.take() else {
             return Ok(());
         };
-        let mut start = 0;
-        let mut end = text.len();
-        for (index, ch) in text.char_indices() {
-            if !maestro_extensions_wasm::utils::is_whitespace_char(&self.api, &ch.to_string())? {
-                break;
-            }
-            start = index + ch.len_utf8();
-        }
-        for (index, ch) in text[start..].char_indices().rev() {
-            if !maestro_extensions_wasm::utils::is_whitespace_char(&self.api, &ch.to_string())? {
-                break;
-            }
-            end = start + index;
-        }
-        let trimmed = &text[start..end.max(start)];
+        let trimmed = trim(&self.api, text)?;
         let value = if trimmed.is_empty() {
             "(no response)"
         } else {

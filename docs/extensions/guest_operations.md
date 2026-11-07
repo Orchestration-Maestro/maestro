@@ -505,6 +505,9 @@ terminal text owner; the component contains no text algorithms.
   its byte length. A position without a complete supported escape returns `None`.
 - `is_whitespace_char` and `is_punctuation_char` report whether any supplied
   scalar belongs to the host's set. Whitespace includes U+FEFF, not U+0085.
+- `trim` drops the leading and trailing scalars the host counts as whitespace and
+  borrows the rest, so interior whitespace, newlines included, stays. A rejected
+  classification returns the host's error, never a component-local trim.
 
 Calls return the host's error rather than choosing a component-local fallback.
 
