@@ -20,6 +20,7 @@ _check *selection:
     cargo hakari verify
     @cargo clippy {{quote(selection)}} --all-targets --locked -- -D warnings
     @cargo clippy {{quote(selection)}} --all-targets --locked --target x86_64-pc-windows-gnu -- -D warnings
+    @cargo run --quiet --locked -p maestro-tooling --bin development -- wasm-clippy {{quote(selection)}}
     @RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc {{quote(selection)}} --no-deps --locked
     cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean
 

@@ -42,6 +42,8 @@ mod nextest_setup;
 mod nextest_wrapper;
 /// Reusable test-setup staging and validation.
 mod test_setup;
+/// Browser-target Clippy over the declared browser crates.
+mod wasm_clippy;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 /// The workspace a development command serves.
@@ -129,6 +131,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
             run_source::Mode::Windows,
         )),
         Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
+        Some("wasm-clippy") => wasm_clippy::run(args, cargo, checkout),
         Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
