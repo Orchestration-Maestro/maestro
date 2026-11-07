@@ -6,6 +6,11 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
+#![expect(
+    clippy::duplicate_mod,
+    reason = "Each shipped example is its own crate; this test module loads several examples that
+        share one support file."
+)]
 
 /// Starts the extension on the built component and on the controlled adapter in turn and runs
 /// the async test body `$body(&mut driver)` against each.

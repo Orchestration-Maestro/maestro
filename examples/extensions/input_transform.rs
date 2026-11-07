@@ -11,26 +11,12 @@ use std::rc::Rc;
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, HookResult, InputEventResult, InputSource, InputTransform, NotificationType,
-    Presence, utils,
+    HookResult, InputEventResult, InputSource, InputTransform, NotificationType, Presence, utils,
 };
 
-/// Trims surrounding characters using the host's shared whitespace definition.
-fn trim<'a>(api: &ExtensionAPI, mut text: &'a str) -> ExtensionResult<&'a str> {
-    while let Some(ch) = text.chars().next() {
-        if !utils::is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        text = &text[ch.len_utf8()..];
-    }
-    while let Some(ch) = text.chars().next_back() {
-        if !utils::is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        text = &text[..text.len() - ch.len_utf8()];
-    }
-    Ok(text)
-}
+#[path = "support/trim.rs"]
+mod trim;
+use trim::trim;
 
 /// Returns a rewrite, local handling decision or explicit continuation for the input.
 fn input(

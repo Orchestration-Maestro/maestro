@@ -14,9 +14,13 @@ use config::{Preset, Presets};
 use maestro_extensions_wasm::{
     BeforeAgentStartEventResult, CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent,
     ExtensionEventResult, ExtensionFuture, ExtensionResult, FlagOptions, FlagType, FlagValue, Key,
-    Model, NotificationType, Presence, SessionEntry, ShortcutOptions, ThinkingLevel, utils,
+    Model, NotificationType, Presence, SessionEntry, ShortcutOptions, ThinkingLevel,
 };
 use std::{cell::RefCell, rc::Rc};
+
+#[path = "support/trim.rs"]
+mod trim;
+use trim::trim;
 
 /// Host settings captured before the first preset is applied.
 #[derive(Clone)]
@@ -235,27 +239,6 @@ fn has_presets(ctx: &ExtensionContext, state: &State) -> ExtensionResult<bool> {
     Ok(false)
 }
 
-/// Trims only characters the host's shared whitespace helper recognizes.
-fn trimmed<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
-    let mut start = 0;
-    let mut end = text.len();
-    for (offset, c) in text.char_indices() {
-        if !utils::is_whitespace_char(api, &c.to_string())? {
-            start = offset;
-            break;
-        }
-        start = offset + c.len_utf8();
-    }
-    for (offset, c) in text[start..].char_indices().rev() {
-        if !utils::is_whitespace_char(api, &c.to_string())? {
-            end = start + offset + c.len_utf8();
-            break;
-        }
-        end = start + offset;
-    }
-    Ok(&text[start..end])
-}
-
 /// Handles direct names or opens the custom selector with the current active marker.
 async fn command(
     api: ExtensionAPI,
@@ -263,7 +246,7 @@ async fn command(
     args: String,
     ctx: ExtensionContext,
 ) -> ExtensionResult<()> {
-    let name = trimmed(&api, &args)?;
+    let name = trim(&api, &args)?;
     if !name.is_empty() {
         if !state.borrow().presets.contains_key(name) {
             return unknown(&ctx, &state.borrow(), name, NotificationType::Error);

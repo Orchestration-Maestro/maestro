@@ -20,6 +20,10 @@ use maestro_extensions_wasm::{
 };
 use serde::Deserialize;
 
+#[path = "support/trim.rs"]
+mod trim;
+use trim::trim;
+
 /// Maximum number of open issues requested from the CLI.
 const MAX_ISSUES: &str = "100";
 /// Maximum number of locally filtered candidates.
@@ -81,25 +85,6 @@ impl Issues {
             waiter.wake();
         }
     }
-}
-
-/// Trims using the host's shared whitespace set, including the byte order mark.
-fn trim<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
-    let mut start = 0;
-    let mut end = text.len();
-    for (index, ch) in text.char_indices() {
-        if !is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        start = index + ch.len_utf8();
-    }
-    for (index, ch) in text[start..].char_indices().rev() {
-        if !is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        end = start + index;
-    }
-    Ok(&text[start..end.max(start)])
 }
 
 /// Accepts only the source's SSH and HTTP GitHub remote spellings.

@@ -20,22 +20,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-/// Trims only the whitespace scalars recognized by the host's shared text owner.
-fn trim<'a>(api: &ExtensionAPI, mut text: &'a str) -> ExtensionResult<&'a str> {
-    while let Some(c) = text.chars().next() {
-        if !maestro_extensions_wasm::utils::is_whitespace_char(api, &c.to_string())? {
-            break;
-        }
-        text = &text[c.len_utf8()..];
-    }
-    while let Some(c) = text.chars().next_back() {
-        if !maestro_extensions_wasm::utils::is_whitespace_char(api, &c.to_string())? {
-            break;
-        }
-        text = &text[..text.len() - c.len_utf8()];
-    }
-    Ok(text)
-}
+#[path = "support/trim.rs"]
+mod trim;
+use trim::trim;
 
 /// Extracts user and assistant text, then assistant tool calls, in branch order.
 fn conversation(api: &ExtensionAPI, entries: Vec<SessionEntry>) -> ExtensionResult<String> {

@@ -13,11 +13,14 @@ use maestro_extensions_wasm::{
     AgentToolResult, CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult,
     NotificationType, Presence, TextContent, ToolDefinition, ToolMetadata, UserBlock, config,
     tools::path_utils::{guest_path, resolve},
-    utils::is_whitespace_char,
 };
 use regex::RegexSet;
 use serde::Deserialize;
 use serde_json::{Value, json};
+
+#[path = "support/trim.rs"]
+mod trim;
+use trim::trim;
 
 /// Read arguments retain the optional numeric line bounds.
 #[derive(Deserialize)]
@@ -165,19 +168,7 @@ fn recent_log(api: &ExtensionAPI, log: &str) -> ExtensionResult<String> {
         return Ok("No access log found".into());
     };
     let text = String::from_utf8_lossy(&bytes);
-    let mut trimmed = text.as_ref();
-    while let Some(ch) = trimmed.chars().next() {
-        if !is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        trimmed = &trimmed[ch.len_utf8()..];
-    }
-    while let Some(ch) = trimmed.chars().next_back() {
-        if !is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        trimmed = &trimmed[..trimmed.len() - ch.len_utf8()];
-    }
+    let trimmed = trim(api, text.as_ref())?;
     let lines: Vec<_> = trimmed.split('\n').collect();
     Ok(format!(
         "Recent file access:\n{}",
