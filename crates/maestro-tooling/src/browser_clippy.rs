@@ -1,6 +1,6 @@
 //! Lint the declared browser crates for the browser target.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
@@ -33,14 +33,21 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
         return Ok(ExitCode::SUCCESS);
     }
     let mut child = Command::new(cargo);
-    child
-        .current_dir(checkout)
-        .args(["clippy", "--locked", "--target", "wasm32-unknown-unknown"]);
-    for package in packages {
-        child.args(["-p", package]);
-    }
-    child.args(["--", "-D", "warnings"]);
+    child.current_dir(checkout).args(arguments(&packages));
     Ok(exit_code(child.status()?))
+}
+
+/// The shared CI lint command over `packages`, one package argument per crate.
+fn arguments(packages: &[&str]) -> Vec<OsString> {
+    let mut arguments: Vec<OsString> = ["clippy", "--locked", "--target", "wasm32-unknown-unknown"]
+        .map(OsString::from)
+        .into();
+    for package in packages {
+        arguments.push(OsString::from("-p"));
+        arguments.push(OsString::from(*package));
+    }
+    arguments.extend(["--", "-D", "warnings"].map(OsString::from));
+    arguments
 }
 
 /// The browser crates the caller declares, in declaration order.
@@ -74,14 +81,14 @@ fn selection(args: &[OsString]) -> io::Result<Option<Vec<String>>> {
         if argument == "--workspace" {
             whole = true;
         } else if let Some(name) = argument.strip_prefix("--package=") {
-            names.push(name.to_owned());
+            names.push(package(name)?.to_owned());
         } else if argument == "-p" || argument == "--package" {
             let name = remaining
                 .next()
                 .ok_or_else(|| io::Error::other(format!("{argument} names no package")))?;
-            names.push(text(name)?.to_owned());
+            names.push(package(text(name)?)?.to_owned());
         } else if let Some(name) = argument.strip_prefix("-p") {
-            names.push(name.to_owned());
+            names.push(package(name)?.to_owned());
         } else {
             return Err(io::Error::other(format!(
                 "the browser lint selects on no argument {argument}"
@@ -91,8 +98,18 @@ fn selection(args: &[OsString]) -> io::Result<Option<Vec<String>>> {
     Ok((!whole).then_some(names))
 }
 
+/// One package name, refusing the Cargo patterns and versions it cannot match to a declared crate.
+fn package(name: &str) -> io::Result<&str> {
+    if name.contains(['*', '?', '@', '[']) {
+        return Err(io::Error::other(format!(
+            "the browser lint cannot narrow the package name {name}"
+        )));
+    }
+    Ok(name)
+}
+
 /// Read one Cargo argument as text.
-fn text(argument: &OsString) -> io::Result<&str> {
+fn text(argument: &OsStr) -> io::Result<&str> {
     argument
         .to_str()
         .ok_or_else(|| io::Error::other("the package selection is not text"))

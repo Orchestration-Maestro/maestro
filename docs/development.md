@@ -48,7 +48,9 @@ use the same package selection with `--all-targets --locked -- -D warnings`; the
 add no reverse dependents. The browser-target lint reads `wasm_crates` from
 `.github/ci.toml` and follows the same selection, so a local check and shared CI
 lint one crate list. It lints library targets only, because an integration test
-may name a crate that exists on native targets alone.
+may name a crate that exists on native targets alone. A package argument it cannot
+match to one declared crate, such as a pattern or a version, fails the check
+instead of linting nothing.
 CI checks dependents and workspace-wide inputs. `just check` explicitly selects
 `--workspace` for every pass on every development host. The commit hook stays
 native-only.
