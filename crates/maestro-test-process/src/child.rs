@@ -11,6 +11,7 @@ use std::process::{Child, Command, Output};
 use std::thread::JoinHandle;
 
 use crate::HARNESS_START;
+use crate::TestProcessError;
 
 /// The standard output a child produces when it writes `body`.
 #[must_use]
@@ -221,13 +222,27 @@ pub fn write_stdout(bytes: &[u8]) -> io::Result<()> {
     out.write_all(bytes).and_then(|()| out.flush())
 }
 
-/// Writes `bytes` to standard error.
+/// Writes `bytes` to standard error through the stream handle.
+///
+/// The harness keeps what the print macros write, so a handle write reaches a test's own
+/// standard error while it passes and a macro write does not.
 ///
 /// # Errors
 ///
 /// Returns the write failure.
 pub fn write_stderr(bytes: &[u8]) -> io::Result<()> {
     io::stderr().write_all(bytes)
+}
+
+/// Repeats a passing child's standard error on this process's standard error.
+///
+/// # Errors
+///
+/// Returns the failure to write, such as a closed stream.
+pub(crate) fn repeat_stderr(test: &str, bytes: &[u8]) -> Result<(), TestProcessError> {
+    write_stderr(bytes).map_err(|error| {
+        TestProcessError::new(test, "cannot repeat the child's standard error").caused_by(error)
+    })
 }
 
 /// The status a child ends with when standard output cannot be flushed.

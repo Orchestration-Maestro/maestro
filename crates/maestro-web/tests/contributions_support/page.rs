@@ -282,9 +282,14 @@ pub(crate) fn selection(root: &Element) -> (String, bool) {
     (text, root.contains(anchor.as_ref()))
 }
 
+/// Clear the page selection.
+pub(crate) fn deselect() {
+    invoke(&page_selection(), "removeAllRanges", &[]).unwrap();
+}
+
 /// Whether the browser's own find locates `text` from the start of the page.
 pub(crate) fn find(text: &str) -> bool {
-    invoke(&page_selection(), "removeAllRanges", &[]).unwrap();
+    deselect();
     invoke(&web_sys::window().unwrap(), "find", &[&text.into()])
         .unwrap()
         .as_bool()

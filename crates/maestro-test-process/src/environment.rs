@@ -3,10 +3,15 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 
+use crate::child::{repeat_stderr, write_stderr};
 use crate::{TestProcess, TestProcessError};
 
 /// Variable that carries the selected environment group into its child.
 const GROUP: &str = "MAESTRO_TEST_GROUP";
+
+/// The premise a host that takes its local zone from its settings fails.
+const SETTINGS_ZONE_PREMISE: &str =
+    "premise not met: this host takes the local time zone from its settings, not TZ\n";
 
 /// Run the calling test's cases in one cleared child per distinct environment.
 ///
@@ -20,14 +25,16 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
 /// other than the environment keep one child each. A passing child's standard error is
-/// repeated here, such as the premise that left one of its cases out; its standard output
-/// stays hidden.
+/// repeated here through the standard error handle rather than the print macros the harness
+/// keeps, such as the premise that left one of its cases out, so `cargo test` writes that line
+/// to the terminal and a runner that captures the test process shows it on a failure or when
+/// asked. Its standard output stays hidden.
 ///
 /// # Errors
 ///
 /// Fails when `test` is not the running test, a child does not start exactly this test,
-/// a child fails, or a child selects a group that does not exist. A failed child's
-/// streams are kept.
+/// a child fails, a child selects a group that does not exist, or a passing child's standard
+/// error cannot be repeated. A failed child's streams are kept.
 pub fn run_per_environment<C, K, V>(
     test: &str,
     cases: impl IntoIterator<Item = C>,
@@ -70,7 +77,7 @@ where
             )
             .with_streams(&output.stdout, &output.stderr));
         }
-        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        repeat_stderr(&name, &output.stderr)?;
     }
     Ok(None)
 }
@@ -147,8 +154,18 @@ pub fn local_zone_follows_tz() -> bool {
     if cfg!(unix) {
         return true;
     }
-    eprintln!("premise not met: this host takes the local time zone from its settings, not TZ");
+    report_settings_zone_premise();
     false
+}
+
+/// Reports the premise that this host takes its local zone from its settings, not `TZ`.
+///
+/// The harness keeps what the print macros write, so this line reaches the standard error of
+/// a test that passes only through the stream handle.
+fn report_settings_zone_premise() {
+    // The run has no other channel for a case it skipped, and a host that cannot take the
+    // line still skips it.
+    let _ = write_stderr(SETTINGS_ZONE_PREMISE.as_bytes());
 }
 
 /// Return this process's typed case or environment-group selection.
@@ -171,3 +188,33 @@ pub fn selection() -> CaseSelection {
 /// A caller that hands a child its environment instead of launching it through
 /// [`TestProcess`] names this variable and passes the case identifier as its value.
 pub const CASE: &str = "MAESTRO_CHILD_CASE";
+
+#[cfg(test)]
+mod tests {
+    use super::{SETTINGS_ZONE_PREMISE, report_settings_zone_premise};
+    use crate::TestProcess;
+
+    /// Variable that marks the child reporting the premise.
+    const PREMISE_CHILD: &str = "MTP_ZONE_PREMISE";
+
+    /// A passing test keeps the premise it skipped a case for, past the harness capture.
+    #[test]
+    fn the_settings_zone_premise_passes_the_harness_capture() {
+        let test = "the_settings_zone_premise_passes_the_harness_capture";
+        if std::env::var_os(PREMISE_CHILD).is_some() {
+            report_settings_zone_premise();
+            return;
+        }
+        let output = TestProcess::current(test)
+            .unwrap()
+            .env(PREMISE_CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains(SETTINGS_ZONE_PREMISE.trim_end()),
+            "a passing test's premise never passed the harness capture: {output:?}"
+        );
+    }
+}

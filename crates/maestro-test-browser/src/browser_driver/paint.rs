@@ -14,6 +14,12 @@ use std::io;
 
 /// Artifact console scenes.
 mod console;
+/// HTML artifact source listing scenes.
+mod html;
+/// Visible boxes and their pixel counts.
+mod region;
+/// Word page scenes.
+mod word;
 
 /// A page point far from every mounted fixture, used to clear native hover.
 const PARKED: (f64, f64) = (1279.0, 719.0);
@@ -130,21 +136,14 @@ impl Page<'_> {
             "offline-tool-card-layout" => tool_card_layout(self).await,
             "offline-tool-card-roles" => tool_card_roles(self).await,
             "control-focus" => control_focus(self).await,
-            "console-rest" => console::resting(self).await,
-            "console-hover" => console::hovered(self).await,
-            "console-focus" => console::focused(self).await,
-            _ => match (scene.strip_prefix("viewport-"), neighbor(scene)) {
-                (Some(index), _) => {
-                    let index = index
-                        .parse()
-                        .ok()
-                        .filter(|index| *index <= LAST_VIEWPORT)
-                        .ok_or_else(|| io::Error::other(format!("unknown paint scene {scene}")))?;
-                    viewport(self, scene, index).await
-                }
-                (None, Some(selector)) => neighbors(self, scene, selector).await,
-                (None, None) => Err(io::Error::other(format!("unknown paint scene {scene}"))),
-            },
+            "console-rest" | "console-hover" | "console-focus" | "console-collapsed"
+            | "console-expanded" | "console-copy" | "console-copied" => {
+                console::observe(self, scene).await
+            }
+            "html-source" => html::shown(self).await,
+            "html-source-again" => html::again(self).await,
+            "word-page" => word::sheet(self).await,
+            _ => placed(self, scene).await,
         }
     }
 
@@ -195,6 +194,22 @@ impl Page<'_> {
             "PAINT {} {scene} {check} pixels={pixels}",
             self.name
         ));
+    }
+}
+
+/// Observe a numbered viewport scene or a neighbour scene.
+async fn placed(page: &mut Page<'_>, scene: &str) -> io::Result<()> {
+    match (scene.strip_prefix("viewport-"), neighbor(scene)) {
+        (Some(index), _) => {
+            let index = index
+                .parse()
+                .ok()
+                .filter(|index| *index <= LAST_VIEWPORT)
+                .ok_or_else(|| io::Error::other(format!("unknown paint scene {scene}")))?;
+            viewport(page, scene, index).await
+        }
+        (None, Some(selector)) => neighbors(page, scene, selector).await,
+        (None, None) => Err(io::Error::other(format!("unknown paint scene {scene}"))),
     }
 }
 
@@ -425,19 +440,25 @@ async fn changed(
     .await
 }
 
-/// Capture, apply the page function `change` to every node of `nodes`, capture again, restore
-/// their authored `style` attributes and count the changed pixels, as `changed` does for `region`.
+/// Capture as `decorated`, apply the page function `change` to every node of `nodes`, capture
+/// again as `without` and restore their authored `style` attributes.
+async fn contrast(page: &mut Page<'_>, nodes: &str, change: &str) -> io::Result<()> {
+    page.shot("decorated").await?;
+    page.evaluate(&format!("__maestroPaint.mutate([...{nodes}],{change})"))
+        .await?;
+    page.shot("without").await?;
+    page.evaluate("__maestroPaint.restore()").await.map(drop)
+}
+
+/// Contrast `nodes` with and without `change` and count the changed pixels, as `changed` does
+/// for `region`.
 async fn without(
     page: &mut Page<'_>,
     nodes: &str,
     change: &str,
     region: Option<&str>,
 ) -> io::Result<u64> {
-    page.shot("decorated").await?;
-    page.evaluate(&format!("__maestroPaint.mutate([...{nodes}],{change})"))
-        .await?;
-    page.shot("without").await?;
-    page.evaluate("__maestroPaint.restore()").await?;
+    contrast(page, nodes, change).await?;
     changed(page, region, ("decorated", "without")).await
 }
 

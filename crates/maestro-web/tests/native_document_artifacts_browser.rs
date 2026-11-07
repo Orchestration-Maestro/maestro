@@ -127,13 +127,13 @@ async fn assert_page_geometry(
     case: &Package,
     width: i32,
 ) -> u32 {
-    use crate::contributions_support::computed;
     let root = artifact(&case.content).mount(view).unwrap();
     viewport.append_child(&root.node).unwrap();
     let node: &Element = root.node.unchecked_ref();
     let sheet = select(node, "section.docx");
-    assert_eq!(computed(&sheet, "background-color"), "rgb(255, 255, 255)");
-    assert_eq!(computed(&sheet, "color"), "rgb(0, 0, 0)");
+    if case.text.iter().any(|text| !text.is_empty()) {
+        crate::support::reading_paint::observe("word-page").await;
+    }
     assert!(
         (sheet.get_bounding_client_rect().width() - f64::from(width)).abs() < 1.0,
         "{}",

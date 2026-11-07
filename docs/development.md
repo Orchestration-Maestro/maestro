@@ -419,8 +419,8 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports and two contribution exports check the pixels the page
-paints. Each one draws a state and awaits
+Eight canvas exports, two contribution exports and two loading exports check the
+pixels the page paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
 with `Page.captureScreenshot`, decodes the image with the browser's own decoder
@@ -442,6 +442,9 @@ the export and the job:
 | `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background. The browser draws no underline on a run of only spaces, so the underline is checked on the export's text. |
 | `control-focus` | `artifact_controls_dom_paint_tokens_and_keyboard_actions` | The control that keyboard focus reached paints the accent ring over more than half of each 2-pixel edge band, so no edge is missing or clipped away by its group. |
 | `console-rest`, `console-hover`, `console-focus` | `artifact_console_dom_expansion_copy_and_follow` | In both modes, the summary and ordinary lines paint the muted role and error lines the error role. Under the native pointer, the summary paints the text role. The follow control that keyboard focus reached paints its accent fill and on-accent glyph, and its accent outline covers more than a quarter of the straight band along each edge. These scenes never move the pointer or scroll, so an element outside the visible page fails. |
+| `console-collapsed`, `console-expanded`, `console-copy`, `console-copied` | `artifact_console_dom_expansion_copy_and_follow` | The glyph's ink, the pixels that change when the glyph is hidden, has the right shape: a collapsed summary paints a right chevron (taller than wide), an expanded one a down chevron (wider than tall), the idle copy control a square copy icon and the copied control a check mark wider than tall. |
+| `word-page` | `docx_artifact_dom_styles_and_safe_targets` | In both modes and both widths, the visible part of the first page paints white over more than half its pixels, and its text paints black ink, pixels with no channel above `0x60`, for every package with text. The limit allows for thin antialiased glyphs that never reach pure black. Dark mode's brand text colour is light, so text that loses its black fails there. |
+| `html-source`, `html-source-again` | `html_artifact_dom_keeps_frame_across_mode_changes` | In both modes, the shown listing paints the background role over more than half its box, and hiding its text changes pixels inside the bounded body and none outside it. After the listing is hidden and shown again, it paints exactly what the last `html-source` capture showed, so it kept its scroll position. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
@@ -455,6 +458,12 @@ each fail. `console_scenes_require_their_painted_roles` covers the console
 scenes: lines, hover and focus that paint their roles pass, while a line
 in the wrong colour, a hover that keeps the resting colour, a missing outline, a
 pointer away from the summary and focus away from the follow control each fail.
+`console_glyph_scenes_require_their_painted_shapes` passes each glyph scene only
+for its own glyph and fails a glyph that paints nothing.
+`word_page_scene_requires_a_white_page_and_black_text` fails a grey page, grey
+text and a missing page. `html_source_scenes_require_covered_clipped_and_unchanged_paint`
+fails a transparent listing, a listing that paints outside its body, a changed
+scroll position and a missing earlier capture.
 
 Fonts are checked by measuring text. In the console export's log box, eight
 narrow letters and eight wide letters take the same width, as they do in the
@@ -2422,8 +2431,12 @@ unchanged. `spawn` reads only the prologue from a piped standard output and repl
 it, preserving ready lines and acknowledgements. A test that depends on closing
 a live pipe end must first call `run_alone(test)` and return when it returns
 `true`: the transaction then runs in a fresh process with no sibling tests that
-could fork and inherit its pipe ends. A passing isolated run repeats what its body
-wrote to standard error, such as the premise that left a case out. `status`
+could fork and inherit its pipe ends. A passing isolated run writes what its body
+wrote to standard error onto the run's own standard error, such as the premise that
+left a case out, through the stream handle rather than the print macros the harness
+keeps: `cargo test` writes that line to the terminal, and a runner that captures the
+test process, as `just test` does, shows it on a failure or when asked for a passing
+test's output. `status`
 replays captured streams afterwards and is not a live route. `status_with_stdout`
 requires an empty regular file with its cursor at zero, sends standard output
 there and checks the prefix through that same open file. Nonempty files or nonzero
@@ -2473,13 +2486,16 @@ variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
 instead of compiling it again. In the parent, `run_per_environment` returns
 `None` once every child passes, and repeats each passing child's standard error
-as it goes, so a case that left one out keeps its reason. A run shows those lines
-when it asks for child output, as `--nocapture` does, or when the test fails. In
-a child it returns that group's cases in their original order, and the test
-checks them. Cases that share variables therefore share one child and one fixture
-parse, so don't spawn a child per case yourself. A case that needs a fresh process
-for other state, such as a process-wide counter or files created per case, keeps
-its own child. Use `TestProcess::case(id)` to select that case. Set a
+as it goes, so a case that left one out keeps its reason. `run_per_environment`
+writes those lines through the standard error handle instead of the print macros the
+harness keeps: `cargo test` writes them to the terminal, and a runner that captures
+the test process, as `just test` does, shows them on a failure or when asked for a
+passing test's output. In a child it returns that
+group's cases in their original order, and the test checks them. Cases that share
+variables therefore share one child and one fixture parse, so don't spawn a child
+per case yourself. A case that needs a fresh process for other state, such as a
+process-wide counter or files created per case, keeps its own child. Use
+`TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,

@@ -785,10 +785,9 @@ fn alone_passing_body_writes_a_diagnostic() {
 }
 
 #[test]
-fn alone_success_forwards_only_the_body_diagnostics() {
+fn alone_forwards_a_passing_body_diagnostic_past_the_harness_capture() {
     let output = TestProcess::named("checked_runs::alone_passing_body_writes_a_diagnostic")
         .unwrap()
-        .nocapture()
         .env("MTP_ALONE_DIAGNOSES", "1")
         .output()
         .unwrap();
@@ -798,7 +797,7 @@ fn alone_success_forwards_only_the_body_diagnostics() {
         stderr.contains("ALONE-BODY-DIAGNOSTIC")
             && !stderr.contains("ALONE-BODY-STDOUT")
             && !stderr.contains("running 1 test"),
-        "{stderr}"
+        "a passing isolated body's diagnostic never passed the harness capture: {stderr}"
     );
 }
 
