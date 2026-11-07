@@ -8,14 +8,10 @@
 use maestro_extensions_wasm::{
     Component, ExtensionAPI, ExtensionFuture, ExtensionResult, Presence, Text, Theme, Tool,
     ToolDefinition, ToolMetadata, ToolName, ToolRenderResultLike, ToolRenderResultOptions,
-    ToolsOptions, UserBlock, tools::path_utils,
+    ToolsOptions, UserBlock, tools::path_utils, utils::trim,
 };
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Original built-in executables in their native insertion order.
 type BuiltInTools = indexmap::IndexMap<ToolName, Tool>;

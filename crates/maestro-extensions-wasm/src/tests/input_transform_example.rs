@@ -6,11 +6,6 @@ use super::example_support::{Observation, observations, release_all, start};
 use crate::component_adapter::Capabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
-#[expect(
-    clippy::duplicate_mod,
-    reason = "Each shipped example is its own crate; this harness loads several examples that
-        share one support file."
-)]
 #[path = "../../../../examples/extensions/input_transform.rs"]
 mod input_transform;
 

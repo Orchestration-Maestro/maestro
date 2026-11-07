@@ -10,12 +10,8 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, HookFuture, NotificationType, SessionEntry, SessionEvent,
+    ExtensionResult, HookFuture, NotificationType, SessionEntry, SessionEvent, utils::trim,
 };
-
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Checkpoint objects and the last leaf observed after a tool result.
 #[derive(Default)]

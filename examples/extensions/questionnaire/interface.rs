@@ -3,13 +3,9 @@ use super::{Answer, Question, QuestionnaireResult};
 use maestro_extensions_wasm::{
     CallbackEmitter, Component, ComponentView, CustomDone, CustomFactoryOutcome, Editor,
     EditorOptions, EditorTheme, ExtensionAPI, ExtensionComponent, ExtensionContext,
-    ExtensionResult, SelectListTheme, Style, TUI, Theme, matches_key,
+    ExtensionResult, SelectListTheme, Style, TUI, Theme, matches_key, utils::trim,
 };
 use std::{cell::RefCell, rc::Rc};
-
-#[path = "../support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Mutable selection and answers, independent of the host editor.
 #[derive(Default)]

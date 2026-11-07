@@ -16,13 +16,10 @@ use std::{
 use maestro_extensions_wasm::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CompletionOptions,
     CompletionResult, CursorPosition, ExecOptions, ExtensionAPI, ExtensionContext, ExtensionFuture,
-    ExtensionResult, NotificationType, fuzzy_filter, utils::is_whitespace_char,
+    ExtensionResult, NotificationType, fuzzy_filter,
+    utils::{is_whitespace_char, trim},
 };
 use serde::Deserialize;
-
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Maximum number of open issues requested from the CLI.
 const MAX_ISSUES: &str = "100";

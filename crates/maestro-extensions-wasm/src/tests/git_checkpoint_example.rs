@@ -12,11 +12,6 @@ use crate::component_adapter::{Capabilities, Exports};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
 /// The single shipped factory, also exported by the built component.
-#[expect(
-    clippy::duplicate_mod,
-    reason = "Each shipped example is its own crate; this harness loads several examples that
-        share one support file."
-)]
 #[path = "../../../../examples/extensions/git_checkpoint.rs"]
 mod git_checkpoint;
 

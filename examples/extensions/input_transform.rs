@@ -14,10 +14,6 @@ use maestro_extensions_wasm::{
     HookResult, InputEventResult, InputSource, InputTransform, NotificationType, Presence, utils,
 };
 
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
-
 /// Returns a rewrite, local handling decision or explicit continuation for the input.
 fn input(
     api: &ExtensionAPI,
@@ -30,7 +26,7 @@ fn input(
     let result = if event.source == InputSource::Extension {
         InputEventResult::Continue
     } else if let Some(query) = event.text.strip_prefix("?quick ") {
-        let query = trim(api, query)?;
+        let query = utils::trim(api, query)?;
         if query.is_empty() {
             ctx.ui()?
                 .notify("Usage: ?quick <question>", Some(NotificationType::Warning))?;

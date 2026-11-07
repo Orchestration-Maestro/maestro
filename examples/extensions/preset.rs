@@ -14,13 +14,9 @@ use config::{Preset, Presets};
 use maestro_extensions_wasm::{
     BeforeAgentStartEventResult, CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent,
     ExtensionEventResult, ExtensionFuture, ExtensionResult, FlagOptions, FlagType, FlagValue, Key,
-    Model, NotificationType, Presence, SessionEntry, ShortcutOptions, ThinkingLevel,
+    Model, NotificationType, Presence, SessionEntry, ShortcutOptions, ThinkingLevel, utils::trim,
 };
 use std::{cell::RefCell, rc::Rc};
-
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Host settings captured before the first preset is applied.
 #[derive(Clone)]

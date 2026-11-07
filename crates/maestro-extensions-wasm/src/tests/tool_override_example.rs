@@ -4,11 +4,6 @@ use crate::component_adapter::ToolCapabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::json;
 
-#[expect(
-    clippy::duplicate_mod,
-    reason = "Each shipped example is its own crate; this harness loads several examples that
-        share one support file."
-)]
 #[path = "../../../../examples/extensions/tool_override.rs"]
 mod tool_override;
 

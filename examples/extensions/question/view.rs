@@ -9,13 +9,9 @@ use maestro_extensions_wasm::{
     CallbackEmitter, Component, ComponentView, CustomDone, CustomFactoryOutcome, Editor,
     EditorOptions, EditorTheme, ExtensionAPI, ExtensionComponent, ExtensionContext,
     ExtensionResult, SelectListTheme, Style, TUI, Theme, matches_key,
-    utils::{TruncateOptions, truncate_to_width},
+    utils::{TruncateOptions, trim, truncate_to_width},
 };
 use std::{cell::RefCell, rc::Rc};
-
-#[path = "../support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Mutable navigation, kept separate from reentrant host effects.
 #[derive(Default)]

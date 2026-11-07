@@ -5,11 +5,6 @@ use super::{
 };
 use serde_json::{Value, json};
 
-#[expect(
-    clippy::duplicate_mod,
-    reason = "Each shipped example is its own crate; this harness loads several examples that
-        share one support file."
-)]
 #[path = "../../../../examples/extensions/questionnaire.rs"]
 mod questionnaire;
 

@@ -9,11 +9,6 @@ use crate::{
 };
 use serde_json::{Value, json};
 
-#[expect(
-    clippy::duplicate_mod,
-    reason = "Each shipped example is its own crate; this harness loads several examples that
-        share one support file."
-)]
 #[path = "../../../../examples/extensions/question.rs"]
 mod question;
 /// The shipped factory, without an alternate implementation.

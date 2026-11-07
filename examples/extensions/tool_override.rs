@@ -13,14 +13,11 @@ use maestro_extensions_wasm::{
     AgentToolResult, CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult,
     NotificationType, Presence, TextContent, ToolDefinition, ToolMetadata, UserBlock, config,
     tools::path_utils::{guest_path, resolve},
+    utils::trim,
 };
 use regex::RegexSet;
 use serde::Deserialize;
 use serde_json::{Value, json};
-
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Read arguments retain the optional numeric line bounds.
 #[derive(Deserialize)]
