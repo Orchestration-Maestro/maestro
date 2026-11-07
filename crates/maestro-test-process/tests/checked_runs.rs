@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 use maestro_test_directory::Scratch;
@@ -608,8 +608,8 @@ fn view(process: TestProcess) -> BTreeMap<String, String> {
 
 /// Check each ordered edit against the ambient values the raw outer child supplied.
 ///
-/// The overridden profile destination is a disposable root: an instrumented child writes
-/// its counters beside the working directory, which is this crate's directory.
+/// An instrumented child writes its counters beside its working directory, so the outer
+/// child runs in a disposable root and every descendant inherits it.
 fn check_edits(profile: Option<&str>) {
     let name = left_name();
     let before: Vec<_> = std::env::vars_os().collect();
@@ -662,6 +662,12 @@ fn check_edits(profile: Option<&str>) {
 #[test]
 fn environment_edits_keep_order_profile_bytes_cache_home_and_parent_state() {
     if is_outer() {
+        let root = PathBuf::from(std::env::var_os("MTP_OUTER_ROOT").unwrap());
+        assert_eq!(
+            std::env::current_dir().unwrap(),
+            root,
+            "the outer child runs outside the disposable root"
+        );
         check_edits(std::env::var("LLVM_PROFILE_FILE").ok().as_deref());
         return;
     }
@@ -671,6 +677,8 @@ fn environment_edits_keep_order_profile_bytes_cache_home_and_parent_state() {
         let mut command =
             outer("environment_edits_keep_order_profile_bytes_cache_home_and_parent_state");
         command
+            .current_dir(scratch.path())
+            .env("MTP_OUTER_ROOT", scratch.path())
             .env("MTP_AMBIENT", "outer")
             .env("PATH", "outer-path")
             .env("XDG_CACHE_HOME", CACHE_HOME);
