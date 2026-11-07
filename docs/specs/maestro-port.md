@@ -427,8 +427,8 @@ descriptions below also permit the [native feature-unifier exception](#native-fe
 including leaves and exact sets. An em dash means no domain dependencies apart
 from the optional foundation utility described below.
 
-The table lists production edges. Guest-authoring examples also have a portable
-development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
+The table lists production edges. `maestro-extensions-wasm` also declares the leaf
+as one portable build dependency and one portable development dependency.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
@@ -460,7 +460,7 @@ development-only edge from `maestro-extensions-wasm` to `maestro-listing`.
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
 | `maestro-test-process` | run controlled native test children | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
-| `maestro-tooling` | automate repository development | `maestro-realpath` | 0 |
+| `maestro-tooling` | automate repository development | `maestro-listing`, `maestro-realpath` | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources`, `maestro-listeners` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text`, `maestro-realpath` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock`, `maestro-realpath` | 0 |
@@ -705,11 +705,12 @@ one directory's entries sorted by file name on every platform. File systems retu
 entries in their own order, such as hash order on many Unix file systems and
 case-insensitive name order on NTFS. The JavaScript runtime sorts its listing on
 Unix only; that platform difference is a runtime mechanic, so the leaf does not
-copy it. Only resources, theme, the terminal toolkit, tools, session and the
-application may depend on it, and only on native targets. Callers keep their own kind filtering,
-name decoding and any further ordering. Guest-authoring examples may also use the leaf
-through one portable development dependency from `maestro-extensions-wasm`; this
-permits no normal or build edge.
+copy it. Only resources, theme, the terminal toolkit, tools, session, repository
+tooling and the application may depend on it, and only on native targets. Callers
+keep their own kind filtering, name decoding and any further ordering. The guest
+crate declares one build dependency for its build script, which reads the example
+test files in the leaf's name order, and the guest-authoring examples declare one
+portable development dependency for their own directory reads.
 
 `maestro-realpath` is a core leaf below layer 0 whose only workspace dependency is
 `maestro-path`. Its one job is resolving a native path to its real path: links
@@ -868,9 +869,12 @@ callbacks to the native argument validator. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-extensions-wasmtime`, declared as a native-only,
 non-optional development dependency, lets component tests build their engine from the
 product's one engine configuration. It permits no normal or build edge.
-`maestro-extensions-wasm` to `maestro-listing`, declared as a portable development
-dependency, supplies name-ordered directory reads to the guest examples. It permits
-no normal or build dependency on the listing leaf.
+`maestro-extensions-wasm` to `maestro-listing` lets the guest crate read a
+directory in name order. The crate declares one portable build dependency for its
+build script, so the generated example-module inventory keeps that order, and the
+guest-authoring examples declare one portable development dependency for their own
+directory reads.
+Neither declaration permits a normal dependency on the leaf.
 `maestro` to `maestro-lock`, declared as a native, non-optional development
 dependency, serializes the executable's file-trigger test on the shared host
 fixture. It permits no normal or build edge.

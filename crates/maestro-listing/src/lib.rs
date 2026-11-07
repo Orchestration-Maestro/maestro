@@ -2,8 +2,9 @@
 //!
 //! File systems return a directory's entries in their own order: hash order on
 //! many Unix file systems, case-insensitive name order on NTFS. Resources, theme,
-//! autocomplete, tool and session readers use [`read_dir`] to see the same name
-//! order on every platform.
+//! the terminal toolkit, tools, session, repository tooling, the application, the
+//! guest build script and guest-authoring examples use [`read_dir`] to see the
+//! same name order on every platform.
 
 use std::{fs::DirEntry, io, path::Path};
 

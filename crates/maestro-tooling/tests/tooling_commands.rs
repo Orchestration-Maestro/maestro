@@ -1882,13 +1882,18 @@ fn maestro_destination_failure_keeps_its_native_error() {
     );
 }
 
-fn assert_asset_match_order() {
-    let fixture = Fixture::new();
-    let source = asset_inputs(&fixture);
+/// Copy the theme assets after creating `created` in that order, the one named
+/// `blocked` as a directory, and assert the copy stopped at that directory.
+fn assert_copy_stops_at(fixture: &Fixture, created: [&str; 3], blocked: &str) -> PathBuf {
+    let source = asset_inputs(fixture);
     let themes = source.join("src/modes/interactive/theme");
-    fs::write(themes.join("a.json"), "first").unwrap();
-    fs::create_dir(themes.join("b.json")).unwrap();
-    fs::write(themes.join("c.json"), "later").unwrap();
+    for name in created {
+        if name == blocked {
+            fs::create_dir(themes.join(name)).unwrap();
+        } else {
+            fs::write(themes.join(name), name).unwrap();
+        }
+    }
     let destination = fixture.root.path().join("dist");
     let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
@@ -1897,20 +1902,55 @@ fn assert_asset_match_order() {
         error.to_string(),
         format!(
             "cannot copy {}: not a regular file",
-            themes.join("b.json").display()
+            themes.join(blocked).display()
         )
     );
     assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
-    assert_eq!(
-        fs::read(destination.join("modes/interactive/theme/a.json")).unwrap(),
-        b"first"
-    );
-    assert!(!destination.join("modes/interactive/theme/c.json").exists());
+    destination
+}
+
+fn assert_asset_match_order() {
+    let fixture = Fixture::new();
+    let destination = assert_copy_stops_at(&fixture, ["a.json", "b.json", "c.json"], "b.json");
+    let themes = destination.join("modes/interactive/theme");
+    assert_eq!(fs::read(themes.join("a.json")).unwrap(), b"a.json");
+    assert!(!themes.join("c.json").exists());
     assert!(
         !destination
             .join("modes/interactive/assets/mark.png")
             .exists()
     );
+}
+
+/// Matches copy in name order even when the directory created them in reverse.
+#[test]
+fn asset_matches_follow_name_order_over_creation_order() {
+    let fixture = Fixture::new();
+    let created = ["zulu.json", "yankee.json", "mike.json"];
+    let destination = assert_copy_stops_at(&fixture, created, "mike.json");
+    let themes = destination.join("modes/interactive/theme");
+    assert_eq!(fs::read(themes.join("dark.json")).unwrap(), b"dark");
+    for name in ["schema.json", "yankee.json", "zulu.json"] {
+        assert!(!themes.join(name).exists(), "{name}");
+    }
+}
+
+/// A tree copy visits its entries in name order even when created in reverse.
+#[test]
+fn asset_tree_follows_name_order_over_creation_order() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let source = scratch.path().join("source");
+    let destination = scratch.path().join("destination");
+    for name in ["zulu.txt", "mike.txt", "alpha.txt"] {
+        write_input(&source, name, name);
+    }
+    fs::create_dir_all(destination.join("mike.txt")).unwrap();
+    tooling::copy_assets::copy_tree(&source, &destination).unwrap_err();
+    assert_eq!(
+        fs::read(destination.join("alpha.txt")).unwrap(),
+        b"alpha.txt"
+    );
+    assert!(!destination.join("zulu.txt").exists());
 }
 
 #[test]
@@ -4358,20 +4398,23 @@ fn shipped_example_index_matches_documentation() {
     .unwrap();
 }
 
-/// Two new example test files enter the same generated module inventory independently.
+/// New example test files enter one generated inventory in name order.
 #[test]
 fn example_test_modules_discover_independent_additions() {
     let root = maestro_test_directory::Scratch::new().unwrap();
-    for name in ["zebra_example.rs", "alpha_example.rs", "helper.rs"] {
+    for name in [
+        "zulu_example.rs",
+        "mike_example.rs",
+        "alpha_example.rs",
+        "helper.rs",
+    ] {
         fs::write(root.path().join(name), "// test fixture\n").unwrap();
     }
     let declarations = crate::example_test_modules::generate(root.path()).unwrap();
-    assert!(declarations.contains("mod alpha_example;"));
-    assert!(declarations.contains("mod zebra_example;"));
     assert!(!declarations.contains("mod helper;"));
-    assert!(
-        declarations.find("alpha_example").unwrap() < declarations.find("zebra_example").unwrap()
-    );
+    let positions = ["alpha_example", "mike_example", "zulu_example"]
+        .map(|name| declarations.find(&format!("mod {name};")).unwrap());
+    assert!(positions.is_sorted(), "{declarations}");
     assert!(!declarations.contains("#[path"));
 }
 

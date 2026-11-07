@@ -181,10 +181,11 @@ shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).
 The listing leaf `maestro-listing` is declared core below layer 0 with no workspace
 dependencies, including `maestro-path`. It owns directory listing: one directory's
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
-tools and session may depend on it, on native targets; they keep kind filtering,
-name decoding and any further ordering. Guest-authoring examples may use it through
-a portable development dependency from `maestro-extensions-wasm`, never a normal
-or build dependency.
+tools, session, repository tooling and the application may depend on it, on native
+targets; they keep kind filtering, name decoding and any further ordering. The
+guest crate declares it as one build dependency for its build script, and
+guest-authoring examples as one portable development dependency from
+`maestro-extensions-wasm`; a normal dependency stays forbidden.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.

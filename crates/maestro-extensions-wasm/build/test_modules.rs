@@ -4,21 +4,19 @@ use std::fmt::Write;
 use std::io;
 use std::path::Path;
 
-/// Render module declarations for the example test files in a supplied directory.
+/// Render module declarations, in name order, for the example test files in a supplied directory.
 ///
 /// # Errors
 /// Returns a directory or filename decoding failure.
 pub fn generate(directory: &Path) -> io::Result<String> {
     let mut files = Vec::new();
-    for entry in std::fs::read_dir(directory)? {
-        let entry = entry?;
+    for entry in maestro_listing::read_dir(directory)? {
         if entry.file_type()?.is_file()
             && entry.file_name().to_string_lossy().ends_with("_example.rs")
         {
             files.push(entry.path());
         }
     }
-    files.sort();
     // The expansion keeps ordinary module ownership, including nested-file lookup.
     let mut result = String::from(
         "/// Declare discovered modules with their ordinary source directories.\nmacro_rules! example_tests { () => {\n",
