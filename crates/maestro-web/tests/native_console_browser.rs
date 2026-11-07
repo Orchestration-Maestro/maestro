@@ -1,8 +1,11 @@
 //! Console output mounted as native page content and followed through its own scroller.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{
-    Clipboard, Recorded, computed, container, document, driver, frames, host, rgb, select, text,
-    until, view,
+use crate::{
+    browser_fixture_support::{Patch, get, global},
+    contributions_support::{
+        Clipboard, Recorded, computed, container, document, driver, frames, host, page, rgb,
+        select, text, until, view,
+    },
 };
 use maestro_web::{
     ConsoleBlock,
@@ -10,8 +13,8 @@ use maestro_web::{
     dom::{DomView, MountedContent},
 };
 use serde::Deserialize;
-use std::rc::Rc;
-use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 /// Console cases recorded from the reference component.
@@ -77,6 +80,9 @@ struct German {
     feedback: String,
 }
 
+/// The console's success feedback duration, in milliseconds.
+const FEEDBACK_MS: f64 = 1500.0;
+
 /// The recorded console cases.
 fn fixture() -> Fixture {
     serde_json::from_str(include_str!("fixtures/native_transcript/tools.json")).unwrap()
@@ -105,6 +111,21 @@ fn parts(root: &Element) -> (Element, HtmlElement) {
         .unwrap()
         .unchecked_into();
     (body, scroll)
+}
+/// The output height `scroll` hides, which must cover at least one full view, so only a body
+/// that follows its end reads as scrolled to it.
+fn hidden(scroll: &HtmlElement) -> i32 {
+    let hidden = scroll.scroll_height() - scroll.client_height();
+    assert!(
+        hidden >= scroll.client_height(),
+        "the body hides only {hidden} pixels"
+    );
+    hidden
+}
+/// The updated output: the mounted lines, then the update's literal text, so the replaced
+/// body overflows too.
+fn overflowing(cases: &Console) -> String {
+    format!("{}\n{}", cases.mount.content, cases.update.content)
 }
 /// The console's header label.
 fn header_label(root: &Element) -> Element {
@@ -177,8 +198,52 @@ impl Drop for Placed {
         }
     }
 }
-/// Wait for `element` to show the success feedback.
+/// Timers the page registers while installed, held until the test runs them, so feedback
+/// restoration is observed at the control's own timer rather than on a clock.
+struct Held {
+    /// Each registration's delay and callback, oldest first.
+    timers: Rc<RefCell<Vec<(f64, js_sys::Function)>>>,
+    /// The replaced page `setTimeout`.
+    _patch: Patch,
+}
+impl Held {
+    /// Hold every timer the page registers; each registration schedules a no-op instead, so
+    /// clearing its handle cancels nothing else.
+    fn install() -> Self {
+        let timers: Rc<RefCell<Vec<(f64, js_sys::Function)>>> = Rc::default();
+        let registered = Rc::clone(&timers);
+        let inert = get(&global("Function"), "prototype");
+        let window = web_sys::window().unwrap();
+        let patch = Patch::method(&window, "setTimeout", move |original, this, args| {
+            registered
+                .borrow_mut()
+                .push((args.get(1).as_f64().unwrap(), args.get(0).unchecked_into()));
+            args.set(0, inert.clone());
+            original.apply(&this, &args)
+        });
+        Self {
+            timers,
+            _patch: patch,
+        }
+    }
+    /// The delays registered so far, oldest first.
+    fn delays(&self) -> Vec<f64> {
+        self.timers
+            .borrow()
+            .iter()
+            .map(|(delay, _)| *delay)
+            .collect()
+    }
+    /// Run the newest held timer, as the page would at its delay.
+    fn fire(&self) {
+        let (_, callback) = self.timers.borrow().last().cloned().unwrap();
+        callback.call0(&JsValue::UNDEFINED).unwrap();
+    }
+}
+/// Wait for `element` to render success feedback after this call, so feedback already
+/// showing never satisfies the wait.
 async fn copied(element: &Element) {
+    page::changed(element).await;
     until(element, || !text(element).is_empty()).await;
 }
 /// Wait for `element` to return to its idle control.
@@ -209,40 +274,40 @@ fn assert_mounted(root: &Element, mount: &Mount, copy: &Copy) {
     );
     let (body, scroll) = parts(root);
     assert_eq!(text(&body), mount.content);
-    assert!(scroll.scroll_height() > scroll.client_height());
+    let hidden_height = hidden(&scroll);
     if mount.scrolled_to_end {
-        assert_eq!(
-            scroll.scroll_top(),
-            scroll.scroll_height() - scroll.client_height()
-        );
+        assert_eq!(scroll.scroll_top(), hidden_height);
     }
 }
-/// The console shows `update`'s literal output, keeps its root and scrolls its body to the end.
-fn assert_updated(mounted: &mut Placed, root: &Element, update: &Update) {
+/// The console shows the literal `content`, keeps its root and scrolls its body to the end.
+fn assert_updated(mounted: &mut Placed, root: &Element, content: &str) {
     assert_eq!(
         mounted.root(),
         *root,
         "the updated console replaced its root"
     );
     let (body, scroll) = parts(root);
-    assert_eq!(text(&body), update.content);
+    assert_eq!(text(&body), content);
     assert!(body.query_selector("b").unwrap().is_none());
     assert_eq!(body.class_name(), "maestro-console-error");
     assert_eq!(
         scroll.scroll_top(),
-        scroll.scroll_height() - scroll.client_height()
+        hidden(&scroll),
+        "the update left the body above its end"
     );
 }
 /// An activation copies the current output once and follows it to the body's end.
 async fn assert_copy_follows(root: &Element, clipboard: &Recorded, content: &str) {
     let control = copy_control(root);
+    let (_, scroll) = parts(root);
+    scroll.set_scroll_top(0);
     copy_button(root).click();
     copied(&control).await;
     assert_eq!(clipboard.texts(), [content]);
-    let (_, scroll) = parts(root);
     assert_eq!(
         scroll.scroll_top(),
-        scroll.scroll_height() - scroll.client_height()
+        hidden(&scroll),
+        "the copy feedback left the body above its end"
     );
 }
 /// An update carrying the same operands keeps the scrolled place, the root and the body.
@@ -261,14 +326,14 @@ fn assert_localized_update(
     (root, block): (&Element, &ConsoleBlock),
     german_cases: &German,
 ) {
-    crate::contributions_support::page::select_children(&parts(root).0);
+    page::select_children(&parts(root).0);
     mounted.replace_view(block, german(view));
     assert_eq!(text(&header_label(root)), german_cases.label);
     assert_eq!(
         copy_control(root).get_attribute("title").as_deref(),
         Some(german_cases.title.as_str())
     );
-    let (selected, inside) = crate::contributions_support::page::selection(root);
+    let (selected, inside) = page::selection(root);
     assert!(!selected.is_empty() && inside, "selection lost on update");
 }
 
@@ -286,10 +351,11 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
     frames(1).await;
     assert_mounted(&root, &cases.mount, &cases.copy);
     assert_unchanged_update(&mut mounted, &root, &initial);
-    let changed = console(&cases.update.content, variant(&cases.update.variant));
+    let content = overflowing(&cases);
+    let changed = console(&content, variant(&cases.update.variant));
     mounted.update(&changed);
-    assert_updated(&mut mounted, &root, &cases.update);
-    assert_copy_follows(&root, &clipboard, &cases.update.content).await;
+    assert_updated(&mut mounted, &root, &content);
+    assert_copy_follows(&root, &clipboard, &content).await;
     let (_, scroll) = parts(&root);
     scroll.set_scroll_top(0);
     mounted.update(&changed);
@@ -303,25 +369,25 @@ pub async fn console_dom_literal_scroll_and_variant(import_module: js_sys::Funct
     assert_eq!(text(&header_label(&root)), cases.mount.label);
 }
 
-/// Success feedback reads the current text, restores at the console's own duration and
-/// returns to the idle control.
+/// Success feedback reads the current text, holds until its restoring timer at the
+/// console's own duration and then returns to the idle control.
 async fn assert_success_feedback(root: &Element, clipboard: &Recorded, cases: &Fixture) {
     let control = copy_control(root);
     let idle = control.inner_html();
-    let clicked = js_sys::Date::now();
+    let timers = Held::install();
     copy_button(root).click();
     copied(&control).await;
     assert_eq!(clipboard.texts(), [cases.console.update.content.as_str()]);
     assert_eq!(text(&control), cases.console.copy.feedback);
     assert_ne!(control.inner_html(), idle);
     assert!(control.query_selector("svg").unwrap().is_some());
-    restored(&control).await;
-    let elapsed = js_sys::Date::now() - clicked;
-    assert!(
-        (1500.0..2000.0).contains(&elapsed),
-        "restored after {elapsed}"
+    assert_eq!(timers.delays(), [FEEDBACK_MS], "restoring interval");
+    timers.fire();
+    assert_eq!(
+        control.inner_html(),
+        idle,
+        "the restoring timer left the feedback showing"
     );
-    assert_eq!(control.inner_html(), idle);
 }
 
 /// A presented localization reaches both the recorded text and the feedback label.
@@ -338,11 +404,17 @@ async fn assert_german_feedback(
     assert_eq!(text(&control), cases.german.feedback);
 }
 
-/// A refused write leaves the control in its idle state.
-fn assert_refused_copy(root: &Element) {
+/// A refused write, once settled, leaves the control in its idle state.
+async fn assert_refused_copy(root: &Element, refused: &Recorded, content: &str) {
     let control = copy_control(root);
     copy_button(root).click();
-    assert!(text(&control).is_empty());
+    assert_eq!(refused.texts(), [content]);
+    // The refusal settles in microtasks, which all run before the next frame.
+    frames(1).await;
+    assert!(
+        text(&control).is_empty(),
+        "a refused write showed success feedback"
+    );
     assert!(control.query_selector("span").unwrap().is_none());
 }
 
@@ -365,12 +437,12 @@ pub async fn console_dom_copy_feedback_uses_current_text_and_locale(
     assert_eq!(clipboard.texts().len(), 2);
     assert_german_feedback(&mut mounted, german(&view), &block, &cases.console).await;
     assert_eq!(clipboard.texts().len(), 3);
-    let _refused = Recorded::install(Clipboard::Refuse);
+    let refusing = Recorded::install(Clipboard::Refuse);
     let refused = Placed::show(
         german(&view),
         &console(&cases.console.german.content, ConsoleVariant::Default),
     );
-    assert_refused_copy(&refused.root());
+    assert_refused_copy(&refused.root(), &refusing, &cases.console.german.content).await;
 }
 
 /// An activation copies once, and a reattached instance keeps one subscription while
@@ -424,7 +496,42 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
     );
     clipboard.settle();
     copied(&left_copy).await;
+    assert_pending_across_disconnect(&clipboard, &cases).await;
     assert_retired_completions(&clipboard, &cases).await;
+}
+/// A write still pending across a disconnect and reconnection settles after the reconnected
+/// control's own copy showed feedback, and it restarts no restoring interval.
+async fn assert_pending_across_disconnect(clipboard: &Recorded, cases: &Console) {
+    let timers = Held::install();
+    let written = clipboard.texts().len();
+    let placed = Placed::show(
+        view(),
+        &console(&cases.mount.content, ConsoleVariant::Default),
+    );
+    let root = placed.root();
+    let control = copy_control(&root);
+    copy_button(&root).click();
+    let detached = placed.detach();
+    container().append_child(&detached).unwrap();
+    copy_button(&root).click();
+    assert_eq!(
+        clipboard.texts().len(),
+        written + 2,
+        "the reconnected control did not copy again"
+    );
+    clipboard.settle();
+    copied(&control).await;
+    assert_eq!(timers.delays(), [FEEDBACK_MS]);
+    // Only the write from before the disconnect is still pending.
+    clipboard.settle();
+    frames(1).await;
+    assert_eq!(
+        timers.delays(),
+        [FEEDBACK_MS],
+        "a write pending across the disconnect restarted the feedback"
+    );
+    timers.fire();
+    assert!(text(&control).is_empty(), "the feedback outlived its timer");
 }
 /// A completion that settles after its control disconnected, or after it reconnected,
 /// is retired with the view that asked for it.
@@ -532,7 +639,7 @@ async fn assert_success_gap((control, cases): (&HtmlElement, &Console)) {
 }
 /// Finish the control's running transitions, so the next reading is its painted result.
 fn settle_transitions(element: &Element) {
-    crate::contributions_support::page::finish(element);
+    page::finish(element);
 }
 
 /// The console's copy control keeps the reference's compact, muted and accent treatment.
