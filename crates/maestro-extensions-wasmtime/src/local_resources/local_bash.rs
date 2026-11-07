@@ -4,7 +4,9 @@ use crate::{
     api_reads,
     guest_calls::{Handle, SynchronousKind, bash::BashRequest},
 };
-use maestro_extensions::{BashExecOptions, BashOperations, Cancellation, EventBus, Local};
+use maestro_extensions::{
+    BashExecOptions, BashOperations, Cancellation, EventBus, Local, helpers::native_path,
+};
 use std::{rc::Rc, sync::Arc};
 
 /// Independently retained native shell identity, safe to hold on the Store thread.
@@ -112,7 +114,7 @@ impl Execution {
         operations
             .exec(
                 &request.command,
-                &request.cwd,
+                &native_path(&request.cwd),
                 BashExecOptions {
                     on_data: &mut on_data,
                     signal: signal.as_ref(),

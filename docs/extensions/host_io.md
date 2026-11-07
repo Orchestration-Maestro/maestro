@@ -77,6 +77,9 @@ per-drive state the component does not have. Unix paths are returned unchanged.
 The cwd is supplied in the same spelling, for example `/C:/Users/me/project`,
 and the 0.3 interfaces list the same single root, so a component that opens
 through them passes the converted path without its leading `/`.
+A working directory handed back to the host takes either spelling: the host
+reads it as the native path before a built-in tool factory, the local shell
+operations or `exec` use it, so `std::env::current_dir()` works there as it is.
 
 Links below the root behave as they do natively. Relative and absolute
 symbolic links and junctions are followed, including links to directories.
