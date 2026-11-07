@@ -503,7 +503,7 @@ conversion admits rectangles from a second same-origin realm. Both failure
 phases reach the existing host error and restoration path; lint levels and the
 generated-guest exception above are unchanged.
 
-The 27 browser-library roots are declared in `.github/ci.toml`'s `wasm_crates`,
+The 28 browser-library roots are declared in `.github/ci.toml`'s `wasm_crates`,
 including `maestro-path`. Check each declared library locally with:
 
 ```sh
