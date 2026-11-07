@@ -84,7 +84,7 @@ mod tests {
         assert_eq!(value[2]["tools"], json!(["read", "bash", "edit", "write"]));
         assert_eq!(value[3]["tools"], json!(["read", "bash", "grep"]));
         assert_eq!(value[0]["cwd"], root);
-        assert_eq!(value[2]["cwd"], format!("{root}/project"));
+        assert_eq!(value[2]["cwd"], maestro_path::join(&[&root, "project"]));
         assert_eq!(value[3]["cwd"], value[2]["cwd"]);
         Ok(())
     }

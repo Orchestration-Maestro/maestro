@@ -4351,7 +4351,10 @@ fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
     )
     .unwrap();
     let error = example_index(root.path(), true).unwrap_err().to_string();
-    assert!(error.contains("hello-extension/Cargo.lock"), "{error}");
+    assert!(
+        error.contains(&maestro_path::join(&["hello-extension", "Cargo.lock"])),
+        "{error}"
+    );
     assert!(error.contains("run just example-index"), "{error}");
     assert_eq!(fs::read(&lock).unwrap(), before);
     example_index(root.path(), false).unwrap();
