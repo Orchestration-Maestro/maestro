@@ -3,8 +3,8 @@
 use crate::{
     browser_fixture_support::{Patch, get, global},
     contributions_support::{
-        Clipboard, Recorded, computed, container, document, driver, frames, host, rgb, select,
-        text, until, view,
+        Clipboard, Recorded, computed, container, document, driver, frames, host, page, rgb,
+        select, text, until, view,
     },
 };
 use maestro_web::{
@@ -112,8 +112,8 @@ fn parts(root: &Element) -> (Element, HtmlElement) {
         .unchecked_into();
     (body, scroll)
 }
-/// The output height `scroll` hides, which must exceed one full view, so only a body that
-/// follows its end reads as scrolled to it.
+/// The output height `scroll` hides, which must cover at least one full view, so only a body
+/// that follows its end reads as scrolled to it.
 fn hidden(scroll: &HtmlElement) -> i32 {
     let hidden = scroll.scroll_height() - scroll.client_height();
     assert!(
@@ -243,7 +243,7 @@ impl Held {
 /// Wait for `element` to render success feedback after this call, so feedback already
 /// showing never satisfies the wait.
 async fn copied(element: &Element) {
-    crate::contributions_support::page::changed(element).await;
+    page::changed(element).await;
     until(element, || !text(element).is_empty()).await;
 }
 /// Wait for `element` to return to its idle control.
@@ -274,9 +274,9 @@ fn assert_mounted(root: &Element, mount: &Mount, copy: &Copy) {
     );
     let (body, scroll) = parts(root);
     assert_eq!(text(&body), mount.content);
-    let hidden = hidden(&scroll);
+    let hidden_height = hidden(&scroll);
     if mount.scrolled_to_end {
-        assert_eq!(scroll.scroll_top(), hidden);
+        assert_eq!(scroll.scroll_top(), hidden_height);
     }
 }
 /// The console shows the literal `content`, keeps its root and scrolls its body to the end.
@@ -326,14 +326,14 @@ fn assert_localized_update(
     (root, block): (&Element, &ConsoleBlock),
     german_cases: &German,
 ) {
-    crate::contributions_support::page::select_children(&parts(root).0);
+    page::select_children(&parts(root).0);
     mounted.replace_view(block, german(view));
     assert_eq!(text(&header_label(root)), german_cases.label);
     assert_eq!(
         copy_control(root).get_attribute("title").as_deref(),
         Some(german_cases.title.as_str())
     );
-    let (selected, inside) = crate::contributions_support::page::selection(root);
+    let (selected, inside) = page::selection(root);
     assert!(!selected.is_empty() && inside, "selection lost on update");
 }
 
@@ -503,6 +503,7 @@ pub async fn console_dom_copy_disconnect_reconnect_releases_work(import_module: 
 /// control's own copy showed feedback, and it restarts no restoring interval.
 async fn assert_pending_across_disconnect(clipboard: &Recorded, cases: &Console) {
     let timers = Held::install();
+    let written = clipboard.texts().len();
     let placed = Placed::show(
         view(),
         &console(&cases.mount.content, ConsoleVariant::Default),
@@ -513,6 +514,11 @@ async fn assert_pending_across_disconnect(clipboard: &Recorded, cases: &Console)
     let detached = placed.detach();
     container().append_child(&detached).unwrap();
     copy_button(&root).click();
+    assert_eq!(
+        clipboard.texts().len(),
+        written + 2,
+        "the reconnected control did not copy again"
+    );
     clipboard.settle();
     copied(&control).await;
     assert_eq!(timers.delays(), [FEEDBACK_MS]);
@@ -633,7 +639,7 @@ async fn assert_success_gap((control, cases): (&HtmlElement, &Console)) {
 }
 /// Finish the control's running transitions, so the next reading is its painted result.
 fn settle_transitions(element: &Element) {
-    crate::contributions_support::page::finish(element);
+    page::finish(element);
 }
 
 /// The console's copy control keeps the reference's compact, muted and accent treatment.
