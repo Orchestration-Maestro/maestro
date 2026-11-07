@@ -10,7 +10,7 @@ use std::process::{Command, Output};
 use crate::recipe_support;
 #[cfg(unix)]
 use recipe_support::ProcessGroup;
-use recipe_support::{Workspace, install_executable, write_input};
+use recipe_support::{Workspace, executable, install_executable, write_input};
 
 #[test]
 fn maestro_workspace_recipes_keep_phase_order() {
@@ -383,17 +383,13 @@ fn native_workspace(workspace: &Workspace) {
         "fn main() {}\n",
     )
     .unwrap();
-    // The installed fixture programs carry the host's executable suffix.
-    let suffix = std::env::consts::EXE_SUFFIX;
+    let bin = workspace.path().join("bin");
     fs::rename(
-        workspace.path().join(format!("bin/cargo{suffix}")),
-        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
+        bin.join(executable("cargo")),
+        bin.join(executable("cargo-proxy")),
     )
     .unwrap();
-    install_executable(
-        Path::new(env!("CARGO")),
-        &workspace.path().join(format!("bin/cargo{suffix}")),
-    );
+    install_executable(Path::new(env!("CARGO")), &bin.join(executable("cargo")));
     assert!(
         workspace
             .toolchain_command(env!("CARGO"))
@@ -504,10 +500,10 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
 }
 
 fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
-    let suffix = std::env::consts::EXE_SUFFIX;
+    let bin = workspace.path().join("bin");
     fs::rename(
-        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
-        workspace.path().join(format!("bin/cargo{suffix}")),
+        bin.join(executable("cargo-proxy")),
+        bin.join(executable("cargo")),
     )
     .unwrap();
     create_prepared_assets(workspace);
@@ -897,10 +893,10 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     )
     .unwrap();
     fs::create_dir_all(workspace.path().join("target")).unwrap();
-    let suffix = std::env::consts::EXE_SUFFIX;
+    let bin = workspace.path().join("bin");
     fs::rename(
-        workspace.path().join(format!("bin/cargo-proxy{suffix}")),
-        workspace.path().join(format!("bin/cargo{suffix}")),
+        bin.join(executable("cargo-proxy")),
+        bin.join(executable("cargo")),
     )
     .unwrap();
 }
@@ -1608,8 +1604,7 @@ fn maestro_setup_keeps_pins_and_existing_hooks() {
     for stage in ["pre-commit", "pre-merge-commit", "commit-msg"] {
         assert!(workspace.path().join(".git/hooks").join(stage).is_file());
     }
-    let prek = format!("bin/prek{}", std::env::consts::EXE_SUFFIX);
-    fs::remove_file(workspace.path().join(prek)).unwrap();
+    fs::remove_file(workspace.path().join("bin").join(executable("prek"))).unwrap();
     let output = workspace
         .command("--command")
         .args(["prek", "run", "workspace-check"])
