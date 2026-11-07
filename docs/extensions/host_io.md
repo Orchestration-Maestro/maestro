@@ -38,6 +38,9 @@ permission to list that directory. On Linux and macOS, the host opens a denied
 parent with a path-only or search-only handle, so direct paths and absolute
 links through that parent keep native file access. Removing search permission
 still denies access; the handle does not grant permission to list the directory.
+The directory the host opens must be a directory on every system. A path such as
+`notes.txt/.` fails with `not-directory` and leaves `notes.txt` untouched, even
+on Windows, which would otherwise drop the final `.` and reach the file itself.
 
 The host supplies the native current directory when it can observe it. Guest
 export startup applies that observation once to Rust’s standard-library cwd

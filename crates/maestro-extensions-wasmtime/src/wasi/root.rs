@@ -89,13 +89,25 @@ fn directory(path: &Path) -> io::Result<Dir> {
         }
         std::os::unix::fs::OpenOptionsExt::custom_flags(&mut options, SEARCH_ONLY).open(path)
     });
+    let file = file?;
+    // Windows opens the file before a terminal `\.`, and no operation may run in a file.
+    if !file.metadata()?.is_dir() {
+        return Err(io::Error::from_raw_os_error(NOT_DIRECTORY));
+    }
     Ok(Dir::new(
-        file?,
+        file,
         FsPerms::ReadWrite,
         OpenMode::READ | OpenMode::WRITE,
         false,
     ))
 }
+
+/// The system's code for a file named where a directory belongs, `ENOTDIR` or `ERROR_DIRECTORY`.
+#[cfg(unix)]
+const NOT_DIRECTORY: i32 = 20;
+/// The system's code for a file named where a directory belongs, `ENOTDIR` or `ERROR_DIRECTORY`.
+#[cfg(windows)]
+const NOT_DIRECTORY: i32 = 267;
 
 /// A descriptor and the path to use with it, beside a native directory held for the operation.
 type Placed = (Resource<Descriptor>, String, Option<Held>);
@@ -248,3 +260,6 @@ fn symlink(target: &str, path: &str) -> io::Result<()> {
     let created = std::os::unix::fs::symlink(target, link);
     created
 }
+
+#[cfg(test)]
+mod tests;
