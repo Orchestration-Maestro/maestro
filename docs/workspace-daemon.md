@@ -853,7 +853,9 @@ itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gi
 `gitdir/i`, `onbranch` and `hasconfig:remote.*.url`. A `hasconfig` include is skipped when
 it, or a file it includes, sets a remote URL, and URLs set in the worktree file never
 satisfy the condition. For `gitdir`, `gitdir/i` and `onbranch` patterns, `*` and `?`
-stop at `/`, `**` crosses it and a trailing `/` means everything below. URL conditions
+stop at `/`, `**` crosses it and a trailing `/` means everything below. On Windows, `\`
+and `/` both separate directories in a `gitdir` pattern and in the checkout path, so a
+pattern written with either one matches. URL conditions
 allow wildcards across `/`. Matching takes time proportional to the pattern length
 times the text length.
 
