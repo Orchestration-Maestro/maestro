@@ -5,6 +5,11 @@ use super::controlled::Controlled;
 use crate::component_adapter::Exports;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
+#[expect(
+    clippy::duplicate_mod,
+    reason = "Each shipped example is its own crate; this harness loads several examples that
+        share one support file."
+)]
 #[path = "../../../../examples/extensions/support/trim.rs"]
 mod trim;
 

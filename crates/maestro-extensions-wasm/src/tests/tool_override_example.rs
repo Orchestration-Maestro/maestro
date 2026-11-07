@@ -4,6 +4,11 @@ use crate::component_adapter::ToolCapabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::json;
 
+#[expect(
+    clippy::duplicate_mod,
+    reason = "Each shipped example is its own crate; this harness loads several examples that
+        share one support file."
+)]
 #[path = "../../../../examples/extensions/tool_override.rs"]
 mod tool_override;
 
@@ -19,6 +24,13 @@ impl Extension for ToolOverride {
 const FIXTURE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/src/tests/tool_override_fixture.txt"
+);
+
+/// An access log whose edges are host whitespace a byte-order mark keeps separate from the
+/// native ones.
+const LOG_FIXTURE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/src/tests/tool_override_log_fixture.txt"
 );
 
 #[test]
@@ -78,6 +90,33 @@ fn tool_override_registered_callbacks_follow_host_paths() -> Result<(), String> 
         assert_eq!(
             receipts.last().unwrap().operands,
             json!(["Recent file access:\nfirst\nsecond Ω\nthird\n", "Info"])
+        );
+        release_all(&host, &["tool read", "command read-log"]);
+        Ok(())
+    })
+}
+
+/// The access-log view trims the edges the host classifies as whitespace, not the native ones.
+#[test]
+fn tool_override_read_log_trims_by_host_classification() -> Result<(), String> {
+    super::block_on(async {
+        let host = super::controlled::Controlled::default();
+        let mut replies = json!({"is_whitespace_char":false,
+            "config.get_agent_dir":"/controlled-agent",
+            "paths.resolve":LOG_FIXTURE, "paths.guest_path":LOG_FIXTURE});
+        for ch in ['\n', '\u{feff}'] {
+            replies[format!("is_whitespace_char {}", json!([ch.to_string()]))] = json!(true);
+        }
+        host.observe().actions.value = replies;
+        let exports = crate::component_adapter::Exports::new(host.clone());
+        exports.start::<ToolOverride>().await?;
+        let key = host.observed().callback("command read-log")?;
+        exports
+            .invoke_command(key, String::new(), host.command_context("/controlled"))
+            .await?;
+        assert_eq!(
+            super::ui_host::notifications(&host.observed()),
+            [json!(["Recent file access:\nfirst\nsecond Ω\nthird", "Info"])]
         );
         release_all(&host, &["tool read", "command read-log"]);
         Ok(())
