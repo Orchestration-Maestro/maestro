@@ -188,9 +188,13 @@ pub fn tree_difference(recorded: &Value) -> String {
 /// Panics if no document is shown or its fonts never load.
 pub async fn measure_math(expected: &Value, branch: &str, source: &str) -> String {
     let container = root().expect("a Markdown document is shown");
+    let ratio = web_sys::window().unwrap().device_pixel_ratio();
+    // The geometry was recorded at ratio 1 and Chromium snaps font metrics to device pixels,
+    // so the container lays out as at ratio 1 and every box it reads is scaled back.
     let style = format!(
-        "{};width:800px;font-size:16px;font-family:\"Times New Roman\";line-height:normal",
-        container.get_attribute("style").unwrap_or_default()
+        "{};width:800px;font-size:16px;font-family:\"Times New Roman\";line-height:normal;zoom:{}",
+        container.get_attribute("style").unwrap_or_default(),
+        1. / ratio
     );
     container.set_attribute("style", &style).unwrap();
     wait_for_fonts().await;
@@ -254,6 +258,7 @@ async fn ready(fonts: &JsValue) {
 
 /// The measured text, bounds, glyph rectangles and SVG rectangles of one formula.
 fn measured(formula: &Element) -> Value {
+    let ratio = web_sys::window().unwrap().device_pixel_ratio();
     let origin = rect(formula.get_bounding_client_rect().as_ref());
     let mut glyphs = Vec::new();
     for text in text_nodes(formula) {
@@ -273,27 +278,35 @@ fn measured(formula: &Element) -> Value {
         );
         glyph.insert(
             "left".to_owned(),
-            json!(number(&found, "left") - number(&origin, "left")),
+            json!((number(&found, "left") - number(&origin, "left")) * ratio),
         );
         glyph.insert(
             "top".to_owned(),
-            json!(number(&found, "top") - number(&origin, "top")),
+            json!((number(&found, "top") - number(&origin, "top")) * ratio),
         );
-        glyph.insert("width".to_owned(), json!(number(&found, "width")));
-        glyph.insert("height".to_owned(), json!(number(&found, "height")));
+        glyph.insert("width".to_owned(), json!(number(&found, "width") * ratio));
+        glyph.insert("height".to_owned(), json!(number(&found, "height") * ratio));
         glyphs.push(Value::Object(glyph));
     }
     let svg = elements(&formula.query_selector_all("svg").unwrap())
         .iter()
-        .map(|svg| Value::Object(rect(svg.get_bounding_client_rect().as_ref())))
+        .map(|svg| {
+            Value::Object(scaled(
+                &rect(svg.get_bounding_client_rect().as_ref()),
+                ratio,
+            ))
+        })
         .collect::<Vec<_>>();
     let mut actual = Map::new();
     actual.insert(
         "text".to_owned(),
         Value::String(formula.text_content().unwrap_or_default()),
     );
-    actual.insert("width".to_owned(), json!(number(&origin, "width")));
-    actual.insert("height".to_owned(), json!(number(&origin, "height")));
+    actual.insert("width".to_owned(), json!(number(&origin, "width") * ratio));
+    actual.insert(
+        "height".to_owned(),
+        json!(number(&origin, "height") * ratio),
+    );
     actual.insert("glyphs".to_owned(), Value::Array(glyphs));
     actual.insert("svg".to_owned(), Value::Array(svg));
     Value::Object(actual)
@@ -328,6 +341,18 @@ fn rect(found: &JsValue) -> Map<String, Value> {
         );
     }
     rect
+}
+
+/// The boxes of a measured rectangle, scaled back from the container's zoom.
+fn scaled(rect: &Map<String, Value>, ratio: f64) -> Map<String, Value> {
+    rect.iter()
+        .map(|(key, value)| {
+            (
+                key.clone(),
+                json!(value.as_f64().unwrap_or_default() * ratio),
+            )
+        })
+        .collect()
 }
 
 /// The number at `key` of a measured rectangle.
