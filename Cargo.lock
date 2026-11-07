@@ -4831,6 +4831,7 @@ version = "0.1.0"
 dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
+ "maestro-listing",
  "maestro-path",
  "maestro-realpath",
  "maestro-test-directory",

@@ -210,10 +210,11 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - `maestro-listing` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path utility. It lists one directory's entries sorted
   by file name on every platform. Only resources, theme, the toolkit, tools,
-  session and the application may depend on it, on native targets; callers keep
-  kind filtering, name decoding and further ordering. Guest-authoring examples may
-  also use it through a portable development dependency from `maestro-extensions-wasm`,
-  never a normal or build dependency.
+  session, repository tooling and the application may depend on it, on native
+  targets; callers keep kind filtering, name decoding and further ordering. The
+  guest crate declares it as one build dependency for its build script, and
+  guest-authoring examples as one portable development dependency from
+  `maestro-extensions-wasm`; a normal dependency stays forbidden.
 - `maestro-realpath` is a declared core leaf below layer 0 depending only on
   `maestro-path`. It resolves a native path to its real path; on Windows it
   returns the ordinary form (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes
@@ -300,8 +301,8 @@ conventions checker, terminal scenario harness, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from `maestro-realpath`, the optional utility and
-the unifier. Sparse workspaces need
+no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
+optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The

@@ -1908,17 +1908,23 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
-fn guest_listing_example_edge_is_portable_development_only() {
+fn guest_listing_edges_are_development_or_build_only() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasm", "maestro-listing"]);
     for kind in [
         "dev-dependencies",
         "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+        "build-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.build-dependencies",
     ] {
         workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\" }}"));
         assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
     }
-    for (kind, extra) in DECLARATIONS {
+    for (kind, extra) in [
+        ("dependencies", ""),
+        ("dependencies", ", optional = true"),
+        ("target.'cfg(target_os = \"none\")'.dependencies", ""),
+    ] {
         workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),

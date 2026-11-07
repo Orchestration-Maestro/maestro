@@ -92,33 +92,27 @@ fn copy_standalone(
     Ok(())
 }
 
-/// Copy visible files matching an extension in stable filename order.
+/// Copy visible files matching an extension, in the listing owner's name order.
 fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<()> {
     fs::create_dir_all(destination)?;
-    let mut matches = fs::read_dir(source)
-        .map_err(|error| input_error(source, &error))?
-        .map(|entry| entry.map(|entry| entry.path()))
-        .collect::<io::Result<Vec<_>>>()
-        .map_err(|error| input_error(source, &error))?;
-    matches.retain(|path| {
-        path.file_name()
-            .is_some_and(|name| !name.as_encoded_bytes().starts_with(b"."))
+    let mut matches =
+        maestro_listing::read_dir(source).map_err(|error| input_error(source, &error))?;
+    matches.retain(|entry| {
+        let name = entry.file_name();
+        let path = Path::new(&name);
+        !name.as_encoded_bytes().starts_with(b".")
             && path
                 .extension()
                 .is_some_and(|extension| extension == suffix)
     });
-    matches.sort();
     if matches.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
             format!("no .{suffix} assets in {}", source.display()),
         ));
     }
-    for path in matches {
-        let name = path
-            .file_name()
-            .ok_or_else(|| io::Error::other("missing asset filename"))?;
-        copy_file(&path, &destination.join(name))?;
+    for entry in matches {
+        copy_file(&entry.path(), &destination.join(entry.file_name()))?;
     }
     Ok(())
 }
@@ -136,12 +130,7 @@ pub fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
         return copy_file(source, destination);
     }
     fs::create_dir_all(destination)?;
-    let mut entries = fs::read_dir(source)
-        .map_err(|error| input_error(source, &error))?
-        .map(|entry| entry.map_err(|error| input_error(source, &error)))
-        .collect::<io::Result<Vec<_>>>()?;
-    entries.sort_by_key(std::fs::DirEntry::file_name);
-    for entry in entries {
+    for entry in maestro_listing::read_dir(source).map_err(|error| input_error(source, &error))? {
         copy_tree(&entry.path(), &destination.join(entry.file_name()))?;
     }
     Ok(())
