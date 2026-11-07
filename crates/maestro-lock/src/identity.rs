@@ -233,10 +233,10 @@ fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
     }
 }
 
-/// Other platforms retain their native locking behaviour.
+/// Hosts without native file identity cannot verify a live lock name.
 #[cfg(not(any(unix, windows)))]
 fn still_named(_file: &File, _path: &Path) -> io::Result<bool> {
-    Ok(true)
+    Err(io::ErrorKind::Unsupported.into())
 }
 
 /// Resolves a path to its real path through the owner that carries the file system.

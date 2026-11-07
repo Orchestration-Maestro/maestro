@@ -259,7 +259,6 @@ fn write_target(
         mode.filter(|mode| matches!(mode, CreationMode::AfterSync(_)) || !cfg!(unix))
     {
         apply_creation_mode(&file, mode.bits())?;
-        sync_creation_mode(&file)?;
     }
     Ok(())
 }
@@ -286,7 +285,8 @@ fn create_target(path: &Path, mode: Option<CreationMode>) -> io::Result<File> {
     open.open(path)
 }
 
-/// Applies a new target's requested mode only after its complete bytes are synced.
+/// Applies a new target's requested mode only after its complete bytes are synced,
+/// then synchronizes the creation metadata.
 fn apply_creation_mode(file: &File, mode: u32) -> io::Result<()> {
     #[cfg(unix)]
     file.set_permissions(fs::Permissions::from_mode(mode))?;
@@ -297,8 +297,8 @@ fn apply_creation_mode(file: &File, mode: u32) -> io::Result<()> {
         file.set_permissions(permissions)?;
     }
     #[cfg(not(any(unix, windows)))]
-    let _ = (file, mode);
-    Ok(())
+    let _ = mode;
+    sync_creation_mode(file)
 }
 
 /// Removes a completed record only after target and parent synchronization.
