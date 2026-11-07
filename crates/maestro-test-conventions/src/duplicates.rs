@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ra_ap_rustc_lexer::TokenKind;
 use syn::spanned::Spanned;
 
-use crate::source::{Member, Source, test_layout};
+use crate::source::{Member, Source};
 
 /// Exact lexical identity, with nested delimiters represented by interned children.
 #[derive(PartialEq, Eq, Hash)]
@@ -100,15 +100,15 @@ impl<'a> Tokens<'a> {
     }
 }
 
-/// Production function bodies of one source, gathered by the shared syntax walk.
+/// Function bodies of one source, production and test code alike, gathered by the shared
+/// syntax walk.
 ///
-/// Each entry holds the body's opening-brace byte offset and its signature's line. The walk
-/// passes only functions outside test-gated items.
+/// Each entry holds the body's opening-brace byte offset and its signature's line.
 #[derive(Default)]
 pub(crate) struct Bodies(pub(crate) Vec<(usize, usize)>);
 
 impl Bodies {
-    /// Record one production function body.
+    /// Record one function body.
     pub(crate) fn function(&mut self, signature: &syn::Signature, block: &syn::Block) {
         self.0
             .push((block.span().byte_range().start, signature_line(signature)));
@@ -136,7 +136,7 @@ fn signature_line(signature: &syn::Signature) -> usize {
         .line
 }
 
-/// Reject every exact duplicate group in parsed, hand-written production sources.
+/// Reject every exact duplicate group in parsed, hand-written sources, test code included.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut tokens = Tokens::default();
     let mut sites = HashMap::new();
@@ -145,9 +145,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             let Some(walk) = &source.walk else {
                 continue;
             };
-            if test_layout(&source.path, &member.directory)
-                || walk.gated
-                || crate::generated::catalog_source(member, source)
+            if crate::generated::catalog_source(member, source)
                 || crate::generated::bindings_source(member, source)
             {
                 continue;

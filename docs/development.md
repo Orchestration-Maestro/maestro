@@ -405,7 +405,7 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports and one contribution export check the pixels the page
+Eight canvas exports and two contribution exports check the pixels the page
 paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
@@ -427,6 +427,7 @@ the export and the job:
 | `export-roles` | `export_rendering_uses_the_selected_brand_roles` | Each export element paints its brand role inside the final clip, for both packs in both modes. Borders paint exactly their role. Hover, expansion and underline change pixels. |
 | `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background. The browser draws no underline on a run of only spaces, so the underline is checked on the export's text. |
 | `control-focus` | `artifact_controls_dom_paint_tokens_and_keyboard_actions` | The control that keyboard focus reached paints the accent ring over more than half of each 2-pixel edge band, so no edge is missing or clipped away by its group. |
+| `console-rest`, `console-hover`, `console-focus` | `artifact_console_dom_expansion_copy_and_follow` | In both modes, the summary and ordinary lines paint the muted role and error lines the error role. Under the native pointer, the summary paints the text role. The follow control that keyboard focus reached paints its accent fill and on-accent glyph, and its accent outline covers more than a quarter of the straight band along each edge. These scenes never move the pointer or scroll, so an element outside the visible page fails. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
@@ -436,7 +437,23 @@ itself: painted text passes, while transparent text, an outer frame shadow and a
 unknown scene each fail. `control_focus_requires_an_unclipped_accent_ring` does
 the same for the focus scene: an inset accent ring passes, while a missing ring,
 an outer ring, a group that clips one edge and a page with no focused control
-each fail.
+each fail. `console_scenes_require_their_painted_roles` covers the console
+scenes: lines, hover and focus that paint their roles pass, while a line
+in the wrong colour, a hover that keeps the resting colour, a missing outline, a
+pointer away from the summary and focus away from the follow control each fail.
+
+Fonts are checked by measuring text. In the console export's log box, eight
+narrow letters and eight wide letters take the same width, as they do in the
+brand mono stack and not in the body font. The Word export awaits the `load()`
+of the face its `embedded-font-loaded` package embeds, then requires the text in
+that face to measure a different width from the same text in a family the page
+lacks, so a face that fails to load cannot pass.
+
+Every package in `tests/fixtures/native_document_artifacts.json` is also a
+`.docx` under `src/docx_preview/fixtures/docx/`, and a native test holds the
+two byte for byte. To change a package, edit the `.docx` and copy its base64
+into the JSON. Another native test decodes the embedded face and compares it
+with the font file it came from.
 
 ### Prove a browser test on a branch
 
@@ -1103,10 +1120,17 @@ Other runs reuse an existing manifest, rejecting stale or incomplete files; with
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. The manifest records one
 digest per artifact instead of one for the whole bundle. All components share one digest over
-the WebAssembly closure of `maestro-extensions-wasm` (its dependencies and development
-dependencies, without the edges gated to native targets), the lock entries of the registry
-packages that closure uses, the workspace manifest, Cargo configuration and the toolchain;
-each component adds a digest of the example files Cargo reports it read, so a helper module
+the WebAssembly closure of `maestro-extensions-wasm` (its dependencies, without the edges
+gated to native targets), the lock entries of the registry packages that closure uses, the
+workspace manifest, Cargo configuration and the toolchain. `cargo build` compiles the
+development dependencies of the crates it builds and of no crate they depend on, so the
+digest follows development dependencies for the built crates only. For every crate in the
+closure it leaves out `tests/` and the unit test files (`src/**/tests.rs` and
+`src/**/tests/`); for every crate it does not build, it also leaves out the
+`[dev-dependencies]` tables of the manifest. A test-only change in a crate the components
+only depend on keeps every component, while a change to its source or to another manifest
+entry rebuilds them all. A change to the workspace manifest rebuilds them all as well.
+Each component adds a digest of the example files Cargo reports it read, so a helper module
 that several components share is part of each of them. The setup example and the development
 tool, and the browser graph, each hash the closure of their own packages with the examples,
 assets, locked dependencies and toolchain they read. A shard's `author-component` setup checks
@@ -1360,11 +1384,11 @@ fixture lives. The group's `max-threads` equals `LANES` in the setup's browser g
 `browser_author_group_admits_one_test_per_lane` fails when the two differ. Every lane can
 build at once, so the lanes split the run's compile jobs: each recipe and helper gets the
 caller's `CARGO_BUILD_JOBS`, or the core count without one, divided by the number of lanes,
-and at least one job. Every recipe still slows while the other lane builds, and a third lane
-would take the longest browser tests past the 30-second slow flag on a four-core runner. A
-test outside the group, or a run without the setup, takes the first lane and waits on its
-lock, so plain Cargo tests still run the browser tests one at a time. Each lane past the
-first costs one copy of the graph before the first test starts.
+and at least one job. Every recipe still slows while the other lane builds: on a four-job run
+three lanes of one job each flagged six browser tests slow and finished the group later,
+where two lanes flag none. A test outside the group, or a run without the setup, takes the
+first lane and waits on its lock, so plain Cargo tests still run the browser tests one at a
+time. Each lane past the first costs one copy of the graph before the first test starts.
 
 `browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
 unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
@@ -1453,9 +1477,20 @@ publishes the result as `seed` beside the configuration. A failed build leaves n
 and the next run continues it. The cold test copies the seed into its empty Cargo target
 directory and checks that it holds compiled units but none of a workspace member's. The
 recipes then compile Maestro's crates and the WebAssembly fixture from nothing, and
-every registry crate is already built. The test keeps the root manifest's per-package
-optimization levels, since the seed holds the optimized parsers. The test never pays for
-the seed.
+every registry crate the seed holds is already built. The test keeps the root manifest's
+per-package optimization levels, since the seed holds the optimized parsers. The test
+never pays for the seed.
+
+Cargo rebuilds a unit when a dependency's outputs are newer than its own, so every copy of
+the seed keeps each file's modification time: the copy that stages it in the bundle, the one
+that installs it beside the sources and the test's own. A copy that stamps files in name
+order makes dependencies look newer than their dependents, and the cold test then compiles
+registry crates the seed already holds. On a four-job run that took 59 s and 53 registry
+packages, against 25 s and 12 with the times kept. The test records the seed copy's time,
+the library build's time and the registry packages and workspace members the build
+compiled, in its transcript and on its standard error. The 12 registry packages that remain
+are the fixture's own `wasm-bindgen` packages, which the seed does not hold. A count in the
+dozens means Cargo rejected the seed.
 
 The test preparation builds the seed once per bundle. It fetches every locked package so
 that the offline vendoring finds them all, prepares the workspace sources and the seed in

@@ -12,6 +12,9 @@ use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::io;
 
+/// Artifact console scenes.
+mod console;
+
 /// A page point far from every mounted fixture, used to clear native hover.
 const PARKED: (f64, f64) = (1279.0, 719.0);
 
@@ -127,6 +130,9 @@ impl Page<'_> {
             "offline-tool-card-layout" => tool_card_layout(self).await,
             "offline-tool-card-roles" => tool_card_roles(self).await,
             "control-focus" => control_focus(self).await,
+            "console-rest" => console::resting(self).await,
+            "console-hover" => console::hovered(self).await,
+            "console-focus" => console::focused(self).await,
             _ => match (scene.strip_prefix("viewport-"), neighbor(scene)) {
                 (Some(index), _) => {
                     let index = index

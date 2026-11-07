@@ -89,9 +89,10 @@ the selected occurrence if no boundary is reachable.
 
 ## Rendering
 
-`render(width, &LiveTheme, &dyn TuiRuntime, styles_enabled)` returns the visible
-window and position/filter status, clipped with the toolkit's terminal-cell
-formatter. Branch gutters follow the filtered parent projection; hidden parents
+`render(width, &LiveTheme, styles_enabled)` returns the visible window and
+position/filter status, clipped with the toolkit's terminal-cell formatter. A tool
+call's path is shortened against the process's own home variables where the row is
+rendered. Branch gutters follow the filtered parent projection; hidden parents
 attach to the nearest visible ancestor. Plain prefixes come from the shared session
 owner; fold markers and theme roles remain here. Active marks follow the current leaf,
 not the selection. Attached nonempty labels precede entry content.

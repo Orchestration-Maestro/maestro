@@ -1,5 +1,6 @@
 //! Searchable session, display and behavior settings with nested selectors.
 mod items;
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) use items::http_idle_timeout_label;
 mod submenus;
 use super::dynamic_border::DynamicBorder;

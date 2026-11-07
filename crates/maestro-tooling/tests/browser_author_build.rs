@@ -1835,15 +1835,16 @@ fn browser_author_bootstraps_from_empty_build_state() {
     let (home, target) = browser_support::cold_sources(&browser);
     browser_support::seed_target(&target);
     let before = browser_support::authored(&browser);
-    success(
-        &browser
-            .cold_command("browser-library-build")
-            .env("CARGO_HOME", &home)
-            .env("CARGO_TARGET_DIR", &target)
-            .env("CARGO_NET_OFFLINE", "true")
-            .output()
-            .unwrap(),
-    );
+    let started = std::time::Instant::now();
+    let built = browser
+        .cold_command("browser-library-build")
+        .env("CARGO_HOME", &home)
+        .env("CARGO_TARGET_DIR", &target)
+        .env("CARGO_NET_OFFLINE", "true")
+        .output()
+        .unwrap();
+    browser_support::record_build(started, &built.stderr);
+    success(&built);
     let first = browser_support::wasm(&browser, "library");
     assert_eq!(&first[..8], b"\0asm\x01\0\0\0");
     let output = browser.path("target/maestro-browser/library");

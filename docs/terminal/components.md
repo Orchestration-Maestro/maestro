@@ -6,7 +6,7 @@ Markdown, command-selection and settings components; contracts for overlays,
 terminals, editors and completion; and the `TUI` frame writer that draws
 components to a terminal. It performs no terminal I/O and starts no timers; whatever
 connects a real terminal supplies a `Terminal` implementation, and the host of the frame
-writer supplies a `TuiRuntime` for time, deferral and log files.
+writer supplies a `TuiRuntime` for time, deferral and the log context.
 See [terminal Markdown](markdown.md) for styled blocks and [widgets](widgets.md)
 for padded content, editing, loading, cancellable loading, command selection
 and settings, [retained

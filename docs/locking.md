@@ -53,6 +53,8 @@ it. A sharing violation or an access denial while the file exists counts as
 contention. A directory at the lock path fails immediately. An access denial with
 no entry is retried once immediately; ten consecutive access denials stop even
 the waiting form.
+A browser build has no file system, so file acquisition reports `Unsupported`
+there.
 
 Lock and recovery names append `.lock` and `.recovery` to the complete file name.
 A name fits within 255 bytes on Unix or 255 UTF-16 units on Windows. Only names

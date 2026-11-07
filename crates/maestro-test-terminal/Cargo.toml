@@ -17,6 +17,10 @@ vt100 = "=0.16.2"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+
 [lints]
 workspace = true
 

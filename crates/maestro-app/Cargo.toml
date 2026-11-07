@@ -86,6 +86,7 @@ js-sys = "=0.3.106"
 [dev-dependencies]
 maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }
 maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }
+maestro-models = { path = "../maestro-models", features = ["test-support"] }
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
 serde = { workspace = true, features = ["rc"] }
 serde_json.workspace = true

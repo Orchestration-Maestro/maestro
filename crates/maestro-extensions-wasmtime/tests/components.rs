@@ -8,11 +8,11 @@ use serde_json::Value;
 use std::{cell::RefCell, path::Path, rc::Rc};
 
 /// Runs a test body on the local task set the artifact factory requires.
-pub fn local(test: impl Future<Output = ()>) {
+pub fn local<T>(test: impl Future<Output = T>) -> T {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, test);
+    tokio::task::LocalSet::new().block_on(&runtime, test)
 }
 
 /// Copies the component the setup variable `component` names to `artifact`.

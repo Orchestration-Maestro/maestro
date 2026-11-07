@@ -2051,6 +2051,34 @@ fn maestro_standalone_assets_preserve_symlinked_directory_roots() {
     );
 }
 
+/// A copied tree keeps each file's modification time, so Cargo finds a copied target directory as
+/// fresh as the original: the later file in copy order is the earlier file in time.
+#[test]
+fn maestro_tree_copy_keeps_modification_times() {
+    let fixture = Fixture::new();
+    let source = fixture.root.path().join("tree");
+    fs::create_dir_all(source.join("nested")).unwrap();
+    let times = [("a", 3000), ("nested/b", 2000), ("z", 1000)].map(|(name, seconds)| {
+        let path = source.join(name);
+        fs::write(&path, name).unwrap();
+        let time = std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds);
+        set_modified(&path, time);
+        (name, time)
+    });
+    let destination = fixture.root.path().join("copy");
+    tooling::copy_assets::copy_tree(&source, &destination).unwrap();
+    for (name, time) in times {
+        assert_eq!(
+            fs::metadata(destination.join(name))
+                .unwrap()
+                .modified()
+                .unwrap(),
+            time,
+            "{name}"
+        );
+    }
+}
+
 /// Write the browser compile witnesses' sources into the fixture checkout.
 fn write_browser_witnesses(root: &Path) {
     for source in [
@@ -3478,7 +3506,6 @@ const AUTHOR_SETUP_SOURCES: [&str; 8] = [
 ];
 
 /// Gives `path` the modification time `time`.
-#[cfg(unix)]
 fn set_modified(path: &Path, time: std::time::SystemTime) {
     fs::File::options()
         .write(true)

@@ -23,9 +23,14 @@ impl InteractiveMode {
         let path = get_debug_log_path(&get_agent_dir()?);
         let time = self.tool_environment.runtime.log_context().iso_time;
         let data = debug_data(&time, size, &lines, &self.runtime_host.session())?;
-        self.tool_environment
-            .runtime
-            .write_log(Path::new(&path), &data)?;
+        let file = Path::new(&path);
+        if let Some(parent) = file
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+        {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(file, &data)?;
         let theme = self.themes.theme().get()?;
         let notice = format!(
             "{}\n{}",

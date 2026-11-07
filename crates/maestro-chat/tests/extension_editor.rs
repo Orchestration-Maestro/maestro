@@ -133,11 +133,6 @@ fn configured_dialog(
     manager: KeybindingsManager,
 ) -> Host {
     let spy = Spy::default();
-    for (key, value) in [("VISUAL", &input.visual), ("EDITOR", &input.editor)] {
-        if let Some(value) = value {
-            spy.clock.set_environment(key, value);
-        }
-    }
     let terminal = RecordingTerminal::new(80, 24);
     let tui = Rc::new(TUI::new(
         terminal.handle(),
@@ -194,32 +189,37 @@ fn editor_dialog_renders_title_editor_and_optional_hint() {
         return;
     }
     maestro_tui::set_keybindings(manager());
-    for (input, expected) in
-        cases::<RenderInput, Snapshot>("editor_dialog_renders_title_editor_and_optional_hint")
-    {
-        let host = dialog(&input, None, EditorOptions::default());
-        let actual = visible_rows(host.dialog.render(input.width));
-        assert_eq!(
-            actual.len(),
-            expected.lines.len(),
-            "row count title={:?}",
-            input.title
-        );
-        for (index, (actual, expected)) in actual.iter().zip(&expected.lines).enumerate() {
-            assert_eq!(actual, expected, "row {index} title={:?}", input.title);
-        }
-        assert_eq!(text(&host.dialog), expected.text);
-        assert_eq!(host.dialog.focus_flag().get(), expected.focused);
-        assert_eq!(
-            host.dialog.children().borrow()[4]
-                .focusable()
-                .unwrap()
-                .focus_flag()
-                .get(),
-            expected.child_focused
-        );
-        assert_eq!(*host.events.borrow(), expected.events);
-    }
+    let rows =
+        cases::<RenderInput, Snapshot>("editor_dialog_renders_title_editor_and_optional_hint");
+    run_rows(
+        "editor_dialog_renders_title_editor_and_optional_hint",
+        rows,
+        |row| editor_env(row.0.visual.as_deref(), row.0.editor.as_deref()),
+        |_, (input, expected)| {
+            let host = dialog(&input, None, EditorOptions::default());
+            let actual = visible_rows(host.dialog.render(input.width));
+            assert_eq!(
+                actual.len(),
+                expected.lines.len(),
+                "row count title={:?}",
+                input.title
+            );
+            for (index, (actual, expected)) in actual.iter().zip(&expected.lines).enumerate() {
+                assert_eq!(actual, expected, "row {index} title={:?}", input.title);
+            }
+            assert_eq!(text(&host.dialog), expected.text);
+            assert_eq!(host.dialog.focus_flag().get(), expected.focused);
+            assert_eq!(
+                host.dialog.children().borrow()[4]
+                    .focusable()
+                    .unwrap()
+                    .focus_flag()
+                    .get(),
+                expected.child_focused
+            );
+            assert_eq!(*host.events.borrow(), expected.events);
+        },
+    );
 }
 /// Drops only invisible foreground styles on space-only rows, retaining inverse cells.
 fn visible_rows(rows: Vec<String>) -> Vec<String> {
@@ -237,14 +237,17 @@ fn visible_rows(rows: Vec<String>) -> Vec<String> {
 #[test]
 fn external_editor_preserves_existing_temp_file_and_symlink() {
     let _guard = input_support::globals();
-    if isolated("external_editor_preserves_existing_temp_file_and_symlink") {
+    if row_child(
+        "external_editor_preserves_existing_temp_file_and_symlink",
+        0,
+        &editor_env(Some("inspect-mode"), None),
+    ) {
         return;
     }
     maestro_tui::set_keybindings(manager());
     let host = dialog(
         &RenderInput {
             title: "Edit text".into(),
-            visual: Some("missing-editor-command".into()),
             ..RenderInput::default()
         },
         Some("original".into()),
@@ -268,33 +271,35 @@ fn external_editor_preserves_existing_temp_file_and_symlink() {
     assert_eq!(preserved, b"unrelated saved text");
     assert_eq!(host.terminal.events(), ["start"]);
     #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        use std::os::unix::fs::symlink;
-        let target = maestro_test_directory::temporary_root().join("unrelated-target");
-        std::fs::write(&target, b"unrelated target bytes").unwrap();
-        symlink(&target, &path).unwrap();
-        let result = host.dialog.handle_input("\x07");
-        assert_eq!(
-            result.unwrap_err().kind(),
-            std::io::ErrorKind::AlreadyExists
-        );
-        assert!(
-            std::fs::symlink_metadata(&path)
-                .unwrap()
-                .file_type()
-                .is_symlink()
-        );
-        assert_eq!(std::fs::read(&target).unwrap(), b"unrelated target bytes");
-        std::fs::remove_file(&path).unwrap();
-        install_inspector();
-        host.spy.clock.set_environment("VISUAL", "inspect-mode");
-        host.dialog.handle_input("\x07").unwrap();
-        let copied =
-            std::fs::metadata(maestro_test_directory::temporary_root().join("mode")).unwrap();
-        assert_eq!(copied.permissions().mode() & 0o7777, 0o600);
-        assert!(!path.exists());
-    }
+    preserves_symlink_and_copies_ownership(&host, &path);
+}
+
+/// A symlinked temporary path survives the refusal, and the next edit replaces it.
+#[cfg(unix)]
+fn preserves_symlink_and_copies_ownership(host: &Host, path: &std::path::Path) {
+    use std::os::unix::fs::PermissionsExt;
+    use std::os::unix::fs::symlink;
+    let target = maestro_test_directory::temporary_root().join("unrelated-target");
+    std::fs::write(&target, b"unrelated target bytes").unwrap();
+    symlink(&target, path).unwrap();
+    let result = host.dialog.handle_input("\x07");
+    assert_eq!(
+        result.unwrap_err().kind(),
+        std::io::ErrorKind::AlreadyExists
+    );
+    assert!(
+        std::fs::symlink_metadata(path)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert_eq!(std::fs::read(&target).unwrap(), b"unrelated target bytes");
+    std::fs::remove_file(path).unwrap();
+    install_inspector();
+    host.dialog.handle_input("\x07").unwrap();
+    let copied = std::fs::metadata(maestro_test_directory::temporary_root().join("mode")).unwrap();
+    assert_eq!(copied.permissions().mode() & 0o7777, 0o600);
+    assert!(!path.exists());
 }
 /// Runs native effects in a fresh process with a private temporary directory and PATH.
 fn isolated(name: &str) -> bool {
@@ -320,6 +325,64 @@ fn isolated(name: &str) -> bool {
         String::from_utf8_lossy(&output.stderr)
     );
     true
+}
+/// The editor variables a row supplies, in the order the presentation samples them.
+fn editor_env(visual: Option<&str>, editor: Option<&str>) -> Vec<(String, String)> {
+    [("VISUAL", visual), ("EDITOR", editor)]
+        .into_iter()
+        .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value.to_owned())))
+        .collect()
+}
+/// Runs `row` of `test` in its own fresh child when the row selects an environment.
+///
+/// Returns `true` in the parent, which has launched the row's child, and `false` in the
+/// child that owns `row`. The child sees only `env`, the native fixture path and a command
+/// path holding the scratch directory itself.
+fn row_child(test: &str, row: usize, env: &[(String, String)]) -> bool {
+    let selection = maestro_test_process::selection();
+    if selection.is_child() {
+        return selection.case().and_then(|case| case.parse::<usize>().ok()) != Some(row);
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let directory = scratch.path();
+    let fixture = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    let output = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .nocapture()
+        .env_clear()
+        .case(row.to_string())
+        .current_dir(directory)
+        .temp_dir(directory)
+        .env("PATH", directory)
+        .env("MAESTRO_NATIVE_FIXTURE", &fixture)
+        .envs(
+            env.iter()
+                .map(|(key, value)| (key.as_str(), value.as_str())),
+        )
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "isolated witness failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    true
+}
+/// Runs every `row` of `test` in the child its own environment selects.
+fn run_rows<I>(
+    test: &str,
+    rows: Vec<I>,
+    environment: impl Fn(&I) -> Vec<(String, String)>,
+    body: impl Fn(usize, I),
+) {
+    for (row, item) in rows.into_iter().enumerate() {
+        if row_child(test, row, &environment(&item)) {
+            continue;
+        }
+        body(row, item);
+    }
 }
 /// Prefill-only constructor operands.
 #[derive(Deserialize)]
@@ -380,8 +443,6 @@ enum Operation {
     Global(GlobalOperation),
     /// Replaces the published style.
     Theme(ThemeOperation),
-    /// Replaces the observed environment.
-    Environment(EnvironmentOperation),
     /// Invalidates existing component caches.
     Invalidate(InvalidateOperation),
 }
@@ -453,13 +514,6 @@ fn operation(host: &Host, operation: &Operation) {
     let before = host.terminal.events().len();
     match operation {
         Operation::Key(data) => host.dialog.handle_input(data).unwrap(),
-        Operation::Environment(value) => {
-            for key in ["VISUAL", "EDITOR"] {
-                host.spy
-                    .clock
-                    .set_environment(key, value.environment.get(key).map_or("", String::as_str));
-            }
-        }
         Operation::App(value) => host
             .manager
             .set_user_bindings(bindings::bindings(&value.values)),
@@ -481,36 +535,39 @@ fn operation(host: &Host, operation: &Operation) {
 /// Replays direct input while keeping constructor/global/application routes separate.
 fn input_group(name: &str) {
     let _guard = input_support::globals();
-    if isolated(name) {
-        return;
-    }
-    #[cfg(unix)]
-    install_editor("vi", b"edited\n", 0);
-    for (input, expected) in cases::<OpsInput, Frames>(name) {
-        bindings::replace(&input.global);
-        let application = KeybindingsManager::new(
-            maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            bindings::bindings(&input.app),
-        );
-        let host = configured_dialog(
-            &RenderInput {
-                visual: input.visual,
-                editor: input.editor,
-                ..ordinary_input()
-            },
-            input.prefill,
-            EditorOptions::default(),
-            application,
-        );
-        assert_eq!(expected.frames.len(), input.ops.len() + 1);
-        assert!(input.content.is_none());
-        assert!(matches!(input.status, RecordedStatus::Code(0)));
-        snapshot(&host, &expected.frames[0]);
-        for (op, expected) in input.ops.iter().zip(&expected.frames[1..]) {
-            operation(&host, op);
-            snapshot(&host, expected);
-        }
-    }
+    let rows = cases::<OpsInput, Frames>(name);
+    run_rows(
+        name,
+        rows,
+        |row| editor_env(row.0.visual.as_deref(), row.0.editor.as_deref()),
+        |_, (input, expected)| {
+            #[cfg(unix)]
+            install_editor("vi", b"edited\n", 0);
+            bindings::replace(&input.global);
+            let application = KeybindingsManager::new(
+                maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+                bindings::bindings(&input.app),
+            );
+            let host = configured_dialog(
+                &RenderInput {
+                    visual: input.visual,
+                    editor: input.editor,
+                    ..ordinary_input()
+                },
+                input.prefill,
+                EditorOptions::default(),
+                application,
+            );
+            assert_eq!(expected.frames.len(), input.ops.len() + 1);
+            assert!(input.content.is_none());
+            assert!(matches!(input.status, RecordedStatus::Code(0)));
+            snapshot(&host, &expected.frames[0]);
+            for (op, expected) in input.ops.iter().zip(&expected.frames[1..]) {
+                operation(&host, op);
+                snapshot(&host, expected);
+            }
+        },
+    );
 }
 
 #[test]
@@ -868,6 +925,13 @@ fn editor_dialog_focus_routes_real_writer_cursor() {
 #[test]
 fn editor_dialog_releases_writer_and_callback_captures() {
     let _guard = input_support::globals();
+    if row_child(
+        "editor_dialog_releases_writer_and_callback_captures",
+        0,
+        &editor_env(Some("must-not-spawn"), None),
+    ) {
+        return;
+    }
     let host = dialog(&ordinary_input(), None, EditorOptions::default());
     let capture = Rc::new(());
     let released = Rc::downgrade(&capture);
@@ -899,7 +963,6 @@ fn editor_dialog_releases_writer_and_callback_captures() {
     assert!(weak_writer.upgrade().is_none());
     assert!(weak_component.upgrade().is_none());
     assert!(released.upgrade().is_none());
-    runtime.clock.set_environment("VISUAL", "must-not-spawn");
     let before = runtime.events.borrow().len();
     survivor.handle_input("\x07").unwrap();
     assert_eq!(runtime.events.borrow().len(), before);
@@ -908,18 +971,15 @@ fn editor_dialog_releases_writer_and_callback_captures() {
 #[test]
 fn editor_dialog_trait_reports_errors_through_runtime() {
     let _guard = input_support::globals();
-    if isolated("editor_dialog_trait_reports_errors_through_runtime") {
+    if row_child(
+        "editor_dialog_trait_reports_errors_through_runtime",
+        0,
+        &editor_env(Some("missing-editor"), None),
+    ) {
         return;
     }
     maestro_tui::set_keybindings(manager());
-    let host = dialog(
-        &RenderInput {
-            visual: Some("missing-editor".into()),
-            ..ordinary_input()
-        },
-        None,
-        EditorOptions::default(),
-    );
+    let host = dialog(&ordinary_input(), None, EditorOptions::default());
     host.terminal
         .set_hide_error(Some(std::io::ErrorKind::PermissionDenied));
     assert_eq!(
@@ -937,13 +997,6 @@ fn editor_dialog_trait_reports_errors_through_runtime() {
         std::io::ErrorKind::PermissionDenied
     );
     assert_eq!(host.spy.clock.futures(), 0);
-}
-/// Host environment replacement with explicit empty/missing preservation.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct EnvironmentOperation {
-    /// Complete new observed environment.
-    environment: std::collections::BTreeMap<String, String>,
 }
 /// Exit status zero/nonzero or termination with no integer status.
 #[derive(Deserialize)]
@@ -963,46 +1016,49 @@ impl Default for RecordedStatus {
 #[cfg(unix)]
 fn external_group(name: &str) {
     let _guard = input_support::globals();
-    if isolated(name) {
-        return;
-    }
-    for (index, (input, expected)) in cases::<OpsInput, Frames>(name).into_iter().enumerate() {
-        let _ = std::fs::remove_file(maestro_test_directory::temporary_root().join("argv"));
-        let command = input.visual.clone();
-        maestro_tui::set_keybindings(manager());
-        assert!(input.global.is_empty() && input.app.is_empty());
-        let content = input.content.as_deref().unwrap_or("edited\n").as_bytes();
-        let status = match input.status {
-            RecordedStatus::Code(code) => code,
-            RecordedStatus::Null(()) => -15,
-        };
-        for executable in [
-            "ed", "chosen", "fallback", "changed", "\"my", "ed\t-x", "missing",
-        ] {
-            install_editor(executable, content, status);
-        }
-        let host = dialog(
-            &RenderInput {
-                visual: input.visual,
-                editor: input.editor,
-                ..ordinary_input()
-            },
-            input.prefill,
-            EditorOptions::default(),
-        );
-        assert_eq!(expected.frames.len(), input.ops.len() + 1);
-        snapshot(&host, &expected.frames[0]);
-        for (op, expected) in input.ops.iter().zip(&expected.frames[1..]) {
-            operation(&host, op);
-            snapshot(&host, expected);
-        }
-        if name == "external_editor_splits_only_ascii_spaces_and_sets_platform_shell" {
-            assert_arguments(command.as_deref().unwrap());
-        }
-        if name == "external_editor_selects_visual_then_editor_without_trimming" {
-            selected_executable(index);
-        }
-    }
+    let rows = cases::<OpsInput, Frames>(name);
+    run_rows(
+        name,
+        rows,
+        |row| editor_env(row.0.visual.as_deref(), row.0.editor.as_deref()),
+        |index, (input, expected)| {
+            let _ = std::fs::remove_file(maestro_test_directory::temporary_root().join("argv"));
+            let command = input.visual.clone();
+            maestro_tui::set_keybindings(manager());
+            assert!(input.global.is_empty() && input.app.is_empty());
+            let content = input.content.as_deref().unwrap_or("edited\n").as_bytes();
+            let status = match input.status {
+                RecordedStatus::Code(code) => code,
+                RecordedStatus::Null(()) => -15,
+            };
+            for executable in [
+                "ed", "chosen", "fallback", "changed", "\"my", "ed\t-x", "missing",
+            ] {
+                install_editor(executable, content, status);
+            }
+            let host = dialog(
+                &RenderInput {
+                    visual: input.visual,
+                    editor: input.editor,
+                    ..ordinary_input()
+                },
+                input.prefill,
+                EditorOptions::default(),
+            );
+            assert_eq!(expected.frames.len(), input.ops.len() + 1);
+            snapshot(&host, &expected.frames[0]);
+            for (op, expected) in input.ops.iter().zip(&expected.frames[1..]) {
+                operation(&host, op);
+                snapshot(&host, expected);
+            }
+            if name == "external_editor_splits_only_ascii_spaces_and_sets_platform_shell" {
+                assert_arguments(command.as_deref().unwrap());
+            }
+            if name == "external_editor_selects_visual_then_editor_without_trimming" {
+                selected_executable(index);
+            }
+        },
+    );
 }
 #[test]
 #[cfg(unix)]
@@ -1020,12 +1076,6 @@ fn external_editor_replaces_text_only_after_success_and_removes_one_lf() {
 #[cfg(unix)]
 fn external_editor_nonzero_signal_and_spawn_failure_preserve_text() {
     external_group("external_editor_nonzero_signal_and_spawn_failure_preserve_text");
-}
-
-#[test]
-#[cfg(unix)]
-fn external_editor_samples_environment_at_each_invocation() {
-    external_group("external_editor_samples_environment_at_each_invocation");
 }
 /// Checks the actual executable and argv against the independently recorded split table.
 #[cfg(unix)]
@@ -1124,65 +1174,64 @@ fn assert_temporary_file(root: &std::path::Path, survived: bool) {
 fn external_editor_finally_cleans_and_restarts_after_io_failures() {
     use std::os::unix::fs::PermissionsExt;
     let _guard = input_support::globals();
-    if isolated("external_editor_finally_cleans_and_restarts_after_io_failures") {
-        return;
-    }
-    maestro_tui::set_keybindings(manager());
-    let root = maestro_test_directory::temporary_root();
-    // A privileged run ignores the write and unlink faults, so it has nothing to check.
-    if maestro_test_directory::deny(&root, 0o500)
-        .unwrap()
-        .is_none()
-    {
-        return;
-    }
-    for (input, expected) in cases::<FaultInput, FaultExpected>(
-        "external_editor_finally_cleans_and_restarts_after_io_failures",
-    ) {
-        let host = dialog(
-            &RenderInput {
-                visual: Some(input.visual.clone()),
-                ..ordinary_input()
-            },
-            Some(input.prefill),
-            EditorOptions::default(),
-        );
-        install_editor(&input.visual, b"edited\n", 0);
-        install_fault(&input.visual, &input.fault);
-        if input.fault.contains("write") {
-            std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o500)).unwrap();
-        }
-        if input.fault == "stop" {
-            host.terminal
-                .set_stop_error(Some(std::io::ErrorKind::BrokenPipe));
-        }
-        if input.fault.contains("start") {
-            host.terminal
-                .set_hide_error(Some(std::io::ErrorKind::ConnectionReset));
-        }
-        let result = host.dialog.handle_input("\x07");
-        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o700)).unwrap();
-        assert_eq!(result.is_err(), expected.failed);
-        let phase = result.as_ref().err().map(|error| match error.kind() {
-            std::io::ErrorKind::PermissionDenied => "write",
-            std::io::ErrorKind::BrokenPipe => "stop",
-            std::io::ErrorKind::NotFound => "read",
-            std::io::ErrorKind::ConnectionReset => "start",
-            _ => panic!("unexpected native failure kind"),
-        });
-        assert_eq!(phase, expected.failure_phase.as_deref());
-        host.events.borrow_mut().extend(
-            host.terminal
-                .events()
-                .into_iter()
-                .map(|event| vec![event.into()]),
-        );
-        snapshot(&host, &expected.snapshot);
-        let pending = host.spy.events.borrow().len();
-        assert_eq!(pending > 0, !input.fault.contains("start"));
-        assert_temporary_file(&root, input.fault == "unlink");
-        let _ = std::fs::remove_file(root.join("maestro-extension-editor-1767323045006.md"));
-    }
+    let test = "external_editor_finally_cleans_and_restarts_after_io_failures";
+    let rows = cases::<FaultInput, FaultExpected>(test);
+    run_rows(
+        test,
+        rows,
+        |row| editor_env(Some(row.0.visual.as_str()), None),
+        |_, (input, expected)| {
+            maestro_tui::set_keybindings(manager());
+            let root = maestro_test_directory::temporary_root();
+            // A privileged run ignores the write and unlink faults, so it has nothing to check.
+            if maestro_test_directory::deny(&root, 0o500)
+                .unwrap()
+                .is_none()
+            {
+                return;
+            }
+            let host = dialog(
+                &ordinary_input(),
+                Some(input.prefill),
+                EditorOptions::default(),
+            );
+            install_editor(&input.visual, b"edited\n", 0);
+            install_fault(&input.visual, &input.fault);
+            if input.fault.contains("write") {
+                std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o500)).unwrap();
+            }
+            if input.fault == "stop" {
+                host.terminal
+                    .set_stop_error(Some(std::io::ErrorKind::BrokenPipe));
+            }
+            if input.fault.contains("start") {
+                host.terminal
+                    .set_hide_error(Some(std::io::ErrorKind::ConnectionReset));
+            }
+            let result = host.dialog.handle_input("\x07");
+            std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o700)).unwrap();
+            assert_eq!(result.is_err(), expected.failed);
+            let phase = result.as_ref().err().map(|error| match error.kind() {
+                std::io::ErrorKind::PermissionDenied => "write",
+                std::io::ErrorKind::BrokenPipe => "stop",
+                std::io::ErrorKind::NotFound => "read",
+                std::io::ErrorKind::ConnectionReset => "start",
+                _ => panic!("unexpected native failure kind"),
+            });
+            assert_eq!(phase, expected.failure_phase.as_deref());
+            host.events.borrow_mut().extend(
+                host.terminal
+                    .events()
+                    .into_iter()
+                    .map(|event| vec![event.into()]),
+            );
+            snapshot(&host, &expected.snapshot);
+            let pending = host.spy.events.borrow().len();
+            assert_eq!(pending > 0, !input.fault.contains("start"));
+            assert_temporary_file(&root, input.fault == "unlink");
+            let _ = std::fs::remove_file(root.join("maestro-extension-editor-1767323045006.md"));
+        },
+    );
 }
 /// Controlled native process scenario, not a simulated bridge response.
 #[derive(Deserialize)]
@@ -1264,11 +1313,24 @@ fn external_editor_native_command_roundtrip_and_cleanup() {
         maestro_tui::KeybindingKeys::Single("ctrl+g".into())
     );
     assert_eq!(binding.description.as_deref(), Some("Open external editor"));
-    for (input, expected) in
-        cases::<NativeInput, NativeExpected>("external_editor_native_command_roundtrip_and_cleanup")
-    {
-        native_case(input, expected);
-    }
+    let test = "external_editor_native_command_roundtrip_and_cleanup";
+    let rows = cases::<NativeInput, NativeExpected>(test);
+    run_rows(
+        test,
+        rows,
+        |row| {
+            editor_env(
+                None,
+                Some(
+                    &row.0
+                        .editor
+                        .replace("<node> <controlled-editor>", "native-editor")
+                        .replace("<temporary-directory>", "."),
+                ),
+            )
+        },
+        |_, (input, expected)| native_case(input, expected),
+    );
 }
 /// Executes one observed OS outcome, retaining all original scenario distinctions.
 #[cfg(target_os = "linux")]
@@ -1281,15 +1343,8 @@ fn native_case(input: NativeInput, expected: NativeExpected) {
     }
     let record = native_record(&input.scenario);
     install("native-editor", &record);
-    let command = input
-        .editor
-        .replace("<node> <controlled-editor>", "native-editor")
-        .replace("<temporary-directory>", root.to_str().unwrap());
     let host = dialog(
-        &RenderInput {
-            editor: Some(command),
-            ..ordinary_input()
-        },
+        &RenderInput::default(),
         Some(input.prefill),
         EditorOptions::default(),
     );
@@ -1347,50 +1402,51 @@ struct PlatformInput {
 #[cfg(unix)]
 fn external_editor_windows_uses_shell_while_unix_executes_directly() {
     let _guard = input_support::globals();
-    if isolated("external_editor_windows_uses_shell_while_unix_executes_directly") {
-        return;
-    }
     maestro_tui::set_keybindings(manager());
+    let test = "external_editor_windows_uses_shell_while_unix_executes_directly";
     let rows: Vec<Case> =
         serde_json::from_str(include_str!("fixtures/extension_editor.json")).unwrap();
     let rows: Vec<_> = rows
         .into_iter()
-        .filter(|row| {
-            row.test == "external_editor_windows_uses_shell_while_unix_executes_directly"
-                && row.input.get("VISUAL").is_some()
-        })
+        .filter(|row| row.test == test && row.input.get("VISUAL").is_some())
         .collect();
     assert_eq!(rows.len(), 1);
-    for row in rows {
-        let input: PlatformInput = serde_json::from_value(row.input).unwrap();
-        let expected: Snapshot = serde_json::from_value(row.expected).unwrap();
-        assert_eq!(input.platform, "win32");
-        install_editor("ed", b"edited\n", 0);
-        let host = dialog(
-            &RenderInput {
-                visual: Some(input.visual),
-                ..ordinary_input()
-            },
-            None,
-            EditorOptions::default(),
-        );
-        host.dialog.handle_input("\x07").unwrap();
-        host.events.borrow_mut().extend(
-            host.terminal
-                .events()
-                .into_iter()
-                .map(|event| vec![event.into()]),
-        );
-        snapshot(&host, &expected);
-        let argv = std::fs::read(maestro_test_directory::temporary_root().join("argv")).unwrap();
-        let fields: Vec<_> = argv
-            .strip_suffix(&[0])
-            .unwrap()
-            .split(|byte| *byte == 0)
-            .collect();
-        assert_eq!(fields.len(), 3);
-        assert_eq!(fields[1], b"--wait");
-    }
+    let rows: Vec<(PlatformInput, Snapshot)> = rows
+        .into_iter()
+        .map(|row| {
+            (
+                serde_json::from_value(row.input).unwrap(),
+                serde_json::from_value(row.expected).unwrap(),
+            )
+        })
+        .collect();
+    run_rows(
+        test,
+        rows,
+        |row| editor_env(Some(row.0.visual.as_str()), None),
+        |_, (input, expected)| {
+            assert_eq!(input.platform, "win32");
+            install_editor("ed", b"edited\n", 0);
+            let host = dialog(&ordinary_input(), None, EditorOptions::default());
+            host.dialog.handle_input("\x07").unwrap();
+            host.events.borrow_mut().extend(
+                host.terminal
+                    .events()
+                    .into_iter()
+                    .map(|event| vec![event.into()]),
+            );
+            snapshot(&host, &expected);
+            let argv =
+                std::fs::read(maestro_test_directory::temporary_root().join("argv")).unwrap();
+            let fields: Vec<_> = argv
+                .strip_suffix(&[0])
+                .unwrap()
+                .split(|byte| *byte == 0)
+                .collect();
+            assert_eq!(fields.len(), 3);
+            assert_eq!(fields[1], b"--wait");
+        },
+    );
 }
 
 /// Checks the independently recorded winning environment route.
@@ -1473,21 +1529,22 @@ const OWNERS: [&str; 22] = [
 #[cfg(windows)]
 fn external_editor_passes_environment_operand_to_native_child() {
     let _guard = input_support::globals();
-    if isolated("external_editor_passes_environment_operand_to_native_child") {
+    let shell = std::env::var("COMSPEC").expect("the platform names its shell");
+    let mut env = editor_env(Some("echo changed>"), None);
+    env.push(("comspec".to_owned(), shell));
+    if row_child(
+        "external_editor_passes_environment_operand_to_native_child",
+        0,
+        &env,
+    ) {
         return;
     }
     maestro_tui::set_keybindings(manager());
     let host = dialog(
-        &RenderInput {
-            visual: Some("echo changed>".into()),
-            ..ordinary_input()
-        },
+        &RenderInput::default(),
         Some("before".into()),
         EditorOptions::default(),
     );
-    host.spy
-        .clock
-        .set_environment("comspec", &std::env::var("COMSPEC").unwrap());
     host.dialog.handle_input("\x07").unwrap();
     assert_eq!(text(&host.dialog), "changed\n");
     assert!(

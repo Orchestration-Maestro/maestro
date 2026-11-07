@@ -59,16 +59,7 @@ impl TuiRuntime for Observer {
     fn spawn_local(&self, future: maestro_tui::tui::LocalFuture) {
         self.clock.spawn_local(future);
     }
-    fn environment(&self, key: &str) -> Option<String> {
-        self.clock.environment(key)
-    }
     fn log_context(&self) -> maestro_tui::tui::LogContext {
         self.clock.log_context()
-    }
-    fn append_log(&self, path: &std::path::Path, contents: &str) -> std::io::Result<()> {
-        self.clock.append_log(path, contents)
-    }
-    fn write_log(&self, path: &std::path::Path, contents: &str) -> std::io::Result<()> {
-        self.clock.write_log(path, contents)
     }
 }

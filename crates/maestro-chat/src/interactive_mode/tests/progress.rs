@@ -6,7 +6,8 @@ use super::queues::{Kept, Mode};
 use super::session;
 use super::transcript::{append, recorded, user_record};
 use super::{
-    CommandHandler, Setup, World, answer, cases, held_response, isolated, painted, started,
+    CommandHandler, Effects, Setup, World, answer, cases, held_response, isolated, painted,
+    started, tap,
 };
 use maestro_app::agent_session::{CompactionReason, PromptOptions};
 use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
@@ -108,23 +109,10 @@ struct Outcome {
     editor: String,
 }
 
-/// The terminal's emulated effects since the last tap.
-type Effects = Rc<RefCell<Vec<String>>>;
-
 /// The emulated progress sequence a terminal shows.
 const PROGRESS_ACTIVE: &str = "\u{1b}]9;4;3\u{7}";
 /// The emulated sequence that clears progress.
 const PROGRESS_CLEAR: &str = "\u{1b}]9;4;0;\u{7}";
-
-/// Collects the effects the terminal is asked to emulate from now on.
-fn tap(world: &World) -> Effects {
-    let effects: Effects = Rc::default();
-    let collect = Rc::clone(&effects);
-    world
-        .terminal
-        .set_tap(move |effect| collect.borrow_mut().push(effect.to_owned()));
-    effects
-}
 
 /// The terminal's progress requests in order.
 fn progress(effects: &Effects) -> Vec<bool> {
