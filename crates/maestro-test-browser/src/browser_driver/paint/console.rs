@@ -26,9 +26,9 @@ const OUTLINE: (f64, f64) = (2.0, 2.0);
 /// Inset that keeps the follow control's rounded corners out of its glyph count, in CSS pixels.
 const GLYPH_INSET: f64 = 4.0;
 
-/// Glyph scenes: the glyph's selector, the bounds of its painted width over height and the shape
-/// those bounds name. A right chevron is about 0.6, a down chevron 1.7, the copy icon 1.0 and the
-/// check mark 1.4, antialiasing included.
+/// Glyph scenes: the scene, the glyph's selector, the bounds of its painted width over height and
+/// the shape those bounds name. At the driver's 1.25 device pixel ratio, a right chevron measures
+/// 0.67, a down chevron 1.5, the copy icon 0.95 and the check mark 1.45, antialiasing included.
 const GLYPHS: [(&str, &str, (f64, f64), &str); 4] = [
     (
         "console-collapsed",
