@@ -259,14 +259,23 @@ impl AnswerToolResult {
     }
 }
 
+/// Answers a local request with `answer`, already settled.
+fn answered(
+    answer: AssistantMessage,
+) -> <Local as maestro_models::Execution>::Future<
+    'static,
+    Result<AssistantMessage, DiagnosticErrorInfo>,
+> {
+    Box::pin(std::future::ready(Ok(answer)))
+}
+
 impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for AnswerToolResult {
     type Return = <Local as maestro_models::Execution>::Future<
         'static,
         Result<AssistantMessage, DiagnosticErrorInfo>,
     >;
     fn invoke(&self, input: FauxResponseInput<Local>) -> Self::Return {
-        let answer = self.respond(&input);
-        Box::pin(std::future::ready(Ok(answer)))
+        answered(self.respond(&input))
     }
 }
 
@@ -431,8 +440,7 @@ impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for AnswerUserText 
         Result<AssistantMessage, DiagnosticErrorInfo>,
     >;
     fn invoke(&self, input: FauxResponseInput<Local>) -> Self::Return {
-        let answer = self.respond(&input);
-        Box::pin(std::future::ready(Ok(answer)))
+        answered(self.respond(&input))
     }
 }
 
@@ -654,8 +662,7 @@ impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for AnswerSystemPro
         Result<AssistantMessage, DiagnosticErrorInfo>,
     >;
     fn invoke(&self, input: FauxResponseInput<Local>) -> Self::Return {
-        let answer = self.respond(&input);
-        Box::pin(std::future::ready(Ok(answer)))
+        answered(self.respond(&input))
     }
 }
 

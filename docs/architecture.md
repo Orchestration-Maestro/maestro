@@ -388,16 +388,21 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
-Conventions reject token-identical production function bodies with at least 30
-interior tokens, including free functions, methods, trait defaults and nested
-functions. Whitespace and comments are ignored; token spelling, literal contents
+Conventions reject token-identical function bodies with at least 30 interior
+tokens, including free functions, methods, trait defaults and nested functions.
+Authored test code counts the same as production code: bodies in `tests/` files,
+`tests.rs`, `#![cfg(test)]` files and inline `#[cfg(test)]` items join one
+identity index with every production body, across all workspace packages. A
+copied test helper is therefore reported until its callers share one owner, such
+as the package's test module root or a test-support library they already
+depend on. Whitespace and comments are ignored; token spelling, literal contents
 and delimiter kinds are preserved. Each diagnostic lists the token count and all
 native file paths with one-based signature lines, including same-line sites.
-Parsed `cfg(test)` scopes, test file layouts, the generated model catalog and the
-exact generated guest binding file are excluded. Macro definitions are not
-expanded, but authored invocation tokens inside functions are compared.
-Unparsed fragments produce no candidates; compound configurations are not
-evaluated. There is no baseline, allowlist or suppression attribute.
+Only the generated model catalog and the exact generated guest binding file are
+excluded. Macro definitions are not expanded, but authored invocation tokens
+inside functions are compared. Unparsed fragments produce no candidates;
+compound configurations are not evaluated. There is no baseline, allowlist or
+suppression attribute.
 
 The shipped extension example tests share their document decoding and
 registration release in `src/tests/example_support.rs`. That release also asserts

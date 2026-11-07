@@ -2,22 +2,14 @@
 #[cfg(unix)]
 use super::process;
 use super::{RpcClient, RpcClientError, RpcClientOptions};
+use maestro_test_process::executor::run;
 #[cfg(unix)]
 use std::cell::RefCell;
-use std::{future::Future, rc::Rc};
-
-/// Runs `body` on a local executor with its own runtime.
-fn on_local<F: Future>(body: F) -> F::Output {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, body)
-}
+use std::rc::Rc;
 
 #[test]
 fn failed_prompt_releases_its_collection_registration() {
-    on_local(async {
+    run(async {
         let client = RpcClient::new(RpcClientOptions::default());
         let outcome = client.prompt_and_wait("hello", None, None).await;
         assert!(matches!(outcome, Err(RpcClientError::NotStarted)));
@@ -55,7 +47,7 @@ fn failed_launch_publishes_nothing_and_leaves_no_child() {
         "PEER_MARKER".into(),
         format!("{}.launches", entry.display()),
     );
-    on_local(async {
+    run(async {
         let client = RpcClient::new(options);
         let mut command = process::command_for(&client.options).unwrap();
         let refused = || Err(std::io::Error::other("no thread"));

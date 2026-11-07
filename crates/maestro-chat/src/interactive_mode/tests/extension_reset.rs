@@ -2,7 +2,7 @@
 //! across prompt turns until it does.
 use super::extension_custom::{Build, Flow, Views, overlay, plain};
 use super::extension_editors::{Knobs, probe_factory};
-use super::extension_ui::port;
+use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{World, isolated, with_held_response};
 use maestro_app::{
@@ -18,16 +18,6 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-
-/// An error whose allocation identity survives host forwarding.
-#[derive(Debug)]
-struct Original(Arc<()>);
-impl std::fmt::Display for Original {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("reset cleanup failed")
-    }
-}
-impl std::error::Error for Original {}
 
 /// What a witness's widget disposals record, do and fail with.
 #[derive(Default)]
@@ -66,7 +56,7 @@ impl Disposals {
     fn dispose(&self, label: &'static str) -> Result<(), EventError> {
         self.trace.borrow_mut().push(format!("{label}:dispose"));
         if self.fails.get() == Some(label) {
-            return Err(Box::new(Original(self.error.clone())));
+            return Err(Box::new(Original::new("reset cleanup failed", &self.error)));
         }
         if label == "a"
             && let Some(edit) = self.edit.borrow().as_ref()
@@ -186,11 +176,7 @@ fn widget_clear_observes_finite_live_disposer_edits() {
                 assert_eq!(disposals.trace.borrow().as_slice(), expected, "{case}");
                 if case == "fail" {
                     let error = result.unwrap_err();
-                    assert!(
-                        error
-                            .downcast_ref::<Original>()
-                            .is_some_and(|error| Arc::ptr_eq(&error.0, &disposals.error))
-                    );
+                    assert!(is_original(error.as_ref(), &disposals.error));
                     assert_eq!(
                         widget_keys(&world),
                         (
@@ -417,11 +403,7 @@ fn session_replacement_resets_every_native_addition() {
             assert!(!world.mode.extension_widgets_above.is_empty());
             assert_abandoned(&world, &views, pending);
             let reset = world.mode.reset_extension_ui().unwrap_err();
-            assert!(
-                reset
-                    .downcast_ref::<Original>()
-                    .is_some_and(|e| Arc::ptr_eq(&e.0, &disposals.error))
-            );
+            assert!(is_original(reset.as_ref(), &disposals.error));
         },
     );
 }

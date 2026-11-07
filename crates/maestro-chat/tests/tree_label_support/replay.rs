@@ -105,7 +105,7 @@ fn frame(panel: &TreeSelectorComponent, case: &Case, record: &Frame, context: &C
         assert_eq!(rendered.width, *width);
         assert_eq!(panel.render(*width), rendered.panel, "{}", case.name);
         assert_eq!(
-            list.render(*width, &context.theme, &context.host, case.input.styles)
+            list.render(*width, &context.theme, case.input.styles)
                 .unwrap(),
             rendered.list,
             "{}",

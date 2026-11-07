@@ -272,6 +272,7 @@ mod tests {
     use super::{DispatchToken, local_dispatch};
     use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
     use maestro_app::DiagnosticErrorInfo;
+    use maestro_test_process::executor::block_on;
     use std::{
         cell::{Cell, RefCell},
         future::Future,
@@ -305,16 +306,6 @@ mod tests {
         (dispatch, applied)
     }
 
-    /// Runs `body` inside a current-thread runtime and task set, where the delivery's
-    /// receiver task makes progress.
-    fn on_tasks<T>(body: impl Future<Output = T>) -> T {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        tokio::task::LocalSet::new().block_on(&runtime, body)
-    }
-
     /// Runs the delivery's receiver task beside `body`.
     async fn driving<T>(runtime: &ManualRuntime, body: impl Future<Output = T>) -> T {
         let tasks: Vec<_> = runtime
@@ -344,8 +335,9 @@ mod tests {
         send(3);
         drop(send);
         let settle = Box::pin(dispatch.settle());
-        let error =
-            on_tasks(driving(&runtime, settle)).expect_err("the update failure is returned");
+        let error = block_on(driving(&runtime, settle))
+            .unwrap()
+            .expect_err("the update failure is returned");
         assert_eq!(error.message, "the dialog could not be shown");
     }
 
@@ -358,7 +350,7 @@ mod tests {
         send(1);
         send(2);
         let settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, settle));
+        let outcome = block_on(driving(&runtime, settle)).unwrap();
         assert!(
             outcome.is_ok(),
             "explicit close must not wait for retained sender"
@@ -394,7 +386,7 @@ mod tests {
             "later calls see the failure"
         );
         let settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, settle));
+        let outcome = block_on(driving(&runtime, settle)).unwrap();
         assert_eq!(outcome, Err(refusal()), "settle keeps the same failure");
         assert_eq!(applied.borrow().clone(), [1], "no later work is applied");
     }
@@ -404,11 +396,12 @@ mod tests {
         let runtime = ManualRuntime::new();
         let (direct, applied) = recording(&runtime, u32::MAX);
         let requester = direct.requester();
-        let outcome = on_tasks(async move {
+        let outcome = block_on(async move {
             tokio::task::spawn_local(async move { requester.call(8) })
                 .await
                 .unwrap()
-        });
+        })
+        .unwrap();
         assert_eq!(
             outcome,
             Ok(()),
@@ -430,12 +423,13 @@ mod tests {
             drop(answered.send((first, second)));
         });
         let local = dispatch.requester();
-        let (outcomes, spawned) = on_tasks(driving(&runtime, async {
+        let (outcomes, spawned) = block_on(driving(&runtime, async {
             let outcomes = answer.await.unwrap();
             let seen_then = applied.borrow().clone();
             let spawned = tokio::task::spawn_local(async move { local.call(7) });
             ((outcomes, seen_then), spawned.await.unwrap())
-        }));
+        }))
+        .unwrap();
         foreign.join().unwrap();
         assert_eq!(
             outcomes.0,
@@ -453,7 +447,7 @@ mod tests {
             "a local task meets the same failure directly"
         );
         let settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, settle));
+        let outcome = block_on(driving(&runtime, settle)).unwrap();
         assert_eq!(outcome, Err(refusal()));
     }
 
@@ -479,7 +473,7 @@ mod tests {
             2,
             "the receiver still owns the update"
         );
-        on_tasks(driving(&runtime, async {}));
+        block_on(driving(&runtime, async {})).unwrap();
         assert_eq!(observed.get(), 1, "the admitted item was drained");
         assert_eq!(
             Rc::strong_count(&observed),
@@ -516,7 +510,7 @@ mod tests {
         );
         assert_eq!(held.upgrade().unwrap().borrow().clone(), [0, 1]);
         let settling = Box::pin(async { (first.settle().await, second.settle().await) });
-        let outcomes = on_tasks(driving(&runtime, settling));
+        let outcomes = block_on(driving(&runtime, settling)).unwrap();
         assert_eq!(
             outcomes,
             (Ok(()), Err(refusal())),
@@ -542,7 +536,7 @@ mod tests {
         send(7);
         drop(send);
         let settle = Box::pin(dispatch.settle());
-        let outcome = on_tasks(driving(&runtime, settle));
+        let outcome = block_on(driving(&runtime, settle)).unwrap();
         assert!(outcome.is_ok());
         assert_eq!(applied.borrow().clone(), [7]);
     }

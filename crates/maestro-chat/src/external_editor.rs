@@ -1,6 +1,7 @@
 //! Editing text in the user's external editor on the inherited terminal.
+use crate::environment::variable;
 use crate::temporary_file::write_temporary_file;
-use maestro_tui::{TUI, tui::TuiRuntime};
+use maestro_tui::TUI;
 use std::{fs, io, path::Path};
 
 /// One edit: the configured command, the file it edits and the text written there first.
@@ -15,10 +16,10 @@ pub(crate) struct ExternalEditorFile<'a> {
 
 /// Samples the current nonempty visual editor, falling back to the editor variable,
 /// without trimming or interpreting either value.
-pub(crate) fn external_command(runtime: &dyn TuiRuntime) -> Option<String> {
+pub(crate) fn external_command() -> Option<String> {
     ["VISUAL", "EDITOR"]
         .into_iter()
-        .find_map(|key| runtime.environment(key).filter(|value| !value.is_empty()))
+        .find_map(|key| variable(key).filter(|value| !value.is_empty()))
 }
 
 /// Writes the file, stops the terminal and runs the editor on it; a zero exit hands the
@@ -31,7 +32,6 @@ pub(crate) fn external_command(runtime: &dyn TuiRuntime) -> Option<String> {
 /// nonzero exit, a signal or a refused spawn leave the text unchanged without an error.
 pub(crate) fn edit_external_file<E: From<io::Error>>(
     ui: &TUI,
-    #[cfg(windows)] runtime: &dyn TuiRuntime,
     set_text: impl FnOnce(&str) -> Result<(), E>,
     file: &ExternalEditorFile<'_>,
 ) -> Result<(), E> {
@@ -40,12 +40,7 @@ pub(crate) fn edit_external_file<E: From<io::Error>>(
         write_temporary_file(file.path, file.text.as_bytes())?;
         owned = true;
         ui.stop()?;
-        let command = native_command(
-            file.command,
-            file.path,
-            #[cfg(windows)]
-            runtime,
-        );
+        let command = native_command(file.command, file.path);
         match command.spawn_sync(maestro_app::SpawnSyncOptions::Inherit) {
             Ok(output) if output.status.success() => {
                 let bytes = fs::read(file.path)?;
@@ -78,7 +73,6 @@ pub(crate) fn edit_external_file<E: From<io::Error>>(
 fn native_command(
     command: &str,
     path: &Path,
-    #[cfg(windows)] runtime: &dyn TuiRuntime,
 ) -> maestro_app::LaunchContext<'static, Vec<(&'static str, String)>> {
     #[cfg(not(windows))]
     {
@@ -96,7 +90,7 @@ fn native_command(
         let (launch, env) = windows_command(
             command,
             &path.to_string_lossy(),
-            runtime.environment("comspec").as_deref(),
+            variable("comspec").as_deref(),
         );
         launch.with_context(vec![env], None)
     }

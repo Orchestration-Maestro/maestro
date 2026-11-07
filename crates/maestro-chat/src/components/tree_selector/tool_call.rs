@@ -27,21 +27,16 @@ pub(super) fn collect(nodes: &[SessionTreeNode]) -> HashMap<String, (usize, usiz
 }
 use super::entry_text::{normalize, text};
 use maestro_app::{is_truthy, truncate_utf16};
-use maestro_tui::tui::TuiRuntime;
 use std::{borrow::Cow, io};
 impl TreeState {
     /// Resolve a visible result against all retained assistant calls.
-    pub(super) fn tool_result(
-        &self,
-        message: &Value,
-        runtime: &dyn TuiRuntime,
-    ) -> io::Result<String> {
+    pub(super) fn tool_result(&self, message: &Value) -> io::Result<String> {
         if let Some(&(index, block)) = message["toolCallId"]
             .as_str()
             .and_then(|id| self.tool_calls.get(id))
         {
             let call = &self.nodes[index].entry()["message"]["content"][block];
-            return format_call(text(&call["name"])?, &call["arguments"], runtime);
+            return format_call(text(&call["name"])?, &call["arguments"]);
         }
         let name = message
             .get("toolName")
@@ -51,7 +46,7 @@ impl TreeState {
     }
 }
 /// Summarize only the fields used by the selected tool kind.
-fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result<String> {
+fn format_call(name: &str, args: &Value) -> io::Result<String> {
     match name {
         "bash" => {
             let raw = argument(args, "command", "")?;
@@ -71,7 +66,7 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
             } else {
                 argument(args, "file_path", "")?
             };
-            let path = shorten_path(&raw, runtime);
+            let path = shorten_path(&raw);
             let range = if name == "read" {
                 maestro_app::format_read_line_range(args)
             } else {
@@ -80,7 +75,7 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
             Ok(format!("[{name}: {path}{range}]"))
         }
         "grep" | "find" | "ls" => {
-            let path = shorten_path(&argument(args, "path", ".")?, runtime);
+            let path = shorten_path(&argument(args, "path", ".")?);
             if name == "ls" {
                 return Ok(format!("[ls: {path}]"));
             }
@@ -122,10 +117,10 @@ fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<
         .map_err(io::Error::other)
 }
 /// Bind the live nonempty home observation only when formatting a path.
-fn shorten_path(path: &str, runtime: &dyn TuiRuntime) -> String {
+fn shorten_path(path: &str) -> String {
     super::super::shorten_path_with_home(
         path,
-        &|variable| runtime.environment(variable),
+        &crate::environment::variable,
         maestro_path::shorten_home,
     )
 }

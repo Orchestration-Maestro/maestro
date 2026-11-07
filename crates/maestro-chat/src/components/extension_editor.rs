@@ -79,7 +79,7 @@ impl ExtensionEditorComponent {
         editor.set_on_submit(Some(options.on_submit));
         container.add_child(editor.clone());
         container.add_child(Rc::new(Spacer::new(1)));
-        let hint = editor_hint(&options.theme, options.runtime.as_ref())?;
+        let hint = editor_hint(&options.theme)?;
         container.add_child(Rc::new(Text::new(hint, 1, 0, None)));
         container.add_child(Rc::new(Spacer::new(1)));
         container.add_child(border());
@@ -109,7 +109,7 @@ impl ExtensionEditorComponent {
     }
     /// Edits the buffer in the configured external editor through the shared edit owner.
     fn open_external_editor(&self) -> io::Result<()> {
-        let Some(command) = external_command(self.runtime.as_ref()) else {
+        let Some(command) = external_command() else {
             return Ok(());
         };
         let Some(tui) = self.tui.upgrade() else {
@@ -126,8 +126,6 @@ impl ExtensionEditorComponent {
         };
         edit_external_file(
             &tui,
-            #[cfg(windows)]
-            self.runtime.as_ref(),
             |text| {
                 self.editor.set_text(text);
                 Ok::<_, io::Error>(())
@@ -167,13 +165,13 @@ impl Component for ExtensionEditorComponent {
 }
 
 /// Prepares the constructor-time help using the global registry.
-fn editor_hint(theme: &LiveTheme, runtime: &dyn TuiRuntime) -> Result<String, ThemeError> {
+fn editor_hint(theme: &LiveTheme) -> Result<String, ThemeError> {
     let mut hints = vec![
         ("tui.select.confirm", "submit"),
         ("tui.input.newLine", "newline"),
         ("tui.select.cancel", "cancel"),
     ];
-    if external_command(runtime).is_some() {
+    if external_command().is_some() {
         hints.push(("app.editor.external", "external editor"));
     }
     Ok(hints

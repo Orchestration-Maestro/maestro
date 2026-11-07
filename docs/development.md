@@ -405,7 +405,7 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports and one contribution export check the pixels the page
+Eight canvas exports and two contribution exports check the pixels the page
 paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
@@ -427,6 +427,7 @@ the export and the job:
 | `export-roles` | `export_rendering_uses_the_selected_brand_roles` | Each export element paints its brand role inside the final clip, for both packs in both modes. Borders paint exactly their role. Hover, expansion and underline change pixels. |
 | `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background. The browser draws no underline on a run of only spaces, so the underline is checked on the export's text. |
 | `control-focus` | `artifact_controls_dom_paint_tokens_and_keyboard_actions` | The control that keyboard focus reached paints the accent ring over more than half of each 2-pixel edge band, so no edge is missing or clipped away by its group. |
+| `console-rest`, `console-hover`, `console-focus` | `artifact_console_dom_expansion_copy_and_follow` | In both modes, the summary and ordinary lines paint the muted role and error lines the error role. Under the native pointer, the summary paints the text role. The follow control that keyboard focus reached paints its accent fill and on-accent glyph, and its accent outline covers more than a quarter of the straight band along each edge. These scenes never move the pointer or scroll, so an element outside the visible page fails. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
@@ -436,7 +437,23 @@ itself: painted text passes, while transparent text, an outer frame shadow and a
 unknown scene each fail. `control_focus_requires_an_unclipped_accent_ring` does
 the same for the focus scene: an inset accent ring passes, while a missing ring,
 an outer ring, a group that clips one edge and a page with no focused control
-each fail.
+each fail. `console_scenes_require_their_painted_roles` covers the console
+scenes: lines, hover and focus that paint their roles pass, while a line
+in the wrong colour, a hover that keeps the resting colour, a missing outline, a
+pointer away from the summary and focus away from the follow control each fail.
+
+Fonts are checked by measuring text. In the console export's log box, eight
+narrow letters and eight wide letters take the same width, as they do in the
+brand mono stack and not in the body font. The Word export awaits the `load()`
+of the face its `embedded-font-loaded` package embeds, then requires the text in
+that face to measure a different width from the same text in a family the page
+lacks, so a face that fails to load cannot pass.
+
+Every package in `tests/fixtures/native_document_artifacts.json` is also a
+`.docx` under `src/docx_preview/fixtures/docx/`, and a native test holds the
+two byte for byte. To change a package, edit the `.docx` and copy its base64
+into the JSON. Another native test decodes the embedded face and compares it
+with the font file it came from.
 
 ### Prove a browser test on a branch
 

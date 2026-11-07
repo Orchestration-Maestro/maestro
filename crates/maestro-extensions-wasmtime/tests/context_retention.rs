@@ -15,6 +15,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use crate::components::local;
 use crate::retained_contexts::STALE;
 
 /// Live values the supplied base and command bindings answer with.
@@ -25,14 +26,6 @@ struct Bindings {
     second: Value,
     /// Native command operations this run invoked.
     calls: Rc<Cell<usize>>,
-}
-
-/// Runs every retained-context case on one current-thread runtime.
-fn local<T>(work: impl std::future::Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, work)
 }
 
 /// Loads the component over a seeded history, catalog and model.

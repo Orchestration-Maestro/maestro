@@ -4,8 +4,10 @@ use maestro_extensions::{
     CommandContextOperations, ExtensionCommandContextActions, ExtensionRunner, Local,
     NewSessionHandler, ReplacedSessionContext, create_event_bus_for, types::SessionChangeResult,
 };
-use serde_json::{Value, json};
+use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
+
+use super::{components::local, retained_components::report};
 
 /// The stale guidance every retired read reports.
 const STALE: &str = super::retained_contexts::STALE;
@@ -18,34 +20,12 @@ struct Host {
     retire: bool,
 }
 
-/// Runs one retained-runtime case on one current-thread runtime.
-fn local<T>(work: impl std::future::Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, work)
-}
-
 /// Loads the component over its own origin session.
 async fn loaded() -> ExtensionRunner<Local> {
     let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
     let (session, _) = super::session::runner_session("/target-origin");
     let (_, runner, _) = super::retained_components::loaded_in(bus.for_extension(), session).await;
     runner
-}
-
-/// Runs one authored request that answers with its own JSON either way.
-async fn report(runner: &ExtensionRunner<Local>, request: &str) -> Value {
-    let handler = runner
-        .get_command("bridge-observe")
-        .unwrap()
-        .command
-        .handler;
-    let answer = handler(request.into(), runner.create_command_context())
-        .await
-        .expect_err("retained request")
-        .to_string();
-    serde_json::from_str(&answer).unwrap_or_else(|error| panic!("{error}: {answer}"))
 }
 
 /// Builds one fresh target runner, binds the replacement operation and keeps it.

@@ -1037,11 +1037,12 @@ fn startup_package_check_skips_before_observations_when_offline() {
     .into_iter()
     .enumerate()
     {
-        super::isolated_case(TEST, &index.to_string(), &[], async |directory| {
+        let env: Vec<(&OsStr, &OsStr)> = value
+            .map(|value| (OsStr::new("MAESTRO_OFFLINE"), OsStr::new(value)))
+            .into_iter()
+            .collect();
+        super::isolated_case(TEST, &index.to_string(), &env, async |directory| {
             let world = native_package_world(directory);
-            if let Some(value) = value {
-                world.runtime.set_environment("MAESTRO_OFFLINE", value);
-            }
             async {
                 let set = value.is_some_and(|value| !value.is_empty());
                 assert_eq!(maestro_app::configuration::flag_is_set(value), set);
@@ -1197,13 +1198,16 @@ fn tmux_warning_selects_first_reachable_policy() {
         .into_iter()
         .enumerate()
     {
-        super::isolated_case(TEST, &index.to_string(), &[], async |directory| {
+        let env: Vec<(&OsStr, &OsStr)> = input
+            .tmux
+            .as_deref()
+            .map(|value| (OsStr::new("TMUX"), OsStr::new(value)))
+            .into_iter()
+            .collect();
+        super::isolated_case(TEST, &index.to_string(), &env, async |directory| {
             install_tmux(directory, &reply(&input.ext), &reply(&input.format));
             let world = Setup::default().build(directory);
             assert_eq!(input.op, "tmux");
-            if let Some(value) = &input.tmux {
-                world.runtime.set_environment("TMUX", value);
-            }
             async {
                 let (warning, errors) =
                     super::driving(&world, world.mode.check_tmux_keyboard_setup()).await;
@@ -1243,9 +1247,14 @@ fn startup_checks_start_in_order_without_blocking_prompts() {
         }
         drop(run);
     });
-    super::isolated_case(TEST, "ready", &[], async |root| {
-        (ready_completion_order(root)).await;
-    });
+    super::isolated_case(
+        TEST,
+        "ready",
+        &[(OsStr::new("TMUX"), OsStr::new("session"))],
+        async |root| {
+            (ready_completion_order(root)).await;
+        },
+    );
     for (index, order) in [
         [0, 1, 2],
         [0, 2, 1],
@@ -1260,10 +1269,13 @@ fn startup_checks_start_in_order_without_blocking_prompts() {
         super::isolated_case(
             TEST,
             &index.to_string(),
-            &[(
-                OsStr::new("MAESTRO_NOTICE_INHERITED"),
-                OsStr::new("retained"),
-            )],
+            &[
+                (
+                    OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                    OsStr::new("retained"),
+                ),
+                (OsStr::new("TMUX"), OsStr::new("session")),
+            ],
             async |root| {
                 (completion_order(root, order)).await;
             },
@@ -1537,15 +1549,17 @@ fn tmux_probe_uses_both_options_concurrently() {
     super::isolated_case(
         TEST,
         "child",
-        &[(
-            OsStr::new("MAESTRO_NOTICE_INHERITED"),
-            OsStr::new("retained"),
-        )],
+        &[
+            (
+                OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                OsStr::new("retained"),
+            ),
+            (OsStr::new("TMUX"), OsStr::new("session")),
+        ],
         async |root| {
             install_command(root, "tmux", &gated("gated-tmux", root));
             let mut gates = NativeGates::new(root);
             let world = Setup::default().build(root);
-            world.runtime.set_environment("TMUX", "session");
             let mut query = Box::pin(world.mode.check_tmux_keyboard_setup());
             assert!(poll(&mut query).is_none());
             let tasks = super::start_host_work(&world);
@@ -1746,6 +1760,7 @@ fn startup_offline_selection_reaches_each_existing_operation() {
                 &format!("{index}-{skip}"),
                 &[
                     (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
+                    (OsStr::new("TMUX"), OsStr::new("session")),
                     (
                         OsStr::new("MAESTRO_SKIP_VERSION_CHECK"),
                         if skip {
@@ -1777,8 +1792,6 @@ async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: 
         },
         offline,
     );
-    world.runtime.set_environment("MAESTRO_OFFLINE", "1");
-    world.runtime.set_environment("TMUX", "session");
     let mut run = Box::pin(world.mode.run());
     assert!(poll(&mut run).is_none());
     super::prompts::until_waiting(&world.mode, run.as_mut()).await;
@@ -1941,7 +1954,6 @@ fn completion_world(root: &std::path::Path, fetch: maestro_app::Fetch) -> World 
         .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
             "npm".into(),
         )]));
-    world.runtime.set_environment("TMUX", "session");
     world
 }
 

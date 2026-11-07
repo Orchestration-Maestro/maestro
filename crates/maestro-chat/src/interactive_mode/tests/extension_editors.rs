@@ -1,5 +1,5 @@
 //! Extension editors replacing the default editor through the retained host.
-use super::extension_ui::port;
+use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{Setup, World, isolated};
 use crate::CustomEditor;
@@ -21,16 +21,6 @@ use std::{
     rc::{Rc, Weak},
     sync::Arc,
 };
-
-/// An error whose allocation identity survives host forwarding.
-#[derive(Debug)]
-pub(super) struct Original(pub(super) Arc<()>);
-impl std::fmt::Display for Original {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("editor operation failed")
-    }
-}
-impl std::error::Error for Original {}
 
 /// What a test reads from, and asks of, the editors its factories build.
 #[derive(Default)]
@@ -56,9 +46,7 @@ impl Knobs {
     }
     /// Whether `error` is this witness's original failure.
     pub(super) fn is_original(&self, error: &(dyn std::error::Error + 'static)) -> bool {
-        error
-            .downcast_ref::<Original>()
-            .is_some_and(|error| Arc::ptr_eq(&error.0, &self.error))
+        is_original(error, &self.error)
     }
     /// Takes the recorded calls.
     fn take(&self) -> Vec<String> {
@@ -80,7 +68,10 @@ impl Probe {
     fn enter(&self, name: &'static str) -> Result<(), EditorError> {
         self.knobs.calls.borrow_mut().push(name.to_owned());
         if self.knobs.fail.get() == Some(name) {
-            return Err(Box::new(Original(self.knobs.error.clone())));
+            return Err(Box::new(Original::new(
+                "editor operation failed",
+                &self.knobs.error,
+            )));
         }
         Ok(())
     }
@@ -219,7 +210,10 @@ pub(super) fn probe_factory(
     api.ui_callback(move |(tui, theme, keys): (_, _, ExtensionKeybindings), _| {
         knobs.calls.borrow_mut().push("factory".into());
         if knobs.fail.get() == Some("factory") {
-            return Err(Box::new(Original(knobs.error.clone())));
+            return Err(Box::new(Original::new(
+                "editor operation failed",
+                &knobs.error,
+            )));
         }
         let probe = Rc::new(Probe {
             inner: CustomEditor::new(&tui, theme, keys.manager, EditorOptions::default()),

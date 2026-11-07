@@ -144,6 +144,20 @@ pub(super) fn view(
     })
 }
 
+/// Runs one authored request through the loaded component's observe command.
+pub(super) async fn report(runner: &ExtensionRunner<Local>, request: &str) -> serde_json::Value {
+    let handler = runner
+        .get_command("bridge-observe")
+        .unwrap()
+        .command
+        .handler;
+    let answer = handler(request.into(), runner.create_command_context())
+        .await
+        .expect_err("retained request")
+        .to_string();
+    serde_json::from_str(&answer).unwrap_or_else(|error| panic!("{error}: {answer}"))
+}
+
 #[test]
 fn canonical_renderer_preserves_creation_render_and_infallible_method_errors() {
     let runtime = tokio::runtime::Builder::new_current_thread()

@@ -1,8 +1,8 @@
 //! Artifact-console bodies retain literal ordered rows and independent controls.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{
-    Clipboard, Recorded, computed, container, driver, frames, host, published, rgb, select, text,
-    until, view,
+    Clipboard, Recorded, computed, container, driver, frames, host, published, select, text, until,
+    view,
 };
 use crate::native_artifact_console_support::{
     Probe, cases, deduplicated, localized, native_string, operand, rescan,
@@ -529,38 +529,57 @@ async fn growth(console: &Console, root: &DomRoot, view: &DomView) {
     reentrant_history(view, &clipboard);
 }
 
-/// Native row paint and finished control transitions use the selected mode's roles.
+/// Native row paint and finished control transitions paint the selected mode's roles.
 async fn assert_console_roles(root: &DomRoot, view: &DomView, mode: maestro_theme::BrandMode) {
     let presentation = view.pack.presentation(mode).unwrap();
+    crate::support::reading_paint::publish_colors(&presentation.colors);
     let summary = select(&root.node, ".maestro-artifact-summary");
     driver("driverPointer", "[0,0,false]").await;
     crate::contributions_support::page::finish(&summary);
-    assert_eq!(
-        computed(&summary, "color"),
-        rgb(presentation.colors["muted"])
-    );
-    assert_eq!(
-        computed(&select(&root.node, ".maestro-artifact-log"), "color"),
-        rgb(presentation.colors["muted"])
-    );
-    assert_eq!(
-        computed(&select(&root.node, ".maestro-artifact-error"), "color"),
-        rgb(presentation.colors["error"])
-    );
+    crate::support::reading_paint::observe("console-rest").await;
     assert_eq!(
         computed(&select(&root.node, ".maestro-artifact-logs"), "overflow-y"),
         "auto"
     );
-    assert_eq!(
-        computed(&select(&root.node, ".maestro-artifact-logs"), "font-family"),
-        presentation.css_properties()["--maestro-type-mono-font"]
+    assert_monospaced_logs(root);
+    console_interaction_roles(root).await;
+}
+/// Log text measures as the brand mono stack lays it out: narrow and wide runs of one length
+/// share a width, which the body font's runs do not.
+fn assert_monospaced_logs(root: &DomRoot) {
+    let logs = select(&root.node, ".maestro-artifact-logs");
+    let measure = |text: &str, family: Option<&str>| {
+        let probe: HtmlElement = crate::contributions_support::document()
+            .create_element("span")
+            .unwrap()
+            .unchecked_into();
+        probe.set_text_content(Some(text));
+        if let Some(family) = family {
+            probe.style().set_property("font-family", family).unwrap();
+        }
+        logs.append_child(&probe).unwrap();
+        let width = probe.get_bounding_client_rect().width();
+        probe.remove();
+        width
+    };
+    let (narrow, wide) = (measure("iiiiiiii", None), measure("MMMMMMMM", None));
+    let body = "var(--maestro-type-body-font)";
+    assert!(
+        (measure("iiiiiiii", Some(body)) - measure("MMMMMMMM", Some(body))).abs() > 1.0,
+        "the body font measures proportional runs"
     );
-
-    console_interaction_roles(root, view, mode).await;
+    assert!(
+        (narrow - wide).abs() < 0.5,
+        "log text paints a monospaced face: {narrow} and {wide}"
+    );
+    let mono = measure("iiiiiiii", Some("var(--maestro-type-mono-font)"));
+    assert!(
+        (narrow - mono).abs() < 0.5,
+        "log text paints the brand mono stack: {narrow} and {mono}"
+    );
 }
 /// Real pointer hits and keyboard focus paint the current control state.
-async fn console_interaction_roles(root: &DomRoot, view: &DomView, mode: maestro_theme::BrandMode) {
-    let presentation = view.pack.presentation(mode).unwrap();
+async fn console_interaction_roles(root: &DomRoot) {
     let summary = select(&root.node, ".maestro-artifact-summary");
     let rect = summary.get_bounding_client_rect();
     driver(
@@ -573,26 +592,12 @@ async fn console_interaction_roles(root: &DomRoot, view: &DomView, mode: maestro
     )
     .await;
     crate::contributions_support::page::finish(&summary);
-    assert_eq!(
-        computed(&summary, "color"),
-        rgb(presentation.colors["text"])
-    );
+    crate::support::reading_paint::observe("console-hover").await;
     summary.unchecked_ref::<HtmlElement>().focus().unwrap();
     driver("driverPress", "Tab").await;
     let follow = select(&root.node, ".maestro-artifact-follow");
-    assert_eq!(
-        computed(&follow, "background-color"),
-        rgb(presentation.colors["accent"])
-    );
-    assert_eq!(
-        computed(&follow, "color"),
-        rgb(presentation.colors["on-accent"])
-    );
-    assert_eq!(computed(&follow, "outline-style"), "solid");
-    assert_eq!(
-        computed(&follow, "outline-color"),
-        rgb(presentation.colors["accent"])
-    );
+    crate::contributions_support::page::finish(&follow);
+    crate::support::reading_paint::observe("console-focus").await;
     driver(
         "driverPointer",
         &format!(
