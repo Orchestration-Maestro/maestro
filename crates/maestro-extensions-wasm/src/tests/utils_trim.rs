@@ -1,12 +1,10 @@
-//! Shared example trimming observes host boundaries and propagates host failures.
+//! Shared trimming observes host boundaries and propagates host failures.
 use serde_json::json;
 
 use super::controlled::Controlled;
 use crate::component_adapter::Exports;
+use crate::utils;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
-
-#[path = "../../../../examples/extensions/support/trim.rs"]
-mod trim;
 
 /// Exercises borrowed slices, including the host's non-native whitespace boundaries.
 struct TrimCases;
@@ -19,7 +17,7 @@ impl Extension for TrimCases {
                 (" \u{feff}hé \tllo\n", "hé \tllo"),
                 (" \u{85}text\u{85} ", "\u{85}text\u{85}"),
             ] {
-                assert_eq!(trim::trim(&api, text)?, expected);
+                assert_eq!(utils::trim(&api, text)?, expected);
             }
             Ok(())
         })
@@ -31,7 +29,10 @@ struct TrimFailure;
 impl Extension for TrimFailure {
     fn load(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         Box::pin(async move {
-            assert_eq!(trim::trim(&api, " text "), Err("classifier refused".into()));
+            assert_eq!(
+                utils::trim(&api, " text "),
+                Err("classifier refused".into())
+            );
             Ok(())
         })
     }
@@ -39,7 +40,7 @@ impl Extension for TrimFailure {
 
 /// Uses the existing controlled adapter, without a second whitespace classifier.
 #[test]
-fn example_trim_uses_host_boundaries_and_propagates_errors() -> Result<(), String> {
+fn trim_uses_host_boundaries_and_propagates_errors() -> Result<(), String> {
     super::block_on(async {
         let host = Controlled::default();
         let mut replies = json!({"is_whitespace_char":false});

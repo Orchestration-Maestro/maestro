@@ -9,13 +9,9 @@
 use maestro_extensions_wasm::{
     ExecOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
     ExtensionFuture, ExtensionResult, HookResult, InputEventResult, InputTransform,
-    NotificationType,
+    NotificationType, utils::trim,
 };
 use std::rc::Rc;
-
-#[path = "support/trim.rs"]
-mod trim;
-use trim::trim;
 
 /// Reads a nonempty expression ending at this original fragment's closing brace.
 fn expression(fragment: &str) -> Option<(&str, &str)> {

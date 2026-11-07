@@ -8,7 +8,7 @@
 use maestro_extensions_wasm::{
     Component, ExtensionAPI, ExtensionFuture, ExtensionResult, Presence, Text, Theme, Tool,
     ToolDefinition, ToolMetadata, ToolName, ToolRenderResultLike, ToolRenderResultOptions,
-    ToolsOptions, UserBlock, tools::path_utils, utils,
+    ToolsOptions, UserBlock, tools::path_utils, utils::trim,
 };
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -176,23 +176,6 @@ fn render_call(
     view(&text)
 }
 
-/// Trims with the native text owner's whitespace definition.
-fn trimmed<'a>(api: &ExtensionAPI, mut text: &'a str) -> ExtensionResult<&'a str> {
-    while let Some(ch) = text.chars().next() {
-        if !utils::is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        text = &text[ch.len_utf8()..];
-    }
-    while let Some(ch) = text.chars().next_back() {
-        if !utils::is_whitespace_char(api, &ch.to_string())? {
-            break;
-        }
-        text = &text[..text.len() - ch.len_utf8()];
-    }
-    Ok(text)
-}
-
 /// Paints each output line independently, retaining the leading blank row.
 fn output_lines(text: &str, theme: &Theme) -> ExtensionResult<Component> {
     let output = text
@@ -216,7 +199,7 @@ fn collapsed(
         ToolName::Ls => "entries",
         ToolName::Read | ToolName::Bash | ToolName::Write | ToolName::Edit => return view(""),
     };
-    let count = trimmed(api, text)?
+    let count = trim(api, text)?
         .split('\n')
         .filter(|line| !line.is_empty())
         .count();
@@ -260,7 +243,7 @@ fn render_result(
             view(&format!("\n{}", theme.fg(role, text)?))
         }
         ToolName::Bash | ToolName::Find | ToolName::Grep | ToolName::Ls => {
-            let text = trimmed(api, text)?;
+            let text = trim(api, text)?;
             if name == ToolName::Bash && text.is_empty() {
                 return view("");
             }

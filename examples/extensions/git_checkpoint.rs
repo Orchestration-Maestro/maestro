@@ -10,8 +10,7 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult, ExtensionFuture,
-    ExtensionResult, HookFuture, NotificationType, SessionEntry, SessionEvent,
-    utils::is_whitespace_char,
+    ExtensionResult, HookFuture, NotificationType, SessionEntry, SessionEvent, utils::trim,
 };
 
 /// Checkpoint objects and the last leaf observed after a tool result.
@@ -36,25 +35,6 @@ fn entry_id(entry: SessionEntry) -> String {
         SessionEntry::Label(value) => value.base.id,
         SessionEntry::SessionInfo(value) => value.base.id,
     }
-}
-
-/// Trims only scalars the host's text utility classifies as whitespace.
-fn trim<'a>(api: &ExtensionAPI, text: &'a str) -> ExtensionResult<&'a str> {
-    let mut start = 0;
-    for (offset, character) in text.char_indices() {
-        if !is_whitespace_char(api, &character.to_string())? {
-            break;
-        }
-        start = offset + character.len_utf8();
-    }
-    let mut end = text.len();
-    for (offset, character) in text[start..].char_indices().rev() {
-        if !is_whitespace_char(api, &character.to_string())? {
-            break;
-        }
-        end = start + offset;
-    }
-    Ok(&text[start..end])
 }
 
 /// Applies an approved checkpoint and announces success only after a clean completion.
