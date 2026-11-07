@@ -462,17 +462,7 @@ fn console_scenes_require_their_painted_roles() {
         let result = run(fixture(&[], async |browser, origin| {
             browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{globalThis.colors=JSON.stringify({{muted:'#ffff00',error:'#ff00ff',text:'#ffffff',accent:'#ff0000','on-accent':'#00ff00'}});document.body.innerHTML='<style>.maestro-artifact-summary{{color:#ffff00}}.maestro-artifact-summary:hover{{color:{text}}}</style><div style=\"margin:20px;padding:8px;width:400px;background:#000;font:16px sans-serif\"><div style=\"display:flex;gap:8px\"><button class=\"maestro-artifact-summary\" style=\"flex:1;border:0;background:transparent;font:inherit\">console (1 error)</button><button class=\"maestro-artifact-follow\" style=\"border:0;padding:4px;width:28px;height:28px;background:#ff0000;outline:{outline};outline-offset:2px\"><svg width=\"20\" height=\"20\" style=\"display:block\"><rect width=\"20\" height=\"20\" fill=\"#00ff00\"/></svg></button></div><div class=\"maestro-artifact-log\" style=\"color:{log}\">[log] ordinary</div><div class=\"maestro-artifact-error\" style=\"color:#ff00ff\">[error] failed</div></div>';{prepare}return await readingPaint('{scene}');}})()")).await
         }));
-        match result {
-            Ok(value) => assert!(
-                failure.is_none() && value == json!(true),
-                "{scene} {log} {text} {outline}: expected {}",
-                failure.unwrap_or("an accepted scene")
-            ),
-            Err(error) => assert!(
-                failure.is_some_and(|failure| error.to_string().contains(failure)),
-                "{scene} {log} {text} {outline}: {error}"
-            ),
-        }
+        assert_scene(result, failure, &format!("{scene} {log} {text} {outline}"));
     }
 }
 
