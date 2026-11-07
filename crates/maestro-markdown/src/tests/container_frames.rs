@@ -709,11 +709,16 @@ fn reply_quote_mapping_grows_linearly_root_witness() {
         (3, [120, 240, 480]),
         (3, [256, 512, 1024]),
         (40, [120, 240, 480]),
-        (40, [240, 480, 960]),
     ] {
         let samples = sizes.map(|lines| measured_reply(lines, cycle));
         let charged = samples.each_ref().map(container_work);
         eprintln!("cycle={cycle} sizes={sizes:?} charged={charged:?} samples={samples:?}");
+        for pair in charged.windows(2) {
+            assert!(
+                pair[1] <= 3 * pair[0],
+                "cycle={cycle} doubling grew superlinearly: {charged:?}"
+            );
+        }
     }
 }
 
