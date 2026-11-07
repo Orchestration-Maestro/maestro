@@ -212,9 +212,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session, repository tooling and the application may depend on it, on native
   targets; callers keep kind filtering, name decoding and further ordering. The
-  guest crate's build script declares it as one build dependency, and guest-authoring
-  examples as one portable development dependency from `maestro-extensions-wasm`; a
-  normal dependency stays forbidden.
+  guest crate declares it as one build dependency for its build script, and
+  guest-authoring examples as one portable development dependency from
+  `maestro-extensions-wasm`; a normal dependency stays forbidden.
 - `maestro-realpath` is a declared core leaf below layer 0 depending only on
   `maestro-path`. It resolves a native path to its real path; on Windows it
   returns the ordinary form (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes

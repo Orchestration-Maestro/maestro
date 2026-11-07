@@ -183,9 +183,9 @@ dependencies, including `maestro-path`. It owns directory listing: one directory
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
 tools, session, repository tooling and the application may depend on it, on native
 targets; they keep kind filtering, name decoding and any further ordering. The
-guest crate's build script declares it as one build dependency, and guest-authoring
-examples as one portable development dependency from `maestro-extensions-wasm`; a
-normal dependency stays forbidden.
+guest crate declares it as one build dependency for its build script, and
+guest-authoring examples as one portable development dependency from
+`maestro-extensions-wasm`; a normal dependency stays forbidden.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.

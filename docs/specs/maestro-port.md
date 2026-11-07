@@ -708,8 +708,8 @@ Unix only; that platform difference is a runtime mechanic, so the leaf does not
 copy it. Only resources, theme, the terminal toolkit, tools, session, repository
 tooling and the application may depend on it, and only on native targets. Callers
 keep their own kind filtering, name decoding and any further ordering. The guest
-crate's build script declares it as one build dependency and reads the example test
-files in the leaf's name order, and the guest-authoring examples declare it as one
+crate declares one build dependency for its build script, which reads the example
+test files in the leaf's name order, and the guest-authoring examples declare one
 portable development dependency for their own directory reads.
 
 `maestro-realpath` is a core leaf below layer 0 whose only workspace dependency is
@@ -870,9 +870,10 @@ callbacks to the native argument validator. It permits no normal or build edge.
 non-optional development dependency, lets component tests build their engine from the
 product's one engine configuration. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-listing` lets the guest crate read a
-directory in name order. The build script declares one portable build dependency, so
-the generated example-module inventory keeps that order, and the guest-authoring
-examples declare one portable development dependency for their own directory reads.
+directory in name order. The crate declares one portable build dependency for its
+build script, so the generated example-module inventory keeps that order, and the
+guest-authoring examples declare one portable development dependency for their own
+directory reads.
 Neither declaration permits a normal dependency on the leaf.
 `maestro` to `maestro-lock`, declared as a native, non-optional development
 dependency, serializes the executable's file-trigger test on the shared host

@@ -1882,13 +1882,18 @@ fn maestro_destination_failure_keeps_its_native_error() {
     );
 }
 
-fn assert_asset_match_order() {
-    let fixture = Fixture::new();
-    let source = asset_inputs(&fixture);
+/// Copy the theme assets after creating `created` in that order, the one named
+/// `blocked` as a directory, and assert the copy stopped at that directory.
+fn assert_copy_stops_at(fixture: &Fixture, created: [&str; 3], blocked: &str) -> PathBuf {
+    let source = asset_inputs(fixture);
     let themes = source.join("src/modes/interactive/theme");
-    fs::write(themes.join("a.json"), "first").unwrap();
-    fs::create_dir(themes.join("b.json")).unwrap();
-    fs::write(themes.join("c.json"), "later").unwrap();
+    for name in created {
+        if name == blocked {
+            fs::create_dir(themes.join(name)).unwrap();
+        } else {
+            fs::write(themes.join(name), name).unwrap();
+        }
+    }
     let destination = fixture.root.path().join("dist");
     let error =
         tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
@@ -1897,15 +1902,19 @@ fn assert_asset_match_order() {
         error.to_string(),
         format!(
             "cannot copy {}: not a regular file",
-            themes.join("b.json").display()
+            themes.join(blocked).display()
         )
     );
     assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
-    assert_eq!(
-        fs::read(destination.join("modes/interactive/theme/a.json")).unwrap(),
-        b"first"
-    );
-    assert!(!destination.join("modes/interactive/theme/c.json").exists());
+    destination
+}
+
+fn assert_asset_match_order() {
+    let fixture = Fixture::new();
+    let destination = assert_copy_stops_at(&fixture, ["a.json", "b.json", "c.json"], "b.json");
+    let themes = destination.join("modes/interactive/theme");
+    assert_eq!(fs::read(themes.join("a.json")).unwrap(), b"a.json");
+    assert!(!themes.join("c.json").exists());
     assert!(
         !destination
             .join("modes/interactive/assets/mark.png")
@@ -1917,34 +1926,12 @@ fn assert_asset_match_order() {
 #[test]
 fn asset_matches_follow_name_order_over_creation_order() {
     let fixture = Fixture::new();
-    let source = asset_inputs(&fixture);
-    let themes = source.join("src/modes/interactive/theme");
-    fs::write(themes.join("zulu.json"), "zulu").unwrap();
-    fs::write(themes.join("yankee.json"), "yankee").unwrap();
-    fs::create_dir(themes.join("mike.json")).unwrap();
-    let destination = fixture.root.path().join("dist");
-    let error =
-        tooling::copy_assets::copy(&source, &destination, tooling::copy_assets::Layout::Library)
-            .unwrap_err();
-    assert_eq!(
-        error.to_string(),
-        format!(
-            "cannot copy {}: not a regular file",
-            themes.join("mike.json").display()
-        )
-    );
-    assert_eq!(
-        fs::read(destination.join("modes/interactive/theme/dark.json")).unwrap(),
-        b"dark"
-    );
+    let created = ["zulu.json", "yankee.json", "mike.json"];
+    let destination = assert_copy_stops_at(&fixture, created, "mike.json");
+    let themes = destination.join("modes/interactive/theme");
+    assert_eq!(fs::read(themes.join("dark.json")).unwrap(), b"dark");
     for name in ["schema.json", "yankee.json", "zulu.json"] {
-        assert!(
-            !destination
-                .join("modes/interactive/theme")
-                .join(name)
-                .exists(),
-            "{name}"
-        );
+        assert!(!themes.join(name).exists(), "{name}");
     }
 }
 
