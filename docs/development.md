@@ -159,10 +159,14 @@ they compile for the browser target:
 test crates refuses that target; lint its library target instead.
 
 A browser compile witness, an example target whose body only compiles for the
-browser target, is not covered by native Clippy. `just check-browser-smoke`
-compiles every witness for `wasm32-unknown-unknown` and stops at the first
-failure, printing the path of the diagnostics log. The commit hook runs the same
-command when a staged crate owns a witness.
+browser target, is not covered by native Clippy. `.github/ci.toml` declares each
+witness under `wasm_examples`, and the shared wasm job compiles every declared one
+for `wasm32-unknown-unknown` on each pull request, stopping at the first failure.
+`just check-browser-smoke` compiles the same witnesses locally and stops at the
+first failure, printing the path of the diagnostics log. The commit hook runs the
+same command when a staged crate owns a witness. `maestro-tooling` holds the one
+witness list: its browser smoke command compiles it, and a test fails when the
+`wasm_examples` declaration and that list differ.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
