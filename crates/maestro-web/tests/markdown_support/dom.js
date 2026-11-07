@@ -150,10 +150,7 @@
   // Compare a mounted formula at the recorder's typography and containing width.
   async function measureMath() {
     const container = document.querySelector('.maestro-markdown');
-    // The geometry was recorded at device pixel ratio 1 and Chromium snaps font metrics to device
-    // pixels, so the container is zoomed to lay out as at ratio 1 and each box is scaled back.
-    const ratio = devicePixelRatio;
-    container.style.cssText += `;width:800px;font-size:16px;font-family:"Times New Roman";line-height:normal;zoom:${1 / ratio}`;
+    container.style.cssText += ';width:800px;font-size:16px;font-family:"Times New Roman";line-height:normal';
     await document.fonts.ready;
     await Promise.all(['KaTeX_Main', 'KaTeX_Math', 'KaTeX_Size1', 'KaTeX_Size2'].map(f => document.fonts.load(`16px ${f}`)));
     await document.fonts.ready;
@@ -170,7 +167,7 @@
     if (error !== (branch === 'error')) return 'wrong error branch';
     if (error && (!root.title || root.style.color !== 'var(--maestro-color-error)')) return 'error tooltip or selected role';
     const origin = root.getBoundingClientRect();
-    const bounds = r => ({left:(r.x-origin.x)*ratio, top:(r.y-origin.y)*ratio, width:r.width*ratio, height:r.height*ratio});
+    const bounds = r => ({left:r.x-origin.x, top:r.y-origin.y, width:r.width, height:r.height});
     const glyphs = [], walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
       const text = walker.currentNode;
@@ -179,7 +176,7 @@
       const rect = range.getBoundingClientRect();
       if (rect.width || rect.height) glyphs.push({text:text.textContent, ...bounds(rect)});
     }
-    const actual = {text:root.textContent, width:origin.width*ratio, height:origin.height*ratio, glyphs,
+    const actual = {text:root.textContent, width:origin.width, height:origin.height, glyphs,
       svg:[...root.querySelectorAll('svg')].map(s => bounds(s.getBoundingClientRect()))};
     // Preserve every recorded field, ordering and repeated glyph occurrence.
     const compare = (a, b, path) => {

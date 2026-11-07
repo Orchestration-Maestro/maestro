@@ -313,11 +313,13 @@ signals without command deadlines.
 The launch tells Chromium that this desktop has a hover-capable pointer, so
 media queries such as `(hover: hover)` behave like they do on a real desktop.
 Pages keep touch emulation off; only an export that asks for touch input turns
-it on. Every page draws at a device pixel ratio of 1.25. The recorded formula
-geometry was measured at a ratio of 1, and Chromium snaps font metrics to device
-pixels, so the formula replay sets its container's CSS `zoom` to the inverse
-ratio and scales each box it reads back up. Layout then snaps exactly as it does
-at a ratio of 1, and every box is compared to 1/64 of a pixel. A navigation
+it on. Every page draws at a device pixel ratio of 1.25. Chromium snaps font
+metrics to device pixels, so a recorded formula box only reproduces on the same
+pixel grid. `crates/maestro-web/tests/fixtures/markdown/math.json` holds those
+boxes as measured from the reference KaTeX 0.16.45 in a standards-mode page, in
+an 800 by 500 viewport at a ratio of 1.25, with the container typography the
+replay sets before it measures. A re-record uses those same inputs, and the
+replay compares every box to 1/64 of a pixel. A navigation
 waits for the committed main frame's own default
 execution context before it evaluates readiness, whichever side of the navigate
 reply announces it.
