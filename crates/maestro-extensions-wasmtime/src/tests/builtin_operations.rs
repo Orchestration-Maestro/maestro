@@ -2315,6 +2315,12 @@ async fn observe_queue_tool_release(
     assert_eq!(actual, serde_json::to_value(expected).unwrap());
 }
 
+/// A directory as a built-in tool records it: a component's own spelling becomes the
+/// host's, so an expectation follows the host instead of the authored text.
+fn recorded_cwd(cwd: &str) -> String {
+    maestro_extensions::helpers::native_path(cwd)
+}
+
 /// Shell selection reaches the actual local backend; replacement effects bypass it.
 #[test]
 fn builtin_bash_options_reach_the_nested_local_backend() {
@@ -2384,7 +2390,7 @@ async fn check_builtin_bash_controls(
         };
         assert_eq!(
             observed,
-            json!({"calls":[{"command":command,"cwd":"relative/雪","timeout":null,"bin":true,"home":std::env::var_os("HOME").is_some(),"hookValue":null,"unset":null,"unsetPresent":false,"aborted":false}],
+            json!({"calls":[{"command":command,"cwd":recorded_cwd("relative/雪"),"timeout":null,"bin":true,"home":std::env::var_os("HOME").is_some(),"hookValue":null,"unset":null,"unsetPresent":false,"aborted":false}],
             "result":{"Ok":{"content":[{"type":"text","text":"supplied\0é😀"}]}}})
         );
     }
@@ -2465,7 +2471,7 @@ async fn check_builtin_spawn(
     };
     assert_eq!(
         observed["calls"][0],
-        json!({"hook":prefixed,"cwd":"unobserved/factory",
+        json!({"hook":prefixed,"cwd":recorded_cwd("unobserved/factory"),
         "fresh":true,"home":std::env::var_os("HOME").is_some()})
     );
     assert_builtin_spawn_outcome(&observed, request);
