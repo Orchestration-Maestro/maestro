@@ -16,20 +16,28 @@ fn windows_checkout() -> GitWorktreeInfo {
 }
 
 /// `info` judged from the configuration file in its own metadata directory.
-fn subject(info: &GitWorktreeInfo) -> Subject<'_> {
+fn subject<'a>(info: &'a GitWorktreeInfo, home: Option<&'a Path>) -> Subject<'a> {
     Subject {
         info,
         branch: "main",
-        home: None,
+        home,
     }
 }
 
 #[test]
 fn gitdir_condition_matches_a_windows_spelled_checkout() {
     let info = windows_checkout();
-    let subject = subject(&info);
+    let subject = subject(&info, Some(Path::new(r"D:\work")));
     let config = Path::new(r"D:\work\repo\.git\config");
-    for pattern in [r"D:/work/repo/.git", r"D:\work\repo\.git"] {
+    for pattern in [
+        r"D:/work/repo/.git",
+        r"D:\work\repo\.git",
+        r"D:\work\repo\",
+        r"~/repo/",
+        r"~\repo\",
+        r"D:/work/*/.git",
+        r"D:/**/.git",
+    ] {
         assert!(
             subject.git_dir_matches(pattern, config, PATHNAME, true),
             "{pattern}"
@@ -40,7 +48,7 @@ fn gitdir_condition_matches_a_windows_spelled_checkout() {
 #[test]
 fn gitdir_conditions_keep_their_case_rules_on_windows_spellings() {
     let info = windows_checkout();
-    let subject = subject(&info);
+    let subject = subject(&info, None);
     let config = Path::new(r"D:\work\repo\.git\config");
     let upper = r"D:/WORK/REPO/.GIT";
     let ignoring_case = Rules {
@@ -61,7 +69,7 @@ fn gitdir_condition_reads_a_backslash_as_a_file_character_off_windows() {
         is_bare: false,
         is_linked_worktree: false,
     };
-    let subject = subject(&info);
+    let subject = subject(&info, None);
     let config = Path::new(r"/work/repo\name/.git/config");
     assert!(subject.git_dir_matches(r"/work/repo\name/.git", config, PATHNAME, false));
     assert!(!subject.git_dir_matches("/work/repo/name/.git", config, PATHNAME, false));
