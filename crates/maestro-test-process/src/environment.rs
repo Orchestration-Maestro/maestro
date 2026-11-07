@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 
+use crate::child::repeat_stderr;
 use crate::{TestProcess, TestProcessError};
 
 /// Variable that carries the selected environment group into its child.
@@ -20,8 +21,8 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 /// Returns `Ok(Some(cases))` in a child: the cases of its environment in their original
 /// order, which the test body runs. Cases that need a fresh process for state
 /// other than the environment keep one child each. A passing child's standard error is
-/// repeated here, such as the premise that left one of its cases out; its standard output
-/// stays hidden.
+/// repeated here, such as the premise that left one of its cases out, so the run shows it even
+/// while the test passes; its standard output stays hidden.
 ///
 /// # Errors
 ///
@@ -70,7 +71,7 @@ where
             )
             .with_streams(&output.stdout, &output.stderr));
         }
-        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        repeat_stderr(&name, &output.stderr)?;
     }
     Ok(None)
 }

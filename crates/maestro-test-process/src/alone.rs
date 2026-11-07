@@ -1,5 +1,6 @@
 //! Isolation of a live pipe transaction in a process that runs only that test.
 
+use crate::child::repeat_stderr;
 use crate::{TestProcess, TestProcessError};
 
 /// Variable that marks the process [`run_alone`] started.
@@ -14,8 +15,9 @@ const ALONE: &str = "MAESTRO_TEST_ALONE";
 /// in the isolated process, where the test body runs. Call it before the body starts any
 /// child whose pipes the test closes.
 ///
-/// A passing run repeats what the body wrote to standard error, such as why it skipped a
-/// case; its standard output stays hidden.
+/// A passing run repeats what the body wrote to standard error on this process's standard
+/// error, such as why it skipped a case, so the run shows it even while the test passes; its
+/// standard output stays hidden.
 ///
 /// # Errors
 ///
@@ -29,7 +31,7 @@ pub fn run_alone(test: &str) -> Result<bool, TestProcessError> {
     let name = process.name().to_owned();
     let output = process.env(ALONE, "1").nocapture().output()?;
     if output.status.success() {
-        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        repeat_stderr(&name, &output.stderr)?;
         return Ok(true);
     }
     Err(TestProcessError::new(
