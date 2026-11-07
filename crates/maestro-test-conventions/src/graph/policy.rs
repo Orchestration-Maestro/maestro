@@ -45,6 +45,14 @@ pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
     DEVELOPMENT.contains(&(from, to)) || NATIVE_DEVELOPMENT.contains(&(from, to))
 }
 
+/// Internal build edges permitted beyond the production table.
+pub(crate) const BUILD: &[(&str, &str)] = &[("maestro-extensions-wasm", "maestro-listing")];
+
+/// Whether the policy permits this internal build edge between the two crates.
+pub(crate) fn permitted_build(from: &str, to: &str) -> bool {
+    BUILD.contains(&(from, to))
+}
+
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
 

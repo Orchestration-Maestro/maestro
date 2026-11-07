@@ -362,6 +362,9 @@ fn validate_edge(edge: &Edge, packages: &BTreeSet<String>) -> Result<(), String>
             edge.from, edge.to
         ));
     }
+    if edge.kind == Kind::Build && policy::permitted_build(&edge.from, &edge.to) {
+        return Ok(());
+    }
     if edge.kind == Kind::Development {
         if policy::permitted_development(&edge.from, &edge.to) {
             return Ok(());
