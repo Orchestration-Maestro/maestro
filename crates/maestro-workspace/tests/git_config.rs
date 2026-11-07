@@ -68,10 +68,10 @@ fn upstream(config: &BranchConfig) -> (&str, Option<String>) {
     (&config.remote, config.upstream_full_ref())
 }
 
-/// A path written into a quoted configuration value.
+/// A path written into a quoted subsection name of an include condition.
 ///
-/// A value is quoted because a native Windows path may hold spaces, and Git's own unescape
-/// reads `\\` as one `\`, so every separator is written twice to survive it.
+/// A subsection name is always quoted, and Git's own unescape reads `\\` as one `\`, so every
+/// separator is written twice to survive that unescape.
 fn quoted_path(path: &Path) -> String {
     path.display().to_string().replace('\\', r"\\")
 }

@@ -172,7 +172,8 @@ prints no package-command error line.
 If the first matching package has a different stored spelling, only its source is
 replaced; its other fields and list position stay intact. An identical spelling
 changes nothing; on Windows, `\` and `/` count as the same separator, so
-`../project/pkg` already records `..\project\pkg`. An absent source is appended.
+a stored `../project/pkg` already matches the source `..\project\pkg`. An absent
+source is appended.
 The same rules apply when a pin or
 Git checkout is unchanged. See [Git preparation and recovery](package-sources.md#git-preparation-and-recovery).
 `remove_and_persist` removes the source after a successful removal and returns
