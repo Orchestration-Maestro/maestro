@@ -233,7 +233,7 @@ fn still_named(_file: &File, path: &Path) -> io::Result<bool> {
     }
 }
 
-/// wasm32 has no file system, so a live lock name cannot be verified.
+/// Hosts without native file identity cannot verify a live lock name.
 #[cfg(not(any(unix, windows)))]
 fn still_named(_file: &File, _path: &Path) -> io::Result<bool> {
     Err(io::ErrorKind::Unsupported.into())
