@@ -1,10 +1,15 @@
-//! Screenshot observations of the artifact console's line roles, summary hover and follow focus.
+//! Screenshot observations of the artifact console's line roles, summary hover, follow focus and
+//! glyph shapes.
 //!
 //! The export leaves the pointer and keyboard focus where its scene needs them, so these
 //! observations never move the pointer or scroll the page; an element outside the visible page
 //! fails instead.
 
-use super::{Page, require};
+use super::{
+    Page, changed, contrast,
+    region::{role_pixels, visible},
+    require,
+};
 use serde_json::{Value, json};
 use std::io;
 
@@ -21,31 +26,48 @@ const OUTLINE: (f64, f64) = (2.0, 2.0);
 /// Inset that keeps the follow control's rounded corners out of its glyph count, in CSS pixels.
 const GLYPH_INSET: f64 = 4.0;
 
-/// The first `selector` match's visible box as `[left, top, right, bottom]`, failing when it
-/// has no area or reaches outside the visible page.
-async fn visible(page: &mut Page<'_>, selector: &str) -> io::Result<Value> {
-    let rect: Value = page.read(&format!("(() => {{const b=__maestroPaint.element({}).getBoundingClientRect();return b.width>0&&b.height>0&&b.left>=0&&b.top>=0&&b.right<=innerWidth&&b.bottom<=innerHeight?[b.left,b.top,b.right,b.bottom]:null;}})()", json!(selector))).await?;
-    require(!rect.is_null(), &format!("{selector} must be visible"))?;
-    Ok(rect)
-}
+/// Glyph scenes: the glyph's selector, the bounds of its painted width over height and the shape
+/// those bounds name. A right chevron is about 0.6, a down chevron 1.7, the copy icon 1.0 and the
+/// check mark 1.4, antialiasing included.
+const GLYPHS: [(&str, &str, (f64, f64), &str); 4] = [
+    (
+        "console-collapsed",
+        ".maestro-artifact-summary svg",
+        (0.0, 0.75),
+        "a right chevron",
+    ),
+    (
+        "console-expanded",
+        ".maestro-artifact-summary svg",
+        (1.33, f64::INFINITY),
+        "a down chevron",
+    ),
+    (
+        "console-copy",
+        "copy-button svg",
+        (0.85, 1.18),
+        "the copy icon",
+    ),
+    (
+        "console-copied",
+        "copy-button svg",
+        (1.2, f64::INFINITY),
+        "a check mark",
+    ),
+];
 
-/// Count pixels of the brand `role` inside `rect` of the capture `label`.
-async fn role_pixels(
-    page: &mut Page<'_>,
-    label: &str,
-    rect: &Value,
-    role: &str,
-) -> io::Result<u64> {
-    page.read(&format!(
-        "__maestroPaint.count({},{rect},__maestroPaint.colour({}))",
-        json!(label),
-        json!(role)
-    ))
-    .await
+/// Observe one console scene.
+pub(super) async fn observe(page: &mut Page<'_>, scene: &str) -> io::Result<()> {
+    match scene {
+        "console-rest" => resting(page).await,
+        "console-hover" => hovered(page).await,
+        "console-focus" => focused(page).await,
+        _ => glyph(page, scene).await,
+    }
 }
 
 /// The summary and both line kinds paint their resting roles.
-pub(super) async fn resting(page: &mut Page<'_>) -> io::Result<()> {
+async fn resting(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "console-rest";
     page.shot(scene).await?;
     for (selector, role) in RESTING {
@@ -58,7 +80,7 @@ pub(super) async fn resting(page: &mut Page<'_>) -> io::Result<()> {
 }
 
 /// The summary under the native pointer paints the text role.
-pub(super) async fn hovered(page: &mut Page<'_>) -> io::Result<()> {
+async fn hovered(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "console-hover";
     let selector = ".maestro-artifact-summary";
     require(
@@ -77,12 +99,41 @@ pub(super) async fn hovered(page: &mut Page<'_>) -> io::Result<()> {
     Ok(())
 }
 
+/// The glyph of `scene` paints ink whose box has that glyph's shape: the pixels that change when
+/// the glyph is hidden span a width over height inside the scene's bounds.
+async fn glyph(page: &mut Page<'_>, scene: &str) -> io::Result<()> {
+    let (selector, (least, most), shape) = GLYPHS
+        .iter()
+        .find(|glyph| glyph.0 == scene)
+        .map(|&(_, selector, bounds, shape)| (selector, bounds, shape))
+        .ok_or_else(|| io::Error::other(format!("unknown paint scene {scene}")))?;
+    let rect = visible(page, selector).await?;
+    let element = json!(selector).to_string();
+    contrast(
+        page,
+        &format!("[__maestroPaint.element({element})]"),
+        "n=>n.style.visibility='hidden'",
+    )
+    .await?;
+    let ink: Option<[f64; 2]> = page.read(&format!("(e=>e&&[e[2]-e[0]+1/devicePixelRatio,e[3]-e[1]+1/devicePixelRatio])(__maestroPaint.extent('decorated','without',{rect}))")).await?;
+    let [width, height] =
+        ink.ok_or_else(|| io::Error::other(format!("{selector} paints no ink")))?;
+    let ratio = width / height;
+    require(
+        (least..=most).contains(&ratio),
+        &format!("{selector} paints {shape} ({width:.2} by {height:.2} pixels)"),
+    )?;
+    let pixels = changed(page, Some(&element), ("decorated", "without")).await?;
+    page.observed(scene, selector, pixels);
+    Ok(())
+}
+
 /// The keyboard-focused follow control paints its accent fill and on-accent glyph, and its
 /// accent outline covers more than a quarter of the band along each edge, so no edge is
 /// missing or clipped away. Each band stops short of the rounded corners by the outline's
 /// reach, so only the straight part of an edge counts. A quarter, not a half, because a device
 /// pixel ratio above one antialiases the outer edge against the page.
-pub(super) async fn focused(page: &mut Page<'_>) -> io::Result<()> {
+async fn focused(page: &mut Page<'_>) -> io::Result<()> {
     let scene = "console-focus";
     let selector = ".maestro-artifact-follow";
     require(

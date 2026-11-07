@@ -4,7 +4,9 @@
 ///
 /// Screenshots stay in the page as decoded image data, so only counts cross the protocol.
 /// Pixel positions are CSS coordinates of each device pixel's centre. `count` applies the report
-/// observer's role-pixel rule: an opaque pixel with exactly the role's RGB channels.
+/// observer's role-pixel rule: an opaque pixel with exactly the role's RGB channels. `dark`
+/// counts opaque pixels with no channel above `limit`. `extent`
+/// returns the box of the device-pixel centres where two captures differ inside `rect`, or null.
 pub(super) const PAINT: &str = r"(() => {
   if (globalThis.__maestroPaint) return;
   const shots = new Map();
@@ -44,6 +46,23 @@ pub(super) const PAINT: &str = r"(() => {
         for (let k = 0; k < 4; k++) if (data[i + k] !== other[i + k]) { n++; return; }
       });
       return n;
+    },
+    dark: (label, rect, limit) => {
+      let n = 0;
+      scan(label, (x, y, data, i) => { if (inside(x, y, rect) && data[i] <= limit && data[i + 1] <= limit && data[i + 2] <= limit && data[i + 3] === 255) n++; });
+      return n;
+    },
+    extent: (first, second, rect) => {
+      const other = image(second).data;
+      let box = null;
+      scan(first, (x, y, data, i) => {
+        if (!inside(x, y, rect)) return;
+        for (let k = 0; k < 4; k++) if (data[i + k] !== other[i + k]) {
+          box = box ? [Math.min(box[0], x), Math.min(box[1], y), Math.max(box[2], x), Math.max(box[3], y)] : [x, y, x, y];
+          return;
+        }
+      });
+      return box;
     },
     pixel: (label, [x, y]) => {
       const {data, width} = image(label), d = devicePixelRatio, i = (Math.floor(y * d) * width + Math.floor(x * d)) * 4;

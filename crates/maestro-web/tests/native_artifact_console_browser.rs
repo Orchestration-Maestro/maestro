@@ -194,14 +194,14 @@ fn place(view: &DomView, console: &Console) -> (Element, DomRoot) {
 pub async fn artifact_console_dom_expansion_copy_and_follow(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    following_and_geometry(&view);
+    following_and_geometry(&view).await;
     current_controller_and_copy(&view).await;
     forms_and_keyboard(&view).await;
     painted_roles(&view).await;
     release_and_sibling(&view).await;
 }
 /// An overflowing viewport follows every enabled update and scales in root-relative units.
-fn following_and_geometry(view: &DomView) {
+async fn following_and_geometry(view: &DomView) {
     let console = Console::new();
     let (parent, root) = place(view, &console);
     console
@@ -217,7 +217,7 @@ fn following_and_geometry(view: &DomView) {
     );
     click(&root, ".maestro-artifact-summary");
     let scroll = select(&root.node, ".maestro-artifact-logs");
-    assert_disclosure(&root, true);
+    assert_disclosure(&root, true).await;
     let html = scroll.unchecked_ref::<HtmlElement>();
     viewport_sizes(&console, &root, view, &scroll);
     click(&root, ".maestro-artifact-follow");
@@ -251,7 +251,7 @@ fn following_and_geometry(view: &DomView) {
             .unwrap()
             .is_none()
     );
-    assert_disclosure(&root, false);
+    assert_disclosure(&root, false).await;
     parent.remove();
 }
 /// A later controller replaces collection, localization and actions without replacing the summary.
@@ -318,21 +318,28 @@ async fn assert_copy_feedback(root: &DomRoot, expected: &str) {
         copy.get_attribute("title").as_deref(),
         Some("Logs kopieren")
     );
+    let idle = select(&copy, "svg");
     let started = js_sys::Date::now();
     click(root, "copy-button button");
-    until(&copy, || {
-        copy.query_selector("path[d='M20 6 9 17l-5-5']")
-            .unwrap()
-            .is_some()
-    })
-    .await;
+    let copied = replaced(&copy, &idle).await;
+    crate::support::reading_paint::observe("console-copied").await;
     assert_eq!(clipboard.texts(), [expected]);
     assert!(text(&copy).is_empty());
-    until(&copy, || copy.query_selector("rect").unwrap().is_some()).await;
+    replaced(&copy, &copied).await;
+    crate::support::reading_paint::observe("console-copy").await;
     assert!(
         js_sys::Date::now() - started >= 2000.0,
         "artifact feedback must not use the shorter tool-output policy"
     );
+}
+/// Wait, by changes below `copy`, until its glyph is no longer `glyph`; returns the new glyph.
+async fn replaced(copy: &Element, glyph: &Element) -> Element {
+    let current = || copy.query_selector("svg").unwrap();
+    until(copy, || {
+        current().is_some_and(|svg| !svg.is_same_node(Some(glyph)))
+    })
+    .await;
+    current().unwrap()
 }
 /// Summary and following retain submit semantics while copy and keyboard traversal stay native.
 async fn forms_and_keyboard(view: &DomView) {
@@ -628,18 +635,14 @@ fn viewport_sizes(console: &Console, root: &DomRoot, view: &DomView, scroll: &El
     style.set_property("font-size", &old).unwrap();
 }
 
-/// Glyph geometry and auxiliary-control admission track the actual disclosure state.
-fn assert_disclosure(root: &DomRoot, expanded: bool) {
-    assert_eq!(
-        select(&root.node, ".maestro-artifact-summary path")
-            .get_attribute("d")
-            .as_deref(),
-        Some(if expanded {
-            "m6 9 6 6 6-6"
-        } else {
-            "m9 18 6-6-6-6"
-        })
-    );
+/// The painted glyph and auxiliary-control admission track the actual disclosure state.
+async fn assert_disclosure(root: &DomRoot, expanded: bool) {
+    crate::support::reading_paint::observe(if expanded {
+        "console-expanded"
+    } else {
+        "console-collapsed"
+    })
+    .await;
     assert_eq!(
         select(&root.node, ".maestro-artifact-summary")
             .get_attribute("aria-expanded")

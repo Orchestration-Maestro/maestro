@@ -476,6 +476,149 @@ fn console_scenes_require_their_painted_roles() {
     }
 }
 
+/// Require `result` to be an accepted scene when `failure` is absent, and otherwise an error
+/// naming `failure`.
+fn assert_scene(result: io::Result<serde_json::Value>, failure: Option<&str>, case: &str) {
+    match result {
+        Ok(value) => assert!(
+            failure.is_none() && value == json!(true),
+            "{case}: expected {}",
+            failure.unwrap_or("an accepted scene")
+        ),
+        Err(error) => assert!(
+            failure.is_some_and(|failure| error.to_string().contains(failure)),
+            "{case}: {error}"
+        ),
+    }
+}
+
+/// Run `prepare` then the paint scene `scene` on a fresh page whose body is `body`, with a
+/// background role published.
+fn paint_scene(body: &str, prepare: &str, scene: &str) -> io::Result<serde_json::Value> {
+    run(fixture(&[], async |browser, origin| {
+        browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{globalThis.colors=JSON.stringify({{background:'#102030'}});document.body.innerHTML='{body}';{prepare}return await readingPaint('{scene}');}})()")).await
+    }))
+}
+
+/// The glyph scenes answer from the ink a real screenshot shows: each shape passes only for its
+/// own glyph, and a glyph that paints nothing fails.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn console_glyph_scenes_require_their_painted_shapes() {
+    let right = r#"<path d="m9 18 6-6-6-6"/>"#;
+    let down = r#"<path d="m6 9 6 6 6-6"/>"#;
+    let copy = r#"<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>"#;
+    let check = r#"<path d="M20 6 9 17l-5-5"/>"#;
+    for (scene, (paths, stroke), failure) in [
+        ("console-collapsed", (right, "#000"), None),
+        (
+            "console-collapsed",
+            (down, "#000"),
+            Some("paints a right chevron"),
+        ),
+        ("console-expanded", (down, "#000"), None),
+        (
+            "console-expanded",
+            (right, "#000"),
+            Some("paints a down chevron"),
+        ),
+        ("console-copy", (copy, "#000"), None),
+        (
+            "console-copy",
+            (check, "#000"),
+            Some("paints the copy icon"),
+        ),
+        ("console-copied", (check, "#000"), None),
+        (
+            "console-copied",
+            (copy, "#000"),
+            Some("paints a check mark"),
+        ),
+        ("console-copied", (check, "none"), Some("paints no ink")),
+    ] {
+        let svg = format!(
+            r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">{paths}</svg>"#
+        );
+        let body = format!(
+            r#"<div style="margin:20px"><button class="maestro-artifact-summary">{svg}</button><copy-button>{svg}</copy-button></div>"#
+        );
+        let result = paint_scene(&body, "", scene);
+        assert_scene(result, failure, &format!("{scene} {paths} {stroke}"));
+    }
+}
+
+/// The Word page scene passes only for a visible page that paints white over its box with
+/// black text: a grey page, grey text and a missing page each fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn word_page_scene_requires_a_white_page_and_black_text() {
+    for (page, text, failure) in [
+        ("white", "black", None),
+        ("#eeeeee", "black", Some("paints white over its box")),
+        ("white", "#808080", Some("text paints black ink")),
+        ("", "", Some("a Word page must be visible")),
+    ] {
+        let body = if page.is_empty() {
+            String::new()
+        } else {
+            format!(
+                r#"<div class="maestro-docx-artifact" style="width:300px;height:180px;overflow:auto;background:#102030"><section class="docx" style="padding:32px;background:{page};color:{text};font:16px sans-serif"><p>Body text of the page</p></section></div>"#
+            )
+        };
+        let result = paint_scene(&body, "", "word-page");
+        assert_scene(result, failure, &format!("{page} {text}"));
+    }
+}
+
+/// The listing scenes pass only for a listing that covers its box with the background role,
+/// keeps its text inside the bounded body and paints again exactly as captured: a transparent
+/// listing, an unclipped one, a changed scroll position and a missing capture each fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn html_source_scenes_require_covered_clipped_and_unchanged_paint() {
+    let shown = "await readingPaint('html-source');";
+    let scrolled = "await readingPaint('html-source');document.querySelector('.maestro-html-source').scrollTop=40;";
+    let lines = "line\\n".repeat(40);
+    for (scene, (clip, background), prepare, failure) in [
+        ("html-source", ("auto", "#102030"), "", None),
+        (
+            "html-source",
+            ("auto", "transparent"),
+            "",
+            Some("paints the background role over its box"),
+        ),
+        (
+            "html-source",
+            ("visible", "#102030"),
+            "",
+            Some("nowhere outside the body"),
+        ),
+        ("html-source-again", ("auto", "#102030"), shown, None),
+        (
+            "html-source-again",
+            ("auto", "#102030"),
+            scrolled,
+            Some("paints as it did before it was hidden"),
+        ),
+        (
+            "html-source-again",
+            ("auto", "#102030"),
+            "",
+            Some("missing screenshot html-source"),
+        ),
+    ] {
+        let body = format!(
+            r#"<div style="margin:20px;width:400px;height:160px"><div class="maestro-html-artifact" style="position:relative;height:100%;overflow:{clip}"><div class="maestro-html-source" style="position:absolute;inset:0;overflow:{clip};background:{background}"><pre style="margin:0;font:12px/16px monospace;color:#ff8000"><code>{lines}</code></pre></div></div></div>"#
+        );
+        let result = paint_scene(&body, prepare, scene);
+        assert_scene(
+            result,
+            failure,
+            &format!("{scene} {clip} {background} {prepare}"),
+        );
+    }
+}
+
 /// A paint scene answers from real screenshots: text that paints nothing, an outer frame shadow
 /// and an unknown scene each fail, and only the painted, unshadowed reading root passes.
 #[test]

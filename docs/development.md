@@ -405,8 +405,8 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports and two contribution exports check the pixels the page
-paints. Each one draws a state and awaits
+Eight canvas exports, two contribution exports and two loading exports check the
+pixels the page paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
 with `Page.captureScreenshot`, decodes the image with the browser's own decoder
@@ -428,6 +428,9 @@ the export and the job:
 | `offline-tool-card-layout`, `offline-tool-card-roles` | `tool_card_image_and_diff_layout_uses_native_content`, `tool_cards_use_selected_brand_roles_without_changing_custom_html` | The decoded image and the diff text paint. Card roles paint, output hover changes pixels, and supplied spaces keep their background. The browser draws no underline on a run of only spaces, so the underline is checked on the export's text. |
 | `control-focus` | `artifact_controls_dom_paint_tokens_and_keyboard_actions` | The control that keyboard focus reached paints the accent ring over more than half of each 2-pixel edge band, so no edge is missing or clipped away by its group. |
 | `console-rest`, `console-hover`, `console-focus` | `artifact_console_dom_expansion_copy_and_follow` | In both modes, the summary and ordinary lines paint the muted role and error lines the error role. Under the native pointer, the summary paints the text role. The follow control that keyboard focus reached paints its accent fill and on-accent glyph, and its accent outline covers more than a quarter of the straight band along each edge. These scenes never move the pointer or scroll, so an element outside the visible page fails. |
+| `console-collapsed`, `console-expanded`, `console-copy`, `console-copied` | `artifact_console_dom_expansion_copy_and_follow` | The glyph's ink, the pixels that change when the glyph is hidden, has the right shape: a collapsed summary paints a right chevron (taller than wide), an expanded one a down chevron (wider than tall), the idle copy control a square copy icon and the copied control a check mark wider than tall. |
+| `word-page` | `docx_artifact_dom_styles_and_safe_targets` | In both modes and both widths, the visible part of the first page paints white over more than half its pixels, and its text paints black ink, pixels with no channel above `0x60`, for every package with text. The limit allows for thin antialiased glyphs that never reach pure black. Dark mode's brand text colour is light, so text that loses its black fails there. |
+| `html-source`, `html-source-again` | `html_artifact_dom_keeps_frame_across_mode_changes` | In both modes, the shown listing paints the background role over more than half its box, and hiding its text changes pixels inside the bounded body and none outside it. After the listing is hidden and shown again, it paints exactly what the last `html-source` capture showed, so it kept its scroll position. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
@@ -441,6 +444,12 @@ each fail. `console_scenes_require_their_painted_roles` covers the console
 scenes: lines, hover and focus that paint their roles pass, while a line
 in the wrong colour, a hover that keeps the resting colour, a missing outline, a
 pointer away from the summary and focus away from the follow control each fail.
+`console_glyph_scenes_require_their_painted_shapes` passes each glyph scene only
+for its own glyph and fails a glyph that paints nothing.
+`word_page_scene_requires_a_white_page_and_black_text` fails a grey page, grey
+text and a missing page. `html_source_scenes_require_covered_clipped_and_unchanged_paint`
+fails a transparent listing, a listing that paints outside its body, a changed
+scroll position and a missing earlier capture.
 
 Fonts are checked by measuring text. In the console export's log box, eight
 narrow letters and eight wide letters take the same width, as they do in the
