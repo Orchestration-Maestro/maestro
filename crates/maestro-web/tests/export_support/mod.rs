@@ -39,7 +39,7 @@ mod tests {
     #[cfg(target_arch = "wasm32")]
     pub fn assert_markup(actual: &str, expected: &str, id: &str) {
         use wasm_bindgen::JsValue;
-        js_sys::eval(include_str!("../markdown_support/dom.js")).unwrap();
+        crate::markdown_support::walk::install();
         let global = js_sys::global();
         js_sys::Reflect::set(&global, &"exportActual".into(), &JsValue::from_str(actual)).unwrap();
         js_sys::Reflect::set(

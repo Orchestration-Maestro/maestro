@@ -132,10 +132,9 @@ fn unchanged_update_keeps_nodes(fixture: &mut Fixture) -> Element {
 
 /// The qualified document, contextual and caller corpora replay through page content.
 #[wasm_bindgen]
-pub async fn markdown_dom_replays_qualified_document_rows(import_module: js_sys::Function) {
+pub fn markdown_dom_replays_qualified_document_rows(import_module: &js_sys::Function) {
     let view = view();
-    let _host = host(&view, &import_module);
-    walk::install(&import_module).await;
+    let _host = host(&view, import_module);
     let mut mounter = PageMounter {
         view,
         parent: container(),
