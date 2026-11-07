@@ -1225,6 +1225,10 @@ script's crate after its file, so `build = "builder/main.rs"` gives
 An uplifted executable uses the records of its hashed twin: normalization matches
 length and contents, so copied and hard-linked outputs work alike. Identical twins
 with different dependency records fail rather than select an uncertain build.
+Cargo names Windows MSVC binaries and examples without a hash, so they have no
+twin; such an executable uses the one record of its target (`bin-<name>` or
+`example-<name>`). Several records of that target that differ leave it without a
+record.
 A library's own test binary does not depend on that library's separate output.
 Without an executable fingerprint, normalization conservatively treats any newer
 library output as an input. If a recorded dependency build no longer exists,

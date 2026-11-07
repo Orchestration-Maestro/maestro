@@ -431,6 +431,52 @@ fn cache_normalization_rejects_invalid_fingerprint_records() {
     }
 }
 
+/// Cargo names a Windows MSVC example without a hash, so normalization reads the example's own
+/// record: a build of a linked crate under another feature selection leaves the example current,
+/// and a newer build it links still outdates it.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_reads_the_record_of_an_unhashed_example() {
+    for (linked, outdated) in [(100, false), (300, true)] {
+        let scratch = Scratch::new().unwrap();
+        let profile = scratch.path().join("target/debug");
+        let deps = profile.join("deps");
+        output(&deps, "libalpha-1.rlib", false, linked);
+        output(&deps, "libalpha-2.rlib", false, 300);
+        let example = output(
+            &profile.join("examples"),
+            "prepare_author_component",
+            true,
+            200,
+        );
+        crate::tooling_commands::cargo_fingerprint(
+            &profile,
+            "app-1",
+            "example-prepare_author_component",
+            0,
+            &[("alpha", linked)],
+        );
+        let binary = binary(&deps, "integration-c1", &[], 150);
+
+        let result = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
+            .args(["nextest-setup", "normalize-component-cache"])
+            .arg(&profile)
+            .env_remove("TEST_ARCHIVE")
+            .output()
+            .unwrap();
+
+        let stderr = String::from_utf8_lossy(&result.stderr);
+        assert_eq!(
+            result.status.code(),
+            Some(if outdated { 3 } else { 0 }),
+            "{stderr}"
+        );
+        assert_eq!(fs::metadata(example).unwrap().modified().unwrap(), at(200));
+        let advanced = if outdated { at(150) } else { at(200) };
+        assert_eq!(fs::metadata(binary).unwrap().modified().unwrap(), advanced);
+    }
+}
+
 /// Identical uplifted twins with different dependency records cannot identify a build.
 #[cfg(unix)]
 #[test]
