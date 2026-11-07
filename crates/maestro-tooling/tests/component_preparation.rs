@@ -217,7 +217,9 @@ fn output(deps: &Path, name: &str, executable: bool, seconds: u64) -> std::path:
             &[],
         );
     }
-    fs::File::open(&path)
+    fs::File::options()
+        .write(true)
+        .open(&path)
         .unwrap()
         .set_modified(at(seconds))
         .unwrap();
@@ -440,7 +442,9 @@ fn cache_normalization_rejects_ambiguous_uplifted_twins() {
     binary(&deps, "app-b1", &[("alpha", 1)], 50);
     let uplifted = profile.join("app");
     fs::copy(twin, &uplifted).unwrap();
-    fs::File::open(&uplifted)
+    fs::File::options()
+        .write(true)
+        .open(&uplifted)
         .unwrap()
         .set_modified(at(50))
         .unwrap();

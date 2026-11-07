@@ -1143,7 +1143,9 @@ fn executable(path: &Path, seconds: u64) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, "#!/bin/sh\n").unwrap();
     fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
-    fs::File::open(path)
+    fs::File::options()
+        .write(true)
+        .open(path)
         .unwrap()
         .set_modified(at(seconds))
         .unwrap();
