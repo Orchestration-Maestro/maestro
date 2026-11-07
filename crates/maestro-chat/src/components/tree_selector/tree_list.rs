@@ -9,7 +9,6 @@ use maestro_app::export_html::template::{
 };
 use maestro_app::{SessionTreeNode as InputNode, is_truthy};
 use maestro_theme::LiveTheme;
-use maestro_tui::tui::TuiRuntime;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::{cell::RefCell, io, rc::Rc};
@@ -277,7 +276,7 @@ impl TreeList {
         }
         Ok(())
     }
-    /// Renders a stable navigation snapshot with live theme and host observations.
+    /// Renders a stable navigation snapshot with live theme observations.
     ///
     /// # Errors
     /// Returns invalid data for reached malformed display fields or theme failures.
@@ -285,11 +284,10 @@ impl TreeList {
         &self,
         width: usize,
         theme: &LiveTheme,
-        runtime: &dyn TuiRuntime,
         styles_enabled: bool,
     ) -> io::Result<Vec<String>> {
         let state = Rc::clone(&self.state.borrow());
-        state.render(width, theme, runtime, styles_enabled)
+        state.render(width, theme, styles_enabled)
     }
     /// Installs the panel clock without changing the list constructor.
     pub(super) fn set_clock(&self, now: Rc<dyn Fn() -> std::time::SystemTime>) {

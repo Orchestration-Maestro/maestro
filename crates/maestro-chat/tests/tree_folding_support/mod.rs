@@ -1,7 +1,6 @@
 //! Strict search, fold, query, callback and whole-frame corpus replay.
 use crate::bindings;
 use crate::filter_mode;
-use crate::manual_runtime;
 use crate::occurrences;
 use crate::palette;
 use crate::published;
@@ -77,7 +76,6 @@ struct Rendered {
 fn frame(list: &TreeList, input: &Input, expected: &Frame, events: &RefCell<Vec<Vec<Value>>>) {
     assert_eq!(list.get_search_query(), expected.query);
     assert_eq!(*events.borrow(), expected.events);
-    let host = manual_runtime::ManualRuntime::new();
     let (state, live) =
         published::published(&palette::palette(&input.palettes[0]).unwrap()).unwrap();
     assert_eq!(
@@ -94,10 +92,7 @@ fn frame(list: &TreeList, input: &Input, expected: &Frame, events: &RefCell<Vec<
         state
             .set_theme_instance(self::palette::palette(palette).unwrap())
             .unwrap();
-        assert_eq!(
-            list.render(*width, &live, &host, true).unwrap(),
-            record.lines
-        );
+        assert_eq!(list.render(*width, &live, true).unwrap(), record.lines);
     }
     let handles = occurrences::occurrences(list, &input.nodes);
     assert!(expected.selected.is_some() || expected.visible.is_empty());

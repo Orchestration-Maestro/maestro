@@ -29,6 +29,8 @@ const NATIVE_ONLY: &str = "cfg(not(target_arch = \"wasm32\"))";
 pub(super) struct Plan {
     /// What every component shares.
     pub(super) shared: BTreeSet<String>,
+    /// The manifests among them that are hashed without their development dependencies.
+    pub(super) manifests: BTreeSet<String>,
     /// The registry packages the components depend on directly.
     pub(super) dependencies: BTreeSet<String>,
     /// What the setup example and the development tool read.
@@ -61,9 +63,9 @@ impl Artifacts {
         let plan = plan(workspace, component)?;
         let locked = locked_closure(checkout, &plan.dependencies)?;
         Ok(Self {
-            shared: Inputs::new(checkout, plan.shared, locked)?,
-            tool: Inputs::new(checkout, plan.tool, BTreeSet::new())?,
-            browser: Inputs::new(checkout, plan.browser, BTreeSet::new())?,
+            shared: Inputs::new(checkout, plan.shared, locked, plan.manifests)?,
+            tool: Inputs::new(checkout, plan.tool, BTreeSet::new(), BTreeSet::new())?,
+            browser: Inputs::new(checkout, plan.browser, BTreeSet::new(), BTreeSet::new())?,
         })
     }
 
@@ -78,16 +80,20 @@ impl Artifacts {
     }
 }
 
-/// Whether the component build uses a dependency.
+/// Whether the component build uses a dependency of a package.
+///
+/// `cargo build` compiles the development dependencies of the packages it builds, for their
+/// examples, and of no package they depend on.
 ///
 /// shortcut: only the workspace's native-only gate is recognised, and any other platform gate
 /// counts as used, which at worst rebuilds the components for a change they ignore.
-fn used_by_wasm(dependency: &Dependency) -> bool {
-    dependency.kind == DependencyKind::Build
-        || dependency
-            .target
-            .as_ref()
-            .is_none_or(|platform| platform.to_string() != NATIVE_ONLY)
+fn used_by_wasm(built: bool, dependency: &Dependency) -> bool {
+    (built || dependency.kind != DependencyKind::Development)
+        && (dependency.kind == DependencyKind::Build
+            || dependency
+                .target
+                .as_ref()
+                .is_none_or(|platform| platform.to_string() != NATIVE_ONLY))
 }
 
 /// The workspace packages `built` names and those they depend on through the edges `keep`
@@ -95,7 +101,7 @@ fn used_by_wasm(dependency: &Dependency) -> bool {
 fn closure_packages<'a>(
     metadata: &'a Metadata,
     built: &[&str],
-    keep: impl Fn(&Dependency) -> bool,
+    keep: impl Fn(&Package, &Dependency) -> bool,
 ) -> io::Result<Vec<&'a Package>> {
     let members = members(metadata);
     let roots = member_roots(&members);
@@ -116,22 +122,44 @@ fn closure_packages<'a>(
     )
 }
 
+/// The repository-relative directory of `package`.
+fn directory(metadata: &Metadata, package: &Package) -> Option<String> {
+    let directory = package.manifest_path.parent()?;
+    let relative = directory.strip_prefix(&metadata.workspace_root).ok()?;
+    Some(
+        relative
+            .components()
+            .map(|part| part.as_str())
+            .collect::<Vec<_>>()
+            .join("/"),
+    )
+}
+
 /// The repository-relative directories of `packages`.
 fn directories(metadata: &Metadata, packages: &[&Package]) -> BTreeSet<String> {
     packages
         .iter()
-        .filter_map(|package| {
-            let directory = package.manifest_path.parent()?;
-            let relative = directory.strip_prefix(&metadata.workspace_root).ok()?;
-            Some(
-                relative
-                    .components()
-                    .map(|part| part.as_str())
-                    .collect::<Vec<_>>()
-                    .join("/"),
-            )
-        })
+        .filter_map(|package| directory(metadata, package))
         .collect()
+}
+
+/// The pathspecs of the files a build of the package in `directory` can read: the directory
+/// without the integration tests and the unit test files, which the conventions confine to
+/// `tests.rs` and `tests` directories below `src`.
+fn build_inputs(directory: &str) -> [String; 4] {
+    let below = |rest: &str| {
+        if directory.is_empty() {
+            rest.to_owned()
+        } else {
+            format!("{directory}/{rest}")
+        }
+    };
+    [
+        directory.to_owned(),
+        format!(":(exclude,glob){}", below("tests/**")),
+        format!(":(exclude,glob){}", below("src/**/tests.rs")),
+        format!(":(exclude,glob){}", below("src/**/tests/**")),
+    ]
 }
 
 /// The directories of the named workspace packages and of the packages they depend on.
@@ -141,7 +169,7 @@ pub(super) fn closure_directories(
 ) -> io::Result<BTreeSet<String>> {
     Ok(directories(
         metadata,
-        &closure_packages(metadata, built, |_| true)?,
+        &closure_packages(metadata, built, |_, _| true)?,
     ))
 }
 
@@ -155,6 +183,30 @@ fn crate_paths(
         .into_iter()
         .chain(fixed.map(str::to_owned))
         .collect())
+}
+
+/// The pathspecs of the packages the components build on, and the manifests among them that
+/// are hashed without their development dependencies: those of the packages `built` does not
+/// name.
+fn component_paths(
+    metadata: &Metadata,
+    components: &[&Package],
+    built: impl Fn(&Package) -> bool,
+) -> (BTreeSet<String>, BTreeSet<String>) {
+    let mut shared = BTreeSet::new();
+    let mut manifests = BTreeSet::new();
+    for package in components {
+        let Some(directory) = directory(metadata, package) else {
+            continue;
+        };
+        shared.extend(build_inputs(&directory));
+        if !built(package) {
+            let manifest = format!("{directory}/Cargo.toml");
+            shared.insert(format!(":(exclude){manifest}"));
+            manifests.insert(manifest);
+        }
+    }
+    (shared, manifests)
 }
 
 /// What each artifact hashes, from the workspace metadata.
@@ -184,19 +236,24 @@ pub(super) fn plan(workspace: &Workspace, component: &Path) -> io::Result<Plan> 
         .chain([component_package])
         .filter(|name| workspace.member(name).is_some())
         .collect();
+    let built = |package: &Package| packages.contains(package.name.as_str());
     let components = closure_packages(
         metadata,
-        &packages.into_iter().collect::<Vec<_>>(),
-        used_by_wasm,
+        &packages.iter().copied().collect::<Vec<_>>(),
+        |package, dependency| used_by_wasm(built(package), dependency),
     )?;
     let dependencies = components
         .iter()
-        .flat_map(|package| &package.dependencies)
-        .filter(|dependency| dependency.path.is_none() && used_by_wasm(dependency))
+        .flat_map(|package| {
+            let built = built(package);
+            package.dependencies.iter().filter(move |dependency| {
+                dependency.path.is_none() && used_by_wasm(built, dependency)
+            })
+        })
         .map(|dependency| dependency.name.clone())
         .collect();
     // The examples are hashed one by one, beside the shared inputs.
-    let mut shared = directories(metadata, &components);
+    let (mut shared, manifests) = component_paths(metadata, &components, built);
     shared.extend(SHARED_INPUTS.map(str::to_owned));
     shared.insert(format!(
         ":(exclude){}/{FIXTURES}",
@@ -205,6 +262,7 @@ pub(super) fn plan(workspace: &Workspace, component: &Path) -> io::Result<Plan> 
     let fixed = SHARED_INPUTS.into_iter().chain(LOCKED_INPUTS);
     Ok(Plan {
         shared,
+        manifests,
         dependencies,
         tool: crate_paths(
             metadata,
@@ -251,5 +309,5 @@ pub(super) fn component_inputs(
             paths.insert(name);
         }
     }
-    Inputs::new(checkout, paths, BTreeSet::new())
+    Inputs::new(checkout, paths, BTreeSet::new(), BTreeSet::new())
 }

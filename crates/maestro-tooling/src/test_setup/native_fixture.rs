@@ -169,7 +169,7 @@ fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
             .chain(["Cargo.lock"])
             .map(str::to_owned),
     );
-    Inputs::new(workspace.root(), paths, BTreeSet::new())
+    Inputs::new(workspace.root(), paths, BTreeSet::new(), BTreeSet::new())
 }
 
 /// Validate one staged executable and return its absolute path.

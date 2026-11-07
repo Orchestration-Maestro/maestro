@@ -563,11 +563,13 @@ fn debug_submission_records_then_clears_editor() {
         async |directory| {
             let world = started(directory).await;
             consumed(&world, "/debug");
-            assert!(only_log(&world).starts_with("Debug output at "));
+            assert!(only_log().starts_with("Debug output at "));
             assert!(transcript(&world).contains("Debug log written"));
-            world
-                .runtime
-                .set_write_error(Some(std::io::ErrorKind::PermissionDenied));
+            let path = maestro_app::configuration::config::paths::get_debug_log_path(
+                &maestro_app::configuration::config::get_agent_dir().unwrap(),
+            );
+            std::fs::remove_file(&path).unwrap();
+            std::fs::create_dir(&path).unwrap();
             let notices = world.mode.chat_container.children().borrow().len();
             let mut waiter = waiting(&world.mode);
             enter(&world, "/debug");

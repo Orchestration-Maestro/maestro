@@ -50,21 +50,17 @@ struct ListView {
     list: Rc<TreeList>,
     /// Live row theme.
     theme: LiveTheme,
-    /// Host observations.
-    runtime: Rc<dyn TuiRuntime>,
     /// Row decorations.
     styles: bool,
 }
 impl Component for ListView {
     fn render(&self, width: usize) -> Vec<String> {
         self.list
-            .render(width, &self.theme, self.runtime.as_ref(), self.styles)
+            .render(width, &self.theme, self.styles)
             .unwrap_or_default()
     }
     fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        Ok(self
-            .list
-            .render(width, &self.theme, self.runtime.as_ref(), self.styles)?)
+        Ok(self.list.render(width, &self.theme, self.styles)?)
     }
 }
 /// Read-only authored-query display.
@@ -125,7 +121,6 @@ impl TreeSelectorComponent {
         let view = Rc::new(ListView {
             list: list.clone(),
             theme: theme.clone(),
-            runtime: options.runtime.clone(),
             styles: options.styles_enabled,
         });
         tree_container.add_child(view.clone());

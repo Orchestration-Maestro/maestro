@@ -5,11 +5,12 @@ last drew and writes only what changed, so a spinner redraws one row and the
 terminal's scrollback stays intact. It never switches to the alternate screen, and
 each update is one synchronized write (`CSI ? 2026 h` … `CSI ? 2026 l`).
 
-The writer performs no terminal or file I/O and starts no timers of its own. A
+The writer performs no terminal I/O and starts no timers of its own. A
 `Terminal` receives the bytes. A `TuiRuntime` supplies the monotonic clock, defers
-render callbacks, answers environment queries and performs the log file effects, so
-the same writer runs under a native event loop, a browser or a test with a manual
-clock. `TerminalImage` is the shared image state its components already use; the
+render callbacks and reports the log context, so the same writer runs under a native
+event loop, a browser or a test with a manual clock. The writer reads the process
+environment for its switches and writes its diagnostic files itself, which is why those
+effects need a native target. `TerminalImage` is the shared image state its components already use; the
 writer queries and updates the cell size through that same instance.
 
 `TuiRuntime::spawn_local` hands the host a fallible future, such as an editor's
@@ -27,7 +28,6 @@ it using the same policy as other fallible work, without a deferred render error
 # use std::cell::RefCell;
 # use std::future::Future;
 # use std::io;
-# use std::path::Path;
 # use std::pin::Pin;
 # use std::rc::Rc;
 # use std::time::Duration;
@@ -68,12 +68,9 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 #         Box::new(Timer)
 #     }
 #     fn spawn_local(&self, _: LocalFuture) {}
-#     fn environment(&self, _: &str) -> Option<String> { None }
 #     fn log_context(&self) -> LogContext {
 #         LogContext { home: "/home/user".into(), iso_time: String::new(), unix_ms: 0, nonce: String::new() }
 #     }
-#     fn append_log(&self, _: &Path, _: &str) -> io::Result<()> { Ok(()) }
-#     fn write_log(&self, _: &Path, _: &str) -> io::Result<()> { Ok(()) }
 # }
 # fn main() -> io::Result<()> {
 /// A line of text that can change after it is shown.

@@ -185,7 +185,7 @@ impl InteractiveMode {
     /// Returns the warning's theme failure, the editor's failure or the edit's file,
     /// terminal or process failure.
     pub(super) fn open_external_editor(&self) -> Result<(), Box<dyn Error>> {
-        let Some(command) = external_command(self.tool_environment.runtime.as_ref()) else {
+        let Some(command) = external_command() else {
             return Ok(self.show_warning(
                 "No editor configured. Set $VISUAL or $EDITOR environment variable.",
             )?);
@@ -204,8 +204,6 @@ impl InteractiveMode {
         };
         edit_external_file(
             &self.ui,
-            #[cfg(windows)]
-            self.tool_environment.runtime.as_ref(),
             |text| self.current_editor().try_set_text(text),
             &file,
         )

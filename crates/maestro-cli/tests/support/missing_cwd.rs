@@ -124,12 +124,6 @@ impl Dialog {
     /// Exercise constructor policy separately from the later clear-on-shrink setter.
     pub fn policy_presentation(&self, policies: (bool, bool)) -> MissingSessionCwdPresentation {
         let (hardware, clear) = policies;
-        self.harness
-            .runtime
-            .set_environment("MAESTRO_HARDWARE_CURSOR", if hardware { "0" } else { "1" });
-        self.harness
-            .runtime
-            .set_environment("MAESTRO_CLEAR_ON_SHRINK", if clear { "0" } else { "1" });
         self.settings
             .borrow_mut()
             .set_show_hardware_cursor(hardware);

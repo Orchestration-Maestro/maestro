@@ -1,7 +1,7 @@
 //! Styled rows and position status for the retained tree.
 use super::{FilterMode, tree_list::TreeState};
 use maestro_theme::{LiveTheme, ThemeColor};
-use maestro_tui::{TruncateOptions, truncate_to_width, tui::TuiRuntime};
+use maestro_tui::{TruncateOptions, truncate_to_width};
 use std::io;
 impl TreeState {
     /// Renders the visible window followed by its position and filter status.
@@ -12,7 +12,6 @@ impl TreeState {
         &self,
         width: usize,
         theme: &LiveTheme,
-        runtime: &dyn TuiRuntime,
         styles_enabled: bool,
     ) -> io::Result<Vec<String>> {
         let theme = theme.get().map_err(io::Error::other)?;
@@ -37,7 +36,7 @@ impl TreeState {
         let (start, end) = (window.start, window.end);
         let mut lines = Vec::new();
         for index in start..end {
-            lines.push(clip(&self.row(index, &theme, runtime, styles_enabled)?));
+            lines.push(clip(&self.row(index, &theme, styles_enabled)?));
         }
         lines.push(clip(
             &theme
@@ -55,13 +54,7 @@ impl TreeState {
         Ok(lines)
     }
     /// Compose one row before final terminal-cell clipping.
-    fn row(
-        &self,
-        index: usize,
-        theme: &maestro_theme::Theme,
-        runtime: &dyn TuiRuntime,
-        styles: bool,
-    ) -> io::Result<String> {
+    fn row(&self, index: usize, theme: &maestro_theme::Theme, styles: bool) -> io::Result<String> {
         let node = &self.visible[index];
         let selected = index == self.selected;
         let fg = |key, text: &str| theme.fg(&key, text).map_err(io::Error::other);
@@ -102,7 +95,7 @@ impl TreeState {
         {
             fg(
                 ThemeColor::Muted,
-                &self.tool_result(&node.entry()["message"], runtime)?,
+                &self.tool_result(&node.entry()["message"])?,
             )?
         } else {
             super::entry_text::entry(node.entry(), theme, styles)?

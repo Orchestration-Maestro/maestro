@@ -2,7 +2,7 @@
 //! report and the record of differential updates.
 
 use std::fmt::{self, Write as _};
-use std::io;
+use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
 
 use crate::images::terminal_image::is_image_line;
@@ -19,6 +19,26 @@ const DEBUG_REDRAW: &str = "MAESTRO_DEBUG_REDRAW";
 const DEBUG_RENDER: &str = "MAESTRO_TUI_DEBUG";
 /// Directory that receives the records of every differential update.
 const RENDER_DIRECTORY: &str = "/tmp/tui";
+
+/// Appends `contents` to `path` without creating its directory.
+fn append_log(path: &Path, contents: &str) -> io::Result<()> {
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?
+        .write_all(contents.as_bytes())
+}
+
+/// Replaces `path` with `contents`, creating its directory first.
+fn replace_log(path: &Path, contents: &str) -> io::Result<()> {
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, contents)
+}
 
 /// A file in the application's log directory.
 fn agent_log(context: &LogContext, name: &str) -> PathBuf {
@@ -56,7 +76,7 @@ impl TUI {
     ///
     /// Returns the host's file error unchanged.
     pub(super) fn log_redraw(&self, reason: &RedrawReason, frame: &Frame) -> io::Result<()> {
-        if !is_enabled(&*self.shared.runtime, DEBUG_REDRAW) {
+        if !is_enabled(DEBUG_REDRAW) {
             return Ok(());
         }
         let context = self.shared.runtime.log_context();
@@ -68,7 +88,7 @@ impl TUI {
             frame.height
         );
         let path = agent_log(&context, "maestro-debug.log");
-        self.shared.runtime.append_log(&path, &message)
+        append_log(&path, &message)
     }
 
     /// Fails with a crash report when a text line is wider than the terminal: the report
@@ -91,7 +111,7 @@ impl TUI {
         let context = self.shared.runtime.log_context();
         let path = agent_log(&context, "maestro-crash.log");
         let report = crash_report(&context, frame, row, measured);
-        self.shared.runtime.write_log(&path, &report)?;
+        replace_log(&path, &report)?;
         self.stop()?;
         Err(io::Error::new(
             io::ErrorKind::InvalidData,
@@ -111,7 +131,7 @@ impl TUI {
         update: &Update,
         viewport_top: usize,
     ) -> io::Result<()> {
-        if !is_enabled(&*self.shared.runtime, DEBUG_RENDER) {
+        if !is_enabled(DEBUG_RENDER) {
             return Ok(());
         }
         let report = {
@@ -138,9 +158,7 @@ impl TUI {
         };
         let context = self.shared.runtime.log_context();
         let name = format!("render-{}-{}.log", context.unix_ms, context.nonce);
-        self.shared
-            .runtime
-            .write_log(&Path::new(RENDER_DIRECTORY).join(name), &report)
+        replace_log(&Path::new(RENDER_DIRECTORY).join(name), &report)
     }
 }
 

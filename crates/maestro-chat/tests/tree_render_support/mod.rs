@@ -58,7 +58,6 @@ enum Operation {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Change {
-    env: Option<BTreeMap<String, String>>,
     invalidate: Option<bool>,
 }
 /// Ordered results ending at the first reached error.
@@ -91,7 +90,7 @@ struct Rendered {
     cell_widths: Vec<usize>,
 }
 /// Observe one frame with the surviving list and theme slot.
-fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::ManualRuntime) {
+fn frame(list: &TreeList, input: &Input, frame: &Frame) {
     assert_eq!(
         list.get_selected_node()
             .map(|n| n.entry()["id"].as_str().unwrap().to_owned()),
@@ -113,9 +112,7 @@ fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::M
         state
             .set_theme_instance(self::palette::palette(palette).unwrap())
             .unwrap();
-        let actual = list
-            .render(*width, &live, host, input.styles_enabled)
-            .unwrap();
+        let actual = list.render(*width, &live, input.styles_enabled).unwrap();
         assert_eq!(actual, expected.lines);
         assert_eq!(
             actual
@@ -127,22 +124,14 @@ fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::M
         assert!(expected.cell_widths.iter().all(|cells| cells <= width));
     }
 }
-/// Apply a key or render-local change without altering process environment.
-fn operation(list: &mut TreeList, operation: &Operation, host: &mut manual_runtime::ManualRuntime) {
+/// Apply a key or a render-local change.
+fn operation(list: &mut TreeList, operation: &Operation) {
     match operation {
         Operation::Key(key) => list.handle_input(key).unwrap(),
         Operation::Change(change) => {
-            assert_ne!(change.env.is_some(), change.invalidate.is_some());
-            if let Some(env) = &change.env {
-                *host = manual_runtime::ManualRuntime::new();
-                for (key, value) in env {
-                    host.set_environment(key, value);
-                }
-            }
-            if let Some(invalidate) = change.invalidate {
-                assert!(invalidate);
-                list.invalidate();
-            }
+            let invalidate = change.invalidate.expect("a render-local change");
+            assert!(invalidate);
+            list.invalidate();
         }
     }
 }
@@ -158,16 +147,13 @@ fn replay(case: &Case) {
         Some(mode(&input.mode)),
     )
     .unwrap();
-    let mut host = manual_runtime::ManualRuntime::new();
-    for (key, value) in &input.env {
-        host.set_environment(key, value);
-    }
+    let host = manual_runtime::ManualRuntime::new();
     for index in 0..=input.ops.len() {
         if index > 0 {
-            operation(&mut list, &input.ops[index - 1], &mut host);
+            operation(&mut list, &input.ops[index - 1]);
         }
         if let Some(expected) = case.expected.frames.get(index) {
-            frame(&list, input, expected, &host);
+            frame(&list, input, expected);
         } else {
             assert_eq!(index, case.expected.frames.len());
             assert_eq!(index, input.ops.len());
@@ -175,14 +161,13 @@ fn replay(case: &Case) {
             let (_, live) =
                 published::published(&palette::palette(&input.palettes[0]).unwrap()).unwrap();
             assert_eq!(
-                list.render(input.widths[0], &live, &host, input.styles_enabled)
+                list.render(input.widths[0], &live, input.styles_enabled)
                     .unwrap_err()
                     .kind(),
                 std::io::ErrorKind::InvalidData
             );
         }
         assert_eq!(host.pending(), 0);
-        assert!(host.files().is_empty());
         assert!(host.take_futures().is_empty());
     }
     assert_eq!(
@@ -229,7 +214,18 @@ pub fn group(name: &str) {
     }
     let selected: Vec<_> = cases.iter().filter(|c| c.test == name).collect();
     assert!(!selected.is_empty());
-    for case in selected {
+    let groups = maestro_test_process::run_per_environment(name, selected, |case| {
+        case.input
+            .env
+            .iter()
+            .map(|(key, value)| (key.clone(), Some(value.clone())))
+            .collect()
+    })
+    .expect("the environment groups run");
+    let Some(group) = groups else {
+        return;
+    };
+    for case in group {
         eprintln!("scenario: {}", case.name);
         replay(case);
     }

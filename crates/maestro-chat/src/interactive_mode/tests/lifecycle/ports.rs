@@ -5,7 +5,6 @@ use maestro_tui::tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, Tui
 use std::{
     cell::{Cell, RefCell},
     io,
-    path::Path,
     rc::Rc,
     time::Duration,
 };
@@ -154,17 +153,8 @@ impl TuiRuntime for RuntimePort {
     fn spawn_local(&self, future: LocalFuture) {
         self.inner.spawn_local(future);
     }
-    fn environment(&self, key: &str) -> Option<String> {
-        self.inner.environment(key)
-    }
     fn log_context(&self) -> LogContext {
         self.inner.log_context()
-    }
-    fn append_log(&self, path: &Path, text: &str) -> io::Result<()> {
-        self.inner.append_log(path, text)
-    }
-    fn write_log(&self, path: &Path, text: &str) -> io::Result<()> {
-        self.inner.write_log(path, text)
     }
     fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
         self.output
