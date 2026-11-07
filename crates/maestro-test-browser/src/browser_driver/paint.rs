@@ -16,8 +16,10 @@ use std::io;
 mod console;
 /// HTML artifact source listing scenes.
 mod html;
-/// Visible boxes and their pixel counts.
+/// Visible boxes, their pixel counts and glyph shapes.
 mod region;
+/// Reasoning disclosure scenes.
+mod thinking;
 /// Word page scenes.
 mod word;
 
@@ -139,6 +141,9 @@ impl Page<'_> {
             "console-rest" | "console-hover" | "console-focus" | "console-collapsed"
             | "console-expanded" | "console-copy" | "console-copied" => {
                 console::observe(self, scene).await
+            }
+            "thinking-rest" | "thinking-hover" | "thinking-expanded" => {
+                thinking::observe(self, scene).await
             }
             "html-source" => html::shown(self).await,
             "html-source-again" => html::again(self).await,

@@ -255,13 +255,16 @@ the root's children. A failed update returns its error and leaves the previous
 document in place.
 
 The reasoning disclosure is a native button named `Thinking...` with a chevron.
-Pointer, Enter or Space activation toggles it once. While expanded it shows the
-untrimmed source as a reasoning `MarkdownBlock`; the body exists only then. Each
-root keeps its own expansion through content and streaming updates, and dropping
-the root releases its toggle. The header shimmers while streaming. Its color and
-the chevron's rotation change through 150 ms transitions, and a reversed toggle
-turns back from the current angle. The `new(host)` constructors keep drawing on a
-canvas for the artifacts that still use one.
+Pointer, Enter or Space activation toggles it once. The button keeps its place in
+the tab order both ways: Tab moves on from it and Shift+Tab comes back to it.
+While expanded it shows the untrimmed source as a reasoning `MarkdownBlock`; the
+body exists only then. Each root keeps its own expansion through content and
+streaming updates, and dropping the root releases its toggle. The header shimmers
+while streaming. Its label and chevron paint the muted role, and the text role
+under the pointer. Its color and the chevron's rotation change through 150 ms
+transitions, and a reversed toggle turns back from the current angle. The
+`new(host)` constructors keep drawing on a canvas for the artifacts that still
+use one.
 
 Tool-renderer listings use the same listing pipeline with literal input; see
 [tool renderers](tool-renderers.md). Their text is not auto-decoded.
