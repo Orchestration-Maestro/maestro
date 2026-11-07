@@ -21,6 +21,8 @@ pub mod run_tests;
 
 /// Locked browser-author preparation and native dispatch.
 mod browser_author;
+/// Browser-target Clippy over the declared browser crates.
+mod browser_clippy;
 /// Temporary browser-export manifest preparation and lock checks.
 mod browser_export_setup;
 /// The locked packages and the dependency graph between them.
@@ -32,8 +34,6 @@ mod dep_info;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
-/// Browser-target Clippy over the declared browser crates.
-mod browser_clippy;
 /// Derived extension documentation table.
 mod example_index;
 /// Path dependencies between workspace members.
