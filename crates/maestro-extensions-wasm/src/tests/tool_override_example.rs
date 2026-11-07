@@ -26,8 +26,7 @@ const FIXTURE: &str = concat!(
     "/src/tests/tool_override_fixture.txt"
 );
 
-/// An access log whose edges are host whitespace a byte-order mark keeps separate from the
-/// native ones.
+/// An access log edged with a byte-order mark, which only the host classifies as whitespace.
 const LOG_FIXTURE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/src/tests/tool_override_log_fixture.txt"

@@ -43,7 +43,7 @@ struct QuestionView {
     done: CustomDone<Option<Selection>>,
 }
 impl QuestionView {
-    /// Trims the host's whitespace while preserving the interior text.
+    /// Trims the host's whitespace, then records the answer or clears the editor.
     fn submit(&self, text: &str) -> ExtensionResult<()> {
         let answer = trim(&self.api, text)?;
         if answer.is_empty() {
