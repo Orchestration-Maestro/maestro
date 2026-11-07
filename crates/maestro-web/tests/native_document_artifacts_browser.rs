@@ -30,8 +30,10 @@ pub(crate) struct Package {
     tables: u32,
     /// Math element count.
     math: u32,
-    /// Whether embedded fonts are loaded.
+    /// Whether the rendering declares embedded font faces.
     has_fonts: bool,
+    /// Embedded family whose loaded face paints the document text.
+    loaded_font: Option<String>,
 }
 /// One link observed in the unmodified document.
 #[derive(Deserialize)]
@@ -42,7 +44,7 @@ struct Link {
     /// Safe authored destination, absent for refused targets.
     href: Option<String>,
 }
-/// Read all eighteen document packages.
+/// Read all nineteen document packages.
 pub(crate) fn packages() -> Vec<Package> {
     serde_json::from_str(include_str!("fixtures/native_document_artifacts.json")).unwrap()
 }
@@ -139,6 +141,7 @@ async fn assert_page_geometry(
     );
     assert_painted_page(&sheet, case);
     let scrolled = assert_contained_content(node, &sheet, (case, width)).await;
+    assert_loaded_font(node, case).await;
     let text = crate::contributions_support::page::select_children(&sheet);
     if case.text.iter().any(|text| !text.is_empty()) {
         assert!(!text.is_empty(), "{} selectable text", case.name);
@@ -267,6 +270,48 @@ fn assert_table_scrolling(node: &Element, (page_width, case, width): (f64, &Pack
         }
     }
     scrolled
+}
+
+/// The document's embedded face is a loaded resource that changes the measured width of the
+/// text it paints, so a face that fails to load or a run that falls back cannot pass.
+async fn assert_loaded_font(node: &Element, case: &Package) {
+    let Some(family) = &case.loaded_font else {
+        return;
+    };
+    let fonts = js_sys::Reflect::get(&crate::contributions_support::document(), &"fonts".into());
+    let faces: Vec<_> = js_sys::Array::from(&fonts.unwrap())
+        .iter()
+        .filter(|face| {
+            js_sys::Reflect::get(face, &"family".into())
+                .unwrap()
+                .as_string()
+                .is_some_and(|name| name.trim_matches(['"', '\'']) == family)
+        })
+        .collect();
+    assert!(!faces.is_empty(), "{}: the face is declared", case.name);
+    for face in faces {
+        let load: js_sys::Function = js_sys::Reflect::get(&face, &"load".into())
+            .unwrap()
+            .unchecked_into();
+        let loaded = js_sys::Promise::from(load.call0(&face).unwrap());
+        let loaded = wasm_bindgen_futures::JsFuture::from(loaded).await;
+        assert!(loaded.is_ok(), "{}: the face loads ({loaded:?})", case.name);
+    }
+    let run: HtmlElement = select(node, "article span").unchecked_into();
+    let painted = run.get_bounding_client_rect().width();
+    let fallback: HtmlElement = run.clone_node_with_deep(true).unwrap().unchecked_into();
+    fallback
+        .style()
+        .set_property("font-family", "maestro-absent-family")
+        .unwrap();
+    run.after_with_node_1(&fallback).unwrap();
+    let unloaded = fallback.get_bounding_client_rect().width();
+    fallback.remove();
+    assert!(
+        (painted - unloaded).abs() > 1.0,
+        "{}: the loaded face changes the text width ({painted} and {unloaded})",
+        case.name
+    );
 }
 
 /// Decode and render failures remain independent of the original-byte header.
