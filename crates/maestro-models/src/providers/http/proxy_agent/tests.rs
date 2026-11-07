@@ -480,12 +480,10 @@ fn socks_connection_failure_never_replays_body() {
 #[test]
 fn socks_proxy_resolution_errors_close_without_request_bytes() {
     run(async {
-        let reserved = tokio::net::TcpSocket::new_v4().unwrap();
-        reserved.bind("127.0.0.1:0".parse().unwrap()).unwrap();
-        let address = reserved.local_addr().unwrap();
-        for proxy in ["socks5h://".to_owned(), format!("socks5h://{address}")] {
+        // TCP to IPv4 broadcast fails at once, without a bound socket or DNS lookup.
+        for proxy in ["socks5h://", "socks5h://255.255.255.255:1080"] {
             let result =
-                sender(url::Url::parse(&proxy).unwrap())(request("http://destination.invalid/"))
+                sender(url::Url::parse(proxy).unwrap())(request("http://destination.invalid/"))
                     .await;
             assert!(matches!(
                 result,
