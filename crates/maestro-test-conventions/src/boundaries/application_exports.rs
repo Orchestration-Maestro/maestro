@@ -84,54 +84,72 @@ fn credentials(members: &[Member]) -> Result<(), String> {
     {
         let root = member.directory.join("src").join("lib.rs");
         for source in member.sources.iter().filter(|source| source.path == root) {
-            credentials_source(&source.path, &source.contents)?;
+            let finding = source
+                .walk
+                .as_ref()
+                .and_then(|walk| walk.credentials.as_ref());
+            if let Some((line, message)) = finding {
+                return Err(format!("{}:{line}: {message}", source.path.display()));
+            }
         }
     }
     Ok(())
 }
 
-/// Reject a public name of one credentials root source its declared surface does not carry.
-fn credentials_source(path: &Path, contents: &str) -> Result<(), String> {
-    let file = syn::parse_file(contents).map_err(|error| format!("{}: {error}", path.display()))?;
-    for item in &file.items {
-        match item {
-            syn::Item::Use(item) if public(&item.vis) => written(path, &item.tree)?,
-            syn::Item::Mod(item) if public(&item.vis) => carried(path, &item.ident)?,
-            _ => (),
-        }
+/// The first public name of a credentials root source its declared surface does not carry, with
+/// its line.
+///
+/// The shared syntax walk records it, so the declared surface needs no parsed file.
+pub(crate) fn file_credentials(
+    member: &Member,
+    source: &Source,
+    file: &syn::File,
+) -> Option<(usize, String)> {
+    let root = member.directory.join("src").join("lib.rs");
+    if member.name != "maestro-credentials" || source.path != root {
+        return None;
     }
-    Ok(())
+    file.items.iter().find_map(item_export)
 }
 
-/// Reject the names one public re-export writes, refusing a wildcard that hides them.
-fn written(path: &Path, tree: &syn::UseTree) -> Result<(), String> {
-    for import in flatten(tree) {
-        let Some(binding) = import.binding else {
-            let line = import
-                .path
-                .last()
-                .map_or(1, |name| name.span().start().line);
-            return Err(format!(
-                "{}:{line}: credential export surface names every export, never a wildcard",
-                path.display()
-            ));
-        };
-        carried(path, binding)?;
+/// The export one top-level item writes that the declared surface does not carry.
+fn item_export(item: &syn::Item) -> Option<(usize, String)> {
+    match item {
+        syn::Item::Use(item) if public(&item.vis) => written(&item.tree),
+        syn::Item::Mod(item) if public(&item.vis) => carried(&item.ident),
+        _ => None,
     }
-    Ok(())
 }
 
-/// Reject an exported name that the credentials crate's declared surface does not carry.
-fn carried(path: &Path, name: &syn::Ident) -> Result<(), String> {
+/// The name one public re-export writes that the declared surface does not carry, refusing a
+/// wildcard that hides them.
+fn written(tree: &syn::UseTree) -> Option<(usize, String)> {
+    flatten(tree)
+        .into_iter()
+        .find_map(|import| match import.binding {
+            Some(binding) => carried(binding),
+            None => Some(wildcard(&import.path)),
+        })
+}
+
+/// The diagnostic of a wildcard re-export at the name whose exports it hides.
+fn wildcard(path: &[&syn::Ident]) -> (usize, String) {
+    let line = path.last().map_or(1, |name| name.span().start().line);
+    (
+        line,
+        "credential export surface names every export, never a wildcard".to_owned(),
+    )
+}
+
+/// The line of an exported name that the credentials crate's declared surface does not carry.
+fn carried(name: &syn::Ident) -> Option<(usize, String)> {
     let spelling = name.unraw().to_string();
-    if CREDENTIALS_NAMES.contains(&spelling.as_str()) {
-        return Ok(());
-    }
-    Err(format!(
-        "{}:{}: credential export surface carries no {spelling}",
-        path.display(),
-        name.span().start().line
-    ))
+    (!CREDENTIALS_NAMES.contains(&spelling.as_str())).then(|| {
+        (
+            name.span().start().line,
+            format!("credential export surface carries no {spelling}"),
+        )
+    })
 }
 
 /// Whether an item visibility makes it part of the crate's public surface.
