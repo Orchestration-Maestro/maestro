@@ -1,19 +1,19 @@
 //! Browser export qualification with the supplied pinned Chromium.
 //!
-//! The development command owns preparation and cleanup. Browser operations use one
-//! low-level library connection per driver, with default-world bindings routed by
-//! renderer session.
+//! A nextest setup prepares the export package once; each export and the report then run
+//! as their own test. Browser operations use one low-level library connection per driver,
+//! with default-world bindings routed by renderer session.
 
 use connection::Dispatcher;
-use inputs::{ExpectedError, Inventory};
+use inputs::ExpectedError;
 use launch::Process;
-use package::{Work, command};
+use package::command;
 use serde_json::{Value, json};
 use std::{
     ffi::OsString,
-    fs, io,
+    io,
     path::{Path, PathBuf},
-    process::{Command, ExitCode},
+    process::Command,
 };
 
 /// Verified report assets and request confinement.
@@ -46,15 +46,18 @@ mod scripts;
 mod server;
 
 pub use page::Page;
+pub use report::run as tool_report;
 pub use resources::resource_path;
 pub use server::Server;
+
+/// The export inventory, the same file the build script generates one test per export from.
+const INVENTORY: &str =
+    include_str!("../../../maestro-web/tests/sandbox_loading_support/exports.json");
 
 /// One CDP connection, owning the fresh pages it creates and its ordered diagnostics.
 struct Driver {
     /// Session-aware transport shared by successive fresh pages.
     dispatcher: Dispatcher,
-    /// Advertised endpoint, reused by a companion connection to the same browser.
-    endpoint: String,
     /// Ordered output from assertions and completion phases.
     lines: Vec<String>,
     /// Parsed policy-error identity used by every page.
@@ -64,13 +67,9 @@ struct Driver {
 impl Driver {
     /// Connect one transport to a launched browser's advertised endpoint.
     async fn connect(endpoint: &str) -> io::Result<Self> {
-        let expected_error = inputs::inventory(include_str!(
-            "../../../maestro-web/tests/sandbox_loading_support/exports.json"
-        ))?
-        .expected_error;
+        let expected_error = inputs::inventory(INVENTORY)?.expected_error;
         Ok(Self {
             dispatcher: Dispatcher::connect(endpoint).await?,
-            endpoint: endpoint.to_owned(),
             lines: Vec::new(),
             expected_error,
         })
@@ -108,26 +107,6 @@ impl Driver {
         cleanup(result, closed)
     }
 
-    /// Require every selected export to be callable before invoking any assertion.
-    ///
-    /// # Errors
-    /// Returns initialization failures or the complete missing/non-callable selection.
-    async fn preflight(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
-        let expression = format!(
-            "(async () => {{ const module = await import('/sandbox.js'); await module.default(); return {}.filter(name => typeof module[name] !== 'function'); }})()",
-            json!(names)
-        );
-        let missing = self
-            .check(&format!("{origin}/"), "inventory", &expression)
-            .await?;
-        if missing != json!([]) {
-            return Err(io::Error::other(format!(
-                "missing/non-callable exports: {missing}"
-            )));
-        }
-        Ok(())
-    }
-
     /// Ordered observations emitted by completed and failed assertions.
     fn lines(&self) -> &[String] {
         &self.lines
@@ -140,19 +119,13 @@ impl Driver {
     async fn execute(&mut self, method: &'static str, params: Value) -> io::Result<Value> {
         page::raw(&mut self.dispatcher, None, method, params).await
     }
-
-    /// Emit family accounting alongside the page's diagnostic phases.
-    fn log(&mut self, text: &str) {
-        println!("{text}");
-        self.lines.push(text.to_owned());
-    }
 }
 
-/// One launched browser process with the first of its connected drivers.
+/// One launched browser process with its connected driver.
 pub struct Browser {
     /// Browser process and diagnostics.
     process: Process,
-    /// Driver serving the whole run, including the inventory preflight.
+    /// Driver serving every page of this browser.
     driver: Driver,
 }
 
@@ -171,11 +144,6 @@ impl Browser {
         }
     }
 
-    /// Connect a companion driver so two exports can run at once in their own pages.
-    async fn companion(&self) -> io::Result<Driver> {
-        Driver::connect(&self.driver.endpoint).await
-    }
-
     /// Open a fresh page whose explicit close settles renderer cleanup.
     ///
     /// # Errors
@@ -190,14 +158,6 @@ impl Browser {
     /// Returns navigation, assertion, page/crash/disconnect or cleanup failures.
     pub async fn check(&mut self, url: &str, name: &str, expression: &str) -> io::Result<Value> {
         self.driver.check(url, name, expression).await
-    }
-
-    /// Require every selected export to be callable before invoking any assertion.
-    ///
-    /// # Errors
-    /// Returns initialization failures or the complete missing/non-callable selection.
-    pub async fn preflight(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
-        self.driver.preflight(origin, names).await
     }
 
     /// Ordered observations emitted by completed and failed assertions.
@@ -226,62 +186,23 @@ impl Browser {
     }
 }
 
-/// Dispatch the full browser command on the binary's runtime.
+/// Prepare the export package once for a nextest run and tell its browser tests where it is.
+///
+/// The package replaces the previous run's in Cargo's target directory, where the tests read
+/// it until the next preparation.
 ///
 /// # Errors
-/// Returns tool-contract, preparation, browser assertion and cleanup failures.
-pub async fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    if args.len() > 1 {
+/// Returns argument, tool-contract, inventory, build or setup-export failures.
+pub fn prepare(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<()> {
+    if !args.is_empty() {
         return Err(io::Error::other(
-            "browser-test accepts at most one report HTML path",
+            "the browser export setup takes no arguments",
         ));
     }
-    let fixture = args.first().map(PathBuf::from);
     let executable = std::env::var_os("CHROMIUM_PATH")
         .map(PathBuf::from)
         .ok_or_else(|| io::Error::other("CHROMIUM_PATH must be an absolute executable file"))?;
-    let checkout = checkout.to_owned();
-    let cargo = cargo.to_owned();
-    let build_executable = executable.clone();
-    let build_checkout = checkout.clone();
-    let (work, root, inventory) =
-        tokio::task::spawn_blocking(move || prepare(&build_checkout, &cargo, &build_executable))
-            .await
-            .map_err(io::Error::other)??;
-    let profile = work.path.join("chromium");
-    let result = async {
-        let exported = exports(&root, &executable, &profile, &inventory).await;
-        let target = work
-            .path
-            .parent()
-            .ok_or_else(|| io::Error::other("browser target directory missing"))?;
-        let reported = report::run(
-            &checkout,
-            &executable,
-            target,
-            &work.path,
-            fixture.as_deref(),
-        )
-        .await;
-        match (exported, reported) {
-            (Err(exported), Err(reported)) => {
-                Err(io::Error::other(format!("{exported}\n{reported}")))
-            }
-            (exported, reported) => exported.and(reported),
-        }
-    }
-    .await;
-    cleanup(result, tokio::fs::remove_dir_all(&work.path).await)?;
-    Ok(ExitCode::SUCCESS)
-}
-
-/// Validate and build before starting a listener or a browser process.
-fn prepare(
-    checkout: &Path,
-    cargo: &Path,
-    executable: &Path,
-) -> io::Result<(Work, PathBuf, Inventory)> {
-    package::tools(executable, checkout)?;
+    package::tools(&executable, checkout)?;
     println!(
         "CHECKOUT {}",
         command(
@@ -291,77 +212,64 @@ fn prepare(
         )?
         .trim()
     );
-    let inventory = inputs::inventory(&fs::read_to_string(
-        checkout.join("crates/maestro-web/tests/sandbox_loading_support/exports.json"),
-    )?)?;
+    inputs::inventory(INVENTORY)?;
     let target = maestro_tooling::locked_metadata(cargo, checkout)?
         .target_directory
         .into_std_path_buf();
-    let work = Work::new(&target)?;
-    let root = package::build(checkout, cargo, &target, &work.path)?;
-    Ok((work, root, inventory))
+    let root = package::build(checkout, cargo, &target, &package::directory(&target)?)?;
+    setup_variable("MAESTRO_BROWSER_EXPORTS", &root)?;
+    setup_variable(
+        "MAESTRO_BROWSER_ASSETS",
+        &target.join("browser-analysis-assets"),
+    )
 }
 
-/// Run the complete inventory in fresh pages and prove host-byte stability.
-async fn exports(
-    root: &Path,
+/// Hand one prepared location to the tests the setup serves.
+fn setup_variable(variable: &str, path: &Path) -> io::Result<()> {
+    let mut entry = OsString::from(format!("{variable}="));
+    entry.push(path);
+    maestro_tooling::nextest_setup::export(&entry)
+}
+
+/// Run one inventory export in its own browser on the prepared package, which it must leave
+/// unchanged.
+///
+/// # Errors
+/// Returns server, launch, assertion, cleanup or host-change failures.
+pub async fn run_export(
     executable: &Path,
     profile: &Path,
-    inventory: &Inventory,
+    root: &Path,
+    family: &str,
+    name: &str,
 ) -> io::Result<()> {
-    let server = server::Server::start(root).await?;
+    let before = host_digest(root).await?;
+    session(executable, profile, root, async |browser, origin| {
+        run_case(&mut browser.driver, origin, family, name).await
+    })
+    .await?;
+    if host_digest(root).await? == before {
+        Ok(())
+    } else {
+        Err(io::Error::other("host bundle changed while modules loaded"))
+    }
+}
+
+/// Serve a package to one fresh browser for the action, closing both on every outcome.
+async fn session<T>(
+    executable: &Path,
+    profile: &Path,
+    root: &Path,
+    action: impl AsyncFnOnce(&mut Browser, &str) -> io::Result<T>,
+) -> io::Result<T> {
+    let server = Server::start(root).await?;
     let result = async {
         let mut browser = Browser::launch(executable, profile, &[]).await?;
-        let result = async {
-            let mut companion = browser.companion().await?;
-            run_inventory(
-                &mut browser.driver,
-                &mut companion,
-                root,
-                &server.origin,
-                inventory,
-            )
-            .await
-        }
-        .await;
+        let result = action(&mut browser, &server.origin).await;
         cleanup(result, browser.close().await)
     }
     .await;
     cleanup(result, server.close().await)
-}
-
-/// Preflight every callable export before invoking the first assertion.
-async fn run_inventory(
-    first: &mut Driver,
-    second: &mut Driver,
-    root: &Path,
-    origin: &str,
-    inventory: &Inventory,
-) -> io::Result<()> {
-    let names: Vec<String> = inventory
-        .families
-        .iter()
-        .flat_map(|(_, names)| names.iter().cloned())
-        .collect();
-    first.expected_error.clone_from(&inventory.expected_error);
-    second.expected_error.clone_from(&inventory.expected_error);
-    let before = host_digest(root).await?;
-    first.preflight(origin, &names).await?;
-    let cases = run_cases(
-        first,
-        second,
-        &inventory.families,
-        Driver::log,
-        async |driver, family, name| run_case(driver, origin, family, name).await,
-    )
-    .await;
-    let unchanged = if host_digest(root).await? == before {
-        first.log(&format!("HOST {before} unchanged"));
-        Ok(())
-    } else {
-        Err(io::Error::other("host bundle changed while modules loaded"))
-    };
-    cases.and(unchanged)
 }
 
 /// Run one export in a fresh page of the driver that owns it.
@@ -379,79 +287,6 @@ async fn run_case(driver: &mut Driver, origin: &str, family: &str, name: &str) -
         .check(&format!("{origin}{entry}"), name, &expression)
         .await
         .map(|_| ())
-}
-
-/// Run each family's exports in pairs, one fresh page per export on either driver.
-///
-/// A pair settles before the next starts, so a failure leaves no export in flight.
-/// Record every case, then fail with all failures, as nextest does under `--no-fail-fast`.
-async fn run_cases<S>(
-    first: &mut S,
-    second: &mut S,
-    families: &[(&str, Vec<String>)],
-    log: fn(&mut S, &str),
-    case: impl AsyncFn(&mut S, &str, &str) -> io::Result<()>,
-) -> io::Result<()> {
-    let total: usize = families.iter().map(|(_, names)| names.len()).sum();
-    let mut failures = Vec::new();
-    for (family, names) in families {
-        let mut passed = 0;
-        for pair in names.chunks(2) {
-            let one = &pair[0];
-            log(&mut *first, &format!("START {family} {one}"));
-            if let Some(two) = pair.get(1) {
-                log(&mut *second, &format!("START {family} {two}"));
-                let (left, right) = futures_util::future::join(
-                    case(&mut *first, family, one),
-                    case(&mut *second, family, two),
-                )
-                .await;
-                let failed = settle(&mut *first, log, family, one, left);
-                passed += usize::from(failed.is_none());
-                failures.extend(failed);
-                let failed = settle(&mut *second, log, family, two, right);
-                passed += usize::from(failed.is_none());
-                failures.extend(failed);
-            } else {
-                let outcome = case(&mut *first, family, one).await;
-                let failed = settle(&mut *first, log, family, one, outcome);
-                passed += usize::from(failed.is_none());
-                failures.extend(failed);
-            }
-        }
-        log(
-            &mut *first,
-            &format!("FAMILY {family} {passed}/{}", names.len()),
-        );
-    }
-    let passed = total - failures.len();
-    log(&mut *first, &format!("COMPLETE {passed}/{total}"));
-    if failures.is_empty() {
-        Ok(())
-    } else {
-        Err(io::Error::other(failures.join("\n")))
-    }
-}
-
-/// Emit one export's outcome, returning its failure line for the family's total.
-fn settle<S>(
-    state: &mut S,
-    log: fn(&mut S, &str),
-    family: &str,
-    name: &str,
-    outcome: io::Result<()>,
-) -> Option<String> {
-    match outcome {
-        Ok(()) => {
-            log(state, &format!("PASS {family} {name}"));
-            None
-        }
-        Err(error) => {
-            let failure = format!("FAIL {name}: {error}");
-            log(state, &failure);
-            Some(failure)
-        }
-    }
 }
 
 /// Keep filesystem hashing off the browser event loop.

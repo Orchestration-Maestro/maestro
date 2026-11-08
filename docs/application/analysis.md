@@ -1,7 +1,7 @@
 # Session analysis reports
 
-Four developer reports read the journals Maestro already writes under the home
-session root. Two print totals for one project, one writes transcript files with
+Four developer reports read the journals Maestro already writes under the
+agent directory's session root. Two print totals for one project, one writes transcript files with
 an optional analysis run, and one writes an interactive tool report. They are
 checkout-run developer programs (sources in `crates/maestro-app/scripts/`): they
 read recorded journals and write nothing
@@ -27,17 +27,19 @@ empty value counts as absent, and `0` or text fails with the same diagnostic as
 a missing argument. `-h`/`--help` prints the usage text before anything is read.
 Unknown arguments are ignored.
 
-The report keeps the directory under the home session root,
-`~/.maestro/agent/sessions/--<project>--`, where `<project>` is the authored path
+The report keeps the directory under the session root of the agent directory,
+`<agent>/sessions/--<project>--` (`<agent>` is `~/.maestro/agent` unless
+`MAESTRO_CODING_AGENT_DIR` names another), where `<project>` is the authored path
 with one leading separator removed and every other `/`, `\` or `:` replaced by a
 dash; the path is not normalized or made absolute. A missing directory fails
 with the path it looked for; an empty or fully filtered directory reports that
 no sessions were found.
 
 Each journal whose own filename instant is at or after the local midnight `-n`
-days before today contributes its assistant messages that report a cost. The cost
-report alone takes its root from the `HOME` variable; the other three use the
-account-aware home directory, so they still work where `HOME` is unset. Days
+days before today contributes its assistant messages that report a cost. All four
+reports take their root from the agent directory, so a nonempty
+`MAESTRO_CODING_AGENT_DIR` moves them together; the default uses the account-aware
+home directory, so they still work where `HOME` is unset. Days
 are UTC calendar days of the message instant, providers keep their recorded
 names including ones that collide with inherited object properties, and every
 amount is spelled with four fractional digits, except that one of 1e21 or more
@@ -52,7 +54,7 @@ cargo run --locked -p maestro-app --example usage_report -- --cwd /work/project 
 
 `-d`, `--dir` and `--cwd` select the project; `--days`/`-n` select the local
 calendar days, defaulting to seven, and `--sessions-base` overrides the session
-root. Relative paths resolve against the working directory. An empty option
+root of the agent directory. Relative paths resolve against the working directory. An empty option
 value counts as absent, which leaves that option's default in place. A missing
 value keeps the default as well. A day count that is not a positive integer is
 rejected.
@@ -108,7 +110,7 @@ is printed and the command still exits zero.
 cargo run --locked -p maestro-app --example tool_report -- --sessions-dir ./sessions --output ./tool-stats.html
 ```
 
-`--sessions-dir` defaults to the home session root and `--output`/`-o` to
+`--sessions-dir` defaults to the session root of the agent directory and `--output`/`-o` to
 `maestro-tool-stats.html` in the temporary directory. Every `.jsonl` file
 beneath the chosen directory is read, directories included, in file-name order.
 The page is written before the platform viewer is started, and it names no other

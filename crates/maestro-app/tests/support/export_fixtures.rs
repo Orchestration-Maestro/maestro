@@ -6,7 +6,7 @@ use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, 
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::TerminalImage;
 use maestro_tui::tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
-use std::{cell::RefCell, io, path::Path, rc::Rc, time::Duration};
+use std::{cell::RefCell, io, rc::Rc, time::Duration};
 
 /// The host an export renders through: no clock, deferred work, environment or log files.
 struct ExportHost;
@@ -31,7 +31,7 @@ impl TuiRuntime for ExportHost {
 
     fn log_context(&self) -> LogContext {
         LogContext {
-            home: Path::new("").to_path_buf(),
+            agent_dir: String::new(),
             iso_time: String::new(),
             unix_ms: 0,
             nonce: String::new(),

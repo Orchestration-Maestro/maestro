@@ -9,30 +9,17 @@ use std::{
     process::{Command, Stdio},
 };
 
-/// An exclusive working tree removed on success, failure or early return.
-pub(super) struct Work {
-    /// Native path allocated inside Cargo's target directory.
-    pub path: PathBuf,
-}
-
-impl Work {
-    /// Reserve one invocation's output without touching another process's tree.
-    pub fn new(target: &Path) -> io::Result<Self> {
-        fs::create_dir_all(target)?;
-        let path = target.join(format!("browser-driver-{}", std::process::id()));
-        fs::create_dir(&path)?;
-        Ok(Self { path })
+/// Replace the previous run's export package with an empty working tree in Cargo's target
+/// directory, where the run's tests read the new package.
+pub(super) fn directory(target: &Path) -> io::Result<PathBuf> {
+    let path = target.join("browser-exports");
+    if let Err(error) = fs::remove_dir_all(&path)
+        && error.kind() != io::ErrorKind::NotFound
+    {
+        return Err(error);
     }
-}
-
-impl Drop for Work {
-    fn drop(&mut self) {
-        if let Err(error) = fs::remove_dir_all(&self.path)
-            && error.kind() != io::ErrorKind::NotFound
-        {
-            eprintln!("browser working directory {}: {error}", self.path.display());
-        }
-    }
+    fs::create_dir_all(&path)?;
+    Ok(path)
 }
 
 /// Capture a native tool's stdout while preserving its diagnostics and exit status.

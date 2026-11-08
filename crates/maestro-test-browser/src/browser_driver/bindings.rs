@@ -6,18 +6,58 @@ use super::{
     scripts,
 };
 use chromiumoxide::{
+    cdp::browser_protocol::target::SessionId,
     keys::{KeyDefinition, get_key_definition},
     types::CdpJsonEventMessage,
 };
 use serde_json::{Value, json};
-use std::{collections::HashMap, io};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    io,
+};
 
 /// Chromium's verdict on an evaluation whose context the renderer has already dropped.
 const DROPPED_CONTEXT: &str = "Cannot find context with specified id";
 
+/// Host calls waiting their turn: one is served at a time, and none while an attached renderer
+/// finishes its setup.
+#[derive(Default)]
+pub(super) struct Deferral {
+    /// Attached renderers still awaiting their setup answers.
+    pub(super) initializing: HashSet<SessionId>,
+    /// Whether a host call is being served.
+    pub(super) serving: bool,
+    /// Host calls received during a setup, while another call is served or while earlier ones
+    /// are released, in arrival order.
+    pub(super) calls: VecDeque<CdpJsonEventMessage>,
+}
+
+impl Deferral {
+    /// Whether a new host call must wait: another is served, a renderer is being set up or
+    /// earlier calls are still queued.
+    pub(super) fn waiting(&self) -> bool {
+        self.serving || !self.initializing.is_empty() || !self.calls.is_empty()
+    }
+}
+
 impl Page<'_> {
+    /// Serve one host call, then each call that waited behind it, one at a time in arrival order,
+    /// so a burst of calls never nests one inside another.
+    pub(super) async fn serve(&mut self, event: CdpJsonEventMessage) -> io::Result<()> {
+        self.deferral.serving = true;
+        let mut served = self.binding(&event).await;
+        while served.is_ok()
+            && self.deferral.initializing.is_empty()
+            && let Some(event) = self.deferral.calls.pop_front()
+        {
+            served = self.binding(&event).await;
+        }
+        self.deferral.serving = false;
+        served
+    }
+
     /// Resolve the host call in the exact context that emitted it.
-    pub(super) async fn binding(&mut self, event: &CdpJsonEventMessage) -> io::Result<()> {
+    async fn binding(&mut self, event: &CdpJsonEventMessage) -> io::Result<()> {
         if event.params["name"] != "__maestroDriver" {
             return Ok(());
         }

@@ -39,7 +39,7 @@ mod example_index;
 /// Path dependencies between workspace members.
 mod member_graph;
 /// Setup commands that nextest runs before the tests that need them.
-mod nextest_setup;
+pub mod nextest_setup;
 /// Per-test admission for reserved callback ports.
 mod nextest_wrapper;
 /// Emscripten build and link audit of the in-frame sandbox runtime.
@@ -212,54 +212,45 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Run the real-browser regressions, then the export inventory even when a regression fails, so
-/// one run reports every case; the first failure's status is the command's. A stale generated
-/// sandbox runtime fails the run after both.
+/// Run every real-browser case, the driver regressions, each export and the report, as one
+/// nextest run, so the hang limit bounds and names each case and one run reports them all. A
+/// stale generated sandbox runtime fails the run after it.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    let mut regressions = Command::new(cargo);
-    regressions.current_dir(checkout).args([
-        "nextest",
-        "run",
-        "--locked",
-        "-p",
-        "maestro-test-browser",
-        "--run-ignored",
-        "only",
-        "--no-fail-fast",
-        "-E",
-        "test(/^browser::/)",
-    ]);
-    let mut inventory = Command::new(cargo);
-    inventory.current_dir(checkout).args([
-        "run",
-        "--quiet",
-        "--locked",
-        "-p",
-        "maestro-test-browser",
-        "--",
-    ]);
-    let mut bundle = Command::new(cargo);
-    bundle.current_dir(checkout).args([
-        "run",
-        "--quiet",
-        "--locked",
-        "-p",
-        "maestro-tooling",
-        "--bin",
-        "development",
-        "--",
-        "sandbox-runtime",
-        "--check",
-    ]);
-    let regressed = regressions.status()?;
-    let inventoried = inventory.status()?;
-    let generated = bundle.status()?;
-    Ok(exit_code(
-        [regressed, inventoried, generated]
-            .into_iter()
-            .find(|status| !status.success())
-            .unwrap_or(generated),
-    ))
+    let regressed = Command::new(cargo)
+        .current_dir(checkout)
+        .args([
+            "nextest",
+            "run",
+            "--locked",
+            "-p",
+            "maestro-test-browser",
+            "--run-ignored",
+            "only",
+            "--no-fail-fast",
+            "-E",
+            "test(/^browser::/)",
+        ])
+        .status()?;
+    let generated = Command::new(cargo)
+        .current_dir(checkout)
+        .args([
+            "run",
+            "--quiet",
+            "--locked",
+            "-p",
+            "maestro-tooling",
+            "--bin",
+            "development",
+            "--",
+            "sandbox-runtime",
+            "--check",
+        ])
+        .status()?;
+    Ok(exit_code(if regressed.success() {
+        generated
+    } else {
+        regressed
+    }))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

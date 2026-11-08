@@ -3,7 +3,6 @@
 use std::cell::RefCell;
 use std::future::Future;
 use std::io;
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
@@ -31,8 +30,8 @@ pub trait RenderTimer {
 /// Wall-clock and file-system facts the diagnostic logs are written with.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LogContext {
-    /// Home directory the application's log paths are built from; the host chooses its form.
-    pub home: PathBuf,
+    /// Agent directory that receives the application's log files, as the application spells it.
+    pub agent_dir: String,
     /// UTC time with millisecond precision, such as `2026-01-02T03:04:05.006Z`.
     pub iso_time: String,
     /// Milliseconds since the Unix epoch.
@@ -59,7 +58,7 @@ pub trait TuiRuntime {
     /// prints it.
     fn spawn_local(&self, future: LocalFuture);
 
-    /// The current time, home directory and file name nonce for a diagnostic log.
+    /// The current time, agent directory and file name nonce for a diagnostic log.
     fn log_context(&self) -> LogContext;
 
     /// Registers `handler` for the failures of the host's own output; the returned operation

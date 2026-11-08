@@ -178,6 +178,26 @@ fn modal_editor_bottom_line_shows_the_mode() -> Result<(), String> {
     Ok(())
 }
 
+/// Invalidating the example's editor reaches the host custom editor it extends.
+#[test]
+fn modal_editor_invalidate_reaches_the_custom_editor() -> Result<(), String> {
+    let mut host = started()?;
+    let custom = host
+        .observed()
+        .ui
+        .editor
+        .as_ref()
+        .and_then(|slot| slot.custom)
+        .ok_or("no custom editor")?;
+    let from = host.observed().transcript.len();
+    assert_eq!(editor(&mut host, Call::Invalidate)?, Reply::Done);
+    assert_eq!(
+        host.observed().transcript[from..],
+        [format!("widget {custom} invalidate")]
+    );
+    Ok(())
+}
+
 /// The editor keeps every operation of the custom editor it extends.
 #[test]
 fn modal_editor_keeps_the_custom_editor_operations() -> Result<(), String> {

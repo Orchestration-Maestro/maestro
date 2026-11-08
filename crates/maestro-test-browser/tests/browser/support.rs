@@ -7,11 +7,25 @@ use maestro_test_browser::{
 };
 use maestro_test_directory::Scratch;
 use serde_json::json;
-use std::{fs, future::Future, io, path::Path};
+use std::{fs, future::Future, io, path::PathBuf};
 
 /// Run one browser test without enabling test-specific runtime features.
 pub(super) fn run<T>(future: impl Future<Output = T>) -> T {
     test_support::runtime().unwrap().block_on(future)
+}
+
+/// The pinned Chromium executable the browser job supplies.
+pub(super) fn chromium() -> PathBuf {
+    std::env::var_os("CHROMIUM_PATH")
+        .expect("pinned job requires CHROMIUM_PATH")
+        .into()
+}
+
+/// A location the browser export setup prepared for this run.
+pub(super) fn prepared(variable: &str) -> PathBuf {
+    std::env::var_os(variable)
+        .unwrap_or_else(|| panic!("the browser export setup exports {variable}"))
+        .into()
 }
 
 /// Own a fresh packaged endpoint and browser for the entire supplied assertion.
@@ -19,7 +33,7 @@ pub(super) async fn fixture<T>(
     args: &[String],
     action: impl AsyncFnOnce(&mut Browser, &str) -> io::Result<T>,
 ) -> io::Result<T> {
-    let executable = std::env::var_os("CHROMIUM_PATH").expect("pinned job requires CHROMIUM_PATH");
+    let executable = chromium();
     let root = Scratch::new().unwrap();
     fs::write(
         root.path().join("index.html"),
@@ -32,10 +46,6 @@ pub(super) async fn fixture<T>(
     )
     .unwrap();
     fs::write(
-        root.path().join("sandbox.js"),
-        "export default async function(){};export function ready(){throw Error('must not run')};export const not_callable=9;",
-    ).unwrap();
-    fs::write(
         root.path().join("click_document.html"),
         include_str!(
             "../../../maestro-web/tests/sandbox_loading_support/program_inputs/click_document.html"
@@ -44,7 +54,7 @@ pub(super) async fn fixture<T>(
     .unwrap();
     let profile = Scratch::new().unwrap();
     let server = Server::start(root.path()).await.unwrap();
-    let browser = Browser::launch(Path::new(&executable), profile.path(), args).await;
+    let browser = Browser::launch(&executable, profile.path(), args).await;
     let result = match browser {
         Ok(mut browser) => {
             let result = action(&mut browser, &server.origin).await;

@@ -949,25 +949,20 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
     );
 }
 
-/// A failing real-browser regression run still runs the export inventory, so one run reports
-/// every case, and the command keeps the first failure's status.
+/// Every real-browser case, the driver regressions, each export and the report, runs in one
+/// nextest invocation under its hang limit, and that run's status is the command's.
 #[test]
-fn browser_test_runs_every_selection_after_a_failure() {
+fn browser_test_runs_every_case_in_one_nextest_run() {
     drive();
     let fixture = Fixture::new();
-    for (failing, code) in [
-        ("none", 0),
-        ("nextest", 17),
-        ("run=18", 18),
-        ("nextest=17,run=18", 17),
-    ] {
+    for (failing, code) in [("none", 0), ("nextest=18", 18)] {
         let receipt = fixture.root.path().join("receipt/invocations");
         if receipt.exists() {
             fs::remove_file(&receipt).unwrap();
         }
         let output = fixture
             .invoke(
-                "browser_test_runs_every_selection_after_a_failure",
+                "browser_test_runs_every_case_in_one_nextest_run",
                 "browser-test",
                 &[],
             )
@@ -979,7 +974,6 @@ fn browser_test_runs_every_selection_after_a_failure() {
             invocations(&fixture),
             [
                 "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
-                "run|--quiet|--locked|-p|maestro-test-browser|--",
                 "run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime|--check",
             ],
             "{failing}"
