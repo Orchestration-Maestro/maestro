@@ -170,7 +170,6 @@ fn redraw_log_reasons_keep_exact_messages() {
         "redraw_log_reasons_keep_exact_messages",
         &[("MAESTRO_DEBUG_REDRAW", "1")],
         |home| {
-            std::fs::create_dir_all(agent_directory(home)).unwrap();
             for reason in redraw_reasons() {
                 let rig = Rig::new(home, &FIVE);
                 if reason.name != "first" {
@@ -192,23 +191,23 @@ fn redraw_log_reasons_keep_exact_messages() {
 }
 
 #[test]
-fn redraw_log_append_requires_its_directory() {
+fn redraw_log_append_creates_its_directory() {
     in_home(
-        "redraw_log_append_requires_its_directory",
+        "redraw_log_append_creates_its_directory",
         &[("MAESTRO_DEBUG_REDRAW", "1")],
         |home| {
             let rig = Rig::new(home, &FIVE);
-            rig.tui.start().unwrap();
-            rig.tui.request_render(false);
-            let error = rig.runtime.settle().unwrap_err();
-            assert_eq!(
-                error.kind(),
-                std::io::ErrorKind::NotFound,
-                "the append reports the missing directory"
-            );
             assert!(
                 !agent_directory(home).exists(),
-                "the append creates no directory"
+                "the agent directory is absent before the first frame"
+            );
+            rig.tui.start().unwrap();
+            rig.tui.request_render(false);
+            rig.runtime.settle().unwrap();
+            assert_eq!(
+                rig.redraw_log(),
+                "[2026-01-02T03:04:05.006Z] fullRender: first render (prev=0, new=5, height=3)\n",
+                "the append creates the directory and writes the line"
             );
         },
     );
