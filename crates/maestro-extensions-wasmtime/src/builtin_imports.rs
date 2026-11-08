@@ -4,6 +4,7 @@ use crate::{
     callback_imports::CallbackView,
     local_resources::SignalEndpoint,
 };
+use maestro_extensions::helpers::native_path;
 use wasmtime::{
     StoreContextMut,
     component::{LinkerInstance, Resource},
@@ -83,7 +84,10 @@ fn add_factories<T: CallbackView + 'static>(
                     crate::callback_imports::retain_object(store.data_mut(), operations)
                 })
                 .transpose()?;
-            let result = store.data().api().create_read(cwd, resize, operations);
+            let result = store
+                .data()
+                .api()
+                .create_read(native_path(&cwd), resize, operations);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
                 Err(error) => Err(error),
@@ -131,7 +135,7 @@ fn add_mutating_factories<T: CallbackView + 'static>(
                     crate::callback_imports::retain_object(store.data_mut(), operations)
                 })
                 .transpose()?;
-            let result = create(store.data().api(), cwd, operations);
+            let result = create(store.data().api(), native_path(&cwd), operations);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
                 Err(error) => Err(error),
@@ -179,7 +183,7 @@ fn add_bash_factory<T: CallbackView + 'static>(
                 operations: retain(operations)?,
                 hook: retain(hook)?,
             };
-            let result = store.data().api().create_bash(cwd, options);
+            let result = store.data().api().create_bash(native_path(&cwd), options);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
                 Err(error) => Err(error),

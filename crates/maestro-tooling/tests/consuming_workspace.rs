@@ -8,6 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use crate::recipe_support::executable;
 use maestro_test_directory::Scratch;
 
 use tooling::workspace::{REGION_END, REGION_START};
@@ -205,7 +206,7 @@ fn prepared_bundle(root: &Path, rev: &str) -> PathBuf {
     let bundle = root.join("bundle");
     fs::create_dir_all(&bundle).unwrap();
     for name in [EXECUTABLE, "prepare_author_component"] {
-        fs::write(bundle.join(name), "").unwrap();
+        fs::write(bundle.join(executable(name)), "").unwrap();
     }
     let inputs = serde_json::json!({"paths": [], "locked": [], "manifests": [], "digest": EMPTY});
     let manifest = serde_json::json!({
@@ -258,7 +259,10 @@ fn executable_setup_exports_the_prepared_bundle() {
     let exported = fs::read_to_string(root.join("nextest-env")).unwrap();
     assert_eq!(
         exported,
-        format!("MAESTRO_EXECUTABLE={}\n", bundle.join(EXECUTABLE).display())
+        format!(
+            "MAESTRO_EXECUTABLE={}\n",
+            bundle.join(executable(EXECUTABLE)).display()
+        )
     );
 }
 

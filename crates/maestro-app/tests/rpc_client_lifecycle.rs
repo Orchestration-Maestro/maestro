@@ -1,4 +1,6 @@
 //! Launching, observing and stopping the RPC client's child.
+//!
+//! Live child reports can follow the single-thread harness's test label on the same line.
 #![cfg(unix)]
 use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
@@ -259,6 +261,7 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
     )
     .unwrap()
     .nocapture()
+    .single_threaded()
     .stdin(std::process::Stdio::piped())
     .stderr(std::process::Stdio::piped())
     .case("*")
@@ -283,7 +286,7 @@ fn stderr_is_forwarded_and_retained_during_start_and_stop() {
             stdout.read_line(&mut line).unwrap() > 0,
             "the child reports"
         );
-        if let Some(probe) = line.strip_prefix("PROBE ") {
+        if let Some((_, probe)) = line.split_once("PROBE ") {
             break probe.trim_end().to_owned();
         }
     };
@@ -342,6 +345,7 @@ fn stop_ends_after_every_captured_diagnostic_byte_is_written() {
     )
     .unwrap()
     .nocapture()
+    .single_threaded()
     .stderr(std::process::Stdio::piped())
     .case("*")
     .spawn()
@@ -353,7 +357,7 @@ fn stop_ends_after_every_captured_diagnostic_byte_is_written() {
             stdout.read_line(&mut line).unwrap() > 0,
             "the child reports"
         );
-        if let Some(verdict) = line.strip_prefix("VERDICT ") {
+        if let Some((_, verdict)) = line.split_once("VERDICT ") {
             break verdict.trim_end().to_owned();
         }
     };

@@ -200,8 +200,10 @@ proxy script for the conversation instead of opening direct destination connecti
 The script receives the complete destination URL and its canonical host, including
 a nondefault port in the URL, before choosing ordered DIRECT, HTTP, HTTPS or SOCKS
 candidates. Unknown directives advance; malformed recognized proxy URLs fail.
-Fallback happens only before application bytes are sent. A connected proxy's
-CONNECT refusal is returned with its status, headers and body, without replay.
+Connection refusal and DNS lookup failure advance to the next candidate before
+any application bytes are sent. DNS lookup uses the host resolver, so its failure
+latency depends on the host's DNS configuration. A connected proxy's CONNECT
+refusal is returned with its status, headers and body, without replay.
 
 Scripts have the standard host, DNS, network, local-address, time, weekday and
 calendar helpers. `myIpAddress()` discovers the local IPv4 through a UDP route

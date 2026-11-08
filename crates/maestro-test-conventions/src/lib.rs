@@ -114,6 +114,10 @@ mod time_limits;
 /// writes the decode or the release walk inline is reported with its file and
 /// line, wherever the copy sits.
 ///
+/// The credentials crate names every name it exports. A public re-export or module in
+/// its root that the checker's declared surface does not carry is reported with its file
+/// and line, and a wildcard export is refused, so a removed writer cannot return.
+///
 /// Test code in every member may not name the platform temporary directory
 /// itself: not as a call, a value or a macro argument inside test-owned code, and
 /// not as an import anywhere in the crate, whatever the alias. Diagnostics name

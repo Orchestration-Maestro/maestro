@@ -152,6 +152,8 @@
     "the_element_bridge_ships_its_pinned_shim",
     "markdown_dom_defaults_and_unchanged_roots",
     "markdown_dom_replays_qualified_document_rows",
+    "markdown_dom_replays_recorded_formula_geometry",
+    "code_dom_replays_recorded_standalone_rows",
     "markdown_dom_keeps_code_controls_across_presentation_changes",
     "thinking_dom_disclosure_retains_state_and_exact_header",
     "thinking_dom_streaming_and_instances_are_independent",
@@ -371,7 +373,18 @@
     "copy_link_native_slot_composition_preserves_reading_selection",
     "generic_guidance_is_literal_selectable_and_localized",
     "tool_card_image_and_diff_layout_uses_native_content",
-    "tool_cards_use_selected_brand_roles_without_changing_custom_html"
+    "tool_cards_use_selected_brand_roles_without_changing_custom_html",
+    "math_roots_pad_bare_symbols_without_changing_groups",
+    "math_scaled_roots_preserve_display_style",
+    "math_unchanged_size_preserves_superscript_spacing",
+    "math_unchanged_size_preserves_subscript_spacing",
+    "math_unchanged_size_preserves_nested_script_spacing",
+    "math_arrows_keep_measured_label_and_svg_alignment",
+    "math_macro_failures_keep_inline_error_spans",
+    "math_error_paths_keep_fallback_and_escaped_text",
+    "math_macro_overrides_keep_valid_expansions",
+    "code_blocks_decode_base64_or_keep_original_input",
+    "code_blocks_reuse_explicit_highlighting_and_plain_fallback"
   ],
   "expectedError": {
     "export": "inline_programs_preserve_text_policies_and_order",

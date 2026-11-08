@@ -68,6 +68,22 @@ fn upstream(config: &BranchConfig) -> (&str, Option<String>) {
     (&config.remote, config.upstream_full_ref())
 }
 
+/// A path written into a quoted subsection name of an include condition.
+///
+/// A subsection name is always quoted, and Git's own unescape reads `\\` as one `\`, so every
+/// separator is written twice to survive that unescape.
+fn quoted_path(path: &Path) -> String {
+    path.display().to_string().replace('\\', r"\\")
+}
+
+#[test]
+fn a_quoted_path_keeps_every_separator_of_a_windows_spelling() {
+    assert_eq!(
+        quoted_path(Path::new(r"D:\work\repo\.git")),
+        r"D:\\work\\repo\\.git"
+    );
+}
+
 #[test]
 fn fetch_refspec_maps_the_upstream_reference() {
     let checkout = Checkout::new(&format!(
@@ -161,7 +177,7 @@ fn gitdir_condition_matches_the_git_directory() {
     let checkout = Checkout::new("");
     let condition = format!(
         "[includeIf \"gitdir:{}\"]\n\tpath = included.cfg\n",
-        checkout.git().display()
+        quoted_path(&checkout.git())
     );
     checkout.write("repo/.git/config", &condition);
     checkout.write("repo/.git/included.cfg", INCLUDED_TRACKING);
@@ -174,7 +190,7 @@ fn gitdir_condition_with_a_trailing_slash_matches_nested_checkouts() {
     let parent = checkout.scratch.path();
     let condition = format!(
         "[includeIf \"gitdir:{}/\"]\n\tpath = included.cfg\n",
-        parent.display()
+        quoted_path(parent)
     );
     checkout.write("repo/.git/config", &condition);
     checkout.write("repo/.git/included.cfg", INCLUDED_TRACKING);
@@ -237,7 +253,7 @@ fn include_path_with_repeated_separators_stays_below_the_home() {
 #[test]
 fn gitdir_condition_ignores_case_only_when_asked() {
     let checkout = Checkout::new("");
-    let upper = checkout.git().display().to_string().to_uppercase();
+    let upper = quoted_path(&checkout.git()).to_uppercase();
     checkout.write(
         "repo/.git/config",
         &format!("[includeIf \"gitdir/i:{upper}\"]\n\tpath = insensitive.cfg\n[includeIf \"gitdir:{upper}\"]\n\tpath = sensitive.cfg\n"),
@@ -250,7 +266,7 @@ fn gitdir_condition_ignores_case_only_when_asked() {
 #[test]
 fn gitdir_star_stays_within_one_directory() {
     let checkout = Checkout::new("");
-    let parent = checkout.scratch.path().display();
+    let parent = quoted_path(checkout.scratch.path());
     checkout.write(
         "repo/.git/config",
         &format!("[includeIf \"gitdir:{parent}/*/.git\"]\n\tpath = shallow.cfg\n[includeIf \"gitdir:{parent}/*.git\"]\n\tpath = crossing.cfg\n"),
@@ -263,7 +279,7 @@ fn gitdir_star_stays_within_one_directory() {
 #[test]
 fn gitdir_double_star_crosses_directories() {
     let checkout = Checkout::new("");
-    let parent = checkout.scratch.path().display();
+    let parent = quoted_path(checkout.scratch.path());
     checkout.write(
         "repo/.git/config",
         &format!("[includeIf \"gitdir:{parent}/**/.git\"]\n\tpath = included.cfg\n"),

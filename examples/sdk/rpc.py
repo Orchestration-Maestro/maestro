@@ -1,6 +1,7 @@
 """Inspect a Maestro RPC session, or print one prompted run as JSONL."""
 
 import argparse
+import io
 import json
 import subprocess
 import sys
@@ -63,6 +64,10 @@ def main():
 
 
 if __name__ == "__main__":
+    # Output is UTF-8 with LF line ends on every host, whatever the console code page.
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8", newline="\n")
     try:
         main()
     except (OSError, ValueError, RuntimeError) as error:

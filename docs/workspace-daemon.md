@@ -181,7 +181,10 @@ pretty JSON without a trailing newline to `<name>.json.tmp`, syncs the temporary
 file, renames it over the target, then syncs the parent directory. A failure before
 the rename removes the temporary file and leaves the previous snapshot unchanged.
 A crash before rename leaves the previous snapshot readable. Existing permission
-bits are retained; ownership and ACLs are not. Hard links keep the old bytes. Topology commits before history is saved or removed; failure on the
+bits are retained, except that on Unix a read-only session or history file is
+replaced and the new file has the default creation mode; on Windows the save is
+refused with `PermissionDenied` and the file is unchanged. Ownership and ACLs are
+not retained. Hard links keep the old bytes. Topology commits before history is saved or removed; failure on the
 second file does not undo the first. Parent-directory sync errors are returned
 after the new snapshot has committed.
 
@@ -478,6 +481,8 @@ downgrades or changed bytes at the same version are rejected. Documents and
 `status.toml` write to `.<file name>.<process id>.<nanoseconds>.tmp` beside the
 target, sync the file, rename it over the target and sync the parent directory.
 Precommit failures remove the temporary file and leave the previous bytes intact.
+On Unix a read-only document or status file is replaced and the new file has the
+default creation mode; on Windows the commit is refused and the file is unchanged.
 A parent-sync failure after rename logs a warning and still succeeds. Unlocked
 readers see a complete old or new document. `status.toml` records outcomes under
 the supplied catalog folder. `auto_update` reloads the
@@ -853,7 +858,9 @@ itself, so a cycle ends at the repeated file. The `includeIf` conditions are `gi
 `gitdir/i`, `onbranch` and `hasconfig:remote.*.url`. A `hasconfig` include is skipped when
 it, or a file it includes, sets a remote URL, and URLs set in the worktree file never
 satisfy the condition. For `gitdir`, `gitdir/i` and `onbranch` patterns, `*` and `?`
-stop at `/`, `**` crosses it and a trailing `/` means everything below. URL conditions
+stop at `/`, `**` crosses it and a trailing `/` means everything below. On Windows, `\`
+and `/` both separate directories in a `gitdir` pattern and in the checkout path, so a
+pattern written with either one matches. URL conditions
 allow wildcards across `/`. Matching takes time proportional to the pattern length
 times the text length.
 

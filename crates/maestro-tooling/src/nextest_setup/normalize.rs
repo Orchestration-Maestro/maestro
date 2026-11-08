@@ -220,7 +220,11 @@ fn outdated(
     libraries: &[Library],
     newest_library: Option<SystemTime>,
 ) -> io::Result<bool> {
-    let Some(record) = executable_fingerprint(artifact, fingerprints)? else {
+    let record = match executable_fingerprint(artifact, fingerprints)? {
+        Some(record) => Some(record),
+        None => named_fingerprint(artifact, fingerprints)?,
+    };
+    let Some(record) = record else {
         return Ok(newest_library.is_some_and(|newest| newest > modified));
     };
     let Some(linked) = linked_libraries(record, fingerprints)? else {
@@ -382,6 +386,35 @@ fn executable_fingerprint(
             }
             found = Some(next);
         }
+    }
+    Ok(found)
+}
+
+/// The record of an executable Cargo names without a hash, as it names Windows MSVC binaries and
+/// examples: the one record of that target, or `None` when the target has none or several that
+/// differ, since the name then no longer tells which build wrote the file.
+fn named_fingerprint(
+    artifact: &Path,
+    fingerprints: &Fingerprints,
+) -> io::Result<Option<Fingerprint>> {
+    let stem = artifact
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    let examples = artifact
+        .parent()
+        .is_some_and(|parent| parent.ends_with("examples"));
+    let record = format!("{}-{stem}.json", if examples { "example" } else { "bin" });
+    let mut found = None;
+    for path in &fingerprints.executables {
+        if file_name(path) != record {
+            continue;
+        }
+        let next = read_fingerprint(path)?;
+        if found.as_ref().is_some_and(|previous| *previous != next) {
+            return Ok(None);
+        }
+        found = Some(next);
     }
     Ok(found)
 }

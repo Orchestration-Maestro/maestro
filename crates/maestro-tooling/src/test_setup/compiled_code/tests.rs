@@ -37,7 +37,9 @@ fn reported_cache_directory_is_collected_and_installed() {
     std::fs::write(namespace.join("compiled-component"), b"compiled bytes").unwrap();
     let example = root.join("prepare_author_component.exe");
     std::fs::write(&example, b"prepared executable").unwrap();
-    std::fs::File::open(&example)
+    std::fs::File::options()
+        .write(true)
+        .open(&example)
         .unwrap()
         .set_modified(UNIX_EPOCH + Duration::from_secs(11))
         .unwrap();
@@ -47,7 +49,9 @@ fn reported_cache_directory_is_collected_and_installed() {
         .unwrap()
         .expect("the engine's reported cache must be collected");
     code.verify(&staged).unwrap();
-    std::fs::File::open(&example)
+    std::fs::File::options()
+        .write(true)
+        .open(&example)
         .unwrap()
         .set_modified(UNIX_EPOCH + Duration::from_secs(22))
         .unwrap();

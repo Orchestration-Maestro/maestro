@@ -161,7 +161,8 @@ mod tests {
         assert_eq!(value["memoryFile"], Value::Null);
         assert_eq!(value["explicitManager"], true);
         let file = value["newFile"].as_str().ok_or("missing file")?;
-        assert!(file.starts_with(&format!("{root}/sessions/")));
+        let sessions = maestro_path::join(&[&root, "sessions"]);
+        assert!(file.starts_with(&format!("{sessions}{}", maestro_path::SEP)));
         assert_eq!(value["continuedFile"], file);
         assert_eq!(value["openedFile"], file);
         assert_eq!(value["count"], 1);

@@ -887,9 +887,9 @@ fn assert_link(observed: &serde_json::Value, target: &Path, case: &str) {
     );
 }
 
-/// A terminal dot must not turn a rejected path into removal of its preceding file.
+/// A terminal dot must not turn a rejected path into an operation on its preceding file.
 #[test]
-fn component_unlink_preserves_terminal_dot() {
+fn component_file_operations_preserve_terminal_dot() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     run(async {
         let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
@@ -897,9 +897,17 @@ fn component_unlink_preserves_terminal_dot() {
             let victim = scratch.path().join(generation);
             std::fs::write(&victim, b"keep").unwrap();
             let path = format!("{}/.", victim.display());
-            let observed = host.request(json!({"op":"file","generation":generation,"path":path,"bytes":[],"action":"unlink"})).await;
-            assert!(!observed["error"].is_null(), "{generation}: {observed}");
-            assert_eq!(std::fs::read(&victim).unwrap(), b"keep");
+            for (action, write) in [
+                ("unlink", false),
+                ("exclusive", false),
+                ("", true),
+                ("", false),
+            ] {
+                let observed = host.request(json!({"op":"file","generation":generation,"path":path,"bytes":[1],"write":write,"action":action})).await;
+                let case = format!("{generation} {action} write={write}");
+                assert!(!observed["error"].is_null(), "{case}: {observed}");
+                assert_eq!(std::fs::read(&victim).unwrap(), b"keep", "{case}");
+            }
         }
     });
 }

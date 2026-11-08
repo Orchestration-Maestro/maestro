@@ -23,7 +23,7 @@ mod tilde;
 pub use links::resolve_final_links;
 pub use os::{homedir, native_homedir};
 pub use path::{
-    Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, win32,
+    Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, slashed, win32,
 };
 pub use tilde::{
     Tilde, expand_tilde, expand_tilde_joined, expand_tilde_native, join_home, parse_tilde,

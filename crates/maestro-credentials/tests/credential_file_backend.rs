@@ -429,9 +429,12 @@ mod tests {
             return;
         };
 
-        let error = maestro_credentials::write_auth_file(&path, "{}").unwrap_err();
+        let error = FileAuthStorageBackend::new(&path)
+            .with_lock(&mut |_| Ok(Some("{}".to_owned())))
+            .unwrap_err();
 
-        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        let io = error.downcast_ref::<std::io::Error>().unwrap();
+        assert_eq!(io.kind(), std::io::ErrorKind::PermissionDenied);
         assert_eq!(
             std::fs::read_to_string(&path).unwrap(),
             pretty(&[("a", "1")])

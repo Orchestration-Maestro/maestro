@@ -171,7 +171,10 @@ prints no package-command error line.
 `install_and_persist` records the normalized source after successful acquisition.
 If the first matching package has a different stored spelling, only its source is
 replaced; its other fields and list position stay intact. An identical spelling
-changes nothing. An absent source is appended. The same rules apply when a pin or
+changes nothing; on Windows, `\` and `/` count as the same separator, so
+a stored `../project/pkg` already matches the source `..\project\pkg`. An absent
+source is appended.
+The same rules apply when a pin or
 Git checkout is unchanged. See [Git preparation and recovery](package-sources.md#git-preparation-and-recovery).
 `remove_and_persist` removes the source after a successful removal and returns
 whether any entry changed. Neither operation flushes settings nor undoes installed

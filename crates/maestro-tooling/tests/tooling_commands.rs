@@ -3562,8 +3562,21 @@ fn set_age(path: &Path, age: std::time::Duration) {
     set_modified(path, std::time::SystemTime::now() - age);
 }
 
-/// Lays out a profile directory with a built example, a fake Cargo that rebuilds it and every
-/// source an hour old. Returns the profile directory and the example.
+/// Dates an installed example half an hour back, after its sources.
+///
+/// A copy can keep the prepared fixture's time, however old, so the example first takes an
+/// epoch time on every host and only this dating makes it fresh.
+#[cfg(unix)]
+fn date_example(example: &Path) {
+    set_modified(
+        example,
+        std::time::UNIX_EPOCH + std::time::Duration::from_secs(1),
+    );
+    set_age(example, std::time::Duration::from_mins(30));
+}
+
+/// Lays out a profile directory with a built example half an hour old, a fake Cargo that
+/// rebuilds it and every source an hour old. Returns the profile directory and the example.
 #[cfg(unix)]
 fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf) {
     let profile = root.join("target/debug");
@@ -3602,6 +3615,7 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
         "prepare_author_component",
         "example",
     );
+    date_example(&example);
     recipe_support::scenario(
         root,
         "cargo",
@@ -3631,6 +3645,8 @@ fn author_setup_runs_the_built_example_only_while_fresh() {
         );
         assert!(run().starts_with("cargo build "), "{source}");
         set_age(&root.join(source), Duration::from_secs(3600));
+        // The rebuild installs a copy too, so the example is dated again.
+        date_example(&example);
     }
     fs::remove_file(&example).unwrap();
     assert!(run().starts_with("cargo build "));
@@ -4352,7 +4368,10 @@ fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
     )
     .unwrap();
     let error = example_index(root.path(), true).unwrap_err().to_string();
-    assert!(error.contains("hello-extension/Cargo.lock"), "{error}");
+    assert!(
+        error.contains(&maestro_path::join(&["hello-extension", "Cargo.lock"])),
+        "{error}"
+    );
     assert!(error.contains("run just example-index"), "{error}");
     assert_eq!(fs::read(&lock).unwrap(), before);
     example_index(root.path(), false).unwrap();

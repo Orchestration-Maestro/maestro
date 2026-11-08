@@ -6,8 +6,8 @@
 //! fails instead.
 
 use super::{
-    Page, changed, contrast,
-    region::{role_pixels, visible},
+    Page,
+    region::{DOWN_CHEVRON, RIGHT_CHEVRON, role_pixels, shape, visible},
     require,
 };
 use serde_json::{Value, json};
@@ -27,19 +27,19 @@ const OUTLINE: (f64, f64) = (2.0, 2.0);
 const GLYPH_INSET: f64 = 4.0;
 
 /// Glyph scenes: the scene, the glyph's selector, the bounds of its painted width over height and
-/// the shape those bounds name. At the driver's 1.25 device pixel ratio, a right chevron measures
-/// 0.67, a down chevron 1.5, the copy icon 0.95 and the check mark 1.45, antialiasing included.
+/// the shape those bounds name. At the driver's 1.25 device pixel ratio, the copy icon measures
+/// 0.95 and the check mark 1.45, antialiasing included.
 const GLYPHS: [(&str, &str, (f64, f64), &str); 4] = [
     (
         "console-collapsed",
         ".maestro-artifact-summary svg",
-        (0.0, 0.75),
+        RIGHT_CHEVRON,
         "a right chevron",
     ),
     (
         "console-expanded",
         ".maestro-artifact-summary svg",
-        (1.33, f64::INFINITY),
+        DOWN_CHEVRON,
         "a down chevron",
     ),
     (
@@ -99,33 +99,13 @@ async fn hovered(page: &mut Page<'_>) -> io::Result<()> {
     Ok(())
 }
 
-/// The glyph of `scene` paints ink whose box has that glyph's shape: the pixels that change when
-/// the glyph is hidden span a width over height inside the scene's bounds.
+/// The glyph of `scene` paints ink whose box has that glyph's shape.
 async fn glyph(page: &mut Page<'_>, scene: &str) -> io::Result<()> {
-    let (selector, (least, most), shape) = GLYPHS
+    let &(_, selector, bounds, name) = GLYPHS
         .iter()
         .find(|glyph| glyph.0 == scene)
-        .map(|&(_, selector, bounds, shape)| (selector, bounds, shape))
         .ok_or_else(|| io::Error::other(format!("unknown paint scene {scene}")))?;
-    let rect = visible(page, selector).await?;
-    let element = json!(selector).to_string();
-    contrast(
-        page,
-        &format!("[__maestroPaint.element({element})]"),
-        "n=>n.style.visibility='hidden'",
-    )
-    .await?;
-    let ink: Option<[f64; 2]> = page.read(&format!("(e=>e&&[e[2]-e[0]+1/devicePixelRatio,e[3]-e[1]+1/devicePixelRatio])(__maestroPaint.extent('decorated','without',{rect}))")).await?;
-    let [width, height] =
-        ink.ok_or_else(|| io::Error::other(format!("{selector} paints no ink")))?;
-    let ratio = width / height;
-    require(
-        (least..=most).contains(&ratio),
-        &format!("{selector} paints {shape} ({width:.2} by {height:.2} pixels)"),
-    )?;
-    let pixels = changed(page, Some(&element), ("decorated", "without")).await?;
-    page.observed(scene, selector, pixels);
-    Ok(())
+    shape(page, scene, selector, bounds, name).await
 }
 
 /// The keyboard-focused follow control paints its accent fill and on-accent glyph, and its

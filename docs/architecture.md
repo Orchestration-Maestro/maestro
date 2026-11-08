@@ -30,6 +30,11 @@ aliases, including when a later export refers to an earlier alias through `self`
 
 For example, `pub use maestro_terminal::render::Dirty;` selects one item.
 `pub use maestro_terminal::render;` exposes a whole module and is rejected.
+
+The same run checks the credentials crate's public surface. Its root names every
+export: the checker reports a public re-export or module whose name the crate's
+declared surface does not carry, and refuses a wildcard, so a writer cannot
+return as a public name.
 Application-owned modules may group named records and operations.
 
 ## Inventory and dependencies
@@ -519,8 +524,9 @@ browser target, so native Clippy never reads it. Every witness the workspace kee
 is listed with its owning package and source in `maestro-tooling`'s browser smoke
 command, which compiles each one for `wasm32-unknown-unknown` and stops at the
 first failure. The commit hook runs it when a staged crate owns a witness, and
-`just check` runs it for the workspace. The shared wasm job builds library roots
-only, so this command is what reports a witness that stopped compiling.
+`just check` runs it for the workspace. `.github/ci.toml` declares the same
+witnesses under `wasm_examples`, so the shared wasm job compiles each one on every
+pull request, and a test fails when the declaration and the witness list differ.
 
 ## Commands and failure evidence
 

@@ -3,6 +3,7 @@ use super::{
     super::discovery::GitWorktreeInfo,
     wildmatch::{Rules, wildmatch},
 };
+use maestro_path::{posix, slashed, win32};
 use std::path::{Path, PathBuf};
 
 /// The checkout and values a condition is judged against.
@@ -29,9 +30,17 @@ impl Subject<'_> {
         urls: Option<&[String]>,
     ) -> bool {
         if let Some(pattern) = condition.strip_prefix("gitdir/i:") {
-            self.git_dir_matches(pattern, config_path, true)
+            self.git_dir_matches(
+                pattern,
+                config_path,
+                Rules {
+                    ignore_case: true,
+                    ..PATHNAME
+                },
+                WINDOWS,
+            )
         } else if let Some(pattern) = condition.strip_prefix("gitdir:") {
-            self.git_dir_matches(pattern, config_path, false)
+            self.git_dir_matches(pattern, config_path, PATHNAME, WINDOWS)
         } else if let Some(pattern) = condition.strip_prefix("onbranch:") {
             wildmatch(&directory_prefix(pattern), self.branch, PATHNAME)
         } else if let Some(pattern) = condition.strip_prefix(HAS_CONFIG) {
@@ -42,42 +51,47 @@ impl Subject<'_> {
     }
 
     /// Whether the checkout's metadata directory matches a `gitdir` pattern.
-    fn git_dir_matches(&self, pattern: &str, config_path: &Path, ignore_case: bool) -> bool {
-        let Some(pattern) = self.gitdir_pattern(pattern, config_path) else {
+    ///
+    /// `windows` is the host's spelling: its patterns and checkout paths reach one
+    /// comparison in slash-separated form, which is the only separator the rules know.
+    fn git_dir_matches(
+        &self,
+        pattern: &str,
+        config_path: &Path,
+        rules: Rules,
+        windows: bool,
+    ) -> bool {
+        let Some(pattern) = self.gitdir_pattern(pattern, config_path, windows) else {
             return false;
         };
-        let rules = Rules {
-            ignore_case,
-            ..PATHNAME
-        };
-        [
-            self.info.git_dir.clone(),
-            self.info.git_common_dir.clone(),
-            self.info.repo_root.join(".git"),
-        ]
-        .iter()
-        .any(|candidate| wildmatch(&pattern, &candidate.display().to_string(), rules))
+        let repo_git = self.info.repo_root.join(".git");
+        [&self.info.git_dir, &self.info.git_common_dir, &repo_git]
+            .into_iter()
+            .any(|candidate| {
+                let text = candidate.display().to_string();
+                wildmatch(&pattern, &slashed(&text, windows), rules)
+            })
     }
 
     /// Anchor a `gitdir` pattern: `~/` below the home, `./` beside the file, else anywhere.
-    fn gitdir_pattern(&self, pattern: &str, config_path: &Path) -> Option<String> {
+    ///
+    /// With `windows`, every separator of the result is `/`, the only one the rules know.
+    fn gitdir_pattern(&self, pattern: &str, config_path: &Path, windows: bool) -> Option<String> {
+        let pattern = directory_prefix(&slashed(pattern, windows));
         let anchored = if pattern.starts_with("~/") {
-            super::expand_home(pattern, self.home)?
+            let home = super::expand_home(&pattern, self.home)?
                 .display()
-                .to_string()
+                .to_string();
+            slashed(&home, windows).into_owned()
         } else if let Some(rest) = pattern.strip_prefix("./") {
-            config_path
-                .parent()
-                .unwrap_or(Path::new("."))
-                .join(rest)
-                .display()
-                .to_string()
-        } else if Path::new(pattern).is_absolute() {
-            pattern.to_owned()
+            let beside = config_path.parent().unwrap_or(Path::new(".")).join(rest);
+            slashed(&beside.display().to_string(), windows).into_owned()
+        } else if is_absolute(&pattern, windows) {
+            pattern
         } else {
             format!("**/{pattern}")
         };
-        Some(directory_prefix(&anchored))
+        Some(anchored)
     }
 
     /// Where the include entry `value`, written in `config_path`, points.
@@ -97,6 +111,18 @@ const PATHNAME: Rules = Rules {
     ignore_case: false,
 };
 
+/// Whether the host spells paths with `\` as well as `/`.
+const WINDOWS: bool = cfg!(windows);
+
+/// Whether an authored path names a root, in a supplied path flavor.
+fn is_absolute(pattern: &str, windows: bool) -> bool {
+    if windows {
+        win32::is_absolute(pattern)
+    } else {
+        posix::is_absolute(pattern)
+    }
+}
+
 /// URLs compare as plain text.
 const ANYWHERE: Rules = Rules {
     pathname: false,
@@ -111,3 +137,6 @@ fn directory_prefix(pattern: &str) -> String {
         pattern.to_owned()
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -124,13 +124,14 @@ cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests
 
 ## Platform test qualification
 
-Native path assertions use the host's separators. Build expected paths from
-individual components with `std::path`, or state Windows and Unix literals
-explicitly. Keep expectations independent of the production path formatter;
-leave authored path inputs unchanged. A passing Linux run does not qualify a
-Windows assertion: run it on native Windows too. Shared fixtures build an
-installed location once, in their support module, so every test that names it
-uses the same native path.
+Native path assertions use the host's separators. Build lexical expectations
+with `maestro_path::join`, including paths embedded in diagnostics and Cargo
+metadata. Leave authored path inputs and production output unchanged. On
+Windows, a rooted path without a drive, such as `/w`, uses the current drive;
+a supplied home does not choose the drive for an unexpanded name such as `~x`.
+A passing Linux run does not qualify a Windows assertion: run it on native
+Windows too. Shared fixtures build an installed location once, in their
+support module, so every test that names it uses the same native path.
 
 Compile every declared browser crate's test and example targets without running them:
 
@@ -159,10 +160,14 @@ they compile for the browser target:
 test crates refuses that target; lint its library target instead.
 
 A browser compile witness, an example target whose body only compiles for the
-browser target, is not covered by native Clippy. `just check-browser-smoke`
-compiles every witness for `wasm32-unknown-unknown` and stops at the first
-failure, printing the path of the diagnostics log. The commit hook runs the same
-command when a staged crate owns a witness.
+browser target, is not covered by native Clippy. `.github/ci.toml` declares each
+witness under `wasm_examples`, and the shared wasm job compiles every declared one
+for `wasm32-unknown-unknown` on each pull request, stopping at the first failure.
+`just check-browser-smoke` compiles the same witnesses locally and stops at the
+first failure, printing the path of the diagnostics log. The commit hook runs the
+same command when a staged crate owns a witness. `maestro-tooling` holds the one
+witness list: its browser smoke command compiles it, and a test fails when the
+`wasm_examples` declaration and that list differ.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
@@ -283,7 +288,7 @@ Bindings use `--target web --split-linked-modules` to retain local snippets,
 relative fixture imports and native module identity. The runner serves only the
 packaged output on an ephemeral loopback port. It checks the entire selected
 inventory before invoking assertions, then checks each family in pairs:
-27 execution exports, 64 loading exports, 194 contribution exports and 77 canvas
+27 execution exports, 64 loading exports, 196 contribution exports and 88 canvas
 exports. Both exports of a pair run at once, each in a fresh page of its own
 driver, and the pair settles before the next starts. A failing export closes its
 own page and the run continues; the browser and the server close once every
@@ -305,7 +310,7 @@ origin, with no body margin, because they compare canvas points with page
 coordinates.
 The host bundle's digest must match before and after the run. Logs identify each
 `START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 362/362` on success. A failing export is recorded and
+`HOST` digest and `COMPLETE 375/375` on success. A failing export is recorded and
 the run goes on, so one Chromium run reports every failure; the command then fails
 with all of them, and the report painting still runs. `PHASE` records
 identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
@@ -339,7 +344,14 @@ signals without command deadlines.
 The launch tells Chromium that this desktop has a hover-capable pointer, so
 media queries such as `(hover: hover)` behave like they do on a real desktop.
 Pages keep touch emulation off; only an export that asks for touch input turns
-it on. A navigation waits for the committed main frame's own default
+it on. Every page draws at a device pixel ratio of 1.25. Chromium snaps font
+metrics to device pixels, so a recorded formula box only reproduces on the same
+pixel grid. `crates/maestro-web/tests/fixtures/markdown/math.json` holds those
+boxes as measured from the reference KaTeX 0.16.45 in a standards-mode page, in
+an 800 by 500 viewport at a ratio of 1.25, with the container typography the
+replay sets before it measures. A re-record uses those same inputs, and the
+replay compares every box to 1/64 of a pixel. A navigation
+waits for the committed main frame's own default
 execution context before it evaluates readiness, whichever side of the navigate
 reply announces it.
 
@@ -440,7 +452,7 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports, two contribution exports and two loading exports check the
+Eight canvas exports, three contribution exports and two loading exports check the
 pixels the page paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
@@ -464,6 +476,7 @@ the export and the job:
 | `control-focus` | `artifact_controls_dom_paint_tokens_and_keyboard_actions` | The control that keyboard focus reached paints the accent ring over more than half of each 2-pixel edge band, so no edge is missing or clipped away by its group. |
 | `console-rest`, `console-hover`, `console-focus` | `artifact_console_dom_expansion_copy_and_follow` | In both modes, the summary and ordinary lines paint the muted role and error lines the error role. Under the native pointer, the summary paints the text role. The follow control that keyboard focus reached paints its accent fill and on-accent glyph, and its accent outline covers more than a quarter of the straight band along each edge. These scenes never move the pointer or scroll, so an element outside the visible page fails. |
 | `console-collapsed`, `console-expanded`, `console-copy`, `console-copied` | `artifact_console_dom_expansion_copy_and_follow` | The glyph's ink, the pixels that change when the glyph is hidden, has the right shape: a collapsed summary paints a right chevron (taller than wide), an expanded one a down chevron (wider than tall), the idle copy control a square copy icon and the copied control a check mark wider than tall. |
+| `thinking-rest`, `thinking-hover`, `thinking-expanded` | `thinking_dom_paints_brand_roles_and_disclosure_motion` | In both modes, the reasoning header's label and chevron paint exactly the muted role at rest and the text role under the native pointer: repainting either in that role's colour changes no pixel, while making it transparent changes some. At rest the chevron's ink is a right chevron, and once expanded a down chevron. |
 | `word-page` | `docx_artifact_dom_styles_and_safe_targets` | In both modes and both widths, the visible part of the first page paints white over more than half its pixels, and its text paints black ink, pixels with no channel above `0x60`, for every package with text. The limit allows for thin antialiased glyphs that never reach pure black. Dark mode's brand text colour is light, so text that loses its black fails there. |
 | `html-source`, `html-source-again` | `html_artifact_dom_keeps_frame_across_mode_changes` | In both modes, the shown listing paints the background role over more than half its box, and hiding its text changes pixels inside the bounded body and none outside it. After the listing is hidden and shown again, it paints exactly what the last `html-source` capture showed, so it kept its scroll position. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
@@ -481,6 +494,9 @@ in the wrong colour, a hover that keeps the resting colour, a missing outline, a
 pointer away from the summary and focus away from the follow control each fail.
 `console_glyph_scenes_require_their_painted_shapes` passes each glyph scene only
 for its own glyph and fails a glyph that paints nothing.
+`thinking_scenes_require_their_painted_roles_and_chevron` fails a label or chevron
+in another colour, a pointer away from the header and a chevron turned the wrong
+way.
 `word_page_scene_requires_a_white_page_and_black_text` fails a grey page, grey
 text and a missing page. `html_source_scenes_require_covered_clipped_and_unchanged_paint`
 fails a transparent listing, a listing that paints outside its body, a changed
@@ -1255,6 +1271,10 @@ script's crate after its file, so `build = "builder/main.rs"` gives
 An uplifted executable uses the records of its hashed twin: normalization matches
 length and contents, so copied and hard-linked outputs work alike. Identical twins
 with different dependency records fail rather than select an uncertain build.
+Cargo names Windows MSVC binaries and examples without a hash, so they have no
+twin; such an executable uses the one record of its target (`bin-<name>` or
+`example-<name>`). Several records of that target that differ leave it without a
+record.
 A library's own test binary does not depend on that library's separate output.
 Without an executable fingerprint, normalization conservatively treats any newer
 library output as an input. If a recorded dependency build no longer exists,
@@ -1639,6 +1659,12 @@ prepared `native_fixture` example when a backend launches a program by name with
 literal operands, or when its protocol requires raw bytes. The complete contract
 is [Rust test children](specs/test-processes.md).
 
+The package re-pin matrix shares one native Git history per repository layout.
+Before each reference form, it restores the original HEAD selection, revision and
+in-memory settings, then clears dependency observations. The matrix covers failed
+acquisition, successful retries, missing refs and unchanged revisions without
+recreating or republishing the history for each form.
+
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
@@ -1661,7 +1687,9 @@ Call `install_executable(artifact, destination)` with that explicit path. The
 caller's disposable directory owns the alias. Installation runs inside the same
 artifact and waits for the copy's writer to close; the test runner never opens a
 writable executable that a sibling child could inherit. Copies have independent
-modification times. Windows aliases use the native `.exe` suffix.
+modification times. A new copy keeps the artifact's time on macOS and Windows
+and takes the copy time on Linux, so a test that compares an alias's time with
+other files sets that time itself. Windows aliases use the native `.exe` suffix.
 
 The observation scenario reads `<alias>.fixture`, including the `.exe` suffix
 when present. The record has exactly three lines: `observe`, the parent's
@@ -2442,6 +2470,12 @@ Every re-run writes the prologue, including a descendant that a child starts the
 same way. When several of them share one captured output, a byte count or capture
 limit allows one prologue per process. A limit sized for one prologue trips on the
 second, before the scenario's own output.
+
+With `nocapture` and one test thread, the harness can put `test <name> ... `
+before the child's first report on the same line. A live reader that waits for a
+marker uses `split_once` to find it after that label, rather than requiring it at
+the start of the line. Exercise that reader with `single_threaded()` so it also
+works when the runner admits only one test thread.
 
 Choose the route by stream use. `output` captures both streams and returns them
 unchanged. `spawn` reads only the prologue from a piped standard output and replays

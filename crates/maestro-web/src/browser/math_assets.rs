@@ -1,9 +1,10 @@
 //! Matching math stylesheet and fonts, embedded and installed once per document.
-use crate::browser::attachment_content::AttachmentHostError;
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+use crate::browser::attachment_content::{AttachmentHostError, browser::host_error};
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};
-use web_sys::Document;
+use web_sys::{Document, FontFace, FontFaceDescriptors};
 
+/// Opening of each font rule in the stylesheet.
+const FONT_RULE: &str = "@font-face{";
 /// Stylesheet whose font sources are the embedded files below.
 const STYLESHEET: &str = include_str!("../../assets/katex/katex.css");
 /// Embedded fonts, named as the stylesheet refers to them.
@@ -90,24 +91,63 @@ const FONTS: [(&str, &[u8]); 20] = [
     ),
 ];
 
-/// Insert the stylesheet with its fonts as data, once per document and content hash.
+/// Add the embedded fonts to the document's font set and insert the stylesheet without its
+/// font rules, once per document and content hash.
+///
+/// The faces are built from their bytes, which no page content policy governs, so math keeps
+/// its fonts on a page that refuses font URLs.
 pub(crate) fn install(document: &Document) -> Result<(), AttachmentHostError> {
     let mut hasher = DefaultHasher::new();
     STYLESHEET.hash(&mut hasher);
     for font in FONTS {
         font.hash(&mut hasher);
     }
-    let css = FONTS
+    let id = format!("maestro-math-{:016x}", hasher.finish());
+    if document.get_element_by_id(&id).is_some() {
+        return Ok(());
+    }
+    let mut css = String::with_capacity(STYLESHEET.len());
+    let mut rest = STYLESHEET;
+    while let Some(start) = rest.find(FONT_RULE) {
+        css.push_str(&rest[..start]);
+        let rule = &rest[start + FONT_RULE.len()..];
+        let end = rule
+            .find('}')
+            .ok_or_else(|| AttachmentHostError::Presentation("Unterminated font rule".into()))?;
+        add_face(document, &rule[..end])?;
+        rest = &rule[end + 1..];
+    }
+    css.push_str(rest);
+    super::install_stylesheet(document, &id, &css)
+}
+
+/// Add the embedded face whose font rule has the declarations `rule`.
+fn add_face(document: &Document, rule: &str) -> Result<(), AttachmentHostError> {
+    let descriptors = FontFaceDescriptors::new();
+    let (mut family, mut file) = ("", "");
+    for (name, value) in rule.split(';').filter_map(|line| line.split_once(':')) {
+        match name {
+            "font-family" => family = value.trim_matches('"'),
+            "font-style" => descriptors.set_style(value),
+            "font-weight" => descriptors.set_weight(value),
+            "font-display" => descriptors.set_display(value),
+            "src" => {
+                file = value
+                    .strip_prefix("url(fonts/")
+                    .and_then(|source| source.split_once(".woff2)"))
+                    .map_or("", |(file, _)| file);
+            }
+            _ => {}
+        }
+    }
+    let (_, bytes) = FONTS
         .iter()
-        .fold(STYLESHEET.to_owned(), |css, (name, bytes)| {
-            css.replace(
-                &format!("url(fonts/{name}.woff2)"),
-                &format!("url(data:font/woff2;base64,{})", STANDARD.encode(bytes)),
-            )
-        });
-    super::install_stylesheet(
-        document,
-        &format!("maestro-math-{:016x}", hasher.finish()),
-        &css,
-    )
+        .find(|(name, _)| *name == file)
+        .ok_or_else(|| AttachmentHostError::Presentation(format!("Missing math font {file}")))?;
+    let face = FontFace::new_with_u8_array_and_descriptors(family, bytes, &descriptors)
+        .map_err(|error| host_error(&error))?;
+    document
+        .fonts()
+        .add(&face)
+        .map_err(|error| host_error(&error))
 }

@@ -90,7 +90,9 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     if archived {
         let library = profile.join("deps/libworkspace-1.rlib");
         std::fs::write(&library, b"").unwrap();
-        std::fs::File::open(library)
+        std::fs::File::options()
+            .write(true)
+            .open(library)
             .unwrap()
             .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(3))
             .unwrap();
@@ -98,7 +100,9 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     let binaries = [profile.join("deps/prime"), profile.join("deps/consume")];
     for (binary, seconds) in binaries.iter().zip([1, 2]) {
         std::fs::copy(std::env::current_exe().unwrap(), binary).unwrap();
-        std::fs::File::open(binary)
+        std::fs::File::options()
+            .write(true)
+            .open(binary)
             .unwrap()
             .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds))
             .unwrap();
@@ -127,7 +131,9 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     maestro_test_process::install_executable(Path::new(&artifact), &example).unwrap();
     let built = if archived { 5 } else { 1 };
-    std::fs::File::open(example)
+    std::fs::File::options()
+        .write(true)
+        .open(example)
         .unwrap()
         .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(built))
         .unwrap();
@@ -149,7 +155,9 @@ fn component_workspace(root: &Path) {
         ),
     ] {
         std::fs::write(&manifest, text).unwrap();
-        std::fs::File::open(manifest)
+        std::fs::File::options()
+            .write(true)
+            .open(manifest)
             .unwrap()
             .set_modified(std::time::UNIX_EPOCH)
             .unwrap();

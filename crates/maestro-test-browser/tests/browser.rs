@@ -537,6 +537,70 @@ fn console_glyph_scenes_require_their_painted_shapes() {
     }
 }
 
+/// The reasoning scenes answer from real screenshots: a resting header passes only while its
+/// label and right chevron paint the muted role, a hovered one only while both paint the text
+/// role under the pointer, and an expanded one only while its chevron points down.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn thinking_scenes_require_their_painted_roles_and_chevron() {
+    let hover = "const b=document.querySelector('.maestro-thinking-header').getBoundingClientRect();await driverPointer(JSON.stringify([b.x+b.width/2,b.y+b.height/2,false]));";
+    let turn =
+        "document.querySelector('.maestro-thinking-chevron').style.transform='rotate(90deg)';";
+    for (scene, (label, chevron), prepare, failure) in [
+        ("thinking-rest", ("inherit", "inherit"), "", None),
+        (
+            "thinking-rest",
+            ("#808080", "inherit"),
+            "",
+            Some("span:last-child paints muted"),
+        ),
+        (
+            "thinking-rest",
+            ("inherit", "#808080"),
+            "",
+            Some("svg paints muted"),
+        ),
+        (
+            "thinking-rest",
+            ("inherit", "inherit"),
+            turn,
+            Some("paints a right chevron"),
+        ),
+        ("thinking-hover", ("inherit", "inherit"), hover, None),
+        (
+            "thinking-hover",
+            ("inherit", "#ffff00"),
+            hover,
+            Some("svg paints text"),
+        ),
+        (
+            "thinking-hover",
+            ("inherit", "inherit"),
+            "",
+            Some("the pointer must rest on the reasoning header"),
+        ),
+        ("thinking-expanded", ("inherit", "inherit"), turn, None),
+        (
+            "thinking-expanded",
+            ("inherit", "inherit"),
+            "",
+            Some("paints a down chevron"),
+        ),
+    ] {
+        let body = format!(
+            r#"<style>.maestro-thinking-header{{color:#ffff00}}.maestro-thinking-header:hover{{color:#ffffff}}</style><div style="margin:20px;padding:8px;width:400px;background:#000"><button class="maestro-thinking-header" style="display:flex;gap:8px;border:0;background:transparent;font:16px sans-serif"><span class="maestro-thinking-chevron" style="display:inline-flex;color:{chevron}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="m9 18 6-6-6-6"/></svg></span><span style="color:{label}">Thinking...</span></button></div>"#
+        );
+        let result = run(fixture(&[], async |browser, origin| {
+            browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{globalThis.colors=JSON.stringify({{muted:'#ffff00',text:'#ffffff'}});document.body.innerHTML='{body}';{prepare}return await readingPaint('{scene}');}})()")).await
+        }));
+        assert_scene(
+            result,
+            failure,
+            &format!("{scene} {label} {chevron} {prepare}"),
+        );
+    }
+}
+
 /// The Word page scene passes only for a visible page that paints white over its box with
 /// black text: a grey page, grey text and a missing page each fail.
 #[test]

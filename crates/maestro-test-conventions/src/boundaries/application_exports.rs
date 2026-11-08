@@ -1,4 +1,5 @@
-//! Named application exports instead of unrestricted domain namespaces.
+//! Named application exports instead of unrestricted domain namespaces, and the enumerated
+//! public surface of the credentials crate.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -11,6 +12,37 @@ use crate::source::{Member, Source, imports::flatten};
 
 /// Domain crates whose frontend surface is selected by the application.
 const DOMAINS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-markdown"];
+
+/// Public names `maestro-credentials` offers; the crate names each one and adds no writer.
+const CREDENTIALS_NAMES: &[&str] = &[
+    "ApiKeyCredential",
+    "AsyncLockUpdate",
+    "AuthCredential",
+    "AuthSource",
+    "AuthStatus",
+    "AuthStorage",
+    "AuthStorageBackend",
+    "AuthStorageData",
+    "AuthStorageError",
+    "AuthStorageFuture",
+    "ConfigValueOperations",
+    "FileAuthStorageBackend",
+    "InMemoryAuthStorageBackend",
+    "LockUpdate",
+    "OAuthCredential",
+    "ProcessConfigValueOperations",
+    "clear_config_value_cache",
+    "format_no_api_key_found_message",
+    "format_no_models_available_message",
+    "format_no_model_selected_message",
+    "get_provider_login_help",
+    "resolve_config_value",
+    "resolve_config_value_or_throw",
+    "resolve_config_value_uncached",
+    "resolve_headers",
+    "resolve_headers_or_throw",
+    "test_support",
+];
 
 /// Binding paths with their visibility scopes; `None` means unrestricted visibility.
 pub(crate) type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
@@ -41,7 +73,88 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
             }
         }
     }
+    credentials(members)
+}
+
+/// Reject a public name of `maestro-credentials` that its declared surface does not carry.
+fn credentials(members: &[Member]) -> Result<(), String> {
+    for member in members
+        .iter()
+        .filter(|member| member.name == "maestro-credentials")
+    {
+        let root = member.directory.join("src").join("lib.rs");
+        for source in member.sources.iter().filter(|source| source.path == root) {
+            let finding = source
+                .walk
+                .as_ref()
+                .and_then(|walk| walk.credentials.as_ref());
+            if let Some((line, message)) = finding {
+                return Err(format!("{}:{line}: {message}", source.path.display()));
+            }
+        }
+    }
     Ok(())
+}
+
+/// The first public name of a credentials root source its declared surface does not carry, with
+/// its line.
+///
+/// The shared syntax walk records it, so the declared surface needs no parsed file.
+pub(crate) fn file_credentials(
+    member: &Member,
+    source: &Source,
+    file: &syn::File,
+) -> Option<(usize, String)> {
+    let root = member.directory.join("src").join("lib.rs");
+    if member.name != "maestro-credentials" || source.path != root {
+        return None;
+    }
+    file.items.iter().find_map(item_export)
+}
+
+/// The export one top-level item writes that the declared surface does not carry.
+fn item_export(item: &syn::Item) -> Option<(usize, String)> {
+    match item {
+        syn::Item::Use(item) if public(&item.vis) => written(&item.tree),
+        syn::Item::Mod(item) if public(&item.vis) => carried(&item.ident),
+        _ => None,
+    }
+}
+
+/// The name one public re-export writes that the declared surface does not carry, refusing a
+/// wildcard that hides them.
+fn written(tree: &syn::UseTree) -> Option<(usize, String)> {
+    flatten(tree)
+        .into_iter()
+        .find_map(|import| match import.binding {
+            Some(binding) => carried(binding),
+            None => Some(wildcard(&import.path)),
+        })
+}
+
+/// The diagnostic of a wildcard re-export at the name whose exports it hides.
+fn wildcard(path: &[&syn::Ident]) -> (usize, String) {
+    let line = path.last().map_or(1, |name| name.span().start().line);
+    (
+        line,
+        "credential export surface names every export, never a wildcard".to_owned(),
+    )
+}
+
+/// The line of an exported name that the credentials crate's declared surface does not carry.
+fn carried(name: &syn::Ident) -> Option<(usize, String)> {
+    let spelling = name.unraw().to_string();
+    (!CREDENTIALS_NAMES.contains(&spelling.as_str())).then(|| {
+        (
+            name.span().start().line,
+            format!("credential export surface carries no {spelling}"),
+        )
+    })
+}
+
+/// Whether an item visibility makes it part of the crate's public surface.
+fn public(vis: &syn::Visibility) -> bool {
+    matches!(vis, syn::Visibility::Public(_))
 }
 
 /// Whether a resolved path begins in one of the bounded domain crates.
