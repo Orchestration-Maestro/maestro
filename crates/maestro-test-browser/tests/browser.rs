@@ -394,6 +394,29 @@ fn native_keyboard_pointer_and_accessibility_bindings_work() {
     })).unwrap();
 }
 
+/// A module function the inventory leaves out fails without running any export, while the
+/// bindings' initializers, generated classes and values are not exports.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn inventory_requires_every_module_export() {
+    let error = run(fixture(&[], async |browser, origin| {
+        browser.listed(origin, &["ready".into()]).await
+    }))
+    .unwrap_err()
+    .to_string();
+    assert!(
+        error.ends_with(r#"exports missing from the inventory: ["extra"]"#),
+        "{error}"
+    );
+
+    run(fixture(&[], async |browser, origin| {
+        browser
+            .listed(origin, &["ready".into(), "extra".into()])
+            .await
+    }))
+    .unwrap();
+}
+
 /// The console scenes answer from real screenshots: resting lines, the hovered summary and the
 /// focused follow control pass only while they paint their roles, and a wrong role, a missing
 /// outline, a pointer elsewhere, focus elsewhere and a summary off the page each fail.
@@ -1129,6 +1152,20 @@ mod exports {
             &prepared("MAESTRO_BROWSER_EXPORTS"),
             family,
             name,
+        ))
+        .unwrap();
+    }
+
+    /// The built module offers no export function the inventory leaves out.
+    #[test]
+    #[ignore = "runs in the pinned Chromium job"]
+    fn every_built_export_is_in_the_inventory() {
+        let profile = Scratch::new().unwrap();
+
+        run(browser_driver::check_inventory(
+            &chromium(),
+            profile.path(),
+            &prepared("MAESTRO_BROWSER_EXPORTS"),
         ))
         .unwrap();
     }

@@ -273,7 +273,10 @@ serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in
 parallel like any others. A missing or non-callable export fails its own test.
-Packaging also
+`browser::exports::every_built_export_is_in_the_inventory` checks the other
+direction: every function the built module exports, apart from the binding
+initializers `default` and `initSync` and generated classes, must be in the
+inventory, and none is called. Packaging also
 builds the two runtime-module fixtures, each from its own manifest and lock with
 its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue

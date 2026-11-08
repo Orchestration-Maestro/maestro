@@ -46,6 +46,11 @@ pub(super) async fn fixture<T>(
     )
     .unwrap();
     fs::write(
+        root.path().join("sandbox.js"),
+        "export default async function(){};export function initSync(){throw Error('must not run')};export function ready(){throw Error('must not run')};export function extra(){throw Error('must not run')};export class Glue{};export const not_callable=9;",
+    )
+    .unwrap();
+    fs::write(
         root.path().join("click_document.html"),
         include_str!(
             "../../../maestro-web/tests/sandbox_loading_support/program_inputs/click_document.html"
