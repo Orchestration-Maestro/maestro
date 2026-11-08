@@ -1,5 +1,7 @@
 //! Audit decisions over generated script text and linker maps.
 use super::audit::{libraries, script};
+use super::rustflags;
+use std::path::Path;
 
 /// Linker map lines of the audited runtime build.
 const MAP: &str = "\
@@ -58,4 +60,20 @@ fn script_text_must_survive_an_inline_script_and_forbid_dynamic_code() {
         let refusal = script(bytes).unwrap_err();
         assert!(refusal.contains(expected), "{refusal}");
     }
+}
+
+#[test]
+fn rustflags_keep_paths_with_spaces_in_one_argument() {
+    let flags = rustflags(
+        Path::new("/work/maestro sandbox"),
+        Path::new("/work/maestro sandbox/target/sandbox-runtime/runtime.map"),
+    );
+    let arguments: Vec<&str> = flags.split('\x1f').collect();
+    assert!(arguments.contains(&"--remap-path-prefix=/work/maestro sandbox=/checkout"));
+    assert!(
+        arguments.contains(
+            &"-Clink-arg=-Wl,-Map=/work/maestro sandbox/target/sandbox-runtime/runtime.map"
+        )
+    );
+    assert!(arguments.contains(&"-Clink-arg=-sWASM_BINDGEN"));
 }

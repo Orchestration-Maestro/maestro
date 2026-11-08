@@ -59,7 +59,7 @@ pub(super) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
     let directory = checkout.join("target/sandbox-runtime");
     fs::create_dir_all(&directory)?;
     let (script, map) = build(cargo, checkout, &directory)?;
-    let bytes = fs::read(&script)?;
+    let bytes = scoped(&fs::read(&script)?);
     audit::script(&bytes).map_err(io::Error::other)?;
     let libraries = audit::libraries(&fs::read_to_string(&map)?).map_err(io::Error::other)?;
     println!("LINKED {}", libraries.join(" "));
@@ -88,9 +88,11 @@ fn tool(name: &str, release: &str) -> io::Result<()> {
     }
 }
 
-/// Compile the runtime and return the generated script and the linker map.
-fn build(cargo: &Path, checkout: &Path, directory: &Path) -> io::Result<(PathBuf, PathBuf)> {
-    let map = directory.join("runtime.map");
+/// The compiler flags of the runtime build, as Cargo's separator-delimited encoded list.
+///
+/// Cargo splits the plain flags variables at whitespace; the encoded form keeps a checkout
+/// path that contains spaces in one argument.
+fn rustflags(checkout: &Path, map: &Path) -> String {
     let mut flags = vec![
         "-Cpanic=abort".to_owned(),
         "-Cllvm-args=-enable-emscripten-cxx-exceptions=0".to_owned(),
@@ -105,13 +107,29 @@ fn build(cargo: &Path, checkout: &Path, directory: &Path) -> io::Result<(PathBuf
         };
         flags.push(format!("-Clink-arg={setting}"));
     }
+    flags.join("\x1f")
+}
+
+/// Wrap the generated script in a function so its internals stay out of the page's global scope.
+///
+/// The function receives the page's `Module`, if any, as its program arguments, so a script
+/// that precedes the bundle can still pass them. Authored scripts that follow it may declare
+/// every name the generated code uses.
+fn scoped(script: &[u8]) -> Vec<u8> {
+    let mut wrapped = b"(function(Module){".to_vec();
+    wrapped.extend_from_slice(script);
+    wrapped.extend_from_slice(b"\n})(typeof Module==\"undefined\"?void 0:Module);");
+    wrapped
+}
+
+/// Compile the runtime and return the generated script and the linker map.
+fn build(cargo: &Path, checkout: &Path, directory: &Path) -> io::Result<(PathBuf, PathBuf)> {
+    let map = directory.join("runtime.map");
+    let flags = rustflags(checkout, &map);
     let output = Command::new(cargo)
         .current_dir(checkout)
         .env("CARGO_TARGET_DIR", directory)
-        .env(
-            "CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_RUSTFLAGS",
-            flags.join(" "),
-        )
+        .env("CARGO_ENCODED_RUSTFLAGS", flags)
         .args([
             "build",
             "--release",

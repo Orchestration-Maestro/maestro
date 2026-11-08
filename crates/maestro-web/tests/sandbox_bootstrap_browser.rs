@@ -316,6 +316,27 @@ async fn provider_failures(bundle: &Bundle) {
     }
 }
 
+/// A provider expression that throws before it yields a function stops later installation.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_provider_expression_failure_stops_installation() {
+    let bundle = Bundle::load();
+    let state = provider_document(
+        &bundle,
+        &config(&["provider", "attachments"]),
+        &["(()=>{throw new TypeError('expression failure')})()"],
+        "S.helper=typeof listAttachments",
+    )
+    .await;
+    assert_eq!(state["helper"], "string");
+    let errors = state["errors"].as_array().unwrap();
+    assert_eq!(errors.len(), 2);
+    assert!(
+        errors
+            .iter()
+            .all(|error| error.as_str() == Some("TypeError: expression failure"))
+    );
+}
+
 /// Install supplied providers and inspect a following classic script under exact hashes.
 async fn provider_document(
     bundle: &Bundle,
@@ -629,4 +650,17 @@ pub async fn bootstrap_completion_follows_trailing_source() {
         fields(&state, &["log", "body"]),
         json!({"log":["head:function","body","trailing","complete","module"],"body":"script,script,script"})
     );
+}
+
+/// Authored scripts declare the names the generated runtime is built from, and none leaks onto the window.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_leaves_authored_global_names_free() {
+    let bundle = Bundle::load();
+    let probe = "const Module={own:1};const abort=2;const preRun=3;const ENVIRONMENT_IS_WEB=4;const updateMemoryViews=5;S.names=[Module.own,abort,preRun,ENVIRONMENT_IS_WEB,updateMemoryViews].join();S.helper=typeof listAttachments;S.leaked=['Module','abort','preRun','postRun','ENVIRONMENT_IS_WEB','updateMemoryViews','createWasm','handleError','HEAP8','HEAPU8','wasmExports','wasmMemory'].filter(name=>Object.hasOwn(window,name))";
+    let state = provider_document(&bundle, &config(&["attachments"]), &[], probe).await;
+    assert_eq!(
+        fields(&state, &["names", "helper", "leaked"]),
+        json!({"names":"1,2,3,4,5", "helper":"function", "leaked":[]})
+    );
+    assert_eq!(state["errors"], json!([]));
 }

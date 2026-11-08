@@ -92,11 +92,10 @@ same-origin permission, `unsafe-eval`, wildcard origin, `blob:` or `data:` sourc
 policies still refuse unmatched scripts. A frame without `'wasm-unsafe-eval'` installs
 nothing: the module fails to compile and the carriers stay inert.
 
-The bundle's glue declares Emscripten and binding names at global scope, for example
-`Module`, `abort`, `preRun`, `postRun`, `createWasm`, `handleError` and the `___wbg_*`
-bindings. A page that redeclares one of these as a top-level `let` or `const` throws a
-`SyntaxError`, and a page that overwrites one with a function breaks later calls into the
-runtime. Name your own globals around them.
+The generator wraps the bundle in a function, so its Emscripten and binding names stay out
+of the frame's global scope. Authored scripts may declare `Module`, `abort` or `preRun`
+at the top level. A `Module` object defined before the bundle reaches the function as its
+program arguments.
 
 ## Retained HTML loading
 
@@ -189,8 +188,9 @@ invocation. A native setter restores the original global descriptor before Rust
 calls the captured function with the sandbox identifier. The function still runs
 synchronously while its classic script is current. Anonymous functions keep their
 empty name, and provider changes to the restored property remain visible. Native
-callability checks ignore a function's own `call` property. A thrown provider or a
-non-callable expression stops later installation with its native error.
+callability checks ignore a function's own `call` property. A provider that throws, an
+expression that throws before it yields a function and a non-callable expression each stop
+later installation with their native error.
 The capture property must be configurable when already present; failed installation
 is reported rather than overwriting a protected property.
 
@@ -261,9 +261,8 @@ caller-owned. Keep the adapter alive while awaiting its execution future.
 ## Injected bridge
 
 Online documents install the iframe bridge from their configuration. For a world without
-a prepared document, such as an extension user script, generate the runtime script with the
-module's typed options. The following example is also checked in the generator's
-public rustdoc:
+a prepared document, generate the runtime script with the module's typed options. The
+following example is also checked in the generator's public rustdoc:
 
 ```rust
 use maestro_web::RuntimeMessageBridge;
@@ -281,14 +280,15 @@ assert!(source.ends_with(BUNDLE));
 # Ok::<(), maestro_app::DiagnosticErrorInfo>(())
 ```
 
-The script is the runtime bundle preceded by the channel and identifier as program
-arguments. Running it installs `sendRuntimeMessage` and ordered `onCompleted` callbacks.
-`__completionCallbacks` is reset to a new public array, and `onCompleted` appends to its
-current value, so replacing the array stays visible. Iframe requests correlate replies by
-message id, listen before posting and reject after 30,000 ms; user scripts await the
-extension's native reply with the identifier last. Identifiers are quoted without
-trimming or extra HTML escaping. An extension world must admit `'wasm-unsafe-eval'` for
-its own policy; that world is not exercised by the browser integration command.
+The frame script is the runtime bundle preceded by the channel and identifier as program
+arguments. The extension user-script script is the one it has always been, kept until that
+world is qualified for the bundle and its `'wasm-unsafe-eval'` policy; the browser
+integration command does not exercise it. Running either installs `sendRuntimeMessage` and
+ordered `onCompleted` callbacks. `__completionCallbacks` is reset to a new public array,
+and `onCompleted` appends to its current value, so replacing the array stays visible.
+Iframe requests correlate replies by message id, listen before posting and reject after
+30,000 ms; user scripts await the extension's native reply with the identifier last.
+Identifiers are quoted without trimming or extra HTML escaping.
 
 ## Router ownership and sender admission
 

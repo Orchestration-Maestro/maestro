@@ -169,12 +169,31 @@ pub(crate) fn run_carrier(
         .get_attribute("data-maestro-capture")
         .ok_or("no capture key")?;
     let pending = provider(window, &key, id)?;
+    let thrown = Rc::new(RefCell::new(None));
+    let handler = get(window, "onerror")?;
+    set(window, "onerror", &script_errors(&thrown))?;
     let result = head.append_child(&script);
+    set(window, "onerror", &handler)?;
     script.remove();
     template.remove();
     let finished = pending.finish(window, &key);
     result?;
-    finished
+    finished?;
+    thrown.take().map_or(Ok(()), Err)
+}
+
+/// Record the first error the carrier script throws while it runs, before it assigns its function.
+///
+/// The window's error handler property carries the observer for the one synchronous insertion, so
+/// the frame holds no listener afterwards.
+fn script_errors(thrown: &Rc<RefCell<Option<JsValue>>>) -> JsValue {
+    let thrown = Rc::clone(thrown);
+    Closure::<dyn FnMut(JsValue, JsValue, JsValue, JsValue, JsValue)>::new(
+        move |_message, _source, _line, _column, error| {
+            thrown.borrow_mut().get_or_insert(error);
+        },
+    )
+    .into_js_value()
 }
 
 /// Settle a program that could not be compiled as the browser would report its syntax error.

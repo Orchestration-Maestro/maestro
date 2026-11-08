@@ -85,6 +85,8 @@
     "bootstrap_keeps_native_module_admission",
     "bootstrap_captures_native_provider_expressions",
     "bootstrap_refuses_protected_capture_properties",
+    "bootstrap_provider_expression_failure_stops_installation",
+    "bootstrap_leaves_authored_global_names_free",
     "bootstrap_supplied_url_installs_before_first_classic_scripts",
     "bootstrap_supplied_url_loads_only_from_its_parent",
     "bootstrap_offline_document_needs_no_resource",

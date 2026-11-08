@@ -215,8 +215,11 @@ CARGO_BUILD_JOBS=3 just sandbox-runtime --check  # fail when the asset is stale
 
 Change the runtime package, regenerate, and commit the asset with the source. Never edit
 the asset. The command refuses an unpinned compiler, a library outside the audited list and
-script text that an inline script cannot carry. The build box's saved setup carries the SDK;
-shared CI browser jobs install the same release.
+script text that an inline script cannot carry. It wraps the script in a function so no glue name
+reaches the frame's global scope, and passes the compiler flags in Cargo's encoded form so a
+checkout path with spaces builds. The package repeats the workspace lint table in its manifest and
+is linted with the browser crates. The build box's saved setup carries the SDK; shared CI browser
+jobs install the same release.
 
 ## Browser integration qualification
 

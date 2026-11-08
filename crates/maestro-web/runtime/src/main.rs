@@ -3,9 +3,9 @@
 //! The bundle runs as the first classic script of a prepared document. Its start
 //! function reads the inert configuration block, assigns the sandbox identifier
 //! and every global, then installs the bridge, each runtime selection in order,
-//! navigation interception and finally the compiled program. An extension world
-//! without a configuration block passes the bridge role and identifier as program
-//! arguments instead.
+//! navigation interception and finally the compiled program. A script without a
+//! configuration block passes the bridge role and identifier as program arguments
+//! instead.
 mod artifacts;
 mod attachments;
 mod bridge;
