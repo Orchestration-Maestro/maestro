@@ -921,8 +921,8 @@ remain visible in GitHub but do not block the merge queue.
 ### Slowest-first test order
 
 The 64 tests that took more than 30 seconds in the baseline merge group have
-distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first,
-except the cold browser build, which always holds 100. Other tests retain priority 0. These are
+distinct priorities in `.config/nextest.toml`, 100 down to 37 by duration. The
+cold browser build always holds 100. Other tests keep priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
 count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
@@ -958,18 +958,20 @@ The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
 worker proves the cold browser build starts first, then the next two tooling
-tests in descending order, before an unprioritized short test. It uses a fixed
-16-way split, independent of CI's `test_shard_count`, and compares every
+tests in descending order, before an unprioritized short test. The split is
+fixed at 16 lanes, independent of CI's `test_shard_count`. It compares every
 partition's membership with and without priorities, checks an exactly-once
-union and keeps an intentional selected failure visible. It does not run the expensive browser bodies.
+union and keeps an intentional selected failure visible. It does not run the
+expensive browser bodies.
 
 #### Measured successful test durations and priorities (seconds)
 
-The cold browser build takes every core, so it holds priority 100 whatever its duration. Nextest
-starts tests in priority order and holds the queue until the next one fits. A test ranked above it
-ran alone for 17 seconds in merge-group run 42491037894 while three cores sat idle. Replaying that
-shard's durations with the two ranks swapped ends the shard 8 seconds sooner, and the browser
-lanes then start together after the cold build.
+The cold browser build takes every core, so it holds priority 100 whatever its
+duration. Nextest starts tests in priority order and holds the queue until the
+next one fits. In merge-group run 42491037894, a test ranked above it ran alone
+for 17 seconds while three cores sat idle. Swapping those two ranks and
+replaying the shard's durations ends the shard 8 seconds sooner: the browser
+lanes then start together once the cold build finishes.
 
 | Priority | Package / test | Seconds |
 | ---: | --- | ---: |
@@ -1049,16 +1051,15 @@ To refresh the ranks:
    successful retry rows. Exclude `SETUP PASS` and final-summary repeats. Check
    unique identities across shards against the summed summaries and eligible
    inventory; account separately for intentionally ignored probes and retries.
-3. Sort tests exceeding 30 seconds by descending duration. Remove old priority
+3. Sort the tests over 30 seconds by descending duration. Drop the old priority
    fields, give the cold browser build (`threads-required = "num-cpus"`)
-   priority 100, assign distinct descending priorities from 99 to the rest and
-   leave other tests at 0. For tied durations, order by binary then test name.
-   Never change an exception limit or selection filter to refresh a priority.
+   priority 100 and the rest distinct descending priorities from 99. Leave every
+   other test at 0. Order tied durations by binary, then test name. Never refresh
+   a priority by changing an exception limit or selection filter.
 4. Update this evidence table and run the focused tooling regression:
    `cargo nextest run --locked -p maestro-tooling --test integration -E 'test(measured_priorities_order_tests_without_changing_shards)'`.
-   If the two slowest tooling identities after the cold build change, update its
-   controlled bodies and expected order to match the new measurements; the cold
-   build stays first.
+   If the two slowest tooling identities after the cold build change, update the
+   controlled bodies and expected order to match; the cold build stays first.
 5. Record the next merge-group run's slowest span and spread on #3613, with its
    inventory and revision. Explain setup, serialization or source changes rather
    than treating per-test duration sums as shard wall time.
