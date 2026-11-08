@@ -284,6 +284,25 @@ fn replacement_preserves_existing_permissions_before_publication() {
 
 #[cfg(unix)]
 #[test]
+fn narrowing_a_looser_target_keeps_its_bytes_and_a_missing_one_stays_absent() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let existing = dir.path().join("loose");
+    fs::write(&existing, b"secret").unwrap();
+    fs::set_permissions(&existing, fs::Permissions::from_mode(0o644)).unwrap();
+    narrow_existing(&existing, 0o600).unwrap();
+    assert_eq!(
+        fs::metadata(&existing).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert_eq!(fs::read(&existing).unwrap(), b"secret");
+    let absent = dir.path().join("absent");
+    narrow_existing(&absent, 0o600).unwrap();
+    assert!(!absent.exists());
+}
+
+#[cfg(unix)]
+#[test]
 fn creation_mode_is_private_before_publication() {
     use std::os::unix::fs::PermissionsExt;
     let Some(_setup) = launch_umask_cases("creation_mode_is_private_before_publication") else {

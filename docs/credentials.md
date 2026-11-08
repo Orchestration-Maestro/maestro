@@ -132,7 +132,10 @@ link to the file sees the new bytes. A file its owner made read-only is refused 
 unchanged. A write cut short is completed, not rolled back, by the next coordinated writer.
 The crate exports no writer function. The startup conversion of legacy credentials
 and the standalone account file publish through the application's own helper, which
-repeats the narrowing and writes through the same recoverable publication. The
+narrows and writes through the same recoverable publication. Both the backend and
+that helper narrow through
+[the shared in-place writer's](locking.md#recoverable-byte-publication)
+`narrow_existing`, so the mode has one implementation. The
 conversion creates the directory chain of the `auth.json` path first; the account
 file creates none, so a missing directory is a write error.
 Construction, `reload`, `set` and `remove` use

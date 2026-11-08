@@ -36,6 +36,24 @@ pub struct Committed {
     /// Unexpected directory sync or recovery cleanup error after target sync.
     pub dir_sync: Option<io::Error>,
 }
+/// Narrows the existing target at `path` to `bits`, leaving a missing file missing.
+///
+/// The caller chooses the mode it publishes under. An existing file must be writable by its
+/// owner, so the handle that opens it proves that before its bits narrow; a read-only file
+/// fails with the native permission error and keeps its bytes.
+///
+/// # Errors
+/// Returns the native open or permission error of an existing file it cannot narrow.
+#[cfg(unix)]
+pub fn narrow_existing(path: &Path, bits: u32) -> io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    match File::options().write(true).open(path) {
+        Ok(file) => file.set_permissions(std::fs::Permissions::from_mode(bits)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
 /// Publishes intended bytes durably, then writes the target in place under exclusion.
 ///
 /// No directory is created: a missing parent, including the missing target directory of a

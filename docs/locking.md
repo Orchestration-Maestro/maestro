@@ -104,6 +104,13 @@ normal Unix creation. `None` keeps native creation defaults. Both policies leave
 existing targets' permissions unchanged. On Windows both retain the owner-write
 to read-only mapping after byte sync.
 
+A caller that publishes secrets narrows an existing looser file first with
+`narrow_existing(path, bits)`: Unix opens the file writable, so a read-only file
+fails with the native permission error, and the opened handle narrows the bits
+before any byte is written. A missing file stays missing. The caller picks the
+bits and its own policy for a refusal; the publication owner creates no mode of
+its own for an existing target.
+
 Unix replay of a read-only AtCreation target first durably stages its observed
 mode as AfterSync, then adds only owner-write while completing the recorded
 bytes. It restores and syncs the observed mode before retiring the record.

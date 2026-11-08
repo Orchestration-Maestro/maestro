@@ -69,7 +69,7 @@ pub fn save_auth(path: &str, auth: &Map<String, Value>) -> Result<(), AccountFil
 /// Returns the native error of the narrowing or of the publication.
 pub(crate) fn write_private(path: &str, text: &str) -> std::io::Result<()> {
     #[cfg(unix)]
-    narrow(std::path::Path::new(path))?;
+    maestro_lock::narrow_existing(std::path::Path::new(path), 0o600)?;
     maestro_lock::replace(
         std::path::Path::new(path),
         text.as_bytes(),
@@ -79,18 +79,6 @@ pub(crate) fn write_private(path: &str, text: &str) -> std::io::Result<()> {
         },
     )
     .map(|_| ())
-}
-
-/// Narrows an existing writable file before publishing any credential bytes.
-#[cfg(unix)]
-fn narrow(path: &std::path::Path) -> std::io::Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    match std::fs::OpenOptions::new().write(true).open(path) {
-        Ok(file) => file.set_permissions(std::fs::Permissions::from_mode(0o600))?,
-        Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error),
-        Err(_) => (),
-    }
-    Ok(())
 }
 
 /// The parsed root of the file at `path`, absent when it cannot be read or parsed.

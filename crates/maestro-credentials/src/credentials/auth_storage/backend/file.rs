@@ -165,21 +165,11 @@ fn create_missing(candidate: &Path) -> io::Result<Option<PathBuf>> {
     }
 }
 
-/// Narrows an existing writable file before publishing any credential bytes.
-#[cfg(unix)]
-fn narrow(path: &Path) -> io::Result<()> {
-    match OpenOptions::new().write(true).open(path) {
-        Ok(file) => file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?,
-        Err(error) if error.kind() != ErrorKind::NotFound => return Err(error),
-        Err(_) => (),
-    }
-    Ok(())
-}
-
-/// Publishes on the transaction's retained lock without acquiring it again.
+/// Publishes on the transaction's retained lock without acquiring it again, narrowing an
+/// existing looser file to its owner first so no credential byte is written under looser bits.
 fn publish(holder: WriteLock, text: &str) -> io::Result<()> {
     #[cfg(unix)]
-    narrow(holder.path())?;
+    maestro_lock::narrow_existing(holder.path(), 0o600)?;
     holder
         .replace(text.as_bytes(), Some(CreationMode::AfterSync(0o600)))
         .map(|_| ())
