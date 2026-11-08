@@ -338,7 +338,7 @@ impl Scene {
         let activity = Rc::new(Activity::default());
         let terminal: TerminalHandle = Rc::new(RefCell::new(Sink { writes: writes_in }));
         let host = Watched {
-            host: ProcessTuiRuntime::new(local),
+            host: ProcessTuiRuntime::new(local, String::new()),
             report,
             ended: ended_in,
             activity: Rc::clone(&activity),

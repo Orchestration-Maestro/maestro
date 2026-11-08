@@ -42,8 +42,8 @@ struct State {
 pub struct ManualRuntime {
     /// State shared by every clone.
     state: Rc<RefCell<State>>,
-    /// The home directory [`log_context`](TuiRuntime::log_context) reports.
-    home: PathBuf,
+    /// The agent directory [`log_context`](TuiRuntime::log_context) reports.
+    agent_dir: PathBuf,
     /// The file name nonce [`log_context`](TuiRuntime::log_context) reports.
     nonce: String,
 }
@@ -86,22 +86,23 @@ impl ManualRuntime {
         std::mem::take(&mut self.state.borrow_mut().futures)
     }
 
-    /// Creates a host at time zero that reports the placeholder home `/home/fixture`.
+    /// Creates a host at time zero that reports the placeholder agent directory
+    /// `/home/fixture`.
     #[must_use]
     pub fn new() -> Self {
-        Self::with_home(PathBuf::from("/home/fixture"))
+        Self::with_agent_dir(PathBuf::from("/home/fixture"))
     }
 
-    /// Creates a host at time zero whose diagnostic log paths sit below `home`.
+    /// Creates a host at time zero whose diagnostic log files sit in `agent_dir`.
     ///
-    /// The file name nonce is `home`'s own name, so runs sharing a log directory write
+    /// The file name nonce is `agent_dir`'s own name, so runs sharing a log directory write
     /// separate records.
     #[must_use]
-    pub fn with_home(home: PathBuf) -> Self {
-        let nonce = nonce(&home);
+    pub fn with_agent_dir(agent_dir: PathBuf) -> Self {
+        let nonce = nonce(&agent_dir);
         Self {
             state: Rc::new(RefCell::new(State::default())),
-            home,
+            agent_dir,
             nonce,
         }
     }
@@ -266,7 +267,7 @@ impl TuiRuntime for ManualRuntime {
 
     fn log_context(&self) -> LogContext {
         LogContext {
-            home: self.home.clone(),
+            agent_dir: self.agent_dir.to_string_lossy().into_owned(),
             iso_time: "2026-01-02T03:04:05.006Z".to_owned(),
             unix_ms: 1_767_323_045_006,
             nonce: self.nonce.clone(),
@@ -274,9 +275,9 @@ impl TuiRuntime for ManualRuntime {
     }
 }
 
-/// The name of `home` in lowercase alphanumerics, which keeps concurrent records apart.
-fn nonce(home: &Path) -> String {
-    let name = home.file_name().map_or_else(String::new, |name| {
+/// The name of `agent_dir` in lowercase alphanumerics, which keeps concurrent records apart.
+fn nonce(agent_dir: &Path) -> String {
+    let name = agent_dir.file_name().map_or_else(String::new, |name| {
         name.to_string_lossy()
             .chars()
             .filter(char::is_ascii_alphanumeric)

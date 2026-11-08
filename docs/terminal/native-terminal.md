@@ -60,8 +60,10 @@ Tokio runtime with the time driver enabled.
   each source error written to standard error, each followed by a newline; the host then
   keeps running. A failure to write there releases the lock on standard error and then
   reaches the registered output-error handlers once.
-- `log_context` reports the home directory (empty when the platform has none), the current
-  UTC time in milliseconds and a random lowercase hexadecimal nonce. The writer builds its
+- `log_context` reports the agent directory the host was created with, the current UTC
+  time in milliseconds and a random lowercase hexadecimal nonce. The caller chooses the
+  directory, normally `maestro_app::configuration::config::get_agent_dir`, so the logs follow
+  `MAESTRO_CODING_AGENT_DIR`. The writer builds its
   diagnostic paths from it and writes the files itself, through the standard library, so
   those errors are the operating system's. A redraw log is appended without creating its
   directory; a crash report and a differential record create their directory first.

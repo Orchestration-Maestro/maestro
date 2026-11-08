@@ -69,7 +69,7 @@ use maestro_tui::{Component, Terminal, TerminalImage, TUI};
 #     }
 #     fn spawn_local(&self, _: LocalFuture) {}
 #     fn log_context(&self) -> LogContext {
-#         LogContext { home: "/home/user".into(), iso_time: String::new(), unix_ms: 0, nonce: String::new() }
+#         LogContext { agent_dir: "/home/user/.maestro/agent".into(), iso_time: String::new(), unix_ms: 0, nonce: String::new() }
 #     }
 # }
 # fn main() -> io::Result<()> {
@@ -248,8 +248,9 @@ The cell size is only requested at startup when the terminal supports images.
 
 A text line wider than the terminal is never drawn. Before any frame is written the
 writer checks every line; for the first oversized one it writes a crash report to
-`{home}/.maestro/agent/maestro-crash.log`, restores the terminal (as `stop` does) and
-fails the frame with
+`maestro-crash.log` in the agent directory the runtime reports (`~/.maestro/agent`
+unless `MAESTRO_CODING_AGENT_DIR` names another), restores the terminal (as `stop`
+does) and fails the frame with
 
 ```text
 Rendered line {i} exceeds terminal width ({visible_width} > {width}).
@@ -265,7 +266,7 @@ measured width. Truncate component output to the width it is given; the writer d
 not clip it.
 
 With `MAESTRO_DEBUG_REDRAW=1` each full redraw appends one line to
-`{home}/.maestro/agent/maestro-debug.log`:
+`maestro-debug.log` in that directory, created on the first write:
 `[{time}] fullRender: {reason} (prev={rows}, new={rows}, height={height})`. The
 reasons are `first render`, `terminal width changed (a -> b)`,
 `terminal height changed (a -> b)`, `clearOnShrink (maxLinesRendered=n)`,
@@ -276,5 +277,4 @@ With `MAESTRO_TUI_DEBUG=1` each differential update writes its first changed row
 cursor rows, the new and retained lines and the exact bytes to
 `/tmp/tui/render-{unix_ms}-{nonce}.log`.
 
-Appending to the redraw log does not create its directory; the crash report and the
-differential record create theirs. A failed log effect fails the frame.
+Every diagnostic writer creates its directory. A failed log effect fails the frame.
