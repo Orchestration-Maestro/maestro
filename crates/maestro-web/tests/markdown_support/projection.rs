@@ -11,7 +11,7 @@ thread_local! {
 }
 
 /// Element names whose neighbouring newline-only text is layout rather than content.
-const BLOCKS: [&str; 19] = [
+const BLOCKS: [&str; 20] = [
     "P",
     "H1",
     "H2",
@@ -31,6 +31,7 @@ const BLOCKS: [&str; 19] = [
     "TD",
     "HR",
     "DIV",
+    "PRE",
 ];
 
 /// Container class names and the painted role each one resolves to.
@@ -170,7 +171,7 @@ pub fn tree_difference(recorded: &Value) -> String {
             "top level: {} != {}: {}",
             actual.len(),
             expected.len(),
-            truncated(&serialized(&Value::Array(actual)))
+            truncated(&serialized(&actual))
         );
     }
     for (index, node) in expected.iter().enumerate() {
@@ -752,31 +753,23 @@ fn first_difference(actual: &Value, expected: &Value, path: &str) -> String {
     if tag(actual) != tag(expected) {
         return format!("{path}: <{}> != <{}>", tag(actual), tag(expected));
     }
-    let attributes = |object: &Map<String, Value>| object.get("a").cloned().unwrap_or(Value::Null);
-    if attributes(actual) != attributes(expected) {
+    if actual.get("a") != expected.get("a") {
         return format!(
             "{path}<{}>: attrs {} != {}",
             tag(actual),
-            serialized(&attributes(actual)),
-            serialized(&attributes(expected))
+            serialized(actual.get("a").unwrap_or(&Value::Null)),
+            serialized(expected.get("a").unwrap_or(&Value::Null))
         );
     }
-    let children = |object: &Map<String, Value>| {
-        object
-            .get("c")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default()
-    };
     let name = tag(actual);
-    let (actual, expected) = (children(actual), children(expected));
+    let (actual, expected) = (array(actual, "c"), array(expected, "c"));
     if actual.len() != expected.len() {
         return format!(
             "{path}<{name}>: {} != {} children: {} != {}",
             actual.len(),
             expected.len(),
-            truncated(&serialized(&Value::Array(actual))),
-            truncated(&serialized(&Value::Array(expected)))
+            truncated(&serialized(actual)),
+            truncated(&serialized(expected))
         );
     }
     for (index, child) in actual.iter().enumerate() {
@@ -789,7 +782,7 @@ fn first_difference(actual: &Value, expected: &Value, path: &str) -> String {
 }
 
 /// `value` as the page's JSON spells it.
-fn serialized(value: &Value) -> String {
+fn serialized<T: serde::Serialize + ?Sized>(value: &T) -> String {
     serde_json::to_string(value).unwrap_or_default()
 }
 
@@ -953,7 +946,7 @@ fn tree_node_difference(actual: &Value, expected: &Value, path: &str) -> String 
                     "{path}<{kind}>: {} != {} children: {}",
                     shown.len(),
                     recorded.len(),
-                    truncated(&serialized(&Value::Array(shown)))
+                    truncated(&serialized(shown))
                 );
             }
             for (index, child) in recorded.iter().enumerate() {
@@ -974,11 +967,16 @@ fn text(value: Option<&Value>) -> String {
 }
 
 /// The array at `key` of a recorded value, or an empty list.
-fn values(value: &Value, key: &str) -> Vec<Value> {
-    field(value, key)
+fn values<'a>(value: &'a Value, key: &str) -> &'a [Value] {
+    value.as_object().map_or(&[], |object| array(object, key))
+}
+
+/// The array at `key` of one projected object, or an empty list.
+fn array<'a>(object: &'a Map<String, Value>, key: &str) -> &'a [Value] {
+    object
+        .get(key)
         .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default()
+        .map_or(&[], Vec::as_slice)
 }
 
 /// The neutral projection of one formula's markup, or "null" when it has no element.
