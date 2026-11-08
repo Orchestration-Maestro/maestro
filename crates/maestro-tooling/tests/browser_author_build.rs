@@ -294,7 +294,9 @@ fn browser_check_repairs_formatting() {
 #[test]
 fn browser_author_checks_accept_valid_sources() {
     let browser = Browser::cached();
+    let before = browser_support::authored(&browser);
     success(&browser.run("browser-check"));
+    assert_eq!(browser_support::authored(&browser), before);
     assert_no_browser_distribution(&browser);
 }
 
@@ -330,10 +332,15 @@ fn assert_browser_source_rejected(relative: &str, invalid: &str) {
     assert_no_browser_distribution(&browser);
 }
 
-/// Checks must not produce either browser distribution, including after a refusal.
+/// Checks must not produce any browser distribution, including after a refusal.
 fn assert_no_browser_distribution(browser: &Browser) {
-    assert!(!browser.path("target/maestro-browser/library").exists());
-    assert!(!browser.path("target/maestro-browser/example").exists());
+    for route in ["library", "example", "debug"] {
+        assert!(
+            !browser
+                .path(&format!("target/maestro-browser/{route}"))
+                .exists()
+        );
+    }
 }
 
 #[test]
@@ -660,35 +667,63 @@ fn browser_styles_reach_prepared_output() {
     assert!(output.contains("var(--maestro-color-text)"));
 }
 
-#[test]
-fn browser_build_rejects_missing_or_failing_inputs() {
+/// A fixture that already holds an earlier library distribution.
+fn browser_with_earlier_distribution() -> Browser {
     let browser = Browser::new();
     let dist = browser.path("target/maestro-browser/library");
     fs::create_dir_all(&dist).unwrap();
     fs::write(dist.join("sentinel"), "earlier distribution").unwrap();
-    for path in [
-        browser.fixture("index.html"),
-        browser.fixture("assets/app.css"),
-        browser.fixture("src/main.rs"),
-    ] {
-        let original = fs::read(&path).unwrap();
-        if path.ends_with("main.rs") {
-            fs::write(&path, "fn main() { missing(); }").unwrap();
-        } else {
-            fs::remove_file(&path).unwrap();
-        }
-        let output = browser.run("browser-library-build");
-        assert!(!output.status.success());
-        assert!(!output.stderr.is_empty() || !output.stdout.is_empty());
-        fs::write(&path, original).unwrap();
-        success(&browser.run("browser-library-build"));
-    }
+    browser
+}
+
+/// The library build fails while a fixture input is spoiled and succeeds once it is restored.
+fn assert_library_build_rejects_spoiled_input(relative: &str, spoil: fn(&std::path::Path)) {
+    let browser = browser_with_earlier_distribution();
+    let path = browser.fixture(relative);
+    let original = fs::read(&path).unwrap();
+    spoil(&path);
+    let output = browser.run("browser-library-build");
+    assert!(!output.status.success());
+    assert!(!output.stderr.is_empty() || !output.stdout.is_empty());
+    fs::write(&path, original).unwrap();
+    success(&browser.run("browser-library-build"));
+}
+
+#[test]
+fn browser_library_build_rejects_a_missing_page_template() {
+    assert_library_build_rejects_spoiled_input("index.html", |path| {
+        fs::remove_file(path).unwrap();
+    });
+}
+
+#[test]
+fn browser_library_build_rejects_a_missing_stylesheet() {
+    assert_library_build_rejects_spoiled_input("assets/app.css", |path| {
+        fs::remove_file(path).unwrap();
+    });
+}
+
+#[test]
+fn browser_library_build_rejects_a_failing_fixture_source() {
+    assert_library_build_rejects_spoiled_input("src/main.rs", |path| {
+        fs::write(path, "fn main() { missing(); }").unwrap();
+    });
+}
+
+#[test]
+fn browser_library_build_rejects_a_failing_optimizer() {
+    let browser = browser_with_earlier_distribution();
     let mut command = browser.command("browser-library-build");
     browser_support::native_tool(&browser, &mut command, "wasm-opt");
     command.env("MAESTRO_NATIVE_FAIL", "1");
     assert!(!command.output().unwrap().status.success());
     command.env_remove("MAESTRO_NATIVE_FAIL");
     success(&command.output().unwrap());
+}
+
+#[test]
+fn browser_library_build_rejects_an_absent_recipe() {
+    let browser = browser_with_earlier_distribution();
     let justfile = browser.path("justfile");
     let text = fs::read_to_string(&justfile).unwrap();
     fs::write(
@@ -1520,84 +1555,102 @@ fn browser_author_hook_status_propagates() {
     );
 }
 
-#[test]
-fn browser_author_check_preserves_adjacent_locks() {
+/// A damaged lock fails the example check without a write, and the restored lock passes it again.
+fn assert_example_check_preserves_damaged_lock(lock: fn(&Browser) -> std::path::PathBuf) {
     let browser = Browser::cached();
     let before = browser_support::authored(&browser);
+    let path = lock(&browser);
+    let original = fs::read(&path).unwrap();
+    fs::write(&path, "version = 4\n").unwrap();
+    let damaged = browser_support::authored(&browser);
+    assert!(!browser.run("browser-example-check").status.success());
+    assert_eq!(browser_support::authored(&browser), damaged);
+    fs::write(path, original).unwrap();
     success(&browser.run("browser-example-check"));
     assert_eq!(browser_support::authored(&browser), before);
-    for path in [browser.fixture("Cargo.lock"), browser.path("Cargo.lock")] {
-        let original = fs::read(&path).unwrap();
-        fs::write(&path, "version = 4\n").unwrap();
-        let damaged = browser_support::authored(&browser);
-        assert!(!browser.run("browser-example-check").status.success());
-        assert_eq!(browser_support::authored(&browser), damaged);
-        fs::write(path, original).unwrap();
-        success(&browser.run("browser-example-check"));
-    }
-    success(&browser.run("browser-check"));
-    assert_eq!(browser_support::authored(&browser), before);
-    for route in ["library", "example", "debug"] {
-        assert!(
-            !browser
-                .path(&format!("target/maestro-browser/{route}"))
-                .exists()
-        );
-    }
 }
 
 #[test]
-fn browser_author_trunk_rejects_stale_lock_without_writes() {
+fn browser_example_check_preserves_a_damaged_fixture_lock() {
+    assert_example_check_preserves_damaged_lock(|browser| browser.fixture("Cargo.lock"));
+}
+
+#[test]
+fn browser_example_check_preserves_a_damaged_workspace_lock() {
+    assert_example_check_preserves_damaged_lock(|browser| browser.path("Cargo.lock"));
+}
+
+/// A stale lock makes `recipe` fail on `--locked` without a write or a distribution. Returns
+/// the fixture with its original lock restored.
+fn assert_stale_lock_rejected(recipe: &str) -> Browser {
     use browser_support::start_output;
     let browser = Browser::new();
     browser_support::bootstrap_source(&browser);
     let lock = browser.fixture("Cargo.lock");
     let original = fs::read(&lock).unwrap();
-    for recipe in [
-        "browser-library-build",
-        "browser-example-build",
-        "browser-debug-build",
-        "browser-dev",
-        "browser-dev-compile",
-    ] {
-        fs::write(&lock, "version = 4\n").unwrap();
-        let before = browser_support::authored(&browser);
-        if ["browser-dev", "browser-dev-compile"].contains(&recipe) {
-            let mut command = browser.command(recipe);
-            if recipe == "browser-dev" {
-                command.args([
-                    browser.path("assets/brand/brand.json").to_str().unwrap(),
-                    "dark",
-                    "--port",
-                    "0",
-                ]);
-            }
-            let (child, receive, thread) = start_output(command);
-            let transcript = browser_support::rejected_pipeline(&receive);
-            assert!(transcript.contains("--locked"), "{transcript}");
-            drop(child);
-            crate::recipe_support::join_reader(thread);
-        } else {
-            let failed = browser.run(recipe);
-            assert!(!failed.status.success());
-            let text = format!(
-                "{}{}",
-                String::from_utf8_lossy(&failed.stdout),
-                String::from_utf8_lossy(&failed.stderr)
-            );
-            assert!(text.contains("--locked"), "{text}");
+    fs::write(&lock, "version = 4\n").unwrap();
+    let before = browser_support::authored(&browser);
+    if ["browser-dev", "browser-dev-compile"].contains(&recipe) {
+        let mut command = browser.command(recipe);
+        if recipe == "browser-dev" {
+            command.args([
+                browser.path("assets/brand/brand.json").to_str().unwrap(),
+                "dark",
+                "--port",
+                "0",
+            ]);
         }
-        assert_eq!(browser_support::authored(&browser), before);
-        for route in ["library", "example", "debug"] {
-            assert!(
-                !browser
-                    .path(&format!("target/maestro-browser/{route}/index.html"))
-                    .is_file()
-            );
-        }
-        fs::write(&lock, &original).unwrap();
+        let (child, receive, thread) = start_output(command);
+        let transcript = browser_support::rejected_pipeline(&receive);
+        assert!(transcript.contains("--locked"), "{transcript}");
+        drop(child);
+        crate::recipe_support::join_reader(thread);
+    } else {
+        let failed = browser.run(recipe);
+        assert!(!failed.status.success());
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&failed.stdout),
+            String::from_utf8_lossy(&failed.stderr)
+        );
+        assert!(text.contains("--locked"), "{text}");
     }
+    assert_eq!(browser_support::authored(&browser), before);
+    for route in ["library", "example", "debug"] {
+        assert!(
+            !browser
+                .path(&format!("target/maestro-browser/{route}/index.html"))
+                .is_file()
+        );
+    }
+    fs::write(&lock, &original).unwrap();
+    browser
+}
+
+#[test]
+fn browser_library_build_rejects_a_stale_lock_without_writes() {
+    let browser = assert_stale_lock_rejected("browser-library-build");
     success(&browser.run("browser-library-build"));
+}
+
+#[test]
+fn browser_example_build_rejects_a_stale_lock_without_writes() {
+    assert_stale_lock_rejected("browser-example-build");
+}
+
+#[test]
+fn browser_debug_build_rejects_a_stale_lock_without_writes() {
+    assert_stale_lock_rejected("browser-debug-build");
+}
+
+#[test]
+fn browser_dev_rejects_a_stale_lock_without_writes() {
+    assert_stale_lock_rejected("browser-dev");
+}
+
+#[test]
+fn browser_dev_compile_rejects_a_stale_lock_without_writes() {
+    assert_stale_lock_rejected("browser-dev-compile");
 }
 
 #[test]

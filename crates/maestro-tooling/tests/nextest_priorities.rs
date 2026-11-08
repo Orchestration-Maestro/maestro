@@ -17,7 +17,7 @@ fn measured_priorities_order_tests_without_changing_shards() {
     fs::write(
         root.path().join("src/lib.rs"),
         "#[test] fn a_short() {}\nmod browser_author_build {\n\
-         #[test] fn browser_author_check_preserves_adjacent_locks() {}\n\
+         #[test] fn browser_author_checks_accept_valid_sources() {}\n\
          #[test] fn browser_author_bootstraps_from_empty_build_state() {}\n\
          #[test] fn browser_check_repairs_formatting() { assert!(false); }\n}\n",
     )
@@ -48,7 +48,7 @@ fn measured_priorities_order_tests_without_changing_shards() {
         [
             "browser_author_build::browser_check_repairs_formatting",
             "browser_author_build::browser_author_bootstraps_from_empty_build_state",
-            "browser_author_build::browser_author_check_preserves_adjacent_locks",
+            "browser_author_build::browser_author_checks_accept_valid_sources",
             "a_short",
         ]
     );
