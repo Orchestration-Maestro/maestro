@@ -2,7 +2,6 @@
 
 use std::error::Error;
 use std::io::{self, Write};
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -32,9 +31,9 @@ use crate::output_errors::{FailureSource, OutputErrors};
 /// handlers [`on_output_error`](TuiRuntime::on_output_error) registered, once, after the lock
 /// on standard error is released.
 ///
-/// [`log_context`](TuiRuntime::log_context) reports the process's home directory (empty when
-/// the platform has none), the current UTC time and a random lowercase hexadecimal nonce;
-/// the frame writer's diagnostic logs are its own file-system calls.
+/// [`log_context`](TuiRuntime::log_context) reports the agent directory the host was created
+/// with, the current UTC time and a random lowercase hexadecimal nonce; the frame writer's
+/// diagnostic logs are its own file-system calls.
 ///
 /// ```no_run
 /// # #[cfg(unix)] {
@@ -44,7 +43,8 @@ use crate::output_errors::{FailureSource, OutputErrors};
 /// use tokio::task::LocalSet;
 ///
 /// let local = Rc::new(LocalSet::new());
-/// let runtime = ProcessTuiRuntime::new(Rc::clone(&local));
+/// let agent_dir = "/home/user/agent".to_owned();
+/// let runtime = ProcessTuiRuntime::new(Rc::clone(&local), agent_dir);
 /// let terminal = ProcessTerminal::new(local);
 /// # drop((runtime, terminal));
 /// # }
@@ -56,16 +56,20 @@ pub struct ProcessTuiRuntime {
     origin: Instant,
     /// The callbacks registered for output failures of the host's own standard error.
     errors: Rc<OutputErrors>,
+    /// The agent directory that receives the diagnostic logs.
+    agent_dir: String,
 }
 
 impl ProcessTuiRuntime {
-    /// Creates a host whose work runs on `local`, which the caller drives.
+    /// Creates a host whose work runs on `local`, which the caller drives, and whose
+    /// diagnostic logs go to `agent_dir`.
     #[must_use]
-    pub fn new(local: Rc<LocalSet>) -> Self {
+    pub fn new(local: Rc<LocalSet>, agent_dir: String) -> Self {
         Self {
             local,
             origin: Instant::now(),
             errors: Rc::new(OutputErrors::default()),
+            agent_dir,
         }
     }
 }
@@ -138,7 +142,7 @@ impl TuiRuntime for ProcessTuiRuntime {
                 u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
             });
         LogContext {
-            home: home_directory(),
+            agent_dir: self.agent_dir.clone(),
             iso_time: timestamp(unix_ms),
             unix_ms,
             nonce: format!("{:x}", rand::random::<u64>()),
@@ -148,18 +152,6 @@ impl TuiRuntime for ProcessTuiRuntime {
     fn on_output_error(&self, handler: OutputErrorHandler) -> Box<dyn Fn()> {
         self.errors.register(handler)
     }
-}
-
-/// The home directory: on Unix the `HOME` variable verbatim, empty included,
-/// and the account directory only when it is unset.
-fn home_directory() -> PathBuf {
-    maestro_path::homedir(
-        std::env::var_os("HOME")
-            .filter(|_| cfg!(unix))
-            .map(PathBuf::from),
-        std::env::home_dir,
-    )
-    .unwrap_or_default()
 }
 
 #[cfg(test)]

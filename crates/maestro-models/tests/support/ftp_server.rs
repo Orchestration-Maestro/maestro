@@ -255,6 +255,9 @@ pub struct Closed {
 /// A running scripted server.
 pub struct Peer {
     address: SocketAddr,
+    /// The listening socket, shared with the worker and held until the peer is dropped, so the
+    /// wake-up connection reaches it even when the worker already stopped.
+    _listener: Arc<TcpListener>,
     /// Observations shared with the server worker.
     pub(super) observed: Arc<Observed>,
     stop: Arc<AtomicBool>,
@@ -279,12 +282,7 @@ impl Peer {
     /// Returns stop, worker or join failures after waiting for admitted sessions.
     pub fn finish(mut self) -> TestResult<Closed> {
         self.stop.store(true, Ordering::SeqCst);
-        match TcpStream::connect(self.address) {
-            // The stopped listener can close before or during the wake-up handshake.
-            Err(error)
-                if error.kind() == std::io::ErrorKind::ConnectionRefused || vanished(&error) => {}
-            other => other.map(drop)?,
-        }
+        TcpStream::connect(self.address).map(drop)?;
         let worker = self.worker.take().ok_or("server already finished")?;
         worker.join().map_err(|_| "server thread panicked")??;
         Ok(Closed {
@@ -676,7 +674,7 @@ fn accept_until_stopped(
 /// # Errors
 /// Returns bind or local-address lookup failures.
 pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
-    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let listener = Arc::new(TcpListener::bind("127.0.0.1:0")?);
     let address = listener.local_addr()?;
     let observed = Arc::new(Observed {
         commands: watch::Sender::new(Vec::new()),
@@ -687,11 +685,13 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
     let stop = Arc::new(AtomicBool::new(false));
     let stopping = Arc::clone(&stop);
     let observing = Arc::clone(&observed);
+    let accepting = Arc::clone(&listener);
     let worker = std::thread::spawn(move || {
-        accept_until_stopped(&listener, &stopping, &scenarios, &observing)
+        accept_until_stopped(&accepting, &stopping, &scenarios, &observing)
     });
     Ok(Peer {
         address,
+        _listener: listener,
         observed,
         stop,
         worker: Some(worker),
@@ -701,18 +701,36 @@ pub fn serve(scenarios: Vec<Scenario>) -> TestResult<Peer> {
 /// Shutdown regressions for the scripted peer.
 #[cfg(test)]
 mod tests {
-    use super::{Scenario, serve};
+    use std::io::Write;
+    use std::net::TcpStream;
+    use std::sync::mpsc;
 
-    /// Finishing without a client session tolerates the listener closing during wake-up.
+    use super::{Held, Scenario, serve};
+
+    /// A peer whose worker already stopped still listens, so the wake-up connection of `finish`
+    /// reaches it and the worker's own failure is what `finish` reports.
     #[test]
-    fn ftp_peer_finish_joins_an_idle_server() {
-        for _ in 0..1_000 {
-            let peer = serve(vec![Scenario::default()]).unwrap();
-            let closed = peer
-                .finish()
-                .expect("the wake-up connection may race shutdown");
-            assert!(!closed.control, "no client session was admitted");
-            assert!(!closed.data, "no data connection was opened");
-        }
+    fn ftp_peer_keeps_listening_after_its_worker_stops() {
+        // The worker never takes from this rendezvous, so a send returns only once the stopped
+        // worker dropped its script.
+        let (script, releases) = mpsc::sync_channel(0);
+        let peer = serve(vec![Scenario {
+            held: Some(Held {
+                commands: &[],
+                releases,
+            }),
+            ..Scenario::default()
+        }])
+        .unwrap();
+        let mut control = TcpStream::connect(peer.address()).unwrap();
+
+        // A transfer without a passive data connection is a scripted-peer mistake, which stops
+        // the worker.
+        control.write_all(b"RETR script.pac\r\n").unwrap();
+        assert!(script.send(()).is_err(), "the worker stopped");
+
+        TcpStream::connect(peer.address()).expect("the peer still listens");
+        let failure = peer.finish().err().map(|error| error.to_string());
+        assert_eq!(failure.as_deref(), Some("no passive data connection"));
     }
 }
