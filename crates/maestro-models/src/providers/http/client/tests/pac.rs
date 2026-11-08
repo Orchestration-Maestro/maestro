@@ -67,9 +67,8 @@ fn pac_failed_compilation_never_reaches_direct_transport() {
 fn pac_direct_and_dns_failures_advance_before_application_bytes() {
     crate::tests::runtime::run(async {
         use tokio::io::{AsyncReadExt, AsyncWriteExt};
-        let reserved = tokio::net::TcpSocket::new_v4().unwrap();
-        reserved.bind("127.0.0.1:0".parse().unwrap()).unwrap();
-        let destination = format!("http://{}/once", reserved.local_addr().unwrap());
+        // Port zero has no listening endpoint and fails without TCP retransmissions.
+        let destination = "http://127.0.0.1:0/once".to_owned();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let proxy = listener.local_addr().unwrap();
         let expected = format!("POST {destination} HTTP/1.1\r\n");
@@ -85,9 +84,10 @@ fn pac_direct_and_dns_failures_advance_before_application_bytes() {
                 .await
                 .unwrap();
         });
-        let refused = reserved.local_addr().unwrap();
+        // A 64-byte DNS label fails locally instead of waiting for an external resolver.
+        let unresolvable = format!("{}.invalid", "x".repeat(64));
         let script = format!(
-            "function FindProxyForURL() {{ return 'DIRECT; PROXY {refused}; PROXY missing.invalid:80; HTTP {proxy}'; }}"
+            "function FindProxyForURL() {{ return 'DIRECT; PROXY 127.0.0.1:0; PROXY {unresolvable}:80; HTTP {proxy}'; }}"
         );
         let response = routed(&script)(request(destination)).await.unwrap();
         assert_eq!(collect_body(response.body).await.unwrap(), b"ok");
