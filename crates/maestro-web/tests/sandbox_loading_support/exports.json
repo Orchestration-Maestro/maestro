@@ -86,6 +86,7 @@
     "bootstrap_captures_native_provider_expressions",
     "bootstrap_refuses_protected_capture_properties",
     "bootstrap_provider_expression_failure_stops_installation",
+    "bootstrap_provider_error_handler_writes_survive_installation",
     "bootstrap_leaves_authored_global_names_free",
     "bootstrap_supplied_url_installs_before_first_classic_scripts",
     "bootstrap_supplied_url_loads_only_from_its_parent",

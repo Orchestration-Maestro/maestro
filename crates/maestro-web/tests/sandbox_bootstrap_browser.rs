@@ -337,6 +337,30 @@ pub async fn bootstrap_provider_expression_failure_stops_installation() {
     );
 }
 
+/// A provider that installs its own error handler keeps it, and one that does so before throwing still stops installation.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_provider_error_handler_writes_survive_installation() {
+    let bundle = Bundle::load();
+    let configuration = config(&["provider", "attachments"]);
+    let kept = provider_document(
+        &bundle,
+        &configuration,
+        &["function(){window.savedHandler=()=>true;window.onerror=window.savedHandler}"],
+        "S.helper=typeof listAttachments;S.kept=window.onerror===window.savedHandler",
+    )
+    .await;
+    assert_eq!(kept["helper"], "function");
+    assert_eq!(kept["kept"], true);
+    let thrown = provider_document(
+        &bundle,
+        &configuration,
+        &["(()=>{window.onerror=()=>true;throw new TypeError('expression failure')})()"],
+        "S.helper=typeof listAttachments",
+    )
+    .await;
+    assert_eq!(thrown["helper"], "string");
+}
+
 /// Install supplied providers and inspect a following classic script under exact hashes.
 async fn provider_document(
     bundle: &Bundle,

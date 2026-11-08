@@ -187,8 +187,11 @@ same observer; the browser remains the final gate for semantic early errors.
 invocation. A native setter restores the original global descriptor before Rust
 calls the captured function with the sandbox identifier. The function still runs
 synchronously while its classic script is current. Anonymous functions keep their
-empty name, and provider changes to the restored property remain visible. Native
-callability checks ignore a function's own `call` property. A provider that throws, an
+empty name, and provider changes to the restored property remain visible. A provider
+that sets `window.onerror` keeps its handler. The runtime watches for thrown errors through
+that property, passes each error to the handler the provider set, and returns the property
+holding it. Native callability checks ignore a function's own `call` property. A provider
+that throws, an
 expression that throws before it yields a function and a non-callable expression each stop
 later installation with their native error.
 The capture property must be configurable when already present; failed installation

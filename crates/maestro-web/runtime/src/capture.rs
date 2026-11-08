@@ -170,27 +170,83 @@ pub(crate) fn run_carrier(
         .ok_or("no capture key")?;
     let pending = provider(window, &key, id)?;
     let thrown = Rc::new(RefCell::new(None));
-    let handler = get(window, "onerror")?;
-    set(window, "onerror", &script_errors(&thrown))?;
+    let handler = ErrorHandler::install(window, &thrown)?;
     let result = head.append_child(&script);
-    set(window, "onerror", &handler)?;
+    let restored = handler.restore(window);
     script.remove();
     template.remove();
     let finished = pending.finish(window, &key);
     result?;
+    restored?;
     finished?;
     thrown.take().map_or(Ok(()), Err)
 }
 
-/// Record the first error the carrier script throws while it runs, before it assigns its function.
+/// The window's error handler property while the carrier script runs.
 ///
-/// The window's error handler property carries the observer for the one synchronous insertion, so
-/// the frame holds no listener afterwards.
-fn script_errors(thrown: &Rc<RefCell<Option<JsValue>>>) -> JsValue {
-    let thrown = Rc::clone(thrown);
-    Closure::<dyn FnMut(JsValue, JsValue, JsValue, JsValue, JsValue)>::new(
-        move |_message, _source, _line, _column, error| {
-            thrown.borrow_mut().get_or_insert(error);
+/// The observer owns the native handler slot, so no listener is registered and supplied code cannot
+/// disable it. Reads and writes of the property reach `current` instead, which the observer forwards
+/// each event to and which the property gets back afterwards.
+struct ErrorHandler {
+    /// The property's native descriptor, put back once the script has run.
+    native: JsValue,
+    /// The handler supplied code sees and sets; it is null when none is set.
+    current: Rc<RefCell<JsValue>>,
+}
+
+impl ErrorHandler {
+    /// Route the window's error events to an observer that records the first thrown error.
+    fn install(window: &Window, thrown: &Rc<RefCell<Option<JsValue>>>) -> Result<Self, JsValue> {
+        let native = Reflect::get_own_property_descriptor(window, &"onerror".into())?;
+        let current = Rc::new(RefCell::new(get(window, "onerror")?));
+        let reader = Rc::clone(&current);
+        let getter = Closure::<dyn FnMut() -> JsValue>::new(move || reader.borrow().clone());
+        let writer = Rc::clone(&current);
+        let setter = Closure::<dyn FnMut(JsValue)>::new(move |value: JsValue| {
+            *writer.borrow_mut() = if value.is_function() {
+                value
+            } else {
+                JsValue::NULL
+            };
+        });
+        let observer = script_errors(window, thrown, &current);
+        accessor(window, "onerror", "get", &getter.into_js_value())?;
+        accessor(window, "onerror", "set", &setter.into_js_value())?;
+        Reflect::apply(
+            get(&native, "set")?.unchecked_ref::<Function>(),
+            window,
+            &Array::of1(&observer),
+        )?;
+        Ok(Self { native, current })
+    }
+
+    /// Put the native property back, holding the handler as supplied code left it.
+    fn restore(&self, window: &Window) -> Result<(), JsValue> {
+        let native = self.native.unchecked_ref::<Object>();
+        if !Reflect::define_property(window, &"onerror".into(), native)? {
+            return Err(js_sys::TypeError::new("cannot restore error handler").into());
+        }
+        set(window, "onerror", &self.current.borrow())
+    }
+}
+
+/// Record the first error the carrier script throws while it runs, then pass the event to the
+/// handler supplied code set, whose result decides whether the browser reports it.
+fn script_errors(
+    window: &Window,
+    thrown: &Rc<RefCell<Option<JsValue>>>,
+    current: &Rc<RefCell<JsValue>>,
+) -> JsValue {
+    let (window, thrown, current) = (window.clone(), Rc::clone(thrown), Rc::clone(current));
+    Closure::<dyn FnMut(JsValue, JsValue, JsValue, JsValue, JsValue) -> Result<JsValue, JsValue>>::new(
+        move |message, source, line, column, error: JsValue| {
+            thrown.borrow_mut().get_or_insert(error.clone());
+            let handler = current.borrow().clone();
+            if !handler.is_function() {
+                return Ok(JsValue::UNDEFINED);
+            }
+            let event = Array::of5(&message, &source, &line, &column, &error);
+            Reflect::apply(handler.unchecked_ref::<Function>(), &window, &event)
         },
     )
     .into_js_value()
