@@ -519,8 +519,9 @@ browser target, so native Clippy never reads it. Every witness the workspace kee
 is listed with its owning package and source in `maestro-tooling`'s browser smoke
 command, which compiles each one for `wasm32-unknown-unknown` and stops at the
 first failure. The commit hook runs it when a staged crate owns a witness, and
-`just check` runs it for the workspace. The shared wasm job builds library roots
-only, so this command is what reports a witness that stopped compiling.
+`just check` runs it for the workspace. `.github/ci.toml` declares the same
+witnesses under `wasm_examples`, so the shared wasm job compiles each one on every
+pull request, and a test fails when the declaration and the witness list differ.
 
 ## Commands and failure evidence
 

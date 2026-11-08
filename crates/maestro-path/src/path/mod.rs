@@ -119,6 +119,30 @@ where
     Ok(groups.iter().map(|g| resolve(g, &cwd)).collect())
 }
 
+/// Write `path` with `/` as its only separator, in a supplied flavor.
+///
+/// A wildcard comparison reads `/` as the separator on every host, so a native
+/// path written with `\` reaches it in one spelling. The Windows flavor turns
+/// each `\` into `/`; the POSIX flavor has no second separator and returns the
+/// text as written, because `\` names an ordinary file character there.
+///
+/// # Examples
+///
+/// ```
+/// use maestro_path::slashed;
+///
+/// assert_eq!(slashed(r"D:\work\notes", true), "D:/work/notes");
+/// assert_eq!(slashed("/work/notes", false), "/work/notes");
+/// assert_eq!(slashed(r"/work\notes", false), r"/work\notes");
+/// ```
+#[must_use]
+pub fn slashed(path: &str, windows: bool) -> Cow<'_, str> {
+    if !windows || !path.contains('\\') {
+        return path.into();
+    }
+    path.replace('\\', "/").into()
+}
+
 /// The root of a Windows path, borrowing the authored spelling.
 ///
 /// Normalization, resolution and relative paths all read a root through this

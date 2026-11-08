@@ -74,7 +74,9 @@ stdin after the correlated response. To run a prompt, add `--prompt TEXT` before
 `--`; that operation can incur provider charges. Select your configured provider
 and model in the child arguments. The example waits for both prompt acceptance
 and `agent_end`, not just the successful response. It leaves stderr separate and
-checks the child's exit status. Use plain prompt text: an extension slash
+checks the child's exit status. It writes UTF-8 with LF line ends on every
+host, whatever the console code page, so a reader parses the same records
+everywhere. Use plain prompt text: an extension slash
 command handled without a run does not produce `agent_end`. The example does
 not track automatic retries or overflow recovery after the first run. Use the
 [typed Rust client](client.md) for reusable subprocess operations. The
