@@ -4,8 +4,7 @@
 
 use crate::support;
 use maestro_daemon::{
-    app::state::DaemonState, settings::model::Config,
-    terminal::runtime_registry::TerminalRuntimeRegistry,
+    app::model::DaemonState, settings::model::Config, terminal::owners::TerminalRuntimeRegistry,
 };
 use maestro_workspace::workspace::{
     GitSpaceMetadata, GitStatusRefreshDemand, WorkspaceGitStatus, WorktreeSpaceMembership,

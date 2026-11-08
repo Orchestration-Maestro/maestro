@@ -1,7 +1,7 @@
 //! Retained application update availability and installation guidance.
 
 use crate::{
-    app::state::{DaemonState, ToastKind, ToastNotification},
+    app::model::{DaemonState, ToastKind, ToastNotification},
     settings::model::ToastDelivery,
 };
 

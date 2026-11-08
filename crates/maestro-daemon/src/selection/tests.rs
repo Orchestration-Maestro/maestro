@@ -1,7 +1,7 @@
 //! Selection lifecycle and scroll-coordinate witnesses.
 
 use super::*;
-use crate::pane::terminal::ScrollMetrics;
+use crate::panes::display::ScrollMetrics;
 use maestro_workspace::layout::{PaneId, Rect};
 
 fn make_sel(sr: u32, sc: u16, er: u32, ec: u16) -> Selection {

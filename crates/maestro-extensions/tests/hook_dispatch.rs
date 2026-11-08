@@ -43,7 +43,7 @@ fn handler_presence_observes_live_known_and_open_registration_names() {
 }
 
 use crate::model_support;
-use maestro_extensions::runner::RunnerEmitEvent;
+use maestro_extensions::execution::RunnerEmitEvent;
 use maestro_session::Presence;
 use serde_json::{Value, json};
 use std::cell::RefCell;
@@ -242,7 +242,7 @@ fn shutdown_helper_reports_handler_presence_and_keeps_error_isolation() {
         let runner = support::runner(&loaded.owners);
         let mut event: SessionShutdownEvent = from_json(json!({"reason":"reload"}));
         assert!(
-            !maestro_extensions::runner::emit_session_shutdown_event(&runner, &mut event)
+            !maestro_extensions::execution::emit_session_shutdown_event(&runner, &mut event)
                 .await
                 .unwrap()
         );
@@ -270,7 +270,7 @@ fn shutdown_helper_reports_handler_presence_and_keeps_error_isolation() {
             )
             .unwrap();
         assert!(
-            maestro_extensions::runner::emit_session_shutdown_event(&runner, &mut event)
+            maestro_extensions::execution::emit_session_shutdown_event(&runner, &mut event)
                 .await
                 .unwrap()
         );

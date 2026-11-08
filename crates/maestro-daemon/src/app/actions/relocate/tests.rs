@@ -1,7 +1,7 @@
 //! Emptied-workspace removal and recovery of a refused move keep identities and selection.
 
 use super::*;
-use crate::{settings::model::Config, terminal::state::TerminalState};
+use crate::{settings::model::Config, terminal::model::TerminalState};
 use maestro_detection::manifest::ManifestCache;
 use maestro_workspace::layout::PaneId;
 use std::sync::{Arc, RwLock};

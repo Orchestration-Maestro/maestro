@@ -1,9 +1,6 @@
 //! Registered question call/result renderers on both callback adapters.
 use super::Question;
-use crate::tests::{
-    scenario::{Driver, ToolRenderRun},
-    theme_host::{Palette, Reply},
-};
+use crate::tests::{scenario::{Driver, ToolRenderRun}, theme_host::{Palette, Reply}};
 use serde_json::{Value, json};
 /// Literal style requests keep the semantic roles observable.
 fn palette() -> Palette {

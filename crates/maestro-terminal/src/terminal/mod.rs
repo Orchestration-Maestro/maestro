@@ -172,7 +172,7 @@ pub struct Terminal {
     /// Configured history byte limit, before storage rounding.
     max_scrollback: usize,
     /// Previous viewport row anchor with its owning screen lifetime.
-    tracked_row: Option<(crate::screen_set::Key, usize, crate::page_list::TrackedPin)>,
+    tracked_row: Option<(crate::screens::Key, usize, crate::page_list::TrackedPin)>,
 }
 
 impl Terminal {

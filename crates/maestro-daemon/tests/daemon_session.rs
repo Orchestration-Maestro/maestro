@@ -2,10 +2,10 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::{launch, runtime::block_on};
+use crate::support::{runtime::block_on, spawning};
 
 use maestro_daemon::{
-    api::event_hub::EventHub, app::App, paths::DaemonPaths, settings::model::Config,
+    app::App, locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config,
 };
 use std::{
     sync::{Arc, RwLock},
@@ -17,7 +17,7 @@ fn app() -> App<fn() -> u128> {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,
@@ -161,7 +161,7 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
     app.config_diagnostic_deadline = Some(past);
     app.state.config_diagnostic = Some("temporary diagnostic".into());
     app.copy_feedback_deadline = Some(past);
-    app.state.copy_feedback = Some(maestro_daemon::app::state::CopyFeedback {
+    app.state.copy_feedback = Some(maestro_daemon::app::model::CopyFeedback {
         message: "copied".into(),
     });
     app.launch
@@ -235,7 +235,7 @@ fn disabled_dirty_saves_stay_idle_and_an_empty_enabled_save_removes_both_files()
 
 #[test]
 fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
-    use maestro_daemon::terminal::state::AgentMetadataReport;
+    use maestro_daemon::terminal::model::AgentMetadataReport;
     let (_directory, paths) = paths();
     let mut app = app();
     // No sidebar row asks for repository status, so no refresh deadline joins the metadata ones.
@@ -250,7 +250,7 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
         .unwrap()
         .clone();
     let mut terminal =
-        maestro_daemon::terminal::state::TerminalState::new(id.clone(), "/expiry".into());
+        maestro_daemon::terminal::model::TerminalState::new(id.clone(), "/expiry".into());
     terminal
         .set_agent_metadata(AgentMetadataReport {
             source: "user".into(),
@@ -295,7 +295,7 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
 
 #[test]
 fn scheduled_managed_timeout_publishes_the_changed_pane() {
-    use maestro_daemon::terminal::state::{ManagedAgentLaunch, TerminalState};
+    use maestro_daemon::terminal::model::{ManagedAgentLaunch, TerminalState};
     let (_directory, paths) = paths();
     let mut app = app();
     let (pane, ()) = app
@@ -349,7 +349,7 @@ fn assert_metadata_expiry_events(hub: &EventHub) {
 
 #[test]
 fn simultaneous_metadata_and_managed_expiry_still_publishes_the_managed_pane() {
-    use maestro_daemon::terminal::state::{AgentMetadataReport, ManagedAgentLaunch, TerminalState};
+    use maestro_daemon::terminal::model::{AgentMetadataReport, ManagedAgentLaunch, TerminalState};
     let (_directory, paths) = paths();
     let mut app = app();
     let (pane, ()) = app

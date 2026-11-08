@@ -2,14 +2,14 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::{self, launch::launch_inputs};
+use crate::support::{self, spawning::launch_inputs};
 
 use maestro_daemon::{
     app::App,
     events::AppEvent,
-    pane::{
-        launch_env::PaneLaunchEnv,
-        runtime::{AgentDetection, PaneRuntime},
+    panes::{
+        launch::PaneLaunchEnv,
+        lifecycle::{AgentDetection, PaneRuntime},
     },
     settings::model::Config,
 };
@@ -25,7 +25,7 @@ use tokio::sync::mpsc;
 
 #[test]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -151,7 +151,7 @@ fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
         (|| 0) as fn() -> u128,
         launch,
         event_rx,
-        maestro_daemon::api::event_hub::EventHub::default(),
+        maestro_daemon::service::event_hub::EventHub::default(),
     );
     let state = &mut app.state;
     state
@@ -188,7 +188,7 @@ fn daemon_delayed_workspace_toast_context_uses_live_root_runtime_cwd_label() {
 fn overlay_app(previous_zoomed: bool) -> (TestApp, PaneId, PaneId) {
     let mut app = context_app("/overlay".into(), false);
     app.state.active = Some(0);
-    app.state.mode = maestro_daemon::app::state::Mode::Terminal;
+    app.state.mode = maestro_daemon::app::model::Mode::Terminal;
     let previous_focus = app.state.topology.workspaces[0].tabs[0].root_pane;
     let pane = app
         .state
@@ -309,7 +309,7 @@ fn daemon_process_exit_releases_a_newer_hook_owned_agent() {
     let terminal = app.state.terminals.get_mut(&terminal_id).unwrap();
     terminal
         .set_hook_authority_at(
-            maestro_daemon::terminal::state::HookReport {
+            maestro_daemon::terminal::model::HookReport {
                 source: "maestro:codex".into(),
                 agent_label: "codex".into(),
                 state: AgentState::Working,
@@ -448,10 +448,10 @@ async fn check_respawn(args: &[String]) {
     let terminal = app.state.terminals.get_mut(&terminal_id).unwrap();
     terminal.respawn_shell_on_exit = true;
     terminal.set_agent_name("codex".into());
-    terminal.set_persisted_agent_session(maestro_daemon::agent_resume::PersistedAgentSession {
+    terminal.set_persisted_agent_session(maestro_daemon::resume::PersistedAgentSession {
         source: "maestro:codex".into(),
         agent: "codex".into(),
-        session_ref: maestro_daemon::agent_resume::AgentSessionRef::id("codex-session").unwrap(),
+        session_ref: maestro_daemon::resume::AgentSessionRef::id("codex-session").unwrap(),
     });
     app.handle_internal_event(AppEvent::PaneDied { pane_id: pane });
     assert!(app.state.find_pane(pane).is_some());
@@ -485,7 +485,7 @@ fn daemon_delayed_terminal_delivery_does_not_refresh_existing_targeted_toast() {
 
 /// Keeps an existing target stable when delivery only targets the external client.
 fn assert_terminal_delivery_keeps_toast(delayed: bool) {
-    use maestro_daemon::app::state::{ToastKind, ToastNotification, ToastTarget};
+    use maestro_daemon::app::model::{ToastKind, ToastNotification, ToastTarget};
     let mut app = context_app("/__maestro_original__".into(), delayed);
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
     let terminal_id = app.state.topology.workspaces[0]
@@ -626,8 +626,8 @@ fn daemon_clipboard_feedback_can_be_disabled() {
 #[test]
 fn daemon_clipboard_feedback_does_not_replace_notification_toast() {
     let mut app = context_app(temporary_root(), false);
-    app.state.toast = Some(maestro_daemon::app::state::ToastNotification {
-        kind: maestro_daemon::app::state::ToastKind::NeedsAttention,
+    app.state.toast = Some(maestro_daemon::app::model::ToastNotification {
+        kind: maestro_daemon::app::model::ToastKind::NeedsAttention,
         title: "agent needs attention".into(),
         context: "background · 2".into(),
         position: None,
@@ -731,7 +731,7 @@ async fn check_workspace_creation(args: &[String]) {
         (|| 0) as fn() -> u128,
         launch,
         receiver,
-        maestro_daemon::api::event_hub::EventHub::default(),
+        maestro_daemon::service::event_hub::EventHub::default(),
     );
     assert!(app.ensure_default_workspace());
     assert!(!app.ensure_default_workspace());
@@ -742,7 +742,7 @@ async fn check_workspace_creation(args: &[String]) {
     assert_eq!(app.state.terminals.len(), 1);
     assert_eq!(app.terminal_runtimes.len(), 1);
     assert!(app.terminal_runtimes.get(terminal).is_some());
-    assert_eq!(app.state.mode, maestro_daemon::app::state::Mode::Terminal);
+    assert_eq!(app.state.mode, maestro_daemon::app::model::Mode::Terminal);
     assert!(app.state.session_dirty);
     app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
     app.state.session_dirty = false;
@@ -785,7 +785,7 @@ fn agent_event_publication_keeps_complete_ordered_payloads() {
         .values_mut()
         .next()
         .unwrap()
-        .set_agent_metadata(maestro_daemon::terminal::state::AgentMetadataReport {
+        .set_agent_metadata(maestro_daemon::terminal::model::AgentMetadataReport {
             source: "test".into(),
             agent_label: Some("codex".into()),
             applies_to_source: None,

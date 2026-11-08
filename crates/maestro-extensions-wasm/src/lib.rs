@@ -11,7 +11,7 @@ mod port;
 mod abort_controller;
 mod agent;
 pub use abort_controller::AbortController;
-pub use maestro_text::line_decoder::ByteLineDecoder;
+pub use maestro_text::line_framing::ByteLineDecoder;
 pub mod utils;
 #[cfg(target_arch = "wasm32")]
 pub use utils::event_stream::create_assistant_message_event_stream;
@@ -100,7 +100,7 @@ pub use compaction::{CompactionPreparation, CompactionResult, CompactionSettings
 #[doc(hidden)]
 pub use component_adapter::Glue;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
-pub use maestro_request::auth_storage::{AuthSource, AuthStatus};
+pub use maestro_request::credentials::{AuthSource, AuthStatus};
 pub use maestro_request::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };

@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use maestro_daemon::{terminal::state::TerminalState, workspace::aggregate};
+use maestro_daemon::{terminal::model::TerminalState, workspace::summary as aggregate};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::{
     layout::PaneId,
@@ -158,7 +158,7 @@ fn daemon_pane_details_includes_tab_context_for_multi_tab_workspace() {
     let mut root_terminal = terminal_for_pane(ws, root_pane);
     root_terminal
         .set_hook_authority_at(
-            maestro_daemon::terminal::state::HookReport {
+            maestro_daemon::terminal::model::HookReport {
                 source: "test".into(),
                 agent_label: "pi".into(),
                 state: AgentState::Working,
@@ -173,7 +173,7 @@ fn daemon_pane_details_includes_tab_context_for_multi_tab_workspace() {
     let mut review_terminal = terminal_for_pane(ws, review_pane);
     review_terminal
         .set_hook_authority_at(
-            maestro_daemon::terminal::state::HookReport {
+            maestro_daemon::terminal::model::HookReport {
                 source: "test".into(),
                 agent_label: "claude".into(),
                 state: AgentState::Idle,

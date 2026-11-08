@@ -4,7 +4,9 @@
 use maestro_agent::{Agent, AgentMessage, AgentOptions, PromptInput};
 use maestro_models::{AssistantMessageEventStream, BoxFuture, UserContent};
 use maestro_request::presence::Presence;
-use maestro_session::messages::{BashExecutionMessage, CustomAgentMessages, create_custom_message};
+use maestro_session::message_records::{
+    BashExecutionMessage, CustomAgentMessages, create_custom_message,
+};
 use std::sync::{Arc, Mutex, RwLock};
 
 /// An unrecognized caller role.

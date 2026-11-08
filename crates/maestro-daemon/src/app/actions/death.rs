@@ -1,6 +1,6 @@
 //! Pane-exit topology and retained-state cleanup.
 
-use crate::app::state::{DaemonState, Mode};
+use crate::app::model::{DaemonState, Mode};
 use maestro_workspace::layout::PaneId;
 use std::collections::HashSet;
 

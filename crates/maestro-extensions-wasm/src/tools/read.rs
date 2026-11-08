@@ -19,7 +19,8 @@ pub struct ReadToolInput {
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
 /// Observations supplied by the read tool with guest field presence.
-pub type ReadToolDetails = maestro_tool::tools::read::ReadToolDetails<Presence<TruncationResult>>;
+pub type ReadToolDetails =
+    maestro_tool::tools::reading::ReadToolDetails<Presence<TruncationResult>>;
 
 /// Fallible asynchronous work supplied by a tool operation.
 pub type OperationFuture<'a, T> = std::pin::Pin<

@@ -1,7 +1,7 @@
 //! Repository status observations applied to retained workspaces.
 
 use crate::{
-    app::state::DaemonState, terminal::runtime_registry::TerminalRuntimeRegistry,
+    app::model::DaemonState, terminal::owners::TerminalRuntimeRegistry,
     workspace::resolved_identity_cwd_from,
 };
 use maestro_workspace::workspace::{Workspace, WorkspaceGitStatus};

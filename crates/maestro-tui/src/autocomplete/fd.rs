@@ -1,6 +1,6 @@
 //! Native search execution with owned child and captured pipes.
 use maestro_cancellation::Cancellation;
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
 use std::io;

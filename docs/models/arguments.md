@@ -5,7 +5,7 @@
 `maestro-models` provides shared parsing and sanitizing operations for
 model-supplied JSON.
 
-`maestro_models::arguments::json_parse::parse_json(&str)` parses complete JSON
+`maestro_models::parameters::json_parse::parse_json(&str)` parses complete JSON
 without repairing string literals. It returns `serde_json::Error` on failure.
 Use this strict operation for displayed JSON text; use `parse_json_with_repair`
 for completed model arguments and `parse_streaming_json` for incomplete ones.
@@ -107,7 +107,7 @@ progress does not replace the arguments or the retained assistant call.
 
 ## Checking without conversion
 
-`maestro_models::arguments::validation::validate_schema` checks an original JSON
+`maestro_models::parameters::validation::validate_schema` checks an original JSON
 value without converting it or changing the schema. It returns diagnostic lines
 for invalid values, an empty list for admitted values, or `DiagnosticErrorInfo`
 when schema preparation fails. It uses the checker described under

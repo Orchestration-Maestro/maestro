@@ -1,6 +1,6 @@
 //! Pane-owned metadata and focus cleanup after topology removal.
 
-use crate::app::state::{DaemonState, Mode};
+use crate::app::model::{DaemonState, Mode};
 use maestro_workspace::{layout::PaneId, terminal_id::TerminalId};
 use std::collections::HashSet;
 

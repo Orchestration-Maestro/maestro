@@ -36,18 +36,18 @@
 /// Invocation-local callback emission.
 pub mod callbacks;
 /// Ordered shared channel delivery.
-pub mod event_bus;
+pub mod events;
 /// Opt-in helpers for controlled tests.
 #[cfg(feature = "test-support")]
 pub mod test_support;
 pub use callbacks::CallbackEmitter;
-pub use event_bus::{
+pub use events::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,
     Subscription, TailSpawner, create_event_bus, create_event_bus_for,
 };
 
 /// The read-only footer metadata extension footers receive.
-pub mod footer_data_provider;
+pub mod footer;
 /// Native helper delegation used by component adapters.
 #[doc(hidden)]
 #[cfg(not(target_arch = "wasm32"))]
@@ -76,7 +76,7 @@ pub use maestro_models::{
     stream_simple_for, stream_simple_via_for,
 };
 pub use maestro_resources::SourceInfo;
-pub use maestro_session::messages::CustomMessageInput;
+pub use maestro_session::message_records::CustomMessageInput;
 pub use maestro_session::session_manager::{
     CompactionOptions, ForkPosition, NavigateTreeOptions, NewSessionOptions,
     ReadonlySessionManager, SessionTreeNode,
@@ -105,8 +105,8 @@ pub use types::{
     WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
-pub mod runner;
-pub use runner::ExtensionRunner;
+pub mod execution;
+pub use execution::ExtensionRunner;
 
 pub use loader::CatalogConstruction;
 #[cfg(not(target_arch = "wasm32"))]
@@ -208,7 +208,7 @@ pub use maestro_tools::{
 pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
 /// Toolkit widgets an extension host builds, and the capability that builds the ones whose
 /// look depends on the host.
-pub mod widgets {
+pub mod presentation {
     pub use crate::types::{
         ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets,
     };

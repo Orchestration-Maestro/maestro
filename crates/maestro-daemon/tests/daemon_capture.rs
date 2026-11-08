@@ -3,10 +3,10 @@
 #![cfg(target_os = "linux")]
 
 use maestro_daemon::{
-    app::state::DaemonState,
+    app::model::DaemonState,
     persist::capture,
     settings::model::Config,
-    terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState},
+    terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
     layout::{PaneId, SplitRequest},
@@ -312,7 +312,7 @@ fn capture_keeps_workspace_identity_and_pane_cwds() {
 
 #[test]
 fn daemon_managed_agent_snapshot_omits_pending_and_persists_active_ownership() {
-    use maestro_daemon::terminal::state::{DetectedStateUpdate, ManagedAgentLaunch};
+    use maestro_daemon::terminal::model::{DetectedStateUpdate, ManagedAgentLaunch};
     use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
     let mut state = state(&["one"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
@@ -358,8 +358,8 @@ fn daemon_managed_agent_snapshot_omits_pending_and_persists_active_ownership() {
 #[test]
 fn capture_keeps_hook_authority_agent_session() {
     use maestro_daemon::{
-        agent_resume::{AgentSessionRef, AgentSessionRefKind, PersistedAgentSession},
-        terminal::state::HookReport,
+        resume::{AgentSessionRef, AgentSessionRefKind, PersistedAgentSession},
+        terminal::model::HookReport,
     };
     let mut state = state(&["one"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
@@ -401,9 +401,7 @@ fn capture_keeps_hook_authority_agent_session() {
 
 #[test]
 fn capture_retains_restored_agent_session() {
-    use maestro_daemon::agent_resume::{
-        AgentSessionRef, AgentSessionRefKind, PersistedAgentSession,
-    };
+    use maestro_daemon::resume::{AgentSessionRef, AgentSessionRefKind, PersistedAgentSession};
     let mut state = state(&["one"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
     let id = state.topology.workspaces[0]
@@ -431,12 +429,12 @@ fn capture_retains_restored_agent_session() {
 }
 
 #[cfg(unix)]
-use crate::support::launch;
+use crate::support::spawning;
 
 #[test]
 #[cfg(unix)]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -479,9 +477,9 @@ fn with_history(name: &str, count: usize) {
 async fn check_history(args: &[String], count: usize) {
     use maestro_daemon::{
         events::AppEvent,
-        pane::{
-            launch_env::PaneLaunchEnv,
-            runtime::{AgentDetection, PaneRuntime},
+        panes::{
+            launch::PaneLaunchEnv,
+            lifecycle::{AgentDetection, PaneRuntime},
         },
         persist::capture_history,
     };
@@ -489,7 +487,7 @@ async fn check_history(args: &[String], count: usize) {
     if count == 2 {
         split(&mut state);
     }
-    let (launch, mut receiver) = launch::launch_inputs(args, Arc::clone(&state.manifests));
+    let (launch, mut receiver) = spawning::launch_inputs(args, Arc::clone(&state.manifests));
     let mut runtimes = TerminalRuntimeRegistry::new();
     let panes = state.topology.workspaces[0].tabs[0].layout.pane_ids();
     let markers = if count == 1 {

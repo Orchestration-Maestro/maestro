@@ -4,7 +4,7 @@
 
 The root operations use thread-safe callables on native targets and `Rc` callables
 on browser targets. Their explicit local counterparts
-have the same names under `maestro_agent::agent_loop::local`, with
+have the same names under `maestro_agent::execution::local`, with
 `LocalAgentContext` and `LocalAgentLoopConfig`. Submitted local operations take
 `AgentLoopOptionsRecord<Local>` plus an `AgentSpawner<Local>`; provider tasks reuse
 that facility. Both namespaces keep one explicit custom-message type argument

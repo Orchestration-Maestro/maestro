@@ -171,7 +171,7 @@ button byte and release terminator for projection without a wire dependency.
 
 ## Daemon event projection
 
-`maestro_daemon::input::raw_input::RawInputFramer` projects the toolkit's complete
+`maestro_daemon::ingress::framing::RawInputFramer` projects the toolkit's complete
 frames into the daemon's existing key, paste, mouse, focus and host-reply events.
 `parse_raw_input_bytes_sync` decodes a supplied buffer with one idle flush.
 Neither function reads the terminal. The multiplexer input loop supplies bytes

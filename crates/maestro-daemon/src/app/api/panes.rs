@@ -18,8 +18,8 @@ use super::{
     responses::{api_error, pane_not_found, pane_unresolved},
 };
 use maestro_process::{
-    foreground::ForegroundProcess,
-    pty::foreground::{self, ProcessDetectionMode},
+    jobs::ForegroundProcess,
+    terminal::jobs::{self as foreground, ProcessDetectionMode},
 };
 use maestro_protocol::{
     rpc_types::RpcCommand,

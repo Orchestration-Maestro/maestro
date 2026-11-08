@@ -4,7 +4,7 @@ use maestro_app::rpc_types::{
     RpcCommandBody, RpcData, RpcLastAssistantText, RpcSessionCommand, parse_rpc_command,
 };
 use maestro_app::{Presence, RpcCommand, RpcResponse, RpcSessionState};
-use maestro_json::jsonl::serialize_json_line;
+use maestro_json::lines::serialize_json_line;
 use serde_json::{Value, json};
 
 /// One recorded command, its input and the exact line answering it.

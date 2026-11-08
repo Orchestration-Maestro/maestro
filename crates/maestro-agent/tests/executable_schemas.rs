@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_agent::agent_loop::LocalAgentLoopOptions;
+use maestro_agent::execution::LocalAgentLoopOptions;
 use maestro_agent::{AgentContextRecord, AgentLoopConfigRecord, AgentToolRecord, NoCustomMessages};
 use maestro_models::{
     AssistantContent, Base, Local, ParameterSchema, SchemaCallback, SchemaCode, SchemaKind,
@@ -169,7 +169,7 @@ fn drive(
     config: &AgentLoopConfigRecord<NoCustomMessages, Local>,
     queue: Rc<RefCell<VecDeque<maestro_models::SharedAssistantMessage>>>,
 ) {
-    support::run(maestro_agent::agent_loop::local::run_agent_loop_continue(
+    support::run(maestro_agent::execution::local::run_agent_loop_continue(
         AgentContextRecord {
             system_prompt: String::new(),
             messages: std::sync::Arc::new(RwLock::new(vec![support::user("earlier")])),

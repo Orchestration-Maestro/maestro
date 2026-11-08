@@ -165,7 +165,7 @@ impl Ui {
         options: Option<CustomUIOptions>,
         (open, close): (Open, maestro_extensions::types::CustomClose),
     ) -> Result<(), EventError> {
-        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+        let keys = maestro_extensions::presentation::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
             reload: None,
         };
@@ -572,7 +572,7 @@ fn overlay_qa_tests_margins_and_offsets_place_each_configuration() {
         let width = host.ui.shown.borrow()[0].placement.borrow().width.clone();
         assert_eq!(
             width,
-            Some(maestro_extensions::widgets::SizeValue::Cells(35))
+            Some(maestro_extensions::presentation::SizeValue::Cells(35))
         );
     });
 }

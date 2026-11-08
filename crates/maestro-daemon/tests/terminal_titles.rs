@@ -2,9 +2,9 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::launch;
+use crate::support::spawning;
 
-use maestro_daemon::{api::event_hub::EventHub, app::App, settings::model::Config};
+use maestro_daemon::{app::App, service::event_hub::EventHub, settings::model::Config};
 use maestro_workspace::layout::PaneId;
 use std::{
     collections::HashSet,
@@ -13,7 +13,7 @@ use std::{
 
 #[test]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -23,7 +23,7 @@ fn fixture(args: &[String]) -> (App<fn() -> u128>, PaneId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(args, manifests);
+    let (launch, receiver) = spawning::launch_inputs(args, manifests);
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,
@@ -41,7 +41,7 @@ fn fixture(args: &[String]) -> (App<fn() -> u128>, PaneId) {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let mut terminal = maestro_daemon::terminal::state::TerminalState::new(
+    let mut terminal = maestro_daemon::terminal::model::TerminalState::new(
         id.clone(),
         std::env::current_dir().unwrap(),
     );
@@ -49,12 +49,12 @@ fn fixture(args: &[String]) -> (App<fn() -> u128>, PaneId) {
     terminal.state = maestro_detection::agents::AgentState::Working;
     app.state.terminals.insert(id.clone(), terminal);
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
-    config.agent_detection = maestro_daemon::pane::runtime::AgentDetection::Disabled;
-    let runtime = maestro_daemon::pane::runtime::PaneRuntime::spawn_shell_command(
+    config.agent_detection = maestro_daemon::panes::lifecycle::AgentDetection::Disabled;
+    let runtime = maestro_daemon::panes::lifecycle::PaneRuntime::spawn_shell_command(
         config,
         "read -r line",
         std::env::current_dir().unwrap(),
-        &maestro_daemon::pane::launch_env::PaneLaunchEnv::default(),
+        &maestro_daemon::panes::launch::PaneLaunchEnv::default(),
     )
     .unwrap();
     app.terminal_runtimes.insert(id, runtime);
@@ -123,7 +123,7 @@ async fn check_titles(args: &[String]) {
     assert_eq!(info.terminal_title_stripped, None);
     assert_eq!(info.revision, 3);
     assert_eq!(updates(&app), 3);
-    app.shutdown(&maestro_daemon::paths::DaemonPaths::new("/unused", None).unwrap())
+    app.shutdown(&maestro_daemon::locations::DaemonPaths::new("/unused", None).unwrap())
         .await;
 }
 
@@ -176,14 +176,14 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
                 .block_on(async {
                     let (mut app, pane) = fixture(args);
                     app.config.ui.sidebar.agents.rows = vec![vec![
-                        maestro_daemon::settings::sidebar::AgentSidebarToken::TerminalTitleStripped,
+                        maestro_daemon::settings::navigation::AgentSidebarToken::TerminalTitleStripped,
                     ]];
                     title(&app, b"\x1b]0;building\x07");
                     let _ = app.launch.render_dirty.request_terminal_title(pane);
                     assert!(app.sync_pending_terminal_titles().await.stripped_changed);
                     assert!(app.launch.render_dirty.take().generic);
                     app.shutdown(
-                        &maestro_daemon::paths::DaemonPaths::new("/unused", None).unwrap(),
+                        &maestro_daemon::locations::DaemonPaths::new("/unused", None).unwrap(),
                     )
                     .await;
                 });
@@ -195,12 +195,12 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
 #[test]
 fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
     use maestro_daemon::{
-        app::terminal_titles::TerminalTitleChanges, settings::sidebar::AgentSidebarToken,
+        app::terminal_titles::TerminalTitleChanges, settings::navigation::AgentSidebarToken,
     };
     let manifests = Arc::new(RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,
@@ -266,7 +266,7 @@ async fn check_loop_projection(args: &[String]) {
     app.launch.render_notify.notify_one();
     let hub = app.event_hub.clone();
     app.run(
-        &maestro_daemon::paths::DaemonPaths::new("/unused", None).unwrap(),
+        &maestro_daemon::locations::DaemonPaths::new("/unused", None).unwrap(),
         &mut tokio::sync::mpsc::unbounded_channel().1,
         &mut crate::support::api::settings(),
         async {

@@ -134,7 +134,7 @@ impl ExtensionUIContextPort for Ui {
         let disposer = Rc::new(RefCell::new(None::<ComponentDisposer>));
         let close = loader_close(send, disposer.clone());
         let (tui, _) = super::canonical_ui::screen();
-        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+        let keys = maestro_extensions::presentation::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(
                 maestro_tui::TUI_KEYBINDINGS.clone(),
                 Vec::new(),
@@ -658,7 +658,7 @@ async fn escape_pending_loader(provider: &Provider, driver: &Driver) {
 
 /// The same native helper path as the compiled command, with a real parsed compaction time.
 fn expected_history(timestamp: &str) -> String {
-    let timestamp = maestro_session::messages::parse_timestamp_millis(timestamp)
+    let timestamp = maestro_session::message_records::parse_timestamp_millis(timestamp)
         .unwrap()
         .to_string()
         .parse::<f64>()

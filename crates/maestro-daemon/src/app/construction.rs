@@ -1,20 +1,20 @@
 //! Caller-supplied launch inputs shared by topology creation and shell replacement.
 
-use super::{App, state::DaemonState};
+use super::{App, model::DaemonState};
 use crate::{
-    api::event_hub::EventHub,
     events::AppEvent,
-    pane::runtime::{AgentDetection, PaneRuntimeConfig},
+    panes::lifecycle::{AgentDetection, PaneRuntimeConfig},
     render_signal::RenderSignal,
+    service::event_hub::EventHub,
     settings::{io::AcceptedAreas, model::Config},
-    terminal::runtime_registry::TerminalRuntimeRegistry,
+    terminal::owners::TerminalRuntimeRegistry,
     terminal_theme::{HostAppearance, TerminalTheme},
 };
 /// The detection snapshot type of [`PaneLaunchInputs::manifests`].
 pub use maestro_detection::manifest::ManifestCache;
-use maestro_process::pty::PtySize;
+use maestro_process::terminal::PtySize;
 /// The child-setup entry and process detection policy of [`PaneLaunchInputs`].
-pub use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode, setup_entry};
+pub use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode, setup_entry};
 use maestro_workspace::layout::PaneId;
 use std::{
     collections::HashMap,

@@ -10,8 +10,8 @@ use crate::overlay_reads::{
 };
 use maestro_extensions::{
     EventBus, Local,
+    presentation::{OverlayHandle, OverlayOptions},
     types::UIErrorReporter,
-    widgets::{OverlayHandle, OverlayOptions},
 };
 use std::{
     cell::{OnceCell, RefCell},

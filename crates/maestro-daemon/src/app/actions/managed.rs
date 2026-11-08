@@ -1,6 +1,6 @@
 //! Deadline-driven managed ownership reconciliation without another timer owner.
 
-use crate::{app::state::DaemonState, terminal::state::TerminalState};
+use crate::{app::model::DaemonState, terminal::model::TerminalState};
 use maestro_workspace::layout::PaneId;
 use std::{collections::HashSet, time::Instant};
 

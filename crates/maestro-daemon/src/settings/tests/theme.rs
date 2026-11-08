@@ -1,6 +1,6 @@
 //! Workspace theme preference behavior.
 
-use super::super::theme::{ThemeConfig, canonical_theme_name};
+use super::super::appearance::{ThemeConfig, canonical_theme_name};
 use serde_json::json;
 
 #[test]
@@ -38,7 +38,7 @@ fn theme_switch_options_remain_independent() {
 
 #[test]
 fn theme_aliases_resolve_to_canonical_names() {
-    use super::super::theme::THEME_NAMES;
+    use super::super::appearance::THEME_NAMES;
     assert_eq!(THEME_NAMES.len(), 18);
     for name in THEME_NAMES {
         assert_eq!(canonical_theme_name(name), Some(*name));
@@ -149,6 +149,6 @@ fn theme_custom_tokens_keep_all_overrides() {
     let empty: ThemeConfig = serde_json::from_value(json!({"custom":{}})).unwrap();
     assert_eq!(
         empty.custom.unwrap(),
-        super::super::theme::CustomThemeColors::default()
+        super::super::appearance::CustomThemeColors::default()
     );
 }

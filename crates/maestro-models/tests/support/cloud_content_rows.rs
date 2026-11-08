@@ -431,7 +431,7 @@ fn entry(
             ..SimpleStreamOptions::default()
         });
         if input.entry.as_deref() == Some("public") {
-            maestro_models::providers::content::google::stream_simple_google(
+            maestro_models::providers::content::generative::stream_simple_google(
                 model, context, options,
             )
         } else {

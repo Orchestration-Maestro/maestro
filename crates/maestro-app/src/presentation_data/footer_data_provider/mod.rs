@@ -14,7 +14,7 @@ mod operations;
 mod provider;
 mod watch;
 
-pub use maestro_extensions::footer_data_provider::{
+pub use maestro_extensions::footer::{
     ExtensionStatusIter, ExtensionStatuses, ReadonlyFooterDataProvider,
 };
 pub use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};

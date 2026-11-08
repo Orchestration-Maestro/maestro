@@ -1,7 +1,7 @@
 //! Native output observed through an actual pseudo-terminal.
 #![cfg(target_os = "linux")]
 use super::Root;
-use maestro_process::pty::{PtyCommand, PtyEnvironment, PtySetupEntry, PtySize};
+use maestro_process::terminal::{PtyCommand, PtyEnvironment, PtySetupEntry, PtySize};
 use std::io::{Read, Write};
 
 /// Reap the real executable on assertion failure as well as successful completion.

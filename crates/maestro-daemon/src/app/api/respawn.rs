@@ -3,7 +3,7 @@
 use crate::{
     app::App,
     events::AppEvent,
-    pane::{runtime::PaneRuntime, shell::PaneShellConfig},
+    panes::{commands::PaneShellConfig, lifecycle::PaneRuntime},
 };
 use maestro_workspace::layout::PaneId;
 
@@ -67,11 +67,11 @@ impl<C: FnMut() -> u128> App<C> {
         workspace: usize,
         pane: PaneId,
         extra: Vec<(String, String)>,
-    ) -> Option<crate::pane::launch_env::PaneLaunchEnv> {
+    ) -> Option<crate::panes::launch::PaneLaunchEnv> {
         let target = self.state.topology.workspaces.get(workspace)?;
         let tab = target.find_tab_index_for_pane(pane)?;
         Some(
-            crate::pane::launch_env::PaneLaunchEnv::from_extra(extra).with_identity(
+            crate::panes::launch::PaneLaunchEnv::from_extra(extra).with_identity(
                 target.id.clone(),
                 self.state.public_tab_id(workspace, tab)?,
                 self.state.public_pane_id(workspace, pane)?,

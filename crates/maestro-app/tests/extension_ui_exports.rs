@@ -26,7 +26,7 @@ fn native_ui(ui: ExtensionUIContext) -> maestro_extensions::ExtensionUIContext {
 /// Returns the footer view the application provider implements.
 fn extension_footer(
     provider: &dyn ReadonlyFooterDataProvider,
-) -> &dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider {
+) -> &dyn maestro_extensions::footer::ReadonlyFooterDataProvider {
     provider
 }
 
@@ -64,7 +64,7 @@ fn native_ui_exports_share_the_existing_records() {
     listeners.add(owner);
     listeners.snapshot()[0]().unwrap();
     let options = MessageRenderOptions { expanded: true };
-    let session: maestro_session::messages::MessageRenderOptions = options;
+    let session: maestro_session::message_records::MessageRenderOptions = options;
     let _: maestro_extensions::MessageRenderOptions = session;
     let renderer: MessageRenderer = SharedHandle::new(|_, _, _, _| Ok(None));
     let _: maestro_extensions::MessageRenderer = renderer;
@@ -85,8 +85,7 @@ fn native_ui_exports_share_the_existing_records() {
     };
     let _: maestro_extensions::WorkingIndicatorOptions = indicator;
     let _ = (native_ui, extension_footer, native_input, native_wrapper);
-    let statuses: maestro_extensions::footer_data_provider::ExtensionStatuses =
-        ExtensionStatuses::new();
+    let statuses: maestro_extensions::footer::ExtensionStatuses = ExtensionStatuses::new();
     statuses.insert("build".into(), "passing".into());
     let walk: ExtensionStatusIter = statuses.iter();
     assert_eq!(

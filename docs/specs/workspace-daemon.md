@@ -113,7 +113,7 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Daemon state, view state and the render surface
 
-- **Daemon state.** `maestro-daemon::app::state::DaemonState` holds every field that daemon code reads or
+- **Daemon state.** `maestro-daemon::app::model::DaemonState` holds every field that daemon code reads or
   writes, directly or through a state method. Examples are sizes, popup geometry, persisted sidebar values,
   toasts, the mode, copy mode, selection, focus records, notification delivery and the worktree-open dialog.
   It is shared by every client of one daemon.
@@ -132,13 +132,13 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Interfaces
 
-- **JSONL framing.** `maestro_json::jsonl::{serialize_json_line, JsonlLineSplitter}`: synchronous, bytes in
+- **JSONL framing.** `maestro_json::lines::{serialize_json_line, JsonlLineSplitter}`: synchronous, bytes in
   and lines out. Callers own their async glue.
 - **Spawning in topology.** `FnOnce(PaneId, SpawnRequest) -> io::Result<T>` is passed to every topology
   operation that creates a pane. The operation returns `(PaneId, T)` and removes the new leaf when the spawn
   fails.
 - **Recoverable publication.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
-- **Paths and names.** `maestro_daemon::paths::DaemonPaths` and `maestro_daemon::environment::NAMES`.
+- **Paths and names.** `maestro_daemon::locations::DaemonPaths` and `maestro_daemon::variables::NAMES`.
 - **Server.** `maestro_rpc::daemon::run_server` starts the API socket and runs the daemon loop. The
   executable's `daemon` arm and the in-process tests call it.
 - **Daemon client.** `maestro_app::daemon::client::{DaemonClient, ensure_running}`.
@@ -168,7 +168,7 @@ need `unsafe` to hand its descriptor to the async runtime.
   read no variable and name no root.
 - **Dispatch.** Workspace commands reach the daemon through the shared RPC dispatch path, on stdio and on the
   socket. The socket adapter lives in `maestro-rpc::daemon`; daemon state, subscriptions and waits live in
-  `maestro-daemon::api`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
+  `maestro-daemon::service`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
   connection teardown and drives the existing daemon `App::run` loop. Each accepted socket
   uses the application connection runner with no session; supplied sessions remain supported
   by that same runner. Typed requests flow down to daemon-owned handlers, never through a
@@ -209,7 +209,7 @@ need `unsafe` to hand its descriptor to the async runtime.
 
 ### One pane runtime over the concrete emulator
 
-- **Ownership.** `maestro_daemon::pane::PaneRuntime` is the only runtime type for a pane terminal. It owns
+- **Ownership.** `maestro_daemon::panes::PaneRuntime` is the only runtime type for a pane terminal. It owns
   the PTY child, the emulator's `Terminal` and the agent detection task, and it keeps behaviour only.
 - **No forwarding layers.** Types that only delegate are not built. The registry stores `PaneRuntime`
   directly.
@@ -227,7 +227,7 @@ need `unsafe` to hand its descriptor to the async runtime.
 ### One key and mouse vocabulary
 
 - **Vocabulary.** The protocol's key and mouse enums are the vocabulary in every crate.
-- **TerminalKey.** `maestro_daemon::input::TerminalKey` wraps them. It adds the shifted code point and the
+- **TerminalKey.** `maestro_daemon::ingress::TerminalKey` wraps them. It adds the shifted code point and the
   physical key identity, and it has one conversion pair to the protocol's key event.
 - **Emulator boundary.** The emulator's key event is built from `TerminalKey` only where an encoder is
   called.
@@ -243,9 +243,9 @@ The snapshot, the detection catalog and the announcements store use it.
 ### Foreground process facts
 
 - **Location.** Foreground jobs, process trees, argv, working directories and environment values are read in
-  the Linux-only `maestro-process::pty::foreground`. Its `ForegroundJob` and
+  the Linux-only `maestro-process::terminal::jobs`. Its `ForegroundJob` and
   `ForegroundProcess` records live in the platform-independent
-  `maestro-process::foreground` module, with re-exports at their Linux paths.
+  `maestro-process::jobs` module, with re-exports at their Linux paths.
 - **Environment hint.** It is returned as the raw value, and the daemon parses it with the agent catalogue.
   That removes the cycle between process facts and agent recognition.
 
@@ -292,7 +292,7 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 
 | Defect | Fix | Delivery |
 |---|---|---|
-| Six POSIX shell quoters, one with a different safe set, plus five other quoters | one quoter in `maestro-process::shell`; the others become its callers | 2 |
+| Six POSIX shell quoters, one with a different safe set, plus five other quoters | one quoter in `maestro-process::commands`; the others become its callers | 2 |
 | The peer-closed probe consumes a byte and treats data as a disconnect | full-duplex lines and end of input | 1, 13 |
 | Two run loops with duplicated scheduling, deferred requests, repeat plans and key handling | one loop | 12, 29, 34 |
 | Three atomic JSON writers with different durability | one replacement owner | 6, 7, 27 |

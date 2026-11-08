@@ -74,7 +74,7 @@ impl Terminal {
             .is_some_and(|(row, _)| {
                 row.semantic_prompt() != crate::page::row::SemanticPrompt::None
             });
-        if self.screens.active_key() == crate::screen_set::Key::Primary && at_prompt {
+        if self.screens.active_key() == crate::screens::Key::Primary && at_prompt {
             self.screens.active_mut().scroll_clear();
         }
         let screen = self.screens.active_mut();

@@ -1,7 +1,7 @@
 //! Scheduled presentation and token expiry through retained terminal owners.
 
 use super::PaneStateUpdate;
-use crate::{app::state::DaemonState, terminal::state::TerminalState};
+use crate::{app::model::DaemonState, terminal::model::TerminalState};
 use maestro_workspace::layout::PaneId;
 use std::time::Instant;
 

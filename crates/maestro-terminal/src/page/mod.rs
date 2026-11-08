@@ -68,11 +68,11 @@ pub struct Page {
     /// First-fit 32-byte chunks for link strings.
     string_alloc: BitmapAllocator<32>,
     /// Deduplicated hyperlink identity ownership.
-    pub(crate) hyperlink_set: crate::hyperlink::Set,
+    pub(crate) hyperlink_set: crate::links::Set,
     /// Linked cells addressed by physical cell position.
-    hyperlink_map: HashMap<usize, crate::hyperlink::Id>,
+    hyperlink_map: HashMap<usize, crate::links::Id>,
     /// Logical string chunks released with the last identity owner.
-    hyperlink_entries: HashMap<crate::hyperlink::Id, crate::hyperlink::PageEntry>,
+    hyperlink_entries: HashMap<crate::links::Id, crate::links::PageEntry>,
 }
 
 impl Page {
@@ -99,7 +99,7 @@ impl Page {
             graphemes: HashMap::new(),
             styles: crate::style::Set::init(usize::from(capacity.styles)),
             string_alloc: BitmapAllocator::init(capacity.string_bytes),
-            hyperlink_set: crate::hyperlink::Set::init(usize::from(capacity.hyperlink_bytes) / 48),
+            hyperlink_set: crate::links::Set::init(usize::from(capacity.hyperlink_bytes) / 48),
             hyperlink_map: HashMap::new(),
             hyperlink_entries: HashMap::new(),
         }

@@ -196,11 +196,11 @@ pub fn kill_process_tree(pid: u32) {
     #[cfg(unix)]
     tree_kill(
         pid,
-        maestro_process::child_process::kill_process_group,
-        maestro_process::child_process::kill_process,
+        maestro_process::children::kill_process_group,
+        maestro_process::children::kill_process,
     );
     #[cfg(windows)]
-    let _ = maestro_process::child_process::request_tree_kill(pid);
+    let _ = maestro_process::children::request_tree_kill(pid);
 }
 
 /// Drains before invoking platform effects, without holding the registry lock.

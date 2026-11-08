@@ -1,11 +1,11 @@
 //! Shared daemon state admission and invariant observations.
 
 pub mod api;
-pub mod launch;
 pub mod layouts;
 pub mod runtime;
+pub mod spawning;
 
-use maestro_daemon::app::state::DaemonState;
+use maestro_daemon::app::model::DaemonState;
 
 /// Admit terminal metadata for each pane using its topology-owned identity.
 pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
@@ -15,7 +15,7 @@ pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
                 .terminals
                 .entry(pane.attached_terminal_id.clone())
                 .or_insert_with(|| {
-                    maestro_daemon::terminal::state::TerminalState::new(
+                    maestro_daemon::terminal::model::TerminalState::new(
                         pane.attached_terminal_id.clone(),
                         workspace.identity_cwd.clone(),
                     )

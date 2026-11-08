@@ -9,13 +9,13 @@ use crate::rpc_types::{
     RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcSessionCommand,
     RpcSessionState, RpcThinkingLevel, workspace, workspace_schema,
 };
-use maestro_daemon::{api::request_changes_ui, logging};
+use maestro_daemon::{diagnostics as logging, service::request_changes_ui};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};
 use maestro_lock::read;
 use maestro_models::ImageContent;
 use maestro_session::Presence;
-use maestro_session::messages::UserMessageDelivery;
+use maestro_session::message_records::UserMessageDelivery;
 use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::Cell, io, rc::Rc, sync::Arc};
 

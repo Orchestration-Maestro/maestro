@@ -1,6 +1,6 @@
 //! Notification sound preference behavior.
 
-use super::super::sound::{AgentSoundSetting, SoundConfig};
+use super::super::audio::{AgentSoundSetting, SoundConfig};
 use maestro_detection::agents::Agent;
 use serde_json::json;
 

@@ -1,8 +1,8 @@
 //! Owned topology and separate terminal-history snapshots.
 
 use crate::{
-    app::state::DaemonState,
-    terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState},
+    app::model::DaemonState,
+    terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
     pane_state::PaneState,

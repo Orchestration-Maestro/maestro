@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use crate::terminal::state::{AgentMetadataReport, SessionStartReport};
+use crate::terminal::model::{AgentMetadataReport, SessionStartReport};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::layout::PaneId;
 use tokio::sync::mpsc;
@@ -67,7 +67,7 @@ pub enum AppEvent {
         /// Source-local sequence.
         seq: Option<u64>,
         /// Validated session identity.
-        session_ref: Option<crate::agent_resume::AgentSessionRef>,
+        session_ref: Option<crate::resume::AgentSessionRef>,
     },
     /// Agent session identity was reported without state authority.
     AgentSessionReported {

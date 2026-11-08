@@ -5,7 +5,7 @@
 use crate::support;
 use support::{assert_identity_invariants, populate_terminals};
 
-use maestro_daemon::{app::state::DaemonState, settings::model::Config};
+use maestro_daemon::{app::model::DaemonState, settings::model::Config};
 use maestro_workspace::layout::{Borders, PaneId, PaneInfo, Rect};
 
 #[test]

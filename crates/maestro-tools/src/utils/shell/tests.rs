@@ -341,8 +341,8 @@ fn tree_kill_falls_back_only_after_group_failure() {
             if fail { vec![-123, 123] } else { vec![-123] }
         );
     }
-    assert!(maestro_process::child_process::kill_process_group(0).is_err());
-    assert!(maestro_process::child_process::kill_process(u32::MAX).is_err());
+    assert!(maestro_process::children::kill_process_group(0).is_err());
+    assert!(maestro_process::children::kill_process(u32::MAX).is_err());
 }
 
 #[test]

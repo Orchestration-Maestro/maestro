@@ -58,7 +58,7 @@ fn retained_ui_owned_host_example() -> Result<(), EventError> {
 #       }
 #   }
 #   let no_commands = maestro_models::SharedHandle::new(NoCommands);
-#   let session = maestro_extensions::runner::ExtensionRunnerSession {
+#   let session = maestro_extensions::execution::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
 #       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
@@ -195,7 +195,7 @@ for the host terminal, the live theme's Markdown styles with the host's code
 highlighting, and the application's dynamic border. Every mode supplies one, so an
 extension can build widgets without an interactive UI; only showing them goes through
 the UI context. Text, boxes, containers and spacers need nothing from the host and come
-from the toolkit directly. `maestro_extensions::widgets` re-exports those toolkit
+from the toolkit directly. `maestro_extensions::presentation` re-exports those toolkit
 widgets beside the capability, and the chat crate's `ExtensionWidgetHost` implements it.
 The capability also lends the live theme's selection and settings list styles and builds the
 application's bordered loader as an `ExtensionLoader`, whose signal, abort notification,

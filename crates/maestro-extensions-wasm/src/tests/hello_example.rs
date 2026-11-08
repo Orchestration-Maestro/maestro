@@ -1,9 +1,7 @@
 //! The shipped greeting factory exercised through registration and invocation.
 use serde_json::{Value, json};
 
-use super::example_support::{
-    invoke_tool_on_component, registered, registered_metadata, release_all, result_value,
-};
+use super::example_support::{invoke_tool_on_component, registered, registered_metadata, release_all, result_value};
 use crate::component_adapter::ToolCapabilities;
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 

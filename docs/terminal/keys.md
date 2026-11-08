@@ -75,7 +75,7 @@ another script stays as typed in the workspace, and chat matches the letter it l
 to, such as the Kelvin sign U+212A for `k`. Any other text names no key and never matches.
 
 `maestro_tui::keys::Identifier::parse` is this grammar. The workspace key combinations
-(`maestro_daemon::key_combo::parse_key_combo`) project its result onto the protocol's key
+(`maestro_daemon::keys::parse_key_combo`) project its result onto the protocol's key
 codes and modifier bits, so both frontends accept and reject the same spellings.
 
 `KeyId` is a `String`; `Key` spells the supported identifiers as constants

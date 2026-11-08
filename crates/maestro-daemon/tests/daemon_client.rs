@@ -2,9 +2,9 @@
 //! connection, with the shared response shapes and the live status read.
 #![cfg(all(test, unix))]
 
-use maestro_daemon::api::client::{ApiClientError, ConnectionTarget, DaemonClient};
-use maestro_daemon::api::{RuntimeStatus, read_runtime_status_at};
 use maestro_daemon::instances::{Selection, SelectionEnvironment};
+use maestro_daemon::service::transport::{ApiClientError, ConnectionTarget, DaemonClient};
+use maestro_daemon::service::{RuntimeStatus, read_runtime_status_at};
 use maestro_protocol::{
     rpc_types::{Request, RpcCommand, RpcResponse},
     schema::{ErrorBody, PingParams, ResponseResult, ServerCapabilities},

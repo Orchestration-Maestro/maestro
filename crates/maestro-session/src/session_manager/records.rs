@@ -1,6 +1,6 @@
 //! Record framing shared by whole-text parsing and streamed session reads.
-use super::{FileEntry, context::ecma_whitespace};
-use maestro_json::jsonl::JsonlLineSplitter;
+use super::{FileEntry, history::ecma_whitespace};
+use maestro_json::lines::JsonlLineSplitter;
 use std::{
     io::{self, BufRead, ErrorKind},
     ops::ControlFlow,

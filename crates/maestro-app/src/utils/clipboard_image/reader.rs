@@ -253,7 +253,7 @@ fn powershell_file(
     if win_path.is_empty() {
         return None;
     }
-    let quoted = maestro_process::shell::quote_powershell_literal(win_path);
+    let quoted = maestro_process::commands::quote_powershell_literal(win_path);
     let script = format!(
         "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $path = {quoted}; $img = [System.Windows.Forms.Clipboard]::GetImage(); if ($img) {{ $img.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); Write-Output 'ok' }} else {{ Write-Output 'empty' }}"
     );

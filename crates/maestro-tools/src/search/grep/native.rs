@@ -3,7 +3,7 @@ use super::GrepToolInput;
 use crate::utils::diagnostics::{aborted, diagnostic, failure};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, OutputStream, Termination, WaitOptions, wait_for_child_process,
 };
 use maestro_text::{Utf8Stream, is_whitespace_scalar};

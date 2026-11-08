@@ -1,10 +1,10 @@
 //! Effective terminal changes projected for daemon consumers.
 
 use crate::{
-    app::state::DaemonState,
+    app::model::DaemonState,
     terminal::{
-        metadata::EffectivePresentation,
-        state::{EffectiveStateChange, TerminalState, TerminalStateMutation},
+        agents::EffectivePresentation,
+        model::{EffectiveStateChange, TerminalState, TerminalStateMutation},
     },
 };
 use maestro_detection::agents::{Agent, AgentState};
@@ -103,7 +103,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
                 return None;
             }
             Some(terminal.set_detected_state_with_screen_signals_at(
-                crate::terminal::state::DetectedStateUpdate {
+                crate::terminal::model::DetectedStateUpdate {
                     agent,
                     fallback_state: AgentState::Idle,
                     visible: maestro_detection::agents::AgentVisibility {

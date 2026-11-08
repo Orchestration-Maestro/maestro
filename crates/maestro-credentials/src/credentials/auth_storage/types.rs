@@ -1,5 +1,5 @@
 //! Stored credential records, their stored JSON form and status metadata.
-pub use maestro_request::auth_storage::{
+pub use maestro_request::credentials::{
     ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorageData, OAuthCredential,
 };
 use serde::Deserialize;

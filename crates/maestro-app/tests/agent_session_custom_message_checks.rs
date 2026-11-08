@@ -7,7 +7,7 @@ use crate::support::session_harness::{
 };
 use indexmap::IndexMap;
 use maestro_app::AgentSessionEvent;
-use maestro_session::messages::SendMessageOptions;
+use maestro_session::message_records::SendMessageOptions;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;

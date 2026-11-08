@@ -13,7 +13,7 @@ use crate::browser::tools::prompts::{
 };
 use crate::browser::utils::attachment_utils::SharedAttachment;
 use indexmap::IndexMap;
-use maestro_agent::agent::Native;
+use maestro_agent::runtime::Native;
 use maestro_agent::{
     AgentExecution, AgentMessage, AgentState, CustomAgentMessages as CustomMessage,
 };

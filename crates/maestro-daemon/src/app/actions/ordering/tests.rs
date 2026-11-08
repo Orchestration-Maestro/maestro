@@ -1,15 +1,15 @@
 //! Counted work through the daemon's block-move command.
 use crate::{
-    api::event_hub::EventHub,
     app::{App, construction::PaneLaunchInputs},
-    paths::DaemonPaths,
+    locations::DaemonPaths,
     render_signal::RenderSignal,
+    service::event_hub::EventHub,
     settings::model::Config,
     terminal_theme::TerminalTheme,
     tests::{WORKSPACE_WORK, block_on},
 };
 use maestro_detection::manifest::ManifestCache;
-use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
+use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode};
 use maestro_protocol::schema::ResponseResult;
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use std::sync::{Arc, RwLock};

@@ -779,20 +779,20 @@ fn theme_watch_imports_are_shared_types() {
     use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
     fn watches(value: Box<dyn FsWatcher>) -> Box<dyn FsWatcher> {
         let root: Box<dyn maestro_theme::ThemeWatcher> = value;
-        let module: Box<dyn maestro_theme::theme::ThemeWatcher> = root;
-        let facade: Box<dyn maestro_theme::theme::fs_watch::ThemeWatcher> = module;
+        let module: Box<dyn maestro_theme::palette::ThemeWatcher> = root;
+        let facade: Box<dyn maestro_theme::palette::fs_watch::ThemeWatcher> = module;
         facade
     }
     fn timers(value: Box<dyn WatchTimer>) -> Box<dyn WatchTimer> {
         let root: Box<dyn maestro_theme::ThemeReloadTimer> = value;
-        let module: Box<dyn maestro_theme::theme::ThemeReloadTimer> = root;
-        let facade: Box<dyn maestro_theme::theme::fs_watch::ThemeReloadTimer> = module;
+        let module: Box<dyn maestro_theme::palette::ThemeReloadTimer> = root;
+        let facade: Box<dyn maestro_theme::palette::fs_watch::ThemeReloadTimer> = module;
         facade
     }
     fn operations(value: Rc<dyn WatchOperations>) -> Rc<dyn WatchOperations> {
         let root: Rc<dyn maestro_theme::ThemeWatchOperations> = value;
-        let module: Rc<dyn maestro_theme::theme::ThemeWatchOperations> = root;
-        let facade: Rc<dyn maestro_theme::theme::fs_watch::ThemeWatchOperations> = module;
+        let module: Rc<dyn maestro_theme::palette::ThemeWatchOperations> = root;
+        let facade: Rc<dyn maestro_theme::palette::fs_watch::ThemeWatchOperations> = module;
         facade
     }
     let fake = Rc::new(Fake::default());
@@ -821,11 +821,11 @@ fn theme_watch_imports_are_shared_types() {
         );
         assert_eq!(
             shared,
-            TypeId::of::<maestro_theme::theme::NativeThemeWatchOperations>()
+            TypeId::of::<maestro_theme::palette::NativeThemeWatchOperations>()
         );
         assert_eq!(
             shared,
-            TypeId::of::<maestro_theme::theme::fs_watch::NativeThemeWatchOperations>()
+            TypeId::of::<maestro_theme::palette::fs_watch::NativeThemeWatchOperations>()
         );
     }
 }

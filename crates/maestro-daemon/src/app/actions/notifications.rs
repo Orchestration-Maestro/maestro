@@ -5,12 +5,12 @@ use super::{
     state_update::{CompletionPolicy, PaneStateUpdate},
 };
 use crate::{
-    app::state::{
+    app::model::{
         AgentNotificationDelivery, DaemonState, PendingAgentNotification, ToastKind,
         ToastNotification, ToastTarget,
     },
     settings::model::{MAX_TOAST_DELAY_SECONDS, ToastDelivery},
-    terminal::state::EffectiveStateChange,
+    terminal::model::EffectiveStateChange,
 };
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::NotificationShowSound;

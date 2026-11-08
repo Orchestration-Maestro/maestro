@@ -5,9 +5,7 @@ use crate::{
     utils::diagnostics::{diagnostic, failure, guarded},
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
-use maestro_process::child_process::{
-    CapturedChild, Termination, WaitOptions, wait_for_child_process,
-};
+use maestro_process::children::{CapturedChild, Termination, WaitOptions, wait_for_child_process};
 use maestro_text::is_whitespace_scalar;
 use regex_syntax::hir::{
     Class, ClassBytes, ClassBytesRange, ClassUnicode, ClassUnicodeRange, Hir, HirKind, Literal,

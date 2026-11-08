@@ -50,8 +50,8 @@ fn preserve_sdk_generic_arity<C: maestro_agent::CustomAgentMessages + Send + Syn
     let _ = maestro_agent::agent_loop_continue::<C>;
     let _ = maestro_agent::run_agent_loop::<C>;
     let _ = maestro_agent::run_agent_loop_continue::<C>;
-    let _ = maestro_agent::agent_loop::local::agent_loop::<C>;
-    let _ = maestro_agent::agent_loop::local::agent_loop_continue::<C>;
-    let _ = maestro_agent::agent_loop::local::run_agent_loop::<C>;
-    let _ = maestro_agent::agent_loop::local::run_agent_loop_continue::<C>;
+    let _ = maestro_agent::execution::local::agent_loop::<C>;
+    let _ = maestro_agent::execution::local::agent_loop_continue::<C>;
+    let _ = maestro_agent::execution::local::run_agent_loop::<C>;
+    let _ = maestro_agent::execution::local::run_agent_loop_continue::<C>;
 }

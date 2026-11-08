@@ -1,11 +1,11 @@
 //! Keybindings managers and keybinding hints, served on the local owner.
 use crate::local_resources::{Lease, Message, Registry};
 use crate::widget_reads::{Reply, WidgetMessage};
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     ExtensionKeybindings, ExtensionWidgets, KeybindingConflict, KeybindingDefinition,
     KeybindingKeys, KeybindingsConfig, get_keybindings, key_text,
 };
-use maestro_extensions::{KeybindingsManager, widgets};
+use maestro_extensions::{KeybindingsManager, presentation as widgets};
 use std::sync::Arc;
 use wasmtime::component::{ComponentType, Lift, Lower};
 

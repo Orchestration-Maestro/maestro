@@ -406,7 +406,7 @@ fn object_valued_string_enums_reject_projection() {
     assert!(loaded.invalid_sections.is_empty());
     assert_eq!(
         loaded.config.ui.tab_bar_right,
-        [crate::settings::tab_bar::TabBarRightEntryConfig::Text {
+        [crate::settings::tabs::TabBarRightEntryConfig::Text {
             text: "ready".into()
         }]
     );

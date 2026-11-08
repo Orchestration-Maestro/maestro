@@ -1945,7 +1945,7 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
-| `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
+| `crates/maestro-daemon/src/panes/lifecycle/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
 | `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
 | `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
@@ -2631,7 +2631,7 @@ a hang or runaway memory as a finding.
 | `terminal-escapes` | `maestro_terminal::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
-| `git-worktrees` | `maestro_daemon::git::worktree::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
+| `git-worktrees` | `maestro_daemon::git::checkouts::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
 
 The text targets skip input that is not UTF-8, because their callers only pass
 decoded text. Seeds come from the existing test fixtures and live in

@@ -60,7 +60,7 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
         theme: Rc<maestro_theme::Theme>,
         message: String,
         cancellable: bool,
-    ) -> Result<Rc<dyn maestro_extensions::widgets::ExtensionLoader>, String> {
+    ) -> Result<Rc<dyn maestro_extensions::presentation::ExtensionLoader>, String> {
         let color =
             move |key: maestro_theme::ThemeColor| -> maestro_tui::editor_component::BorderColor {
                 let theme = theme.clone();
@@ -87,13 +87,13 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
         &self,
         user_bindings: maestro_tui::KeybindingsConfig,
         config_path: Option<String>,
-    ) -> maestro_extensions::widgets::ExtensionKeybindings {
+    ) -> maestro_extensions::presentation::ExtensionKeybindings {
         let manager = maestro_tui::KeybindingsManager::new(
             maestro_tui::TUI_KEYBINDINGS.clone(),
             user_bindings,
         );
         let reloaded = manager.clone();
-        maestro_extensions::widgets::ExtensionKeybindings {
+        maestro_extensions::presentation::ExtensionKeybindings {
             manager,
             reload: config_path.map(|_| {
                 Rc::new(move || reloaded.set_user_bindings(reloaded_bindings())) as Rc<dyn Fn()>
@@ -103,7 +103,7 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
     fn create_keybindings(
         &self,
         agent_dir: Option<String>,
-    ) -> Result<maestro_extensions::widgets::ExtensionKeybindings, String> {
+    ) -> Result<maestro_extensions::presentation::ExtensionKeybindings, String> {
         let path = agent_dir.unwrap_or_else(|| "/agent".to_owned());
         Ok(self.keybindings(Vec::new(), Some(format!("{path}/keybindings.json"))))
     }
@@ -111,7 +111,7 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
         maestro_theme::get_editor_theme(self.0.clone())
     }
     fn key_hint(&self, keybinding: &str, description: &str) -> Result<String, String> {
-        let keys = maestro_extensions::widgets::key_text(keybinding);
+        let keys = maestro_extensions::presentation::key_text(keybinding);
         Ok(format!("[{keys}] {description}"))
     }
     fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String> {
@@ -123,7 +123,7 @@ impl maestro_extensions::ExtensionWidgets for ToolkitWidgets {
         theme: maestro_tui::EditorTheme,
         keybindings: maestro_tui::KeybindingsManager,
         options: maestro_tui::EditorOptions,
-    ) -> Rc<dyn maestro_extensions::widgets::ExtensionEditor> {
+    ) -> Rc<dyn maestro_extensions::presentation::ExtensionEditor> {
         Rc::new(editor::CustomEditor {
             editor: maestro_tui::Editor::new(tui, theme, options),
             keybindings,
@@ -173,7 +173,7 @@ impl maestro_extensions::InputHandler for Loader {
     }
 }
 
-impl maestro_extensions::widgets::ExtensionLoader for Loader {
+impl maestro_extensions::presentation::ExtensionLoader for Loader {
     fn signal(&self) -> maestro_tui::Cancellation {
         if self.cancellable {
             self.inner.signal().clone()

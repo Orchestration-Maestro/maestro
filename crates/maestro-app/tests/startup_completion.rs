@@ -74,7 +74,7 @@ struct ValueInput {
 #[test]
 fn slash_command_records_keep_owned_source_metadata() {
     use maestro_app::{SlashCommandInfo, SlashCommandSource};
-    use maestro_resources::source_info::{SourceInfo, SourceOrigin, SourceScope};
+    use maestro_resources::provenance::{SourceInfo, SourceOrigin, SourceScope};
     assert_eq!(
         [
             SlashCommandSource::EXTENSION,

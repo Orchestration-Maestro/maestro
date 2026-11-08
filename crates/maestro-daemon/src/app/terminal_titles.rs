@@ -1,7 +1,7 @@
 //! Raw terminal title synchronization with semantic pane-update publication.
 
 use super::App;
-use crate::settings::sidebar::AgentSidebarToken;
+use crate::settings::navigation::AgentSidebarToken;
 use maestro_workspace::layout::PaneId;
 use std::collections::HashSet;
 

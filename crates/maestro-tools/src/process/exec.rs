@@ -1,10 +1,10 @@
 //! Explicit command execution: a literal program and arguments in a given directory.
 //!
 //! Lifecycle, pipe collection and termination belong to
-//! [`maestro_process::child_process`]; this module selects the exit grace and the
+//! [`maestro_process::children`]; this module selects the exit grace and the
 //! escalation delay and maps the outcome to an [`ExecResult`].
 use maestro_models::Cancellation;
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, EXIT_STDIO_GRACE_MS, Termination, WaitOptions, wait_for_child_process,
 };
 use std::{cell::Cell, io, process::Output, time::Duration};

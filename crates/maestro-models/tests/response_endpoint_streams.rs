@@ -355,19 +355,18 @@ fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
         let model =
             chat::model(&serde_json::json!({"api":"openai-responses","provider":"openai"}))?;
         let context = chat::context(&serde_json::json!({"messages":[]}))?;
-        let stream =
-            maestro_models::providers::responses::openai_responses::stream_openai_responses(
-                model,
-                context,
-                Some(OpenAIResponsesOptions {
-                    common: StreamOptions {
-                        api_key: Some("fixture-key".into()),
-                        fetch: Some(fetch),
-                        ..Default::default()
-                    },
+        let stream = maestro_models::providers::responses_api::openai::stream_openai_responses(
+            model,
+            context,
+            Some(OpenAIResponsesOptions {
+                common: StreamOptions {
+                    api_key: Some("fixture-key".into()),
+                    fetch: Some(fetch),
                     ..Default::default()
-                }),
-            );
+                },
+                ..Default::default()
+            }),
+        );
         reached.await?;
         let mut partial = None;
         while let Some(Some(event)) = stream.next().now_or_never() {
@@ -442,21 +441,18 @@ fn response_argument_roots_survive_each_completion_route() -> chat::TestResult {
     crate::runtime::run(async {
         for row in crate::root_routes::recorded()?.responses {
             let (feed, body) = crate::messages::feed();
-            let stream =
-                maestro_models::providers::responses::openai_responses::stream_openai_responses(
-                    chat::model(
-                        &serde_json::json!({"api":"openai-responses","provider":"openai"}),
-                    )?,
-                    chat::context(&serde_json::json!({"messages":[]}))?,
-                    Some(maestro_models::OpenAIResponsesOptions {
-                        common: maestro_models::StreamOptions {
-                            api_key: Some("fixture-key".into()),
-                            fetch: Some(crate::root_routes::body_fetch(body)),
-                            ..Default::default()
-                        },
+            let stream = maestro_models::providers::responses_api::openai::stream_openai_responses(
+                chat::model(&serde_json::json!({"api":"openai-responses","provider":"openai"}))?,
+                chat::context(&serde_json::json!({"messages":[]}))?,
+                Some(maestro_models::OpenAIResponsesOptions {
+                    common: maestro_models::StreamOptions {
+                        api_key: Some("fixture-key".into()),
+                        fetch: Some(crate::root_routes::body_fetch(body)),
                         ..Default::default()
-                    }),
-                );
+                    },
+                    ..Default::default()
+                }),
+            );
             crate::root_routes::gated(
                 &stream,
                 feed,

@@ -42,7 +42,7 @@ use maestro_listeners::Listeners;
 use maestro_lock::{read, write};
 use maestro_models::{DiagnosticErrorInfo, Local, Model};
 use maestro_session::{
-    Presence, SessionManager, messages::CustomAgentMessages,
+    Presence, SessionManager, message_records::CustomAgentMessages,
     session_manager::ReadonlySessionManager,
 };
 use maestro_settings::SettingsManager;

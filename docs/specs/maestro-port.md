@@ -596,7 +596,7 @@ It uses `maestro-json` for JSON truthiness.
 
 The read-only footer contract `ReadonlyFooterDataProvider`, its live
 `ExtensionStatuses` view and the one generic insertion-ordered live map behind it
-belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
+belong to the extension consumer layer (`maestro-extensions::footer`),
 because extension footer factories receive it. The application keeps the footer
 metadata owner, its branch, watch, count and status policy and its existing public
 paths, which re-export the moved declarations. The keyed live map reuses
@@ -891,7 +891,7 @@ projection only after this contract lands.
 ### Terminal child setup entry
 
 `maestro-process` owns the parent-side terminal launch and the child-side setup
-entry. The composition root calls `maestro_process::pty::setup_entry` before
+entry. The composition root calls `maestro_process::terminal::setup_entry` before
 ordinary argument parsing. A setup invocation acquires its terminal session,
 resets signals and replaces itself with the requested command. The parent passes
 an explicit executable and entry arguments; libraries never assume the current
@@ -1104,7 +1104,7 @@ format and one protocol version on both stdio and daemon sockets. The 29 session
 exact wire bytes, fields, omission/null rules and results. Workspace commands are additive on stdio.
 `maestro-protocol` owns the generic request and response envelopes, the workspace records and
 their schema; `maestro-app::rpc_types` owns the session records and the composed command
-family; `maestro-json::jsonl` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
+family; `maestro-json::lines` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
 runner: it serves workspace operations and an optional local session over a caller's line
 reader and writer, returning how the connection ended. `RpcModeOptions` groups session-only
 facilities in `Option<RpcSessionOptions>`: runtime, process signals, theme and export effects.

@@ -1,7 +1,7 @@
 //! Public pane observations over topology, retained metadata and live runtimes.
 
 use super::{App, actions::pane_agent_status};
-use crate::pane::PaneRuntime;
+use crate::panes::PaneRuntime;
 use maestro_protocol::{
     events::EventData,
     schema::{AgentSessionInfo, PaneInfo, PaneScrollInfo},

@@ -171,5 +171,5 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C14 | `crates/maestro-models/src/providers/content/google_shared/node_auth/tests/adc.rs:423-434`; `tests/support/profile_files.rs:24-39,60` and every process-profile consumer. |
 | C15 | `crates/maestro-daemon/tests/desktop_notification.rs:20-26,72-74`; `tests/repository_discovery.rs:365-380`. |
 | C16 | `crates/maestro-test-conventions/tests/support/mod.rs:181-185,229-272`; `tests/architecture.rs:1164`; retained non-executed rejection input in `tests/config_scripts.rs:16-23`. |
-| C17 | `crates/maestro-process/src/child_process/tests.rs:184,315,604`; shell/PTY/capture modules; `crates/maestro-detection/tests/live_foreground.rs:13-48`; `crates/maestro-cli/tests/startup_stdout.rs:35-42`; `crates/maestro-credentials/src/credentials/tests.rs:183-217`; RPC native-signal cases. |
+| C17 | `crates/maestro-process/src/children/tests.rs:184,315,604`; shell/PTY/capture modules; `crates/maestro-detection/tests/live_foreground.rs:13-48`; `crates/maestro-cli/tests/startup_stdout.rs:35-42`; `crates/maestro-credentials/src/credentials/tests.rs:183-217`; RPC native-signal cases. |
 | C18 | `crates/maestro-tooling/src/browser_export_setup.rs`; `crates/maestro-test-browser/src/browser_driver/package.rs`; browser preparation and export qualification in #3868. |

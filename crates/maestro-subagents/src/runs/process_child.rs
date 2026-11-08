@@ -1,14 +1,14 @@
 //! Literal native child launches with owned cancellation and prompt cleanup.
 
 use super::{Progress, SingleResult, TaskItem};
-use crate::agents::AgentConfig;
+use crate::discovery::AgentConfig;
 use maestro_extensions_wasm::{
     AbortSignal, ExtensionAPI, ExtensionResult, Subscription,
     child_process::{ChildProcess, SpawnOptions, Stdio},
     streams::Readable,
     tools::path_utils::{guest_path, make_temp_dir, resolve},
 };
-use maestro_json::jsonl::JsonlLineSplitter;
+use maestro_json::lines::JsonlLineSplitter;
 use serde_json::Value;
 use std::rc::Rc;
 

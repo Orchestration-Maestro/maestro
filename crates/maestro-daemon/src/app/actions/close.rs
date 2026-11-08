@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::app::state::{DaemonState, Mode};
+use crate::app::model::{DaemonState, Mode};
 use maestro_workspace::layout::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {

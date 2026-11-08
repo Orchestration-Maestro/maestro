@@ -3,16 +3,16 @@
 #![cfg(target_os = "linux")]
 
 #[cfg(unix)]
-use crate::support::launch;
+use crate::support::spawning;
 
-use maestro_daemon::{app::state::DaemonState, settings::model::Config};
+use maestro_daemon::{app::model::DaemonState, settings::model::Config};
 #[cfg(unix)]
 use maestro_daemon::{
     app::{
         App,
         terminal_targets::{TerminalTargetCandidate, TerminalTargetError},
     },
-    terminal::state::TerminalState,
+    terminal::model::TerminalState,
 };
 #[cfg(unix)]
 use maestro_detection::agents::{Agent, AgentState};
@@ -130,13 +130,13 @@ fn target_app() -> (TargetApp, PaneId, TerminalId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,
         launch,
         receiver,
-        maestro_daemon::api::event_hub::EventHub::default(),
+        maestro_daemon::service::event_hub::EventHub::default(),
     );
     let (removed, ()) = app
         .state

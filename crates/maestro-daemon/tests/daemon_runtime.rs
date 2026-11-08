@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use maestro_daemon::{app::state::DaemonState, settings::model::Config};
+use maestro_daemon::{app::model::DaemonState, settings::model::Config};
 
 #[test]
 fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
@@ -32,7 +32,7 @@ fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
 }
 
 #[cfg(unix)]
-use crate::support::launch;
+use crate::support::spawning;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
@@ -49,13 +49,13 @@ pub(crate) fn app_with_args(
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(args, manifests);
+    let (launch, receiver) = spawning::launch_inputs(args, manifests);
     maestro_daemon::app::App::new(
         config,
         (|| 0) as fn() -> u128,
         launch,
         receiver,
-        maestro_daemon::api::event_hub::EventHub::default(),
+        maestro_daemon::service::event_hub::EventHub::default(),
     )
 }
 
@@ -84,7 +84,7 @@ fn daemon_tab_info_number_uses_stable_public_tab_number() {
 #[test]
 #[cfg(unix)]
 fn tab_projection_keeps_focus_and_agent_attention_independent_of_identity() {
-    use maestro_daemon::terminal::state::TerminalState;
+    use maestro_daemon::terminal::model::TerminalState;
     use maestro_detection::agents::AgentState;
     use maestro_protocol::schema::AgentStatus;
     let mut app = app(&Config::default());
@@ -156,7 +156,7 @@ fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd()
         .build()
         .unwrap()
         .block_on(async {
-            use maestro_daemon::app::state::Mode;
+            use maestro_daemon::app::model::Mode;
             let mut config = Config::default();
             config.ui.prompt_new_workspace_name.0 = true;
             let mut app = app(&config);
@@ -262,7 +262,7 @@ fn attach_terminal(
         .clone();
     app.state.terminals.insert(
         id.clone(),
-        maestro_daemon::terminal::state::TerminalState::new(id, "/target".into()),
+        maestro_daemon::terminal::model::TerminalState::new(id, "/target".into()),
     );
 }
 
@@ -554,7 +554,7 @@ fn daemon_full_internal_event_queue_eventually_applies_working_to_idle_transitio
 #[test]
 #[cfg(unix)]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -584,7 +584,7 @@ fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
 /// Holds a real child until shutdown while the critical event queue is full.
 #[cfg(unix)]
 async fn check_shutdown(args: &[String]) {
-    use maestro_daemon::{events::AppEvent, paths::DaemonPaths};
+    use maestro_daemon::{events::AppEvent, locations::DaemonPaths};
     let (mut app, pane) = live_shutdown_app(args).await;
     app.state
         .terminals
@@ -610,7 +610,7 @@ async fn check_shutdown(args: &[String]) {
     let runtime = app.terminal_runtimes.values().next().unwrap();
     let pid = runtime.child_pid().unwrap();
     runtime.send_bytes(b"\n".to_vec()).await.unwrap();
-    while maestro_process::child_process::process_exists(pid) {
+    while maestro_process::children::process_exists(pid) {
         tokio::task::yield_now().await;
     }
     app.shutdown(&DaemonPaths::new("/unused", None).unwrap())
@@ -649,14 +649,14 @@ async fn live_shutdown_app(
 ) {
     use maestro_daemon::{
         events::AppEvent,
-        pane::{
-            launch_env::PaneLaunchEnv,
-            runtime::{AgentDetection, PaneRuntime},
+        panes::{
+            launch::PaneLaunchEnv,
+            lifecycle::{AgentDetection, PaneRuntime},
         },
     };
     let (mut app, pane) = target_app();
     let (launch, receiver) =
-        launch::launch_inputs(args, std::sync::Arc::clone(&app.state.manifests));
+        spawning::launch_inputs(args, std::sync::Arc::clone(&app.state.manifests));
     app.launch = launch;
     app.event_rx = receiver;
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));

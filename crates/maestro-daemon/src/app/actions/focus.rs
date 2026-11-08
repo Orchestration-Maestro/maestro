@@ -1,6 +1,6 @@
 //! Workspace and pane focus navigation with retained logical history.
 
-use crate::app::state::{DaemonState, Mode, PaneFocusTarget};
+use crate::app::model::{DaemonState, Mode, PaneFocusTarget};
 use maestro_workspace::layout::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {

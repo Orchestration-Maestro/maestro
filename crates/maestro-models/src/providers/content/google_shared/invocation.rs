@@ -1,5 +1,5 @@
 //! Owned content-generation producer shared by both endpoint policies.
-use super::super::google::GoogleOptions;
+use super::super::generative::GoogleOptions;
 use super::thinking::disabled_thinking;
 use super::{ApiClient, GenerateContentParameters, build_parameters, enabled_thinking};
 use crate::{
@@ -135,10 +135,10 @@ async fn invoke<E: ProviderExecution>(
     options: &GoogleOptions<E>,
     events: &crate::AssistantMessageEventStream,
     output: &crate::SharedAssistantMessage,
-) -> Result<(), crate::providers::http::RequestFailure> {
+) -> Result<(), crate::providers::transport::RequestFailure> {
     use super::process_google_stream;
     use crate::providers::assistant_output::conclude;
-    use crate::providers::http::{Raced, RequestFailure, race};
+    use crate::providers::transport::{Raced, RequestFailure, race};
     let model = invocation.model;
     let client = invocation.client?;
     let selected = selected_payload(
@@ -214,7 +214,7 @@ async fn prepare(
         super::api_client::PreparedContentRequest,
         Option<std::time::Duration>,
     ),
-    crate::providers::http::RequestFailure,
+    crate::providers::transport::RequestFailure,
 > {
     #[cfg(not(target_arch = "wasm32"))]
     let started = tokio::time::Instant::now();
@@ -229,7 +229,7 @@ async fn prepare(
                 .checked_sub(started.elapsed())
                 .filter(|left| !left.is_zero())
                 .ok_or_else(|| {
-                    crate::providers::http::RequestFailure::new("Request was aborted")
+                    crate::providers::transport::RequestFailure::new("Request was aborted")
                 })?,
         ),
         None => None,
@@ -243,8 +243,8 @@ async fn selected_payload<E: ProviderExecution>(
     context: &Context,
     options: &GoogleOptions<E>,
     cloud: bool,
-) -> Result<crate::PayloadHookInput, crate::providers::http::RequestFailure> {
-    use crate::providers::http::RequestFailure;
+) -> Result<crate::PayloadHookInput, crate::providers::transport::RequestFailure> {
+    use crate::providers::transport::RequestFailure;
     let payload = serde_json::to_value(params(model, context, options, cloud)?)
         .map_err(|error| RequestFailure::new(error.to_string()))?;
     let selected = crate::PayloadHookInput {

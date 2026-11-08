@@ -145,8 +145,8 @@ impl<'de, C: Default> Deserialize<'de> for ParameterSchema<C> {
 }
 
 /// Executable schema callback records.
-pub mod code;
-pub use code::{Base, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaNode};
+pub mod executable;
+pub use executable::{Base, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaNode};
 impl<C> ParameterSchema<C> {
     /// Borrow the code payload.
     pub fn code(&self) -> &C {

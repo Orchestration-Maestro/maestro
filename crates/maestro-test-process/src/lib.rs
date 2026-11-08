@@ -59,10 +59,10 @@ pub use test_process::TestProcess;
 /// Controlled loopback HTTP fixtures.
 pub mod loopback;
 
+/// Child build toolchain selection.
+pub mod compiler;
 /// Caller-owned local executors for native test futures.
 pub mod executor;
-/// Child build toolchain selection.
-pub mod toolchain;
 
 /// Shared subprocess helpers.
 pub mod subprocess;

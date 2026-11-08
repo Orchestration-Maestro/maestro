@@ -14,7 +14,7 @@ use crate::rpc_types::{
     workspace_schema,
 };
 use crate::utils::task::start_now;
-use maestro_json::jsonl::JsonlLineSplitter;
+use maestro_json::lines::JsonlLineSplitter;
 use maestro_json::object::names;
 use serde_json::Value;
 use std::{

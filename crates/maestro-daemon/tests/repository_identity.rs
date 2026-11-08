@@ -2,11 +2,11 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 use crate::repository_support::{init_repo_with_commit, run_git};
-use crate::support::launch;
+use crate::support::spawning;
 use maestro_daemon::{
     app::App,
     settings::model::Config,
-    terminal::{runtime_registry::TerminalRuntimeRegistry, state::TerminalState},
+    terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::{
@@ -17,7 +17,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 #[test]
 fn setup_entry() {
-    if maestro_process::pty::setup_entry().is_some() {
+    if maestro_process::terminal::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -50,7 +50,7 @@ async fn check_admitted_repository(args: &[String]) {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(args, manifests);
+    let (launch, receiver) = spawning::launch_inputs(args, manifests);
     let mut config = Config::default();
     config.terminal.default_shell = "/bin/sh".into();
     let mut app = App::new(
@@ -58,7 +58,7 @@ async fn check_admitted_repository(args: &[String]) {
         (|| 0) as fn() -> u128,
         launch,
         receiver,
-        maestro_daemon::api::event_hub::EventHub::default(),
+        maestro_daemon::service::event_hub::EventHub::default(),
     );
     app.create_workspace_with_options(root.clone(), true)
         .unwrap();

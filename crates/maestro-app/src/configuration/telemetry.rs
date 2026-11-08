@@ -17,7 +17,7 @@ pub fn is_install_telemetry_enabled(
 use {
     super::{config::service_endpoint, maestro_user_agent::get_maestro_user_agent},
     crate::utils::uri::encode_uri_component,
-    maestro_models::{BoxFuture, Fetch, HttpRequest, default_fetch, providers::http::race},
+    maestro_models::{BoxFuture, Fetch, HttpRequest, default_fetch, providers::transport::race},
     std::time::Duration,
 };
 

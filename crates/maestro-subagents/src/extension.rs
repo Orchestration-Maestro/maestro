@@ -1,7 +1,7 @@
 //! Registration and invocation of the authored-agent tool.
 
 use crate::{
-    agents::{self, AgentConfig, AgentScope},
+    discovery::{self as agents, AgentConfig, AgentScope},
     runs::{
         Progress, SingleResult, SubagentDetails, TaskItem, fallback, process_child::Run,
         tool_result,

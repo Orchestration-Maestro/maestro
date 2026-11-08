@@ -1,6 +1,6 @@
 //! Zoom changes for a topology tab.
 
-use crate::app::state::DaemonState;
+use crate::app::model::DaemonState;
 use maestro_protocol::schema::{PaneZoomMode, PaneZoomReason};
 use maestro_workspace::layout::PaneId;
 

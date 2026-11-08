@@ -24,7 +24,7 @@ pub(super) fn create_extension<E: ExtensionExecution>(
     let source_info = Arc::new(RwLock::new(
         maestro_resources::create_synthetic_source_info(
             extension_path.clone(),
-            maestro_resources::source_info::SyntheticSourceOptions {
+            maestro_resources::provenance::SyntheticSourceOptions {
                 source: source.into(),
                 scope: None,
                 origin: None,

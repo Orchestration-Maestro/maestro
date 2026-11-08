@@ -1,7 +1,7 @@
 //! Terminal and agent targeting keep stable pane handles distinct from names.
 
 use super::{App, actions::pane_agent_status};
-use crate::terminal::state::TerminalState;
+use crate::terminal::model::TerminalState;
 use maestro_protocol::schema::AgentStatus;
 use maestro_workspace::layout::PaneId;
 

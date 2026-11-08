@@ -119,7 +119,7 @@ fn native_record_aliases_keep_producer_fields() {
         let details: maestro_tools::read::ReadToolDetails = maestro_tools::ReadToolDetails {
             truncation: Some(result),
         };
-        let shared: maestro_tool::tools::read::ReadToolDetails<
+        let shared: maestro_tool::tools::reading::ReadToolDetails<
             Option<maestro_tools::TruncationResult>,
         > = details;
         assert_eq!(

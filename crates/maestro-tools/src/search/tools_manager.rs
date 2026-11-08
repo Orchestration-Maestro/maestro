@@ -2,7 +2,7 @@
 
 use futures_util::TryStreamExt;
 use maestro_models::{Fetch, FetchError, HttpRequest, default_fetch};
-use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_text::is_whitespace_scalar;
 use owo_colors::OwoColorize;
 use serde_json::Value;

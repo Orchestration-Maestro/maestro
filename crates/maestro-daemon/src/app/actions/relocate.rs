@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::app::state::DaemonState;
+use crate::app::model::DaemonState;
 use maestro_workspace::{
     tab::MovedPane,
     workspace::{WorkspaceTopology, WorktreeSpaceMembership},

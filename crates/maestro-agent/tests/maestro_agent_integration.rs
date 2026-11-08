@@ -15,7 +15,7 @@ use support::scripted::{
     Registered, agent_for, ask_calculator, block_text, history, last_assistant, record_events, say,
     set_history, streaming, user,
 };
-use support::utils::calculate::{calculate, calculate_tool};
+use support::utils::arithmetic::{calculate, calculate_tool};
 
 /// A prompt answered by the registered adapter settles user then assistant history.
 #[test]

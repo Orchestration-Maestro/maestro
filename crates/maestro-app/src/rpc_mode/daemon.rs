@@ -2,7 +2,7 @@
 //! stop itself, and the daemon loop answers every other command.
 use super::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
 use crate::rpc_types::{workspace, workspace_schema};
-use maestro_daemon::api::{ApiRequestSender, RequestMessage};
+use maestro_daemon::service::{ApiRequestSender, RequestMessage};
 use std::cell::RefCell;
 use tokio::sync::{oneshot, watch};
 

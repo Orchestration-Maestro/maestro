@@ -4,7 +4,7 @@
 use crate::error_support::Marker;
 use crate::local_support::{Loaded, Released, Trace, loaded_for, mark};
 use crate::ui_toolkit::{Keyboard, Metadata, Words, screen};
-use maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider;
+use maestro_extensions::footer::ReadonlyFooterDataProvider;
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentDisposer, ComponentFactory, CustomClose,
     CustomComponentFactory, CustomDone, CustomFactory, CustomFactoryOutcome, EditorFactoryOutcome,

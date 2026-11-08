@@ -446,7 +446,12 @@ type ResolvedModel = (Option<Arc<RwLock<Model>>>, Option<String>);
 
 /// An agent with its runner slot and the model fallback message.
 type PreparedAgent = (
-    Rc<maestro_agent::Agent<maestro_session::messages::CustomAgentMessages, maestro_models::Local>>,
+    Rc<
+        maestro_agent::Agent<
+            maestro_session::message_records::CustomAgentMessages,
+            maestro_models::Local,
+        >,
+    >,
     ExtensionRunnerRef,
     Option<String>,
 );

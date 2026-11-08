@@ -1,9 +1,10 @@
 //! Worktree names, checkout paths and the Git commands that add, remove and list worktrees.
 #![cfg(test)]
 use crate::repository_support::{init_repo_with_commit, run_git};
-use maestro_daemon::git::worktree::{
-    self, ExistingWorktree, WorktreeError, branch_to_path_slug, checkout_has_dirty_files,
-    default_checkout_path, generated_branch_slug, local_branch_exists, worktrees_root,
+use maestro_daemon::git::checkouts::{
+    self as worktree, ExistingWorktree, WorktreeError, branch_to_path_slug,
+    checkout_has_dirty_files, default_checkout_path, generated_branch_slug, local_branch_exists,
+    worktrees_root,
 };
 use maestro_test_directory::Scratch;
 use std::path::{Path, PathBuf};

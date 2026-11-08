@@ -2,11 +2,11 @@
 #![cfg(test)]
 use maestro_extensions::{
     EventError, ExtensionUIContext,
+    presentation::SizeValue,
     types::{
         CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionUIContextPort,
         ExtensionUIFuture, OverlayOptionsSource,
     },
-    widgets::SizeValue,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -39,7 +39,7 @@ impl ExtensionUIContextPort for Ui {
             }
             Ok(true)
         });
-        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+        let keys = maestro_extensions::presentation::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
             reload: None,
         };
@@ -125,7 +125,7 @@ impl ExtensionUIContextPort for OverlayUi {
             }
             Ok(true)
         });
-        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+        let keys = maestro_extensions::presentation::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
             reload: None,
         };

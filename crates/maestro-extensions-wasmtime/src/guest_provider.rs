@@ -6,7 +6,7 @@ use crate::guest_calls::{
     widget_calls::Item,
 };
 use crate::local_resources::Registry;
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     AutocompleteProvider, AutocompleteSuggestions, CompletionError, CompletionOptions,
     CompletionResult, CursorPosition,
 };

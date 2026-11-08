@@ -1,4 +1,4 @@
-use maestro_terminal::input::mouse_encode::size::{
+use maestro_terminal::input::mouse_encode::dimensions::{
     CellSize, Coordinate, GridSize, Padding, ScreenSize, Size, Space,
 };
 

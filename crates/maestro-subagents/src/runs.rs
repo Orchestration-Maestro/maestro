@@ -1,6 +1,6 @@
 //! Child observations and live tool progress.
 
-use crate::agents::AgentScope;
+use crate::discovery::AgentScope;
 use maestro_extensions_wasm::{
     AgentToolResult, AgentToolUpdateCallback, ExtensionResult, Presence, TextContent, UserBlock,
 };

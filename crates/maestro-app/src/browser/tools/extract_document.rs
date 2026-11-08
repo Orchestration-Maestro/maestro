@@ -243,7 +243,7 @@ async fn download(
     fetch: &Fetch,
     signal: Option<&Cancellation>,
 ) -> Result<Vec<u8>, DiagnosticErrorInfo> {
-    use maestro_models::providers::http::{Raced, race};
+    use maestro_models::providers::transport::{Raced, race};
     match race(download_work(url, fetch, signal), None, signal).await {
         Raced::Done(result) => result,
         Raced::Cancelled | Raced::TimedOut => Err(fetch_error(FetchError::Aborted)),

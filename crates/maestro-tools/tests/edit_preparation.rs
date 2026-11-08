@@ -115,7 +115,7 @@ fn edit_definition_keeps_schema_and_prompt_metadata() {
 
 #[test]
 fn edit_arguments_use_preparation_before_shared_validation() {
-    use maestro_models::arguments::validation::validate_schema;
+    use maestro_models::parameters::validation::validate_schema;
     use maestro_models::{ToolCall, validate_tool_arguments};
     use serde::Deserialize;
     use serde_json::{Value, json};

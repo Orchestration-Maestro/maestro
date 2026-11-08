@@ -26,13 +26,13 @@ pub mod construction;
 /// Pane geometry served from tile cells, the view area and pane chrome.
 pub mod layout;
 
-use crate::terminal::runtime_registry::TerminalRuntimeRegistry;
-use state::DaemonState;
+use crate::terminal::owners::TerminalRuntimeRegistry;
+use model::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
 pub struct App<C> {
     /// Parsed outer-title format with the server hostname resolved at configuration time.
-    window_title_template: Option<(crate::settings::window_title::WindowTitleTemplate, String)>,
+    window_title_template: Option<(crate::settings::titles::WindowTitleTemplate, String)>,
     /// Earliest capture time for the next debounced session save.
     pub session_save_deadline: Option<std::time::Instant>,
     /// The sole writer of an already captured session job.
@@ -76,7 +76,7 @@ pub struct App<C> {
     /// Live process owners keyed by durable terminal identity.
     pub terminal_runtimes: TerminalRuntimeRegistry,
     /// Shared publication history for state transitions and pane exits.
-    pub event_hub: crate::api::event_hub::EventHub,
+    pub event_hub: crate::service::event_hub::EventHub,
     /// Temporary panes awaiting exit and restoration of their previous focus.
     pub overlay_panes:
         std::collections::HashMap<maestro_workspace::layout::PaneId, OverlayPaneState>,
@@ -97,7 +97,7 @@ pub struct OverlayPaneState {
 }
 
 /// Retained daemon data independent of attached views.
-pub mod state;
+pub mod model;
 
 mod ids;
 

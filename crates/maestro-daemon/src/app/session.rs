@@ -1,7 +1,7 @@
 //! Debounced owned session jobs through the existing snapshot storage owner.
 
 use super::App;
-use crate::{paths::DaemonPaths, persist};
+use crate::{locations::DaemonPaths, persist};
 use maestro_workspace::persist::snapshot::{SessionHistorySnapshot, SessionSnapshot};
 use std::time::{Duration, Instant};
 

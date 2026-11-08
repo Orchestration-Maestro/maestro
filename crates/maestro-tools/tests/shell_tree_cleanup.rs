@@ -3,7 +3,7 @@
 #![cfg(unix)]
 use crate::read_support::{self, Scratch};
 use crate::runtime::run;
-use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_tools::utils::shell::{
     kill_process_tree, kill_tracked_detached_children, track_detached_child_pid,
 };

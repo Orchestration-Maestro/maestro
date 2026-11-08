@@ -15,7 +15,7 @@ use crate::utils::shell::{
     untrack_detached_child_pid,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Execution, Local, Threaded};
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, EXIT_STDIO_GRACE_MS, WaitOptions, wait_for_child_process_with_sink,
 };
 use std::{error::Error, fmt, io, path::Path, sync::Arc, time::Duration};
@@ -250,7 +250,7 @@ async fn observe(
     signal: Option<&Cancellation>,
     seconds: Option<f64>,
     expired: &mut bool,
-) -> maestro_process::child_process::Termination {
+) -> maestro_process::children::Termination {
     let abort = async {
         match signal {
             Some(signal) => signal.cancelled().await,

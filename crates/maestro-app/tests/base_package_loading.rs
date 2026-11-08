@@ -226,7 +226,7 @@ fn runner(loader: &impl ResourceLoader<Local>) -> maestro_app::ExtensionRunner<L
     maestro_app::ExtensionRunner::<Local>::new(
         Rc::new(std::sync::RwLock::new(result.extensions.clone())),
         result.runtime.clone(),
-        maestro_extensions::runner::ExtensionRunnerSession {
+        maestro_extensions::execution::ExtensionRunnerSession {
             cwd: "/work".into(),
             session_manager: Rc::new(RefCell::new(
                 maestro_session::SessionManager::in_memory(None).unwrap(),

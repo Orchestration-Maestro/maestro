@@ -1,6 +1,6 @@
 use super::style::{PaletteOverrides, cell_color, cell_symbol};
 use super::*;
-use crate::render::frame::frame_from_buffer;
+use crate::render::conversion::frame_from_buffer;
 use maestro_app::daemon::{RgbColor, TerminalTheme};
 use maestro_app::terminal::{Color as CellColor, RenderState, Rgb, Terminal, Wide};
 use maestro_protocol::frames::{CellData, underline_style_from_modifier};

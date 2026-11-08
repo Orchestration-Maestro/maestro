@@ -8,7 +8,7 @@ use crate::{
 };
 use maestro_extensions::{
     Component, EventBus, InputHandler, Local,
-    widgets::{FocusFlag, Focusable},
+    presentation::{FocusFlag, Focusable},
 };
 use std::cell::RefCell;
 

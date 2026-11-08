@@ -12,7 +12,7 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 #[cfg(unix)]
-use maestro_process::child_process::process_exists;
+use maestro_process::children::process_exists;
 #[cfg(unix)]
 use maestro_test_process::git_command;
 use serde::Deserialize;

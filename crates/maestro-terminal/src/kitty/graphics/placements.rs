@@ -6,10 +6,10 @@ use std::{
 };
 
 use super::{
+    bitmap::Image,
     command::{Compression, Format},
-    image::Image,
-    render::PlacementRenderInfo,
-    storage::{Location, PlacementId},
+    images::{Location, PlacementId},
+    painting::PlacementRenderInfo,
 };
 use crate::{Screen, Terminal, point::Tag};
 
@@ -197,7 +197,7 @@ impl KittyImagePlacement {
         descriptor: KittyImageDescriptor,
         data: Vec<u8>,
         render: PlacementRenderInfo,
-        placement: &super::storage::Placement,
+        placement: &super::images::Placement,
     ) -> Self {
         Self {
             image_id: descriptor.image_id,
@@ -282,7 +282,7 @@ fn synthetic_placement_id(run: super::unicode::Placement, coord: crate::point::C
 
 /// Convert the shared fragment geometry without re-decoding placeholder cells.
 fn placeholder_render_info(
-    fragment: super::render::RenderPlacement,
+    fragment: super::painting::RenderPlacement,
     coord: crate::point::Coordinate,
 ) -> PlacementRenderInfo {
     PlacementRenderInfo {

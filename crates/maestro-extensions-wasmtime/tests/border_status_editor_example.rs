@@ -295,7 +295,7 @@ fn border_status_editor_component_replaces_footer_and_working_row() {
         h.start().await;
         assert_eq!(h.ui.working.get(), Some(false));
         let footer = h.ui.footer.borrow().clone().expect("a footer");
-        let metadata: Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider> =
+        let metadata: Rc<dyn maestro_extensions::footer::ReadonlyFooterDataProvider> =
             Rc::new(super::canonical_ui::Metadata::default());
         let footer = footer.call((h.ui.tui.clone(), h.ui.theme.clone(), metadata));
         assert!(footer.unwrap().component.try_render(80).unwrap().is_empty());

@@ -1,6 +1,6 @@
 //! Public identity parsing over the topology owner's stable numbers.
 
-use super::state::DaemonState;
+use super::model::DaemonState;
 use maestro_workspace::{
     layout::PaneId,
     pane_state::PaneState,

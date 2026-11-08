@@ -2,15 +2,15 @@
 
 use super::*;
 use crate::{
-    api::event_hub::EventHub,
     app::construction::PaneLaunchInputs,
     events::AppEvent,
     git::status::git_status_snapshot_for_cwd_with_demand,
     render_signal::RenderSignal,
-    settings::{model::Config, sidebar::SpaceSidebarToken},
+    service::event_hub::EventHub,
+    settings::{model::Config, navigation::SpaceSidebarToken},
     terminal_theme::TerminalTheme,
 };
-use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
+use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode};
 use maestro_workspace::workspace::{GitSpaceMetadata, WorkspaceGitStatusSnapshot};
 use std::{
     path::Path,
@@ -365,7 +365,7 @@ fn scheduled_tasks_start_the_due_refresh() {
     crate::tests::block_on(async {
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let paths =
-            crate::paths::DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
+            crate::locations::DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
         let mut app = app_with_rows(vec![vec![SpaceSidebarToken::Branch]]);
         add_workspace(&mut app, directory.path());
         let now = Instant::now();

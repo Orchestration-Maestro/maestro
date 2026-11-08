@@ -12,7 +12,7 @@ use ui_host::Named;
 use local_support::{
     Loaded, LocalBus, Released, STALE, Trace, listener, loaded, local, mark, runner,
 };
-use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooterDataProvider};
+use maestro_extensions::footer::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
     CustomFactory, CustomFactoryOutcome, CustomUIOptions, EditorFactoryOutcome,
@@ -29,7 +29,7 @@ use maestro_extensions::{
 };
 use maestro_models::{Cancellation, Local, UserContent};
 use maestro_session::Presence;
-use maestro_session::messages::CustomMessage;
+use maestro_session::message_records::CustomMessage;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeInfo, ThemeState, get_editor_theme};
 use maestro_tui::autocomplete::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
