@@ -1,5 +1,7 @@
 //! Compile-only caller-local browser catalog effects.
 #[cfg(target_arch = "wasm32")]
+compile_error!("deliberately broken witness");
+#[cfg(target_arch = "wasm32")]
 mod browser {
     //! Compile-only browser callers with real non-Send effects.
     use maestro_catalog::{
