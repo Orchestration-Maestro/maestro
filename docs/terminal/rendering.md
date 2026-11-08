@@ -277,5 +277,4 @@ With `MAESTRO_TUI_DEBUG=1` each differential update writes its first changed row
 cursor rows, the new and retained lines and the exact bytes to
 `/tmp/tui/render-{unix_ms}-{nonce}.log`.
 
-Appending to the redraw log does not create its directory; the crash report and the
-differential record create theirs. A failed log effect fails the frame.
+Every diagnostic writer creates its directory. A failed log effect fails the frame.
