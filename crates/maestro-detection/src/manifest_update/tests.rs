@@ -33,6 +33,97 @@ fn newer_download_publishes_exact_manifest_bytes() {
     );
 }
 
+/// The Unix mode a file created in `dir` receives from the process's creation mask.
+#[cfg(unix)]
+fn default_mode(dir: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    let probe = dir.join("mode-probe");
+    std::fs::write(&probe, b"").unwrap();
+    let mode = std::fs::metadata(&probe).unwrap().permissions().mode() & 0o777;
+    std::fs::remove_file(probe).unwrap();
+    mode
+}
+
+/// Makes `path` read-only and returns the mode a replacement should receive.
+#[cfg(unix)]
+fn make_read_only(path: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o444)).unwrap();
+    default_mode(path.parent().unwrap())
+}
+
+#[cfg(unix)]
+#[test]
+fn read_only_cached_manifest_is_replaced_with_the_default_mode() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    process_agent_manifest(
+        &fixture.catalog(),
+        Agent::Codex,
+        &remote_manifest("9999.01.01.1", "old"),
+    )
+    .unwrap();
+    let path = remote_manifest_path(&fixture.catalog(), Agent::Codex);
+    let expected = make_read_only(&path);
+
+    let newer = remote_manifest("9999.01.01.2", "new");
+    process_agent_manifest(&fixture.catalog(), Agent::Codex, &newer)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), newer);
+    assert_eq!(
+        std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        expected
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn read_only_status_file_is_replaced_with_the_default_mode() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    let path = status_path(&fixture.catalog());
+    std::fs::create_dir_all(fixture.catalog()).unwrap();
+    std::fs::write(&path, "last_result = \"stale\"\n").unwrap();
+    let expected = make_read_only(&path);
+
+    let output = check_and_update(
+        &fixture.catalog(),
+        "https://catalog.invalid/index.toml",
+        &mut |_| Ok(b"schema_version = 1\n".to_vec()),
+    )
+    .unwrap();
+
+    assert_eq!(output.status.last_result.as_deref(), Some("checked"));
+    assert_eq!(load_status(&fixture.catalog()), output.status);
+    assert_eq!(
+        std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        expected
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn read_only_cached_manifest_is_refused_and_left_unchanged() {
+    let fixture = Fixture::new();
+    let old = remote_manifest("9999.01.01.1", "old");
+    process_agent_manifest(&fixture.catalog(), Agent::Codex, &old).unwrap();
+    let path = remote_manifest_path(&fixture.catalog(), Agent::Codex);
+    let mut permissions = std::fs::metadata(&path).unwrap().permissions();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(&path, permissions).unwrap();
+
+    let result = process_agent_manifest(
+        &fixture.catalog(),
+        Agent::Codex,
+        &remote_manifest("9999.01.01.2", "new"),
+    );
+
+    assert!(result.is_err());
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), old);
+}
+
 #[test]
 fn dotted_versions_compare_numeric_and_zero_tail_segments() {
     use super::ManifestVersion;

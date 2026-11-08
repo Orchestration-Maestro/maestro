@@ -1,11 +1,7 @@
 //! Recoverable byte publication preserving native file identity.
 #[cfg(all(test, unix))]
 use crate::identity::resolve_write_target;
-use std::{
-    fs::{self, File},
-    io,
-    path::Path,
-};
+use std::{fs::File, io, path::Path};
 
 /// Permission timing for a newly created target; existing access controls always win.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,6 +38,9 @@ pub struct Committed {
 }
 /// Publishes intended bytes durably, then writes the target in place under exclusion.
 ///
+/// No directory is created: a missing parent, including the missing target directory of a
+/// dangling link, fails with the native not-found error and leaves the link in place.
+///
 /// # Errors
 /// Returns native resolution, lock, staging or target-write errors. An interrupted
 /// write is completed from its recovery record by the next coordinated writer.
@@ -51,11 +50,6 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
     } else {
         path.to_path_buf()
     };
-    let parent = target
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    fs::create_dir_all(parent)?;
     crate::acquire_write(&target, false)?.replace(bytes, options.creation_mode)
 }
 

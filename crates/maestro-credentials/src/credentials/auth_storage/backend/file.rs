@@ -165,32 +165,6 @@ fn create_missing(candidate: &Path) -> io::Result<Option<PathBuf>> {
     }
 }
 
-/// Publishes `text` as the credential file at `path` through the shared recoverable writer,
-/// readable only by its owner on Unix.
-///
-/// The text is written in place under the shared exclusion, so a hard link to the file sees it,
-/// and a write cut short is completed, not rolled back, by the next coordinated writer. A symbolic
-/// link at `path` is followed and a missing parent directory is created. An existing file must be
-/// writable by its owner: it is narrowed to mode 0600 through the handle that proved this, so the
-/// new text is never written under looser bits, and a read-only file is refused without a change.
-/// A failed parent-directory sync after the write is not reported: the text is already written.
-///
-/// # Errors
-/// Returns the native error of the narrowing or of the publication.
-pub fn write_auth_file(path: &str, text: &str) -> io::Result<()> {
-    #[cfg(unix)]
-    narrow(Path::new(path))?;
-    maestro_lock::replace(
-        Path::new(path),
-        text.as_bytes(),
-        maestro_lock::Replace {
-            through_symlinks: true,
-            creation_mode: Some(CreationMode::AfterSync(0o600)),
-        },
-    )
-    .map(|_| ())
-}
-
 /// Narrows an existing writable file before publishing any credential bytes.
 #[cfg(unix)]
 fn narrow(path: &Path) -> io::Result<()> {
