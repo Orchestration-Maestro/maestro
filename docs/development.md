@@ -1750,6 +1750,22 @@ configured command. The stand-in inherits the child's environment, so the two
 record may omit `ready` when no caller reads that marker. A `holder` names its
 descendant by an installed alias, whose own record gives that descendant its work.
 
+Another family takes the same route: `install_family(alias, family, record)` copies
+the artifact and writes the family and its record, and `install_command`, the
+credential, Git and peer installers all call it. A test that installs a record of
+its own, such as an editor or a viewer, calls it directly instead of writing the
+`.fixture` file itself.
+
+A `hold` child waits on FIFOs that Rust's standard library cannot create.
+`gate::Gate::new(path)` makes the FIFO and keeps it open for reading and writing
+until the guard drops. Pass `gate.path()` as `permit` and `gate.release()` lets
+one waiting child continue. Pass a second gate as `ready` and `gate.take(5)` waits
+for a child's `"ready"` bytes, so a test holds one child, observes it started,
+releases it and then observes the next, without a sleep or a poll. Dropping the
+guard removes the FIFO: a waiting child reads the end of the stream and ends, and
+a child that starts later finds no FIFO, so a failed test never leaves one blocked.
+The gate exists on Unix only.
+
 The conventions checker's architecture tests answer its Cargo metadata and compiler
 queries the same way. `Workspace::metadata_command` installs a `metadata` Cargo whose
 `declared` and `resolved` files sit in the fixture workspace, and `Workspace::command`
@@ -2310,24 +2326,19 @@ Install the same artifact as `open`, `xdg-open`, `explorer.exe`, an editor name
 or `trash` when a test observes a desktop viewer launch, an edit or a session
 deletion. Write the family on the first line of `<alias>.fixture`, followed by a
 JSON object that the fixture parses before any effect; unknown fields and
-malformed values fail at once. The chat tests install these aliases through one
-helper in `tests/support/native_alias.rs`.
+malformed values fail at once. `maestro_test_process::install_family` installs the
+alias and writes that record.
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
     let directory = maestro_test_directory::Scratch::new()?;
     let editor = directory.path().join("ed");
-    std::fs::write(
-        editor.with_file_name("ed.fixture"),
-        format!("editor\n{}", serde_json::json!({
-            "argv": directory.path().join("argv"),
-            "before": directory.path().join("before"),
-            "content": b"edited\n",
-        })),
-    )?;
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor)?;
+    let record = serde_json::json!({
+        "argv": directory.path().join("argv"),
+        "before": directory.path().join("before"),
+        "content": b"edited\n",
+    });
+    maestro_test_process::install_family(&editor, "editor", &record.to_string())?;
     Ok(())
 }
 ```

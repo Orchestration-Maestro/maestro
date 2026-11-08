@@ -593,6 +593,157 @@ fn analysis_runs_each_file_before_aggregation() {
     );
 }
 
+/// Standard output that hands each finished line to the test before the command continues.
+#[cfg(unix)]
+struct Lines {
+    /// Bytes of the line being written.
+    pending: Vec<u8>,
+    /// Rendezvous with the test: a send returns once the test has taken the line.
+    sender: std::sync::mpsc::SyncSender<String>,
+}
+
+#[cfg(unix)]
+impl std::io::Write for Lines {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.pending.extend_from_slice(bytes);
+        while let Some(end) = self.pending.iter().position(|byte| *byte == b'\n') {
+            let line = String::from_utf8_lossy(&self.pending[..end]).into_owned();
+            self.pending.drain(..=end);
+            self.sender.send(line).map_err(std::io::Error::other)?;
+        }
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// The lines the command prints up to and including the first one that starts with `prefix`.
+#[cfg(unix)]
+fn printed_until(lines: &std::sync::mpsc::Receiver<String>, prefix: &str) -> Vec<String> {
+    let mut seen = Vec::new();
+    loop {
+        let line = lines.recv().expect("the command prints the awaited line");
+        let done = line.starts_with(prefix);
+        seen.push(line);
+        if done {
+            return seen;
+        }
+    }
+}
+
+/// A project with two transcript files and a summary file for each, and its output directory.
+#[cfg(unix)]
+fn two_files_with_summaries(base: &str) -> (String, String) {
+    let (project, output) = prepared(base);
+    sessions(
+        base,
+        &project,
+        &[
+            ("a.jsonl", &sized_transcript("a.jsonl", 60_000)),
+            ("b.jsonl", &sized_transcript("b.jsonl", 60_000)),
+        ],
+    );
+    std::fs::create_dir_all(&output).expect("the output directory is creatable");
+    for index in 0..2 {
+        std::fs::write(
+            format!("{output}/session-transcripts-{index:03}.summary.txt"),
+            "PATTERN",
+        )
+        .expect("the summary file is writable");
+    }
+    (project, output)
+}
+
+/// Install a `maestro` child that announces on `ready`, waits on `permit`, then prints one
+/// text event and the end of its turn.
+#[cfg(unix)]
+fn held_child(
+    base: &str,
+    ready: &maestro_test_process::gate::Gate,
+    permit: &maestro_test_process::gate::Gate,
+) {
+    let events = format!(
+        "{}\n{}\n",
+        r#"{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"first"}}"#,
+        r#"{"type":"turn_end"}"#
+    );
+    crate::native::command(
+        Path::new(base).join("bin").as_path(),
+        "maestro",
+        &serde_json::json!({
+            "scenario": "hold",
+            "ready": ready.path(),
+            "permit": permit.path(),
+            "stdout": events.as_bytes(),
+            "stderr": [],
+        }),
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn analysis_starts_each_child_only_after_the_previous_one_ends() {
+    use maestro_test_process::gate::Gate;
+    let path = "$BASE/bin";
+    with_environment(
+        "analysis_starts_each_child_only_after_the_previous_one_ends",
+        &[("PATH", path)],
+        |base| {
+            let (project, output) = two_files_with_summaries(base);
+            std::thread::scope(|scope| {
+                // The gates and the receiver belong to this closure, so a failed assertion
+                // releases every child and the command's blocked print.
+                let (sender, lines) = std::sync::mpsc::sync_channel(0);
+                let ready = Gate::new(&Path::new(base).join("ready")).expect("the ready gate");
+                let permit = Gate::new(&Path::new(base).join("permit")).expect("the permit gate");
+                held_child(base, &ready, &permit);
+                let arguments = ["--analyze", "--output", &output, &project].map(str::to_owned);
+                let command = scope.spawn(move || {
+                    let mut stdout = Lines {
+                        pending: Vec::new(),
+                        sender,
+                    };
+                    crate::support::run_io(maestro_app::developer_tools::session_transcripts::main(
+                        &arguments,
+                        false,
+                        &mut stdout,
+                        &mut Vec::new(),
+                    ))
+                });
+                // The first child runs and stays held.
+                printed_until(&lines, "Analyzing session-transcripts-000.txt");
+                assert_eq!(ready.take(5).expect("the first child starts"), b"ready");
+                permit.release().expect("the first child is released");
+                // The second child is announced only after the first printed its result.
+                let first = printed_until(&lines, "Analyzing session-transcripts-001.txt");
+                assert!(first.contains(&"  first".to_owned()), "{first:?}");
+                assert!(
+                    first.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
+                    "{first:?}"
+                );
+                assert_eq!(ready.take(5).expect("the second child starts"), b"ready");
+                permit.release().expect("the second child is released");
+                // The aggregating child follows the second one.
+                let second = printed_until(&lines, "Aggregating findings into final summary...");
+                assert!(second.contains(&"  -> session-transcripts-001.summary.txt".to_owned()));
+                assert_eq!(
+                    ready.take(5).expect("the aggregating child starts"),
+                    b"ready"
+                );
+                permit.release().expect("the aggregating child is released");
+                while lines.recv().is_ok() {}
+                let code = command
+                    .join()
+                    .expect("the command ends")
+                    .expect("the command ran");
+                assert_eq!(code, std::process::ExitCode::SUCCESS);
+            });
+        },
+    );
+}
+
 /// Assert both recorded prompts name their instruction files and summary paths in order.
 #[cfg(unix)]
 fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[String]) {
