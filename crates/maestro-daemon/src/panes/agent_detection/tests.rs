@@ -6,7 +6,7 @@ use super::*;
 fn runtime_state_changed_event_waits_for_queue_space_instead_of_dropping() {
     crate::tests::block_on(async {
         use crate::events::AppEvent;
-        use maestro_workspace::layout::PaneId;
+        use maestro_workspace::tiling::PaneId;
         use std::{
             future::Future,
             task::{Context, Poll, Waker},
@@ -58,7 +58,7 @@ fn runtime_state_changed_event_waits_for_queue_space_instead_of_dropping() {
 
 #[test]
 fn osc_detection_uses_supplied_cache_and_process_exit_overrides_transcript() {
-    use maestro_detection::manifest::{DetectionInput, ManifestCache};
+    use maestro_detection::definitions::{DetectionInput, ManifestCache};
     let cache = ManifestCache::new(None, None).unwrap();
     let transcript = "showing detailed transcript\nctrl+o to toggle";
     let input = DetectionInput {

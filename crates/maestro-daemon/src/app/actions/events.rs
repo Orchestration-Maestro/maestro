@@ -7,7 +7,7 @@ use crate::{
     terminal::model::{DetectedStateUpdate, HookReport, TerminalState},
 };
 use maestro_detection::agents::AgentVisibility;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Applies background state observations; host bell and clipboard effects stay with the loop.

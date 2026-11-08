@@ -12,7 +12,7 @@ use tokio::sync::{Notify, mpsc};
 /// Supplies the same existing pane runtime boundary used by native launches.
 pub fn launch_inputs(
     args: &[String],
-    manifests: Arc<std::sync::RwLock<maestro_detection::manifest::ManifestCache>>,
+    manifests: Arc<std::sync::RwLock<maestro_detection::definitions::ManifestCache>>,
 ) -> (PaneLaunchInputs, mpsc::Receiver<AppEvent>) {
     let (events, receiver) = mpsc::channel(8);
     (

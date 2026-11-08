@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use crate::terminal::model::{AgentMetadataReport, SessionStartReport};
 use maestro_detection::agents::{Agent, AgentState};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use tokio::sync::mpsc;
 
 /// An observation from a background pane task.
@@ -115,9 +115,9 @@ pub enum AppEvent {
     /// Detection catalogue publication has completed against the shared cache.
     AgentDetectionManifestsUpdated {
         /// Successfully published agent versions.
-        updated: Vec<maestro_detection::manifest_update::ManifestUpdateCommit>,
+        updated: Vec<maestro_detection::updates::ManifestUpdateCommit>,
         /// Latest catalogue diagnostics, including checks with no updates.
-        status: maestro_detection::manifest_update::ManifestUpdateStatus,
+        status: maestro_detection::updates::ManifestUpdateStatus,
     },
     /// Fallback screen detection changed a pane's state.
     StateChanged {
@@ -139,7 +139,7 @@ pub enum AppEvent {
     /// A background refresh of repository status finished.
     GitStatusRefreshed {
         /// One observation for each workspace the refresh covered.
-        results: Vec<maestro_workspace::workspace::WorkspaceGitStatus>,
+        results: Vec<maestro_workspace::spaces::WorkspaceGitStatus>,
         /// Cache entries to retain, keyed by repository.
         cache_updates: Vec<(std::path::PathBuf, crate::git::status::GitStatusCacheEntry)>,
     },

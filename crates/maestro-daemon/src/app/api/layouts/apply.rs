@@ -6,7 +6,7 @@ use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, LayoutApplyParams, LayoutNode, LayoutPane, ResponseResult},
 };
-use maestro_workspace::layout::{PaneId, SplitRequest};
+use maestro_workspace::tiling::{PaneId, SplitRequest};
 use std::path::PathBuf;
 
 impl<C: FnMut() -> u128> App<C> {

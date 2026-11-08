@@ -1,6 +1,6 @@
 //! Configuration resolution, stored credentials and user-facing authentication guidance.
-pub mod auth_storage;
-pub mod resolve_config_value;
+pub mod configuration;
+pub mod vault;
 
 #[cfg(test)]
 mod tests;

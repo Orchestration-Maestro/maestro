@@ -4,7 +4,7 @@
 pub mod summary;
 
 use crate::terminal::{model::TerminalState, owners::TerminalRuntimeRegistry};
-use maestro_workspace::{terminal_id::TerminalId, workspace::Workspace};
+use maestro_workspace::{spaces::Workspace, terminal_id::TerminalId};
 use std::{collections::HashMap, path::PathBuf};
 
 /// Resolves identity from the first root process, falling back to retained topology.

@@ -1,6 +1,6 @@
 //! Managed pinned checkout integrity through native Git effects.
 #![cfg(unix)]
-use crate::native_git::{git, retry::RetryFixture};
+use crate::native_git::{git, reattempts::RetryFixture};
 use maestro_packages::PackageManager;
 
 #[test]

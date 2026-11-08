@@ -1,6 +1,6 @@
 //! Candidate reads preserve installed files and never prepare dependencies.
 #![cfg(unix)]
-use crate::native_git::{git, retry::RetryFixture};
+use crate::native_git::{git, reattempts::RetryFixture};
 use maestro_packages::{NativePackageOperations, PackageManager, PackageOperations, SourceScope};
 use std::{path::Path, rc::Rc};
 

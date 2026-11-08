@@ -19,7 +19,7 @@ pub(super) fn evaluate_loaded_manifest(
     agent: Agent,
     input: DetectionInput<'_>,
     loaded: &LoadedManifest,
-    update_status: Option<crate::manifest_update::AgentRemoteStatus>,
+    update_status: Option<crate::updates::AgentRemoteStatus>,
 ) -> DetectionExplain {
     let mut matched: Option<&ManifestRule> = None;
     let mut evaluated_rules = Vec::new();
@@ -91,7 +91,7 @@ pub(super) fn evaluate_loaded_manifest(
 pub(super) fn fallback_explain(
     agent: Option<Agent>,
     context: Option<(&LoadedManifest, Vec<EvaluatedRule>)>,
-    update_status: Option<crate::manifest_update::AgentRemoteStatus>,
+    update_status: Option<crate::updates::AgentRemoteStatus>,
 ) -> DetectionExplain {
     let (
         source,

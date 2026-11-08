@@ -45,10 +45,10 @@ pub fn parse_remote_manifest_for_agent(
     let min_engine_version = manifest
         .min_engine_version
         .ok_or("remote manifest must include min_engine_version")?;
-    if min_engine_version > crate::manifest_update::MANIFEST_ENGINE_VERSION {
+    if min_engine_version > crate::updates::MANIFEST_ENGINE_VERSION {
         return Err(format!(
             "manifest requires engine {min_engine_version}, current engine is {}",
-            crate::manifest_update::MANIFEST_ENGINE_VERSION
+            crate::updates::MANIFEST_ENGINE_VERSION
         ));
     }
     Ok(ParsedRemoteManifest { manifest, version })

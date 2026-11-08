@@ -101,7 +101,7 @@ impl HostPixels {
     #[must_use]
     pub fn pane_position(
         self,
-        inner: maestro_workspace::layout::Rect,
+        inner: maestro_workspace::tiling::Rect,
         child_width_px: u32,
         child_height_px: u32,
     ) -> Option<Position> {

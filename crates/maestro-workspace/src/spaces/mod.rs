@@ -12,8 +12,8 @@ pub use topology::WorkspaceTopology;
 mod operations;
 
 /// Supplied repository records and labels.
-pub mod git;
+pub mod repository;
 
 mod identity;
-pub use git::{GitSpaceMetadata, GitStatusRefreshDemand};
 pub use identity::{WorkspaceGitStatus, WorkspaceGitStatusSnapshot, WorktreeSpaceMembership};
+pub use repository::{GitSpaceMetadata, GitStatusRefreshDemand};

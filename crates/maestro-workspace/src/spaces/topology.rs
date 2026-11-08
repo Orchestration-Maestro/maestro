@@ -1,9 +1,9 @@
 //! One owned allocator across all workspaces.
 use super::{Workspace, encode_public_number};
 use crate::{
-    layout::{PaneId, SplitRequest},
     tab::{SpawnRequest, Tab},
     terminal_id::TerminalId,
+    tiling::{PaneId, SplitRequest},
 };
 use std::{
     io,
@@ -79,7 +79,7 @@ impl<C: FnMut() -> u128> WorkspaceTopology<C> {
             terminal_id: self.alloc_terminal_id(),
         };
         let (tab, result) = Tab::new_with_runtime(pane, request, spawn)?;
-        let label = super::git::fallback_label_from_cwd(&cwd, home);
+        let label = super::repository::fallback_label_from_cwd(&cwd, home);
         self.workspaces.push(Workspace::new(id, cwd, label, tab));
         Ok((pane, result))
     }
@@ -169,7 +169,7 @@ impl<C: FnMut() -> u128> WorkspaceTopology<C> {
     ) -> usize {
         owner.allocator.pane = owner.allocator.pane.max(moved.pane_id.raw() + 1);
         let id = owner.generate_workspace_id();
-        let label = super::git::fallback_label_from_cwd(&cwd, home);
+        let label = super::repository::fallback_label_from_cwd(&cwd, home);
         let tab = Tab::from_existing_pane(1, None, moved);
         owner.workspaces.push(Workspace::new(id, cwd, label, tab));
         owner.workspaces.len() - 1

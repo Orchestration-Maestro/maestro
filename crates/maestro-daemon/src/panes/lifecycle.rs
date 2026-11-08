@@ -14,11 +14,11 @@ use crate::{
     render_signal::RenderSignal,
     terminal_theme::{HostAppearance, TerminalTheme},
 };
-use maestro_detection::manifest::ManifestCache;
+use maestro_detection::definitions::ManifestCache;
 use maestro_process::terminal::{
     PtySetupEntry, PtySize, channels::PtyIoActorHandle, jobs::ProcessDetectionMode,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::{
     cell::Cell,
     path::PathBuf,
@@ -96,7 +96,7 @@ impl PaneRuntime {
     #[must_use]
     pub fn cursor_state(
         &self,
-        area: maestro_workspace::layout::Rect,
+        area: maestro_workspace::tiling::Rect,
         show_cursor: bool,
     ) -> Option<super::display::TerminalCursorState> {
         if !show_cursor {

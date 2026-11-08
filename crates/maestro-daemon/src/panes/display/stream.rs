@@ -7,7 +7,7 @@ use crate::panes::osc::{
 };
 use maestro_process::jobs::ForegroundJob;
 use maestro_terminal::Mode;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::time::{Duration, Instant};
 use std::{borrow::Cow, cell::LazyCell};
 

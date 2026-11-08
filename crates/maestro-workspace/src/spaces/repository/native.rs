@@ -213,8 +213,8 @@ pub(super) fn git_dir_is_bare(git_dir: &Path) -> bool {
 
 /// Extract a repository configuration value; the last assignment in the plain section wins.
 fn read_git_config_value(path: &Path, section: &str, key: &str) -> Option<String> {
-    let items = super::config::syntax::parse(&read_text(path).ok()?);
-    super::config::syntax::plain_entries(&items, section)
+    let items = super::tracking::syntax::parse(&read_text(path).ok()?);
+    super::tracking::syntax::plain_entries(&items, section)
         .filter(|(name, _)| name.eq_ignore_ascii_case(key))
         .last()
         .and_then(|(_, value)| value.map(str::to_owned))

@@ -3,7 +3,7 @@ use super::super::native::trim;
 
 /// One meaningful line of a configuration file.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::workspace::git) enum Item {
+pub(in crate::spaces::repository) enum Item {
     /// A section header such as `[remote "origin"]`.
     Header {
         /// Section name as written; an unreadable header leaves it empty.
@@ -21,14 +21,14 @@ pub(in crate::workspace::git) enum Item {
 }
 
 /// Read every header and entry, skipping blank and comment lines.
-pub(in crate::workspace::git) fn parse(text: &str) -> Vec<Item> {
+pub(in crate::spaces::repository) fn parse(text: &str) -> Vec<Item> {
     text.lines()
         .filter_map(|line| parse_line(trim(line)))
         .collect()
 }
 
 /// Entries under headers named `section` that carry no subsection, in file order.
-pub(in crate::workspace::git) fn plain_entries<'a>(
+pub(in crate::spaces::repository) fn plain_entries<'a>(
     items: &'a [Item],
     section: &'a str,
 ) -> impl Iterator<Item = (&'a str, Option<&'a str>)> + 'a {
@@ -47,7 +47,7 @@ pub(in crate::workspace::git) fn plain_entries<'a>(
 }
 
 /// Whether a value reads as true: a bare key, `true`, `yes`, `on` or a nonzero integer.
-pub(in crate::workspace::git) fn is_true(value: Option<&str>) -> bool {
+pub(in crate::spaces::repository) fn is_true(value: Option<&str>) -> bool {
     let Some(value) = value else { return true };
     ["true", "yes", "on"]
         .iter()

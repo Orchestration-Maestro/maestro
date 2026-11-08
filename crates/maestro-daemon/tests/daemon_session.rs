@@ -15,7 +15,7 @@ use std::{
 /// Constructs an empty daemon without starting a child or reading host settings.
 fn app() -> App<fn() -> u128> {
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     App::new(

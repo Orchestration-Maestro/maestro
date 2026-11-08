@@ -65,7 +65,7 @@ pub struct WorkspaceSnapshot {
     pub identity_cwd: PathBuf,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Optional managed-worktree membership.
-    pub worktree_space: Option<crate::workspace::WorktreeSpaceMembership>,
+    pub worktree_space: Option<crate::spaces::WorktreeSpaceMembership>,
     #[serde(default)]
     /// Public pane numbers indexed by raw identity.
     pub public_pane_numbers: HashMap<u32, usize>,
@@ -250,8 +250,8 @@ pub(crate) fn snapshot_file_version(content: &str) -> Option<u32> {
 }
 /// Projects a live split tree into its persisted axis spelling.
 #[must_use]
-pub fn capture_node(node: &crate::layout::Node) -> LayoutSnapshot {
-    use crate::layout::Node;
+pub fn capture_node(node: &crate::tiling::Node) -> LayoutSnapshot {
+    use crate::tiling::Node;
     use maestro_protocol::schema::SplitDirection;
     match node {
         Node::Pane(id) => LayoutSnapshot::Pane(id.raw()),

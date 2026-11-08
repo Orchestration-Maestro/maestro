@@ -3,7 +3,7 @@
 use super::super::*;
 use maestro_process::jobs::{ForegroundJob, ForegroundProcess};
 use maestro_terminal::{CursorStyle, Terminal};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::time::{Duration, Instant};
 
 fn pane() -> PaneTerminal {

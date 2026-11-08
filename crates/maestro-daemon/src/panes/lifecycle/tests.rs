@@ -491,7 +491,7 @@ fn runtime_cursor_projection_gates_clips_and_translates_the_viewport() {
         return;
     }
     with_runtime(name, "read -r line", |runtime, _, _| async move {
-        use maestro_workspace::layout::Rect;
+        use maestro_workspace::tiling::Rect;
         runtime.seed_history_ansi("\x1b[3;5H\x1b[5 q");
         let area = Rect::new(10, 20, 8, 6);
         assert!(runtime.cursor_state(area, false).is_none());
@@ -912,7 +912,7 @@ fn assert_manifest_reset_selection(
 ) {
     use maestro_detection::{
         agents::{Agent, AgentState},
-        manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
+        updates::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
     };
     for (hook, agents, expected) in [
         (None, vec![], false),

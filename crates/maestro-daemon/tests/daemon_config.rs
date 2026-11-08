@@ -66,7 +66,7 @@ fn live_reload_applies_daemon_areas_without_binding_loader() {
         direction: maestro_daemon::app::model::SelectionAutoscrollDirection::Down,
         last_mouse_screen_col: 1,
         last_mouse_screen_row: 1,
-        inner_rect: maestro_workspace::layout::Rect::new(0, 0, 2, 2),
+        inner_rect: maestro_workspace::tiling::Rect::new(0, 0, 2, 2),
     });
     app.next_auto_update_check = Some(Instant::now());
     app.next_agent_manifest_update_check = Some(Instant::now());

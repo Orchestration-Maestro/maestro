@@ -2,7 +2,7 @@
 use crate::agents::{
     Agent, AgentDetection, AgentState, AgentVisibility, agent_label, parse_agent_label,
 };
-use crate::manifest_update::ManifestVersion;
+use crate::updates::ManifestVersion;
 use regex::Regex;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};

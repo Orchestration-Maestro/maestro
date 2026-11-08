@@ -22,10 +22,10 @@ use super::{
 use crate::events::AppEvent;
 use maestro_detection::{
     agents::{Agent, AgentState, AgentVisibility},
-    manifest::{DetectionInput, ManifestCache},
+    definitions::{DetectionInput, ManifestCache},
 };
 use maestro_process::terminal::jobs::{self as foreground, ProcessDetectionMode};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::{
     sync::{
         Arc, Mutex, RwLock,

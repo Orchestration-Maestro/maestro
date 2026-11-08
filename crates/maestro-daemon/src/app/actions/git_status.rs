@@ -4,7 +4,7 @@ use crate::{
     app::model::DaemonState, terminal::owners::TerminalRuntimeRegistry,
     workspace::resolved_identity_cwd_from,
 };
-use maestro_workspace::workspace::{Workspace, WorkspaceGitStatus};
+use maestro_workspace::spaces::{Workspace, WorkspaceGitStatus};
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Apply observations to the workspaces they still describe and report visible changes.

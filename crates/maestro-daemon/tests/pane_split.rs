@@ -8,7 +8,7 @@ use maestro_daemon::app::model::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::json;
 use std::path::PathBuf;
 

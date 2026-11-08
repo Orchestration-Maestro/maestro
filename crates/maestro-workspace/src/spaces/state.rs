@@ -1,5 +1,5 @@
 //! Workspace topology records.
-use crate::{layout::PaneId, tab::Tab};
+use crate::{tab::Tab, tiling::PaneId};
 use std::{collections::HashMap, path::PathBuf};
 /// A named collection of tabs with stable public numbers.
 #[derive(Debug, Clone, PartialEq)]

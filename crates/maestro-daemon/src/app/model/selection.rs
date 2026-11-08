@@ -1,6 +1,6 @@
 //! Retained selection ownership across focus navigation.
 
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Active daemon interaction context.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,5 +55,5 @@ pub struct SelectionAutoscroll {
     /// Last observed mouse row.
     pub last_mouse_screen_row: u16,
     /// Pane content rectangle at the last drag observation.
-    pub inner_rect: maestro_workspace::layout::Rect,
+    pub inner_rect: maestro_workspace::tiling::Rect,
 }

@@ -9,8 +9,8 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Refreshes detection diagnostics and summaries from the runtime's shared snapshot.
     pub(super) fn record_manifest_update(
         &mut self,
-        updated: &[maestro_detection::manifest_update::ManifestUpdateCommit],
-        status: maestro_detection::manifest_update::ManifestUpdateStatus,
+        updated: &[maestro_detection::updates::ManifestUpdateCommit],
+        status: maestro_detection::updates::ManifestUpdateStatus,
     ) {
         self.agent_manifest_update_status = status;
         self.agent_manifest_summaries = self

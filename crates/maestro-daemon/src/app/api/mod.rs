@@ -208,7 +208,7 @@ impl<C: FnMut() -> u128> App<C> {
     pub(super) fn live_notification_context(
         &self,
         workspace: usize,
-        pane: maestro_workspace::layout::PaneId,
+        pane: maestro_workspace::tiling::PaneId,
     ) -> Option<String> {
         let target = self.state.topology.workspaces.get(workspace)?;
         let label = crate::workspace::display_name_from(

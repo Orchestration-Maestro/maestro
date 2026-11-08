@@ -16,7 +16,7 @@ use maestro_daemon::{
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_test_directory::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Daemon owner driven by a deterministic public-identity clock.
 type TestApp = App<fn() -> u128>;
@@ -195,7 +195,7 @@ fn overlay_app(previous_zoomed: bool) -> (TestApp, PaneId, PaneId) {
         .topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target: previous_focus,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: Some(0.5),

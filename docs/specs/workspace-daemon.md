@@ -91,8 +91,8 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 | `maestro-json` | `jsonl` | 1 |
 | `maestro-ipc` | `local_socket`, `socket_paths` | 1 |
 | `maestro-process` | `pty::{fd, actor, foreground}`, `shell` additions, `child_process::native` signal escalation | 2, 19, 29 |
-| `maestro-workspace` | `layout`, `workspace`, `workspace::git`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persist::{snapshot, io}` | 3, 6, 14 |
-| `maestro-detection` | `agents`, `manifest`, `manifest_update`, bundled manifests | 4, 7 |
+| `maestro-workspace` | `tiling`, `spaces`, `spaces::repository`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persist::{records, io}` | 3, 6, 14 |
+| `maestro-detection` | `agents`, `definitions`, `updates`, bundled manifests | 4, 7 |
 | `maestro-lock` | `replace` | 6 |
 | `maestro-protocol` | `KeyModifiers` constants and the underline bit layout in `frames` (additive) | 9, 26 |
 | `maestro-settings` | `SettingsManager::set_global_key` becomes public | 8 |
@@ -196,7 +196,7 @@ need `unsafe` to hand its descriptor to the async runtime.
   identities are allocated afresh. Counters survive workspace removal and are independent between owners.
 - **Runtimes.** The daemon passes the spawn closure and inserts the runtime into its one registry.
 - **Repository identity.** Native discovery belongs to the existing
-  `maestro-workspace::workspace::git` owner. The daemon and application footer use
+  `maestro-workspace::spaces::repository` owner. The daemon and application footer use
   the same directory walk for ordinary, linked, bare and embedded-bare layouts.
   Native path bytes survive traversal and metadata-link resolution. Shared Unicode
   trimming applies to link text. Workspace discovery climbs past markers without a

@@ -6,7 +6,7 @@ use crate::{
     settings::model::Config,
     terminal::model::TerminalState,
 };
-use maestro_detection::manifest::ManifestCache;
+use maestro_detection::definitions::ManifestCache;
 use std::sync::{Arc, RwLock};
 
 /// Builds two workspaces with two tabs each, without child processes.

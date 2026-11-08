@@ -2,7 +2,7 @@
 
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_protocol::{schema::NotificationShowSound, shared::ToastMaestroPosition};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::time::Instant;
 
 /// Short-lived clipboard acknowledgement, independent of agent notifications.

@@ -2,7 +2,7 @@
 
 use super::super::*;
 use maestro_terminal::{Terminal, color::Rgb};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 fn current_palette_color(pane: &PaneTerminal, index: u8) -> Rgb {
     pane.core.lock().unwrap().terminal.colors.palette.current[usize::from(index)]

@@ -6,7 +6,7 @@ use maestro_process::terminal::{
     channels::{PtyIoActor, PtyIoActorConfig, PtyReadResult},
     jobs as foreground,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::os::fd::OwnedFd;
 use std::{
     io,

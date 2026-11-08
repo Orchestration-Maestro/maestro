@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::panes::display::ScrollMetrics;
-use maestro_workspace::layout::{PaneId, Rect};
+use maestro_workspace::tiling::{PaneId, Rect};
 
 fn make_sel(sr: u32, sc: u16, er: u32, ec: u16) -> Selection {
     let metrics = |row| {

@@ -5,7 +5,7 @@
 use crate::support::spawning;
 
 use maestro_daemon::{app::App, service::event_hub::EventHub, settings::model::Config};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::{
     collections::HashSet,
     sync::{Arc, RwLock},
@@ -21,7 +21,7 @@ fn setup_entry() {
 /// Constructs real native ownership without a shell emitting unsolicited titles.
 fn fixture(args: &[String]) -> (App<fn() -> u128>, PaneId) {
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(args, manifests);
     let mut app = App::new(
@@ -198,7 +198,7 @@ fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
         app::terminal_titles::TerminalTitleChanges, settings::navigation::AgentSidebarToken,
     };
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     let mut app = App::new(

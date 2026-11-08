@@ -2,7 +2,7 @@
 
 use super::App;
 use crate::{locations::DaemonPaths, persist};
-use maestro_workspace::persist::snapshot::{SessionHistorySnapshot, SessionSnapshot};
+use maestro_workspace::persist::records::{SessionHistorySnapshot, SessionSnapshot};
 use std::time::{Duration, Instant};
 
 /// Delay after a dirty observation before capturing the current session.

@@ -13,9 +13,9 @@ use maestro_protocol::{
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use maestro_workspace::{
-    layout::{PaneId, SplitRequest},
+    spaces::WorktreeSpaceMembership,
     terminal_id::TerminalId,
-    workspace::WorktreeSpaceMembership,
+    tiling::{PaneId, SplitRequest},
 };
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Instant};

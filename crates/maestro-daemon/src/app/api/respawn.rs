@@ -5,7 +5,7 @@ use crate::{
     events::AppEvent,
     panes::{commands::PaneShellConfig, lifecycle::PaneRuntime},
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 impl<C: FnMut() -> u128> App<C> {
     /// Attempts replacement before pane removal; failure leaves ordinary close policy intact.

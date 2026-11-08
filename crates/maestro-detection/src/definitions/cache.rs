@@ -102,7 +102,7 @@ impl ManifestCache {
         let status = self
             .catalog_root
             .as_deref()
-            .and_then(|root| crate::manifest_update::load_status(root).agent_status(agent));
+            .and_then(|root| crate::updates::load_status(root).agent_status(agent));
         self.evaluate(agent, input, status)
     }
 
@@ -129,7 +129,7 @@ impl ManifestCache {
         &self,
         agent: Agent,
         input: DetectionInput<'_>,
-        status: Option<crate::manifest_update::AgentRemoteStatus>,
+        status: Option<crate::updates::AgentRemoteStatus>,
     ) -> DetectionExplain {
         match self
             .manifests
@@ -150,7 +150,7 @@ impl ManifestCache {
         let bundled = parse_manifest(content)?;
         let mut selected = LoadedManifest::new(bundled, ManifestSource::Bundled)?;
         if let Some(root) = &self.catalog_root {
-            let path = crate::manifest_update::remote_manifest_path(root, agent);
+            let path = crate::updates::remote_manifest_path(root, agent);
             if path.exists() {
                 selected.select_remote(agent, &path);
             }

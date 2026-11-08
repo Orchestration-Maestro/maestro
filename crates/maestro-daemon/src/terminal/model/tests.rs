@@ -6,7 +6,7 @@ use maestro_detection::agents::AgentDetection;
 /// A terminal with a fixed identity and working directory.
 pub(in crate::terminal) fn test_terminal() -> TerminalState {
     TerminalState::new(
-        maestro_workspace::workspace::WorkspaceTopology::new(|| 0xabc).alloc_terminal_id(),
+        maestro_workspace::spaces::WorkspaceTopology::new(|| 0xabc).alloc_terminal_id(),
         "/tmp".into(),
     )
 }

@@ -1,7 +1,7 @@
 //! Prompt-derived cwd policy with explicitly enabled owned state.
 use super::super::{prompt_cwd::windows_powershell_prompt_cwd, *};
 use maestro_terminal::Terminal;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 #[test]
 fn pane_windows_powershell_prompt_cwd_uses_latest_default_prompt_path() {
     let cwd = std::env::current_dir().unwrap();

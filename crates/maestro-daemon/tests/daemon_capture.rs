@@ -9,9 +9,9 @@ use maestro_daemon::{
     terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
-    layout::{PaneId, SplitRequest},
-    persist::snapshot::{LayoutSnapshot, SessionSnapshot},
-    workspace::WorktreeSpaceMembership,
+    persist::records::{LayoutSnapshot, SessionSnapshot},
+    spaces::WorktreeSpaceMembership,
+    tiling::{PaneId, SplitRequest},
 };
 use std::{
     collections::HashMap,
@@ -25,7 +25,7 @@ fn state(names: &[&str]) -> DaemonState<fn() -> u128> {
         &Config::default(),
         (|| 0) as fn() -> u128,
         Arc::new(RwLock::new(
-            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
     );
     for name in names {
@@ -194,10 +194,10 @@ fn capture_keeps_focus_navigation() {
     let second = split(&mut state);
     let layout = &mut state.topology.workspaces[0].tabs[0].layout;
     layout.focus_pane(root);
-    let panes = layout.panes(maestro_workspace::layout::Rect::new(0, 0, 106, 20));
-    let next = maestro_workspace::layout::find_in_direction(
+    let panes = layout.panes(maestro_workspace::tiling::Rect::new(0, 0, 106, 20));
+    let next = maestro_workspace::tiling::find_in_direction(
         panes.iter().find(|pane| pane.id == root).unwrap(),
-        maestro_workspace::layout::NavDirection::Right,
+        maestro_workspace::tiling::NavDirection::Right,
         &panes,
     )
     .unwrap();
@@ -215,9 +215,9 @@ fn capture_keeps_resize_ratio_changes() {
     state.topology.workspaces[0].tabs[0].layout.focus_pane(root);
     let before = snapshot(&state);
     state.topology.workspaces[0].tabs[0].layout.resize_focused(
-        maestro_workspace::layout::NavDirection::Right,
+        maestro_workspace::tiling::NavDirection::Right,
         0.05,
-        maestro_workspace::layout::Rect::new(0, 0, 106, 20),
+        maestro_workspace::tiling::Rect::new(0, 0, 106, 20),
     );
     let after = snapshot(&state);
     let LayoutSnapshot::Split { ratio: first, .. } = before.workspaces[0].tabs[0].layout else {
@@ -531,7 +531,7 @@ async fn check_history(args: &[String], count: usize) {
 #[cfg(unix)]
 fn assert_history(
     encoded: &str,
-    history: &maestro_workspace::persist::snapshot::SessionHistorySnapshot,
+    history: &maestro_workspace::persist::records::SessionHistorySnapshot,
     panes: &[PaneId],
     markers: &[&str],
 ) {

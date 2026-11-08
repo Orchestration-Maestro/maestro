@@ -5,8 +5,8 @@
 use maestro_daemon::{terminal::model::TerminalState, workspace::summary as aggregate};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::{
-    layout::PaneId,
-    workspace::{Workspace, WorkspaceTopology},
+    spaces::{Workspace, WorkspaceTopology},
+    tiling::PaneId,
 };
 use std::collections::HashMap;
 
@@ -50,7 +50,7 @@ fn workspace_rollup_priority() {
     let id2 = topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: None,
@@ -89,7 +89,7 @@ fn workspace_rollup_done_unseen_beats_working() {
     let id2 = topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: None,

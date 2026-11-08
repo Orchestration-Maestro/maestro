@@ -11,8 +11,8 @@ use maestro_protocol::{
     schema::{ErrorBody, WorkspaceCreateParams},
 };
 use maestro_workspace::{
-    layout::PaneId,
-    workspace::{public_pane_id_for_number, public_tab_id_for_number},
+    spaces::{public_pane_id_for_number, public_tab_id_for_number},
+    tiling::PaneId,
 };
 use std::{collections::HashMap, io, path::PathBuf};
 
@@ -377,10 +377,7 @@ impl<C: FnMut() -> u128> App<C> {
                 .state
                 .public_tab_id(index, ws.active_tab)
                 .unwrap_or_else(|| {
-                    maestro_workspace::workspace::public_tab_id_for_number(
-                        &ws.id,
-                        ws.active_tab + 1,
-                    )
+                    maestro_workspace::spaces::public_tab_id_for_number(&ws.id, ws.active_tab + 1)
                 }),
             agent_status: super::actions::pane_agent_status(state, seen),
             tokens: ws.metadata_tokens.values(),

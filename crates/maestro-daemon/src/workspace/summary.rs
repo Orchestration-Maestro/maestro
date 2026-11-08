@@ -2,7 +2,7 @@
 
 use crate::terminal::model::TerminalState;
 use maestro_detection::agents::{Agent, AgentState};
-use maestro_workspace::{layout::PaneId, tab::Tab, terminal_id::TerminalId, workspace::Workspace};
+use maestro_workspace::{spaces::Workspace, tab::Tab, terminal_id::TerminalId, tiling::PaneId};
 use std::collections::HashMap;
 
 /// Agent presentation for one attached pane in layout order.

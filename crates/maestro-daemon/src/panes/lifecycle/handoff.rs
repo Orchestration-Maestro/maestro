@@ -1,7 +1,7 @@
 //! Terminal history and retained handoff state.
 use super::{PaneRuntime, PaneRuntimeConfig};
 use maestro_process::terminal::PtySize;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::{io, sync::atomic::Ordering};
 
 /// Replay limit per pane during server replacement.

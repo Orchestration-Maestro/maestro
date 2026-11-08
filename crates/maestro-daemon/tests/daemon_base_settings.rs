@@ -507,7 +507,7 @@ fn daemon_first_reload_retains_startup_area_document() {
     let mut manager = SettingsManager::from_storage(storage.clone());
     let loaded = load_config(&mut manager, Path::new(".")).0;
     let manifests = Arc::new(std::sync::RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = crate::support::spawning::launch_inputs(&[], manifests);
     let mut app = App::from_loaded(&loaded, || 0, launch, receiver, EventHub::default());

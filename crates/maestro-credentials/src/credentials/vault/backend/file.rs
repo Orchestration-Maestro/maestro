@@ -37,14 +37,14 @@ impl FileAuthStorageBackend {
 
     /// Replace random draws for deterministic acquisition tests.
     #[cfg(test)]
-    pub(in crate::credentials::auth_storage) fn with_draw(mut self, draw: fn() -> f64) -> Self {
+    pub(in crate::credentials::vault) fn with_draw(mut self, draw: fn() -> f64) -> Self {
         self.draw = draw;
         self
     }
 
     /// Replace blocking waits for controlled competing writers.
     #[cfg(test)]
-    pub(in crate::credentials::auth_storage) fn with_wait(mut self, wait: fn(Duration)) -> Self {
+    pub(in crate::credentials::vault) fn with_wait(mut self, wait: fn(Duration)) -> Self {
         self.wait = wait;
         self
     }

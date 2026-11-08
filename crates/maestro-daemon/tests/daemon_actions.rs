@@ -149,7 +149,7 @@ fn daemon_notification_context_formats_resolved_workspace_label() {
             &state.topology.workspaces[0],
             "resolved",
             2,
-            maestro_workspace::layout::PaneId::from_raw(999)
+            maestro_workspace::tiling::PaneId::from_raw(999)
         ),
         "resolved · 3"
     );
@@ -167,7 +167,7 @@ fn daemon_switch_workspace_updates_active_and_selected() {
 fn split(
     state: &mut DaemonState<fn() -> u128>,
     workspace: usize,
-) -> maestro_workspace::layout::PaneId {
+) -> maestro_workspace::tiling::PaneId {
     let target = state.topology.workspaces[workspace]
         .focused_pane_id()
         .unwrap();
@@ -175,7 +175,7 @@ fn split(
         .topology
         .split_pane_with_runtime(
             workspace,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: Some(0.5),
@@ -218,7 +218,7 @@ fn daemon_removing_background_pane_preserves_last_pane_history() {
 fn add_tab(
     state: &mut DaemonState<fn() -> u128>,
     workspace: usize,
-) -> maestro_workspace::layout::PaneId {
+) -> maestro_workspace::tiling::PaneId {
     state
         .topology
         .create_tab_with_runtime(workspace, |_, _| Ok(()))
@@ -476,7 +476,7 @@ fn daemon_pane_died_multi_pane_keeps_workspace() {
 #[test]
 fn daemon_pane_died_unknown_pane_is_noop() {
     let mut state = app_with_workspaces(&["test"]);
-    state.handle_pane_died(maestro_workspace::layout::PaneId::from_raw(9999));
+    state.handle_pane_died(maestro_workspace::tiling::PaneId::from_raw(9999));
     assert_eq!(state.topology.workspaces.len(), 1);
     assert_identity_invariants(&state);
 }
@@ -511,7 +511,7 @@ fn pane_death_clears_only_its_selection_and_retires_detached_metadata() {
         direction: SelectionAutoscrollDirection::Down,
         last_mouse_screen_col: 0,
         last_mouse_screen_row: 23,
-        inner_rect: maestro_workspace::layout::Rect::new(0, 0, 80, 24),
+        inner_rect: maestro_workspace::tiling::Rect::new(0, 0, 80, 24),
     });
     state.pane_id_aliases.insert(99, background);
     state
@@ -583,7 +583,7 @@ fn daemon_state_changed_idle_in_background_marks_unseen() {
 /// Reports the same screen-state envelope used by the background detector.
 fn report_state(
     state: &mut DaemonState<fn() -> u128>,
-    pane: maestro_workspace::layout::PaneId,
+    pane: maestro_workspace::tiling::PaneId,
     next: maestro_detection::agents::AgentState,
 ) -> Vec<maestro_daemon::app::actions::PaneStateUpdate> {
     report_detected(
@@ -799,7 +799,7 @@ fn daemon_delayed_background_waiting_is_cleared_when_pane_dies() {
 /// Feeds supplied screen signals through the same event consumer as detection.
 fn report_detected(
     state: &mut DaemonState<fn() -> u128>,
-    pane: maestro_workspace::layout::PaneId,
+    pane: maestro_workspace::tiling::PaneId,
     update: maestro_daemon::terminal::model::DetectedStateUpdate,
 ) -> Vec<maestro_daemon::app::actions::PaneStateUpdate> {
     state.handle_app_event(maestro_daemon::events::AppEvent::StateChanged {
@@ -816,7 +816,7 @@ fn report_detected(
 /// Reports process acquisition before any screen-state event.
 fn detect_agent(
     state: &mut DaemonState<fn() -> u128>,
-    pane: maestro_workspace::layout::PaneId,
+    pane: maestro_workspace::tiling::PaneId,
     agent: maestro_detection::agents::Agent,
 ) {
     state.handle_app_event(maestro_daemon::events::AppEvent::AgentProcessDetected {
@@ -870,7 +870,7 @@ fn daemon_first_idle_after_process_detection_is_not_completion() {
 /// Acquisition suppression ends when the actual detected process exits.
 fn assert_acquired_process_exit_is_completion(
     state: &mut DaemonState<fn() -> u128>,
-    pane: maestro_workspace::layout::PaneId,
+    pane: maestro_workspace::tiling::PaneId,
 ) {
     use maestro_daemon::{app::actions::CompletionPolicy, terminal::model::DetectedStateUpdate};
     use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
@@ -1495,7 +1495,7 @@ fn daemon_agent_detection_manifest_update_event_updates_status_and_toast() {
     use maestro_daemon::{app::model::ToastKind, events::AppEvent};
     use maestro_detection::{
         agents::Agent,
-        manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
+        updates::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
     };
     let mut state = app_with_workspaces(&[]);
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
@@ -1525,8 +1525,8 @@ fn manifest_update_refreshes_the_shared_runtime_snapshot_without_a_toast() {
     use maestro_daemon::{events::AppEvent, settings::model::ToastDelivery};
     use maestro_detection::{
         agents::Agent,
-        manifest::{ManifestCache, ManifestSource},
-        manifest_update::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
+        definitions::{ManifestCache, ManifestSource},
+        updates::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
     };
     use std::sync::{Arc, RwLock};
     let directory = maestro_test_directory::Scratch::new().unwrap();
@@ -1592,7 +1592,7 @@ fn daemon_toggle_zoom_works() {
         .topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target: root,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: None,
@@ -1757,7 +1757,7 @@ fn daemon_close_pane_last_pane_closes_active_workspace_not_selected_workspace() 
 /// Assigns supplied repository-group membership without invoking later discovery effects.
 fn mark_worktree(state: &mut DaemonState<fn() -> u128>, index: usize, linked: bool) {
     state.topology.workspaces[index].worktree_space =
-        Some(maestro_workspace::workspace::WorktreeSpaceMembership {
+        Some(maestro_workspace::spaces::WorktreeSpaceMembership {
             key: "repo-key".into(),
             label: "project".into(),
             repo_root: "/repo/project".into(),

@@ -30,7 +30,7 @@ use maestro_protocol::{
     },
     shared::Flag,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Where a resolved pane lives: its workspace, tab and identity.
 #[derive(Clone, Copy)]

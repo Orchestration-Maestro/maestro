@@ -8,8 +8,8 @@ use crate::{
     },
     settings::navigation::SpaceSidebarToken,
 };
-use maestro_workspace::workspace::{
-    GitStatusRefreshDemand, WorkspaceGitStatus, git::config::ConfigEnvironment,
+use maestro_workspace::spaces::{
+    GitStatusRefreshDemand, WorkspaceGitStatus, repository::tracking::ConfigEnvironment,
 };
 use std::{
     collections::HashMap,

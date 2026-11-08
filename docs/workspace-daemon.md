@@ -448,7 +448,7 @@ performs no filesystem lookup.
 
 ## Detection manifests
 
-[`ManifestCache`](../crates/maestro-detection/src/manifest/cache.rs) loads the
+[`ManifestCache`](../crates/maestro-detection/src/definitions/cache.rs) loads the
 20 embedded detection documents. Callers supply optional override and catalog
 folders; detection does not discover global configuration paths. A valid local
 `<agent>.toml` override takes precedence over a compatible download in
@@ -467,7 +467,7 @@ without live-state confidence; an absent agent returns unknown.
 
 ## Detection catalog
 
-[`manifest_update`](../crates/maestro-detection/src/manifest_update.rs) checks a
+[`updates`](../crates/maestro-detection/src/updates.rs) checks a
 caller-supplied catalog URL through a supplied fetch operation. Requests carry a
 256 KiB response limit, two retries, a five-second connection timeout and a
 15-second total timeout for the transport adapter to enforce. The engine rejects
@@ -824,7 +824,7 @@ and restores focus. A failed spawn follows the normal pane-close path.
 Successful workspace creation admits native repository metadata and its initial
 branch after the pane spawn succeeds. Ordinary repositories, linked worktrees,
 standalone bare repositories and embedded bare repositories use the shared
-`maestro-workspace::workspace::git` discovery owner, re-exported through
+`maestro-workspace::spaces::repository` discovery owner, re-exported through
 `maestro-daemon::git::discovery`. Reftable branch and revision queries stay with
 the daemon's process-owning caller.
 
@@ -838,7 +838,7 @@ without changing the workspace's retained fallback directory.
 
 ### Branch tracking configuration
 
-`maestro-workspace::workspace::git::config::read_branch_config` reads the remote and
+`maestro-workspace::spaces::repository::tracking::read_branch_config` reads the remote and
 merge reference of a branch. Files apply in Git's order: the user files the caller
 supplies, then the repository file in the shared metadata directory, then the checkout's
 `config.worktree` when the repository file turns on `extensions.worktreeConfig`. The

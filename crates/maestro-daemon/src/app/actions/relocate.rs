@@ -6,8 +6,8 @@ mod tests;
 
 use crate::app::model::DaemonState;
 use maestro_workspace::{
+    spaces::{WorkspaceTopology, WorktreeSpaceMembership},
     tab::MovedPane,
-    workspace::{WorkspaceTopology, WorktreeSpaceMembership},
 };
 use std::path::PathBuf;
 

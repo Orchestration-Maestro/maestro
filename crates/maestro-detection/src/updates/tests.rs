@@ -185,7 +185,7 @@ fn update_commit_reloads_before_result_callback() {
             assert_eq!(explanation.state, crate::agents::AgentState::Idle);
             assert!(matches!(
                 explanation.source,
-                Some(crate::manifest::ManifestSource::Remote { .. })
+                Some(crate::definitions::ManifestSource::Remote { .. })
             ));
             assert_eq!(
                 explanation

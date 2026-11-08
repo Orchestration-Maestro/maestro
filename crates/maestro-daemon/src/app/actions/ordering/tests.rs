@@ -8,7 +8,7 @@ use crate::{
     terminal_theme::TerminalTheme,
     tests::{WORKSPACE_WORK, block_on},
 };
-use maestro_detection::manifest::ManifestCache;
+use maestro_detection::definitions::ManifestCache;
 use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode};
 use maestro_protocol::schema::ResponseResult;
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};

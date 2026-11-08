@@ -171,7 +171,7 @@ pub fn process_agent_manifest(
     agent: Agent,
     content: &str,
 ) -> Result<Option<ManifestUpdateCommit>, String> {
-    let parsed = crate::manifest::parse_remote_manifest_for_agent(agent, content)?;
+    let parsed = crate::definitions::parse_remote_manifest_for_agent(agent, content)?;
     if let Some(current) = cached_remote_version(root, agent) {
         match parsed.version.cmp(&current) {
             Ordering::Less => {
@@ -206,7 +206,7 @@ pub fn process_agent_manifest(
 #[must_use]
 pub fn cached_remote_version(root: &Path, agent: Agent) -> Option<ManifestVersion> {
     let content = std::fs::read_to_string(remote_manifest_path(root, agent)).ok()?;
-    crate::manifest::parse_remote_manifest_for_agent(agent, &content)
+    crate::definitions::parse_remote_manifest_for_agent(agent, &content)
         .ok()
         .map(|parsed| parsed.version)
 }
@@ -251,11 +251,11 @@ pub struct ManifestUpdateOutput {
 /// # Errors
 /// Returns a bundled-document error if reloading the supplied cache fails.
 pub fn auto_update(
-    cache: &mut crate::manifest::ManifestCache,
+    cache: &mut crate::definitions::ManifestCache,
     root: &Path,
     url: &str,
     fetch: &mut impl FnMut(FetchRequest<'_>) -> Result<Vec<u8>, String>,
-    callback: impl FnOnce(&crate::manifest::ManifestCache, ManifestUpdateOutput),
+    callback: impl FnOnce(&crate::definitions::ManifestCache, ManifestUpdateOutput),
 ) -> Result<(), String> {
     let output = match check_and_update(root, url, fetch) {
         Ok(output) => output,

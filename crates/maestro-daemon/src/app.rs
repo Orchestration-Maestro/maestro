@@ -79,7 +79,7 @@ pub struct App<C> {
     pub event_hub: crate::service::event_hub::EventHub,
     /// Temporary panes awaiting exit and restoration of their previous focus.
     pub overlay_panes:
-        std::collections::HashMap<maestro_workspace::layout::PaneId, OverlayPaneState>,
+        std::collections::HashMap<maestro_workspace::tiling::PaneId, OverlayPaneState>,
 }
 
 /// Focus and cleanup retained while a temporary overlay process owns a pane.
@@ -89,7 +89,7 @@ pub struct OverlayPaneState {
     /// Tab display position containing the overlay.
     pub tab_idx: usize,
     /// Pane to restore if the overlay still has focus when it exits.
-    pub previous_focus: maestro_workspace::layout::PaneId,
+    pub previous_focus: maestro_workspace::tiling::PaneId,
     /// Zoom state before the overlay took focus.
     pub previous_zoomed: bool,
     /// Temporary files owned by the overlay process.

@@ -1,7 +1,7 @@
 //! Live terminal observations over topology-owned tabs.
 
 use crate::terminal::{model::TerminalState, owners::TerminalRuntimeRegistry};
-use maestro_workspace::{layout::PaneId, tab::Tab, terminal_id::TerminalId};
+use maestro_workspace::{tab::Tab, terminal_id::TerminalId, tiling::PaneId};
 use std::{collections::HashMap, path::PathBuf};
 
 /// Reads a pane's native directory before its retained terminal metadata.

@@ -19,7 +19,7 @@ use maestro_detection::agents::{Agent, AgentState};
 #[cfg(unix)]
 use maestro_protocol::schema::AgentStatus;
 #[cfg(unix)]
-use maestro_workspace::{layout::PaneId, terminal_id::TerminalId};
+use maestro_workspace::{terminal_id::TerminalId, tiling::PaneId};
 #[cfg(unix)]
 use std::sync::{Arc, RwLock};
 #[cfg(unix)]
@@ -31,7 +31,7 @@ fn public_target_forms_keep_alias_and_number_meaning() {
         &Config::default(),
         || 0,
         std::sync::Arc::new(std::sync::RwLock::new(
-            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
     );
     let (removed, ()) = state
@@ -78,7 +78,7 @@ fn workspace_and_tab_spellings_keep_positions_distinct_from_public_numbers() {
         &Config::default(),
         || 0,
         std::sync::Arc::new(std::sync::RwLock::new(
-            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
     );
     for cwd in ["/first", "/second"] {
@@ -128,7 +128,7 @@ fn workspace_and_tab_spellings_keep_positions_distinct_from_public_numbers() {
 #[cfg(unix)]
 fn target_app() -> (TargetApp, PaneId, TerminalId) {
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     let mut app = App::new(

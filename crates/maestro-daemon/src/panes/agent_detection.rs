@@ -239,9 +239,9 @@ pub fn decide_screen_detection_publish(
 /// Evaluates supplied screen and OSC evidence, unless completion forces visible idle.
 #[must_use]
 pub fn detection_update_for_publish_with_osc(
-    cache: &maestro_detection::manifest::ManifestCache,
+    cache: &maestro_detection::definitions::ManifestCache,
     agent: Option<Agent>,
-    input: maestro_detection::manifest::DetectionInput<'_>,
+    input: maestro_detection::definitions::DetectionInput<'_>,
     process_exited: bool,
 ) -> Option<AgentDetection> {
     if process_exited {

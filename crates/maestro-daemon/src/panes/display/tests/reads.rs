@@ -1,7 +1,7 @@
 //! Reads, scrolling and resize geometry.
 use super::super::*;
 use maestro_terminal::{Mode, Terminal};
-use maestro_workspace::layout::{PaneId, Rect};
+use maestro_workspace::tiling::{PaneId, Rect};
 use std::time::Instant;
 fn write_numbered_lines(terminal: &mut Terminal, count: usize) {
     for i in 0..count {

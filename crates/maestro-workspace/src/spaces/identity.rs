@@ -1,5 +1,5 @@
 //! Supplied workspace repository and worktree identity.
-use super::git::{
+use super::repository::{
     GitSpaceMetadata, GitStatusRefreshDemand, automatic_workspace_label, fallback_label_from_cwd,
 };
 use std::path::{Path, PathBuf};

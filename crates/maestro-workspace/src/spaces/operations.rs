@@ -1,10 +1,10 @@
 //! Workspace tab and pane mutations.
 use super::{TakenPane, Workspace};
 use crate::{
-    layout::{PaneId, SplitRequest},
     pane_state::PaneState,
     tab::{MovedPane, Tab},
     terminal_id::TerminalId,
+    tiling::{PaneId, SplitRequest},
 };
 
 impl Workspace {
@@ -249,7 +249,7 @@ impl Workspace {
         if cwd == self.cached_identity_cwd {
             self.cached_auto_label.clone()
         } else {
-            super::git::fallback_label_from_cwd(cwd, home)
+            super::repository::fallback_label_from_cwd(cwd, home)
         }
     }
 

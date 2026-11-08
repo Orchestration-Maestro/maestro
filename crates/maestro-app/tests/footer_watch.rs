@@ -1303,7 +1303,7 @@ async fn footer_reaping_barrier(pid: rustix::process::Pid) {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn footer_embedded_checkout_retains_branch_and_watch_identity() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     let e = Rc::new(Effects::default());
     e.directory("/container/.bare/objects");
     e.directory("/container/.bare/refs");

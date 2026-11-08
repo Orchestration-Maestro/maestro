@@ -2,13 +2,13 @@
 
 use crate::{settings::model::Config, terminal::model::TerminalState};
 use maestro_detection::{
-    manifest::{AgentManifestSummary, ManifestCache},
-    manifest_update::ManifestUpdateStatus,
+    definitions::{AgentManifestSummary, ManifestCache},
+    updates::ManifestUpdateStatus,
 };
 use maestro_workspace::terminal_id::TerminalId;
 use maestro_workspace::{
-    layout::{PaneId, PaneInfo, Rect},
-    workspace::WorkspaceTopology,
+    spaces::WorkspaceTopology,
+    tiling::{PaneId, PaneInfo, Rect},
 };
 use std::{
     collections::HashMap,

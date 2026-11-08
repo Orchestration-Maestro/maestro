@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 /// Constructs the real daemon owner without creating a workspace or native child.
 fn app(config: &Config) -> App<fn() -> u128> {
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     App::new(
@@ -238,7 +238,7 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
     let mut config = Config::default();
     config.theme.auto_switch = true;
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (mut launch, receiver) = spawning::launch_inputs(&[], manifests);
     launch.appearance = Some(HostAppearance::Light);

@@ -67,7 +67,7 @@ impl<C: FnMut() -> u128> App<C> {
                     )
                 }),
                 WindowTitlePart::Token(WindowTitleToken::Tab) => workspace
-                    .and_then(maestro_workspace::workspace::Workspace::active_tab_display_name),
+                    .and_then(maestro_workspace::spaces::Workspace::active_tab_display_name),
                 WindowTitlePart::Token(WindowTitleToken::Pane) => {
                     terminal.and_then(|terminal| terminal.manual_label.clone())
                 }

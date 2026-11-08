@@ -19,7 +19,7 @@ use maestro_protocol::{
     },
 };
 use maestro_test_directory::Scratch;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
 use std::io::{self, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};

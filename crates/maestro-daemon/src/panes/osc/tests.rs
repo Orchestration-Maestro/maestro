@@ -301,7 +301,7 @@ fn pane_default_color_tracker_detects_split_osc_11_sequences() {
     let pane = super::super::display::PaneTerminal::new(
         maestro_terminal::Terminal::new(20, 5, 0).unwrap(),
     );
-    let id = maestro_workspace::layout::PaneId::from_raw(1);
+    let id = maestro_workspace::tiling::PaneId::from_raw(1);
     pane.process_pty_bytes(id, 0, b"\x1b]11;rgb:11/22", || None);
     pane.process_pty_bytes(id, 0, b"/33\x1b\\", || None);
     pane.apply_host_terminal_theme(crate::terminal_theme::TerminalTheme::default().with_color(
@@ -325,7 +325,7 @@ fn pane_default_color_tracker_ignores_osc_queries() {
     let pane = super::super::display::PaneTerminal::new(
         maestro_terminal::Terminal::new(20, 5, 0).unwrap(),
     );
-    let id = maestro_workspace::layout::PaneId::from_raw(1);
+    let id = maestro_workspace::tiling::PaneId::from_raw(1);
     pane.process_pty_bytes(id, 0, b"\x1b]10;?\x1b\\\x1b]11;?\x07", || None);
     pane.apply_host_terminal_theme(crate::terminal_theme::TerminalTheme::default().with_color(
         crate::terminal_theme::DefaultColorKind::Background,

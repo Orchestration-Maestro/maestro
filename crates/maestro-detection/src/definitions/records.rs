@@ -169,7 +169,7 @@ pub(super) struct LoadedManifest {
     /// Whether a local document exists alongside a valid cached download.
     pub(super) local_override_shadowing_remote: bool,
 }
-/// Authored detection document; [`crate::manifest::parse_manifest`] validates its rules.
+/// Authored detection document; [`crate::definitions::parse_manifest`] validates its rules.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct AgentManifest {

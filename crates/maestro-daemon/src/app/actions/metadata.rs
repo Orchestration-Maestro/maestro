@@ -2,7 +2,7 @@
 
 use super::PaneStateUpdate;
 use crate::{app::model::DaemonState, terminal::model::TerminalState};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::time::Instant;
 
 impl<C: FnMut() -> u128> DaemonState<C> {

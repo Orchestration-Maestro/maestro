@@ -1,6 +1,6 @@
 //! Configuration files read once and the observations that tell when they changed.
 use super::syntax::{Item, parse};
-use crate::workspace::git::{discovery::canonicalize_best_effort_path, native::read_text};
+use crate::spaces::repository::{discovery::canonicalize_best_effort_path, native::read_text};
 use std::{
     collections::HashMap,
     io::ErrorKind,

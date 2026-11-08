@@ -11,11 +11,11 @@ use crate::{
     terminal_theme::{HostAppearance, TerminalTheme},
 };
 /// The detection snapshot type of [`PaneLaunchInputs::manifests`].
-pub use maestro_detection::manifest::ManifestCache;
+pub use maestro_detection::definitions::ManifestCache;
 use maestro_process::terminal::PtySize;
 /// The child-setup entry and process detection policy of [`PaneLaunchInputs`].
 pub use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode, setup_entry};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::{
     collections::HashMap,
     path::PathBuf,

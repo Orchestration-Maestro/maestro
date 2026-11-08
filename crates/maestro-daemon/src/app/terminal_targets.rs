@@ -3,7 +3,7 @@
 use super::{App, actions::pane_agent_status};
 use crate::terminal::model::TerminalState;
 use maestro_protocol::schema::AgentStatus;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Located viewport and its attached terminal identity.
 #[derive(Debug, Clone, PartialEq, Eq)]

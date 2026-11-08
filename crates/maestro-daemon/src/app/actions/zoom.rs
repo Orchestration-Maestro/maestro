@@ -2,7 +2,7 @@
 
 use crate::app::model::DaemonState;
 use maestro_protocol::schema::{PaneZoomMode, PaneZoomReason};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// What one zoom request did to a tab.
 #[derive(Debug, Clone, PartialEq, Eq)]

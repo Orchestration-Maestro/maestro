@@ -1,6 +1,6 @@
 //! `gitdir` conditions compare a checkout's native spelling with the authored pattern.
 use super::{PATHNAME, Rules, Subject};
-use crate::workspace::git::discovery::GitWorktreeInfo;
+use crate::spaces::repository::discovery::GitWorktreeInfo;
 use std::path::{Path, PathBuf};
 
 /// A checkout whose paths native Windows spell with `\`.

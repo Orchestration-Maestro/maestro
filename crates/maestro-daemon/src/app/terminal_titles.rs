@@ -2,7 +2,7 @@
 
 use super::App;
 use crate::settings::navigation::AgentSidebarToken;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::collections::HashSet;
 
 /// Distinguishes spinner-only changes from changes to the displayed title text.

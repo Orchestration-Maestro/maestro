@@ -251,7 +251,7 @@ fn pane_key_encoder_updates_after_terminal_mode_changes() {
     assert_eq!(before, b"\x1b[A");
 
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[?1h",
         || None,
@@ -276,7 +276,7 @@ fn pane_key_encoder_updates_after_kitty_flag_changes() {
 
     let before = pane.encode_terminal_key(key.clone(), KeyboardProtocol::Legacy);
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>1u",
         || None,
@@ -293,7 +293,7 @@ fn pane_kitty_pane_encodes_shift_enter_as_csi_u() {
     let pane = PaneTerminal::new(terminal);
 
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>5u",
         || None,
@@ -331,7 +331,7 @@ fn pane_keyboard_protocol_state_replays_nested_stack() {
     let pane = PaneTerminal::new(terminal);
 
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>1u\x1b[>5u",
         || None,
@@ -348,7 +348,7 @@ fn pane_keyboard_protocol_state_replays_nested_stack() {
     );
 
     restored.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[<u",
         || None,
@@ -366,7 +366,7 @@ fn pane_modify_other_keys_mode_one_preserves_shift_enter() {
     let key = crate::ingress::parse_terminal_key_sequence("\x1b[13;2u").unwrap();
 
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>4;1m",
         || None,
@@ -382,7 +382,7 @@ fn pane_kitty_pane_encodes_parsed_legacy_alt_backspace_as_csi_u() {
     let pane = PaneTerminal::new(terminal);
 
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>1u",
         || None,
@@ -400,7 +400,7 @@ fn pane_kitty_pane_preserves_legacy_ctrl_alt_letter() {
     let pane = PaneTerminal::new(terminal);
 
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>5u",
         || None,
@@ -421,7 +421,7 @@ fn pane_key_encoders_are_isolated_per_pane() {
     let second = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
 
     first.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[?1h",
         || None,
@@ -542,19 +542,19 @@ fn pane_pixel_release_does_not_truncate_coordinates_above_u16() {
 fn pane_keyboard_flags_compose_split_sequences_without_rescanning() {
     let pane = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"\x1b[>1u\x1b[>4;",
         || None,
     );
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"01m\x1b[>5u\x1b[<",
         || None,
     );
     pane.process_pty_bytes(
-        maestro_workspace::layout::PaneId::from_raw(1),
+        maestro_workspace::tiling::PaneId::from_raw(1),
         0,
         b"u",
         || None,
@@ -669,7 +669,7 @@ fn pane_host_extended_modifiers_survive_semantic_character_encoding() {
 #[test]
 fn pane_keyboard_replay_excludes_independent_modified_key_mode() {
     let pane = PaneTerminal::new(Terminal::new(80, 24, 0).unwrap());
-    let id = maestro_workspace::layout::PaneId::from_raw(1);
+    let id = maestro_workspace::tiling::PaneId::from_raw(1);
     pane.process_pty_bytes(id, 0, b"\x1b[>4;2m", || None);
     assert_eq!(pane.kitty_keyboard_state_ansi(), None);
     pane.process_pty_bytes(id, 0, b"\x1b[>1u\x1b[>0u", || None);

@@ -613,7 +613,7 @@ of a replacement editor (`CustomEditorComponent`), the editor factory result
 application re-exports them; the chat frontend's `CustomEditor` implements the
 capability and keeps the action map alias at its existing path. Extension components
 carry their optional disposal, expansion and overlay width in the same owner.
-Native repository discovery belongs to `maestro-workspace::workspace::git`.
+Native repository discovery belongs to `maestro-workspace::spaces::repository`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.
 A typed discovery policy preserves caller-specific metadata rules: the

@@ -14,7 +14,7 @@ use crate::{
 };
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::NotificationShowSound;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use std::time::{Duration, Instant};
 
 /// Whether execution changed from active work or established unknown ownership to idle.

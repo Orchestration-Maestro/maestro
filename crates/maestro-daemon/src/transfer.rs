@@ -1,6 +1,6 @@
 //! Owned native terminal state transferred during workspace server replacement.
 use crate::panes::display::InputState;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde::{Deserialize, Serialize};
 use std::os::fd::OwnedFd;
 

@@ -10,7 +10,7 @@ fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
         &Config::default(),
         || 0,
         std::sync::Arc::new(std::sync::RwLock::new(
-            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
     );
     state
@@ -47,7 +47,7 @@ pub(crate) fn app_with_args(
     args: &[String],
 ) -> maestro_daemon::app::App<fn() -> u128> {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(args, manifests);
     maestro_daemon::app::App::new(
@@ -237,7 +237,7 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
 #[cfg(unix)]
 fn target_app() -> (
     maestro_daemon::app::App<fn() -> u128>,
-    maestro_workspace::layout::PaneId,
+    maestro_workspace::tiling::PaneId,
 ) {
     let mut app = app(&Config::default());
     let (pane, ()) = app
@@ -254,7 +254,7 @@ fn target_app() -> (
 #[cfg(unix)]
 fn attach_terminal(
     app: &mut maestro_daemon::app::App<fn() -> u128>,
-    pane: maestro_workspace::layout::PaneId,
+    pane: maestro_workspace::tiling::PaneId,
 ) {
     let id = app.state.topology.workspaces[0]
         .terminal_id(pane)
@@ -375,7 +375,7 @@ fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
         .topology
         .split_pane_with_runtime(
             0,
-            maestro_workspace::layout::SplitRequest {
+            maestro_workspace::tiling::SplitRequest {
                 target: first,
                 direction: maestro_protocol::schema::SplitDirection::Right,
                 ratio: None,
@@ -410,7 +410,7 @@ fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
 #[cfg(unix)]
 fn detect_agent(
     app: &mut maestro_daemon::app::App<fn() -> u128>,
-    pane: maestro_workspace::layout::PaneId,
+    pane: maestro_workspace::tiling::PaneId,
 ) {
     app.state
         .handle_app_event(maestro_daemon::events::AppEvent::AgentProcessDetected {
@@ -500,7 +500,7 @@ fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous(
 /// Builds the screen-state observation used by native fallback detection.
 #[cfg(unix)]
 fn state_event(
-    pane_id: maestro_workspace::layout::PaneId,
+    pane_id: maestro_workspace::tiling::PaneId,
     state: maestro_detection::agents::AgentState,
 ) -> maestro_daemon::events::AppEvent {
     maestro_daemon::events::AppEvent::StateChanged {
@@ -645,7 +645,7 @@ async fn live_shutdown_app(
     args: &[String],
 ) -> (
     maestro_daemon::app::App<fn() -> u128>,
-    maestro_workspace::layout::PaneId,
+    maestro_workspace::tiling::PaneId,
 ) {
     use maestro_daemon::{
         events::AppEvent,
@@ -687,7 +687,7 @@ async fn live_shutdown_app(
 #[test]
 fn daemon_construction_initializes_supplied_manifest_summaries() {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let expected = manifests.read().unwrap().manifest_summaries();
     assert!(!expected.is_empty());

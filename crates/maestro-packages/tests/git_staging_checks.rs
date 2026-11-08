@@ -171,7 +171,7 @@ fn npm_repin_survives_following_resolution() {
 #[cfg(unix)]
 #[test]
 fn git_requested_ref_is_applied_before_dependencies() {
-    let fixture = crate::native_git::retry::RetryFixture::new("ordinary");
+    let fixture = crate::native_git::reattempts::RetryFixture::new("ordinary");
     fixture.advance();
     let expected = crate::native_git::git(&fixture.repo.seed, &["rev-parse", "HEAD"]);
     fixture
@@ -194,7 +194,7 @@ fn git_failed_dependency_restores_revision_at_mutation_owner() {
     if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
         return;
     }
-    let fixture = crate::native_git::retry::RetryFixture::new("ordinary");
+    let fixture = crate::native_git::reattempts::RetryFixture::new("ordinary");
     fixture.advance();
     *fixture.fail.borrow_mut() = "dependencies".into();
     assert!(fixture.run(fixture.manager.clone().update(None)).is_err());
@@ -608,7 +608,7 @@ fn repin_persistence_replaces_current_git_spelling_and_appends_absent_sources() 
 #[cfg(unix)]
 #[test]
 fn git_repin_ref_forms_retry_without_rewinding_requested_branches() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     for layout in ["ordinary", "linked", "separate", "include"] {
         let fixture = RetryFixture::new(layout);
         fixture.advance();
@@ -634,7 +634,11 @@ fn git_repin_ref_forms_retry_without_rewinding_requested_branches() {
 
 #[cfg(unix)]
 /// Exercises one complete native re-pin failure/retry transaction on the retained history.
-fn check_repin_case(fixture: &crate::native_git::retry::RetryFixture, kind: &str, desired: &str) {
+fn check_repin_case(
+    fixture: &crate::native_git::reattempts::RetryFixture,
+    kind: &str,
+    desired: &str,
+) {
     use crate::native_git::git;
     let reference = prepare_ref(fixture, kind, desired);
     let old = &fixture.repo.original;
@@ -676,7 +680,7 @@ fn check_repin_case(fixture: &crate::native_git::retry::RetryFixture, kind: &str
 #[cfg(unix)]
 /// Publishes distinguishable ref forms on the remote with native Git.
 fn prepare_ref(
-    fixture: &crate::native_git::retry::RetryFixture,
+    fixture: &crate::native_git::reattempts::RetryFixture,
     kind: &str,
     desired: &str,
 ) -> Option<String> {
@@ -720,7 +724,7 @@ fn git_repin_reset_failure_restores_original_selection() {
 #[cfg(unix)]
 #[test]
 fn git_fetch_or_probe_failure_does_not_start_rollback() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     if crate::resolution_support::case_in_child("online", |_| vec![]).is_none() {
         return;
     }
@@ -820,7 +824,7 @@ fn git_recovery_io_failure_reports_original_kind_without_persisting() {
 #[cfg(unix)]
 #[test]
 fn git_repin_live_configuration_reaches_selected_transport() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     for layout in ["ordinary", "linked", "separate", "include"] {
         let fixture = RetryFixture::new(layout);
         fixture.advance();
@@ -868,7 +872,7 @@ fn git_repin_live_configuration_reaches_selected_transport() {
 #[cfg(unix)]
 #[test]
 fn git_temporary_refresh_recovers_then_suppresses_failure() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     if crate::resolution_support::case_in_child("temporary", |_| vec![]).is_none() {
         return;
     }
@@ -907,7 +911,7 @@ fn git_temporary_refresh_recovers_then_suppresses_failure() {
 #[cfg(unix)]
 /// Checks failure on either side of the reset effect in one native layout.
 fn check_reset_failure(layout: &str, phase: &str, detached: bool) {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     let fixture = RetryFixture::new(layout);
     fixture.advance();
     git(
@@ -972,7 +976,7 @@ fn reject_completion(event: &maestro_packages::ProgressEvent) -> io::Result<()> 
 
 #[cfg(unix)]
 /// Rejects the comparison probe, not the earlier upstream-selector probe.
-fn reject_probe(fixture: &crate::native_git::retry::RetryFixture, phase: &'static str) {
+fn reject_probe(fixture: &crate::native_git::reattempts::RetryFixture, phase: &'static str) {
     let hook = fixture.effects.capture_hook.borrow().clone().unwrap();
     let count = std::rc::Rc::new(std::cell::Cell::new(0));
     *fixture.effects.capture_hook.borrow_mut() =
@@ -1044,7 +1048,7 @@ fn check_settings_case(case: &SettingsCase, index: usize) {
 #[cfg(unix)]
 /// Installs a finite upload-pack stand-in through the prepared fixture, not a writable descriptor.
 fn install_transport(
-    fixture: &crate::native_git::retry::RetryFixture,
+    fixture: &crate::native_git::reattempts::RetryFixture,
     common: &Path,
 ) -> std::path::PathBuf {
     use crate::native_git::git;
@@ -1117,7 +1121,7 @@ fn settings_replay(case: &SettingsCase) -> SettingsReplay {
 #[cfg(unix)]
 /// Checks the retained revision, selection and settings after a failed re-pin.
 fn assert_repin_failure(
-    fixture: &crate::native_git::retry::RetryFixture,
+    fixture: &crate::native_git::reattempts::RetryFixture,
     old: &str,
     selection: &str,
 ) {
@@ -1136,7 +1140,7 @@ fn assert_repin_failure(
 #[cfg(unix)]
 /// A failed checkout must be reacquired until the requested ref actually exists upstream.
 fn missing_invalid_ref_retries_until_available() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     let fixture = RetryFixture::new("ordinary");
     fixture.use_local_clone();
     std::fs::remove_dir_all(&fixture.repo.target).unwrap();
@@ -1170,7 +1174,7 @@ fn missing_invalid_ref_retries_until_available() {
 #[cfg(unix)]
 /// Drives each mutation failure through the public update and a completed retry.
 fn check_update_retry(layout: &str, phase: &str) {
-    let fixture = crate::native_git::retry::RetryFixture::new(layout);
+    let fixture = crate::native_git::reattempts::RetryFixture::new(layout);
     fixture.advance();
     *fixture.fail.borrow_mut() = phase.into();
     assert!(fixture.run(fixture.manager.clone().update(None)).is_err());
@@ -1192,7 +1196,7 @@ fn check_update_retry(layout: &str, phase: &str) {
 #[cfg(unix)]
 /// Confirms real reset locking and controlled selection-recovery failure remain observable.
 fn check_native_recovery_failure(mode: &str) {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     let fixture = RetryFixture::new("ordinary");
     fixture.advance();
     *fixture.fail.borrow_mut() = mode.into();
@@ -1232,7 +1236,7 @@ fn check_native_recovery_failure(mode: &str) {
 #[cfg(unix)]
 /// A fallible adapter probe must not be mistaken for a detached HEAD.
 fn check_repin_probe_failure() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     let fixture = RetryFixture::new("ordinary");
     fixture.advance();
     let selection = git(&fixture.repo.target, &["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -1283,7 +1287,7 @@ fn check_repin_probe_failure() {
 #[cfg(unix)]
 /// A failed fetch of the requested ref leaves the dirty checkout untouched.
 fn check_repin_fetch_failure() {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     let fixture = RetryFixture::new("ordinary");
     fixture.advance();
     std::fs::write(fixture.repo.target.join("content"), "dirty").unwrap();
@@ -1330,7 +1334,7 @@ fn git_current_commit_preserves_selection_and_observes_completion_settings() {
 
 #[cfg(unix)]
 /// Moves the installed checkout below the project's managed Git root.
-fn move_to_project_scope(fixture: &mut crate::native_git::retry::RetryFixture) {
+fn move_to_project_scope(fixture: &mut crate::native_git::reattempts::RetryFixture) {
     let path = fixture
         .repo
         .scratch
@@ -1348,7 +1352,7 @@ fn check_current_selection(
     form: &str,
     callback_edit: &str,
 ) {
-    use crate::native_git::{git, retry::RetryFixture};
+    use crate::native_git::{git, reattempts::RetryFixture};
     use maestro_packages::InstalledSourceScope::{Project, User};
     let mut fixture = RetryFixture::new("ordinary");
     if scope == Project {
@@ -1402,7 +1406,7 @@ fn check_current_selection(
 #[cfg(unix)]
 /// Edits the selected settings scope only after acquisition completes.
 fn edit_settings_on_completion(
-    fixture: &crate::native_git::retry::RetryFixture,
+    fixture: &crate::native_git::reattempts::RetryFixture,
     scope: maestro_packages::InstalledSourceScope,
     remove: bool,
 ) {
@@ -1440,7 +1444,7 @@ fn edit_settings_on_completion(
 
 #[cfg(unix)]
 /// Observes dirty and untracked files after a same-commit refresh.
-fn assert_dirty_contents(fixture: &crate::native_git::retry::RetryFixture) {
+fn assert_dirty_contents(fixture: &crate::native_git::reattempts::RetryFixture) {
     assert_eq!(
         std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
         "dirty"
