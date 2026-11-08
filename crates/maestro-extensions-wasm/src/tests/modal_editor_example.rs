@@ -182,14 +182,19 @@ fn modal_editor_bottom_line_shows_the_mode() -> Result<(), String> {
 #[test]
 fn modal_editor_invalidate_reaches_the_custom_editor() -> Result<(), String> {
     let mut host = started()?;
+    let custom = host
+        .observed()
+        .ui
+        .editor
+        .as_ref()
+        .and_then(|slot| slot.custom)
+        .ok_or("no custom editor")?;
     let from = host.observed().transcript.len();
     assert_eq!(editor(&mut host, Call::Invalidate)?, Reply::Done);
-    let invalidations: Vec<_> = host.observed().transcript[from..]
-        .iter()
-        .filter(|line| line.ends_with(" invalidate"))
-        .cloned()
-        .collect();
-    assert_eq!(invalidations.len(), 1, "{invalidations:?}");
+    assert_eq!(
+        host.observed().transcript[from..],
+        [format!("widget {custom} invalidate")]
+    );
     Ok(())
 }
 
