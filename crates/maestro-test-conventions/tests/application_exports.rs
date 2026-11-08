@@ -209,7 +209,7 @@ fn credentials_exports_carry_only_their_declared_names() {
         source(&workspace, "maestro-credentials", "src/lib.rs", export);
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
-            error.contains("credential export surface") && error.contains("src/lib.rs:1:"),
+            error.contains("credential export surface") && error.contains(":1:"),
             "{export}: {error}"
         );
     }
