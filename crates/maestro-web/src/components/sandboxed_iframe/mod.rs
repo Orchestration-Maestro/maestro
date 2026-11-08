@@ -3,6 +3,7 @@
 mod document;
 #[cfg(any(target_arch = "wasm32", test))]
 mod execution;
+pub mod lowering;
 #[cfg(any(target_arch = "wasm32", test))]
 mod runtime;
 #[cfg(test)]

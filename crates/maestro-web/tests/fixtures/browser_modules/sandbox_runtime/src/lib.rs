@@ -3,11 +3,13 @@
 //! Built separately with its own no-modules binding glue. The start function reads
 //! the inert configuration block, assigns the sandbox identifier and every data
 //! global, then installs each runtime selection in order. A supplied provider
-//! function waits in an inert carrier until its selection is reached. `run`
-//! settles an asynchronous program and its completion callbacks.
+//! function waits in an inert carrier until its selection is reached. Native
+//! assignment observers capture providers and settle compiled program outcomes.
 use js_sys::{Array, Function, JSON, Object, Promise, Reflect};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
 use web_sys::{Document, Element, Window};
+
+mod capture;
 
 /// Ordered installation trace the qualification documents read.
 const TRACE: &str = "__sandboxInstallTrace";
@@ -30,8 +32,8 @@ fn set(target: &JsValue, key: &str, value: &JsValue) -> Result<(), JsValue> {
 
 /// Call a named method with the supplied arguments.
 fn call(target: &JsValue, method: &str, arguments: &Array) -> Result<JsValue, JsValue> {
-    let function: Function = get(target, method)?.dyn_into()?;
-    Reflect::apply(&function, target, arguments)
+    let function = get(target, method)?;
+    Reflect::apply(function.unchecked_ref::<Function>(), target, arguments)
 }
 
 /// The current window and its document.
@@ -102,25 +104,44 @@ fn install(
                 let entry = format!("attachments:{}", data.as_string().unwrap_or_default());
                 trace.push(&JsValue::from(entry));
             }
-            Some("provider") => run_carrier(document, &carriers.next().ok_or("no carrier")?)?,
+            Some("provider") => run_carrier(
+                window,
+                document,
+                &carriers.next().ok_or("no carrier")?,
+                &get(config, "providerId")?,
+            )?,
             _ => return Err("unknown runtime selection".into()),
         }
+    }
+    if let Some(key) = get(config, "programCapture")?.as_string() {
+        capture::program(window, &key)?;
     }
     Ok(())
 }
 
-/// Execute a supplied provider by moving its parser-created script into the document.
-fn run_carrier(document: &Document, template: &Element) -> Result<(), JsValue> {
+/// Capture a supplied provider from its parser-created script and invoke it synchronously in Rust.
+fn run_carrier(
+    window: &Window,
+    document: &Document,
+    template: &Element,
+    id: &JsValue,
+) -> Result<(), JsValue> {
     let script: Element = get(
         &get(&get(template, "content")?, "firstChild")?,
         "firstChild",
     )?
     .dyn_into()?;
     let head: Element = get(document, "head")?.dyn_into()?;
-    head.append_child(&script)?;
+    let key = template
+        .get_attribute("data-maestro-capture")
+        .ok_or("no capture key")?;
+    let pending = capture::provider(window, &key, id)?;
+    let result = head.append_child(&script);
     script.remove();
     template.remove();
-    Ok(())
+    let finished = pending.finish(window, &key);
+    result?;
+    finished
 }
 
 /// Install the synchronous attachment listing over the live attachment global.
@@ -172,26 +193,6 @@ fn stage(
         .post_message(&message, "*")
 }
 
-/// Settle one asynchronous program: callbacks first, then the completion global.
-///
-/// # Errors
-/// Returns a non-callable program or a program that does not return a promise.
-#[wasm_bindgen]
-pub fn run(program: &Function) -> Result<(), JsValue> {
-    let (window, document) = page()?;
-    if let Some(scaffold) = document.query_selector(PROGRAM)? {
-        scaffold.remove();
-    }
-    let pending: Promise = program.call0(&JsValue::UNDEFINED)?.dyn_into()?;
-    let (resolved, rejected) = (window.clone(), window);
-    then(
-        &pending,
-        &Closure::once_into_js(move |value: JsValue| settle(&resolved, true, value)),
-        &Closure::once_into_js(move |error: JsValue| settle(&rejected, false, error)),
-    )
-    .map(drop)
-}
-
 /// Attach fulfillment and rejection reactions through the native `then`.
 fn then(promise: &JsValue, resolved: &JsValue, rejected: &JsValue) -> Result<JsValue, JsValue> {
     call(promise, "then", &Array::of2(resolved, rejected))
@@ -209,23 +210,23 @@ fn settle(window: &Window, success: bool, outcome: JsValue) -> Result<JsValue, J
     then(&joined, &finish, &JsValue::UNDEFINED)
 }
 
-/// Invoke every callback in order; a synchronous throw stops the walk.
+/// Map callbacks natively, skipping elisions and stopping on a synchronous throw.
 fn join(window: &Window, list: &Array, success: bool) -> Promise {
-    let mut results = Array::new();
-    for callback in list.iter() {
-        let invoked = callback
-            .dyn_ref::<Function>()
-            .ok_or_else(|| JsValue::from(js_sys::TypeError::new("callback is not a function")))
-            .and_then(|callback| callback.call1(&JsValue::UNDEFINED, &success.into()));
-        match invoked {
-            Ok(value) => results.push(&value),
-            Err(error) => {
-                report(window, &error);
-                results = Array::new();
-                break;
-            }
-        };
-    }
+    let invoke =
+        Closure::<dyn Fn(JsValue) -> Result<JsValue, JsValue>>::new(move |callback: JsValue| {
+            Reflect::apply(
+                callback.unchecked_ref::<Function>(),
+                &JsValue::UNDEFINED,
+                &Array::of1(&success.into()),
+            )
+        });
+    let results: Array = match call(list, "map", &Array::of1(&invoke.into_js_value())) {
+        Ok(values) => values.unchecked_into(),
+        Err(error) => {
+            report(window, &error);
+            return Promise::resolve(&JsValue::UNDEFINED);
+        }
+    };
     let target = window.clone();
     let failed = Closure::once_into_js(move |error: JsValue| report(&target, &error));
     then(&Promise::all(&results), &JsValue::UNDEFINED, &failed).map_or_else(

@@ -4,10 +4,13 @@ use crate::browser_fixture_support::{construct, object, post_from};
 use crate::contributions_support::fetch_text;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use js_sys::{Function, Object, Promise, Reflect, Uint8Array};
+use maestro_web::components::sandboxed_iframe::lowering::{self, Compiled};
 use std::{cell::Cell, fmt::Write as _};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Document, HtmlIFrameElement, MessageEvent, Window};
+
+pub(crate) mod cases;
 
 /// Global the prototype's generated binding glue initializes.
 pub(crate) const GLOBAL: &str = "__maestroSandboxRuntime";
@@ -125,10 +128,11 @@ impl Runtime {
         id: &str,
         providers: &[&str],
     ) -> Self {
-        let quoted = serde_json::Value::String(id.into());
-        let providers: Vec<String> = providers
+        let mut config = config.clone();
+        config["providerId"] = id.into();
+        let providers: Vec<Compiled> = providers
             .iter()
-            .map(|source| format!("({source})({quoted});"))
+            .map(|source| lowering::provider(source).unwrap())
             .collect();
         let Boot {
             prefix: mut markup,
@@ -138,8 +142,9 @@ impl Runtime {
         for provider in &providers {
             let _ = write!(
                 markup,
-                "<template data-maestro-sandbox-provider><svg><script>{}</script></svg></template>",
-                encode(provider)
+                "<template data-maestro-sandbox-provider data-maestro-capture=\"{}\"><svg><script>{}</script></svg></template>",
+                provider.capture(),
+                encode(provider.code())
             );
         }
         let _ = write!(
@@ -150,7 +155,10 @@ impl Runtime {
         Self {
             markup,
             boot,
-            providers,
+            providers: providers
+                .into_iter()
+                .map(|provider| provider.code().to_owned())
+                .collect(),
         }
     }
 }
@@ -174,9 +182,9 @@ pub(crate) fn encode(code: &str) -> String {
         .replace('\r', "&#13;")
 }
 
-/// Asynchronous program text settled by the prototype's `run`.
-pub(crate) fn program(code: &str) -> String {
-    format!("{GLOBAL}.run(async () => {{\n{code}\n}});")
+/// Supplied asynchronous body compiled for the prototype's Rust outcome observer.
+pub(crate) fn program(code: &str) -> Compiled {
+    lowering::program(code).unwrap()
 }
 
 /// Wrap a program module after the runtime in a complete document.

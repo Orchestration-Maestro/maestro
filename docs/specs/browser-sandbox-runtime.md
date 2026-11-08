@@ -282,9 +282,9 @@ Run the repository check, affected native crate tests/doctests, actual wasm and 
 
 ## Out of scope
 
-1. Rewriting supplied JavaScript, removing user-script messaging or reducing any selected provider capability. **Proven scope: C01-C07.**
+1. Changing supplied-program behavior beyond the completion-correct AST lowering above, removing user-script messaging or reducing any selected provider capability. **Proven scope: C01-C07.**
 2. A new extension host, transport, scheduler, store, worker isolation model, hard-interruption promise or runtime consumer build. **Proven boundaries: C07-C11, C13.**
-3. Extra libraries, dependency features, compatibility formats, root README redesign or unrelated browser qualification. Existing broader qualification remains tracked by #825 and #1084. **Proven scope: C01, C13-C14 and the sandbox guide.**
+3. Libraries beyond the approved browser bindings and supplied-content parser family, extra dependency features, compatibility formats, root README redesign or unrelated browser qualification. Existing broader qualification remains tracked by #825 and #1084. **Proven scope: C01, C13-C14 and the sandbox guide.**
 
 No useful capability is omitted. The deleted assets and script envelopes are implementation mechanisms replaced by the qualified Rust path. Keep corrected empty-artifact lookup, native SVG navigation and whole-source completion ordering; do not restore the defects their witnesses prevent. **Proven: C03, C09, C11-C12.**
 

@@ -66,6 +66,72 @@ error, panel and monospace roles; authored sandbox content keeps its own styling
 Execution uses the same retained frame owner, but rejects validation errors instead
 of painting this loading document.
 
+## Supplied-content compiler qualification
+
+Run `just browser-test` to exercise the Rust compiler and native capture observers
+in isolated frames. This qualification path does not change production document
+emission or the runtime loading statement.
+
+The compiler is available at
+`maestro_web::components::sandboxed_iframe::lowering`:
+
+```rust
+use maestro_web::components::sandboxed_iframe::lowering;
+
+let compiled = lowering::program("await null; return 42;")?;
+let module_source = compiled.code();
+let capture_property = compiled.capture();
+# let _ = (module_source, capture_property);
+# Ok::<(), lowering::Error>(())
+```
+
+### Reference
+
+`program` accepts an asynchronous body. It parses an asynchronous arrow solely for
+grammar admission, then lowers the body into a native inline module. Returns become
+breaks to a private label. Falling through clears the saved result inside that
+label, so `finally` can cancel a pending return with a break or continue. Each
+finalizer saves the pending value and restores it on normal completion. A local
+break can discard an inner return without replacing an outer pending return.
+Native loops retain iterator-close error precedence. Function declarations retain their
+function-scoped bindings; nested function and method returns stay untouched.
+Generated names exclude decoded identifiers, labels and literal names in the input.
+
+Before module execution, the fixture installs a temporary native getter at
+`Compiled::capture()`. Reading it restores the original global descriptor, removes
+the carrier and returns a private outcome observer. Assignments to that observer
+carry native success values or errors to Rust. Returned thenables settle before
+callbacks and completion. A parser SyntaxError before module entry reaches the
+same observer; the browser remains the final gate for semantic early errors.
+
+`provider` accepts one expression and emits a capture assignment, without an
+invocation. A native setter restores the original global descriptor before Rust
+calls the captured function with the sandbox identifier. The function still runs
+synchronously while its classic script is current. Anonymous functions keep their
+empty name, and provider changes to the restored property remain visible. Native
+callability checks ignore a function's own `call` property. A thrown provider or a
+non-callable expression stops later installation with its native error.
+The capture property must be configurable when already present; failed installation
+is reported rather than overwriting a protected property.
+
+HTML carrier encoding and exact decoded-source hashing remain separate operations.
+The compiler adds no eval permission, Function constructor, interpreter, same-origin
+access or dynamic script-text sink. The existing loader remains under separate
+qualification; passing compiler witnesses does not establish production startup.
+
+### Examples covered by qualification
+
+- `try { return 1 } finally { return 2 }` returns 2.
+- `for (let i = 0; i < 1; i++) { try { return 1 } finally { continue } }`
+  falls through with undefined.
+- Returned thenables, rejected promises, native DOM/fetch/timers and relative
+  imports retain their browser behavior.
+- Native object identity, signed zero, undefined and null survive outcome capture.
+  All four built-in provider inputs leave the reserved capture namespace unused.
+- Real tool inputs keep closing-script text, carriage returns and Unicode through
+  the existing carrier. Invalid labels and duplicate lexical declarations still
+  fail as SyntaxErrors.
+
 ## Hidden JavaScript execution
 
 On WebAssembly, `BrowserSandboxHost` creates a hidden `sandbox-iframe` parent.

@@ -1,7 +1,7 @@
 //! Prototype runtime bootstrap qualification in isolated Chromium frames.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::sandbox_bootstrap_support::{
-    Boot, Bundle, Mount, OBSERVER, Runtime, digests, encode, json as native_json,
+    Boot, Bundle, Mount, OBSERVER, Runtime, cases, digests, encode, json as native_json,
     loads_only_from_parent, observe, padded, program, receipt, synchronous_limit, wrap,
 };
 use serde_json::{Value, json};
@@ -17,7 +17,7 @@ const TRACE_PROVIDER: &str = "function(id){if(1<2&&id)__sandboxInstallTrace.push
 /// Supplied provider that turns Trusted Types to `none` inside the frame.
 const TRUSTED_NONE: &str = "function(){const m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content=\"require-trusted-types-for 'script'; trusted-types 'none'\";document.head.append(m)}";
 /// Supplied completion provider for asynchronous programs.
-const COMPLETION: &str = "function(){window.S={log:[]};window.done=new Promise(r=>window.complete=async(error,value)=>{S.log.push('complete');S.error=error;S.value=value;r()})}";
+const COMPLETION: &str = "function(id){window['__maestro'+0]++;window.S={log:[],providerName:arguments.callee.name,providerId:id,providerThis:this===window,providerCurrent:document.currentScript.localName,capturedValue:window['__maestro'+0]};window.done=new Promise(r=>window.complete=async(error,value)=>{S.log.push('complete');S.error=error;S.value=value;S.returnName=typeof value==='function'?value.name:null;S.returnSame=value===window.expected;S.returnNegativeZero=Object.is(value,-0);S.returnUndefined=value===undefined;S.returnNull=value===null;r()})}";
 /// Frame policy that requires Trusted Types without any frame policy object.
 const STRICT: &str =
     "<meta http-equiv=\"Content-Security-Policy\" content=\"require-trusted-types-for 'script'\">";
@@ -144,8 +144,12 @@ fn check_program(state: &Value, expected: &Value) {
     let error = match &state["error"] {
         Value::Object(error) => {
             let stack = error["stack"].as_str().unwrap();
-            assert!(stack.contains("TypeError: user failure"), "{stack}");
-            json!({"message": error["message"]})
+            if expected["error"].get("name").is_some() {
+                json!({"name": stack.split(':').next().unwrap()})
+            } else {
+                assert!(stack.contains("TypeError: user failure"), "{stack}");
+                json!({"message": error["message"]})
+            }
         }
         other => other.clone(),
     };
@@ -154,6 +158,9 @@ fn check_program(state: &Value, expected: &Value) {
     assert_eq!(&observed, expected);
     if state.get("metaUrl").is_some() {
         assert_eq!(state["metaUrl"], state["base"]);
+    }
+    if let Some(carriage_return) = state.get("cr") {
+        assert_eq!(carriage_return.as_bool(), Some(true));
     }
     assert_eq!(
         fields(state, &["body", "scaffold"]),
@@ -164,41 +171,271 @@ fn check_program(state: &Value, expected: &Value) {
 /// Asynchronous programs settle through Rust: await, return, throw, imports and callbacks.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_settles_asynchronous_programs_in_rust() {
+    run_programs(cases::measured(ID)).await;
+}
+
+/// Native abrupt completions retain finally cancellation, iterator cleanup and binding scopes.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_preserves_completion_control_flow() {
+    run_programs(
+        cases::finalizer_restoration()
+            .into_iter()
+            .chain(cases::control_flow())
+            .chain(cases::cleanup())
+            .collect(),
+    )
+    .await;
+}
+
+/// Actual tool content still executes, while native module early errors settle as SyntaxErrors.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_keeps_native_module_admission() {
+    run_programs(cases::admission()).await;
+}
+
+/// Captured providers keep anonymous names, invocation context, script timing and global changes.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_captures_native_provider_expressions() {
     let bundle = Bundle::load().await;
+    provider_failures(&bundle).await;
+    native_values(&bundle).await;
+    let anonymous = json!({"log":["complete"], "error":null, "value":{}, "helper":null});
+    for source in ["return function(){}", "return ()=>42", "return class{}"] {
+        let state = run_program(&bundle, source, &anonymous, COMPLETION).await;
+        assert_eq!(state["returnName"], "", "{source}");
+    }
+    let named = run_program(
+        &bundle,
+        "function named(){}return named",
+        &anonymous,
+        COMPLETION,
+    )
+    .await;
+    assert_eq!(named["returnName"], "named");
+    let expected = json!({"log":["complete"], "error":null, "value":3, "helper":null});
+    let providers = [
+        COMPLETION.to_owned(),
+        format!("Object.assign({COMPLETION},{{call:null}})"),
+    ];
+    for provider in providers {
+        let state = run_program(
+            &bundle,
+            "window['__maestro'+0]++;return window['__maestro'+0]",
+            &expected,
+            &provider,
+        )
+        .await;
+        assert_eq!(
+            fields(
+                &state,
+                &[
+                    "providerName",
+                    "providerId",
+                    "providerThis",
+                    "providerCurrent",
+                    "capturedValue"
+                ]
+            ),
+            json!({"providerName":"", "providerId":ID, "providerThis":true, "providerCurrent":"script", "capturedValue":2})
+        );
+    }
+}
+
+/// Built-in provider globals leave the reserved numeric capture namespace unused.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_builtin_providers_leave_capture_namespace() {
+    let bundle = Bundle::load().await;
+    builtin_namespace(&bundle).await;
+}
+
+/// Protected capture properties cause setup refusal without overwriting their values.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_refuses_protected_capture_properties() {
+    let bundle = Bundle::load().await;
+    let supplied = "function(){window.ran=true}";
+    let candidate =
+        maestro_web::components::sandboxed_iframe::lowering::provider(supplied).unwrap();
+    for selections in [
+        vec!["provider", "provider", "attachments"],
+        vec!["provider"],
+    ] {
+        let key = candidate.capture();
+        let protected = format!(
+            "function(){{Object.defineProperty(window,{},{{value:'kept',configurable:false}})}}",
+            json!(key)
+        );
+        let mut configuration = config(&selections);
+        if selections.len() == 1 {
+            configuration["programCapture"] = key.into();
+        }
+        let providers = if selections.len() == 1 {
+            vec![protected.as_str()]
+        } else {
+            vec![protected.as_str(), supplied]
+        };
+        let probe = format!(
+            "S.kept=window[{}];S.ran=typeof window.ran;S.helper=typeof listAttachments",
+            json!(key)
+        );
+        let state = provider_document(&bundle, &configuration, &providers, &probe).await;
+        receipt(&format!(
+            "protected capture selections={selections:?} state={state}"
+        ));
+        assert_eq!(
+            fields(&state, &["kept", "ran", "helper"]),
+            json!({"kept":"kept", "ran":"undefined", "helper":"string"})
+        );
+        let errors = state["errors"].as_array().unwrap();
+        assert_eq!(errors.len(), 1);
+        assert!(
+            errors[0]
+                .as_str()
+                .unwrap()
+                .starts_with("TypeError: cannot install capture accessor")
+        );
+    }
+}
+
+/// Native identity, signed zero, undefined and null survive outcome capture without JSON conversion.
+async fn native_values(bundle: &Bundle) {
     let rows = [
         (
-            "S.started=true;window.__completionCallbacks=[async ok=>{await null;S.log.push('callback:'+ok)}];S.metaUrl=import.meta.url;S.base=document.baseURI;S.helper=(await import('./helper.js')).answer;await null;return [sandboxId,42];",
-            json!({"log":["callback:true","complete"],"error":null,"value":[ID,42],"helper":"helper-ok"}),
+            "return -0",
+            json!(0),
+            json!({"returnSame":false,"returnNegativeZero":true,"returnUndefined":false,"returnNull":false}),
         ),
         (
-            "S.started=true;window.__completionCallbacks=[async ok=>{await null;S.log.push('callback:'+ok)}];throw new TypeError('user failure');",
-            json!({"log":["callback:false","complete"],"error":{"message":"user failure"},"value":null,"helper":null}),
+            "return undefined",
+            Value::Null,
+            json!({"returnSame":true,"returnNegativeZero":false,"returnUndefined":true,"returnNull":false}),
         ),
         (
-            "S.started=true;window.__completionCallbacks=[()=>{throw Error('callback failure')},ok=>{S.log.push('second:'+ok)}];return 'kept';",
-            json!({"log":["complete"],"error":null,"value":"kept","helper":null}),
+            "return null",
+            Value::Null,
+            json!({"returnSame":false,"returnNegativeZero":false,"returnUndefined":false,"returnNull":true}),
+        ),
+        (
+            "window.expected={answer:42};return window.expected",
+            json!({"answer":42}),
+            json!({"returnSame":true,"returnNegativeZero":false,"returnUndefined":false,"returnNull":false}),
         ),
     ];
-    for (code, expected) in rows {
-        let runtime = Runtime::new(
-            Bundle::served(&bundle.wasm),
+    for (source, value, native) in rows {
+        let expected = json!({"log":["complete"],"error":null,"value":value,"helper":null});
+        let state = run_program(bundle, source, &expected, COMPLETION).await;
+        assert_eq!(
+            fields(
+                &state,
+                &[
+                    "returnSame",
+                    "returnNegativeZero",
+                    "returnUndefined",
+                    "returnNull"
+                ]
+            ),
+            native
+        );
+    }
+}
+
+/// Real built-in provider inputs leave no compiler-reserved globals after capture.
+async fn builtin_namespace(bundle: &Bundle) {
+    let providers = crate::sandbox_lowering::BUILTINS;
+    let probe = "S.reserved=Object.getOwnPropertyNames(window).filter(name=>/^__maestro[0-9]+$/.test(name));S.helpers=[typeof listArtifacts,typeof readTextAttachment,typeof complete,typeof returnDownloadableFile]";
+    let state = provider_document(
+        bundle,
+        &config(&vec!["provider"; providers.len()]),
+        providers,
+        probe,
+    )
+    .await;
+    assert_eq!(state["reserved"], json!([]));
+    assert_eq!(
+        state["helpers"],
+        json!(["function", "function", "function", "function"])
+    );
+    assert_eq!(state["errors"], json!([]));
+}
+
+/// A thrown provider or non-callable expression stops later installation with one native TypeError.
+async fn provider_failures(bundle: &Bundle) {
+    for source in ["function(){throw new TypeError('provider failure')}", "42"] {
+        let state = provider_document(
+            bundle,
             &config(&["provider", "attachments"]),
-            ID,
-            &[COMPLETION],
-        );
-        let text = program(code);
-        let policy = format!(
-            "script-src 'self' {} 'wasm-unsafe-eval'",
-            digests(&[&runtime.boot, &runtime.providers[0], &text]).await
-        );
-        let mount = Mount {
+            &[source],
+            "S.helper=typeof listAttachments",
+        )
+        .await;
+        assert_eq!(state["helper"], "string");
+        let errors = state["errors"].as_array().unwrap();
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].as_str().unwrap().starts_with("TypeError:"));
+    }
+}
+
+/// Install supplied providers and inspect a following classic script under exact hashes.
+async fn provider_document(
+    bundle: &Bundle,
+    configuration: &Value,
+    providers: &[&str],
+    probe: &str,
+) -> Value {
+    let runtime = Runtime::new(Bundle::served(&bundle.wasm), configuration, ID, providers);
+    let html = format!(
+        "<!DOCTYPE html><script>{OBSERVER}</script>{}<script>{probe}</script>",
+        runtime.markup
+    );
+    let mut texts = vec![OBSERVER, runtime.boot.as_str(), probe];
+    texts.extend(runtime.providers.iter().map(String::as_str));
+    let policy = format!(
+        "script-src 'self' {} 'wasm-unsafe-eval'",
+        digests(&texts).await
+    );
+    let (state, _) = observe(
+        &html,
+        Mount {
             policy: &policy,
             ..Mount::default()
-        };
-        let (state, _) = observe(&wrap(&runtime.markup, &text), mount).await;
-        receipt(&format!("program state={state}"));
-        check_program(&state, &expected);
+        },
+    )
+    .await;
+    receipt(&format!("provider state={state}"));
+    state
+}
+
+/// Run each supplied body in a fresh isolated realm with an exact input-hash policy.
+async fn run_programs(rows: Vec<(&str, Value)>) {
+    let bundle = Bundle::load().await;
+    for (code, expected) in rows {
+        run_program(&bundle, code, &expected, COMPLETION).await;
     }
+}
+
+/// Compile, mount and inspect one program through the retained qualification boundary.
+async fn run_program(bundle: &Bundle, code: &str, expected: &Value, provider: &str) -> Value {
+    let text = program(code);
+    let mut configuration = config(&["provider", "attachments"]);
+    configuration["programCapture"] = text.capture().into();
+    configuration["globals"]["__maestro0"] = 1.into();
+    let runtime = Runtime::new(
+        Bundle::served(&bundle.wasm),
+        &configuration,
+        ID,
+        &[provider],
+    );
+    let policy = format!(
+        "script-src 'self' {} 'wasm-unsafe-eval'",
+        digests(&[&runtime.boot, &runtime.providers[0], text.code()]).await
+    );
+    let mount = Mount {
+        policy: &policy,
+        ..Mount::default()
+    };
+    let (state, _) = observe(&wrap(&runtime.markup, text.code()), mount).await;
+    receipt(&format!("program input={code:?} state={state}"));
+    check_program(&state, expected);
+    state
 }
 
 /// The supplied sandbox URL writes the same document and keeps first-script access.
