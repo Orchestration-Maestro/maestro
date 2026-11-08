@@ -1,6 +1,6 @@
 //! Real painting observations for the committed tool report.
 
-use super::{Browser, assets, cleanup, page::Page, report_scripts, server::Server};
+use super::{Browser, assets, cleanup, page::Page, report_scripts, session};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{io, path::Path};
@@ -39,31 +39,26 @@ struct Painted {
     width: usize,
 }
 
-/// Run the report under the same pinned executable and one confined HTTP endpoint.
-pub(super) async fn run(
-    checkout: &Path,
-    executable: &Path,
-    target: &Path,
-    work: &Path,
-    fixture: Option<&Path>,
-) -> io::Result<()> {
+/// Run the committed tool report in the pinned executable on one confined HTTP endpoint,
+/// answering its two library URLs from the verified copies in `assets`.
+///
+/// `work` is an empty directory that receives the served report and the browser profile.
+///
+/// # Errors
+/// Returns copy, server, launch, asset, observation or cleanup failures.
+pub async fn run(checkout: &Path, executable: &Path, assets: &Path, work: &Path) -> io::Result<()> {
     let root = work.join("report");
     tokio::fs::create_dir(&root).await?;
-    let default = checkout.join("crates/maestro-app/tests/fixtures/analysis/tool-report.html");
-    tokio::fs::copy(fixture.unwrap_or(&default), root.join("index.html")).await?;
-    let server = Server::start(&root).await?;
-    let result = async {
-        let mut browser = Browser::launch(executable, &work.join("report-chromium"), &[]).await?;
-        let result = page(
-            &mut browser,
-            &server.origin,
-            &target.join("browser-analysis-assets"),
-        )
-        .await;
-        cleanup(result, browser.close().await)
-    }
-    .await;
-    cleanup(result, server.close().await)?;
+    tokio::fs::copy(
+        checkout.join("crates/maestro-app/tests/fixtures/analysis/tool-report.html"),
+        root.join("index.html"),
+    )
+    .await?;
+    let profile = work.join("report-chromium");
+    session(executable, &profile, &root, async |browser, origin| {
+        page(browser, origin, assets).await
+    })
+    .await?;
     println!("PASS analysis_page");
     Ok(())
 }

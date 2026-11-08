@@ -19,7 +19,7 @@ where
     let images = TerminalImage::default();
     let tui = TUI::new(
         Rc::new(RefCell::new(ProcessTerminal::new(Rc::clone(&local)))),
-        Rc::new(ProcessTuiRuntime::new(Rc::clone(&local))),
+        Rc::new(ProcessTuiRuntime::new(Rc::clone(&local), String::new())),
         images.clone(),
         None,
     );

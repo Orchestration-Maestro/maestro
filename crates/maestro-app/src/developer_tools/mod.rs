@@ -16,34 +16,22 @@ pub mod tool_stats;
 
 use std::io;
 
-/// The agent directory beneath the host's home directory.
+use crate::configuration::config;
+
+/// The configured agent directory: `MAESTRO_CODING_AGENT_DIR` or its default.
 ///
 /// # Errors
-/// Returns a not-found error when the host names no home directory, or an
-/// invalid-data one when it is not valid UTF-8.
+/// Returns the home lookup failure of the default.
 pub(crate) fn agent_base() -> io::Result<String> {
-    Ok(maestro_path::join(&[
-        &maestro_resources::paths::home_directory()?,
-        ".maestro/agent",
-    ]))
+    config::get_agent_dir()
 }
 
-/// The session root beneath the host's home directory.
+/// The session root beneath the configured agent directory.
 ///
 /// # Errors
-/// Returns the home directory failure of [`agent_base`].
+/// Returns the failure of [`agent_base`].
 pub(crate) fn session_base() -> io::Result<String> {
-    Ok(maestro_path::join(&[&agent_base()?, "sessions"]))
-}
-
-/// The session root beneath the `HOME` variable, which the cost report alone reads.
-///
-/// # Errors
-/// Returns a native error when the variable names no directory.
-pub(crate) fn cost_session_base() -> io::Result<String> {
-    let home = std::env::var("HOME")
-        .map_err(|_| io::Error::new(io::ErrorKind::NotFound, "no home directory"))?;
-    Ok(maestro_path::join(&[&home, ".maestro/agent/sessions"]))
+    Ok(config::paths::get_sessions_dir(&agent_base()?))
 }
 
 /// Resolve an authored path against the process working directory.

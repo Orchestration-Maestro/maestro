@@ -235,7 +235,10 @@ mod native {
         let local = Rc::new(tokio::task::LocalSet::new());
         let tui = TUI::new(
             Rc::new(RefCell::new(ProcessTerminal::new(local.clone()))),
-            Rc::new(ProcessTuiRuntime::new(local.clone())),
+            Rc::new(ProcessTuiRuntime::new(
+                local.clone(),
+                config::get_agent_dir()?,
+            )),
             TerminalImage::default(),
             None,
         );
@@ -340,7 +343,10 @@ mod tests {
         });
         let tui = TUI::new(
             Rc::new(RefCell::new(terminal.clone())),
-            Rc::new(ProcessTuiRuntime::new(local.clone())),
+            Rc::new(ProcessTuiRuntime::new(
+                local.clone(),
+                maestro_app::configuration::config::get_agent_dir().unwrap(),
+            )),
             TerminalImage::default(),
             None,
         );
