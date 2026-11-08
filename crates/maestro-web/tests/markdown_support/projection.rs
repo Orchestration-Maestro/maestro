@@ -188,13 +188,9 @@ pub fn tree_difference(recorded: &Value) -> String {
 /// Panics if no document is shown or its fonts never load.
 pub async fn measure_math(expected: &Value, branch: &str, source: &str) -> String {
     let container = root().expect("a Markdown document is shown");
-    let ratio = web_sys::window().unwrap().device_pixel_ratio();
-    // The geometry was recorded at ratio 1 and Chromium snaps font metrics to device pixels,
-    // so the container lays out as at ratio 1 and every box it reads is scaled back.
     let style = format!(
-        "{};width:800px;font-size:16px;font-family:\"Times New Roman\";line-height:normal;zoom:{}",
-        container.get_attribute("style").unwrap_or_default(),
-        1. / ratio
+        "{};width:800px;font-size:16px;font-family:\"Times New Roman\";line-height:normal",
+        container.get_attribute("style").unwrap_or_default()
     );
     container.set_attribute("style", &style).unwrap();
     wait_for_fonts().await;
@@ -258,7 +254,6 @@ async fn ready(fonts: &JsValue) {
 
 /// The measured text, bounds, glyph rectangles and SVG rectangles of one formula.
 fn measured(formula: &Element) -> Value {
-    let ratio = web_sys::window().unwrap().device_pixel_ratio();
     let origin = rect(formula.get_bounding_client_rect().as_ref());
     let mut glyphs = Vec::new();
     for text in text_nodes(formula) {
@@ -276,14 +271,14 @@ fn measured(formula: &Element) -> Value {
             "text".to_owned(),
             Value::String(text.text_content().unwrap_or_default()),
         );
-        glyph.extend(relative_boxes(&found, &origin, ratio));
+        glyph.extend(relative_boxes(&found, &origin));
         glyphs.push(Value::Object(glyph));
     }
     let svg = elements(&formula.query_selector_all("svg").unwrap())
         .iter()
         .map(|svg| {
             let found = rect(svg.get_bounding_client_rect().as_ref());
-            Value::Object(relative_boxes(&found, &origin, ratio))
+            Value::Object(relative_boxes(&found, &origin))
         })
         .collect::<Vec<_>>();
     let mut actual = Map::new();
@@ -291,11 +286,8 @@ fn measured(formula: &Element) -> Value {
         "text".to_owned(),
         Value::String(formula.text_content().unwrap_or_default()),
     );
-    actual.insert("width".to_owned(), json!(number(&origin, "width") * ratio));
-    actual.insert(
-        "height".to_owned(),
-        json!(number(&origin, "height") * ratio),
-    );
+    actual.insert("width".to_owned(), json!(number(&origin, "width")));
+    actual.insert("height".to_owned(), json!(number(&origin, "height")));
     actual.insert("glyphs".to_owned(), Value::Array(glyphs));
     actual.insert("svg".to_owned(), Value::Array(svg));
     Value::Object(actual)
@@ -332,12 +324,8 @@ fn rect(found: &JsValue) -> Map<String, Value> {
     rect
 }
 
-/// The boxes of `found` relative to the formula `origin`, scaled back from the container's zoom.
-fn relative_boxes(
-    found: &Map<String, Value>,
-    origin: &Map<String, Value>,
-    ratio: f64,
-) -> Map<String, Value> {
+/// The boxes of `found` relative to the formula `origin`.
+fn relative_boxes(found: &Map<String, Value>, origin: &Map<String, Value>) -> Map<String, Value> {
     ["left", "top", "width", "height"]
         .into_iter()
         .map(|key| {
@@ -346,7 +334,7 @@ fn relative_boxes(
             } else {
                 number(found, key)
             };
-            (key.to_owned(), json!(box_value * ratio))
+            (key.to_owned(), json!(box_value))
         })
         .collect()
 }

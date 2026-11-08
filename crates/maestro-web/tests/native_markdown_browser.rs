@@ -186,7 +186,7 @@ pub fn markdown_dom_replays_qualified_document_rows(import_module: &js_sys::Func
 pub async fn markdown_dom_replays_recorded_formula_geometry(import_module: js_sys::Function) {
     let view = view();
     let _host = host(&view, &import_module);
-    walk::install(&import_module).await;
+    walk::install();
     let mut mounter = PageMounter {
         view,
         parent: container(),
