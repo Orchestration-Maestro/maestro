@@ -59,10 +59,11 @@ mod tests {
             sample.output = output.clone();
             run(sample)
         })?;
+        let agents_file = maestro_path::join(&[&root, "AGENTS.md"]);
         assert_eq!(
             String::from_utf8(output.borrow().clone())?,
             format!(
-                "Discovered context files:\n  - {root}/AGENTS.md (29 chars)\n  - /virtual/AGENTS.md (26 chars)\nSession created with 2 context files\n"
+                "Discovered context files:\n  - {agents_file} (29 chars)\n  - /virtual/AGENTS.md (26 chars)\nSession created with 2 context files\n"
             )
         );
         Ok(())
