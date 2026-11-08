@@ -2418,6 +2418,12 @@ same way. When several of them share one captured output, a byte count or captur
 limit allows one prologue per process. A limit sized for one prologue trips on the
 second, before the scenario's own output.
 
+With `nocapture` and one test thread, the harness can put `test <name> ... `
+before the child's first report on the same line. A live reader that waits for a
+marker uses `split_once` to find it after that label, rather than requiring it at
+the start of the line. Exercise that reader with `single_threaded()` so it also
+works when the runner admits only one test thread.
+
 Choose the route by stream use. `output` captures both streams and returns them
 unchanged. `spawn` reads only the prologue from a piped standard output and replays
 it, preserving ready lines and acknowledgements. A test that depends on closing
