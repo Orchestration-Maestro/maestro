@@ -117,7 +117,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
         .operations
         .open(
             dir,
-            Rc::new(move |name| {
+            named(move |name| {
                 seen.borrow_mut().push(name);
                 if seen.borrow().len() == 2 {
                     completed.borrow_mut().take().unwrap().send(()).unwrap();
@@ -127,6 +127,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
         )
         .unwrap();
     let root = std::path::absolute(dir).unwrap();
+    results.send(Ok(directory_report(&root))).unwrap();
     for file in ["theme.json", "decoy.json"] {
         let path = root.join(file);
         results
@@ -140,7 +141,7 @@ fn native_relative_root_projects_absolute_event_paths_to_names() {
         .local
         .block_on(&harness.runtime, completion)
         .unwrap();
-    assert_eq!(*names.borrow(), names_of(&["theme.json", "decoy.json"]));
+    assert_eq!(*names.borrow(), ["theme.json", "decoy.json"]);
     super::FsWatcher::close(&mut watcher).unwrap();
     harness.local.block_on(&harness.runtime, closed(&results));
 }
@@ -250,7 +251,7 @@ fn native_error_callback_can_close_and_releases_listener() {
         .operations
         .open(
             dir.to_str().unwrap(),
-            Rc::new(move |_| {
+            named(move |_| {
                 let _ = &listener_alive;
                 seen.set(seen.get() + 1);
             }),
@@ -266,6 +267,7 @@ fn native_error_callback_can_close_and_releases_listener() {
         )
         .unwrap();
     *slot.borrow_mut() = Some(watcher);
+    results.send(Ok(directory_report(dir))).unwrap();
     results
         .send(Err(notify::Error::generic("first failure")))
         .unwrap();
@@ -301,12 +303,11 @@ fn native_registration_teardown_leaves_other_watch_active() {
         .operations
         .open(
             dir.to_str().unwrap(),
-            Rc::new(move |name| {
-                observed.send(name).unwrap();
-            }),
+            named(move |name| observed.send(name).unwrap()),
             Rc::new(|| {}),
         )
         .unwrap();
+    b_results.send(Ok(directory_report(dir))).unwrap();
     for dropping in [false, true] {
         let (mut a, a_results) = harness
             .operations
@@ -330,10 +331,7 @@ fn native_registration_teardown_leaves_other_watch_active() {
                     &[dir.join("survives.json").to_str().unwrap()],
                 )))
                 .unwrap();
-            assert_eq!(
-                observations.recv().await.unwrap(),
-                Some("survives.json".into())
-            );
+            assert_eq!(observations.recv().await.unwrap(), "survives.json");
         });
     }
     drop(b);
@@ -424,6 +422,28 @@ fn native_debounce_timer_keeps_its_deadline_through_a_delayed_first_poll() {
         );
         drop(timer);
     });
+}
+
+/// What a native notifier can report about the watched directory itself, such as its
+/// own creation just before the watch started; the report carries no entry name.
+#[cfg(test)]
+fn directory_report(dir: &Path) -> Event {
+    event(
+        EventKind::Create(CreateKind::Folder),
+        &[dir.to_str().unwrap()],
+    )
+}
+
+/// A listener for the entries a test injects. A native notifier may also report the
+/// watched directory itself at any time; that report has no entry name, so it is left
+/// out rather than taken for the test's own event.
+#[cfg(test)]
+fn named(listener: impl Fn(String) + 'static) -> Rc<dyn Fn(Option<String>)> {
+    Rc::new(move |name: Option<String>| {
+        if let Some(name) = name {
+            listener(name);
+        }
+    })
 }
 
 /// Observe receiver teardown.

@@ -246,10 +246,86 @@ struct Gate {
 
 /// Run one gated scenario and return every reply evaluated in the root world.
 async fn gated(gate: Gate) -> Vec<String> {
-    let (mut dispatcher, peer) = connect_peer(move |socket| gated_iframe(socket, gate)).await;
+    held(move |socket| gated_iframe(socket, gate)).await
+}
+
+/// A burst of host calls is served one call at a time, in arrival order, so it never nests and
+/// fits a worker stack well below the main thread's.
+#[test]
+fn host_call_bursts_are_served_one_at_a_time() {
+    let replies = std::thread::Builder::new()
+        .stack_size(BURST_STACK)
+        .spawn(|| block_on(held(burst)))
+        .unwrap()
+        .join()
+        .unwrap();
+
+    let expected: Vec<String> = (1..=BURST)
+        .map(|id| format!("__maestroReply({id},null,null)"))
+        .collect();
+    assert_eq!(replies, expected);
+}
+
+/// Host calls the burst peer sends at once, as a page's synthetic clicks fire their phase calls.
+const BURST: usize = 200;
+
+/// A worker stack well below the main thread's, so a nested burst cannot lean on it.
+const BURST_STACK: usize = 2 * 1024 * 1024;
+
+/// Send the whole burst once the root evaluation is held, and release it after the last reply.
+///
+/// Returns every reply the driver evaluated in the root world.
+async fn burst(mut socket: WebSocketStream<TcpStream>) -> Vec<String> {
+    let (mut held, mut replies) = (None, Vec::new());
+    while let Some(call) = receive(&mut socket).await {
+        let method = call["method"].as_str().unwrap();
+        if method == "Runtime.evaluate" && call["params"]["expression"] == HOLD {
+            held = Some(call["id"].clone());
+            for id in 1..=BURST {
+                let payload =
+                    json!({"id":id,"name":"sandboxDriverPhase","args":["click dispatched"]});
+                let call = json!({
+                    "method":"Runtime.bindingCalled","sessionId":"session",
+                    "params":{
+                        "name":"__maestroDriver","executionContextId":1,
+                        "payload":payload.to_string()
+                    }
+                });
+                send(&mut socket, call).await;
+            }
+            continue;
+        }
+        if method == "Runtime.enable" {
+            send(&mut socket, enabled_context(&call)).await;
+        }
+        let result = gated_reply(&call, &mut replies);
+        send(&mut socket, json!({"id":call["id"],"result":result})).await;
+        if replies.len() == BURST
+            && let Some(held) = held.take()
+        {
+            send(
+                &mut socket,
+                json!({"id":held,"result":{"result":{"value":null}}}),
+            )
+            .await;
+        }
+        if method == "Target.disposeBrowserContext" {
+            break;
+        }
+    }
+    replies
+}
+
+/// Hold the root evaluation open against a scripted peer and return the replies it recorded.
+async fn held<F, Fut>(script: F) -> Vec<String>
+where
+    F: FnOnce(WebSocketStream<TcpStream>) -> Fut + Send + 'static,
+    Fut: std::future::Future<Output = Vec<String>> + Send + 'static,
+{
+    let (mut dispatcher, peer) = connect_peer(script).await;
     let mut lines = Vec::new();
     let expected = inputs::inventory(INVENTORY).unwrap().expected_error;
-    let mut page = Page::open(&mut dispatcher, "gated", &mut lines, &expected)
+    let mut page = Page::open(&mut dispatcher, "held", &mut lines, &expected)
         .await
         .unwrap();
     page.initialize().await.unwrap();

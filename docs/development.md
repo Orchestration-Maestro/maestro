@@ -229,10 +229,12 @@ tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
 printed.
-One run reports every real-browser case. The command runs the driver's own
-`browser::` regressions with `--no-fail-fast`, then the export inventory and the
-report painting, even when a regression fails. It exits with the first failing
-step's status.
+One nextest run reports every real-browser case. The command selects every
+`browser::` test of `maestro-test-browser` with `--no-fail-fast`: the driver's
+own regressions, one test per inventory export and the report painting. Each
+case is its own test, so the [hang limit](#test-time-budget) stops an export
+that never completes and names it, and the run still reports every other case.
+The command exits with that run's status.
 
 The registered integration target is compiled with the workspace lock but never
 loaded in the browser: its libtest startup would execute native tests. Runtime
@@ -259,18 +261,19 @@ fails before compilation. The authored manifests
 and lock stay unchanged. Build outputs remain in Cargo's resolved target directory.
 
 Bindings use `--target web --split-linked-modules` to retain local snippets,
-relative fixture imports and native module identity. The runner serves only the
-packaged output on an ephemeral loopback port. It checks the entire selected
-inventory before invoking assertions, then checks each family in pairs:
-27 execution exports, 64 loading exports, 196 contribution exports and 88 canvas
-exports. Both exports of a pair run at once, each in a fresh page of its own
-driver, and the pair settles before the next starts. A failing export closes its
-own page and the run continues; the browser and the server close once every
-family has run. Two drivers connect to the one launched browser, and each keeps
-one connection, which its exports share across pairs. Every export still gets
-its own disposable browser context, page lifecycle and policy-error accounting.
-Each driver records its exports' diagnostics, so completion logs within a pair
-can arrive out of order, and an odd last export runs alone. Packaging also
+relative fixture imports and native module identity. The `browser-exports`
+nextest setup builds the package once per run, before any test that reads it.
+Cargo builds the setup binary with the crate's tests. The binary writes the
+package to `browser-exports` under Cargo's target directory, replacing the
+previous run's copy. If setup fails, nextest prints its output and stops before
+any browser test runs. The crate's build script generates one test per name in
+`exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
+64 loading exports, 196 contribution exports and 88 canvas exports. Each test
+serves only the packaged output on an ephemeral loopback port, launches its own
+browser and runs its export in a fresh page, with a disposable browser context,
+page lifecycle and policy-error accounting. Nextest runs these tests in
+parallel like any others. A missing or non-callable export fails its own test.
+Packaging also
 builds the two runtime-module fixtures, each from its own manifest and lock with
 its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
@@ -282,13 +285,12 @@ exports run on a page served under a content security policy without
 Canvas exports run on a page that holds only an 800 by 600 `#canvas` at the page
 origin, with no body margin, because they compare canvas points with page
 coordinates.
-The host bundle's digest must match before and after the run. Logs identify each
-`START` and `PASS`, each `FAIL`, each `FAMILY` passed and total, the unchanged
-`HOST` digest and `COMPLETE 375/375` on success. A failing export is recorded and
-the run goes on, so one Chromium run reports every failure; the command then fails
-with all of them, and the report painting still runs. `PHASE` records
-identify loaded pages, resolved exports, pointer dispatch and pointer acknowledgments
-so an interrupted run retains its last observed browser phase.
+Each export test checks that the host bundle's digest is the same after the export
+as before it. Nextest prints each export's `PASS`, `FAIL` or `TIMEOUT` under its
+test name, and its summary counts every case. `PHASE` records identify loaded
+pages, resolved exports, pointer dispatch and pointer acknowledgments. Nextest
+shows them for a failing or timed-out export, so an interrupted export keeps its
+last observed browser phase.
 
 After each native sandbox click completes, the driver checks the selected
 fixture document for a fresh trusted click whose composed path contains its
@@ -305,15 +307,17 @@ running when they attach. It registers the binding script as a
 new-document script that also runs immediately, and sends no evaluation that needs a
 default context, because a frame that loads from a URL attaches before its document
 commits and has none yet: it runs the script at commit, and a `srcdoc` frame
-runs it at once. A host call that arrives while an iframe is still
-being set up waits, and runs in arrival order once that setup completes,
-ahead of any call that arrives while the queue drains. A session the caller
-attaches itself stays with the caller. An iframe removed during its own setup
-is reported where a call uses it, and a host call whose caller is already gone
-gets no reply and fails nothing else; page errors, crashes and console panics
-raised during that setup still fail the command. Browser events route by
-session; export, binding and input operations wait for their own completion
-signals without command deadlines.
+runs it at once. The driver serves host calls one at a time. A call that arrives
+while another is being served, or while an iframe is still being set up, waits,
+and waiting calls run in arrival order once the driver is free, ahead of any
+call that arrives while they drain. A burst of calls, such as the phase call
+each synthetic click makes, therefore never nests one call inside another. A
+session the caller attaches itself stays with the caller. An iframe removed
+during its own setup is reported where a call uses it, and a host call whose
+caller is already gone gets no reply and fails nothing else; page errors,
+crashes and console panics raised during that setup still fail the command.
+Browser events route by session; export, binding and input operations wait for
+their own completion signals without command deadlines.
 
 The launch tells Chromium that this desktop has a hover-capable pointer, so
 media queries such as `(hover: hover)` behave like they do on a real desktop.
@@ -335,7 +339,7 @@ written `--key` or `--key=value`; anything else is refused before launch, and
 repeated `--disable-features` switches merge into one list.
 
 Missing exports, synchronous throws, rejected promises, unexpected page errors,
-page crashes and unexpected browser disconnection fail the command. An
+page crashes and unexpected browser disconnection fail the export's test. An
 acknowledged browser close or a lost connection ends command admission: later
 operations, including page creation, fail immediately with a connection-closed
 error. Script arguments in the browser fixtures are JSON-encoded before evaluation
@@ -374,31 +378,37 @@ One deliberate policy-negative export,
 `inline_programs_preserve_text_policies_and_order`, must produce exactly one
 `TypeError` with message `window.complete is not a function` from `about:srcdoc`.
 Its ordinary assertions still run; absent, repeated or other errors fail. Error
-accounting stays attached until the page closes. Browser, server and temporary
-preparation are closed or removed on both outcomes; a cleanup failure does not
-skip the other resource or replace an assertion failure.
+accounting stays attached until the page closes. Each test closes its browser and
+server and removes its disposable profile on both outcomes; a cleanup failure does
+not skip the other resource or replace an assertion failure.
 
-The command first runs the Rust driver regressions from `maestro-test-browser`'s one
-integration target. This test-only crate owns the browser stack and reuses
+The driver regressions, the export tests and the report test share
+`maestro-test-browser`'s one integration target. This test-only crate owns the
+browser stack and reuses
 `maestro-tooling` for preparation, locked metadata and asset copying. Hakari excludes
 it from traversal, so ordinary development commands never build the browser stack.
 These tests carry the reason `runs in the pinned Chromium job`;
 ordinary native runs leave them ignored and run the browser-independent input,
 resource and pixel checks. The command selects only the `browser` module, keeping
-controlled-child tests out. Run only the browser regressions with the same supplied
-executable:
+controlled-child tests out. Run every browser case, or one export by its test
+name, with the same supplied executable; the `browser-exports` setup runs first
+whenever an export or the report is selected:
 
 ```sh
 ~/.local/bin/capped just prepare-tests
 ~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(/^browser::/)'
+~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+  --run-ignored only -E 'test(=browser::exports::loading::<export>)'
 ```
 
-The tool report page is a second witness in the same job. The Rust driver
+The tool report page is a second witness in the same run, the test
+`browser::tool_report_paints_from_its_verified_assets`. The Rust driver
 serves the committed report fixture and answers the page's two pinned library
-URLs from cached copies whose SHA-256 digests it checks. A missing copy is fetched
+URLs from cached copies in `browser-analysis-assets` under Cargo's target
+directory, whose SHA-256 digests it checks. A missing copy is fetched
 with the existing three-attempt budget; a mismatch fails. Any other request outside
-the driver's loopback origin is aborted and fails the run, checked after
+the driver's loopback origin is aborted and fails the test, checked after
 navigation and again after the last observation, so the bytes the page executes
 are the bytes the cache was verified with. The driver then observes what the
 page paints: a row click must change the selected summary and the canvas bitmap,
@@ -522,8 +532,8 @@ To prove a test red and then green:
 1. Push a branch that breaks one assertion of the test. Keep the test registered and
    its selection unchanged. Note the commit SHA and the test's name.
 2. Dispatch the proof for that branch. The run must fail at that assertion, not in
-   setup or compilation, and still report every other case: the export inventory
-   ends with its `COMPLETE` count.
+   setup or compilation, and still report every other case: nextest's summary
+   counts every browser test.
 3. Restore the assertion on the branch under review and dispatch again. The run must
    pass.
 4. Save the two `browser-test.log` files as `<test>-red.log` and
@@ -710,6 +720,8 @@ compiled Cargo package version. It re-exports the resource owner's `.maestro`
 configuration-directory name and derives `MAESTRO_CODING_AGENT_DIR` and
 `MAESTRO_CODING_AGENT_SESSION_DIR` from the command name. The default agent root
 is `<home>/.maestro/agent`; a nonempty `MAESTRO_CODING_AGENT_DIR` overrides it.
+The terminal redraw log, the width crash report and the cost, usage, transcript and
+tool reports all follow this one directory.
 See [application configuration](application/configuration.md#identity-and-roots)
 for root selection. Renaming the executable alone does not change these values.
 Changing compiled identity requires source edits and a rebuild; there is no
@@ -1061,6 +1073,13 @@ test that normally runs well inside it. The default profile sets both:
 [profile.default]
 slow-timeout = { period = "30s", terminate-after = 4 }
 ```
+
+The Chromium job runs under the same limit. `just browser-test` is one nextest
+run in which every browser export, the report page and each driver regression is
+its own test, so an export whose page never answers is killed at 120 seconds,
+its `TIMEOUT` line names it, and the run still reports every other case. The
+driver itself sets no command deadlines. See
+[browser integration qualification](#browser-integration-qualification).
 
 A test that needs more than 120 seconds gets an exception in
 `.config/nextest.toml`. It must select exactly one test, or one shared fixture
