@@ -1,13 +1,15 @@
 //! Session-aware page operations serviced through one CDP dispatcher.
 
-use super::{assets::Cache, connection::Dispatcher, inputs::ExpectedError, scripts};
+use super::{
+    assets::Cache, bindings::Deferral, connection::Dispatcher, inputs::ExpectedError, scripts,
+};
 use chromiumoxide::{
     cdp::browser_protocol::{browser::BrowserContextId, target::SessionId},
     types::{CallId, CdpJsonEventMessage},
 };
 use serde_json::{Value, json};
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashMap, HashSet},
     io,
 };
 
@@ -22,15 +24,6 @@ pub(super) struct Context {
     pub frame: String,
 }
 
-/// Host calls waiting for attached renderers to finish their setup.
-#[derive(Default)]
-struct Deferral {
-    /// Attached renderers still awaiting their setup answers.
-    initializing: HashSet<SessionId>,
-    /// Host calls received during that setup or while earlier ones are released, in arrival order.
-    calls: VecDeque<CdpJsonEventMessage>,
-}
-
 /// One fresh page's retained state.
 pub struct Page<'a> {
     /// Shared browser transport, also used for attached iframe targets.
@@ -39,8 +32,8 @@ pub struct Page<'a> {
     pub(super) session: SessionId,
     /// Root and automatically attached sessions owned by this page.
     sessions: HashSet<SessionId>,
-    /// Host calls held back while attached renderers finish their setup.
-    deferral: Deferral,
+    /// Host calls waiting their turn behind another call or an attached renderer's setup.
+    pub(super) deferral: Deferral,
     /// Disposable browser context providing fresh cookies and storage for this page.
     context: BrowserContextId,
     /// Root target identifier used for cleanup.
@@ -406,12 +399,10 @@ impl<'a> Page<'a> {
             )?,
             "Runtime.exceptionThrown" => self.exception(&event.params)?,
             "Runtime.consoleAPICalled" => self.console(&event.params)?,
-            "Runtime.bindingCalled"
-                if !self.deferral.initializing.is_empty() || !self.deferral.calls.is_empty() =>
-            {
+            "Runtime.bindingCalled" if self.deferral.waiting() => {
                 self.deferral.calls.push_back(event);
             }
-            "Runtime.bindingCalled" => self.binding(&event).await?,
+            "Runtime.bindingCalled" => self.serve(event).await?,
             "Fetch.requestPaused" => self.route(&event.params).await?,
             _ => {}
         }
@@ -443,10 +434,12 @@ impl<'a> Page<'a> {
         {
             return Err(error);
         }
-        while self.deferral.initializing.is_empty()
+        // A call already being served releases the queue itself once it completes.
+        if !self.deferral.serving
+            && self.deferral.initializing.is_empty()
             && let Some(event) = self.deferral.calls.pop_front()
         {
-            self.binding(&event).await?;
+            self.serve(event).await?;
         }
         Ok(())
     }
