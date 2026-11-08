@@ -11,15 +11,23 @@ use std::io;
 use std::rc::{Rc, Weak};
 use tokio::sync::oneshot;
 
-/// Construct the native terminal and its runtime over `local` without starting either.
+/// Construct the native terminal and its runtime over `local` without starting either; the
+/// runtime writes its diagnostic logs to the configured agent directory.
+///
+/// # Errors
+/// Returns the native home lookup error when the agent directory needs home.
 #[cfg(any(unix, windows))]
-#[must_use]
-pub fn native_terminal(local: Rc<tokio::task::LocalSet>) -> (TerminalHandle, Rc<dyn TuiRuntime>) {
+pub fn native_terminal(
+    local: Rc<tokio::task::LocalSet>,
+) -> io::Result<(TerminalHandle, Rc<dyn TuiRuntime>)> {
     let terminal: TerminalHandle = Rc::new(RefCell::new(
         maestro_tui_crossterm::ProcessTerminal::new(Rc::clone(&local)),
     ));
-    let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(local));
-    (terminal, runtime)
+    let agent_dir = maestro_app::configuration::config::get_agent_dir()?;
+    let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
+        local, agent_dir,
+    ));
+    Ok((terminal, runtime))
 }
 
 /// The frame writer and the exit effect one presentation supplies.
@@ -41,7 +49,7 @@ impl SelectorHost {
     pub fn native(local: Rc<tokio::task::LocalSet>) -> Self {
         Self {
             create_ui: Rc::new(move || {
-                let (terminal, runtime) = native_terminal(Rc::clone(&local));
+                let (terminal, runtime) = native_terminal(Rc::clone(&local))?;
                 Ok(TUI::new(terminal, runtime, TerminalImage::default(), None))
             }),
             exit: Rc::new(|code: i32| std::process::exit(code)),

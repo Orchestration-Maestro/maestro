@@ -165,9 +165,9 @@ fn analysis_large_reports_keep_every_selected_record() {
 }
 
 #[test]
-fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
+fn session_roots_follow_the_account_home() {
     with_environment_without(
-        "session_roots_follow_the_account_home_and_cost_keeps_the_variable",
+        "session_roots_follow_the_account_home",
         &[("TZ", ZONE)],
         &["HOME"],
         |base| {
@@ -181,7 +181,7 @@ fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
             let root = format!("{account}/.maestro/agent/sessions");
             let expected = maestro_session::sessions_dir(&root, &project);
             let expected = expected.as_str();
-            // The usage report names the directory it resolved from the account home.
+            // The reports name the directory they resolved from the account home.
             let transcripts =
                 run_transcripts(&["--output", &format!("{base}/out"), &project], false)
                     .expect("the transcript command reads its directory");
@@ -197,10 +197,14 @@ fn session_roots_follow_the_account_home_and_cost_keeps_the_variable() {
                 usage.stderr,
                 format!("Sessions directory not found: {expected}\n")
             );
-            // The cost report reads the variable directly and reports its absence.
-            let cost = run_cost(&["-d", &project, "-n", "7"])
-                .expect_err("the variable names no home directory");
-            assert_eq!(cost.to_string(), "no home directory");
+            // The cost report resolves the same directory instead of reading the variable.
+            let cost =
+                run_cost(&["-d", &project, "-n", "7"]).expect("the report reads its directory");
+            assert!(cost.failed());
+            assert_eq!(
+                cost.stderr,
+                format!("Sessions directory not found: {expected}\n")
+            );
         },
     );
 }

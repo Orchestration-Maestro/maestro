@@ -20,7 +20,7 @@ const HELP: &str = "Usage: scripts/stats.ts [options]
 Options:
   -n, --days <days>         Number of local calendar days to include (default: 7)
   -d, --dir, --cwd <path>   Project cwd to inspect (default: current cwd)
-  --sessions-base <path>    Sessions base directory (default: ~/.maestro/agent/sessions)
+  --sessions-base <path>    Sessions base directory (default: the sessions folder of the agent directory)
   -h, --help                Show this help
 ";
 /// Width of the report's double and single rules.
