@@ -17,7 +17,7 @@ pub(crate) struct Request {
 struct Options {
     /// Optional millisecond deadline.
     timeout: Option<f64>,
-    /// Literal directory; absence selects the facade's captured directory.
+    /// Directory in either spelling; absence selects the facade's captured directory.
     cwd: Option<String>,
 }
 
@@ -33,6 +33,10 @@ pub(crate) fn start(
             let (command, args, options): (String, Vec<String>, Option<Options>) =
                 crate::writer_reads::decode(&data)?;
             let options = options.unwrap_or_default();
+            let cwd = options
+                .cwd
+                .as_deref()
+                .map(maestro_extensions::helpers::native_path);
             let exec = maestro_extensions::ExecOptions {
                 signal: signal.as_ref(),
                 timeout: options
@@ -41,7 +45,7 @@ pub(crate) fn start(
                     .map(milliseconds),
             };
             let result = api
-                .exec(&command, &args, options.cwd.as_deref(), exec)
+                .exec(&command, &args, cwd.as_deref(), exec)
                 .map_err(|error| error.to_string())?
                 .await
                 .map_err(|error| error.to_string())?;

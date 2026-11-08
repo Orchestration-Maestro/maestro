@@ -125,7 +125,9 @@ impl Browser {
             browser.fixture("src/main.rs"),
             browser.path("crates/maestro-web/src/lib.rs"),
         ] {
-            fs::File::open(source)
+            fs::File::options()
+                .write(true)
+                .open(source)
                 .unwrap()
                 .set_modified(std::time::SystemTime::now())
                 .unwrap();

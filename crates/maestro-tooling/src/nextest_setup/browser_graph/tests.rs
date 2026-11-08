@@ -90,7 +90,9 @@ fn installed_graph_leaves_cargo_nothing_to_compile_in_a_newer_checkout() {
         "dependency/build.rs",
         "dependency/src/lib.rs",
     ] {
-        fs::File::open(root.join(source))
+        fs::File::options()
+            .write(true)
+            .open(root.join(source))
             .unwrap()
             .set_modified(SystemTime::now())
             .unwrap();

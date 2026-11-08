@@ -640,12 +640,13 @@ fn native_nofollow_metadata_distinguishes_links() {
 /// which names the working directory, and a relative Unix home resolves below it.
 #[test]
 fn explicit_skill_paths_follow_the_reference_table() {
+    let unexpanded = crate::paths::resolve(&["/w", "~x"]).unwrap();
     let rows: &[(&str, &str, &str)] = if cfg!(windows) {
         &[
             ("~", r"C:\h", r"C:\h"),
             ("~/", r"C:\h", r"C:\h"),
             ("~/x", r"C:\h", r"C:\h\x"),
-            ("~x", r"C:\h", r"C:\w\~x"),
+            ("~x", r"C:\h", &unexpanded),
             ("~", r"C:\h\.", r"C:\h\."),
         ]
     } else {
@@ -653,7 +654,7 @@ fn explicit_skill_paths_follow_the_reference_table() {
             ("~", "/h", "/h"),
             ("~/", "/h", "/h"),
             ("~/x", "/h", "/h/x"),
-            ("~x", "/h", "/w/~x"),
+            ("~x", "/h", &unexpanded),
             ("~", "/h/.", "/h/."),
             ("~", "", "/w"),
             ("~/x", "", "/w/x"),

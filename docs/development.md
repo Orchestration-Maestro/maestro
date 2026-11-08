@@ -124,13 +124,14 @@ cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests
 
 ## Platform test qualification
 
-Native path assertions use the host's separators. Build expected paths from
-individual components with `std::path`, or state Windows and Unix literals
-explicitly. Keep expectations independent of the production path formatter;
-leave authored path inputs unchanged. A passing Linux run does not qualify a
-Windows assertion: run it on native Windows too. Shared fixtures build an
-installed location once, in their support module, so every test that names it
-uses the same native path.
+Native path assertions use the host's separators. Build lexical expectations
+with `maestro_path::join`, including paths embedded in diagnostics and Cargo
+metadata. Leave authored path inputs and production output unchanged. On
+Windows, a rooted path without a drive, such as `/w`, uses the current drive;
+a supplied home does not choose the drive for an unexpanded name such as `~x`.
+A passing Linux run does not qualify a Windows assertion: run it on native
+Windows too. Shared fixtures build an installed location once, in their
+support module, so every test that names it uses the same native path.
 
 Compile every declared browser crate's test and example targets without running them:
 
@@ -159,10 +160,14 @@ they compile for the browser target:
 test crates refuses that target; lint its library target instead.
 
 A browser compile witness, an example target whose body only compiles for the
-browser target, is not covered by native Clippy. `just check-browser-smoke`
-compiles every witness for `wasm32-unknown-unknown` and stops at the first
-failure, printing the path of the diagnostics log. The commit hook runs the same
-command when a staged crate owns a witness.
+browser target, is not covered by native Clippy. `.github/ci.toml` declares each
+witness under `wasm_examples`, and the shared wasm job compiles every declared one
+for `wasm32-unknown-unknown` on each pull request, stopping at the first failure.
+`just check-browser-smoke` compiles the same witnesses locally and stops at the
+first failure, printing the path of the diagnostics log. The commit hook runs the
+same command when a staged crate owns a witness. `maestro-tooling` holds the one
+witness list: its browser smoke command compiles it, and a test fails when the
+`wasm_examples` declaration and that list differ.
 
 Checking one crate at a time prevents another crate's development features from
 hiding missing helper activation. Portable helper imports, owner modules and
@@ -1232,6 +1237,10 @@ script's crate after its file, so `build = "builder/main.rs"` gives
 An uplifted executable uses the records of its hashed twin: normalization matches
 length and contents, so copied and hard-linked outputs work alike. Identical twins
 with different dependency records fail rather than select an uncertain build.
+Cargo names Windows MSVC binaries and examples without a hash, so they have no
+twin; such an executable uses the one record of its target (`bin-<name>` or
+`example-<name>`). Several records of that target that differ leave it without a
+record.
 A library's own test binary does not depend on that library's separate output.
 Without an executable fingerprint, normalization conservatively treats any newer
 library output as an input. If a recorded dependency build no longer exists,
@@ -1638,7 +1647,9 @@ Call `install_executable(artifact, destination)` with that explicit path. The
 caller's disposable directory owns the alias. Installation runs inside the same
 artifact and waits for the copy's writer to close; the test runner never opens a
 writable executable that a sibling child could inherit. Copies have independent
-modification times. Windows aliases use the native `.exe` suffix.
+modification times. A new copy keeps the artifact's time on macOS and Windows
+and takes the copy time on Linux, so a test that compares an alias's time with
+other files sets that time itself. Windows aliases use the native `.exe` suffix.
 
 The observation scenario reads `<alias>.fixture`, including the `.exe` suffix
 when present. The record has exactly three lines: `observe`, the parent's

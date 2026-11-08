@@ -46,7 +46,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             if !self.matches(stored, source, scope)? {
                 continue;
             }
-            if stored == normalized {
+            if spelled_as(stored, &normalized, cfg!(windows)) {
                 return Ok(None);
             }
             found = Some(index);
@@ -228,6 +228,11 @@ fn package_rows(snapshot: &Settings) -> io::Result<&[Value]> {
     }
 }
 
+/// Whether a stored entry already spells the normalized source, separators aside on Windows.
+fn spelled_as(stored: &str, normalized: &str, windows: bool) -> bool {
+    maestro_path::slashed(stored, windows) == maestro_path::slashed(normalized, windows)
+}
+
 /// Keeps the source kind separate from its identity string.
 pub(super) fn identity<'a>(source: &'a str, base: &str) -> io::Result<Identity<'a>> {
     Ok(match sources::parse(source) {
@@ -249,3 +254,6 @@ pub(super) fn identity_text(source: &str, base: &str) -> io::Result<String> {
         Identity::Local(path) => format!("local:{path}"),
     })
 }
+
+#[cfg(test)]
+mod tests;

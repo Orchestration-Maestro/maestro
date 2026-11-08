@@ -1,5 +1,6 @@
 //! Canonical named selection borrows the existing callback resources.
 use crate::{callback_imports::CallbackView, guest_calls::Callback};
+use maestro_extensions::helpers::native_path;
 use wasmtime::{
     StoreContextMut,
     component::{ComponentType, Lift, LinkerInstance, Resource},
@@ -50,7 +51,10 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
         "create-tool",
         |mut store: StoreContextMut<'_, T>, (name, cwd, options): (String, String, Options)| {
             let options = retain_options(store.data_mut(), options)?;
-            let result = store.data().api().create_selected(name, cwd, options);
+            let result = store
+                .data()
+                .api()
+                .create_selected(name, native_path(&cwd), options);
             let result = match result {
                 Ok(tool) => Ok(store.data_mut().ctx().table.push(tool)?),
                 Err(error) => Err(error),
@@ -98,7 +102,10 @@ fn add_preset<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wa
             Options,
         )| {
             let options = retain_options(store.data_mut(), options)?;
-            let result = store.data().api().create_preset(preset, cwd, options);
+            let result = store
+                .data()
+                .api()
+                .create_preset(preset, native_path(&cwd), options);
             let result = match result {
                 Ok(tools) => Ok(tools
                     .into_iter()

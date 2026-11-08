@@ -1,7 +1,7 @@
 //! Bounded domain exports through the application.
 #![cfg(test)]
 
-use crate::support::{Workspace, source};
+use crate::support::{Workspace, native_path_text, source};
 use maestro_test_conventions::check_workspace;
 
 #[test]
@@ -35,7 +35,8 @@ fn application_exports_reject_crates_modules_and_wildcards() {
             source(&workspace, "maestro-app", "src/lib.rs", &export);
             let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(
-                error.contains("named application exports") && error.contains("src/lib.rs:1:"),
+                error.contains("named application exports")
+                    && error.contains(&format!("{}:1:", native_path_text("src/lib.rs"))),
                 "{error}"
             );
         }
