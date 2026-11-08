@@ -1,7 +1,7 @@
 //! Real-browser regressions selected only by the pinned Chromium profile.
 
 use serde_json::json;
-use std::io;
+use std::{fmt::Write as _, io};
 
 mod support;
 use support::{MOUNT, POLICY, fixture, run, state};
@@ -621,6 +621,127 @@ fn word_page_scene_requires_a_white_page_and_black_text() {
         };
         let result = paint_scene(&body, "", "word-page");
         assert_scene(result, failure, &format!("{page} {text}"));
+    }
+}
+
+/// Run the Markdown paint scene `scene` on a fresh page whose body is `body`, with one distinct
+/// colour published per brand role.
+fn markdown_scene(body: &str, scene: &str) -> io::Result<serde_json::Value> {
+    run(fixture(&[], async |browser, origin| {
+        browser.check(&format!("{origin}/"), "paint", &format!("(async()=>{{globalThis.colors=JSON.stringify({{text:'#ffffff',muted:'#ffff00',accent:'#ff0000',panel:'#00ff00',border:'#0000ff',error:'#ff00ff',success:'#00ffff',warning:'#ff8000',live:'#8000ff'}});document.body.innerHTML='{body}';return await readingPaint('{scene}');}})()")).await
+    }))
+}
+
+/// The hover scene passes only while hovering the link repaints its text and leaves its image
+/// and inline-code background alone: a repainted image, a repainted code background and an
+/// unchanged link each fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn markdown_hover_scene_requires_text_repaint_without_image_or_code_change() {
+    let svg = r"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22%3E%3Cpath fill=%22red%22 d=%22M0 0h20v20H0z%22/%3E%3C/svg%3E";
+    for (style, failure) in [
+        ("a:hover span{color:#ff0000}", None),
+        ("", Some("the link text must repaint on hover")),
+        (
+            "a:hover span{color:#ff0000}a:hover img{opacity:.5}",
+            Some("the linked image's paint must not change"),
+        ),
+        (
+            "a:hover span{color:#ff0000}a:hover code{background:#00ff00 !important}",
+            Some("the inline-code background must not change"),
+        ),
+    ] {
+        let body = format!(
+            r##"<style>{style}</style><div class="maestro-reading-viewport" style="background:#000;padding:20px"><div class="maestro-markdown" style="font:24px sans-serif"><a href="#hover" style="color:#fff"><span>hover text</span><img width="20" height="20" src="{svg}"><code style="background:#808080;color:#000">code</code></a></div></div>"##
+        );
+        assert_scene(markdown_scene(&body, "markdown-hover"), failure, style);
+    }
+}
+
+/// The syntax scene passes only while every token class paints its theme role: a keyword in the
+/// wrong role and a missing class each fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn markdown_syntax_scene_requires_each_token_class_in_its_role() {
+    let tokens = [
+        ("comment", "#ffff00"),
+        ("keyword", "#ff0000"),
+        ("function", "#ff0000"),
+        ("variable", "#ffffff"),
+        ("string", "#00ffff"),
+        ("number", "#ff8000"),
+        ("type", "#8000ff"),
+        ("operator", "#ffffff"),
+        ("punctuation", "#ffffff"),
+    ];
+    for (wrong, missing, failure) in [
+        ("", "", None),
+        (
+            "keyword",
+            "",
+            Some(".hljs-keyword must paint accent pixels"),
+        ),
+        ("", "type", Some("paint element missing")),
+    ] {
+        let mut spans = String::new();
+        for (name, colour) in tokens.iter().filter(|(name, _)| *name != missing) {
+            let colour = if *name == wrong { "#ffffff" } else { colour };
+            write!(
+                spans,
+                r#"<div class="hljs-{name}" style="color:{colour}">{name}</div>"#
+            )
+            .unwrap();
+        }
+        let body = format!(
+            r#"<div class="maestro-reading-viewport" style="background:#000;padding:20px"><div class="maestro-markdown" style="font:bold 24px sans-serif">{spans}</div></div>"#
+        );
+        assert_scene(
+            markdown_scene(&body, "markdown-syntax"),
+            failure,
+            &format!("{wrong}{missing}"),
+        );
+    }
+}
+
+/// The brand scene passes only while the paragraph, link, inline code, quote, table header,
+/// formula error and listing paint their roles: a link in the wrong role, a paragraph in the
+/// body role while thinking and a listing without its border each fail.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn markdown_brand_scene_requires_each_selected_role_to_paint() {
+    for (root, paragraph, link, border, failure) in [
+        ("normal", "#ffffff", "#ff0000", "8px solid #0000ff", None),
+        ("italic", "#ffff00", "#ff0000", "8px solid #0000ff", None),
+        (
+            "normal",
+            "#ffffff",
+            "#ffffff",
+            "8px solid #0000ff",
+            Some(".maestro-markdown a must paint accent pixels"),
+        ),
+        (
+            "italic",
+            "#ffffff",
+            "#ff0000",
+            "8px solid #0000ff",
+            Some(".maestro-markdown p must paint muted pixels"),
+        ),
+        (
+            "normal",
+            "#ffffff",
+            "#ff0000",
+            "0 none",
+            Some(".maestro-markdown .maestro-code must paint border pixels"),
+        ),
+    ] {
+        let body = format!(
+            r##"<div class="maestro-reading-viewport" style="background:#000;padding:20px"><div class="maestro-markdown" style="font:bold {root} 24px sans-serif;color:#fff"><p style="color:{paragraph}">paragraph</p><a href="#a" style="color:{link}">link</a> <code style="background:#00ff00;color:#000">code</code><blockquote style="margin:0;border-left:8px solid #0000ff">quote</blockquote><table><tr><th style="background:#00ff00;color:#000">head</th></tr></table><span class="katex-error" style="color:#ff00ff">bad</span><div class="maestro-code" style="border:{border};height:20px"></div></div></div>"##
+        );
+        assert_scene(
+            markdown_scene(&body, "markdown-brand"),
+            failure,
+            &format!("{root} {paragraph} {link} {border}"),
+        );
     }
 }
 
