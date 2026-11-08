@@ -608,24 +608,36 @@ fn repin_persistence_replaces_current_git_spelling_and_appends_absent_sources() 
 #[cfg(unix)]
 #[test]
 fn git_repin_ref_forms_retry_without_rewinding_requested_branches() {
+    use crate::native_git::{git, retry::RetryFixture};
     for layout in ["ordinary", "linked", "separate", "include"] {
+        let fixture = RetryFixture::new(layout);
+        fixture.advance();
+        let desired = git(&fixture.repo.seed, &["rev-parse", "HEAD"]);
+        let selection = git(&fixture.repo.target, &["symbolic-ref", "HEAD"]);
+        let settings = fixture.settings.borrow().get_global_settings();
         for kind in [
             "branch", "tag", "hash", "missing", "current", "no-ref", "detached",
         ] {
-            check_repin_case(layout, kind);
+            // Share history without carrying a prior transaction's selection or settings.
+            git(&fixture.repo.target, &["symbolic-ref", "HEAD", &selection]);
+            git(
+                &fixture.repo.target,
+                &["reset", "--hard", &fixture.repo.original],
+            );
+            *fixture.settings.borrow_mut() =
+                maestro_settings::SettingsManager::in_memory(settings.clone());
+            fixture.dependencies.borrow_mut().clear();
+            check_repin_case(&fixture, kind, &desired);
         }
     }
 }
 
 #[cfg(unix)]
-/// Exercises one complete native re-pin failure/retry transaction.
-fn check_repin_case(layout: &str, kind: &str) {
-    use crate::native_git::{git, retry::RetryFixture};
-    let fixture = RetryFixture::new(layout);
-    fixture.advance();
-    let desired = git(&fixture.repo.seed, &["rev-parse", "HEAD"]);
-    let reference = prepare_ref(&fixture, kind, &desired);
-    let old = git(&fixture.repo.target, &["rev-parse", "HEAD"]);
+/// Exercises one complete native re-pin failure/retry transaction on the retained history.
+fn check_repin_case(fixture: &crate::native_git::retry::RetryFixture, kind: &str, desired: &str) {
+    use crate::native_git::git;
+    let reference = prepare_ref(fixture, kind, desired);
+    let old = &fixture.repo.original;
     let selection = git(&fixture.repo.target, &["rev-parse", "--abbrev-ref", "HEAD"]);
     let source = reference.as_ref().map_or_else(
         || "git:github.com/acme/tool".into(),
@@ -642,8 +654,8 @@ fn check_repin_case(layout: &str, kind: &str) {
         );
         return;
     }
-    assert!(first.is_err(), "{layout}/{kind}");
-    assert_repin_failure(&fixture, &old, &selection);
+    assert!(first.is_err(), "{kind}");
+    assert_repin_failure(fixture, old, &selection);
     if kind == "missing" {
         assert!(fixture.dependencies.borrow().is_empty());
         return;
@@ -672,7 +684,7 @@ fn prepare_ref(
     let remote = &fixture.repo.remote;
     match kind {
         "branch" | "detached" => {
-            git(remote, &["branch", "new-pin", desired]);
+            git(remote, &["branch", "--force", "new-pin", desired]);
             if kind == "detached" {
                 git(&fixture.repo.target, &["checkout", "--detach"]);
             }

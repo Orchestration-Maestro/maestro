@@ -267,7 +267,8 @@ document as ignored.
 
 Pages may run under a content security policy without `unsafe-eval`. Modules
 need `script-src 'self' 'wasm-unsafe-eval'`, and built-in elements set inline
-style attributes. Isolated frames under such a policy need the sandbox document
+style attributes. Math needs no `font-src`: its fonts come from embedded bytes,
+not font URLs. Isolated frames under such a policy need the sandbox document
 URL (the `sandbox_url` argument), because a `srcdoc` frame inherits the page's
 policy and its inline scripts would be refused. The browser tests run the
 contribution family under

@@ -119,8 +119,8 @@ interface.
 ## File and memory backends
 
 `FileAuthStorageBackend` (native builds) keeps credentials at a caller-supplied
-path, relative paths resolving against the working directory. Missing parent
-directories are created with mode 0700 and a missing file is created, only while
+path, relative paths resolving against the working directory. Only this backend
+creates the parent directories, with mode 0700, and a missing file is created, only while
 shared write lock `<target>.lock` beside the canonical target is held, containing
 `{}` with mode 0600 on Unix. Synchronous and asynchronous transactions follow
 symbolic links before choosing the lock path and hold that one lock across read,
@@ -130,8 +130,14 @@ through the held lock's
 0600. The text is written in place, so a hard
 link to the file sees the new bytes. A file its owner made read-only is refused and left
 unchanged. A write cut short is completed, not rolled back, by the next coordinated writer.
-The startup conversion of legacy credentials and the standalone account file use
-`write_auth_file`, which shares the same permission narrowing and publication.
+The crate exports no writer function. The startup conversion of legacy credentials
+and the standalone account file publish through the application's own helper, which
+narrows and writes through the same recoverable publication. Both the backend and
+that helper narrow through
+[the shared in-place writer's](locking.md#recoverable-byte-publication)
+`narrow_existing`, so the mode has one implementation. The
+conversion creates the directory chain of the `auth.json` path first; the account
+file creates none, so a missing directory is a write error.
 Construction, `reload`, `set` and `remove` use
 [the shared bounded file-lock operation](locking.md): ten attempts, 20 ms apart.
 The lock file is removed after every outcome, including when a pending asynchronous

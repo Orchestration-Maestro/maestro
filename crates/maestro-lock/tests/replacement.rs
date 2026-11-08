@@ -26,6 +26,7 @@ fn replacement_handles_relative_and_extensionless_paths() {
             PathBuf::from,
         );
     let path = relative.join("nested/file");
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
     replace(
         &path,
         b"new bytes",
@@ -79,6 +80,42 @@ fn replacement_handles_relative_and_extensionless_paths() {
         .unwrap();
         assert_eq!(fs::read(path).unwrap(), b"native");
     }
+}
+
+#[test]
+fn replacement_creates_no_directory_for_a_missing_parent() {
+    let dir = Directory::new();
+    let path = dir.path().join("missing/nested/file");
+
+    let error = replace(&path, b"new", Replace::default()).unwrap_err();
+
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert!(!dir.path().join("missing").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn replacement_through_a_dangling_link_creates_no_directory() {
+    let dir = Directory::new();
+    let link = dir.path().join("link");
+    std::os::unix::fs::symlink("missing/nested/target", &link).unwrap();
+
+    let error = replace(
+        &link,
+        b"new",
+        Replace {
+            through_symlinks: true,
+            ..Replace::default()
+        },
+    )
+    .unwrap_err();
+
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert_eq!(
+        fs::read_link(&link).unwrap(),
+        PathBuf::from("missing/nested/target")
+    );
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
 }
 
 #[cfg(unix)]

@@ -141,8 +141,8 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
         [
             ("execution", 27),
             ("loading", 64),
-            ("contributions", 194),
-            ("canvas", 77)
+            ("contributions", 196),
+            ("canvas", 88)
         ]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
@@ -234,6 +234,11 @@ fn inventory_matches_authored_exports() {
         .iter()
         .flat_map(|file| source_exports(&root.join(file)))
         .collect::<Vec<_>>();
+    names.extend(
+        source_exports(&root.join("markdown_blocks.rs"))
+            .into_iter()
+            .filter(|name| name.starts_with("math_")),
+    );
     names.sort();
     let mut selected = inventory.families[3].1.clone();
     selected.sort();
@@ -255,6 +260,7 @@ const CANVAS_SOURCES: &[&str] = &[
     "artifact_elements_browser.rs",
     "tool_renderers_browser.rs",
     "offline_tool_cards_browser.rs",
+    "code_blocks.rs",
 ];
 
 /// Authored source modules supplying the contribution inventory.

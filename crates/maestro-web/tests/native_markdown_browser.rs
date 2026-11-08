@@ -1,8 +1,10 @@
 //! Markdown mounted as native page content through its public component.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::contributions_support::{computed, container, document, host, rgb, view};
+use crate::contributions_support::{
+    Clipboard, Recorded, body, computed, container, document, host, rgb, until, view,
+};
 use crate::markdown_support::{
-    BlockRow, ContextRow, rows,
+    BlockRow, CodeRow, ContextRow, math_rows_match, rows,
     walk::{self, Mounter as _},
 };
 use maestro_web::{
@@ -11,7 +13,7 @@ use maestro_web::{
     dom::{DomView, MountedContent},
 };
 use std::{any::Any, rc::Rc, sync::Arc};
-use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::Element;
 
 /// Markdown with a paragraph and one listing.
@@ -179,6 +181,69 @@ pub async fn markdown_dom_replays_qualified_document_rows(import_module: js_sys:
     drop(shown);
 }
 
+/// Every recorded formula, in both of its delimiter spellings, replays its geometry through
+/// page content.
+#[wasm_bindgen]
+pub async fn markdown_dom_replays_recorded_formula_geometry(import_module: js_sys::Function) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    walk::install(&import_module).await;
+    let mut mounter = PageMounter {
+        view,
+        parent: container(),
+    };
+    math_rows_match(&mut mounter, None).await;
+}
+
+/// Every recorded standalone listing shows its label, class and text through the page's code
+/// element, and its copy control writes the decoded text and shows success feedback.
+#[wasm_bindgen]
+pub async fn code_dom_replays_recorded_standalone_rows(import_module: js_sys::Function) {
+    let view = view();
+    let _host = host(&view, &import_module);
+    let listings = rows(
+        include_str!("fixtures/markdown/code.json"),
+        |_: &CodeRow| true,
+    );
+    assert_eq!(listings.len(), 24);
+    for row in listings {
+        let block = view.document.create_element("code-block").unwrap();
+        block.set_attribute("code", &row.code).unwrap();
+        block.set_attribute("language", &row.language).unwrap();
+        body().append_child(&block).unwrap();
+        let label = block
+            .query_selector(".maestro-code-label")
+            .unwrap()
+            .unwrap();
+        let code = block.query_selector("pre code").unwrap().unwrap();
+        assert_eq!(
+            (label.text_content().unwrap(), code.class_name()),
+            (
+                row.display_language.clone(),
+                format!("hljs language-{}", row.css_language)
+            ),
+            "{}",
+            row.id
+        );
+        assert_eq!(code.text_content().unwrap(), row.decoded, "{}", row.id);
+        let copy = block.query_selector("copy-button").unwrap().unwrap();
+        assert_eq!(
+            copy.get_attribute("title").as_deref(),
+            Some(row.copy_title.as_str()),
+            "{}",
+            row.id
+        );
+        assert_eq!(copy.has_attribute("show-text"), row.show_text, "{}", row.id);
+        click_copy(&copy, &row.decoded).await;
+        assert!(
+            copy.text_content().unwrap().contains("Copied!"),
+            "{}",
+            row.id
+        );
+        block.remove();
+    }
+}
+
 /// Presentation changes keep the listing, its copy feedback and the selection, and change only text roles.
 #[wasm_bindgen]
 pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
@@ -211,30 +276,34 @@ pub async fn markdown_dom_keeps_code_controls_across_presentation_changes(
     assert_eq!(computed(&paragraph, "font-style"), "italic");
     supplied_adapters_reach_updates(&mut fixture, &block, &copy).await;
 }
+/// Text of the listing in [`WITH_CODE`].
+const LISTED: &str = "let kept = 1;\n";
+
 /// Click the document's copy control with a succeeding clipboard and wait for its feedback.
 async fn copied(mounted: &Element) -> Element {
     let copy = mounted.query_selector("copy-button").unwrap().unwrap();
-    click_copy(&copy).await;
+    click_copy(&copy, LISTED).await;
     assert!(copy.text_content().unwrap().contains("Copied!"));
     copy
 }
-/// Click `copy` with a succeeding clipboard and wait until it shows success feedback.
-async fn click_copy(copy: &Element) {
-    let write = Closure::<dyn Fn(String) -> js_sys::Promise>::new(|_: String| {
-        js_sys::Promise::resolve(&JsValue::UNDEFINED)
-    });
-    let navigator = web_sys::window().unwrap().navigator();
-    let clipboard = js_sys::Reflect::get(&navigator, &"clipboard".into()).unwrap();
-    js_sys::Reflect::set(&clipboard, &"writeText".into(), write.as_ref()).unwrap();
-    write.forget();
+/// Click `copy`, require that it writes exactly `text`, then settle that write and wait until
+/// the feedback it renders replaces whatever feedback showed before.
+async fn click_copy(copy: &Element, text: &str) {
+    let clipboard = Recorded::install(Clipboard::Defer);
     let control: web_sys::HtmlElement = copy
         .query_selector("button")
         .unwrap()
         .unwrap()
         .unchecked_into();
     control.click();
-    crate::contributions_support::until(copy, || copy.query_selector("span").unwrap().is_some())
-        .await;
+    assert_eq!(clipboard.texts(), [text]);
+    let shown = copy.query_selector("span").unwrap();
+    clipboard.settle();
+    until(copy, || {
+        let feedback = copy.query_selector("span").unwrap();
+        feedback.is_some() && feedback != shown
+    })
+    .await;
 }
 /// A supplied language reaches the copy title and feedback; a supplied failing engine fails without publishing.
 async fn supplied_adapters_reach_updates(
@@ -249,7 +318,7 @@ async fn supplied_adapters_reach_updates(
         copy.get_attribute("title").as_deref(),
         Some("Code kopieren")
     );
-    click_copy(copy).await;
+    click_copy(copy, LISTED).await;
     assert!(copy.text_content().unwrap().contains("Kopiert!"));
     let failing = DomView {
         highlighter: Rc::new(crate::failing_highlighter::FailingEngine(Arc::new(()))),

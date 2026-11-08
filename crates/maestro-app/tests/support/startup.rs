@@ -233,6 +233,7 @@ fn operation() {
             providers: None,
             error: Some(Failure {
                 code: match error.raw_os_error() {
+                    Some(2) => "ENOENT",
                     Some(13) => "EACCES",
                     Some(27) => "EFBIG",
                     _ => panic!("unexpected native error category"),
@@ -320,6 +321,39 @@ pub fn check_file_limit_restoration(name: &str) {
         assert_eq!(fs::read(&output).unwrap(), [0_u8; 4096]);
         fs::remove_file(&output).unwrap();
     }
+}
+
+/// Check that a conversion through a dangling `auth.json` link fails and creates no directory.
+pub fn check_dangling_auth_link(name: &str) {
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        operation_child();
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let root = scratch.0.path();
+    fs::write(
+        root.join("oauth.json"),
+        r#"{"provider":{"access":"token"}}"#,
+    )
+    .unwrap();
+    symlink("missing/nested/auth.json", root.join("auth.json")).unwrap();
+
+    let outcome = invoke(
+        name,
+        root,
+        &[
+            ("STARTUP_OPERATION", "auth"),
+            ("MAESTRO_CODING_AGENT_DIR", root.to_str().unwrap()),
+        ],
+        None,
+    );
+
+    assert_eq!(outcome.error.map(|error| error.code), Some("ENOENT".into()));
+    assert_eq!(
+        fs::read_link(root.join("auth.json")).unwrap(),
+        Path::new("missing/nested/auth.json")
+    );
+    assert!(!root.join("missing").exists());
 }
 
 pub fn run(name: &str) {
