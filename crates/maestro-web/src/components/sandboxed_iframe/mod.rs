@@ -6,6 +6,8 @@ mod execution;
 pub mod lowering;
 #[cfg(any(target_arch = "wasm32", test))]
 mod runtime;
+#[cfg(any(target_arch = "wasm32", test))]
+pub use runtime::COMPLETION_PROPERTY;
 #[cfg(test)]
 mod tests;
 

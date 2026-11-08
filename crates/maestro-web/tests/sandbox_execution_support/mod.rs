@@ -4,7 +4,7 @@ use maestro_app::browser::components::{
     sandbox::sandbox_runtime_provider::{SandboxRespond, SandboxRuntimeProvider},
     sandboxed_iframe::{SandboxEnvironment, SandboxExecution},
 };
-use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
+use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, Runtime, SharedHandle};
 use maestro_web::{SandboxIframe, browser::sandbox_value::BrowserSandboxValue};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast, prelude::*};
@@ -46,15 +46,15 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
         }
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
         if self.failure == Some("runtime") {
             return Err(DiagnosticErrorInfo::error("runtime failure"));
         }
-        Ok(if self.runtime.is_empty() {
+        Ok(Runtime::Content(if self.runtime.is_empty() {
             "function(){}".into()
         } else {
             self.runtime.clone()
-        })
+        }))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok("controlled helper".into())

@@ -2,7 +2,7 @@
 use super::*;
 use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::{
-    SandboxRespond, SandboxRuntimeProvider,
+    Runtime, SandboxRespond, SandboxRuntimeProvider,
 };
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
@@ -211,8 +211,8 @@ impl SandboxRuntimeProvider<Shared> for Provider {
     fn get_data(&self) -> Result<indexmap::IndexMap<String, Shared>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(String::new())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Empty)
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
@@ -253,8 +253,8 @@ impl SandboxRuntimeProvider<Shared> for DefaultProvider {
     fn get_data(&self) -> Result<indexmap::IndexMap<String, Shared>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(String::new())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Empty)
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())

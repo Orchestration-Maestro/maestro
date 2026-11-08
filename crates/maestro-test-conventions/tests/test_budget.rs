@@ -15,10 +15,7 @@ fn configure(workspace: &Workspace, config: &str) {
 
 /// A fixture workspace with one member, ready for runner configuration.
 fn workspace() -> Workspace {
-    let workspace = Workspace::new();
-    workspace.member("text", "maestro-text", "");
-    workspace.list(&[("maestro-text", "core")]);
-    workspace
+    Workspace::with_text_member()
 }
 
 /// One override selecting `slow` with `timeout`, preceded by `comment`.

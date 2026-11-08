@@ -1,12 +1,16 @@
 //! Native observers for compiler-created capture assignments.
-use super::{PROGRAM, get, set, settle, then};
+use crate::js::{get, set};
+use crate::settle::{settle, then};
+
+/// Marker of the program scaffold removed when the program starts.
+const PROGRAM: &str = "svg[data-maestro-sandbox-program]";
 use js_sys::{Array, Function, Object, Promise, Reflect};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
-use web_sys::{Event, Window};
+use web_sys::{Document, Element, Event, Window};
 
 /// A provider accessor awaiting either its capture or refused script execution.
-pub(super) struct Pending {
+pub(crate) struct Pending {
     /// Descriptor to restore if the script never assigns its function.
     previous: JsValue,
     /// Identity of this capture's setter.
@@ -17,7 +21,7 @@ pub(super) struct Pending {
 
 impl Pending {
     /// Restore a pending accessor and return its invocation outcome without overwriting provider changes.
-    pub(super) fn finish(&self, window: &Window, key: &str) -> Result<(), JsValue> {
+    pub(crate) fn finish(&self, window: &Window, key: &str) -> Result<(), JsValue> {
         let current = Reflect::get_own_property_descriptor(window, &key.into())?;
         if current.is_object() && Object::is(&get(&current, "set")?, &self.setter) {
             restore(window, key, &self.previous)?;
@@ -27,12 +31,12 @@ impl Pending {
 }
 
 /// Invoke each captured provider after restoring its globals, while its classic script is current.
-pub(super) fn provider(window: &Window, key: &str, id: &JsValue) -> Result<Pending, JsValue> {
+pub(crate) fn provider(window: &Window, key: &str, id: &JsValue) -> Result<Pending, JsValue> {
     let previous = Reflect::get_own_property_descriptor(window, &key.into())?;
     let (target, name, saved, id) = (window.clone(), key.to_owned(), previous.clone(), id.clone());
     let invocation = Rc::new(RefCell::new(Ok(())));
     let result = Rc::clone(&invocation);
-    let setter = Closure::<dyn Fn(JsValue)>::new(move |value: JsValue| {
+    let setter = Closure::<dyn FnMut(JsValue)>::new(move |value: JsValue| {
         let called = restore(&target, &name, &saved).and_then(|()| {
             Reflect::apply(
                 value.unchecked_ref::<Function>(),
@@ -53,12 +57,12 @@ pub(super) fn provider(window: &Window, key: &str, id: &JsValue) -> Result<Pendi
 }
 
 /// Return a private outcome observer from a temporary getter, before supplied code executes.
-pub(super) fn program(window: &Window, key: &str) -> Result<(), JsValue> {
+pub(crate) fn program(window: &Window, key: &str) -> Result<(), JsValue> {
     let previous = Reflect::get_own_property_descriptor(window, &key.into())?;
     let observer = outcome(window)?;
     let listener = syntax_errors(window, key);
     let (target, name, failure) = (window.clone(), key.to_owned(), listener.clone());
-    let getter = Closure::<dyn Fn() -> Result<Object, JsValue>>::new(move || {
+    let getter = Closure::<dyn FnMut() -> Result<Object, JsValue>>::new(move || {
         target.remove_event_listener_with_callback("error", failure.unchecked_ref())?;
         restore(&target, &name, &previous)?;
         if let Some(scaffold) = target
@@ -78,15 +82,16 @@ pub(super) fn program(window: &Window, key: &str) -> Result<(), JsValue> {
 fn outcome(window: &Window) -> Result<Object, JsValue> {
     let observer = Object::new();
     let target = window.clone();
-    let setter = Closure::<dyn Fn(JsValue) -> Result<(), JsValue>>::new(move |record: JsValue| {
-        let value = get(&record, "1")?;
-        if get(&record, "0")?.as_bool() == Some(true) {
-            success(&target, &value)?;
-        } else {
-            reject(&target, &Promise::reject(&value))?;
-        }
-        Ok(())
-    });
+    let setter =
+        Closure::<dyn FnMut(JsValue) -> Result<(), JsValue>>::new(move |record: JsValue| {
+            let value = get(&record, "1")?;
+            if get(&record, "0")?.as_bool() == Some(true) {
+                success(&target, &value)?;
+            } else {
+                reject(&target, &Promise::reject(&value))?;
+            }
+            Ok(())
+        });
     accessor(&observer, "value", "set", &setter.into_js_value())?;
     Ok(observer)
 }
@@ -94,7 +99,7 @@ fn outcome(window: &Window) -> Result<Object, JsValue> {
 /// Route module-parser syntax errors before program entry through the same outcome observer.
 fn syntax_errors(window: &Window, key: &str) -> JsValue {
     let (target, key) = (window.clone(), key.to_owned());
-    Closure::<dyn Fn(Event) -> Result<(), JsValue>>::new(move |event: Event| {
+    Closure::<dyn FnMut(Event) -> Result<(), JsValue>>::new(move |event: Event| {
         let error = get(&event, "error")?;
         if !error.is_object() || get(&error, "name")?.as_string().as_deref() != Some("SyntaxError")
         {
@@ -145,4 +150,35 @@ fn restore(window: &Window, key: &str, previous: &JsValue) -> Result<(), JsValue
         return Err(js_sys::TypeError::new("cannot restore capture slot").into());
     }
     Ok(())
+}
+
+/// Capture a supplied provider from its parser-created script and invoke it synchronously in Rust.
+pub(crate) fn run_carrier(
+    window: &Window,
+    document: &Document,
+    template: &Element,
+    id: &JsValue,
+) -> Result<(), JsValue> {
+    let script: Element = get(
+        &get(&get(template, "content")?, "firstChild")?,
+        "firstChild",
+    )?
+    .dyn_into()?;
+    let head: Element = get(document, "head")?.dyn_into()?;
+    let key = template
+        .get_attribute("data-maestro-capture")
+        .ok_or("no capture key")?;
+    let pending = provider(window, &key, id)?;
+    let result = head.append_child(&script);
+    script.remove();
+    template.remove();
+    let finished = pending.finish(window, &key);
+    result?;
+    finished
+}
+
+/// Settle a program that could not be compiled as the browser would report its syntax error.
+pub(crate) fn refuse(window: &Window, message: &str) -> Result<(), JsValue> {
+    let error = js_sys::SyntaxError::new(message);
+    settle(window, false, error.into()).map(drop)
 }

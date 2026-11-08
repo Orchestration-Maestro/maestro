@@ -1,4 +1,5 @@
 //! Source generation for sandbox and extension runtime messages.
+use super::runtime_bundle::BUNDLE;
 use maestro_app::{DiagnosticErrorInfo, compact_json};
 
 /// Messaging intent available to runtime callers.
@@ -27,10 +28,15 @@ pub struct RuntimeMessageBridgeOptions<'a> {
 /// Generator for the complete injectable messaging globals.
 pub struct RuntimeMessageBridge;
 impl RuntimeMessageBridge {
-    /// Generate channel-specific messaging and shared completion registration.
+    /// Generate the runtime script that installs one channel's messaging and the shared
+    /// completion registration.
+    ///
+    /// The script is the sandbox runtime bundle preceded by the channel and identifier
+    /// as program arguments, so the extension world needs no prepared document.
     ///
     /// ```rust
     /// use maestro_web::RuntimeMessageBridge;
+    /// use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
     /// use maestro_web::components::sandbox::runtime_message_bridge::{
     ///     RuntimeMessageBridgeOptions, RuntimeMessageContext,
     /// };
@@ -39,7 +45,8 @@ impl RuntimeMessageBridge {
     ///     context: RuntimeMessageContext::SandboxIframe,
     ///     sandbox_id: "execution",
     /// })?;
-    /// assert!(source.contains("window.sendRuntimeMessage"));
+    /// assert!(source.starts_with("var Module={arguments:[\"frame-bridge\",\"execution\"]};"));
+    /// assert!(source.ends_with(BUNDLE));
     /// # Ok::<(), maestro_app::DiagnosticErrorInfo>(())
     /// ```
     ///
@@ -48,19 +55,12 @@ impl RuntimeMessageBridge {
     pub fn generate_bridge_code(
         options: RuntimeMessageBridgeOptions<'_>,
     ) -> Result<String, DiagnosticErrorInfo> {
-        let template = match options.context {
-            RuntimeMessageContext::SandboxIframe => {
-                include_str!("runtime_message_bridge/sandbox_iframe.js")
-            }
-            RuntimeMessageContext::UserScript => {
-                include_str!("runtime_message_bridge/user_script.js")
-            }
+        let role = match options.context {
+            RuntimeMessageContext::SandboxIframe => "frame-bridge",
+            RuntimeMessageContext::UserScript => "user-script-bridge",
         };
-        let id = compact_json(&serde_json::Value::String(options.sandbox_id.into()))
+        let arguments = compact_json(&serde_json::json!([role, options.sandbox_id]))
             .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
-        let body = template.trim().replacen("__SANDBOX_ID__", &id, 1);
-        Ok(include_str!("runtime_message_bridge/runtime.js")
-            .trim()
-            .replacen("__SEND_RUNTIME_MESSAGE__", &body, 1))
+        Ok(format!("var Module={{arguments:{arguments}}};{BUNDLE}"))
     }
 }

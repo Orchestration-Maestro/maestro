@@ -4,10 +4,99 @@ The browser sandbox modules provide `RuntimeMessageRouter`, `MessageConsumer`
 and `RuntimeMessageBridge`. The crate root exports `RuntimeMessageBridge` and,
 on WebAssembly, the browser-local `RUNTIME_MESSAGE_ROUTER` singleton.
 
+## Quick start
+
+A provider names the helpers its sandbox needs. Maestro's own helpers come from the
+runtime bundle, a Rust program built for the browser; your content stays plain
+JavaScript that the frame runs as input.
+
+```rust
+use maestro_app::{BuiltinRuntime, DiagnosticErrorInfo, Runtime};
+
+// Inside a `SandboxRuntimeProvider` implementation:
+fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+    // Installs `listAttachments`, `readTextAttachment` and `readBinaryAttachment`.
+    Ok(Runtime::Builtin(BuiltinRuntime::Attachments))
+}
+```
+
+Load the provider through `SandboxIframe::load_content`, or prepare a document without
+mounting it with `prepare_html_document`. Then pin the frame's script policy:
+
+1. Add `'wasm-unsafe-eval'` to the frame's `script-src`. It lets the runtime compile its
+   own module. It does not permit `eval` or `Function`.
+2. Pin the SHA-256 of `maestro_web::components::sandbox::runtime_bundle::BUNDLE`.
+3. Pin each supplied provider and program script as before (see
+   [Runtime bundle and script policy](#runtime-bundle-and-script-policy)).
+
 The [browser integration command](../development.md#browser-integration-qualification)
 builds and runs the existing execution and loading assertions with supplied
 Chromium tools. It documents the selected exports, expected policy error and
 cleanup behavior.
+
+## Provider runtime selection
+
+`SandboxRuntimeProvider::get_runtime` returns one `Runtime` entry:
+
+| Entry | Meaning |
+| --- | --- |
+| `Builtin(BuiltinRuntime::Artifacts)` | Async `listArtifacts`, `getArtifact`, `createOrUpdateArtifact`, `deleteArtifact`. |
+| `Builtin(BuiltinRuntime::Attachments)` | Synchronous `listAttachments`, `readTextAttachment`, `readBinaryAttachment`. |
+| `Builtin(BuiltinRuntime::Console)` | Console forwarding, error capture, `complete(error, returnValue)`. |
+| `Builtin(BuiltinRuntime::FileDownload)` | `returnDownloadableFile(fileName, content, mimeType)`. |
+| `Content(String)` | Your function source. It receives the sandbox identifier. |
+| `Empty` | Nothing to install. |
+
+Preparation collects every provider's data in entry order, then every runtime entry in
+entry order, then serializes the merged globals with native browser operations. Later
+values replace earlier keys. In the frame the runtime installs, in order: the sandbox
+identifier, the merged globals, the bridge and `onCompleted` (online documents), each
+runtime entry, navigation interception (online documents) and last the program. Repeated
+entries run repeatedly, and later helpers overwrite earlier ones. Loading and execution
+prepend a fresh console provider. Standalone documents omit the bridge and navigation
+but keep every selected helper.
+
+## Runtime bundle and script policy
+
+The runtime bundle is one classic script built by `just sandbox-runtime` with
+Emscripten 6.0.10 from `crates/maestro-web/runtime`. The generated file is
+`crates/maestro-web/assets/maestro-sandbox-runtime.js`; `just sandbox-runtime --check`
+rebuilds it and fails when the checked-in bytes differ, when the linker map names a library
+outside the audited list, or when the text is not safe inside an inline script. The audited
+list is the Rust crate object, `libc.a`, `libdlmalloc.a`, `libclang_rt.builtins*.a` and the
+compiler builtins. The browser integration command runs the same check.
+
+A prepared document carries, at the runtime insertion point and in this order:
+
+1. one inert `<template data-maestro-sandbox-provider>` per supplied provider;
+2. one inert `<script type="application/json" data-maestro-sandbox>` configuration block
+   (`<` is written as `\u003c`);
+3. the bundle as a parser-blocking inline classic script.
+
+The bundle instantiates its module synchronously, so its start function runs before the
+parser reaches the next element. It reads the configuration, installs everything in the
+order above, moves each supplied provider's script into the head so it runs at once, then
+removes the configuration block, the provider carriers and its own script element.
+
+Hosts pin these digests over decoded text content, not encoded markup:
+
+| Script | Digest source |
+| --- | --- |
+| Runtime bundle | `BUNDLE` |
+| Each supplied provider | The compiled provider text (`lowering::provider`) |
+| REPL program module | The compiled program text (`lowering::program`) |
+| HTML artifact completion | `window.__maestroComplete` |
+
+The only addition to the frame's policy is `'wasm-unsafe-eval'`. The change adds no
+same-origin permission, `unsafe-eval`, wildcard origin, `blob:` or `data:` source. Hash
+policies still refuse unmatched scripts. A frame without `'wasm-unsafe-eval'` installs
+nothing: the module fails to compile and the carriers stay inert.
+
+The bundle's glue declares Emscripten and binding names at global scope, for example
+`Module`, `abort`, `preRun`, `postRun`, `createWasm`, `handleError` and the `___wbg_*`
+bindings. A page that redeclares one of these as a top-level `let` or `const` throws a
+`SyntaxError`, and a page that overwrites one with a function breaks later calls into the
+runtime. Name your own globals around them.
 
 ## Retained HTML loading
 
@@ -44,21 +133,12 @@ properties still ignore numeric assignments, as they do for any browser script.
 HTML and vector links use native hyperlink state and effective resolved HTTP(S)
 targets, including namespaced and animated vector addresses.
 
-When the script policy admits the head boot script, the runtime's inert template
-moves its parser-created script into the head before authored head content. When it
-admits the body remover, the REPL module's non-rendering vector scaffold is removed
-before execution. With both admitted, no carrier template or vector element remains
-after loading; a policy omitting a boot script's digest leaves its inert template or
-vector scaffold in the loaded document.
-During runtime execution, `document.currentScript` is an `SVGScriptElement`; the built-in
-providers do not read it. Hosts pin four digests over decoded text content, not encoded
-markup: the runtime, module and these two constant boot scripts (SHA-256):
-
-- Head boot: `7lLUb+wLFQezr+10zcikIzRbnDaVQGyuZnkcXksV7J4=`
-- Body remover: `8q+8kOKrdFrQmwFljSnTFbN67/+QuOXbkIu3Fp6to98=`
-
-Hash policies still refuse unmatched scripts. The carrier adds no script-string
-sink, dynamic evaluation, program URL resource or policy relaxation.
+During runtime execution, `document.currentScript` is the bundle's script element. The
+built-in helpers do not read it. If the policy omits a provider's digest, that provider's
+inert template stays in the loaded document and its helpers are absent. The completion
+signal of an HTML artifact is a script that reads `window.__maestroComplete`; the runtime
+defines that property so a read calls `window.complete()` when it exists, after the whole
+authored source.
 
 Native HTML parsing accepts recovered markup. Explicit validation errors appear
 as literal preformatted text, with the selected brand pack's background, text,
@@ -69,8 +149,8 @@ of painting this loading document.
 ## Supplied-content compiler qualification
 
 Run `just browser-test` to exercise the Rust compiler and native capture observers
-in isolated frames. This qualification path does not change production document
-emission or the runtime loading statement.
+in isolated frames. Production document preparation uses the same compiler for every
+supplied provider and program.
 
 The compiler is available at
 `maestro_web::components::sandboxed_iframe::lowering`:
@@ -116,8 +196,8 @@ is reported rather than overwriting a protected property.
 
 HTML carrier encoding and exact decoded-source hashing remain separate operations.
 The compiler adds no eval permission, Function constructor, interpreter, same-origin
-access or dynamic script-text sink. The existing loader remains under separate
-qualification; passing compiler witnesses does not establish production startup.
+access or dynamic script-text sink. A program the parser refuses is reported through the
+configuration: the runtime settles it as a `SyntaxError` outcome, as the browser would.
 
 ### Examples covered by qualification
 
@@ -127,7 +207,7 @@ qualification; passing compiler witnesses does not establish production startup.
 - Returned thenables, rejected promises, native DOM/fetch/timers and relative
   imports retain their browser behavior.
 - Native object identity, signed zero, undefined and null survive outcome capture.
-  All four built-in provider inputs leave the reserved capture namespace unused.
+  A document with every built-in helper leaves the reserved capture namespace unused.
 - Real tool inputs keep closing-script text, carriage returns and Unicode through
   the existing carrier. Invalid labels and duplicate lexical declarations still
   fail as SyntaxErrors.
@@ -180,12 +260,14 @@ caller-owned. Keep the adapter alive while awaiting its execution future.
 
 ## Injected bridge
 
-Generate source for the iframe or extension user-script channel with the
+Online documents install the iframe bridge from their configuration. For a world without
+a prepared document, such as an extension user script, generate the runtime script with the
 module's typed options. The following example is also checked in the generator's
 public rustdoc:
 
 ```rust
 use maestro_web::RuntimeMessageBridge;
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::components::sandbox::runtime_message_bridge::{
     RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
@@ -194,15 +276,19 @@ let source = RuntimeMessageBridge::generate_bridge_code(RuntimeMessageBridgeOpti
     context: RuntimeMessageContext::SandboxIframe,
     sandbox_id: "execution",
 })?;
-assert!(source.contains("window.sendRuntimeMessage"));
+assert!(source.starts_with("var Module={arguments:[\"frame-bridge\",\"execution\"]};"));
+assert!(source.ends_with(BUNDLE));
 # Ok::<(), maestro_app::DiagnosticErrorInfo>(())
 ```
 
-The source installs `sendRuntimeMessage` and ordered `onCompleted` callbacks.
-Iframe requests correlate replies by message id and reject after 30,000 ms;
-user scripts await the extension's native reply. Identifiers are quoted without
-trimming or extra HTML escaping. Document/script-tag preparation belongs to the
-embedding host.
+The script is the runtime bundle preceded by the channel and identifier as program
+arguments. Running it installs `sendRuntimeMessage` and ordered `onCompleted` callbacks.
+`__completionCallbacks` is reset to a new public array, and `onCompleted` appends to its
+current value, so replacing the array stays visible. Iframe requests correlate replies by
+message id, listen before posting and reject after 30,000 ms; user scripts await the
+extension's native reply with the identifier last. Identifiers are quoted without
+trimming or extra HTML escaping. An extension world must admit `'wasm-unsafe-eval'` for
+its own policy; that world is not exercised by the browser integration command.
 
 ## Router ownership and sender admission
 
@@ -241,10 +327,10 @@ string conversion otherwise, preserving serializer failures.
 The browser SDK exports the application-owned
 [console, attachment and returned-file providers](../application/browser-tools.md#sandbox-runtime-providers).
 Instantiate them with `BrowserSandboxValue` for native handle retention, then
-register them in the router's provider collection. Their complete injected
-functions supply console forwarding/completion flushing, attachment reads and
-online/offline file returns. The host providers install no listeners or timers;
-the injected document owns those browser effects. Native collection aliases stay
+register them in the router's provider collection. Each returns a built-in selection;
+the runtime bundle supplies console forwarding and completion flushing, attachment reads
+and online/offline file returns. The host providers install no listeners or timers; the
+injected document owns those browser effects. Native collection aliases stay
 live until reset replaces the current collection.
 
 ## Qualification boundary

@@ -6,7 +6,8 @@ use crate::contributions_support::{
 use crate::native_html_artifact_support::{
     LOGGING, QUIET, before, failing, frame, listed, logged, marker, srcdoc,
 };
-use maestro_app::{DiagnosticErrorInfo, SandboxRuntimeProvider, SharedHandle};
+use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHandle};
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::{
     HtmlArtifact,
     browser::sandbox_value::BrowserSandboxValue,
@@ -24,7 +25,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Unread {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         panic!("detached body read provider data")
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
         panic!("detached body read the provider runtime")
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
@@ -185,7 +186,7 @@ fn reload_current(view: &DomView) {
         reload.unchecked_ref::<web_sys::HtmlElement>().click();
         assert!(
             srcdoc(&root).ends_with(&format!(
-                "{source}<script>if (window.complete) window.complete();</script>"
+                "{source}<script>window.__maestroComplete</script>"
             )),
             "reload did not use current source"
         );
@@ -209,10 +210,7 @@ fn reload_current(view: &DomView) {
         before + 1,
         "reload retries the failed assignment"
     );
-    assert!(
-        srcdoc(&root)
-            .ends_with("<p>failed</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(srcdoc(&root).ends_with("<p>failed</p><script>window.__maestroComplete</script>"));
     parent.remove();
 }
 /// Replacement compares current source, even when the old listing has not been updated.
@@ -243,10 +241,7 @@ fn replace_unlisted_source(view: &DomView) {
     assert_eq!(reads.get(), 2, "retained header reloads the replacement");
     replacement.update(&root, view).unwrap();
     assert_eq!(reads.get(), 2, "equal update remains suppressed");
-    assert!(
-        srcdoc(&root)
-            .ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(srcdoc(&root).ends_with("<p>quiet</p><script>window.__maestroComplete</script>"));
     parent.remove();
 }
 /// Detaching removes the frame and its route; reconnecting loads the source once more.
@@ -303,12 +298,10 @@ pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module:
     let parent = container();
     parent.append_child(&root.node).unwrap();
     let document = srcdoc(&root);
-    assert!(before(&document, "window[\"first\"]", "window[\"second\"]"));
+    assert!(before(&document, "[\"first\",", "[\"second\","));
     assert!(before(&document, "runtime_first", "runtime_second"));
     assert!(document.contains("\"artifact-forward.html\""));
-    assert!(
-        document.ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(document.ends_with("<p>quiet</p><script>window.__maestroComplete</script>"));
     assert!(!frame(&root).unwrap().has_attribute("src"));
     let header = artifact.get_header_buttons(&view).unwrap();
     addresses(&root, &mut artifact).await;
@@ -406,7 +399,7 @@ fn providers(root: &DomRoot, artifact: &mut HtmlArtifact) {
     artifact.runtime_providers = vec![marker("third", &reads)];
     artifact.execute_content(QUIET).unwrap();
     let document = srcdoc(root);
-    assert!(document.contains("window[\"third\"]") && !document.contains("window[\"first\"]"));
+    assert!(document.contains("[\"third\",") && !document.contains("[\"first\","));
     artifact.runtime_providers.clear();
     artifact.execute_content(QUIET).unwrap();
     assert!(!srcdoc(root).contains("window[\"third\"]"));
@@ -482,8 +475,8 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Editing {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok("() => {}".to_owned())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content("() => {}".to_owned()))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
@@ -1096,10 +1089,7 @@ async fn mounted_download(
     assert_eq!(reads.get(), 4);
     control(&header, 1).click();
     assert_eq!(reads.get(), 5, "reload loads once");
-    assert!(
-        srcdoc(&root)
-            .ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(srcdoc(&root).ends_with("<p>quiet</p><script>window.__maestroComplete</script>"));
     assert_eq!(
         artifact.get_logs(&view.i18n).unwrap(),
         "No logs for literal$&雪.html"
@@ -1186,8 +1176,10 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(include_str!("native_html_artifact_support/probe.js").to_owned())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content(
+            include_str!("native_html_artifact_support/probe.js").to_owned(),
+        ))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
@@ -1196,8 +1188,8 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
 /// The authored part of a prepared document, without the injected runtime.
 fn authored(document: &str) -> String {
     let start = document.find("<style>\nhtml, body {").unwrap();
-    let end_marker = "s.remove()}</script>";
-    let end = document[start..].find(end_marker).unwrap() + start + end_marker.len();
+    let end_marker = format!("<script>{BUNDLE}</script>");
+    let end = document[start..].find(&end_marker).unwrap() + start + end_marker.len();
     format!("{}{}", &document[..start], &document[end..])
 }
 /// The completion signal follows the whole source exactly once, where the page parser places

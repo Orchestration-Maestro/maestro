@@ -1,5 +1,5 @@
 //! Native retained frame and event ownership.
-use super::{PrepareHtmlOptions, document, runtime};
+use super::{PrepareHtmlOptions, document};
 use crate::browser::{
     event_subscription::EventSubscription,
     sandbox_value::{BrowserSandboxValue, diagnostic},
@@ -10,7 +10,7 @@ use maestro_app::browser::components::sandbox::sandbox_runtime_provider::Sandbox
 use maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider;
 use maestro_app::{DiagnosticErrorInfo, SharedHandle};
 use maestro_theme::BrandPresentation;
-use std::{cell::RefCell, fmt::Write as _, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsValue, closure::Closure};
 use web_sys::{HtmlElement, HtmlIFrameElement, MessageEvent};
 
@@ -193,19 +193,18 @@ impl Owner {
                 Reflect::set(&data, &key.into(), &value.0).map_err(|error| diagnostic(&error))?;
             }
         }
-        let functions = providers
+        let runtimes = providers
             .iter()
             .map(|provider| provider.get_runtime())
             .collect::<Result<Vec<_>, _>>()?;
-        let mut globals = String::new();
+        let mut globals = Vec::new();
         for key in Object::keys(&data) {
             let value = Reflect::get(&data, &key).map_err(|error| diagnostic(&error))?;
             let value = stringify(&value).map_err(|error| diagnostic(&error))?;
             let key = stringify(&key).map_err(|error| diagnostic(&error))?;
-            let _ = writeln!(globals, "window[{key}] = {value};");
+            globals.push((key, value));
         }
-        let runtime = runtime::assemble(sandbox_id, &globals, &functions, options.is_standalone)?;
-        Ok(document::prepare(user_code, &runtime, options))
+        document::prepare(user_code, sandbox_id, &globals, &runtimes, options)
     }
 }
 /// Native compact JSON; undefined is a serialization failure, not a null assignment.

@@ -980,6 +980,7 @@ fn browser_test_runs_every_selection_after_a_failure() {
             [
                 "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
                 "run|--quiet|--locked|-p|maestro-test-browser|--",
+                "run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime|--check",
             ],
             "{failing}"
         );

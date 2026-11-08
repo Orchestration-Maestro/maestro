@@ -142,7 +142,20 @@ Measure prototype and final release bytes separately. T01 measures the selected 
 
 This receipt records what the bootstrap qualification measured. It selects a loader and names the public API, but it does not deliver the production runtime: the ten handwritten runtime files and their envelopes are unchanged until the implementation issue lands. Every row under [open questions](#open-questions-and-required-receipts) is measured or qualified. The implementation issue waits only on the [decisions still open](#decisions-still-open).
 
+### Delivered runtime shape
+
+The implementation replaced the receipt's loader with a runtime built by Emscripten 6.0.10 from `crates/maestro-web/runtime`. The result is one generated classic script, `crates/maestro-web/assets/maestro-sandbox-runtime.js` (278,098 bytes, far below the 8,388,608-byte synchronous compilation limit). The tooling command `sandbox-runtime` regenerates it, and `--check` fails on a stale asset, on text an inline script cannot carry, and on any linked library outside the audited list.
+
+- The three generated call expressions are gone. The generated script instantiates its module synchronously and runs the binding start function, which installs everything before the parser reaches the next element. Supplied providers and programs run from their compiled carriers through native capture accessors. The HTML artifact completion signal reads `window.__maestroComplete`, which the runtime defines.
+- The frame policy gains only `'wasm-unsafe-eval'`. Hosts pin the bundle's digest, each compiled provider, the program module and the completion read.
+- `RuntimeMessageBridge::generate_bridge_code` keeps its options. It returns the bundle preceded by the channel and identifier as program arguments, so the extension user-script world needs no prepared document.
+- The linked set is the Rust crate object, Emscripten's C library members, the allocator and the compiler builtins. The allocator is dlmalloc. Emscripten's allocator `emmalloc` was tried first and fails: the binding integration runs its start function before the static constructors (`onInits` run before `__wasm_call_ctors`), `emmalloc.c:548` initialises its free lists in a constructor, and the first allocation then corrupts the heap (`emmalloc.c:288` aborts under `emmalloc-memvalidate`). The generator keeps the allocator as one constant, audited with its archive.
+- Glue names are global. `Module`, `abort`, `handleError` and about 160 more are declared at the top level of the frame; the guide lists the consequence for supplied pages.
+- Closure signatures are `FnMut` throughout the runtime. The binding export names collide when one signature is registered as both `Fn` and `FnMut`.
+
 ### Measurement setup
+
+The prototype fixture described here was deleted when the delivered runtime replaced it. The same exports now run against the generated bundle (see [Delivered runtime shape](#delivered-runtime-shape)); the compile-limit search, the staging comparison and the delayed-start row had no counterpart for a single inline script and were removed.
 
 The pinned Chromium job ran Chromium 156.0.8078.4 (supplier revision 1248), wasm-bindgen CLI and library 0.2.129, js-sys and web-sys 0.3.106 and the repository's pinned Rust toolchain. The prototype is a Rust runtime bundle beside the existing browser-module fixtures, `crates/maestro-web/tests/fixtures/browser_modules/sandbox_runtime`. It has its own manifest and lock and uses no dependency or feature beyond the existing fixture set. The browser runner's package step builds it in release for `wasm32-unknown-unknown` and generates classic-script glue with `wasm-bindgen --target no-modules --no-modules-global __maestroSandboxRuntime --no-typescript`. Eleven exports in the loading family exercise it in the frame, in `crates/maestro-web/tests/sandbox_bootstrap_browser.rs`. Three more, in `crates/maestro-web/tests/sandbox_loading_browser.rs`, load documents that carry it through the retained frame owner and the shared loading fixture. The in-frame exports log `RECEIPT bootstrap` lines, and every export asserts the rows below. The first eight qualified in run [41773572302](https://github.com/Orchestration-Maestro/maestro/actions/runs/41773572302) (`COMPLETE 277/277`). A failed-and-restored mutation run, [41773604662](https://github.com/Orchestration-Maestro/maestro/actions/runs/41773604662), turns all eight red (`COMPLETE 269/277`). It skips the last selection, completes before the joined callbacks and stops the compile search below the limit. The other six qualified in run [41810477790](https://github.com/Orchestration-Maestro/maestro/actions/runs/41810477790) (`COMPLETE 283/283`). Mutation run [41813779391](https://github.com/Orchestration-Maestro/maestro/actions/runs/41813779391) turns all six red; its two host mutations also fail the existing host witnesses (`COMPLETE 235/283`). It makes the loader require its own current script, defers supplied providers until parsing ends, keeps the router registration on removal and reuses the handshake document.
 
@@ -232,7 +245,7 @@ Planned spellings, compiled by the implementation issue before consumers change:
 
 ### Decisions still open
 
-The first is decided. Each of the others returns for an explicit decision before the implementation issue is dispatched:
+Every decision below is resolved in [Delivered runtime shape](#delivered-runtime-shape): the loader, the `'wasm-unsafe-eval'` addition and the removal of the three call expressions were taken with the Emscripten build, and the extension world is covered by the program-argument install. The list stays as the record of what was open:
 
 1. Decided: srcdoc frames load the glue from a fixed same-origin path, with CORS headers, beside the embedded bundle. Only the glue is served; the module stays embedded inline.
 2. Adding `'wasm-unsafe-eval'` to the frame policy that hosts pin.

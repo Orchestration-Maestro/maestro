@@ -1,9 +1,9 @@
-//! Prototype bootstrap documents, policies and isolated-frame observations.
+//! Bootstrap documents, policies and isolated-frame observations for the generated runtime.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::browser_fixture_support::{construct, object, post_from};
-use crate::contributions_support::fetch_text;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use js_sys::{Function, Object, Promise, Reflect, Uint8Array};
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::components::sandboxed_iframe::lowering::{self, Compiled};
 use std::{cell::Cell, fmt::Write as _};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
@@ -12,16 +12,10 @@ use web_sys::{Document, HtmlIFrameElement, MessageEvent, Window};
 
 pub(crate) mod cases;
 
-/// Global the prototype's generated binding glue initializes.
-pub(crate) const GLOBAL: &str = "__maestroSandboxRuntime";
-/// Served prototype bundle directory.
-const BUNDLE: &str = "/package/modules/sandbox_runtime/";
 /// Sandbox flags of every authored-content frame.
 const FLAGS: &str = "allow-scripts allow-modals";
-/// Upper bound of the synchronous compilation search.
-const SEARCH_LIMIT: usize = 64 << 20;
 /// Records uncaught errors before the runtime and suppresses their default report.
-pub(crate) const OBSERVER: &str = "window.S={errors:[]};addEventListener('error',e=>{S.errors.push(e.error?e.error.name+': '+e.error.message:'muted: '+e.message);e.preventDefault()})";
+pub(crate) const OBSERVER: &str = "window.S={errors:[]};addEventListener('error',e=>{S.errors.push(e.error?e.error.name+': '+e.error.message:'muted: '+e.message);e.preventDefault()});addEventListener('unhandledrejection',e=>{S.errors.push(e.reason?e.reason.name+': '+e.reason.message:'muted: rejection');e.preventDefault()})";
 
 thread_local! {
     /// Distinct observation box per mounted frame.
@@ -33,103 +27,69 @@ pub(crate) fn receipt(text: &str) {
     web_sys::console::log_1(&format!("RECEIPT bootstrap {text}").into());
 }
 
-/// Generated binding glue and the matching WebAssembly bytes.
+/// The generated runtime script every document carries.
 pub(crate) struct Bundle {
-    /// Classic-script glue emitted by the binding generator.
-    pub glue: String,
-    /// Release WebAssembly module.
-    pub wasm: Vec<u8>,
+    /// Classic-script text, exactly as the library embeds it.
+    pub script: &'static str,
 }
 
 impl Bundle {
-    /// Read the packaged prototype bundle from the fixture origin.
-    pub(crate) async fn load() -> Self {
-        let glue = fetch_text(&format!("{BUNDLE}runtime.js")).await;
-        let response: web_sys::Response = JsFuture::from(
-            web_sys::window()
-                .unwrap()
-                .fetch_with_str(&format!("{BUNDLE}runtime_bg.wasm")),
-        )
-        .await
-        .unwrap()
-        .dyn_into()
-        .unwrap();
-        assert!(response.ok(), "runtime bundle HTTP {}", response.status());
-        let bytes = JsFuture::from(response.array_buffer().unwrap())
-            .await
-            .unwrap();
-        let wasm = Uint8Array::new(&bytes).to_vec();
-        Self { glue, wasm }
+    /// The embedded bundle.
+    pub(crate) fn load() -> Self {
+        Self { script: BUNDLE }
     }
 
-    /// Glue and synchronous loader in one inline script, for documents with a hierarchical URL.
-    pub(crate) fn inline(&self, wasm: &[u8]) -> Boot {
+    /// The bundle as the inline script every path uses, srcdoc or URL.
+    pub(crate) fn boot(&self) -> Boot {
         Boot {
             prefix: String::new(),
-            script: format!("{}\n{}", self.glue, loader(wasm)),
-        }
-    }
-
-    /// Served glue, then the inline synchronous loader, for `about:srcdoc` documents.
-    pub(crate) fn served(wasm: &[u8]) -> Boot {
-        Boot {
-            prefix: SERVED.into(),
-            script: loader(wasm),
-        }
-    }
-
-    /// Served glue, then an inline asynchronous loader, for the staging alternative.
-    pub(crate) fn staged(&self) -> Boot {
-        Boot {
-            prefix: SERVED.into(),
-            script: format!(
-                "{GLOBAL}({{module_or_path:Uint8Array.fromBase64(\"{}\")}});",
-                STANDARD.encode(&self.wasm)
-            ),
+            script: self.script.to_owned(),
         }
     }
 }
 
-/// Glue element that loads from the fixture origin, parser-blocking, with unmuted errors.
-const SERVED: &str =
-    "<script src=\"/package/modules/sandbox_runtime/runtime.js\" crossorigin></script>";
-
-/// Inline statement that instantiates the embedded module synchronously.
-fn loader(wasm: &[u8]) -> String {
-    format!(
-        "{GLOBAL}.initSync({{module:Uint8Array.fromBase64(\"{}\")}});",
-        STANDARD.encode(wasm)
-    )
-}
-
-/// Markup that precedes the configuration block and the inline loading script text.
+/// Markup that precedes the configuration block and the inline runtime script text.
 pub(crate) struct Boot {
-    /// Elements placed before the carriers, such as a served glue script.
+    /// Elements placed before the carriers.
     pub prefix: String,
-    /// Inline loading script text.
+    /// Inline runtime script text.
     pub script: String,
 }
 
-/// One prototype runtime insertion and the exact script texts a hash policy admits.
+/// One runtime insertion and the exact script texts a hash policy admits.
 pub(crate) struct Runtime {
-    /// Inert carriers, configuration and loading script.
+    /// Inert carriers, configuration and runtime script.
     pub markup: String,
-    /// Loading script text.
+    /// Runtime script text.
     pub boot: String,
     /// Decoded provider invocation texts in carrier order.
     pub providers: Vec<String>,
 }
 
 impl Runtime {
-    /// Assemble the boot prefix and carriers before the configuration block, then the loader.
+    /// Assemble the carriers before the configuration block, then the runtime script.
+    ///
+    /// `config` names the sandbox identifier, an object of globals, the ordered selections and,
+    /// optionally, the program capture property; the document is a standalone one.
     pub(crate) fn new(
         boot: Boot,
         config: &serde_json::Value,
         id: &str,
         providers: &[&str],
     ) -> Self {
-        let mut config = config.clone();
-        config["providerId"] = id.into();
+        let mut production = serde_json::json!({
+            "sandboxId": id,
+            "globals": config["globals"]
+                .as_object()
+                .map(|globals| globals.iter().map(|(key, value)| serde_json::json!([key, value])).collect::<Vec<_>>())
+                .unwrap_or_default(),
+            "runtime": config["runtime"],
+            "standalone": true,
+            "completion": maestro_web::components::sandboxed_iframe::COMPLETION_PROPERTY,
+        });
+        if let Some(capture) = config.get("programCapture") {
+            production["program"] = capture.clone();
+        }
         let providers: Vec<Compiled> = providers
             .iter()
             .map(|source| lowering::provider(source).unwrap())
@@ -150,7 +110,7 @@ impl Runtime {
         let _ = write!(
             markup,
             "<script type=\"application/json\" data-maestro-sandbox>{}</script><script>{boot}</script>",
-            config.to_string().replace('<', "\\u003c")
+            production.to_string().replace('<', "\\u003c")
         );
         Self {
             markup,
@@ -163,16 +123,9 @@ impl Runtime {
     }
 }
 
-/// Authored document carrying the `head` script, the loader with one attachment selection, then
-/// the `body` script.
-pub(crate) fn loader_document(head: &str, boot: Boot, body: &str) -> String {
-    let id = "bootstrap-loader";
-    let config =
-        serde_json::json!({"sandboxId":id,"globals":{"attachments":[]},"runtime":["attachments"]});
-    format!(
-        "<html><head><script>{head}</script>{}</head><body><script>{body}</script></body></html>",
-        Runtime::new(boot, &config, id, &[]).markup
-    )
+/// Authored document with a `head` script and a `body` script; the host inserts the runtime.
+pub(crate) fn loader_document(head: &str, body: &str) -> String {
+    format!("<html><head><script>{head}</script></head><body><script>{body}</script></body></html>")
 }
 
 /// Encode text for an SVG script carrier.
@@ -193,71 +146,6 @@ pub(crate) fn wrap(runtime: &str, program: &str) -> String {
         "<!DOCTYPE html>\n<html>\n<head>\n{runtime}\n</head>\n<body>\n<svg display=\"none\" data-maestro-sandbox-program><script type=\"module\">{}</script></svg>\n</body>\n</html>",
         encode(program)
     )
-}
-
-/// Pad a module with one custom section to exactly `size` bytes; its own size is returned unchanged.
-pub(crate) fn padded(wasm: &[u8], size: usize) -> Vec<u8> {
-    const NAME: &[u8] = b"maestro-padding";
-    if size == wasm.len() {
-        return wasm.to_vec();
-    }
-    let content = (1..=5)
-        .map(|width| size - wasm.len() - 1 - width)
-        .find(|content| leb(*content).len() == size - wasm.len() - 1 - content)
-        .unwrap();
-    let mut bytes = wasm.to_vec();
-    bytes.push(0);
-    bytes.extend(leb(content));
-    bytes.extend(leb(NAME.len()));
-    bytes.extend(NAME);
-    bytes.resize(size, 0);
-    assert_eq!(bytes.len(), size);
-    bytes
-}
-
-/// Unsigned LEB128 encoding.
-fn leb(mut value: usize) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    loop {
-        let byte = u8::try_from(value & 0x7f).unwrap();
-        value >>= 7;
-        if value == 0 {
-            bytes.push(byte);
-            return bytes;
-        }
-        bytes.push(byte | 0x80);
-    }
-}
-
-/// Compile synchronously on this main thread, returning the refusal text.
-pub(crate) fn compile(wasm: &[u8]) -> Result<(), String> {
-    js_sys::WebAssembly::Module::new(&Uint8Array::from(wasm).into())
-        .map(drop)
-        .map_err(|error| {
-            let error: js_sys::Error = error.unchecked_into();
-            format!(
-                "{}: {}",
-                String::from(error.name()),
-                String::from(error.message())
-            )
-        })
-}
-
-/// Largest padded size that compiles synchronously and the first refused size with its error.
-pub(crate) fn synchronous_limit(wasm: &[u8]) -> (usize, Option<(usize, String)>) {
-    compile(wasm).unwrap();
-    let Err(error) = compile(&padded(wasm, SEARCH_LIMIT)) else {
-        return (SEARCH_LIMIT, None);
-    };
-    let (mut passing, mut refused, mut message) = (wasm.len(), SEARCH_LIMIT, error);
-    while refused - passing > 1 {
-        let middle = passing + (refused - passing) / 2;
-        match compile(&padded(wasm, middle)) {
-            Ok(()) => passing = middle,
-            Err(error) => (refused, message) = (middle, error),
-        }
-    }
-    (passing, Some((refused, message)))
 }
 
 /// Quoted CSP source admitting one exact script text.

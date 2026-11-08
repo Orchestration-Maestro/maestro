@@ -42,6 +42,8 @@ mod member_graph;
 mod nextest_setup;
 /// Per-test admission for reserved callback ports.
 mod nextest_wrapper;
+/// Emscripten build and link audit of the in-frame sandbox runtime.
+mod sandbox_runtime;
 /// Reusable test-setup staging and validation.
 mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.
@@ -101,6 +103,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
         Some("browser-export-setup") => browser_export_setup::run(args, checkout),
+        Some("sandbox-runtime") => sandbox_runtime::run(args, cargo, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
@@ -210,7 +213,8 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
 }
 
 /// Run the real-browser regressions, then the export inventory even when a regression fails, so
-/// one run reports every case; the first failure's status is the command's.
+/// one run reports every case; the first failure's status is the command's. A stale generated
+/// sandbox runtime fails the run after both.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut regressions = Command::new(cargo);
     regressions.current_dir(checkout).args([
@@ -234,13 +238,28 @@ fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         "maestro-test-browser",
         "--",
     ]);
+    let mut bundle = Command::new(cargo);
+    bundle.current_dir(checkout).args([
+        "run",
+        "--quiet",
+        "--locked",
+        "-p",
+        "maestro-tooling",
+        "--bin",
+        "development",
+        "--",
+        "sandbox-runtime",
+        "--check",
+    ]);
     let regressed = regressions.status()?;
     let inventoried = inventory.status()?;
-    Ok(exit_code(if regressed.success() {
-        inventoried
-    } else {
-        regressed
-    }))
+    let generated = bundle.status()?;
+    Ok(exit_code(
+        [regressed, inventoried, generated]
+            .into_iter()
+            .find(|status| !status.success())
+            .unwrap_or(generated),
+    ))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

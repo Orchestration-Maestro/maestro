@@ -2,7 +2,7 @@
 
 use std::ffi::OsString;
 
-use super::{arguments, linted, selection};
+use super::{arguments, linted, runtime_arguments, selection};
 
 /// A package selection lints only its declared browser crates.
 #[test]
@@ -74,4 +74,19 @@ fn an_unknown_selection_fails() {
     assert!(selection(&[OsString::from("-pmaestro-*")]).is_err());
     assert!(selection(&[OsString::from("--package=maestro-lock@0.1.0")]).is_err());
     assert!(selection(&[OsString::from("-p")]).is_err());
+}
+
+/// The runtime package, outside the workspace, is linted by manifest path with warnings denied.
+#[test]
+fn the_runtime_package_is_linted_by_manifest_path() {
+    let command: Vec<String> = runtime_arguments()
+        .iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect();
+    assert!(
+        command
+            .windows(2)
+            .any(|pair| pair == ["--manifest-path", "crates/maestro-web/runtime/Cargo.toml"])
+    );
+    assert!(command.ends_with(&["--".to_owned(), "-D".to_owned(), "warnings".to_owned()]));
 }

@@ -197,6 +197,27 @@ scripts under `crates/maestro-theme/scripts`; they run their author work on nati
 targets, and their browser entrypoints do nothing. Native usage messages and
 generated filenames are unchanged.
 
+## Sandbox runtime bundle
+
+The in-frame sandbox runtime is a Rust program in `crates/maestro-web/runtime`, built for
+`wasm32-unknown-emscripten` into one classic script that the web crate embeds from
+`crates/maestro-web/assets/maestro-sandbox-runtime.js`. The package has its own manifest and
+lock, outside the workspace, so the chat application never builds for the frame.
+
+Install Emscripten SDK 6.0.10 and the Rust standard library for the target, then put
+`emcc` and the wasm-bindgen CLI 0.2.129 on `PATH`:
+
+```sh
+rustup target add wasm32-unknown-emscripten
+CARGO_BUILD_JOBS=3 just sandbox-runtime          # regenerate the asset
+CARGO_BUILD_JOBS=3 just sandbox-runtime --check  # fail when the asset is stale
+```
+
+Change the runtime package, regenerate, and commit the asset with the source. Never edit
+the asset. The command refuses an unpinned compiler, a library outside the audited list and
+script text that an inline script cannot carry. The build box's saved setup carries the SDK;
+shared CI browser jobs install the same release.
+
 ## Browser integration qualification
 
 Lint the browser library, examples and complete integration target with the
@@ -219,7 +240,9 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
 (supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
-binding. The browser executable must be an absolute path. The shared workflow owns
+binding. It also rebuilds the sandbox runtime and compares it with the checked-in
+bundle, which needs Emscripten SDK 6.0.10 on `PATH` (see
+[Sandbox runtime bundle](#sandbox-runtime-bundle)). The browser executable must be an absolute path. The shared workflow owns
 tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
@@ -349,8 +372,7 @@ stay JavaScript or HTML files beside their tests:
   driver's served `/sandbox.html`, it writes a load message's code only when the
   frame's parent sent it.
 - `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
-  and authored documents the program witnesses prepare, plus the generated carrier
-  bootstraps their policies admit by hash.
+  and authored documents the program witnesses prepare.
 
 Tests read these sources as text and hand them to the product unchanged.
 [The frame-side input issue](https://github.com/Orchestration-Maestro/maestro/issues/4134)

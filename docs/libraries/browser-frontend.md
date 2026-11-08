@@ -112,9 +112,18 @@ adds no new package versions. Unicode data retains its Unicode-3.0 requirement.
 Sandbox routing reuses the locked browser bindings with the `HtmlIFrameElement`,
 `MessageEvent` and `EventTarget` web-sys features. Raw values use native js-sys
 JSON/string operations; listener work uses wasm-bindgen-futures. No package
-version, executor or native dependency is added. The embedded messaging scripts
-are host-required assets, not a JavaScript frontend implementation. See
-[sandbox messaging](../browser/sandbox.md).
+version, executor or native dependency is added.
+
+The in-frame runtime is a separate package, `crates/maestro-web/runtime`, with its own
+manifest and lock outside the workspace. It uses the same exact pins (wasm-bindgen 0.2.129,
+wasm-bindgen-futures 0.4.79, js-sys 0.3.106, web-sys 0.3.106 with the Window, Document,
+HtmlElement, Element, Node, Event, EventTarget, MessageEvent, ErrorEvent,
+PromiseRejectionEvent, AddEventListenerOptions, Blob and BlobPropertyBag features) and builds
+for `wasm32-unknown-emscripten` with Emscripten 6.0.10. The generated script is a build
+artifact of the repository tooling; the linked C library, allocator and glue are listed in the
+[third-party notices](../../THIRD-PARTY-NOTICES.md#sandbox-runtime-bundle). See
+[sandbox messaging](../browser/sandbox.md) and the
+[runtime bundle](../browser/sandbox.md#runtime-bundle-and-script-policy).
 
 Owned native reading surfaces additionally enable `web-sys/ResizeObserver` on
 that same locked version. This feature adds no package dependency. The existing

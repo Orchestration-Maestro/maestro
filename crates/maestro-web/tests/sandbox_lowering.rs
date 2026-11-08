@@ -1,22 +1,6 @@
 //! Admission of supplied tool programs and provider expressions.
 use maestro_web::components::sandboxed_iframe::lowering;
 
-/// Actual built-in provider inputs used for parser and browser namespace qualification.
-pub(crate) const BUILTINS: &[&str] = &[
-    include_str!(
-        "../../maestro-app/src/browser/components/sandbox/artifacts_runtime_provider/runtime.js"
-    ),
-    include_str!(
-        "../../maestro-app/src/browser/components/sandbox/attachments_runtime_provider/runtime.js"
-    ),
-    include_str!(
-        "../../maestro-app/src/browser/components/sandbox/console_runtime_provider/runtime.js"
-    ),
-    include_str!(
-        "../../maestro-app/src/browser/components/sandbox/file_download_runtime_provider/runtime.js"
-    ),
-];
-
 /// Real loading inputs remain accepted by the compiler before browser qualification.
 #[test]
 fn supplied_tool_inputs_are_accepted() {
@@ -35,7 +19,7 @@ fn supplied_tool_inputs_are_accepted() {
         "function(id){window.id=id}",
         "id=>{window.id=id}",
     ];
-    for source in supplied.into_iter().chain(BUILTINS.iter().copied()) {
+    for source in supplied {
         lowering::provider(source).unwrap();
     }
 }

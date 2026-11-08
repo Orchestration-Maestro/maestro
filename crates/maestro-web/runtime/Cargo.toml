@@ -1,0 +1,38 @@
+[package]
+name = "maestro-sandbox-runtime"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "In-frame sandbox runtime, built for the Emscripten target by the repository tooling."
+license = "MIT"
+
+[workspace]
+
+[[bin]]
+name = "maestro-sandbox-runtime"
+path = "src/main.rs"
+
+[dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+js-sys = "=0.3.106"
+web-sys = { version = "=0.3.106", features = [
+    "Window", "Document", "HtmlElement", "Element", "Node", "Event", "EventTarget", "MessageEvent",
+    "ErrorEvent", "PromiseRejectionEvent", "AddEventListenerOptions", "Blob", "BlobPropertyBag",
+] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"

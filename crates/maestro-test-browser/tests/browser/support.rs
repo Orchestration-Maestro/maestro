@@ -114,7 +114,7 @@ pub(super) fn state() -> serde_json::Value {
 }
 
 /// Raise an actual unhandled srcdoc exception and await the document's load signal.
-pub(super) const POLICY: &str = r"async (script='window.complete()') => {
+pub(super) const POLICY: &str = r"async (script='__maestro0') => {
   const frame=document.createElement('iframe');frame.srcdoc='<script>'+script+'</script>';
   const loaded=new Promise(resolve=>frame.onload=resolve);document.body.append(frame);await loaded;
 }";

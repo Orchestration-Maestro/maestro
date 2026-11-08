@@ -86,7 +86,7 @@ fn unexpected_page_errors_fail() {
             .map(|_| ())
     }))
     .unwrap_err();
-    assert!(error.to_string().contains("window.complete"), "{error}");
+    assert!(error.to_string().contains("__maestro0"), "{error}");
 }
 
 /// The exact designated source and exception count pass.
@@ -165,9 +165,9 @@ fn different_policy_errors_fail() {
 #[ignore = "runs in the pinned Chromium job"]
 fn policy_error_from_another_source_fails() {
     let error = run(fixture(&[], async |browser, origin| {
-        browser.check(&format!("{origin}/"),POLICY_EXPORT,"(()=>{const script=document.createElement('script');script.textContent='window.complete()';document.body.append(script);})()").await.map(|_| ())
+        browser.check(&format!("{origin}/"),POLICY_EXPORT,"(()=>{const script=document.createElement('script');script.textContent='__maestro0';document.body.append(script);})()").await.map(|_| ())
     })).unwrap_err();
-    assert!(error.to_string().contains("window.complete"), "{error}");
+    assert!(error.to_string().contains("__maestro0"), "{error}");
 }
 
 /// Native renderer crashes settle the outstanding operation with an error.
