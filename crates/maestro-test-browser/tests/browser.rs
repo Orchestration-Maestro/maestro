@@ -1,5 +1,6 @@
 //! Real-browser regressions selected only by the pinned Chromium profile.
 
+use maestro_test_browser::browser_driver;
 use serde_json::json;
 use std::{fmt::Write as _, io};
 
@@ -391,22 +392,6 @@ fn native_keyboard_pointer_and_accessibility_bindings_work() {
         let tree=value["tree"].as_str().unwrap();assert!(tree.contains("button \"Named\""),"{tree}");assert!(tree.contains("textbox \"Message\""),"{tree}");
         Ok(())
     })).unwrap();
-}
-
-/// Preflight reports all missing and non-callable exports before any ready export runs.
-#[test]
-#[ignore = "runs in the pinned Chromium job"]
-fn inventory_requires_every_callable_export() {
-    for name in ["absent", "not_callable"] {
-        let error = run(fixture(&[], async |browser, origin| {
-            browser
-                .preflight(origin, &["ready".into(), name.into()])
-                .await
-        }))
-        .unwrap_err();
-        assert!(error.to_string().contains(name), "{error}");
-        assert!(!error.to_string().contains("must not run"), "{error}");
-    }
 }
 
 /// The console scenes answer from real screenshots: resting lines, the hovered summary and the
@@ -1109,4 +1094,44 @@ fn resources_close_after_success_and_failure() {
             .is_err()
         );
     }
+}
+
+/// The committed tool report paints its brand roles from its verified library copies, and no
+/// request leaves the loopback origin.
+#[test]
+#[ignore = "runs in the pinned Chromium job"]
+fn tool_report_paints_from_its_verified_assets() {
+    let work = maestro_test_directory::Scratch::new().unwrap();
+    let checkout = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+
+    run(browser_driver::tool_report(
+        &checkout,
+        &support::chromium(),
+        &support::prepared("MAESTRO_BROWSER_ASSETS"),
+        work.path(),
+    ))
+    .unwrap();
+}
+
+/// Each inventory export as its own test on the package the browser export setup prepared,
+/// so the test runner's hang limit stops and names an export that never completes.
+mod exports {
+    use super::browser_driver;
+    use super::support::{chromium, prepared, run};
+    use maestro_test_directory::Scratch;
+
+    /// Run one export in its own browser.
+    fn export(family: &str, name: &str) {
+        let profile = Scratch::new().unwrap();
+        run(browser_driver::run_export(
+            &chromium(),
+            profile.path(),
+            &prepared("MAESTRO_BROWSER_EXPORTS"),
+            family,
+            name,
+        ))
+        .unwrap();
+    }
+
+    include!(concat!(env!("OUT_DIR"), "/exports.rs"));
 }

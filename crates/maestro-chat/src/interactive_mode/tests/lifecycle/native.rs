@@ -79,6 +79,7 @@ fn child(directory: &Path, case: &str) {
         let events = Rc::new(RefCell::new(Vec::new()));
         let host: Rc<dyn TuiRuntime> = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
             Rc::clone(&local),
+            String::new(),
         ));
         let recorded = super::super::RecordingTerminal::new(80, 24);
         super::trace_terminal(&recorded, &events);

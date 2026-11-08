@@ -23,32 +23,51 @@ fn ls_keeps_dotfiles_and_directory_suffix() {
     );
 }
 
-/// Finds the installed native program and refuses release lookup or acquisition.
-async fn search_manager(
-    root: &maestro_test_directory::Scratch,
+/// Manager over a fresh binary directory holding the pinned `program`, refusing release lookup
+/// or acquisition.
+///
+/// Nextest supplies the pinned executable as `MAESTRO_TEST_<PROGRAM>`; the manager finds its
+/// copy in the binary directory before any `PATH` lookup, so the runner's search `PATH` never
+/// decides which program runs. The directory lives as long as the returned guard.
+fn search_manager(
     program: maestro_app::SearchTool,
-) -> std::sync::Arc<maestro_tools::ToolsManager> {
+) -> (
+    maestro_test_directory::Scratch,
+    std::sync::Arc<maestro_tools::ToolsManager>,
+) {
+    let name = match program {
+        maestro_app::SearchTool::Fd => "fd",
+        maestro_app::SearchTool::Rg => "rg",
+    };
+    let variable = format!("MAESTRO_TEST_{}", name.to_ascii_uppercase());
+    let source = std::env::var_os(&variable)
+        .unwrap_or_else(|| panic!("{name}: nextest must supply {variable}"));
+    let bin = maestro_test_directory::Scratch::new().unwrap();
+    let copy = bin
+        .path()
+        .join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(source, copy)
+        .unwrap_or_else(|error| panic!("{name}: cannot copy pinned executable: {error}"));
     let manager = std::sync::Arc::new(maestro_tools::ToolsManager::new(
-        root.path().display().to_string(),
+        bin.path().display().to_string(),
         Some(std::sync::Arc::new(|_| {
             Box::pin(async { panic!("native qualification must not download search programs") })
         })),
     ));
-    assert!(
-        manager.get_tool_path(program).await.is_some(),
-        "{program:?} must be installed in the build image"
-    );
-    manager
+    (bin, manager)
 }
 
-/// Creates a file search tool using the installed native program.
-async fn find_tool(root: &maestro_test_directory::Scratch) -> maestro_agent::AgentTool {
-    let manager = search_manager(root, maestro_app::SearchTool::Fd).await;
-    maestro_app::create_find_tool(
+/// Creates a file search tool using the pinned native program.
+fn find_tool(
+    root: &maestro_test_directory::Scratch,
+) -> (maestro_test_directory::Scratch, maestro_agent::AgentTool) {
+    let (bin, manager) = search_manager(maestro_app::SearchTool::Fd);
+    let tool = maestro_app::create_find_tool(
         root.path().display().to_string(),
         maestro_app::FindToolOptions::default(),
         manager,
-    )
+    );
+    (bin, tool)
 }
 
 #[test]
@@ -63,7 +82,7 @@ fn grep_single_file_keeps_filename_and_line() {
     )
     .unwrap();
     run_io(async {
-        let manager = search_manager(&root, maestro_app::SearchTool::Rg).await;
+        let (_bin, manager) = search_manager(maestro_app::SearchTool::Rg);
         let tool = maestro_app::create_grep_tool(
             root.path().display().to_string(),
             maestro_app::GrepToolOptions::default(),
@@ -96,7 +115,7 @@ fn grep_limit_retains_context_and_notice() {
     )
     .unwrap();
     run_io(async {
-        let manager = search_manager(&root, maestro_app::SearchTool::Rg).await;
+        let (_bin, manager) = search_manager(maestro_app::SearchTool::Rg);
         let tool = maestro_app::create_grep_tool(
             root.path().display().to_string(),
             maestro_app::GrepToolOptions::default(),
@@ -130,7 +149,7 @@ fn find_keeps_unignored_hidden_paths() {
     std::fs::write(root.path().join(".secret/hidden.txt"), "hidden").unwrap();
     std::fs::write(root.path().join("visible.txt"), "visible").unwrap();
     run_io(async {
-        let tool = find_tool(&root).await;
+        let (_bin, tool) = find_tool(&root);
         let result = (tool.execute)("find".into(), json!({"pattern":"**/*.txt"}), None, None)
             .await
             .unwrap();
@@ -159,7 +178,7 @@ fn find_applies_ignore_rules_without_repository_metadata() {
     std::fs::write(root.path().join("kept.txt"), "kept").unwrap();
     run_io(async {
         let cwd = root.path().display().to_string();
-        let tool = find_tool(&root).await;
+        let (_bin, tool) = find_tool(&root);
         let expected = json!({"content":[{"type":"text","text":"kept.txt"}]});
         let outside = (tool.execute)("find".into(), json!({"pattern":"**/*.txt"}), None, None)
             .await
@@ -189,7 +208,7 @@ fn find_preserves_invalid_glob_failure() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     run_io(async {
-        let tool = find_tool(&root).await;
+        let (_bin, tool) = find_tool(&root);
         let error = (tool.execute)("find".into(), json!({"pattern":"["}), None, None)
             .await
             .unwrap_err();
@@ -204,7 +223,7 @@ fn find_accepts_flag_like_literal_pattern() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     run_io(async {
-        let tool = find_tool(&root).await;
+        let (_bin, tool) = find_tool(&root);
         let result = (tool.execute)("find".into(), json!({"pattern":"--help"}), None, None)
             .await
             .unwrap();
@@ -228,7 +247,7 @@ fn find_zero_limit_has_no_false_count_notice() {
         std::fs::write(root.path().join(name), "entry").unwrap();
     }
     run_io(async {
-        let tool = find_tool(&root).await;
+        let (_bin, tool) = find_tool(&root);
         let result = (tool.execute)(
             "find".into(),
             json!({"pattern":"**/*.txt","limit":0}),
