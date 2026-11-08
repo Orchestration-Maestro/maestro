@@ -921,8 +921,8 @@ remain visible in GitHub but do not block the merge queue.
 ### Slowest-first test order
 
 The 64 tests that took more than 30 seconds in the baseline merge group have
-distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
-Other tests retain priority 0. These are
+distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first,
+except the cold browser build, which always holds 100. Other tests retain priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
 count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
@@ -957,11 +957,11 @@ build work or uneven fixed count assignments, so some imbalance may remain.
 The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
-worker proves descending order for the three slowest tooling tests, before an
-unprioritized short test. It uses a fixed 16-way split, independent of CI's
-`test_shard_count`, and compares every partition's membership with and
-without priorities, checks an exactly-once union and keeps an intentional
-selected failure visible. It does not run the expensive browser bodies.
+worker proves the cold browser build starts first, then the next two tooling
+tests in descending order, before an unprioritized short test. It uses a fixed
+16-way split, independent of CI's `test_shard_count`, and compares every
+partition's membership with and without priorities, checks an exactly-once
+union and keeps an intentional selected failure visible. It does not run the expensive browser bodies.
 
 #### Measured successful test durations and priorities (seconds)
 
@@ -973,8 +973,8 @@ lanes then start together after the cold build.
 
 | Priority | Package / test | Seconds |
 | ---: | --- | ---: |
-| 99 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
 | 100 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
+| 99 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
 | 98 | `maestro-tooling` / `browser_author_build::browser_author_check_preserves_adjacent_locks` | 109.765 |
 | 97 | `maestro-tooling` / `browser_author_build::browser_author_checks_accept_valid_sources` | 105.572 |
 | 96 | `maestro-extensions-wasmtime` / `component_events::input::component_input_chains_text_preserves_images_and_forwards_sources` | 101.546 |
@@ -1050,13 +1050,15 @@ To refresh the ranks:
    unique identities across shards against the summed summaries and eligible
    inventory; account separately for intentionally ignored probes and retries.
 3. Sort tests exceeding 30 seconds by descending duration. Remove old priority
-   fields, assign distinct descending priorities starting at 100 and leave other
-   tests at 0. For tied durations, order by binary then test name.
+   fields, give the cold browser build (`threads-required = "num-cpus"`)
+   priority 100, assign distinct descending priorities from 99 to the rest and
+   leave other tests at 0. For tied durations, order by binary then test name.
    Never change an exception limit or selection filter to refresh a priority.
 4. Update this evidence table and run the focused tooling regression:
    `cargo nextest run --locked -p maestro-tooling --test integration -E 'test(measured_priorities_order_tests_without_changing_shards)'`.
-   If the three slowest tooling identities change, update its controlled bodies
-   and expected order to match the new measurements.
+   If the two slowest tooling identities after the cold build change, update its
+   controlled bodies and expected order to match the new measurements; the cold
+   build stays first.
 5. Record the next merge-group run's slowest span and spread on #3613, with its
    inventory and revision. Explain setup, serialization or source changes rather
    than treating per-test duration sums as shard wall time.
