@@ -109,8 +109,8 @@ pub fn install() {
         })
         .into_js_value();
     let failures: JsValue =
-        Closure::<dyn Fn(JsValue, JsValue) -> JsValue>::new(|colors: JsValue, options: JsValue| {
-            let thinking = get(&options, "thinking").as_bool().unwrap_or(false);
+        Closure::<dyn Fn(JsValue, JsValue) -> JsValue>::new(|colors: JsValue, mode: JsValue| {
+            let thinking = mode.as_bool().unwrap_or(false);
             let array = js_sys::Array::new();
             for message in paint_failures(&colors, thinking) {
                 array.push(&JsValue::from_str(&message));
@@ -276,25 +276,14 @@ fn measured(formula: &Element) -> Value {
             "text".to_owned(),
             Value::String(text.text_content().unwrap_or_default()),
         );
-        glyph.insert(
-            "left".to_owned(),
-            json!((number(&found, "left") - number(&origin, "left")) * ratio),
-        );
-        glyph.insert(
-            "top".to_owned(),
-            json!((number(&found, "top") - number(&origin, "top")) * ratio),
-        );
-        glyph.insert("width".to_owned(), json!(number(&found, "width") * ratio));
-        glyph.insert("height".to_owned(), json!(number(&found, "height") * ratio));
+        glyph.extend(relative_boxes(&found, &origin, ratio));
         glyphs.push(Value::Object(glyph));
     }
     let svg = elements(&formula.query_selector_all("svg").unwrap())
         .iter()
         .map(|svg| {
-            Value::Object(scaled(
-                &rect(svg.get_bounding_client_rect().as_ref()),
-                ratio,
-            ))
+            let found = rect(svg.get_bounding_client_rect().as_ref());
+            Value::Object(relative_boxes(&found, &origin, ratio))
         })
         .collect::<Vec<_>>();
     let mut actual = Map::new();
@@ -343,14 +332,21 @@ fn rect(found: &JsValue) -> Map<String, Value> {
     rect
 }
 
-/// The boxes of a measured rectangle, scaled back from the container's zoom.
-fn scaled(rect: &Map<String, Value>, ratio: f64) -> Map<String, Value> {
-    rect.iter()
-        .map(|(key, value)| {
-            (
-                key.clone(),
-                json!(value.as_f64().unwrap_or_default() * ratio),
-            )
+/// The boxes of `found` relative to the formula `origin`, scaled back from the container's zoom.
+fn relative_boxes(
+    found: &Map<String, Value>,
+    origin: &Map<String, Value>,
+    ratio: f64,
+) -> Map<String, Value> {
+    ["left", "top", "width", "height"]
+        .into_iter()
+        .map(|key| {
+            let box_value = if matches!(key, "left" | "top") {
+                number(found, key) - number(origin, key)
+            } else {
+                number(found, key)
+            };
+            (key.to_owned(), json!(box_value * ratio))
         })
         .collect()
 }
@@ -368,6 +364,9 @@ fn compared(actual: &Value, expected: &Value, path: &str) -> String {
             return String::new();
         }
         return format!("{path}: {measured} != {recorded}");
+    }
+    if let Some(recorded) = expected.as_array() {
+        return compared_entries(actual, recorded, path);
     }
     let (Some(observed), Some(recorded)) = (actual.as_object(), expected.as_object()) else {
         return if actual == expected {
@@ -393,6 +392,23 @@ fn compared(actual: &Value, expected: &Value, path: &str) -> String {
     String::new()
 }
 
+/// First difference between two measurement lists, preserving their lengths and ordering.
+fn compared_entries(actual: &Value, expected: &[Value], path: &str) -> String {
+    let Some(observed) = actual.as_array() else {
+        return format!("{path}: text differs");
+    };
+    if observed.len() != expected.len() {
+        return format!("{path}: {} != {} entries", observed.len(), expected.len());
+    }
+    for (index, value) in expected.iter().enumerate() {
+        let found = compared(&observed[index], value, &format!("{path}/{index}"));
+        if !found.is_empty() {
+            return found;
+        }
+    }
+    String::new()
+}
+
 /// Names of the painted roles that do not resolve to the selected pack's colors.
 fn paint_failures(colors: &JsValue, thinking: bool) -> Vec<String> {
     let root = root().expect("a Markdown document is shown");
@@ -408,6 +424,7 @@ fn paint_failures(colors: &JsValue, thinking: bool) -> Vec<String> {
             .query_selector(&format!(".maestro-markdown {selector}"))
             .unwrap()
         else {
+            failures.push(format!("{name}: missing"));
             continue;
         };
         let actual = style(&element, property);
