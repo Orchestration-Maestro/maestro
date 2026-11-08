@@ -5,6 +5,7 @@ use maestro_extensions::{
     Cancellation, EventBus, ExtensionRunner, Local, create_event_bus_for, types::ExtensionHandle,
 };
 use maestro_test_directory::Scratch;
+use maestro_test_process::loopback;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use tokio::io::AsyncReadExt;
@@ -61,13 +62,18 @@ impl Programs {
 /// signal ended on Unix has no code and reports 0.
 const KILLED: i32 = if cfg!(windows) { 1 } else { 0 };
 
-/// Whether a read saw the child's end of a socket close. Windows resets the connection of
-/// a killed process instead of closing it.
+/// Whether a read saw the child's end of a socket close. Windows resets or aborts the
+/// connection of a killed process instead of closing it.
 fn closed(read: &std::io::Result<usize>) -> bool {
     match read {
         Ok(read) => *read == 0,
-        Err(error) => error.kind() == std::io::ErrorKind::ConnectionReset,
+        Err(error) => loopback::client_closed(error),
     }
+}
+
+/// Whether a failed announcement read means the child ended before announcing.
+fn ended_before_announcing(error: &std::io::Error) -> bool {
+    error.kind() == std::io::ErrorKind::UnexpectedEof || loopback::client_closed(error)
 }
 
 /// Uses the existing fixture's production artifact loader.
@@ -152,14 +158,7 @@ async fn ready(listener: &tokio::net::TcpListener) -> Option<tokio::net::TcpStre
     let mut ready = [0; 6];
     match socket.read_exact(&mut ready).await {
         Ok(_) => {}
-        Err(error)
-            if matches!(
-                error.kind(),
-                std::io::ErrorKind::UnexpectedEof | std::io::ErrorKind::ConnectionReset
-            ) =>
-        {
-            return None;
-        }
+        Err(error) if ended_before_announcing(&error) => return None,
         Err(error) => panic!("the child's announcement failed: {error}"),
     }
     assert_eq!(&ready, b"READY\n");
@@ -253,6 +252,26 @@ fn release(socket: tokio::net::TcpStream) -> Option<tokio::net::TcpStream> {
     assert_eq!(socket.try_write(b"g").unwrap(), 1);
     drop(socket);
     None
+}
+
+#[test]
+fn a_killed_childs_socket_counts_as_closed_for_every_closed_kind() {
+    use std::io::ErrorKind;
+    assert!(closed(&Ok(0)));
+    assert!(!closed(&Ok(1)));
+    for kind in [
+        ErrorKind::BrokenPipe,
+        ErrorKind::ConnectionReset,
+        ErrorKind::ConnectionAborted,
+    ] {
+        assert!(closed(&Err(kind.into())), "{kind:?}");
+        assert!(ended_before_announcing(&kind.into()), "{kind:?}");
+    }
+    assert!(ended_before_announcing(&ErrorKind::UnexpectedEof.into()));
+    for kind in [ErrorKind::PermissionDenied, ErrorKind::TimedOut] {
+        assert!(!closed(&Err(kind.into())), "{kind:?}");
+        assert!(!ended_before_announcing(&kind.into()), "{kind:?}");
+    }
 }
 
 #[test]
