@@ -152,14 +152,17 @@ threads-required = "num-cpus"
 # run 40795869386, longest first (100 downwards). Other tests keep priority 0.
 # They only order tests within a shard; limits come from the rules above.
 # See docs/development.md#slowest-first-test-order for evidence and refresh steps.
+# The cold-start test takes every core, so it ranks first whatever its duration: nextest starts
+# tests in priority order and holds the queue until it fits, so any test ranked above it would
+# run alone beside idle cores while it waited.
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_check_repairs_formatting)"
-priority = 100
+priority = 99
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
-priority = 99
+priority = 100
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_check_preserves_adjacent_locks)"

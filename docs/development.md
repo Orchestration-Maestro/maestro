@@ -953,10 +953,16 @@ selected failure visible. It does not run the expensive browser bodies.
 
 #### Measured successful test durations and priorities (seconds)
 
+The cold browser build takes every core, so it holds priority 100 whatever its duration. Nextest
+starts tests in priority order and holds the queue until the next one fits. A test ranked above it
+ran alone for 17 seconds in merge-group run 42491037894 while three cores sat idle. Replaying that
+shard's durations with the two ranks swapped ends the shard 8 seconds sooner, and the browser
+lanes then start together after the cold build.
+
 | Priority | Package / test | Seconds |
 | ---: | --- | ---: |
-| 100 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
-| 99 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
+| 99 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
+| 100 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
 | 98 | `maestro-tooling` / `browser_author_build::browser_author_check_preserves_adjacent_locks` | 109.765 |
 | 97 | `maestro-tooling` / `browser_author_build::browser_author_checks_accept_valid_sources` | 105.572 |
 | 96 | `maestro-extensions-wasmtime` / `component_events::input::component_input_chains_text_preserves_images_and_forwards_sources` | 101.546 |

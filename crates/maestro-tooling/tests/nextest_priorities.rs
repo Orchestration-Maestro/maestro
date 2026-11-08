@@ -46,8 +46,8 @@ fn measured_priorities_order_tests_without_changing_shards() {
     assert_eq!(
         after,
         [
-            "browser_author_build::browser_check_repairs_formatting",
             "browser_author_build::browser_author_bootstraps_from_empty_build_state",
+            "browser_author_build::browser_check_repairs_formatting",
             "browser_author_build::browser_author_check_preserves_adjacent_locks",
             "a_short",
         ]
