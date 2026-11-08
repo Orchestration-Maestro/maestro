@@ -842,7 +842,7 @@ fn native_poll_milliseconds() {
             (2_147_483_647, 999_999_046, 2_147_483_647_999.999),
         ] {
             let time: SystemTime = UNIX_EPOCH + Duration::new(seconds, nanos);
-            let file = std::fs::File::open(&path).unwrap();
+            let file = std::fs::File::options().write(true).open(&path).unwrap();
             file.set_times(std::fs::FileTimes::new().set_modified(time))
                 .unwrap();
             let actual = rx.recv().await.unwrap();

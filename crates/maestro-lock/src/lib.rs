@@ -9,6 +9,8 @@ pub use poison::{lock, read, write};
 mod recovery;
 mod replace;
 pub use identity::{acquire_write, acquire_write_bounded, try_acquire_write};
+#[cfg(unix)]
+pub use replace::narrow_existing;
 pub use replace::{Committed, CreationMode, Replace, replace};
 
 use std::fs::{File, TryLockError};

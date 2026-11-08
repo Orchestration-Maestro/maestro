@@ -79,3 +79,54 @@ fn run(child: &mut Command, log: &Path) -> io::Result<ExitCode> {
     eprintln!("Browser smoke check failed. See {}", log.display());
     Ok(ExitCode::FAILURE)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+    use std::path::Path;
+
+    use super::WITNESSES;
+
+    /// The examples the shared wasm job compiles, grouped by owning package.
+    fn declared() -> BTreeMap<String, Vec<String>> {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/ci.toml");
+        let declaration: toml::Table = std::fs::read_to_string(path)
+            .expect("the repository declares its CI settings")
+            .parse()
+            .expect("the CI settings read as TOML");
+        let examples = declaration
+            .get("wasm_examples")
+            .and_then(toml::Value::as_table)
+            .expect("the CI settings declare the wasm examples");
+        examples
+            .iter()
+            .map(|(package, names)| {
+                let names = names
+                    .as_array()
+                    .expect("a wasm example list")
+                    .iter()
+                    .map(|name| name.as_str().expect("an example name").to_owned())
+                    .collect();
+                (package.clone(), names)
+            })
+            .collect()
+    }
+
+    /// The shared wasm job compiles the examples the caller declares, so the declaration names
+    /// the witness list and nothing else.
+    #[test]
+    fn the_declared_wasm_examples_are_the_browser_witnesses() {
+        let mut expected: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        for (package, example, _) in WITNESSES {
+            expected
+                .entry(package.to_owned())
+                .or_default()
+                .push(example.to_owned());
+        }
+        assert_eq!(
+            declared(),
+            expected,
+            "the shared wasm job compiles exactly the browser witnesses"
+        );
+    }
+}

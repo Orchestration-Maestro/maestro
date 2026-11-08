@@ -82,7 +82,7 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
     );
     let metadata: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(metadata["packages"].as_array().unwrap().len(), 2);
-    let expected = serde_json::to_value(dependency.join("Cargo.toml")).unwrap();
+    let expected = maestro_path::join(&[&dependency.to_string_lossy(), "Cargo.toml"]);
     assert!(
         metadata["packages"]
             .as_array()

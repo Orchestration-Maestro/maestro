@@ -60,7 +60,7 @@ impl Source {
     ///
     /// The member is the one that holds this source; it decides which checks the walk serves.
     pub(crate) fn new(member: &Member, path: PathBuf, mut contents: String) -> Self {
-        let syntax = syn::parse_file(&contents).ok();
+        let syntax = parse(&contents);
         if let Some(shebang) = syntax.as_ref().and_then(|file| file.shebang.as_ref()) {
             // Syn retains the newline but removes the shebang before assigning spans.
             contents.drain(..shebang.len());
@@ -84,6 +84,13 @@ impl Source {
             .as_ref()
             .map_or(&[], |walk| walk.test_spans.as_slice())
     }
+}
+
+/// Parse one source's syntax for the shared walk, counting the passes under test.
+fn parse(contents: &str) -> Option<syn::File> {
+    #[cfg(test)]
+    SYNTAX_PARSES.set(SYNTAX_PARSES.get() + 1);
+    syn::parse_file(contents).ok()
 }
 
 /// Load each workspace member's Rust files with normalized source text.
@@ -165,6 +172,8 @@ thread_local! {
     pub(crate) static SPAN_TESTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// Syntax walks of parsed sources on the current test thread.
     static SYNTAX_WALKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Syntax parses of loaded sources on the current test thread.
+    pub(crate) static SYNTAX_PARSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// Count line breaks in the supplied source slice.

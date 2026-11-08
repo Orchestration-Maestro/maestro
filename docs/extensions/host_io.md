@@ -38,6 +38,9 @@ permission to list that directory. On Linux and macOS, the host opens a denied
 parent with a path-only or search-only handle, so direct paths and absolute
 links through that parent keep native file access. Removing search permission
 still denies access; the handle does not grant permission to list the directory.
+The directory the host opens must be a directory on every system. A path such as
+`notes.txt/.` fails with `not-directory` and leaves `notes.txt` untouched, even
+on Windows, which would otherwise drop the final `.` and reach the file itself.
 
 The host supplies the native current directory when it can observe it. Guest
 export startup applies that observation once to Rust’s standard-library cwd
@@ -74,6 +77,9 @@ per-drive state the component does not have. Unix paths are returned unchanged.
 The cwd is supplied in the same spelling, for example `/C:/Users/me/project`,
 and the 0.3 interfaces list the same single root, so a component that opens
 through them passes the converted path without its leading `/`.
+A working directory handed back to the host takes either spelling: the host
+reads it as the native path before a built-in tool factory, the local shell
+operations or `exec` use it, so `std::env::current_dir()` works there as it is.
 
 Links below the root behave as they do natively. Relative and absolute
 symbolic links and junctions are followed, including links to directories.

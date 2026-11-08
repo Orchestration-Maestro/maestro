@@ -70,12 +70,17 @@ pub fn wrapper(directory: &Path, name: &str) -> PathBuf {
     )
 }
 
+/// The file name of the program `name` on this host, with its executable suffix.
+pub fn executable(name: &str) -> String {
+    format!("{name}{}", std::env::consts::EXE_SUFFIX)
+}
+
 /// Install the prepared artifact as one alias with its complete fixture record.
 pub fn installed(directory: &Path, name: &str, contents: &str) -> PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     fs::create_dir_all(directory).unwrap();
-    let path = directory.join(name);
+    let path = directory.join(executable(name));
     maestro_test_process::install_executable(Path::new(&artifact), &path).unwrap();
     let mut record = path.as_os_str().to_owned();
     record.push(".fixture");

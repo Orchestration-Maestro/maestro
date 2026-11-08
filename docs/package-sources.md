@@ -42,7 +42,8 @@ the file system. Consumed malformed source fields fail; ignored
 filter fields remain untouched. Adding a source replaces the first identity match
 when its stored string differs from the normalized source, preserving other object
 members and their order. An equal string, or an absent removal, does not call a
-settings setter. Install-and-persist applies the same rule even when the checkout
+settings setter; on Windows the comparison treats `\` and `/` as one separator.
+Install-and-persist applies the same rule even when the checkout
 already has the fetched commit. An absent registration is appended. Remote sources
 keep their input spelling; local paths are normalized relative to their scope.
 

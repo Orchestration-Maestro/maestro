@@ -1,8 +1,16 @@
-//! Visible boxes and their pixel counts, shared by the artifact scenes.
+//! Visible boxes, their pixel counts and glyph shapes, shared by the scenes.
 
-use super::{Page, require};
+use super::{Page, changed, contrast, require};
 use serde_json::{Value, json};
 use std::io;
+
+/// Bounds of a right chevron's painted width over height, which measures 0.67 at the driver's
+/// 1.25 device pixel ratio, antialiasing included.
+pub(super) const RIGHT_CHEVRON: (f64, f64) = (0.0, 0.75);
+
+/// Bounds of a down chevron's painted width over height, which measures 1.5 at the driver's
+/// 1.25 device pixel ratio, antialiasing included.
+pub(super) const DOWN_CHEVRON: (f64, f64) = (1.33, f64::INFINITY);
 
 /// The first `selector` match's visible box as `[left, top, right, bottom]`, failing when it
 /// has no area or reaches outside the visible page.
@@ -33,4 +41,34 @@ pub(super) async fn role_pixels(
         json!(role)
     ))
     .await
+}
+
+/// The first `selector` match paints ink whose box has the shape `name`: the pixels that change
+/// when the glyph is hidden span a width over height inside `least..=most`.
+pub(super) async fn shape(
+    page: &mut Page<'_>,
+    scene: &str,
+    selector: &str,
+    (least, most): (f64, f64),
+    name: &str,
+) -> io::Result<()> {
+    let rect = visible(page, selector).await?;
+    let element = json!(selector).to_string();
+    contrast(
+        page,
+        &format!("[__maestroPaint.element({element})]"),
+        "n=>n.style.visibility='hidden'",
+    )
+    .await?;
+    let ink: Option<[f64; 2]> = page.read(&format!("(e=>e&&[e[2]-e[0]+1/devicePixelRatio,e[3]-e[1]+1/devicePixelRatio])(__maestroPaint.extent('decorated','without',{rect}))")).await?;
+    let [width, height] =
+        ink.ok_or_else(|| io::Error::other(format!("{selector} paints no ink")))?;
+    let ratio = width / height;
+    require(
+        (least..=most).contains(&ratio),
+        &format!("{selector} paints {name} ({width:.2} by {height:.2} pixels)"),
+    )?;
+    let pixels = changed(page, Some(&element), ("decorated", "without")).await?;
+    page.observed(scene, selector, pixels);
+    Ok(())
 }

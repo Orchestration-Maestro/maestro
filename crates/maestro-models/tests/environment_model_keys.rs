@@ -512,37 +512,15 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
                 OVERRIDE
             });
         }
-        assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, PROFILE);
-        let directory = Directory::new()?;
-        let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
-        for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
-            let mut variables = vars(&[("MAESTRO_NATIVE_EMPTY", "")]);
-            variables.extend(profile.map(|value| ("LLVM_PROFILE_FILE".into(), value.into())));
-            #[cfg(unix)]
-            {
-                use std::os::unix::ffi::OsStringExt as _;
-                variables.push((
-                    "MAESTRO_NATIVE_BYTES".into(),
-                    std::ffi::OsString::from_vec(vec![b'a', 0xff]),
-                ));
-            }
-            run(
-                maestro_test_process::TestProcess::current(NAME)?
-                    .env_clear()
-                    .case(stage),
-                &directory,
-                &variables,
-                "unknown-native-provider",
-                (None, None),
-            )?;
-        }
-        let unchanged = std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
-        assert!(unchanged, "child launches changed the outer environment");
-        return Ok(());
+        return outer_environment_stage(NAME, PROFILE, OVERRIDE);
     }
+    // An instrumented child writes its relative profile into its working directory.
+    let root = Directory::new()?;
     let output = maestro_test_process::TestProcess::current(NAME)?
         .nocapture()
         .case("outer")
+        .current_dir(root.path())
+        .env("MAESTRO_PROFILE_ROOT", root.path())
         .env("LLVM_PROFILE_FILE", PROFILE)
         .env("MAESTRO_NATIVE_SENTINEL", "ambient")
         .output()?;
@@ -551,6 +529,44 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Launch both cleared stages from the outer child and check it left its environment alone.
+fn outer_environment_stage(name: &str, profile: &str, overriding: &str) -> TestResult {
+    assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, profile);
+    let root = std::env::var_os("MAESTRO_PROFILE_ROOT").ok_or("missing profile root")?;
+    assert_eq!(
+        std::env::current_dir()?,
+        std::path::Path::new(&root),
+        "the relative profile lands outside the disposable root"
+    );
+    let directory = Directory::new()?;
+    let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+    for (stage, explicit) in [("inherited", None), ("override", Some(overriding))] {
+        let mut variables = vars(&[("MAESTRO_NATIVE_EMPTY", "")]);
+        variables.extend(explicit.map(|value| ("LLVM_PROFILE_FILE".into(), value.into())));
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStringExt as _;
+            variables.push((
+                "MAESTRO_NATIVE_BYTES".into(),
+                std::ffi::OsString::from_vec(vec![b'a', 0xff]),
+            ));
+        }
+        run(
+            maestro_test_process::TestProcess::current(name)?
+                .env_clear()
+                .case(stage),
+            &directory,
+            &variables,
+            "unknown-native-provider",
+            (None, None),
+        )?;
+    }
+    let unchanged = std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
+    assert!(unchanged, "child launches changed the outer environment");
     Ok(())
 }
 

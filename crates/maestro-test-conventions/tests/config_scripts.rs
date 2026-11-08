@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::support::Workspace;
+use crate::support::{Workspace, native_path_text};
 use maestro_test_conventions::check_workspace;
 
 /// A fixture workspace with one member and a runner configuration directory.
@@ -20,7 +20,10 @@ fn runner_configuration_rejects_a_shell_script() {
 
     let error = check_workspace(workspace.root.path()).unwrap_err();
 
-    assert!(error.contains(".config/prepare.sh"), "{error}");
+    assert!(
+        error.contains(&native_path_text(".config/prepare.sh")),
+        "{error}"
+    );
     assert!(error.contains("development tool"), "{error}");
 }
 

@@ -1,11 +1,7 @@
 //! Recoverable byte publication preserving native file identity.
 #[cfg(all(test, unix))]
 use crate::identity::resolve_write_target;
-use std::{
-    fs::{self, File},
-    io,
-    path::Path,
-};
+use std::{fs::File, io, path::Path};
 
 /// Permission timing for a newly created target; existing access controls always win.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +36,28 @@ pub struct Committed {
     /// Unexpected directory sync or recovery cleanup error after target sync.
     pub dir_sync: Option<io::Error>,
 }
+/// Narrows the existing target at `path` to `bits`, leaving a missing file missing.
+///
+/// The caller chooses the mode it publishes under. An existing file must be writable by its
+/// owner, so the handle that opens it proves that before its bits narrow; a read-only file
+/// fails with the native permission error and keeps its bytes.
+///
+/// # Errors
+/// Returns the native open or permission error of an existing file it cannot narrow.
+#[cfg(unix)]
+pub fn narrow_existing(path: &Path, bits: u32) -> io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    match File::options().write(true).open(path) {
+        Ok(file) => file.set_permissions(std::fs::Permissions::from_mode(bits)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
 /// Publishes intended bytes durably, then writes the target in place under exclusion.
+///
+/// No directory is created: a missing parent, including the missing target directory of a
+/// dangling link, fails with the native not-found error and leaves the link in place.
 ///
 /// # Errors
 /// Returns native resolution, lock, staging or target-write errors. An interrupted
@@ -51,11 +68,6 @@ pub fn replace(path: &Path, bytes: &[u8], options: Replace) -> io::Result<Commit
     } else {
         path.to_path_buf()
     };
-    let parent = target
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    fs::create_dir_all(parent)?;
     crate::acquire_write(&target, false)?.replace(bytes, options.creation_mode)
 }
 

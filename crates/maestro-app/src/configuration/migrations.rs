@@ -6,7 +6,7 @@ mod tests;
 mod relocation;
 use relocation::{PreparedMove, relocate, remove_link_entry};
 
-use maestro_credentials::write_auth_file;
+use crate::model_account::cli::write_private;
 use maestro_json::{canonical_entries, pretty_object};
 use maestro_path::join;
 use maestro_session::session_manager::get_default_session_dir;
@@ -118,7 +118,10 @@ pub fn migrate_auth_to_auth_json() -> io::Result<Vec<String>> {
     let prepared = prepare_auth(&oauth_path, &settings_path);
     if !prepared.migrated.is_empty() {
         let text = pretty_object(&prepared.migrated).map_err(io::Error::other)?;
-        write_auth_file(&auth_path, &text)?;
+        if let Some(directory) = Path::new(&auth_path).parent() {
+            fs::create_dir_all(directory)?;
+        }
+        write_private(&auth_path, &text)?;
     }
     if prepared.oauth_read {
         let _ = fs::rename(&oauth_path, format!("{oauth_path}.migrated"));

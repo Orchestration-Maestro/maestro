@@ -1,6 +1,6 @@
 //! Deterministic publication phases exercised through the native transaction.
 use super::*;
-use std::{cell::RefCell, path::PathBuf};
+use std::{cell::RefCell, fs, path::PathBuf};
 
 /// Controlled native-acquisition observation.
 type Acquisition = Box<dyn FnMut(&str)>;
@@ -280,6 +280,25 @@ fn replacement_preserves_existing_permissions_before_publication() {
     observed.result.unwrap();
     assert_eq!(observed.temporary_mode.unwrap() & !0o640, 0);
     assert_eq!(observed.mode, 0o640);
+}
+
+#[cfg(unix)]
+#[test]
+fn narrowing_a_looser_target_keeps_its_bytes_and_a_missing_one_stays_absent() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let existing = dir.path().join("loose");
+    fs::write(&existing, b"secret").unwrap();
+    fs::set_permissions(&existing, fs::Permissions::from_mode(0o644)).unwrap();
+    narrow_existing(&existing, 0o600).unwrap();
+    assert_eq!(
+        fs::metadata(&existing).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert_eq!(fs::read(&existing).unwrap(), b"secret");
+    let absent = dir.path().join("absent");
+    narrow_existing(&absent, 0o600).unwrap();
+    assert!(!absent.exists());
 }
 
 #[cfg(unix)]
@@ -876,6 +895,36 @@ fn atomic_temporary_is_private_at_creation() {
     assert_eq!(
         fs::metadata(&target).unwrap().permissions().mode() & 0o777,
         0o600
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn atomic_publication_replaces_a_read_only_target_with_the_default_mode() {
+    use std::os::unix::fs::PermissionsExt;
+    let Some(_setup) =
+        launch_umask_cases("atomic_publication_replaces_a_read_only_target_with_the_default_mode")
+    else {
+        return;
+    };
+    let restrictive = std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077";
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let target = scratch.path().join("session.json");
+    fs::write(&target, b"previous").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o444)).unwrap();
+
+    crate::atomic_replace(
+        &target,
+        b"new",
+        crate::Symlinks::Follow,
+        crate::Temporary::Fixed("json.tmp"),
+    )
+    .unwrap();
+
+    assert_eq!(fs::read(&target).unwrap(), b"new");
+    assert_eq!(
+        fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+        if restrictive { 0o600 } else { 0o666 }
     );
 }
 

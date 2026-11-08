@@ -53,6 +53,8 @@ pub(crate) struct Walk {
     pub(crate) reads: BTreeSet<(usize, String)>,
     /// Imports of an application source in its logical module.
     pub(crate) imports: Option<Vec<application_exports::Import>>,
+    /// First public credentials name its declared surface does not carry, with its line.
+    pub(crate) credentials: Option<(usize, String)>,
     /// Lint-level attributes and root layout of a guest source.
     pub(crate) guest: Option<generated::Attributes>,
     /// Literal extension exports outside test-gated items.
@@ -131,6 +133,8 @@ struct Walker<'a> {
     reads: test_input_routes::Reads,
     /// Application imports, for application sources.
     uses: Option<application_exports::Uses>,
+    /// Credentials exports the declared surface does not carry, for a credentials root.
+    credentials: Option<(usize, String)>,
     /// Lint-level attributes, for guest sources.
     attributes: Option<generated::Attributes>,
     /// Extension exports, for production sources that spell the export macro.
@@ -163,6 +167,7 @@ impl<'a> Walker<'a> {
             resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
             reads: test_input_routes::Reads::default(),
             uses: application_exports::Uses::new(member, source),
+            credentials: application_exports::file_credentials(member, source, file),
             attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
             exports: Exports::new(source, scope),
             poison: poison::Definitions::default(),
@@ -246,6 +251,7 @@ impl<'a> Walker<'a> {
                 .unwrap_or_default(),
             reads: self.reads.finish(),
             imports: self.uses.map(|uses| uses.imports),
+            credentials: self.credentials,
             guest: self.attributes,
             exports: self.exports.map_or(0, Exports::finish),
             poison: self.poison.finish(),

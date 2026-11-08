@@ -770,6 +770,27 @@ mod tests {
         assert!(!root.path().join("actual.json.lock").exists());
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn save_through_a_dangling_link_creates_no_target_directory() {
+        let root = Scratch::new().unwrap();
+        let file = support::settings_file(root.path(), SettingsScope::Global);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        let target = root.path().join("missing/nested/settings.json");
+        std::os::unix::fs::symlink(&target, &file).unwrap();
+
+        let result = file_storage(root.path())
+            .with_write_lock(SettingsScope::Global, &mut |_| Ok(Some("{}".into())));
+
+        let error = result.unwrap_err();
+        let Some(std::fs::TryLockError::Error(io)) = error.downcast_ref() else {
+            panic!("expected a native lock failure, got {error:?}");
+        };
+        assert_eq!(io.kind(), std::io::ErrorKind::NotFound);
+        assert_eq!(fs::read_link(&file).unwrap(), target);
+        assert!(!root.path().join("missing").exists());
+    }
+
     #[test]
     fn settings_write_succeeds_without_a_home() {
         const TEST: &str = "settings_storage::tests::settings_write_succeeds_without_a_home";

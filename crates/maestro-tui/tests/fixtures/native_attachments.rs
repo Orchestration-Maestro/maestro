@@ -6,14 +6,54 @@ use super::completion_native::Tree;
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider};
-/// Installed executable is a required integration operand.
+use std::future::Future;
+/// Run real-search assertions with absent or unusable ambient search tools.
+///
+/// Each child receives a copied pinned program separately from PATH, so host tools cannot
+/// satisfy a missing fixture or change completion results. Only the child runs the body.
+pub(crate) fn isolated(body: impl Future<Output = ()>) {
+    if maestro_test_process::selection().is_child() {
+        runtime().block_on(body);
+        return;
+    }
+    let bin = Tree::new().unwrap();
+    let source = std::env::var_os("MAESTRO_TEST_FD").expect("nextest supplies pinned fd");
+    let fd = bin
+        .path()
+        .join(format!("fd{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(source, &fd).unwrap();
+    let ambient = Tree::new().unwrap();
+    for name in ["fd", "rg"] {
+        maestro_test_process::install_command(
+            &ambient
+                .path()
+                .join(format!("{name}{}", std::env::consts::EXE_SUFFIX)),
+            r#"{"scenario":"output","stdout":[],"stderr":[],"code":99}"#,
+        )
+        .unwrap();
+    }
+    for path in [std::ffi::OsStr::new(""), ambient.path().as_os_str()] {
+        let output =
+            maestro_test_process::TestProcess::current(std::thread::current().name().unwrap())
+                .unwrap()
+                .case("search-path")
+                .nocapture()
+                .env("PATH", path)
+                .env("MAESTRO_TEST_FD", &fd)
+                .output()
+                .unwrap();
+        assert!(
+            output.status.success(),
+            "PATH={path:?}\n{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+/// The isolated child's pinned executable, independent of its search PATH.
 pub(crate) fn executable() -> String {
-    let output = std::process::Command::new("fd")
-        .arg("--version")
-        .output()
-        .expect("fd installed");
-    assert!(output.status.success());
-    "fd".into()
+    std::env::var("MAESTRO_TEST_FD").expect("isolated child supplies the pinned executable")
 }
 /// Query through the same native provider used by callers.
 pub(crate) async fn query(base: &str, text: &str) -> Option<AutocompleteSuggestions> {
