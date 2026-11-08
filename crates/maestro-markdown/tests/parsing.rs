@@ -810,6 +810,7 @@ fn escaped_angle_span_keeps_a_quoted_continuation_marker_as_text() {
     }
     for options in link_grammars()
         .into_iter()
+        .chain([maestro_markdown::MarkedOptions::Documentation])
         .filter(|options| *options != escaped)
     {
         let document = maestro_markdown::parse_with_options("> a <b\n> c\n".into(), options);
