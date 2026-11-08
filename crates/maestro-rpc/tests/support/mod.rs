@@ -155,7 +155,10 @@ pub fn options(
                 theme: state,
             }),
             render_environment: Rc::new(ToolRenderEnvironment {
-                runtime: Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(local)),
+                runtime: Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
+                    local,
+                    String::new(),
+                )),
                 readme_path: String::new(),
                 live_theme: theme,
                 highlighter: Rc::new(SyntectHighlighter::new().unwrap()),

@@ -40,7 +40,10 @@ pub fn launchers(
                         theme: themes.theme(),
                         export_operations: export,
                         render_environment: Rc::new(ToolRenderEnvironment {
-                            runtime: Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(local)),
+                            runtime: Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
+                                local,
+                                maestro_app::configuration::config::get_agent_dir()?,
+                            )),
                             readme_path: maestro_app::configuration::config::get_readme_path()?,
                             live_theme: themes.theme(),
                             highlighter: Rc::new(
@@ -73,9 +76,10 @@ fn interactive(
         options,
         (
             terminal,
-            Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(Rc::clone(
-                &local,
-            ))),
+            Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
+                Rc::clone(&local),
+                maestro_app::configuration::config::get_agent_dir()?,
+            )),
         ),
         themes,
         Rc::new(

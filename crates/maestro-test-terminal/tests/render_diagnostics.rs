@@ -18,14 +18,15 @@ const COLUMNS: usize = 10;
 #[cfg(unix)]
 const RENDER_DIRECTORY: &str = "/tmp/tui";
 
-/// Where the writer keeps `name` below the home's agent directory, joined natively.
+/// Where the writer keeps `name` in the agent directory, joined natively.
 fn agent_log(home: &Path, name: &str) -> PathBuf {
     agent_directory(home).join(name)
 }
 
-/// The home's agent directory, which the writer creates only when it writes a file.
+/// The agent directory the host supplies, which the writer creates only when it writes a
+/// file.
 fn agent_directory(home: &Path) -> PathBuf {
-    home.join(".maestro").join("agent")
+    home.join("agent")
 }
 
 /// The text the writer logged in `path`, or nothing when it wrote no file.
@@ -60,7 +61,7 @@ impl Rig {
     /// Creates the writer; nothing is drawn yet and no log directory exists.
     fn new(home: &Path, lines: &[&str]) -> Self {
         let terminal = RecordingTerminal::new(COLUMNS, 3);
-        let runtime = ManualRuntime::with_home(home.to_path_buf());
+        let runtime = ManualRuntime::with_agent_dir(agent_directory(home));
         let tui = TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -330,7 +331,7 @@ fn settings_description_rows_fit_the_frame_viewport() {
         |home| {
             for width in [1, 2, 3, 4, 8] {
                 let terminal = RecordingTerminal::new(width, 20);
-                let runtime = ManualRuntime::with_home(home.to_path_buf());
+                let runtime = ManualRuntime::with_agent_dir(agent_directory(home));
                 let tui = TUI::new(
                     terminal.handle(),
                     runtime.handle(),

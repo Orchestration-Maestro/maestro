@@ -22,7 +22,7 @@ use tokio::task::LocalSet;
 /// The frame-writer factory shared by both selector hosts.
 fn writer(local: Rc<LocalSet>) -> Rc<dyn Fn(Option<bool>) -> io::Result<TUI>> {
     Rc::new(move |cursor| {
-        let (terminal, runtime) = maestro_cli::input::selector::native_terminal(Rc::clone(&local));
+        let (terminal, runtime) = maestro_cli::input::selector::native_terminal(Rc::clone(&local))?;
         Ok(TUI::new(
             terminal,
             runtime,
@@ -71,13 +71,15 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
 
 /// The session selector over the application's supplied scope loaders.
 pub fn sessions(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> SessionPresentation {
-    let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(Rc::clone(
-        &local,
-    )));
+    let host = selector(Rc::clone(&local));
     SessionPresentation {
-        host: selector(local),
+        host,
         keybindings: None,
         presenter: Rc::new(move |request, callbacks| {
+            let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
+                Rc::clone(&local),
+                maestro_app::configuration::config::get_agent_dir()?,
+            ));
             let component = SessionSelectorComponent::new(
                 request.current_sessions_loader,
                 request.all_sessions_loader,
@@ -89,7 +91,7 @@ pub fn sessions(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> SessionPresentati
                     file_operations: None,
                     current_session_file_path: None,
                     theme: theme.theme(),
-                    runtime: runtime.clone(),
+                    runtime,
                     request_render: request.request_render,
                     now_ms: Rc::new(|| {
                         std::time::SystemTime::now()
@@ -112,11 +114,13 @@ pub fn sessions(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> SessionPresentati
 
 /// Continue/cancel presentation using the existing extension selection component.
 pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSessionCwdPresentation {
-    let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(Rc::clone(
-        &local,
-    )));
+    let create = writer(Rc::clone(&local));
     let palette = theme.theme();
     let presenter: ExtensionSelectorFactory = Rc::new(move |request| {
+        let runtime = Rc::new(maestro_tui_crossterm::ProcessTuiRuntime::new(
+            Rc::clone(&local),
+            maestro_app::configuration::config::get_agent_dir()?,
+        ));
         let component = Rc::new(
             ExtensionSelectorComponent::new(
                 request.title,
@@ -126,7 +130,7 @@ pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSession
                 ExtensionSelectorOptions {
                     tui: Some(request.tui),
                     timeout: None,
-                    runtime: runtime.clone(),
+                    runtime,
                     theme: palette.clone(),
                     on_toggle_tools_expanded: None,
                 },
@@ -138,7 +142,6 @@ pub fn missing_cwd(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> MissingSession
             focus: component,
         })
     });
-    let create = writer(local);
     MissingSessionCwdPresentation {
         create_ui: Rc::new(move |cursor| create(Some(cursor))),
         theme,

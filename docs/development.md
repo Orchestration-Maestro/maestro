@@ -694,6 +694,8 @@ compiled Cargo package version. It re-exports the resource owner's `.maestro`
 configuration-directory name and derives `MAESTRO_CODING_AGENT_DIR` and
 `MAESTRO_CODING_AGENT_SESSION_DIR` from the command name. The default agent root
 is `<home>/.maestro/agent`; a nonempty `MAESTRO_CODING_AGENT_DIR` overrides it.
+The terminal redraw log, the width crash report and the cost, usage, transcript and
+tool reports all follow this one directory.
 See [application configuration](application/configuration.md#identity-and-roots)
 for root selection. Renaming the executable alone does not change these values.
 Changing compiled identity requires source edits and a rebuild; there is no

@@ -138,7 +138,7 @@ fn stderr_report_failure_notifies_once() {
 /// Fails real scheduled work while standard error is the closed pipe, and counts the notices.
 fn report_with_a_closed_standard_error() {
     run_set(true, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
+        let host = ProcessTuiRuntime::new(local, String::new());
         let notices = Notices::default();
         let _removal = host.on_output_error(notices.handler());
         drop(host.schedule(

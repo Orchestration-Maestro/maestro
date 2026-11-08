@@ -40,9 +40,9 @@ fn replace_log(path: &Path, contents: &str) -> io::Result<()> {
     std::fs::write(path, contents)
 }
 
-/// A file in the application's log directory.
+/// A file in the agent directory.
 fn agent_log(context: &LogContext, name: &str) -> PathBuf {
-    context.home.join(".maestro").join("agent").join(name)
+    Path::new(&context.agent_dir).join(name)
 }
 
 /// The report of a frame that holds an oversized line.
