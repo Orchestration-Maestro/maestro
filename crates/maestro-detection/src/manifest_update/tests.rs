@@ -103,6 +103,27 @@ fn read_only_status_file_is_replaced_with_the_default_mode() {
     );
 }
 
+/// Gives `path` its earlier permissions back on drop, so the fixture tree stays removable.
+#[cfg(windows)]
+struct ReadOnly(PathBuf, std::fs::Permissions);
+
+#[cfg(windows)]
+impl Drop for ReadOnly {
+    fn drop(&mut self) {
+        let _ = std::fs::set_permissions(&self.0, self.1.clone());
+    }
+}
+
+/// Marks `path` read-only until the returned guard drops.
+#[cfg(windows)]
+fn make_read_only(path: &Path) -> ReadOnly {
+    let original = std::fs::metadata(path).unwrap().permissions();
+    let mut permissions = original.clone();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(path, permissions).unwrap();
+    ReadOnly(path.to_owned(), original)
+}
+
 #[cfg(windows)]
 #[test]
 fn read_only_cached_manifest_is_refused_and_left_unchanged() {
@@ -110,9 +131,7 @@ fn read_only_cached_manifest_is_refused_and_left_unchanged() {
     let old = remote_manifest("9999.01.01.1", "old");
     process_agent_manifest(&fixture.catalog(), Agent::Codex, &old).unwrap();
     let path = remote_manifest_path(&fixture.catalog(), Agent::Codex);
-    let mut permissions = std::fs::metadata(&path).unwrap().permissions();
-    permissions.set_readonly(true);
-    std::fs::set_permissions(&path, permissions).unwrap();
+    let _read_only = make_read_only(&path);
 
     let result = process_agent_manifest(
         &fixture.catalog(),
