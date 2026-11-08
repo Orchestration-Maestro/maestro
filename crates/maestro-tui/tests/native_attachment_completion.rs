@@ -5,15 +5,15 @@
 use crate::fixtures;
 use fixtures::completion_native::Tree;
 #[cfg(unix)]
-use fixtures::native_attachments::{child, native_cases};
-use fixtures::native_attachments::{entries, executable, paths, query, runtime};
+use fixtures::native_attachments::{child, native_cases, runtime};
+use fixtures::native_attachments::{entries, executable, isolated, paths, query};
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
 
 #[test]
 fn native_attachment_search_finds_nested_and_scoped_matches() {
-    runtime().block_on(async {
+    isolated(async {
         let tree = Tree::new().unwrap();
         entries(
             &tree,
@@ -56,7 +56,7 @@ fn native_attachment_search_finds_nested_and_scoped_matches() {
 
 #[test]
 fn native_attachment_search_selects_full_path_fallbacks() {
-    runtime().block_on(async {
+    isolated(async {
         let selective = Tree::new().unwrap();
         entries(
             &selective,
@@ -82,7 +82,7 @@ fn native_attachment_search_selects_full_path_fallbacks() {
 
 #[test]
 fn native_attachment_search_recurses_below_external_scope() {
-    runtime().block_on(async {
+    isolated(async {
         let tree = Tree::new().unwrap();
         let sibling = Tree::new().unwrap();
         entries(
@@ -111,7 +111,7 @@ fn native_attachment_search_recurses_below_external_scope() {
 #[cfg(unix)]
 #[test]
 fn native_attachment_search_respects_ignores_and_follows_links() {
-    runtime().block_on(async {
+    isolated(async {
         native_cases("ignore").await;
         let tree = Tree::new().unwrap();
         entries(
@@ -172,7 +172,7 @@ fn native_attachment_search_respects_ignores_and_follows_links() {
 
 #[test]
 fn native_attachment_search_preserves_quoted_insertion() {
-    runtime().block_on(async {
+    isolated(async {
         let tree = Tree::new().unwrap();
         entries(&tree, &["my folder/alpha.txt", "my folder/other.txt"]);
         assert_eq!(
@@ -236,7 +236,7 @@ fn native_attachment_search_preserves_quoted_insertion() {
 
 #[test]
 fn native_attachment_search_is_independent_of_base_name() {
-    runtime().block_on(async {
+    isolated(async {
         let tree = Tree::new().unwrap();
         for name in ["alpha-base", "other-base"] {
             entries(
@@ -257,7 +257,7 @@ fn native_attachment_search_is_independent_of_base_name() {
 #[cfg(unix)]
 #[test]
 fn native_literal_queries_keep_the_selected_filename() {
-    runtime().block_on(async {
+    isolated(async {
         native_cases("literal").await;
     });
 }
@@ -265,7 +265,7 @@ fn native_literal_queries_keep_the_selected_filename() {
 #[cfg(unix)]
 #[test]
 fn native_filename_records_preserve_whitespace_and_separators() {
-    runtime().block_on(async {
+    isolated(async {
         native_cases("identity").await;
     });
 }
