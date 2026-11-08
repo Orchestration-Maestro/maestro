@@ -1636,7 +1636,9 @@ Call `install_executable(artifact, destination)` with that explicit path. The
 caller's disposable directory owns the alias. Installation runs inside the same
 artifact and waits for the copy's writer to close; the test runner never opens a
 writable executable that a sibling child could inherit. Copies have independent
-modification times. Windows aliases use the native `.exe` suffix.
+modification times. A new copy keeps the artifact's time on macOS and Windows
+and takes the copy time on Linux, so a test that compares an alias's time with
+other files sets that time itself. Windows aliases use the native `.exe` suffix.
 
 The observation scenario reads `<alias>.fixture`, including the `.exe` suffix
 when present. The record has exactly three lines: `observe`, the parent's
