@@ -1,4 +1,5 @@
-//! Named application exports instead of unrestricted domain namespaces.
+//! Named application exports instead of unrestricted domain namespaces, and the enumerated
+//! public surface of the credentials crate.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -11,6 +12,37 @@ use crate::source::{Member, Source, imports::flatten};
 
 /// Domain crates whose frontend surface is selected by the application.
 const DOMAINS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-markdown"];
+
+/// Public names `maestro-credentials` offers; the crate names each one and adds no writer.
+const CREDENTIALS_NAMES: &[&str] = &[
+    "ApiKeyCredential",
+    "AsyncLockUpdate",
+    "AuthCredential",
+    "AuthSource",
+    "AuthStatus",
+    "AuthStorage",
+    "AuthStorageBackend",
+    "AuthStorageData",
+    "AuthStorageError",
+    "AuthStorageFuture",
+    "ConfigValueOperations",
+    "FileAuthStorageBackend",
+    "InMemoryAuthStorageBackend",
+    "LockUpdate",
+    "OAuthCredential",
+    "ProcessConfigValueOperations",
+    "clear_config_value_cache",
+    "format_no_api_key_found_message",
+    "format_no_models_available_message",
+    "format_no_model_selected_message",
+    "get_provider_login_help",
+    "resolve_config_value",
+    "resolve_config_value_or_throw",
+    "resolve_config_value_uncached",
+    "resolve_headers",
+    "resolve_headers_or_throw",
+    "test_support",
+];
 
 /// Binding paths with their visibility scopes; `None` means unrestricted visibility.
 pub(crate) type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
@@ -41,7 +73,70 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
             }
         }
     }
+    credentials(members)
+}
+
+/// Reject a public name of `maestro-credentials` that its declared surface does not carry.
+fn credentials(members: &[Member]) -> Result<(), String> {
+    for member in members
+        .iter()
+        .filter(|member| member.name == "maestro-credentials")
+    {
+        let root = member.directory.join("src").join("lib.rs");
+        for source in member.sources.iter().filter(|source| source.path == root) {
+            credentials_source(&source.path, &source.contents)?;
+        }
+    }
     Ok(())
+}
+
+/// Reject a public name of one credentials root source its declared surface does not carry.
+fn credentials_source(path: &Path, contents: &str) -> Result<(), String> {
+    let file = syn::parse_file(contents).map_err(|error| format!("{}: {error}", path.display()))?;
+    for item in &file.items {
+        match item {
+            syn::Item::Use(item) if public(&item.vis) => written(path, &item.tree)?,
+            syn::Item::Mod(item) if public(&item.vis) => carried(path, &item.ident)?,
+            _ => (),
+        }
+    }
+    Ok(())
+}
+
+/// Reject the names one public re-export writes, refusing a wildcard that hides them.
+fn written(path: &Path, tree: &syn::UseTree) -> Result<(), String> {
+    for import in flatten(tree) {
+        let Some(binding) = import.binding else {
+            let line = import
+                .path
+                .last()
+                .map_or(1, |name| name.span().start().line);
+            return Err(format!(
+                "{}:{line}: credential export surface names every export, never a wildcard",
+                path.display()
+            ));
+        };
+        carried(path, binding)?;
+    }
+    Ok(())
+}
+
+/// Reject an exported name that the credentials crate's declared surface does not carry.
+fn carried(path: &Path, name: &syn::Ident) -> Result<(), String> {
+    let spelling = name.unraw().to_string();
+    if CREDENTIALS_NAMES.contains(&spelling.as_str()) {
+        return Ok(());
+    }
+    Err(format!(
+        "{}:{}: credential export surface carries no {spelling}",
+        path.display(),
+        name.span().start().line
+    ))
+}
+
+/// Whether an item visibility makes it part of the crate's public surface.
+fn public(vis: &syn::Visibility) -> bool {
+    matches!(vis, syn::Visibility::Public(_))
 }
 
 /// Whether a resolved path begins in one of the bounded domain crates.
