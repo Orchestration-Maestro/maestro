@@ -40,9 +40,12 @@ fn environment(base: &str, configured: Option<&str>) -> BTreeMap<&'static str, O
 }
 
 /// Draws a fitting frame, then an oversized one, on a 10 column terminal whose host comes
-/// from the native selector pair.
+/// from the native selector pair. The directory is left absent, as a first run finds it.
 fn draw_then_overflow(agent_dir: &Path) {
-    std::fs::create_dir_all(agent_dir).unwrap();
+    assert!(
+        !agent_dir.exists(),
+        "the host starts without a log directory"
+    );
     let local = Rc::new(tokio::task::LocalSet::new());
     let (_terminal, runtime) =
         maestro_cli::input::selector::native_terminal(Rc::clone(&local)).unwrap();

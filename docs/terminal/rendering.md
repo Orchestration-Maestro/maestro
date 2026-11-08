@@ -266,7 +266,7 @@ measured width. Truncate component output to the width it is given; the writer d
 not clip it.
 
 With `MAESTRO_DEBUG_REDRAW=1` each full redraw appends one line to
-`maestro-debug.log` in that directory:
+`maestro-debug.log` in that directory, created on the first write:
 `[{time}] fullRender: {reason} (prev={rows}, new={rows}, height={height})`. The
 reasons are `first render`, `terminal width changed (a -> b)`,
 `terminal height changed (a -> b)`, `clearOnShrink (maxLinesRendered=n)`,

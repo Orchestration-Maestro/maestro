@@ -20,8 +20,20 @@ const DEBUG_RENDER: &str = "MAESTRO_TUI_DEBUG";
 /// Directory that receives the records of every differential update.
 const RENDER_DIRECTORY: &str = "/tmp/tui";
 
-/// Appends `contents` to `path` without creating its directory.
+/// Creates the directory that holds `path`, so a log file can be written into it.
+fn create_log_directory(path: &Path) -> io::Result<()> {
+    match path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        Some(parent) => std::fs::create_dir_all(parent),
+        None => Ok(()),
+    }
+}
+
+/// Appends `contents` to `path`, creating its directory first.
 fn append_log(path: &Path, contents: &str) -> io::Result<()> {
+    create_log_directory(path)?;
     std::fs::OpenOptions::new()
         .create(true)
         .append(true)
@@ -31,12 +43,7 @@ fn append_log(path: &Path, contents: &str) -> io::Result<()> {
 
 /// Replaces `path` with `contents`, creating its directory first.
 fn replace_log(path: &Path, contents: &str) -> io::Result<()> {
-    if let Some(parent) = path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-    {
-        std::fs::create_dir_all(parent)?;
-    }
+    create_log_directory(path)?;
     std::fs::write(path, contents)
 }
 
