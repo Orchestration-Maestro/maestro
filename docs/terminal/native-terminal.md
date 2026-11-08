@@ -65,8 +65,8 @@ Tokio runtime with the time driver enabled.
   directory, normally `maestro_app::configuration::config::get_agent_dir`, so the logs follow
   `MAESTRO_CODING_AGENT_DIR`. The writer builds its
   diagnostic paths from it and writes the files itself, through the standard library, so
-  those errors are the operating system's. A redraw log is appended without creating its
-  directory; a crash report and a differential record create their directory first.
+  those errors are the operating system's. Every diagnostic writer creates its directory
+  before writing.
 
 Dropping the set drops the work still pending. The host's own tasks hold no handle to the
 host; callers release any strong handle their callbacks capture.
