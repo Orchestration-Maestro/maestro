@@ -168,7 +168,8 @@ pub fn thinking_dom_streaming_and_instances_are_independent(import_module: &js_s
     assert_eq!(computed(&label, "animation-name"), "none");
 }
 
-/// Pointer and keyboard toggle once; reconnection keeps one binding and released roots stay inert.
+/// Pointer and keyboard toggle once, focus moves past the header and back; reconnection keeps
+/// one binding and released roots stay inert.
 #[wasm_bindgen]
 pub async fn thinking_dom_reconnect_and_drop_release_listeners(import_module: js_sys::Function) {
     let view = view();
@@ -193,8 +194,7 @@ pub async fn thinking_dom_reconnect_and_drop_release_listeners(import_module: js
     }
     pointer(center(&toggle), true).await;
     assert!(reasoning(&mounted).is_some());
-    driver("driverPress", "Tab").await;
-    assert_eq!(document().active_element(), Some(after));
+    tab_leaves_and_returns(&toggle, after).await;
     element_reconnects_with_one_binding();
     drop(shown);
     toggle.click();
@@ -206,6 +206,13 @@ pub async fn thinking_dom_reconnect_and_drop_release_listeners(import_module: js
         toggle.get_attribute("aria-expanded").as_deref(),
         Some("true")
     );
+}
+/// Tab moves the focus from `toggle` onto `after`, and Shift+Tab brings it back.
+async fn tab_leaves_and_returns(toggle: &HtmlElement, after: Element) {
+    for (key, target) in [("Tab", after), ("Shift+Tab", toggle.clone().into())] {
+        driver("driverPress", key).await;
+        assert_eq!(document().active_element(), Some(target), "{key}");
+    }
 }
 /// A detached element keeps its expansion without a binding and reconnects with exactly one.
 fn element_reconnects_with_one_binding() {
@@ -242,11 +249,13 @@ pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
     let _host = host(&view, &import_module);
     for mode in [BrandMode::Dark, BrandMode::Light] {
         let parent = container();
+        let presentation = view.pack.presentation(mode).unwrap();
         let mut properties = String::new();
-        for (key, value) in view.pack.presentation(mode).unwrap().css_properties() {
+        for (key, value) in presentation.css_properties() {
             write!(properties, "{key}:{value};").unwrap();
         }
         parent.set_attribute("style", &properties).unwrap();
+        crate::support::reading_paint::publish_colors(&presentation.colors);
         let mut shown = MountedContent::default();
         shown
             .show(&thinking("body", false), &parent, &view)
@@ -254,7 +263,7 @@ pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
         let toggle = header(&root(&shown));
         let roles = (color(&view, mode, "muted"), color(&view, mode, "text"));
         hover_moves_between_roles(&toggle, &roles).await;
-        chevron_turns_and_reverses(&toggle);
+        chevron_turns_and_reverses(&toggle).await;
         shown.show(&thinking("body", true), &parent, &view).unwrap();
         let label = toggle.last_element_child().unwrap();
         assert_eq!(
@@ -277,30 +286,24 @@ pub async fn thinking_dom_paints_brand_roles_and_disclosure_motion(
 fn midway(element: &Element, property: &str) -> Option<f64> {
     crate::contributions_support::page::seek(element, property, 75.)
 }
-/// Hovering moves the header and glyph from the muted to the text role through intermediate colors.
+/// Hovering moves the painted header and glyph from the muted to the text role through
+/// intermediate colors.
 async fn hover_moves_between_roles(toggle: &HtmlElement, (muted, text): &(String, String)) {
-    let svg = toggle
-        .first_element_child()
-        .unwrap()
-        .first_element_child()
-        .unwrap();
-    assert_eq!(&computed(toggle, "color"), muted);
-    assert_eq!(&computed(&svg, "stroke"), muted);
+    crate::support::reading_paint::observe("thinking-rest").await;
     pointer(center(toggle), false).await;
     assert_eq!(midway(toggle, "color"), Some(150.));
     let between = computed(toggle, "color");
     assert!(&between != muted && &between != text, "{between}");
     crate::contributions_support::page::finish(toggle);
-    assert_eq!(&computed(toggle, "color"), text);
-    assert_eq!(&computed(&svg, "stroke"), text);
+    crate::support::reading_paint::observe("thinking-hover").await;
     pointer((0., 0.), false).await;
     crate::contributions_support::page::finish(toggle);
-    assert_eq!(&computed(toggle, "color"), muted);
+    crate::support::reading_paint::observe("thinking-rest").await;
 }
-/// Expanding turns the chevron through intermediate angles; collapsing midway reverses it.
-fn chevron_turns_and_reverses(toggle: &HtmlElement) {
+/// Expanding turns the chevron through intermediate angles; collapsing midway reverses it to
+/// the painted right chevron, and a finished expansion paints a down chevron.
+async fn chevron_turns_and_reverses(toggle: &HtmlElement) {
     let chevron = toggle.first_element_child().unwrap();
-    assert_eq!(computed(&chevron, "transform"), "none");
     toggle.click();
     midway(&chevron, "transform");
     let turning = computed(&chevron, "transform");
@@ -310,9 +313,9 @@ fn chevron_turns_and_reverses(toggle: &HtmlElement) {
     );
     toggle.click();
     crate::contributions_support::page::finish(&chevron);
-    assert_eq!(computed(&chevron, "transform"), "none");
+    crate::support::reading_paint::observe("thinking-rest").await;
     toggle.click();
     crate::contributions_support::page::finish(&chevron);
-    assert!(computed(&chevron, "transform").contains(", 1, -1,"));
+    crate::support::reading_paint::observe("thinking-expanded").await;
     toggle.click();
 }
