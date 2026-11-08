@@ -107,7 +107,8 @@ impl Step {
 }
 
 /// Whether the client closed the connection, which ends the response early without failing it.
-fn client_closed(error: &std::io::Error) -> bool {
+#[must_use]
+pub fn client_closed(error: &std::io::Error) -> bool {
     matches!(
         error.kind(),
         ErrorKind::BrokenPipe | ErrorKind::ConnectionReset | ErrorKind::ConnectionAborted

@@ -1,6 +1,6 @@
 //! Authentication observations and exact wire frames owned by the proxy tests.
 
-use crate::tests::socks as protocol;
+use crate::tests::{loopback, socks as protocol};
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
@@ -78,29 +78,29 @@ pub fn frames(socket: &mut TcpStream, frames: &[Frame]) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Finish a rejected exchange through EOF or reset without discarding received bytes.
+/// Treat a peer that already closed the connection as the end of the exchange.
 ///
 /// # Errors
-/// Returns socket failures other than peer reset or broken pipe.
+/// Returns every failure other than a closed connection.
+pub(super) fn settle<T>(result: std::io::Result<T>) -> std::io::Result<()> {
+    match result {
+        Err(error) if !loopback::client_closed(&error) => Err(error),
+        _ => Ok(()),
+    }
+}
+
+/// Finish a rejected exchange through EOF or a closed connection without discarding received
+/// bytes.
+///
+/// # Errors
+/// Returns socket failures other than a closed connection.
 ///
 /// # Panics
 /// Panics when client protocol bytes differ from the recorded exchange.
 pub fn failed_frames(socket: &mut TcpStream, expected: &[Frame]) -> std::io::Result<Vec<u8>> {
-    match frames(socket, expected) {
-        Err(error)
-            if matches!(
-                error.kind(),
-                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
-            ) => {}
-        result => result?,
-    }
+    settle(frames(socket, expected))?;
     socket.shutdown(std::net::Shutdown::Write).ok();
     let mut after = Vec::new();
-    match socket.read_to_end(&mut after) {
-        Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
-        result => {
-            result?;
-        }
-    }
+    settle(socket.read_to_end(&mut after))?;
     Ok(after)
 }
