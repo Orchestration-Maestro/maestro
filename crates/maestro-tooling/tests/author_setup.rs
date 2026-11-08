@@ -92,7 +92,7 @@ fn archived_author_setup_rejects_missing_and_stale_outputs() {
         );
         assert!(!root.join("nextest-env").exists());
         assert!(!root.join("target/debug/examples").exists());
-        assert!(!root.join("cache-home").exists());
+        assert!(!root.join("shared-agent").exists());
         assert_eq!(fs::read_to_string(root.join("seen")).unwrap(), "unset\n");
         assert_eq!(fs::read_to_string(root.join("builds")).unwrap(), "build\n");
     }
@@ -469,7 +469,7 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
         .unwrap()
         .as_millis();
     let installed = root.join(format!(
-        "target/component-cache/wasmtime/modules/wasmtime-fixture-{milliseconds}"
+        "target/run-agent/component-cache/modules/wasmtime-fixture-{milliseconds}"
     ));
     assert_eq!(
         fs::read_to_string(installed.join("key")).unwrap(),
@@ -478,8 +478,9 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
     assert!(!installed.join("key.stats").exists());
 }
 
-/// The run's compiled code lives in a cache that only the run uses, which the tests inherit, so
-/// another process pruning the shared user cache cannot evict what the setup warmed.
+/// The run's compiled code lives in a cache below an agent directory that only the run uses,
+/// which the tests inherit, so another process pruning a shared cache cannot evict what the setup
+/// warmed.
 #[test]
 fn author_setup_warms_a_cache_only_the_run_uses() {
     for archived in [true, false] {
@@ -496,19 +497,19 @@ fn author_setup_warms_a_cache_only_the_run_uses() {
             command.output().unwrap()
         };
         assert_success(&output);
-        let private = root.join("target/component-cache");
+        let private = root.join("target/run-agent");
         let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
         assert!(
             environment
                 .lines()
-                .any(|line| line == format!("XDG_CACHE_HOME={}", private.display())),
+                .any(|line| line == format!("MAESTRO_CODING_AGENT_DIR={}", private.display())),
             "archived {archived}: {environment}"
         );
         assert!(
-            !root.join("cache-home").exists(),
-            "archived {archived}: the shared user cache was written"
+            !root.join("shared-agent").exists(),
+            "archived {archived}: the shared agent directory was written"
         );
-        let namespaces = fs::read_dir(private.join("wasmtime/modules")).unwrap();
+        let namespaces = fs::read_dir(private.join("component-cache/modules")).unwrap();
         assert_eq!(namespaces.count(), 1, "archived {archived}");
     }
 }
@@ -540,7 +541,7 @@ fn archived_author_setup_without_compiled_code_installs_none() {
     prepare(root);
     assert!(!root.join("target/test-setup/cache").exists());
     assert_success(&export(root, &root.join("target/test-setup"), true));
-    assert!(!root.join("cache-home").exists());
+    assert!(!root.join("shared-agent").exists());
 }
 
 /// Runs without an archive and without a prepared bundle build the setup example themselves,
@@ -1187,7 +1188,7 @@ fn export(root: &Path, prepared: &Path, archived: bool) -> Output {
     export_command(root, prepared, archived).output().unwrap()
 }
 
-/// The command `export` runs, with the user cache inside the fixture.
+/// The command `export` runs, with a shared agent directory inside the fixture.
 fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
     shard_command(setup_command(), root, prepared, archived)
 }
@@ -1210,7 +1211,10 @@ fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: b
             "NEXTEST_DYLD_FALLBACK_LIBRARY_PATH",
             root.join("target/debug"),
         )
-        .env("XDG_CACHE_HOME", root.join("cache-home"));
+        .env(
+            maestro_test_process::AGENT_DIRECTORY,
+            root.join("shared-agent"),
+        );
     command
 }
 
