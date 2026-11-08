@@ -190,3 +190,82 @@ fn saving_creates_the_account_file_private_to_its_owner() {
     let mode = std::fs::metadata(&path).unwrap().permissions().mode();
     assert_eq!(mode & 0o777, 0o600);
 }
+
+/// One account member to save.
+fn alpha() -> Map<String, Value> {
+    Map::from_iter([("alpha".to_owned(), json!({"type": "oauth"}))])
+}
+
+#[test]
+fn saving_creates_no_directory_for_a_missing_parent() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/missing/nested/auth.json", scratch.path().display());
+
+    let saved = save_auth(&path, &alpha());
+
+    assert!(
+        matches!(&saved, Err(AccountFileError::Write(error)) if error.kind() == std::io::ErrorKind::NotFound),
+        "{saved:?}"
+    );
+    assert!(!scratch.path().join("missing").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn saving_through_a_dangling_link_creates_no_directory() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let link = scratch.path().join("auth.json");
+    std::os::unix::fs::symlink("missing/nested/target.json", &link).unwrap();
+
+    let saved = save_auth(link.to_str().unwrap(), &alpha());
+
+    assert!(
+        matches!(&saved, Err(AccountFileError::Write(error)) if error.kind() == std::io::ErrorKind::NotFound),
+        "{saved:?}"
+    );
+    assert_eq!(
+        std::fs::read_link(&link).unwrap(),
+        std::path::Path::new("missing/nested/target.json")
+    );
+    assert!(!scratch.path().join("missing").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn saving_narrows_an_existing_account_file_to_its_owner() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/auth.json", scratch.path().display());
+    std::fs::write(&path, "{}").unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+
+    save_auth(&path, &alpha()).unwrap();
+
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o600);
+    assert!(std::fs::read_to_string(&path).unwrap().contains("alpha"));
+}
+
+#[cfg(unix)]
+#[test]
+fn saving_refuses_a_read_only_account_file_and_leaves_it_unchanged() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let path = format!("{}/auth.json", scratch.path().display());
+    std::fs::write(&path, "{}").unwrap();
+    let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+        return;
+    };
+
+    let saved = save_auth(&path, &alpha());
+
+    assert!(
+        matches!(&saved, Err(AccountFileError::Write(error)) if error.kind() == std::io::ErrorKind::PermissionDenied),
+        "{saved:?}"
+    );
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "{}");
+    assert_eq!(
+        std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+}

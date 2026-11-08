@@ -15,6 +15,14 @@ fn file_limit_is_restored_before_child_exit() {
 
 #[test]
 #[cfg(unix)]
+fn auth_conversion_through_a_dangling_link_creates_no_directory() {
+    startup::check_dangling_auth_link(
+        "auth_conversion_through_a_dangling_link_creates_no_directory",
+    );
+}
+
+#[test]
+#[cfg(unix)]
 fn current_auth_skips_both_legacy_sources() {
     startup::run("current_auth_skips_both_legacy_sources");
 }

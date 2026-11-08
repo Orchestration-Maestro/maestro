@@ -192,6 +192,38 @@ fn application_exports_follow_root_external_prelude_aliases() {
 }
 
 #[test]
+fn credentials_exports_carry_only_their_declared_names() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-credentials"]);
+    source(
+        &workspace,
+        "maestro-credentials",
+        "src/credentials.rs",
+        "pub struct AuthStorage;\npub fn write_auth_file() {}\n",
+    );
+    for export in [
+        "pub use credentials::{AuthStorage, write_auth_file};",
+        "pub use credentials::{write_auth_file as store};",
+        "pub use credentials::*;",
+        "pub mod writer;",
+    ] {
+        source(&workspace, "maestro-credentials", "src/lib.rs", export);
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error.contains("credential export surface") && error.contains(":1:"),
+            "{export}: {error}"
+        );
+    }
+    source(
+        &workspace,
+        "maestro-credentials",
+        "src/lib.rs",
+        "pub use credentials::AuthStorage;\n\n/// Opt-in helpers for controlled tests.\n#[cfg(feature = \"test-support\")]\npub mod test_support;\n",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
 fn application_exports_prefer_glob_bindings_over_external_aliases() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-app", "maestro-terminal"]);

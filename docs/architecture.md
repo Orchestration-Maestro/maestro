@@ -30,6 +30,11 @@ aliases, including when a later export refers to an earlier alias through `self`
 
 For example, `pub use maestro_terminal::render::Dirty;` selects one item.
 `pub use maestro_terminal::render;` exposes a whole module and is rejected.
+
+The same run checks the credentials crate's public surface. Its root names every
+export: the checker reports a public re-export or module whose name the crate's
+declared surface does not carry, and refuses a wildcard, so a writer cannot
+return as a public name.
 Application-owned modules may group named records and operations.
 
 ## Inventory and dependencies

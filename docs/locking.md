@@ -89,6 +89,10 @@ target in place. It syncs the target before removing the record and syncing the
 directory again. An interrupted writer leaves the record for the next holder to
 complete, not roll back.
 
+`replace` creates no directory. A missing parent, including the missing target
+directory of a dangling symbolic link, fails with the native not-found error and
+leaves the link in place; a caller that needs a directory creates it first.
+
 In-place writing preserves ownership, ACLs, native permissions and hard links.
 Existing read-only targets still refuse writable opens. Creation mode applies
 only to missing targets. Default creation permissions are unchanged. With an
@@ -99,6 +103,13 @@ open, filtered by umask, before any bytes reach the target. It never chmods a
 normal Unix creation. `None` keeps native creation defaults. Both policies leave
 existing targets' permissions unchanged. On Windows both retain the owner-write
 to read-only mapping after byte sync.
+
+A caller that publishes secrets narrows an existing looser file first with
+`narrow_existing(path, bits)`: Unix opens the file writable, so a read-only file
+fails with the native permission error, and the opened handle narrows the bits
+before any byte is written. A missing file stays missing. The caller picks the
+bits and its own policy for a refusal; the publication owner creates no mode of
+its own for an existing target.
 
 Unix replay of a read-only AtCreation target first durably stages its observed
 mode as AfterSync, then adds only owner-write while completing the recorded
@@ -128,8 +139,8 @@ the same publication owner.
 ## Atomic byte publication
 
 Workspace snapshots and detection catalogs use `maestro_lock::atomic_replace` so
-unlocked readers see complete old or new files. It creates missing parents,
-writes and syncs a temporary file beside the target, closes it, renames it over
+unlocked readers see complete old or new files. It creates the missing parent of
+its resolved target, writes and syncs a temporary file beside the target, closes it, renames it over
 the target and syncs the parent directory. Precommit failures remove the temporary
 file; a parent-sync error after rename is returned as a committed warning.
 
@@ -141,7 +152,9 @@ is created exclusively. An intervening creator is left untouched and publication
 fails. Missing targets use native default creation permissions, filtered by the
 process umask. Existing target permissions take precedence: the temporary starts
 with no broader access and retains the target's exact permissions before writing
-bytes. Other platforms keep native creation semantics.
+bytes. A read-only Unix target is the exception: it is replaced by a file with the
+default creation mode. On Windows the rename refuses a read-only target and leaves
+it unchanged.
 Renaming replaces the inode: hard links keep their old bytes, while ownership and
 ACLs are not preserved. Lock acquisition completes any pending recovery record
 before atomic publication begins; the new atomic write does not stage one.

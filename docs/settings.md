@@ -326,8 +326,10 @@ join results, then works in place. Its legacy `with_lock` operation behaves as f
 3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md):
    up to ten attempts, with 20 ms only between contended attempts.
 
-Manager saves use `with_write_lock`. The native adapter creates the parent as
-needed and takes the same write lock before reading, including when the
+Manager saves use `with_write_lock`. The native adapter creates the parent of the
+settings path as needed and no other directory: a save through a dangling symbolic
+link whose target directory is missing fails with the native not-found error and
+leaves the link in place. It takes the same write lock before reading, including when the
 settings file is absent. It holds exclusion through the single callback and
 optional write. Independent manager edits survive concurrent first writes and
 existing-file saves when the holder finishes within the writer's attempts; a
