@@ -43,7 +43,7 @@ mod selection;
 mod setup;
 mod test_process;
 
-pub use agent_directory::{AGENT_DIRECTORY, run_agent_directory};
+pub use agent_directory::{AGENT_DIRECTORY, link_files, run_agent_directory};
 pub use alone::run_alone;
 #[cfg(windows)]
 pub use console::on_console;

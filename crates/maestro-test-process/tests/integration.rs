@@ -7,6 +7,7 @@ mod child_helpers;
 mod command_route;
 mod environment_groups;
 mod executor;
+mod linked_files;
 mod native_aliases;
 mod windows_console;
 

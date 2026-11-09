@@ -86,7 +86,25 @@ fn component_cache_is_absent_without_a_usable_agent_directory() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let file = scratch.path().join("file");
     std::fs::write(&file, "not a directory").unwrap();
-    for agent in ["", "relative", file.to_str().unwrap()] {
+    for agent in ["", file.to_str().unwrap()] {
         assert!(component_cache(agent).is_none(), "{agent:?}");
     }
+}
+
+/// A relative agent directory resolves against the working directory, as every other path below
+/// the agent directory does, instead of leaving the engine without a cache.
+#[test]
+fn component_cache_resolves_a_relative_agent_directory_against_the_working_directory() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    std::env::set_current_dir(scratch.path()).unwrap();
+    let cache = component_cache("relative-agent").unwrap();
+    assert_eq!(
+        cache.directory(),
+        &std::env::current_dir()
+            .unwrap()
+            .join("relative-agent")
+            .canonicalize()
+            .unwrap()
+            .join("component-cache")
+    );
 }

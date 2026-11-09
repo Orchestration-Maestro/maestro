@@ -58,29 +58,12 @@ impl Root {
 /// `agent`, so an executable that uses `agent` loads the components the run prepared instead of
 /// compiling them again. Does nothing when the run exported no agent directory.
 pub fn share_component_cache(agent: &Path) {
-    let Some(run) = maestro_test_process::run_agent_directory() else {
-        return;
-    };
-    let from = maestro_extensions_wasmtime::component_cache_directory(&run);
-    if from.is_dir() {
-        let to = maestro_extensions_wasmtime::component_cache_directory(agent.to_str().unwrap());
-        std::fs::create_dir_all(&to).unwrap();
-        link_files(&from, &to);
-    }
-}
-
-/// Links every file below `from` into the same place below `to`, copying a file the file system
-/// cannot link.
-fn link_files(from: &Path, to: &Path) {
-    for entry in std::fs::read_dir(from).unwrap() {
-        let entry = entry.unwrap();
-        let target = to.join(entry.file_name());
-        if entry.file_type().unwrap().is_dir() {
-            std::fs::create_dir_all(&target).unwrap();
-            link_files(&entry.path(), &target);
-        } else if std::fs::hard_link(entry.path(), &target).is_err() {
-            std::fs::copy(entry.path(), &target).unwrap();
-        }
+    if let Some(run) = maestro_test_process::run_agent_directory() {
+        maestro_test_process::link_files(
+            &maestro_extensions_wasmtime::component_cache_directory(run),
+            &maestro_extensions_wasmtime::component_cache_directory(agent),
+        )
+        .unwrap();
     }
 }
 

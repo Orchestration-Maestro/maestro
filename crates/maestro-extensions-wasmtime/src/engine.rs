@@ -31,19 +31,22 @@ pub fn component_engine(cache: Option<Cache>) -> wasmtime::Result<Engine> {
 
 /// The directory that holds the compiled components of the installation in `agent_dir`.
 #[must_use]
-pub fn component_cache_directory(agent_dir: &str) -> PathBuf {
-    Path::new(agent_dir).join(COMPONENT_CACHE)
+pub fn component_cache_directory(agent_dir: impl AsRef<Path>) -> PathBuf {
+    agent_dir.as_ref().join(COMPONENT_CACHE)
 }
 
 /// Opens the compiled-code cache that lives in `agent_dir`.
 ///
 /// Every platform keeps the cache in the same place, below the agent directory, so a run that
-/// moves the agent directory moves its cache with it. Returns `None` when the directory cannot
-/// be used, which leaves the engine without a cache.
+/// moves the agent directory moves its cache with it. A relative agent directory resolves against
+/// the working directory, as every other path below it does. Returns `None` when the directory
+/// cannot be used, which leaves the engine without a cache.
 #[must_use]
 pub fn component_cache(agent_dir: &str) -> Option<Cache> {
     let mut config = CacheConfig::new();
-    config.with_directory(component_cache_directory(agent_dir));
+    config.with_directory(component_cache_directory(
+        std::path::absolute(agent_dir).ok()?,
+    ));
     Cache::new(config).ok()
 }
 

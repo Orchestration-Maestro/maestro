@@ -2527,8 +2527,8 @@ variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME
 and loads a prepared component passes `run_agent_directory()` as
 `MAESTRO_CODING_AGENT_DIR`, so it reuses the setup's compiled code instead of
 compiling the component again. A test that gives an executable its own agent directory
-links the run's cache into it first, as the root-command harness in
-`crates/maestro/tests/support/mod.rs` does.
+links the run's cache into it first with `maestro_test_process::link_files`, as the root-command
+harness in `crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
