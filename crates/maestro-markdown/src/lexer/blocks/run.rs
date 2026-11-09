@@ -7,6 +7,7 @@ use crate::{
     },
     rules::paragraph::ItemText,
     source::{ScopeSource, Segmented},
+    tokenizer::block::LineEnds,
 };
 
 /// Which caller owns one block admission level.
@@ -50,6 +51,8 @@ pub(crate) struct BlockRun {
     awaiting: Option<Await>,
     /// Whether no further block can be admitted here.
     stopped: bool,
+    /// Line ends the item that admitted this operand recorded, for the lists inside it.
+    lines: Option<LineEnds>,
 }
 
 /// One dispatch step that cannot finish before its container completes.
@@ -96,7 +99,21 @@ impl BlockRun {
             output,
             awaiting: None,
             stopped: false,
+            lines: None,
         }
+    }
+
+    /// Frame the lists inside this operand by the line ends its item recorded, if any.
+    pub(crate) fn framed(self, lines: Option<LineEnds>) -> Self {
+        Self { lines, ..self }
+    }
+
+    /// Hand a list recognized at `cursor` the recorded line ends of its operand.
+    fn frame(&self, mut pending: Pending, cursor: usize) -> Pending {
+        if let (Pending::List(entry), Some(lines)) = (&mut pending, &self.lines) {
+            entry.lines = Some(lines.after(cursor));
+        }
+        pending
     }
 
     /// Admit blocks until this level completes or a container takes over.
@@ -129,7 +146,7 @@ impl BlockRun {
                     mark,
                     fallback,
                 });
-                return Step::Push(lexer.admit(pending));
+                return Step::Push(lexer.admit(self.frame(pending, start)));
             }
             self.tail(lexer, &rest, (start, mark));
         }
@@ -187,7 +204,7 @@ impl BlockRun {
                 mark,
                 fallback: Fallback::Tail,
             });
-            return Some(lexer.admit(Pending::List(entry)));
+            return Some(lexer.admit(self.frame(Pending::List(entry), cursor)));
         }
         self.tail(lexer, &rest, (cursor, mark));
         None

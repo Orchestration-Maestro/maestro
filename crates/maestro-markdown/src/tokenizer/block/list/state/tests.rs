@@ -184,3 +184,19 @@ fn item_stops_admit_each_reference_kind_at_its_prefix() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+#[test]
+fn aligned_continuation_lines_skip_the_item_stop_rules() {
+    // Each line opens a stop at two spaces, but sits at the item's indent once dedented
+    // content no lazy stop begins with.
+    crate::tests::WORK.with_borrow_mut(|work| work.item_stop_bytes = 0);
+    let mut item = framed("- a\n  <div>\n  1. d\n  + e\n\t[x]\n");
+    assert_eq!(
+        crate::tests::WORK.with_borrow(|work| work.item_stop_bytes),
+        0
+    );
+    assert_eq!(
+        item.body().mapped().to_owned_string(),
+        "a\n<div>\n1. d\n+ e\n  [x]"
+    );
+}
