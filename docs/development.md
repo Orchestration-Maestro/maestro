@@ -1300,7 +1300,8 @@ their compiler inputs. On Unix it changes each time through a read-only handle a
 never opens an executable for writing: macOS can kill the next launch of an
 executable that was opened for writing after it ran. It skips an executable when
 an exact linked library build is newer than it: advancing that binary would hide
-a rebuild from Cargo.
+a rebuild from Cargo. For the same macOS reason, preparation and setup replace a
+file they stage or install instead of copying over it.
 Cargo's `.fingerprint` records identify each direct and transitive library build
 by its fingerprint and metadata hash, independently of dependency aliases.
 A newer build of the same crate under another hash, including check-only metadata
@@ -1393,6 +1394,10 @@ Maestro through git dependencies.
 target/test-setup/development prepare-test-setup prepare target/test-setup target/test-prepare
 target/test-setup/development nextest-setup author-component
 ```
+
+Preparation keeps the running tool intact when it is already in the output
+directory. `prepare-test-setup install` does the same. Staging from another
+directory replaces the destination file instead of rewriting it.
 
 The tool takes its checkout from the workspace root above the directory it starts
 in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
@@ -1743,7 +1748,9 @@ preparation instead of adding a target-directory search or a runtime compiler.
 Call `install_executable(artifact, destination)` with that explicit path. The
 caller's disposable directory owns the alias. Installation runs inside the same
 artifact and waits for the copy's writer to close; the test runner never opens a
-writable executable that a sibling child could inherit. Copies have independent
+writable executable that a sibling child could inherit. Installing over an
+existing alias replaces its file instead of rewriting it, so an alias that
+already ran is never changed in place. Copies have independent
 modification times. A new copy keeps the artifact's time on macOS and Windows
 and takes the copy time on Linux, so a test that compares an alias's time with
 other files sets that time itself. Windows aliases use the native `.exe` suffix.
