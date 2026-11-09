@@ -18,14 +18,15 @@ const COLUMNS: usize = 10;
 #[cfg(unix)]
 const RENDER_DIRECTORY: &str = "/tmp/tui";
 
-/// Where the writer keeps `name` below the home's agent directory, joined natively.
+/// Where the writer keeps `name` in the agent directory, joined natively.
 fn agent_log(home: &Path, name: &str) -> PathBuf {
     agent_directory(home).join(name)
 }
 
-/// The home's agent directory, which the writer creates only when it writes a file.
+/// The agent directory the host supplies, which the writer creates only when it writes a
+/// file.
 fn agent_directory(home: &Path) -> PathBuf {
-    home.join(".maestro").join("agent")
+    home.join("agent")
 }
 
 /// The text the writer logged in `path`, or nothing when it wrote no file.
@@ -60,7 +61,7 @@ impl Rig {
     /// Creates the writer; nothing is drawn yet and no log directory exists.
     fn new(home: &Path, lines: &[&str]) -> Self {
         let terminal = RecordingTerminal::new(COLUMNS, 3);
-        let runtime = ManualRuntime::with_home(home.to_path_buf());
+        let runtime = ManualRuntime::with_agent_dir(agent_directory(home));
         let tui = TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -169,7 +170,6 @@ fn redraw_log_reasons_keep_exact_messages() {
         "redraw_log_reasons_keep_exact_messages",
         &[("MAESTRO_DEBUG_REDRAW", "1")],
         |home| {
-            std::fs::create_dir_all(agent_directory(home)).unwrap();
             for reason in redraw_reasons() {
                 let rig = Rig::new(home, &FIVE);
                 if reason.name != "first" {
@@ -191,23 +191,23 @@ fn redraw_log_reasons_keep_exact_messages() {
 }
 
 #[test]
-fn redraw_log_append_requires_its_directory() {
+fn redraw_log_append_creates_its_directory() {
     in_home(
-        "redraw_log_append_requires_its_directory",
+        "redraw_log_append_creates_its_directory",
         &[("MAESTRO_DEBUG_REDRAW", "1")],
         |home| {
             let rig = Rig::new(home, &FIVE);
-            rig.tui.start().unwrap();
-            rig.tui.request_render(false);
-            let error = rig.runtime.settle().unwrap_err();
-            assert_eq!(
-                error.kind(),
-                std::io::ErrorKind::NotFound,
-                "the append reports the missing directory"
-            );
             assert!(
                 !agent_directory(home).exists(),
-                "the append creates no directory"
+                "the agent directory is absent before the first frame"
+            );
+            rig.tui.start().unwrap();
+            rig.tui.request_render(false);
+            rig.runtime.settle().unwrap();
+            assert_eq!(
+                rig.redraw_log(),
+                "[2026-01-02T03:04:05.006Z] fullRender: first render (prev=0, new=5, height=3)\n",
+                "the append creates the directory and writes the line"
             );
         },
     );
@@ -330,7 +330,7 @@ fn settings_description_rows_fit_the_frame_viewport() {
         |home| {
             for width in [1, 2, 3, 4, 8] {
                 let terminal = RecordingTerminal::new(width, 20);
-                let runtime = ManualRuntime::with_home(home.to_path_buf());
+                let runtime = ManualRuntime::with_agent_dir(agent_directory(home));
                 let tui = TUI::new(
                     terminal.handle(),
                     runtime.handle(),

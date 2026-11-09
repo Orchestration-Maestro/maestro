@@ -39,6 +39,24 @@ pub fn manager(bin: String, counter: &Arc<AtomicUsize>) -> Arc<ToolsManager> {
     });
     Arc::new(ToolsManager::new(bin, Some(fetch)))
 }
+/// Manager over a fresh binary directory holding the pinned `program` (`fd` or `rg`).
+///
+/// Nextest supplies the pinned executable as `MAESTRO_TEST_<PROGRAM>`; the manager finds its
+/// copy in the binary directory before any `PATH` lookup, so the runner's search `PATH` never
+/// decides which program a real search runs. The directory lives as long as the returned guard.
+pub fn pinned_manager(program: &str) -> (Scratch, Arc<ToolsManager>) {
+    let variable = format!("MAESTRO_TEST_{}", program.to_ascii_uppercase());
+    let source = std::env::var_os(&variable)
+        .unwrap_or_else(|| panic!("{program}: nextest must supply {variable}"));
+    let bin = Scratch::new().unwrap();
+    let copy = bin
+        .path()
+        .join(format!("{program}{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(source, copy)
+        .unwrap_or_else(|error| panic!("{program}: cannot copy pinned executable: {error}"));
+    let pinned = manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
+    (bin, pinned)
+}
 /// Either replaceable operation stage.
 #[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -411,13 +429,10 @@ pub fn check_controlled(test: &str) {
         assert_eq!(canon(&actual), canon(&c.expected), "case {}", c.id);
     }
 }
-/// Run real fd; missing binaries fail instead of skipping.
+/// Run the pinned fd; a missing pin fails instead of skipping.
 pub fn native(root: &Scratch, pattern: &str, limit: Option<f64>) -> Result<Value, String> {
-    let tool = create_find_tool(
-        root.text(),
-        FindToolOptions::default(),
-        manager(root.text(), &Arc::new(AtomicUsize::new(0))),
-    );
+    let (_bin, manager) = pinned_manager("fd");
+    let tool = create_find_tool(root.text(), FindToolOptions::default(), manager);
     let params = json!({"pattern":pattern,"limit":limit});
     run((tool.execute)("call".into(), params, None, None))
         .map(|r| result_json(&r.content, r.details))

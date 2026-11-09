@@ -26,7 +26,6 @@ impl InteractiveMode {
         self.show_selector(|done| {
             let runtime = Rc::clone(&self.tool_environment.runtime);
             let clock = Rc::clone(&runtime);
-            let home = Rc::clone(&runtime);
             let selector = SessionSelectorComponent::new(
                 current_sessions(Rc::downgrade(self)),
                 all_sessions(self.runtime_host.services().agent_dir.clone()),
@@ -44,7 +43,7 @@ impl InteractiveMode {
                         let millis = clock.log_context().unix_ms;
                         millis.to_string().parse().unwrap_or(f64::NAN)
                     }),
-                    home: Rc::new(move || home.log_context().home.to_string_lossy().into_owned()),
+                    home: Rc::new(|| maestro_app::home_directory().unwrap_or_default()),
                     styles_enabled: Rc::new(|| true),
                 },
             )?;

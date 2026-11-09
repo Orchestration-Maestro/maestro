@@ -1,7 +1,7 @@
 //! Recorded-cost report behaviour.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
-use crate::analysis_fixtures::{ZONE, run_cost, sessions};
+use crate::analysis_fixtures::{ZONE, run_cost, sessions, write_files};
 use crate::isolated_home::with_environment;
 
 const HELP: &str = "Usage: cost.ts -d <path> -n <days>
@@ -360,6 +360,30 @@ fn cost_rows_sum_individual_components() {
             );
             assert!(run.stdout.contains("Day total:"), "{}", run.stdout);
             assert!(run.stdout.contains("$  3.0000"), "{}", run.stdout);
+        },
+    );
+}
+
+#[test]
+fn cost_report_reads_the_configured_sessions() {
+    with_environment(
+        "cost_report_reads_the_configured_sessions",
+        &[("TZ", ZONE), ("MAESTRO_CODING_AGENT_DIR", "$BASE/agent")],
+        |base| {
+            let journal = entry("2026-03-09T12:00:00Z", "configured", 1.0);
+            let directory =
+                maestro_session::sessions_dir(&format!("{base}/agent/sessions"), "/project");
+            write_files(
+                directory.as_str(),
+                &[("2026-03-09T12-00-00-000Z_a.jsonl", &journal)],
+            );
+            let run = run_cost(&["-d", "/project", "-n", "7"]).expect("the report runs");
+            assert!(run.succeeded(), "{}", run.stderr);
+            assert!(
+                run.stdout.contains("  configured      $  1.0000"),
+                "{}",
+                run.stdout
+            );
         },
     );
 }
