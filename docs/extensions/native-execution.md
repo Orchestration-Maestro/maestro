@@ -80,7 +80,8 @@ switch path and the setup session. A fork or switch continuation gets the fresh
 context, and a fork result carries `cancelled` only. A setup that writes to a
 persisted session publishes nothing until the history holds an assistant
 message, then flushes every buffered record at once; later appends add one
-record each.
+record each. [Session persistence](../sessions/session_manager.md) describes the
+file side.
 
 When a host phase fails, the error text reaches the awaiting frame unchanged.
 Whether that frame's context is stale depends only on whether the host had

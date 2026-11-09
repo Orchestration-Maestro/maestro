@@ -303,10 +303,10 @@ impl Host {
         let flags: Vec<_> = self.current().get_flag_values().into_iter().collect();
         self.phase("flags captured");
         self.shutdown(SessionShutdownReason::Reload, None).await?;
-        self.phase("settings reloaded");
-        self.phase("resources reloaded");
-        self.phase("providers reset");
         self.retire();
+        self.phase("settings reloaded");
+        self.phase("providers reset");
+        self.phase("resources reloaded");
         let fresh = self.fresh("/fresh-reload", &flags).await?;
         let mut start = SessionStartEvent {
             reason: SessionStartReason::Reload,

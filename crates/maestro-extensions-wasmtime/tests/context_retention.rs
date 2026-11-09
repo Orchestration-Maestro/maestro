@@ -651,10 +651,10 @@ fn reload_keeps_its_no_argument_contract() {
         let mut expected = vec![json!("flags captured"), json!("shutdown")];
         expected.extend(shutdowns(&json!({ "reason": "reload" })));
         expected.extend([
-            json!("settings reloaded"),
-            json!("resources reloaded"),
-            json!("providers reset"),
             json!("invalidated"),
+            json!("settings reloaded"),
+            json!("providers reset"),
+            json!("resources reloaded"),
             json!("activation"),
             json!("bound"),
             started("/fresh-reload"),
