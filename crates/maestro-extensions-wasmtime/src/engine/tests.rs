@@ -91,12 +91,22 @@ fn component_cache_is_absent_without_a_usable_agent_directory() {
     }
 }
 
+/// Returns the process to the directory it found, so a failing test leaves no working directory
+/// behind for its scratch root to clean up.
+struct RestoringDirectory(std::path::PathBuf);
+
+impl Drop for RestoringDirectory {
+    fn drop(&mut self) {
+        let _ = std::env::set_current_dir(&self.0);
+    }
+}
+
 /// A relative agent directory resolves against the working directory, as every other path below
 /// the agent directory does, instead of leaving the engine without a cache.
 #[test]
 fn component_cache_resolves_a_relative_agent_directory_against_the_working_directory() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let original = std::env::current_dir().unwrap();
+    let _restored = RestoringDirectory(std::env::current_dir().unwrap());
     std::env::set_current_dir(scratch.path()).unwrap();
     let cache = component_cache("relative-agent").unwrap();
     assert_eq!(
@@ -108,5 +118,4 @@ fn component_cache_resolves_a_relative_agent_directory_against_the_working_direc
             .unwrap()
             .join("component-cache")
     );
-    std::env::set_current_dir(original).unwrap();
 }
