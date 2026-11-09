@@ -1402,7 +1402,10 @@ they select every test, or none when the file is Markdown or under `docs/`.
 The conventions check names every test that reads `docs/`, `examples/` or `assets/` at
 run time, through a `../../` path, a join onto the workspace root or a call to
 `get_docs_path`, `get_examples_path` or `get_package_dir`, and fails until
-`test_inputs` routes that directory to the reading package.
+`test_inputs` routes that directory to the reading package. The crate-rules check
+reads every crate's manifests and sources, so `crates/` routes to
+`maestro-test-conventions`: a change under any crate selects the conventions
+suite beside the changed crate and its dependents.
 
 ### Test preparation in a consuming workspace
 
