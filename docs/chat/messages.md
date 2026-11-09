@@ -111,7 +111,7 @@ retained array aliases keep working.
 ## Direct shell output
 
 `BashExecutionComponent`, exported at the crate root and in
-`components::bash_execution`, takes an authored command, writer, live theme and
+`components::shell_output`, takes an authored command, writer, live theme and
 context-exclusion flag. Its border and bold command header retain `bashMode`, or
 `dim` for excluded commands, regardless of completion status. No panel background
 is painted.

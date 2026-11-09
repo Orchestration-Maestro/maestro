@@ -35,7 +35,7 @@ async fn loaded(root: &Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSessio
     #[cfg(unix)]
     return child::session(root, local, path.display().to_string()).await;
     #[cfg(not(unix))]
-    crate::support::session::component_session(
+    crate::support::sdk::component_session(
         root,
         local,
         path.display().to_string(),

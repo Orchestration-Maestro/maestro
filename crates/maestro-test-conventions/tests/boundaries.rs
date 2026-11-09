@@ -1521,7 +1521,7 @@ fn interactive_session_setup_rejects_bypasses() {
     source(
         &workspace,
         "maestro-chat",
-        "tests/footer_support/session.rs",
+        "tests/footer_support/harness.rs",
         "fn session() -> Result { AgentSession::new(AgentSessionConfig { agent: owner() }) }",
     );
     for relative in [
@@ -1569,7 +1569,7 @@ fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
         panic!("{detail}: {error}");
     };
     assert_eq!(
-        owner, "tests/footer_support/session.rs",
+        owner, "tests/footer_support/harness.rs",
         "{detail}: {error}"
     );
     assert_eq!(

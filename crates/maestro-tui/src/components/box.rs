@@ -4,7 +4,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use super::background::{BackgroundFn, fill_row};
-use crate::tui::{ChildArray, Component, ComponentHandle, Container};
+use crate::interface::{ChildArray, Component, ComponentHandle, Container};
 
 /// Text handed to the background to detect that it now styles differently.
 const BACKGROUND_SAMPLE: &str = "test";
@@ -175,7 +175,7 @@ impl Component for Box {
     /// the background, if any, is sampled, and the composed rows are reused when width,
     /// child rows and sample are unchanged.
     fn render(&self, width: usize) -> Vec<String> {
-        crate::tui::render_infallible(|render| self.render_children(width, render))
+        crate::interface::render_infallible(|render| self.render_children(width, render))
     }
 
     fn try_render(

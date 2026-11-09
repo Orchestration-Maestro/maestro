@@ -92,7 +92,7 @@ pub use maestro_theme::ThemeBg;
 /// Foreground color key, including authored names.
 pub use maestro_theme::ThemeColor;
 /// What a terminal input listener decided about one chunk of input.
-pub use maestro_tui::tui::InputListenerResult;
+pub use maestro_tui::interface::InputListenerResult;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
@@ -205,7 +205,7 @@ pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
     ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
-pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
+pub use maestro_tui::interface::{Component, ComponentHandle, InputHandler};
 /// Toolkit widgets an extension host builds, and the capability that builds the ones whose
 /// look depends on the host.
 pub mod presentation {
@@ -215,13 +215,13 @@ pub mod presentation {
     pub use maestro_tools::key_text;
     pub use maestro_tui::{
         AutocompleteProvider, AutocompleteSuggestions,
-        autocomplete::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
+        candidates::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
     };
     pub use maestro_tui::{
         Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
         SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
         SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
-        components::settings_list::SettingsListOptions,
+        components::preferences::SettingsListOptions,
         editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
     };
     pub use maestro_tui::{

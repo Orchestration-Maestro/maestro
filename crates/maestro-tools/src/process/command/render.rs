@@ -12,7 +12,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
-use maestro_tui::tui::{ComponentHandle, RepeatingTimer};
+use maestro_tui::interface::{ComponentHandle, RepeatingTimer};
 use maestro_tui::{Component, Container, Text, truncate_to_width};
 use num_traits::ToPrimitive;
 use serde_json::Value;

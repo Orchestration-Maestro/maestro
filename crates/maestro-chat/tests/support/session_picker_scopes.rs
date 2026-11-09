@@ -4,7 +4,7 @@ use maestro_chat::{
     SessionListProgress, SessionSelectorCallbacks, SessionSelectorComponent,
     SessionSelectorOptions, SessionsLoader,
 };
-use maestro_tui::tui::{Focusable, InputHandler};
+use maestro_tui::interface::{Focusable, InputHandler};
 use std::cell::RefCell;
 /// Complete rendered frame and actual callback transcript.
 #[derive(Deserialize, Debug, PartialEq)]

@@ -18,8 +18,8 @@ use maestro_tools::{
     ReadToolDetails, ToolRenderContext, ToolRenderResultOptions, create_read_tool_definition,
 };
 use maestro_tui::{
-    KeybindingDefinition, KeybindingKeys, KeybindingsManager, get_keybindings, set_keybindings,
-    tui::ComponentHandle, visible_width,
+    KeybindingDefinition, KeybindingKeys, KeybindingsManager, get_keybindings,
+    interface::ComponentHandle, set_keybindings, visible_width,
 };
 use serde::Deserialize;
 use serde_json::Value;

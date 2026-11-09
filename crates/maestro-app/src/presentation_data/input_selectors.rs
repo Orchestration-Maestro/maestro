@@ -4,7 +4,7 @@
 //! component the same fields and the settlement rules stay in one place.
 
 use maestro_tui::KeybindingsManager;
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 #[cfg(not(target_arch = "wasm32"))]
 use std::cell::RefCell;
 use std::{error::Error, future::Future, io, pin::Pin, rc::Rc};

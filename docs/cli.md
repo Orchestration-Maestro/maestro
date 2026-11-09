@@ -29,11 +29,11 @@ Package commands wait for their queued settings writes before the process return
 
 ## Arguments
 
-`input::args::parse_args` consumes an authored argument list and retains it as
+`input::arguments::parse_args` consumes an authored argument list and retains it as
 `Args`. Supplied options stay absent until authored, while messages, file
 arguments, unknown flags and diagnostics always exist; an unknown flag keeps its
 value in authored order and a repeated scalar keeps the last value. Diagnostics
-name the option that carried them. `input::args::print_help` renders the complete
+name the option that carried them. `input::arguments::print_help` renders the complete
 help document, including the registrations extensions contributed, and
 `is_valid_thinking_level` accepts exactly the reasoning levels the agent takes.
 
@@ -49,13 +49,13 @@ performs them on this machine.
 
 ## First message
 
-`input::initial_message::build_initial_message` combines piped input, prepared
+`input::messages::build_initial_message` combines piped input, prepared
 file text and the first authored prompt into one message and leaves the
 remaining prompts queued.
 
 ## Model table
 
-`input::list_models::list_models` prints the available models of a
+`input::model_listing::list_models` prints the available models of a
 `ModelRegistry` under the supplied locale comparator, with an optional fuzzy
 search over provider and model. A failed `models.json` load prints the warning
 before the table, an empty catalog prints the login guidance, and an unmatched
@@ -63,14 +63,14 @@ search prints its own line.
 
 ## Selectors
 
-`input::config_selector::select_config` and
+`input::configuration::select_config` and
 `input::session_picker::select_session` present a supplied component in a frame
 writer: focus moves before the first frame, and everything a presentation
 started stops with it, whether it closes, is cancelled or fails. The
 configuration presentation starts a theme watch only for a custom theme and stops
 any watch it starts; the session presentation has no theme and stops only the
 writer. The explicit-exit notification ends the process after those effects.
-`input::selector::SelectorHost::native` supplies the native terminal frame
+`input::selection::SelectorHost::native` supplies the native terminal frame
 writer. Before it presents, the session selector loads the configured
 keybindings and installs that manager, so the search field and the list dispatch
 the configured controls. `packages::handle_config_command` presents the
@@ -83,7 +83,7 @@ See [selectors](chat/selectors.md) for the widgets.
 
 ## Final mode dispatch
 
-`startup::main::dispatch::dispatch_mode` hands a prepared session runtime to the
+`startup::entrypoint::routing::dispatch_mode` hands a prepared session runtime to the
 supplied interactive or RPC presentation, or to the existing print runner. It
 reports the captured model scope in startup order and passes prepared prompts,
 images and transport options unchanged. The caller retains the streams and
@@ -120,7 +120,7 @@ account file, not the session credential store. See
 
 `maestro_cli::main(args, options, host)` runs startup through the application
 services and returns its requested exit status. `MainOptions` supplies ordered
-extra extension factories. `startup::main::MainHost` supplies package operations,
+extra extension factories. `startup::entrypoint::MainHost` supplies package operations,
 selector presentations, mode launchers, streams, file preparation, the extension
 module loader and timing observations. Borrowed input and effects stay with the
 caller; only owned handles enter the retained runtime factory.
@@ -141,7 +141,7 @@ when a session changes directory. Replacements share the original auth store,
 startup-relative resource paths, extra factories and stream handles. Each write
 or flush borrows its stream only for that call.
 
-`startup::main` selects what a run does before any frontend starts, in the
+`startup::entrypoint` selects what a run does before any frontend starts, in the
 order the authored arguments decide it. `bootstrap` picks the presentation mode
 from the parsed mode, the print request and the stdin kind, and says whether the
 run needs standard output reserved, which every mode but the interactive

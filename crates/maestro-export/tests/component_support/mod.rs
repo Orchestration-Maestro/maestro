@@ -14,7 +14,7 @@ use maestro_tools::{ToolRenderContext, ToolRenderEnvironment};
 use maestro_tui::test_support::manual_runtime;
 use maestro_tui::{
     TerminalImage,
-    tui::{Component, ComponentHandle},
+    interface::{Component, ComponentHandle},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};

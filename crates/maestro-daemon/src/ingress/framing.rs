@@ -1,7 +1,7 @@
 //! Decode supplied host bytes for the multiplexer input loop without performing I/O.
 
 use maestro_protocol::frames::{ClientKeyCode, ClientMouseButton, ClientMouseKind, KeyModifiers};
-use maestro_tui::stdin_buffer::{
+use maestro_tui::input_buffer::{
     HostColorScheme, HostMouse, RawInputByteFramer, host_frame_length, parse_host_cell_size_report,
     parse_host_color_scheme_report, parse_host_mouse,
 };

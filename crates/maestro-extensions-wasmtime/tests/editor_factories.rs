@@ -179,7 +179,7 @@ pub(super) type Pending<'a> = std::pin::Pin<
         dyn std::future::Future<
                 Output = Result<
                     Option<maestro_tui::AutocompleteSuggestions>,
-                    maestro_tui::autocomplete::CompletionError,
+                    maestro_tui::candidates::CompletionError,
                 >,
             > + 'a,
     >,
@@ -190,19 +190,19 @@ impl maestro_tui::AutocompleteProvider for Silent {
     fn get_suggestions<'a>(
         &'a self,
         _: &'a [String],
-        _: maestro_tui::autocomplete::CursorPosition,
-        _: maestro_tui::autocomplete::CompletionOptions<'a, maestro_tui::Cancellation>,
+        _: maestro_tui::candidates::CursorPosition,
+        _: maestro_tui::candidates::CompletionOptions<'a, maestro_tui::Cancellation>,
     ) -> Pending<'a> {
         Box::pin(std::future::ready(Ok(None)))
     }
     fn apply_completion(
         &self,
         lines: &[String],
-        cursor: maestro_tui::autocomplete::CursorPosition,
+        cursor: maestro_tui::candidates::CursorPosition,
         _: &maestro_tui::AutocompleteItem,
         _: &str,
-    ) -> maestro_tui::autocomplete::CompletionResult {
-        maestro_tui::autocomplete::CompletionResult {
+    ) -> maestro_tui::candidates::CompletionResult {
+        maestro_tui::candidates::CompletionResult {
             lines: lines.to_vec(),
             cursor_line: cursor.line,
             cursor_col: cursor.col,

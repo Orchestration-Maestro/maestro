@@ -8,7 +8,7 @@ use fixtures::completion_native::Tree;
 use fixtures::native_attachments::{child, native_cases, runtime};
 use fixtures::native_attachments::{entries, executable, isolated, paths, query};
 use maestro_cancellation::Cancellation;
-use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
+use maestro_tui::candidates::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
 
 #[test]
@@ -274,7 +274,7 @@ fn native_filename_records_preserve_whitespace_and_separators() {
 #[test]
 fn native_child_abort_waits_for_cleanup() {
     runtime().block_on(async {
-    use maestro_tui::autocomplete::AutocompleteOperations;
+    use maestro_tui::candidates::AutocompleteOperations;
     use tokio::io::AsyncReadExt;
     let tree = Tree::new().unwrap();
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
@@ -310,7 +310,7 @@ fn native_child_abort_waits_for_cleanup() {
 #[test]
 fn native_preaborted_search_never_launches() {
     runtime().block_on(async {
-        use maestro_tui::autocomplete::AutocompleteOperations;
+        use maestro_tui::candidates::AutocompleteOperations;
         let operations = NativeAutocompleteOperations::default();
         let preaborted = Cancellation::new();
         preaborted.abort();
@@ -335,7 +335,7 @@ fn native_preaborted_search_never_launches() {
 #[test]
 fn native_failed_search_reports_process_failure() {
     runtime().block_on(async {
-        use maestro_tui::autocomplete::AutocompleteOperations;
+        use maestro_tui::candidates::AutocompleteOperations;
         let tree = Tree::new().unwrap();
         let args = tree.path().join("args.json");
         let failure = child(
@@ -360,7 +360,7 @@ fn native_failed_search_reports_process_failure() {
 #[test]
 fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
     runtime().block_on(async {
-        use maestro_tui::autocomplete::AutocompleteOperations;
+        use maestro_tui::candidates::AutocompleteOperations;
         use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
         use std::task::Poll;
         use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -426,7 +426,7 @@ fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
 #[test]
 fn native_child_drains_stderr_before_returning_stdout() {
     runtime().block_on(async {
-        use maestro_tui::autocomplete::AutocompleteOperations;
+        use maestro_tui::candidates::AutocompleteOperations;
         let tree = Tree::new().unwrap();
         let script = child(
             &tree,

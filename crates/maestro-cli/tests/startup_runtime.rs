@@ -4,7 +4,7 @@ use maestro_app::{
     AgentSessionServices, CreateAgentSessionServicesOptions, Local, ModelResolverOutput,
     ReadonlySessionManager, ResourceKind, ResourceLoaderOptions, SessionManager, SettingsManager,
 };
-use maestro_cli::startup::main::runtime::{RuntimeCreation, create_runtime};
+use maestro_cli::startup::entrypoint::initialization::{RuntimeCreation, create_runtime};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 #[cfg(unix)]

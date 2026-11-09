@@ -3,7 +3,7 @@ use maestro_theme::Theme;
 use maestro_tui::{
     Cancellation, Component, Container, Editor, EditorOptions, EditorTheme, KeybindingsConfig,
     KeybindingsManager, Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme,
-    SettingsListTheme, TUI, editor_component::BorderColor, tui::ComponentHandle,
+    SettingsListTheme, TUI, editor_component::BorderColor, interface::ComponentHandle,
 };
 
 /// A keybindings manager an extension holds, with the reload of an application manager that

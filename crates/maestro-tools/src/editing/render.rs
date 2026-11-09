@@ -13,7 +13,7 @@ use crate::{
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor};
-use maestro_tui::{Box as TuiBox, Component, Container, Spacer, Text, tui::ComponentHandle};
+use maestro_tui::{Box as TuiBox, Component, Container, Spacer, Text, interface::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 

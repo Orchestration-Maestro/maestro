@@ -5,7 +5,7 @@ use maestro_app::{
     AuthStorage, AuthStorageData, ModelCost, ModelFileOperations, ModelInput, ModelRegistry,
     ProviderModelInput,
 };
-use maestro_cli::input::list_models::{ListModelsOptions, list_models};
+use maestro_cli::input::model_listing::{ListModelsOptions, list_models};
 use maestro_theme::Collator;
 use std::cell::RefCell;
 use std::rc::Rc;

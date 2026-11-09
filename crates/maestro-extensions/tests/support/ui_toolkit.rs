@@ -14,10 +14,10 @@ use maestro_extensions::{
 };
 use maestro_models::{Cancellation, Local};
 use maestro_theme::LiveTheme;
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
 };
-use maestro_tui::tui::{InputListener, InputListenerResult};
+use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, TUI, TerminalImage,
 };

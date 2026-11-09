@@ -17,7 +17,7 @@ use maestro_extensions::{
 };
 use maestro_models::{Cancellation, Local, Threaded};
 use maestro_theme::{LiveTheme, get_editor_theme};
-use maestro_tui::tui::{InputListener, InputListenerResult};
+use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{
     AutocompleteProvider, Editor, EditorComponent, EditorOptions, EditorTheme, Input,
     KeybindingsManager, OverlayHandle, OverlayOptions, TUI, TUI_KEYBINDINGS,

@@ -6,7 +6,7 @@ mod tests;
 /// Parse exactly three ASCII decimal fields in a complete SGR mouse report.
 #[must_use]
 pub fn parse_report(data: &[u8]) -> Option<(u32, u32)> {
-    let fields = maestro_tui::stdin_buffer::scan_sgr_mouse_fields(data)?;
+    let fields = maestro_tui::input_buffer::scan_sgr_mouse_fields(data)?;
     parse_number(fields.cb)?;
     let x = parse_number(fields.column)?;
     let y = parse_number(fields.row)?;

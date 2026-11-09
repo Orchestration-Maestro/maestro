@@ -558,7 +558,7 @@ yet.
 
 ## Providers offered for API-key sign-in
 
-`maestro_chat::interactive_mode::is_api_key_login_provider` decides whether a
+`maestro_chat::interaction::is_api_key_login_provider` decides whether a
 provider can sign in with an API key. A provider with a nonempty shipped display
 name always can. Otherwise a shipped catalog provider cannot, and neither can a
 provider that signs in only by subscription; any other provider can. A caller may

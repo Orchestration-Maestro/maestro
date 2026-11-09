@@ -14,7 +14,7 @@ use crate::{
 };
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
-use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
+use maestro_tui::{Component, Container, Text, interface::ComponentHandle};
 use serde_json::Value;
 use std::{borrow::Cow, cell::RefCell, rc::Rc};
 

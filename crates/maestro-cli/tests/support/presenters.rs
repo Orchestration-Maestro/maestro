@@ -2,13 +2,13 @@
 
 use maestro_app::presentation_data::input_selectors::{ConfigSelectorOptions, PresentedSelector};
 use maestro_app::{ResolvedPaths, Settings, SettingsManager};
-use maestro_cli::input::selector::SelectorHost;
+use maestro_cli::input::selection::SelectorHost;
 use maestro_test_terminal::manual_runtime::ManualRuntime;
 use maestro_test_terminal::recording_terminal::RecordingTerminal;
 use maestro_theme::{
     ThemeDirectories, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{Component, Container, FocusFlag, Focusable, TUI, TerminalImage};
 use std::cell::RefCell;
 use std::io;

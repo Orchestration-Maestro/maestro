@@ -339,7 +339,7 @@ scratch workspaces, not certified as delivered capabilities.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in
-`crates/maestro-chat/tests/footer_support/session.rs`. The conventions check rejects
+`crates/maestro-chat/tests/footer_support/harness.rs`. The conventions check rejects
 a second construction of the session configuration anywhere in the chat crate's
 test code, naming its file and line, so every chat test shares one setup, which
 returns a session with its services. The rule covers every chat test source in any

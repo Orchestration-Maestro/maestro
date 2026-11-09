@@ -4,7 +4,7 @@ use crate::support::startup;
 use maestro_app::{
     AgentSessionRuntimeDiagnosticType, Model, ModelRegistry, NoTools, ScopedModel, ThinkingLevel,
 };
-use maestro_cli::startup::main::options::{
+use maestro_cli::startup::entrypoint::configuration::{
     BuiltSessionOptions, SessionOptionInputs, build_session_options, resolve_cli_paths,
 };
 use serde_json::json;
@@ -486,7 +486,7 @@ fn selected_model_keeps_the_shared_descriptor() {
 fn model_patterns_use_cli_before_saved_settings() {
     use crate::startup_runtime::{Fixture, run};
     use maestro_app::ModelResolverOutput;
-    use maestro_cli::startup::main::runtime::create_runtime;
+    use maestro_cli::startup::entrypoint::initialization::create_runtime;
     run(
         "model_patterns_use_cli_before_saved_settings",
         |local| async move {
@@ -506,7 +506,7 @@ fn model_patterns_use_cli_before_saved_settings() {
                     startup::settings(&[("enabledModels", stored)]),
                 )
                 .await;
-                let parsed = maestro_cli::input::args::Args {
+                let parsed = maestro_cli::input::arguments::Args {
                     models: cli,
                     ..Default::default()
                 };
@@ -541,7 +541,7 @@ fn model_patterns_use_cli_before_saved_settings() {
 async fn assert_mixed_patterns_fail(local: std::rc::Rc<tokio::task::LocalSet>) {
     use crate::startup_runtime::Fixture;
     use maestro_app::ModelResolverOutput;
-    use maestro_cli::startup::main::runtime::create_runtime;
+    use maestro_cli::startup::entrypoint::initialization::create_runtime;
     let fixture = Fixture::new(
         local,
         startup::settings(&[(

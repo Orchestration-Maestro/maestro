@@ -16,7 +16,7 @@ use maestro_tools::{
         render_utils::strip_ansi,
     },
 };
-use maestro_tui::{ImageProtocol, Text, tui::ComponentHandle};
+use maestro_tui::{ImageProtocol, Text, interface::ComponentHandle};
 use serde::Deserialize;
 use serde_json::{Map, Number, Value, json};
 use std::{

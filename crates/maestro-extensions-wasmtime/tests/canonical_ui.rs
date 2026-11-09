@@ -1431,7 +1431,7 @@ fn builtin_error_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_, ToolRendererState>,
     text: &str,
-) -> maestro_tui::tui::ComponentHandle {
+) -> maestro_tui::interface::ComponentHandle {
     let output: Vec<_> = serde_json::from_value(json!([{"type":"text","text":text}])).unwrap();
     let result = maestro_extensions::ToolRenderResultLike {
         content: &output,

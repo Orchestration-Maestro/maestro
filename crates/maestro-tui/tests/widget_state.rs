@@ -4,7 +4,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{Box, Component, Spacer, Text};
 
 use crate::fixtures;

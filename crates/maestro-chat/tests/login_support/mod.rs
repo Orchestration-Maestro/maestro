@@ -5,7 +5,7 @@ use maestro_chat::{
     LoginDialogComponent, LoginDialogOptions, LoginDialogPlatform, LoginInputFuture,
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
-use maestro_tui::{Component, Container, Focusable, Input, Text, tui::InputHandler};
+use maestro_tui::{Component, Container, Focusable, Input, Text, interface::InputHandler};
 use records::{Case, Frame, Operation, Query};
 use serde_json::Value;
 use std::{
@@ -78,7 +78,7 @@ struct Run {
     /// Retained input alias, independent of visibility.
     input: Rc<dyn Component>,
     /// Original inherited child array.
-    outer: maestro_tui::tui::ChildArray,
+    outer: maestro_tui::interface::ChildArray,
     /// Theme publication owner.
     state: maestro_theme::ThemeState,
     /// Ordered caller notifications.

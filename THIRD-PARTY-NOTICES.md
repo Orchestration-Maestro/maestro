@@ -759,7 +759,7 @@ instead of rewriting the source file in place.
 
 Command metadata and completion normalization in
 `crates/maestro-cli/src/workspace_commands/spec/` and
-`crates/maestro-cli/src/completion.rs`, and the shipped workspace skill in
+`crates/maestro-cli/src/completions.rs`, and the shipped workspace skill in
 `docs/skills/workspace/SKILL.md`, derive from the command-line and skill modules
 under the same license. Command grammar uses Maestro's chat inputs and unified
 daemon noun; completion output is buffered before writing to the caller.
@@ -844,9 +844,9 @@ modules; decoded input events derive from the raw input module. Structured key
 conversions derive from the client input and protocol wire modules. The structured
 host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser;
 shared SGR fields and admitted host mouse records in
-`crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from the mouse and raw input
+`crates/maestro-tui/src/input_buffer/mouse.rs` derive from the mouse and raw input
 modules. The retained byte framer, reply windows and mouse-tail handling in
-`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. The daemon projections in
+`crates/maestro-tui/src/input_buffer/` derive from the raw input module. The daemon projections in
 `crates/maestro-daemon/src/ingress/{parse,framing}.rs` derive from those input
 modules and reuse the toolkit decoders. Chat and
 host input share sequence recognition while retaining their different byte and

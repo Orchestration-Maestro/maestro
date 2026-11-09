@@ -133,7 +133,7 @@ struct FixtureOptions {
 
 impl From<FixtureOptions> for OverlayOptions {
     fn from(value: FixtureOptions) -> Self {
-        use maestro_tui::tui::{OverlayAnchor as A, OverlayMargin, OverlayMarginValue as M};
+        use maestro_tui::interface::{OverlayAnchor as A, OverlayMargin, OverlayMarginValue as M};
         Self {
             width: value.width.map(Into::into),
             min_width: value.min_width,

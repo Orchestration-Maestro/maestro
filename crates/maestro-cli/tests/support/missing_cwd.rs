@@ -4,7 +4,7 @@ use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, ExtensionSelectorRequest,
 };
 use maestro_app::{SessionCwdIssue, SettingsManager};
-use maestro_cli::startup::main::presentation::MissingSessionCwdPresentation;
+use maestro_cli::startup::entrypoint::feedback::MissingSessionCwdPresentation;
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use std::{cell::RefCell, rc::Rc};

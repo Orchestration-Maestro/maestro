@@ -417,8 +417,8 @@ impl maestro_tui::AutocompleteProvider for Commands {
     fn get_suggestions<'a>(
         &'a self,
         _: &'a [String],
-        _: maestro_tui::autocomplete::CursorPosition,
-        _: maestro_tui::autocomplete::CompletionOptions<'a, maestro_tui::Cancellation>,
+        _: maestro_tui::candidates::CursorPosition,
+        _: maestro_tui::candidates::CompletionOptions<'a, maestro_tui::Cancellation>,
     ) -> super::editor_factories::Pending<'a> {
         let item = |name: &str| maestro_tui::AutocompleteItem {
             value: format!("/{name}"),
@@ -435,11 +435,11 @@ impl maestro_tui::AutocompleteProvider for Commands {
     fn apply_completion(
         &self,
         lines: &[String],
-        cursor: maestro_tui::autocomplete::CursorPosition,
+        cursor: maestro_tui::candidates::CursorPosition,
         _: &maestro_tui::AutocompleteItem,
         _: &str,
-    ) -> maestro_tui::autocomplete::CompletionResult {
-        maestro_tui::autocomplete::CompletionResult {
+    ) -> maestro_tui::candidates::CompletionResult {
+        maestro_tui::candidates::CompletionResult {
             lines: lines.to_vec(),
             cursor_line: cursor.line,
             cursor_col: cursor.col,

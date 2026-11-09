@@ -11,7 +11,7 @@ use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
     AutocompleteProvider, EditorTheme, OverlayHandle, OverlayOptions, TUI,
-    tui::{ComponentHandle, InputListenerResult},
+    interface::{ComponentHandle, InputListenerResult},
 };
 use std::{
     cell::{Cell, RefCell},

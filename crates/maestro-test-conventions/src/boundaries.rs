@@ -68,7 +68,7 @@ const SESSION_CONFIGURATION: &str = "AgentSessionConfig";
 const RAW_SESSION_CONFIGURATION: &str = "r#AgentSessionConfig";
 
 /// The one owner of the interactive-mode test session setup.
-const SESSION_SETUP: &str = "tests/footer_support/session.rs";
+const SESSION_SETUP: &str = "tests/footer_support/harness.rs";
 
 #[cfg(test)]
 thread_local! {
