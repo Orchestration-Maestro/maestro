@@ -135,11 +135,12 @@ HTML and vector links use native hyperlink state and effective resolved HTTP(S)
 targets, including namespaced and animated vector addresses.
 
 During runtime execution, `document.currentScript` is the bundle's script element. The
-built-in helpers do not read it. If the policy omits a provider's digest, that provider's
-inert template stays in the loaded document and its helpers are absent. The completion
-signal of an HTML artifact is a script that reads `window.__maestroComplete`; the runtime
-defines that property so a read calls `window.complete()` when it exists, after the whole
-authored source.
+built-in helpers do not read it. If the policy omits a provider's digest, that provider
+never runs: the runtime removes the carrier it reached, stops installation and reports
+`TypeError: provider did not complete`, so the configuration block and the bundle's
+script element stay in the document. The completion signal of an HTML artifact is a
+script that reads `window.__maestroComplete`; the runtime defines that property so a read
+calls `window.complete()` when it exists, after the whole authored source.
 
 Native HTML parsing accepts recovered markup. Explicit validation errors appear
 as literal preformatted text, with the selected brand pack's background, text,

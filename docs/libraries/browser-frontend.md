@@ -195,8 +195,8 @@ application edge; no browser binding feature is added.
 The five Oxc crates are pinned exactly through workspace dependencies. Rust lowers
 supplied asynchronous bodies to inline native modules and supplied provider
 expressions to capture assignments. Browser APIs and values stay native. The
-compiler runs in the bootstrap qualification path; production document emission
-and the runtime loading statement are unchanged.
+compiler runs in the bootstrap qualification path and prepares every supplied
+provider and program of a production document.
 
 The parser diagnoses malformed syntax. The browser remains the final gate for
 semantic early errors, such as unresolved labels and duplicate declarations.
