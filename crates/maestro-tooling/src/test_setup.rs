@@ -608,8 +608,12 @@ pub(crate) fn executable(name: &str, extension: &str) -> PathBuf {
     Path::new(name).with_extension(extension)
 }
 
-/// Copy a file, naming it when the copy fails.
+/// Copy a file to a new file at `to`, naming the path that failed.
+///
+/// An earlier file at `to` is removed, not rewritten: macOS keeps the code signature it checked
+/// when an executable ran and can kill the next launch of a file whose bytes changed in place.
 fn copy(from: &Path, to: &Path) -> io::Result<()> {
+    remove(to).map_err(|error| at(to, &error))?;
     std::fs::copy(from, to)
         .map(drop)
         .map_err(|error| at(from, &error))

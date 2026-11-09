@@ -205,11 +205,24 @@ pub(super) fn run() -> io::Result<()> {
 
 /// Copy bytes in this isolated process; `fs::copy` closes its writer before returning.
 fn install(destination: &Path) -> io::Result<()> {
-    std::fs::copy(std::env::current_exe()?, destination)?;
+    replace_executable(&std::env::current_exe()?, destination)?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         std::fs::set_permissions(destination, std::fs::Permissions::from_mode(0o700))?;
     }
     Ok(())
+}
+
+/// Copy `source` to a new file at `destination`, removing an earlier file there first.
+///
+/// Copying over an existing file rewrites it in place, and macOS keeps the code signature it
+/// checked when an executable ran: it can kill the next launch of a file changed that way.
+pub(super) fn replace_executable(source: &Path, destination: &Path) -> io::Result<()> {
+    if let Err(error) = std::fs::remove_file(destination)
+        && error.kind() != io::ErrorKind::NotFound
+    {
+        return Err(error);
+    }
+    std::fs::copy(source, destination).map(drop)
 }

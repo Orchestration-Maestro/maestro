@@ -116,6 +116,91 @@ fn path_aliases_keep_native_operands_pid_environment_and_raw_streams() {
     }
 }
 
+/// Installing over an alias that already ran puts a new file in its place instead of rewriting
+/// the launched one, whose next launch macOS can kill once its bytes change in place.
+#[cfg(unix)]
+#[test]
+fn reinstalling_a_launched_alias_replaces_its_file() {
+    use std::os::unix::fs::MetadataExt;
+    let root = Scratch::new().unwrap();
+    let alias = root.path().join("probe");
+    install_executable(&artifact(), &alias).unwrap();
+    std::fs::write(root.path().join("probe.fixture"), "echo\nlaunched\n").unwrap();
+    assert_eq!(Command::new(&alias).output().unwrap().stdout, b"launched\n");
+    // The open handle holds the launched file, so its replacement cannot reuse its identity.
+    let launched = std::fs::File::open(&alias).unwrap();
+
+    install_executable(&artifact(), &alias).unwrap();
+
+    assert_ne!(
+        std::fs::metadata(&alias).unwrap().ino(),
+        launched.metadata().unwrap().ino()
+    );
+    assert_eq!(Command::new(&alias).output().unwrap().stdout, b"launched\n");
+}
+
+/// The Cargo fixture stages a repeated build or install as a new file instead of rewriting the
+/// executable the earlier one left in place.
+#[cfg(unix)]
+#[test]
+fn cargo_fixture_restaging_replaces_its_executables() {
+    use std::os::unix::fs::MetadataExt;
+    let root = Scratch::new().unwrap();
+    let cargo = root.path().join("cargo");
+    install_executable(&artifact(), &cargo).unwrap();
+    std::fs::write(
+        root.path().join("cargo.fixture"),
+        "tooling-cargo\nunused-cargo\nunused-template\n",
+    )
+    .unwrap();
+    let target = root.path().join("target");
+    let installed = root.path().join("installed");
+    let build = [
+        "build",
+        "--profile",
+        "dev",
+        "--example",
+        "native_fixture",
+        "--target-dir",
+    ];
+    let install = ["install", "--example", "native_fixture", "--root"];
+    for (operands, directory, staged) in [
+        (
+            build.as_slice(),
+            &target,
+            target.join("debug/examples/native_fixture"),
+        ),
+        (
+            install.as_slice(),
+            &installed,
+            installed.join("bin/native_fixture"),
+        ),
+    ] {
+        let restage = || {
+            let output = Command::new(&cargo)
+                .args(operands)
+                .arg(directory)
+                .current_dir(root.path())
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        };
+        restage();
+        let first = std::fs::File::open(&staged).unwrap();
+
+        restage();
+
+        assert_ne!(
+            std::fs::metadata(&staged).unwrap().ino(),
+            first.metadata().unwrap().ino()
+        );
+    }
+}
+
 /// A copied preparation example reports its cache without exporting components or writing logs.
 #[test]
 fn author_cache_query_has_no_preparation_effects() {
