@@ -9,8 +9,8 @@
 //! checks eligibility only; its caller proves startup through its own transport. A test that closes a pipe end
 //! while a child is live runs alone through [`run_alone`]. Cases that read process variables
 //! share one cleared child per distinct environment through [`run_per_environment`]. A child
-//! that replaces `HOME` keeps this process's Linux user cache through [`user_cache_home`], and a
-//! cleared child keeps the cache home the run's setup exported, so neither recompiles the
+//! that replaces `HOME` passes the run's agent directory back through [`run_agent_directory`],
+//! and a cleared child keeps the one the run's setup exported, so neither recompiles the
 //! components the run prepared.
 //!
 //! A test whose product writes diagnostics to standard error proves it survives a broken
@@ -29,9 +29,9 @@
 //! [`install_executable`] copies it to caller-owned aliases without opening a writable
 //! executable in the runner. These children have no libtest output or argument parsing.
 
+mod agent_directory;
 mod alone;
 mod broken_stderr;
-mod cache;
 pub mod child;
 #[cfg(windows)]
 mod console;
@@ -47,9 +47,9 @@ mod selection;
 mod setup;
 mod test_process;
 
+pub use agent_directory::{AGENT_DIRECTORY, link_files, run_agent_directory};
 pub use alone::run_alone;
 pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
-pub use cache::user_cache_home;
 #[cfg(windows)]
 pub use console::on_console;
 pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_environment, selection};

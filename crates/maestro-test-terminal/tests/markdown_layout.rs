@@ -881,11 +881,21 @@ fn container_frames_follow_configured_grammar() {
 /// Worker stack well below the main thread's, so nesting cannot lean on it.
 const WORKER_STACK: usize = 2 * 1024 * 1024;
 
+/// Worker stack that makes one native frame per nested span observable at a depth debug
+/// can afford.
+const REDUCED_STACK: usize = 128 * 1024;
+
 /// Render Markdown at `width` on a worker thread of the witness stack size, resuming a
 /// worker failure instead of reporting empty rows.
 fn render_on_small_stack(text: String, width: usize) -> Vec<String> {
+    render_on_stack(WORKER_STACK, text, width)
+}
+
+/// Render Markdown at `width` on a worker thread of `stack` bytes, resuming a worker failure
+/// instead of reporting empty rows.
+fn render_on_stack(stack: usize, text: String, width: usize) -> Vec<String> {
     match std::thread::Builder::new()
-        .stack_size(WORKER_STACK)
+        .stack_size(stack)
         .spawn(move || {
             Markdown::new(
                 text,
@@ -930,4 +940,12 @@ fn deep_nested_list_rows_format_on_a_small_stack() {
     assert_eq!(last, format!("{}- x", "  ".repeat(1_999)));
     let bullets: usize = rows.iter().map(|row| row.matches("- ").count()).sum();
     assert_eq!(bullets, 1);
+}
+
+#[test]
+fn deep_formatted_span_rows_format_on_a_small_stack() {
+    let depth = 1_000;
+    let rows = render_on_stack(REDUCED_STACK, format!("{0}x{0}", "**".repeat(depth)), 40);
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].trim_end(), "x");
 }

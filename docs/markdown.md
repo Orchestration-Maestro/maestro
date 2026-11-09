@@ -70,6 +70,16 @@ including after consumed escaped punctuation. Browser protocol matching is
 case-insensitive, while its `www.` prefix is lowercase.
 The recognizer skips failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
+Escapes, tags, links, hard breaks, autolinks, delimiter runs, bare addresses, text runs,
+headings, thematic breaks, list markers, blank-line runs, table rows, fence openers and the
+paragraph and setext predicates match only at the start of the remaining text, and share one
+start-anchored owner. A miss stops at the first start position instead of retrying at each
+later one, so doubling the sentences of a plain paragraph about doubles the parse time. One
+attempt still costs what its pattern spends from that start: an unterminated `<!--` scans the
+rest of the text once. The HTML block opener and closer, the list item stops and the
+punctuation test keep a plain recognizer, each matched against one physical line. The block
+quote keeps one too: the container engine holds its type, and quote workloads measure
+near-linear.
 
 The parser retains link titles, destinations and inline labels; image destinations,
 titles and alt children; table alignments, cell children and original source ranges;
@@ -107,8 +117,10 @@ Quote and list nesting runs on retained frames, not on native recursion: one fra
 stack drives quote chunks, list items and their block admission, so every deeper
 level holds heap frames instead of stack. Each nesting level is built from the same
 block structures a shallow document uses, with no container depth limit and no
-nesting error. Inline spans are the exception: nested emphasis, links and labels
-still interpret recursively on the native stack.
+nesting error. Inline spans follow the same rule: emphasis, strong, strike and
+link labels interpret from an explicit stack of windows, and the terminal and browser
+renderers write nested spans from explicit worklists, so span depth holds heap
+memory and never native stack.
 
 Finished containers publish their items, and replaced subtrees and dropped documents
 release their children. The walks that follow a document - inline-scope indexing,

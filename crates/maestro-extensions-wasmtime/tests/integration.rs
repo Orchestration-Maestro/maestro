@@ -20,6 +20,7 @@ mod canonical_ui;
 mod canonical_widgets;
 mod compilation_cache;
 mod completion_providers;
+mod component_cache_location;
 mod component_callbacks;
 mod component_events;
 mod component_loading;
@@ -113,7 +114,7 @@ fn artifact(path: String) -> maestro_extensions::ExtensionFactory<maestro_extens
         support::widgets(),
         maestro_extensions_wasmtime::Installation {
             version: "installed-component-host".into(),
-            agent_dir: "/controlled-agent".into(),
+            agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
         },
     )
 }

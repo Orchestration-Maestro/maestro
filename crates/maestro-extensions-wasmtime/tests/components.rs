@@ -2,7 +2,7 @@
 #![cfg(test)]
 use maestro_extensions::{
     EventBusController, ExtensionRunner, Local, ModuleLoader, Subscription, create_event_bus_for,
-    types::ExtensionHandle,
+    load_extensions, types::ExtensionHandle,
 };
 use serde_json::Value;
 use std::{cell::RefCell, path::Path, rc::Rc};
@@ -28,6 +28,42 @@ pub fn loader() -> ModuleLoader<Local> {
             path.to_owned(),
         )))))
     })
+}
+
+/// Every file below `directory`, empty when it does not exist yet.
+pub fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return Vec::new();
+    };
+    entries
+        .flat_map(|entry| {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                files_below(&path)
+            } else {
+                vec![path]
+            }
+        })
+        .collect()
+}
+
+/// Loads a valid empty component through the extension loader, which compiles it and then
+/// fails to start it as an extension. Returns its path and the failures reported.
+pub fn load_empty_component(
+    scratch: &maestro_test_directory::Scratch,
+) -> (std::path::PathBuf, Vec<String>) {
+    let path = scratch.path().join("empty.wasm");
+    std::fs::write(&path, b"\0asm\x0d\0\x01\0").unwrap();
+    let supplied = path.to_str().unwrap().to_owned();
+    let errors = RefCell::new(Vec::new());
+    local(async {
+        let bus = TracedBus::new();
+        let loaded = load_extensions(vec![supplied], "/unused", &bus.controller, &loader())
+            .await
+            .unwrap();
+        errors.replace(loaded.errors.into_iter().map(|error| error.error).collect());
+    });
+    (path, errors.into_inner())
 }
 
 /// Values the components reported on the `trace` channel, in delivery order.

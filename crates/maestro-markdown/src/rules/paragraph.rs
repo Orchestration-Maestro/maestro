@@ -1,8 +1,8 @@
 //! Retained paragraph and setext progress over a caller's growing source prefix.
 mod item_text;
+use super::Anchored;
 use crate::MarkedOptions;
 pub(crate) use item_text::ItemText;
-use regress::Regex;
 use std::{borrow::Cow, collections::VecDeque, ops::Range, sync::LazyLock};
 
 /// Setext captures independent of source ownership.
@@ -46,9 +46,9 @@ enum Boundary {
 /// Line-local predicates compiled once for each distinct caller grammar.
 struct Grammar {
     /// Paragraph interruptions, including only a table's header and delimiter.
-    paragraph: Option<Regex>,
+    paragraph: Option<Anchored>,
     /// Setext label exclusions, without the later-line blank check.
-    setext: Option<Regex>,
+    setext: Option<Anchored>,
 }
 
 /// Compile the same interruptions used by quote and table admission.
@@ -92,8 +92,8 @@ fn grammar(options: MarkedOptions) -> Grammar {
         tag, r"[^\n>]+>\n", table,
     ].concat();
     Grammar {
-        paragraph: super::anchored(&["(?:", &paragraph, ")"].concat()),
-        setext: super::anchored(&["(?:", &setext, ")"].concat()),
+        paragraph: Anchored::new(&["(?:", &paragraph, ")"].concat(), ""),
+        setext: Anchored::new(&["(?:", &setext, ")"].concat(), ""),
     }
 }
 
@@ -119,8 +119,8 @@ static GRAMMARS: LazyLock<[Grammar; 4]> = LazyLock::new(|| {
 });
 
 /// A complete setext underline, with the original capture order.
-static UNDERLINE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::with_flags(r"^ {0,3}(=+|-+) *(?:\n+|$)", "").ok());
+static UNDERLINE: LazyLock<Option<Anchored>> =
+    LazyLock::new(|| Anchored::new(r"^ {0,3}(=+|-+) *(?:\n+|$)", ""));
 
 /// Monotone line framing; at most two completed lines await lookahead.
 pub(crate) struct Recognizer<'a> {
@@ -293,7 +293,7 @@ fn carriage(text: &str) -> bool {
 }
 
 /// Observe a bounded grammar operand and charge it at its owning boundary.
-fn matches(rule: Option<&Regex>, source: &str) -> bool {
+fn matches(rule: Option<&Anchored>, source: &str) -> bool {
     #[cfg(test)]
     crate::tests::WORK.with_borrow_mut(|work| work.paragraph_bytes += source.len());
     rule.is_some_and(|rule| rule.find(source).is_some())

@@ -22,7 +22,7 @@ mod custom_imports;
 mod custom_reads;
 mod effect_imports;
 mod engine;
-pub use engine::component_engine;
+pub use engine::{component_cache, component_cache_directory, component_engine};
 mod event_imports;
 mod event_reads;
 mod event_registration;
