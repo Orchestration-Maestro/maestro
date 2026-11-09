@@ -48,14 +48,16 @@ fn hello_greets_the_supplied_name() {
 }
 ```
 
-Build the component, then run the test natively:
+The engine changes the project's dependency graph, so regenerate its lockfile
+once and commit it. Then build the component and run the test natively:
 
 ```sh
+cargo generate-lockfile
 cargo build --locked --target wasm32-wasip2 --release
 cargo test --locked
 ```
 
-The test loads the artifact the first command wrote and never compiles Rust into
+The test loads the artifact the build command wrote and never compiles Rust into
 a component, so rebuild the component after each source change.
 
 ## The harness
