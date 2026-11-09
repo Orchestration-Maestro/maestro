@@ -96,6 +96,7 @@ fn component_cache_is_absent_without_a_usable_agent_directory() {
 #[test]
 fn component_cache_resolves_a_relative_agent_directory_against_the_working_directory() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let original = std::env::current_dir().unwrap();
     std::env::set_current_dir(scratch.path()).unwrap();
     let cache = component_cache("relative-agent").unwrap();
     assert_eq!(
@@ -107,4 +108,5 @@ fn component_cache_resolves_a_relative_agent_directory_against_the_working_direc
             .unwrap()
             .join("component-cache")
     );
+    std::env::set_current_dir(original).unwrap();
 }
