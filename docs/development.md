@@ -920,10 +920,10 @@ remain visible in GitHub but do not block the merge queue.
 
 ### Slowest-first test order
 
-The tests that took more than 30 seconds in the baseline merge group have
-distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first. A test
-that was later split into shorter ones gives up its priority and its table row, which
-leaves a gap in the ranks. Other tests retain priority 0. These are
+The tests that took more than 30 seconds in the baseline merge group, and have not
+been split since, hold distinct priorities in `.config/nextest.toml`: 100 down to 37,
+longest first. A split test gives up its priority and its table row, which leaves a
+gap in the ranks. Other tests retain priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
 count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
@@ -1452,11 +1452,11 @@ test reserves every core with `threads-required`, so other tests do not stretch 
 compiler jobs past the hang limit. The test checks one cold build and its outputs.
 Rebuilds after a change to an included file, a source error and its repair belong to
 `browser_author_included_files_rebuild_without_source_changes` and the
-`browser_library_build_rejects_` tests, one per spoiled input. A recipe that fails during setup
-prints a warning and does not stop the run; the setup then announces the first lane alone,
-and the tests run the same recipes in turn and report the failure. Plain Cargo tests, and
-nextest runs without the setup, use the test build's own target directory as their only
-lane.
+`browser_library_build_rejects_` tests, one per spoiled input. A recipe that fails
+during setup prints a warning and does not stop the run; the setup then announces the
+first lane alone, and the tests run the same recipes in turn and report the failure.
+Plain Cargo tests, and nextest runs without the setup, use the test build's own target
+directory as their only lane.
 
 ### Cargo state of tooling fixtures
 
