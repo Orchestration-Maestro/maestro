@@ -82,6 +82,9 @@ impl Gate {
 
     /// Wait for a child to write `count` bytes into the gate and return them.
     ///
+    /// Blocks until `count` bytes arrive, so it never returns while no child writes; the
+    /// gate's own ends stay open, which keeps the read from seeing the end of the stream.
+    ///
     /// # Errors
     ///
     /// Returns the failure to read the bytes.

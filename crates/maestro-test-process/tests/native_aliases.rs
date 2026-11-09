@@ -851,7 +851,7 @@ fn command_stand_in_holds_streams_until_a_descendant_is_released() {
         .spawn()
         .unwrap();
     assert!(child.wait().unwrap().success());
-    // The readiness marker arrives only after the parent ended, so reading it proves the order.
+    // The readiness marker is written only once the parent has ended, so reading it proves the order.
     assert_eq!(std::fs::read_to_string(&ready).unwrap(), "ready");
     std::fs::write(&permit, b"go\n").unwrap();
     let mut held = String::new();
