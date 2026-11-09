@@ -1252,8 +1252,11 @@ platform's own separator.
 Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than
-their compiler inputs. It skips an executable when an exact linked library build
-is newer than it: advancing that binary would hide a rebuild from Cargo.
+their compiler inputs. On Unix it changes each time through a read-only handle and
+never opens an executable for writing: macOS can kill the next launch of an
+executable that was opened for writing after it ran. It skips an executable when
+an exact linked library build is newer than it: advancing that binary would hide
+a rebuild from Cargo.
 Cargo's `.fingerprint` records identify each direct and transitive library build
 by its fingerprint and metadata hash, independently of dependency aliases.
 A newer build of the same crate under another hash, including check-only metadata
@@ -1414,8 +1417,8 @@ of its size. The bundle manifest records whether it holds a graph; a build that 
 it out and the shards build it themselves. A shard's `nextest-setup browser-author` replaces
 `target/browser-author` with the staged graph, after checking that the checkout still holds
 the files the bundle was prepared from, and gives every file of it one modification time
-taken when it installs. Cargo rebuilds a unit when a source or an output it builds on is
-newer than its fingerprint, so a graph that is newer than the checkout and has no output
+taken when it installs, through a read-only handle on Unix. Cargo rebuilds a unit when a
+source or an output it builds on is newer than its fingerprint, so a graph that is newer than the checkout and has no output
 newer than another leaves the recipes nothing to compile.
 
 The setup runs before the first browser author test of a run, and only on a shard that runs
