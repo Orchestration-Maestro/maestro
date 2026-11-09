@@ -1301,6 +1301,11 @@ resolves that native executable. Preparation also copies, hashes and restores th
 example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
 names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
+A setup entry that fails exits with the failing child's status. A child a signal ended has
+no exit code, so the tool prints the native status on standard error, such as
+`child ended by signal: 9 (SIGKILL)`, then exits with status 1. That line separates a killed
+example from one that failed on its own.
+
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
 artifact directory through its documented platform library search path. It runs
