@@ -206,6 +206,38 @@ fn install_stages_only_the_preparing_command() {
     );
 }
 
+/// The installed setup command can stage itself again without deleting its executable.
+#[test]
+fn installed_setup_keeps_itself_when_restaging_its_own_directory() {
+    use std::os::unix::fs::MetadataExt;
+
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    let installed = root.join("target/test-setup/development");
+    assert_success(
+        &Command::new(env!("CARGO_BIN_EXE_development"))
+            .current_dir(root)
+            .args(["prepare-test-setup", "install", "target/test-setup"])
+            .output()
+            .unwrap(),
+    );
+    let earlier = fs::File::open(&installed).unwrap();
+
+    for output in ["target/test-setup", "target/../target/test-setup"] {
+        assert_success(
+            &Command::new(&installed)
+                .current_dir(root)
+                .args(["prepare-test-setup", "install", output])
+                .output()
+                .unwrap(),
+        );
+        assert_eq!(
+            fs::metadata(&installed).unwrap().ino(),
+            earlier.metadata().unwrap().ino()
+        );
+    }
+}
+
 /// The recipes the browser graph is built with, as one `justfile` stands for them. The first
 /// builds the graph and what Cargo regenerates beside it, or records that it found the graph
 /// installed; the others do nothing.

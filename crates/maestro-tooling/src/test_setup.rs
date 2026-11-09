@@ -341,12 +341,15 @@ fn stage_browser(
     Ok(Some(normalize_native(&directory)))
 }
 
-/// Copy this command into `output`, where the nextest setup entries run it.
+/// Copy this command into `output`, keeping it intact when it already runs there.
 fn stage_tool(output: &Path) -> io::Result<()> {
-    copy(
-        &std::env::current_exe()?,
-        &output.join(executable(EXPORTER, EXE_EXTENSION)),
-    )
+    let source = maestro_realpath::canonicalize(std::env::current_exe()?)?;
+    let destination =
+        maestro_realpath::canonicalize(output)?.join(executable(EXPORTER, EXE_EXTENSION));
+    if source == destination {
+        return Ok(());
+    }
+    copy(&source, &destination)
 }
 
 /// Build the setup example in `target` with the Cargo `profile`, or install it when the

@@ -1351,6 +1351,10 @@ target/test-setup/development prepare-test-setup prepare target/test-setup targe
 target/test-setup/development nextest-setup author-component
 ```
 
+Preparation keeps the running tool intact when it is already in the output
+directory. `prepare-test-setup install` does the same. Staging from another
+directory replaces the destination file instead of rewriting it.
+
 The tool takes its checkout from the workspace root above the directory it starts
 in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
 workspace. A command that reads no workspace, such as `prepare-test-setup install`,
