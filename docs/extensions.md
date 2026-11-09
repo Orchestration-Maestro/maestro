@@ -27,8 +27,9 @@ platform limitations.
 2. [Build the component](#build-the-component)
 3. [Package the component](#package-the-component)
 4. [Load and reload](#load-and-reload)
-5. [Author workflows](extensions/workflows.md)
-6. [Capability reference](#capability-reference)
+5. [Test the component](#test-the-component)
+6. [Author workflows](extensions/workflows.md)
+7. [Capability reference](#capability-reference)
 
 ## Create the project
 
@@ -291,6 +292,16 @@ the native artifact runtime. It asserts both `Hello, Ada!` and the structured
 starts empty. No extension package is downloaded or published, and no provider
 request is made.
 
+## Test the component
+
+Test the built component on Maestro's production engine with the test harness
+in `maestro-extensions-wasmtime`, enabled by its `test-support` feature. The
+harness loads the artifact through the same factory, runtime and runner the
+application uses, with in-memory history and the scripted model provider. A test
+calls the registered tools, commands and event handlers through the runner and
+needs no model or credentials. See [testing extensions](extensions/testing.md)
+for the quick start and the harness reference.
+
 ## Author workflows
 
 After loading your first component, use the [author workflows](extensions/workflows.md)
@@ -318,6 +329,7 @@ native-extension authoring instructions.
 | Child processes, waits, HTTP bodies, watches and built-in tool wrappers | [Guest native operations](extensions/guest_operations.md) |
 | Files, environment, network access and platform limitations | [Operating environment](extensions/host_io.md) |
 | Discovery, initialization, component faults and deployment | [Loading](extensions/loading.md), [native execution](extensions/native-execution.md), [packages](packages.md) |
+| Tests on the production engine with a scripted model | [Testing extensions](extensions/testing.md) |
 
 ### State, errors and modes
 

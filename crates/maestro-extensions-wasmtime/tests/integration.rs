@@ -36,6 +36,7 @@ mod factory_capabilities;
 mod factory_shutdown;
 mod git_checkpoint_example;
 mod handoff_example;
+mod hello_example;
 mod hook_diagnostics;
 mod inline_bash_example;
 mod interactive_shell_example;

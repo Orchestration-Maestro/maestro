@@ -38,7 +38,7 @@ name = "integration"
 path = "tests/integration.rs"
 
 [features]
-test-support = []
+test-support = ["maestro-extensions/test-support"]
 
 [lints]
 workspace = true
