@@ -42,6 +42,8 @@ mod member_graph;
 pub mod nextest_setup;
 /// Per-test admission for reserved callback ports.
 mod nextest_wrapper;
+/// Pinned native search program resolution.
+mod search_tools;
 /// Reusable test-setup staging and validation.
 mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.

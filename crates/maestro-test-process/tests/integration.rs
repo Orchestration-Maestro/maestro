@@ -9,6 +9,7 @@ mod environment_groups;
 mod executor;
 mod linked_files;
 mod native_aliases;
+mod search_programs;
 mod windows_console;
 
 use std::ffi::OsStr;

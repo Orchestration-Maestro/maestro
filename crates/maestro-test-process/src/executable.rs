@@ -1,7 +1,7 @@
-//! Installation of prepared native fixtures without writable executable handles in the runner.
+//! Installation of prepared native fixtures or pinned search programs.
 
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Copy a prepared native fixture to `destination` through its private installation mode.
@@ -47,6 +47,42 @@ pub fn install_executable(artifact: &Path, destination: &Path) -> io::Result<()>
             destination.display()
         )))
     }
+}
+
+/// Install a supplied `rg` or `fd` into a caller-owned directory, independently of PATH.
+///
+/// Reads `MAESTRO_TEST_<PROGRAM>` and copies its bytes and permissions to the native program
+/// name, including `EXE_SUFFIX`. The caller creates the directory and retains its guard.
+///
+/// # Errors
+/// Returns an unsupported program, a missing export or a failed copy naming its source.
+///
+/// # Examples
+/// ```no_run
+/// # fn main() -> std::io::Result<()> {
+/// let bin = maestro_test_directory::Scratch::new()?;
+/// let fd = maestro_test_process::install_search_program("fd", bin.path())?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn install_search_program(program: &str, directory: &Path) -> io::Result<PathBuf> {
+    if !matches!(program, "rg" | "fd") {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "unknown search program",
+        ));
+    }
+    let variable = format!("MAESTRO_TEST_{}", program.to_ascii_uppercase());
+    let source = std::env::var_os(&variable)
+        .ok_or_else(|| io::Error::other(format!("{program}: nextest must supply {variable}")))?;
+    let destination = directory.join(format!("{program}{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(&source, &destination).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!("{}: {error}", Path::new(&source).display()),
+        )
+    })?;
+    Ok(destination)
 }
 
 /// Install the prepared artifact as `entry` with the `command` family's `record`.

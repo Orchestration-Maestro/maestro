@@ -1,4 +1,4 @@
-//! Resolution of the pinned search programs that native tool tests install.
+//! Exact identity and version checks for native search programs.
 
 /// Resolves a pinned development tool from the supplied search PATH.
 ///
