@@ -40,7 +40,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
     }
     let check = !args.is_empty();
     let workspace = Workspace::read(cargo, checkout)?;
-    let component = workspace.component_crate()?;
+    let component = workspace.component_crate()?.directory;
     let shipped = workspace.shipped();
     let targets = targets(&workspace, &component, shipped.as_deref())?;
     let mut regions = Vec::new();
@@ -127,7 +127,8 @@ fn summary(path: &Path) -> io::Result<String> {
 /// Find the shipped examples and the crate's own fixture components, in name order.
 ///
 /// A shipped example is a top-level source file or a directory with its own `main.rs`. A
-/// workspace without the shipped folder renders the crate's own examples alone.
+/// workspace without the shipped folder renders the crate's own examples alone, and a crate
+/// without its own fixture folder renders the shipped examples alone.
 fn targets(
     workspace: &Workspace,
     component: &Path,
@@ -155,7 +156,12 @@ fn targets(
         }
     }
     let local = component.join(FIXTURES);
-    for entry in fs::read_dir(&local)? {
+    let entries = if local.is_dir() {
+        fs::read_dir(&local)?.collect()
+    } else {
+        Vec::new()
+    };
+    for entry in entries {
         let entry = entry?;
         let file = file_name(&entry)?;
         match file.strip_suffix(".rs") {
