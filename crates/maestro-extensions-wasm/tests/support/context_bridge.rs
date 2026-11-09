@@ -119,8 +119,14 @@ mod registrations;
 mod retained;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/phases.rs"]
+mod phases;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/retention.rs"]
 mod retention;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/startup.rs"]
+mod startup;
 
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/signals.rs"]
@@ -186,6 +192,8 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             return host_operations::observe(&api).await;
         }
         check_start(&api)?;
+        startup::observe(&api).await?;
+        phases::register(&api)?;
         load_time::publish(&api)?;
         providers::factory(&api)?;
         register_callbacks(&api)?;
@@ -333,7 +341,7 @@ fn context_command(
         }
         if let Some(request) = args.strip_prefix("retention ") {
             let request = request.to_owned();
-            return retention::command(&context, &request).await;
+            return retention::command(&api, &context, &request).await;
         }
         if args == "retain-suspended" {
             return retained::observe(api, context).await;
