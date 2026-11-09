@@ -656,10 +656,13 @@ fn two_files_with_summaries(base: &str) -> (String, String) {
     (project, output)
 }
 
-/// Install a `maestro` child that announces `ready` on `lifetimes`, waits on `permit`, then
-/// prints one text event and the end of its turn and records `ended` on `lifetimes`.
+/// Install a `maestro` child that records `start` on `lifetimes` the moment it executes, then
+/// runs a held child that waits on `permit`, prints one text event and the end of its turn and
+/// records `ended` on `lifetimes`.
 ///
 /// Every child writes to the one FIFO, so its contents are the order of child starts and ends.
+/// The start is recorded before the child reads its input or reaches the permit, so it is the
+/// earliest mark a child can make.
 #[cfg(unix)]
 fn held_child(
     base: &str,
@@ -671,21 +674,34 @@ fn held_child(
         r#"{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"first"}}"#,
         r#"{"type":"turn_end"}"#
     );
+    let bin = Path::new(base).join("bin");
+    let mark = |bytes: &'static [u8; 5]| {
+        serde_json::json!({
+            "path": lifetimes.path(),
+            "cwd": false,
+            "variable": null,
+            "bytes": bytes,
+        })
+    };
     crate::native::command(
-        Path::new(base).join("bin").as_path(),
-        "maestro",
+        bin.as_path(),
+        "held",
         &serde_json::json!({
             "scenario": "hold",
-            "ready": lifetimes.path(),
+            "ready": null,
             "permit": permit.path(),
             "stdout": events.as_bytes(),
             "stderr": [],
-            "append": {
-                "path": lifetimes.path(),
-                "cwd": false,
-                "variable": null,
-                "bytes": b"ended",
-            },
+            "append": mark(b"ended"),
+        }),
+    );
+    crate::native::command(
+        bin.as_path(),
+        "maestro",
+        &serde_json::json!({
+            "scenario": "forward",
+            "marker": mark(b"start"),
+            "program": "held",
         }),
     );
 }
@@ -721,13 +737,17 @@ fn analysis_starts_each_child_only_after_the_previous_one_ends() {
                         &mut Vec::new(),
                     ))
                 });
-                // Each child records its start, stays held until released, then records its end.
-                // A child started before the previous one ended puts its start ahead of that
-                // end in the shared FIFO, so reading the events in order proves the lifetimes
-                // never overlap.
+                // Each child records its start when it executes, stays held until released, then
+                // records its end. A child that executed before the previous one ended puts its
+                // start ahead of that end in the shared FIFO, so reading the events in order
+                // shows the lifetimes never overlap. Absence of an early start cannot be waited
+                // for without a timer, so the witness is bounded: it catches every concurrent
+                // implementation whose second child executes before the first child's release
+                // reaches the first child and the first child ends, a path with more steps than
+                // the second child's single exec.
                 let event = |what: &str| lifetimes.take(5).unwrap_or_else(|_| panic!("{what}"));
                 printed_until(&lines, "Analyzing session-transcripts-000.txt");
-                assert_eq!(event("the first child starts"), b"ready");
+                assert_eq!(event("the first child starts"), b"start");
                 permit.release().expect("the first child is released");
                 assert_eq!(event("the first child ends"), b"ended");
                 let first = printed_until(&lines, "Analyzing session-transcripts-001.txt");
@@ -736,12 +756,12 @@ fn analysis_starts_each_child_only_after_the_previous_one_ends() {
                     first.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
                     "{first:?}"
                 );
-                assert_eq!(event("the second child starts"), b"ready");
+                assert_eq!(event("the second child starts"), b"start");
                 permit.release().expect("the second child is released");
                 assert_eq!(event("the second child ends"), b"ended");
                 let second = printed_until(&lines, "Aggregating findings into final summary...");
                 assert!(second.contains(&"  -> session-transcripts-001.summary.txt".to_owned()));
-                assert_eq!(event("the aggregating child starts"), b"ready");
+                assert_eq!(event("the aggregating child starts"), b"start");
                 permit.release().expect("the aggregating child is released");
                 assert_eq!(event("the aggregating child ends"), b"ended");
                 while lines.recv().is_ok() {}
