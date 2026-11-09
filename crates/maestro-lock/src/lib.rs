@@ -8,7 +8,9 @@ mod poison;
 pub use poison::{lock, read, write};
 mod recovery;
 mod replace;
-pub use identity::{acquire_write, acquire_write_bounded, try_acquire_write};
+pub use identity::{
+    acquire_write, acquire_write_bounded, try_acquire_exclusion, try_acquire_write,
+};
 #[cfg(unix)]
 pub use replace::narrow_existing;
 pub use replace::{Committed, CreationMode, Replace, replace};
@@ -45,6 +47,23 @@ pub struct WriteLock {
     sidecar: std::path::PathBuf,
     /// Retained native exclusion handle; Windows deletes its name when sharing handles close.
     _file: File,
+}
+
+/// Exclusive ownership of one canonical native target that admits no write.
+///
+/// Dropping it releases the exclusion exactly as dropping a [`WriteLock`] does.
+#[derive(Debug)]
+#[must_use = "dropping the holder releases the exclusion"]
+pub struct Exclusion {
+    /// The retained native exclusion, never offered for publication.
+    _holder: WriteLock,
+}
+
+impl Exclusion {
+    /// Wraps a holder whose pending publication has not been replayed.
+    fn new(holder: WriteLock) -> Self {
+        Self { _holder: holder }
+    }
 }
 
 impl WriteLock {

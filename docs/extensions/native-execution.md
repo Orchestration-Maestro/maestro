@@ -73,6 +73,25 @@ stops its continuation.
 Removing a subscription leaves an admitted tail and its captures running until
 the tail settles.
 
+An old command frame stays suspended in its own Store while the host replaces or
+reloads. Handlers the old component registered, such as shutdown and
+before-switch handlers, run in that Store during the wait. The fresh generation
+loads into a new Store with its own handlers, flags and context.
+
+The adapter forwards each operand as the host supplied it: the event record a
+handler receives, the fork entry and position (absent, `before` or `at`), the
+switch path and the setup session. A fork or switch continuation gets the fresh
+context, and a fork result carries `cancelled` only. A setup that writes to a
+persisted session publishes nothing until the history holds an assistant
+message, then flushes every buffered record at once; later appends add one
+record each. [Session persistence](../sessions/session_manager.md) describes the
+file side.
+
+When a host phase fails, the error text reaches the awaiting frame unchanged.
+Whether that frame's context is stale depends only on whether the host had
+already invalidated it. [Lifecycle](lifecycle.md#host-phases-around-a-replacement)
+lists the phase order.
+
 The adapter delegates registrations and actions to
 [the extension facade](registration.md). Its fixed UI imports forward notification,
 status, working-row, indicator, hidden-thinking-label, widget and title requests

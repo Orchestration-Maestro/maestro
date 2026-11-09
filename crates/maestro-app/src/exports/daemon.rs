@@ -15,10 +15,10 @@ pub mod daemon {
     #[cfg(unix)]
     #[doc(inline)]
     pub use maestro_daemon::api::socket::{
-        AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketFileIdentity,
-        bind_async_local_listener, is_connection_closed_error, prepare_socket_path,
-        remove_socket_file_if_owned, restrict_socket_permissions, socket_file_identity,
-        split_async_stream,
+        AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketClaim,
+        SocketFileIdentity, bind_async_local_listener, is_connection_closed_error,
+        prepare_socket_path, remove_socket_file_if_owned, restrict_socket_permissions,
+        socket_file_identity, split_async_stream,
     };
     #[cfg(target_os = "linux")]
     #[doc(inline)]

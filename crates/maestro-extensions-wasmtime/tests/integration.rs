@@ -52,6 +52,7 @@ mod overlay_test_example;
 mod project_rules_example;
 mod provider_catalog;
 mod replacement_callbacks;
+mod replacement_host;
 mod retained_components;
 mod retained_contexts;
 mod runtime_retention;

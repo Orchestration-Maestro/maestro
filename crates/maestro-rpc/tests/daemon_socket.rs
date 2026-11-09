@@ -632,6 +632,21 @@ fn socket_shutdown_keeps_replacement_files() {
     assert!(!socket.exists());
 }
 
+/// A serving daemon keeps its claim on the socket path whatever a connection would report:
+/// a second start is busy even when the socket file is gone, and the claim ends with the daemon.
+#[test]
+fn socket_claim_lasts_as_long_as_the_daemon_serves() {
+    let root = Scratch::new().unwrap();
+    let paths = root_paths(root.path());
+    let second = paths.clone();
+    let busy = served(&paths, move |socket| {
+        std::fs::remove_file(&socket).unwrap();
+        start(&second).unwrap_err()
+    });
+    assert_eq!(busy.kind(), io::ErrorKind::AddrInUse);
+    start(&paths).unwrap();
+}
+
 /// The server's log records its listener, each request's start and completion with its
 /// correlation, method, outcome and interface impact, a failed connection's cause and a
 /// failed socket removal.
