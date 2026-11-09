@@ -2,6 +2,7 @@
 use crate::{InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse};
 use std::cell::RefCell;
 
+mod anchored_rules;
 mod code_progress;
 mod code_span_windows;
 mod container_depth;
