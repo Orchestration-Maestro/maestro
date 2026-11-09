@@ -623,10 +623,12 @@ async fn policies(html: &str, tt_html: &str, provider: &str, module: &str) {
             .replace('<', "&lt;")
             .replace('\r', "&#13;")
     };
-    let markup = vec![
+    let observed = html.replacen("<head>", &format!("<head><script>{OBSERVER}</script>"), 1);
+    let markup = [
         hashes[0].clone(),
         digest(&encoded(provider)).await,
         digest(&encoded(module)).await,
+        digest(OBSERVER).await,
     ];
     let wasm = "'wasm-unsafe-eval'";
     let scenarios = [
@@ -640,7 +642,6 @@ async fn policies(html: &str, tt_html: &str, provider: &str, module: &str) {
             false,
             false,
         ),
-        ("encoded markup", wasm, markup, false, false),
         (
             "unmatched",
             wasm,
@@ -653,24 +654,20 @@ async fn policies(html: &str, tt_html: &str, provider: &str, module: &str) {
         let policy = format!("script-src 'self' {permission} {}", allowed.join(" "));
         admission(html, label, &policy, (runs, completes)).await;
     }
-    refused_compilation(html, &hashes).await;
+    // A carrier the policy refuses stops installation; the observer absorbs the reported failure.
+    let policy = format!("script-src 'self' {wasm} {}", markup.join(" "));
+    admission(&observed, "encoded markup", &policy, (false, false)).await;
+    refused_compilation(&observed, &hashes).await;
     trusted_types(html, tt_html).await;
 }
 
 /// Without the WebAssembly permission the bundle cannot compile its module, so nothing installs.
 /// An admitted observer records the refused compilation and the module's failure.
-async fn refused_compilation(html: &str, hashes: &[String]) {
-    let observed = html.replacen("<head>", &format!("<head><script>{OBSERVER}</script>"), 1);
+async fn refused_compilation(observed: &str, hashes: &[String]) {
     let mut allowed = hashes.to_vec();
     allowed.push(digest(OBSERVER).await);
     let policy = format!("script-src 'self' {}", allowed.join(" "));
-    admission(
-        &observed,
-        "missing wasm permission",
-        &policy,
-        (false, false),
-    )
-    .await;
+    admission(observed, "missing wasm permission", &policy, (false, false)).await;
 }
 
 /// Trusted Types keep completion, inherited with an HTML-only default and set inside the frame.
