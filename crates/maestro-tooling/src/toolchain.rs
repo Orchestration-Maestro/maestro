@@ -11,7 +11,7 @@ use std::path::Path;
 use std::process::Command;
 
 /// The variable through which rustup selects a toolchain for the processes it starts.
-const SELECTOR: &str = "RUSTUP_TOOLCHAIN";
+pub(crate) const SELECTOR: &str = "RUSTUP_TOOLCHAIN";
 
 /// A command for `program` that runs in `directory` on the toolchain active there.
 ///
