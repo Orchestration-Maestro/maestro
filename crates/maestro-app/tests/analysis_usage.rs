@@ -1,7 +1,7 @@
 //! Recorded-usage report behaviour.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
-use crate::analysis_fixtures::{ZONE, expected, home, resolved, run_usage, sessions};
+use crate::analysis_fixtures::{ZONE, expected, home, resolved, run_usage, sessions, write_files};
 use crate::isolated_home::with_environment;
 
 const HELP: &str = "Usage: scripts/stats.ts [options]
@@ -9,7 +9,7 @@ const HELP: &str = "Usage: scripts/stats.ts [options]
 Options:
   -n, --days <days>         Number of local calendar days to include (default: 7)
   -d, --dir, --cwd <path>   Project cwd to inspect (default: current cwd)
-  --sessions-base <path>    Sessions base directory (default: ~/.maestro/agent/sessions)
+  --sessions-base <path>    Sessions base directory (default: the sessions folder of the agent directory)
   -h, --help                Show this help
 ";
 
@@ -426,6 +426,31 @@ fn usage_directory_lookup_matches_session_writer() {
                 assert!(run.succeeded(), "{cwd}: {}", run.stderr);
                 assert!(run.stdout.contains("  writer"), "{cwd}: {}", run.stdout);
             }
+        },
+    );
+}
+
+#[test]
+fn usage_report_reads_the_configured_sessions() {
+    with_environment(
+        "usage_report_reads_the_configured_sessions",
+        &[("TZ", ZONE), ("MAESTRO_CODING_AGENT_DIR", "$BASE/agent")],
+        |base| {
+            let directory = maestro_session::sessions_dir(
+                &format!("{base}/agent/sessions"),
+                &resolved("/project"),
+            );
+            write_files(
+                directory.as_str(),
+                &[("2026-03-09T12-00-00-000Z_a.jsonl", &raw_usage_entry(""))],
+            );
+            let run = run_usage(&["--cwd", "/project"]).expect("the report runs");
+            assert!(run.succeeded(), "{}", run.stderr);
+            assert!(
+                run.stdout.contains(&totals_row("TOTAL", "0")),
+                "{}",
+                run.stdout
+            );
         },
     );
 }

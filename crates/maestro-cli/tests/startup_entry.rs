@@ -6,7 +6,8 @@
 fn native_selector_terminal_drives_the_supplied_local_set() {
     use std::rc::Rc;
     let local = Rc::new(tokio::task::LocalSet::new());
-    let (terminal, runtime) = maestro_cli::input::selector::native_terminal(Rc::clone(&local));
+    let (terminal, runtime) =
+        maestro_cli::input::selector::native_terminal(Rc::clone(&local)).unwrap();
     let (sender, receiver) = tokio::sync::oneshot::channel();
     runtime.spawn_local(Box::pin(async move {
         sender.send(()).unwrap();

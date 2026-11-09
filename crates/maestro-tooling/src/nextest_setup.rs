@@ -122,7 +122,10 @@ fn nonempty(name: &str) -> Option<OsString> {
 }
 
 /// Export one `NAME=value` entry to the tests, when nextest supplied a file for it.
-pub(crate) fn export(entry: &OsStr) -> io::Result<()> {
+///
+/// # Errors
+/// Returns a failure to open or append to the file nextest supplied.
+pub fn export(entry: &OsStr) -> io::Result<()> {
     let Some(file) = std::env::var_os("NEXTEST_ENV") else {
         return Ok(());
     };

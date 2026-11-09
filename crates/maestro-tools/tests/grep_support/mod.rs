@@ -3,7 +3,7 @@
 use crate::display_support::{Case, search_cases, search_keys};
 #[cfg(unix)]
 use crate::{
-    find_support::{alias, manager},
+    find_support::{alias, manager, pinned_manager},
     ls_support::{canon, result_json, with_home},
     read_support::{Fixture, Scratch},
     runtime::run,
@@ -358,14 +358,11 @@ pub fn add_invalid_filename(root: &Scratch) -> bool {
     std::fs::write(root.path().join(invalid), b"needle\n").unwrap();
     true
 }
-/// Run real search through the wrapped factory and preserve absent details.
+/// Run the pinned ripgrep through the wrapped factory and preserve absent details.
 #[cfg(unix)]
 pub fn native(root: &Scratch, params: Value) -> Result<Value, String> {
-    let tool = create_grep_tool(
-        root.text(),
-        GrepToolOptions::default(),
-        manager(root.text(), &Arc::new(AtomicUsize::new(0))),
-    );
+    let (_bin, manager) = pinned_manager("rg");
+    let tool = create_grep_tool(root.text(), GrepToolOptions::default(), manager);
     run((tool.execute)("call".into(), params, None, None))
         .map(|r| result_json(&r.content, r.details))
         .map_err(|e| e.message)
