@@ -142,16 +142,19 @@ impl ItemStops {
     }
 
     /// A previous code line or block opener cannot admit another lazy line.
+    ///
+    /// Code needs four leading columns before content, so only the first four are read, and
+    /// a line of spaces and tabs alone is found from its end.
     pub(crate) fn ends_lazy(&self, line: &str) -> bool {
-        let code = line
-            .find(|scalar| !matches!(scalar, ' ' | '\t'))
-            .is_some_and(|end| {
-                line[..end]
-                    .chars()
-                    .map(|scalar| if scalar == '\t' { 4 } else { 1 })
-                    .sum::<usize>()
-                    >= 4
-            });
+        let mut columns = 0;
+        for byte in line.bytes().take(4) {
+            columns += match byte {
+                b' ' => 1,
+                b'\t' => 4,
+                _ => break,
+            };
+        }
+        let code = columns >= 4 && !line.trim_end_matches([' ', '\t']).is_empty();
         code || (Self::opens(line, LAZY_OPENERS) && rule_matches(self.lazy.as_ref(), line))
     }
 
