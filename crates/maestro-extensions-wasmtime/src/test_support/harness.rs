@@ -1,14 +1,15 @@
 //! Built components loaded into the production engine over in-memory session owners and the
 //! scripted provider.
 
-use std::{cell::RefCell, io, rc::Rc, sync::RwLock};
+use std::{cell::RefCell, future::ready, io, rc::Rc, sync::RwLock};
 
 use maestro_extensions::{
-    AuthStorage, AuthStorageData, ConfigValueOperations, EventBusController, EventError,
-    ExtensionContextActions, ExtensionExecution, ExtensionLoadError, ExtensionRunner,
-    ExtensionRuntime, ExtensionWidgets, LiveTheme, Local, ModelRegistry, ModuleLoader,
-    ProviderConfig, ProviderModelConfig, SessionManager, SharedHandle, create_event_bus_for,
-    create_extension_runtime, load_extensions_with_runtime,
+    AuthStorage, AuthStorageData, CommandContextOperations, ConfigValueOperations,
+    EventBusController, EventError, ExtensionCommandContextActions, ExtensionContextActions,
+    ExtensionExecution, ExtensionLoadError, ExtensionRunner, ExtensionRuntime, ExtensionWidgets,
+    LiveTheme, Local, ModelRegistry, ModuleLoader, ProviderConfig, ProviderModelConfig,
+    SessionManager, SharedHandle, create_event_bus_for, create_extension_runtime,
+    load_extensions_with_runtime,
     runner::ExtensionRunnerSession,
     test_support::{
         FauxModelDefinition, FauxProviderRegistration, RegisterFauxProviderOptions, ToolkitWidgets,
@@ -37,9 +38,10 @@ pub struct HarnessOptions {
 /// provider configured in that catalog.
 ///
 /// Components load through the production artifact factory into one shared runtime, as an
-/// application loads them. Every application action stays unbound until a test binds it, so
-/// an unconfigured capability fails with the runtime's own error. Run the harness inside
-/// [`local`](super::local): components keep their native work on a local task set.
+/// application loads them. Every application action, context operation and command operation
+/// fails until a test binds it, so an unconfigured capability never reports work nothing
+/// performed. Run the harness inside [`local`](super::local): components keep their native
+/// work on a local task set.
 pub struct Harness {
     /// Working directory the session reports.
     pub cwd: String,
@@ -59,7 +61,8 @@ pub struct Harness {
 
 /// The components of one [`Harness::load`] and the runner over them.
 pub struct Loaded {
-    /// The runner over the components that loaded, bound with unbound application actions.
+    /// The runner over the components that loaded, with every application action, context
+    /// operation and command operation failing until a test binds it.
     pub runner: Rc<ExtensionRunner<Local>>,
     /// The components that failed to load, in supplied order.
     pub errors: Vec<ExtensionLoadError>,
@@ -126,10 +129,13 @@ impl Harness {
         runner
             .bind_core(
                 Local::unbound_actions(),
-                ExtensionContextActions::default(),
+                unconfigured_context_actions(),
                 ProviderActions::default(),
             )
             .map_err(io::Error::other)?;
+        runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+            unconfigured_command_operations(),
+        )));
         Ok(Loaded {
             runner,
             errors: loaded.errors,
@@ -140,6 +146,42 @@ impl Harness {
 impl Drop for Harness {
     fn drop(&mut self) {
         self.faux.unregister();
+    }
+}
+
+/// The failure of a `capability` the test has not bound.
+fn unconfigured(capability: &str) -> EventError {
+    format!("{capability} is not configured in the test harness; bind it on the runner").into()
+}
+
+/// Context operations that each fail with an error naming the operation; a test replaces the
+/// ones it serves and binds the result with `bind_core`.
+#[must_use]
+pub fn unconfigured_context_actions() -> ExtensionContextActions {
+    ExtensionContextActions {
+        get_model: Rc::new(|| Err(unconfigured("get_model"))),
+        is_idle: Rc::new(|| Err(unconfigured("is_idle"))),
+        get_signal: Rc::new(|| Err(unconfigured("get_signal"))),
+        abort: Rc::new(|| Err(unconfigured("abort"))),
+        has_pending_messages: Rc::new(|| Err(unconfigured("has_pending_messages"))),
+        shutdown: Rc::new(|| Err(unconfigured("shutdown"))),
+        get_context_usage: Rc::new(|| Err(unconfigured("get_context_usage"))),
+        compact: Rc::new(|_| Err(unconfigured("compact"))),
+        get_system_prompt: Rc::new(|| Err(unconfigured("get_system_prompt"))),
+    }
+}
+
+/// Command operations that each fail with an error naming the operation; a test replaces the
+/// ones it serves and binds the result with `bind_command_context`.
+#[must_use]
+pub fn unconfigured_command_operations() -> CommandContextOperations {
+    CommandContextOperations {
+        wait_for_idle: Rc::new(|| Box::pin(ready(Err(unconfigured("wait_for_idle"))))),
+        new_session: Rc::new(|_| Box::pin(ready(Err(unconfigured("new_session"))))),
+        fork: Rc::new(|_, _| Box::pin(ready(Err(unconfigured("fork"))))),
+        navigate_tree: Rc::new(|_, _| Box::pin(ready(Err(unconfigured("navigate_tree"))))),
+        switch_session: Rc::new(|_, _| Box::pin(ready(Err(unconfigured("switch_session"))))),
+        reload: Rc::new(|| Box::pin(ready(Err(unconfigured("reload"))))),
     }
 }
 
@@ -210,7 +252,8 @@ mod tests {
     use maestro_extensions::{ResolvedRequestAuth, test_support::FauxModelDefinition};
 
     /// Every scripted model is available in the session catalog and resolves to the scripted
-    /// provider's key, so an extension's model call reaches the scripted provider.
+    /// provider's key, so an extension's model call reaches the scripted provider. A key for a
+    /// shipped provider, as ambient credentials supply, adds its models beside them.
     #[test]
     fn scripted_models_are_available_with_the_scripted_key() {
         let definition = |id: &str| FauxModelDefinition {
@@ -222,7 +265,18 @@ mod tests {
             ..HarnessOptions::default()
         };
         let harness = Harness::new("/work", options).unwrap();
-        let available = harness.model_registry.get_available().unwrap();
+        let api = &harness.faux.api;
+        harness
+            .model_registry
+            .auth_storage()
+            .set_runtime_api_key("openai", "ambient-key");
+        let available: Vec<_> = harness
+            .model_registry
+            .get_available()
+            .unwrap()
+            .into_iter()
+            .filter(|model| model.read().unwrap().api == *api)
+            .collect();
         let identities: Vec<_> = available
             .iter()
             .map(|model| {
@@ -230,7 +284,6 @@ mod tests {
                 (model.provider.clone(), model.id.clone(), model.api.clone())
             })
             .collect();
-        let api = &harness.faux.api;
         assert_eq!(
             identities,
             [
@@ -248,5 +301,48 @@ mod tests {
             panic!("the scripted model resolves its key");
         };
         assert_eq!(api_key.as_deref(), Some(FAUX_KEY));
+    }
+
+    /// Every context and command operation a test has not bound fails with an error naming it,
+    /// instead of reporting success for work nothing performed.
+    #[test]
+    fn unconfigured_context_operations_fail_naming_the_capability() {
+        super::super::local(async {
+            let harness = Harness::new("/work", HarnessOptions::default()).unwrap();
+            let loaded = harness.load(Vec::new()).await.unwrap();
+            let context = loaded.runner.create_command_context();
+            let failures = [
+                ("get_model", context.model().err()),
+                ("is_idle", context.is_idle().err()),
+                ("get_signal", context.signal().err()),
+                ("abort", context.abort().err()),
+                ("has_pending_messages", context.has_pending_messages().err()),
+                ("shutdown", context.shutdown().err()),
+                ("get_context_usage", context.get_context_usage().err()),
+                ("compact", context.compact(None).err()),
+                ("get_system_prompt", context.get_system_prompt().err()),
+                ("wait_for_idle", context.wait_for_idle().await.err()),
+                ("new_session", context.new_session(None).await.err()),
+                ("fork", context.fork("entry".into(), None).await.err()),
+                (
+                    "navigate_tree",
+                    context.navigate_tree("entry".into(), None).await.err(),
+                ),
+                (
+                    "switch_session",
+                    context.switch_session("other".into(), None).await.err(),
+                ),
+                ("reload", context.reload().await.err()),
+            ];
+            for (capability, error) in failures {
+                assert_eq!(
+                    error.map(|error| error.to_string()),
+                    Some(format!(
+                        "{capability} is not configured in the test harness; bind it on the runner"
+                    )),
+                );
+            }
+        })
+        .unwrap();
     }
 }

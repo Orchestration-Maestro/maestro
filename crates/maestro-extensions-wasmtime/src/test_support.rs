@@ -9,7 +9,9 @@ use std::cell::RefCell;
 use tokio::sync::{Notify, mpsc, oneshot};
 
 mod harness;
-pub use harness::{Harness, HarnessOptions, Loaded};
+pub use harness::{
+    Harness, HarnessOptions, Loaded, unconfigured_command_operations, unconfigured_context_actions,
+};
 pub use maestro_extensions;
 pub use maestro_extensions::test_support::{
     FauxModelDefinition, FauxProviderRegistration, FauxResponseStep, ToolkitWidgets,

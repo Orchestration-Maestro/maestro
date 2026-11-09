@@ -71,6 +71,8 @@ runner, its events, contexts and records are named through this one dependency.
 | `Harness::load(paths)` | Loads each component path into the shared runtime, then binds a runner over the ones that loaded. Returns `Loaded`. |
 | `Loaded::runner` | The `ExtensionRunner` over the loaded components. |
 | `Loaded::errors` | One `ExtensionLoadError` for each component whose factory failed, in supplied order. Later paths still load. |
+| `unconfigured_context_actions()` | Context operations that each fail with an error naming the operation. The runner starts with them bound. |
+| `unconfigured_command_operations()` | Command operations that each fail with an error naming the operation. The runner starts with them bound. |
 
 `HarnessOptions` holds three settings, each with a default:
 
@@ -109,18 +111,52 @@ A test drives the extension and reads its answers through the runner and the bus
 
 ### Unconfigured capabilities
 
-The harness binds no application action. An action the test has not bound, such
-as sending a message or reading the active tools, fails with the runtime's own
+Nothing the test leaves unbound reports success. An application action, such as
+sending a message or reading the active tools, fails with the runtime's own
 error: `Extension runtime not initialized. Action methods cannot be called during
-extension loading.` To serve an action, bind it on the runner with recording
-closures:
+extension loading.` A context or command operation, such as `abort`, `compact`,
+`get_model` or `reload`, fails with an error that names it:
+`abort is not configured in the test harness; bind it on the runner`.
+
+To serve a capability, bind it on the runner with recording closures. Start from
+the failing set and replace only the fields the test serves, so everything else
+keeps failing:
 
 ```rust
-runner.bind_core(actions, context_actions, provider_actions)?;
+use std::{cell::Cell, rc::Rc};
+use maestro_extensions_wasmtime::test_support::maestro_extensions::{
+    CommandContextOperations, ExtensionCommandContextActions, ExtensionContextActions,
+    ExtensionExecution, Local, types::ProviderActions,
+};
+use maestro_extensions_wasmtime::test_support::{
+    unconfigured_command_operations, unconfigured_context_actions,
+};
+
+let aborted = Rc::new(Cell::new(false));
+let seen = aborted.clone();
+loaded.runner.bind_core(
+    Local::unbound_actions(),
+    ExtensionContextActions {
+        abort: Rc::new(move || {
+            seen.set(true);
+            Ok(())
+        }),
+        ..unconfigured_context_actions()
+    },
+    ProviderActions::default(),
+)?;
+loaded.runner.bind_command_context(Some(ExtensionCommandContextActions::new(
+    CommandContextOperations {
+        reload: Rc::new(|| Box::pin(std::future::ready(Ok(())))),
+        ..unconfigured_command_operations()
+    },
+)));
 ```
 
-`bind_core` replaces every binding at once. Build `actions` from
-`Local::unbound_actions()` and replace only the fields the test serves.
+`bind_core` replaces the application actions, the context operations and the
+provider actions at once. A context keeps the model reader the runner held when
+it created the context, so bind `get_model` before the event or command that
+reads the model.
 
 ### The scripted provider
 
