@@ -72,7 +72,7 @@ fn extension_of(name: &str) -> Option<&str> {
 /// builtins (Apache-2.0 with the LLVM exception) and the Rust compiler builtins.
 fn audited(name: &str) -> bool {
     name == "libc.a"
-        || name == super::ALLOCATOR.1
+        || name == "libdlmalloc.a"
         || (name.starts_with("libclang_rt.builtins") && extension_of(name) == Some("a"))
         || (name.starts_with("libcompiler_builtins-") && extension_of(name) == Some("rlib"))
         || (name.starts_with("maestro_sandbox_runtime.") && extension_of(name) == Some("o"))

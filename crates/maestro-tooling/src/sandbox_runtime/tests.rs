@@ -67,6 +67,7 @@ fn rustflags_keep_paths_with_spaces_in_one_argument() {
     let flags = rustflags(
         Path::new("/work/maestro sandbox"),
         Path::new("/work/maestro sandbox/target/sandbox-runtime/runtime.map"),
+        &[],
     );
     let arguments: Vec<&str> = flags.split('\x1f').collect();
     assert!(arguments.contains(&"--remap-path-prefix=/work/maestro sandbox=/checkout"));
@@ -75,7 +76,23 @@ fn rustflags_keep_paths_with_spaces_in_one_argument() {
             &"-Clink-arg=-Wl,-Map=/work/maestro sandbox/target/sandbox-runtime/runtime.map"
         )
     );
-    assert!(arguments.contains(&"-Clink-arg=-sWASM_BINDGEN"));
+}
+
+/// Dependency sources are recorded under their package name and version, so the generated
+/// script is the same whichever Cargo home built it.
+#[test]
+fn dependency_sources_are_recorded_without_the_cargo_home() {
+    let root = "/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/js-sys-0.3.106";
+    let flags = rustflags(
+        Path::new("/work/maestro"),
+        Path::new("/work/maestro/target/sandbox-runtime/runtime.map"),
+        &[(root.to_owned(), "js-sys-0.3.106".to_owned())],
+    );
+    let arguments: Vec<&str> = flags.split('\x1f').collect();
+    assert!(
+        arguments.contains(&format!("--remap-path-prefix={root}=js-sys-0.3.106").as_str()),
+        "{flags}"
+    );
 }
 
 #[test]

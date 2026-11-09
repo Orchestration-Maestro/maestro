@@ -223,10 +223,23 @@ the asset. The command refuses a missing or unpinned compiler (naming the tool a
 release), a library outside the audited list and script text that an inline script cannot
 carry. It wraps the script in a function so no glue name reaches the frame's global scope,
 and passes the compiler flags in Cargo's encoded form so a checkout path with spaces
-builds. The package repeats the workspace lint table in its manifest and is linted with
-the browser crates. `just browser-test` runs the check after the browser cases.
-The build box's saved setup carries the SDK. Shared CI browser jobs install the same release
-because `.github/ci.toml` lists the package in `emscripten_crates`.
+builds.
+
+The asset is the same on every machine. The command records the checkout as `/checkout`
+and each dependency's sources as `<name>-<version>`, so no Cargo home or checkout path
+reaches the embedded module. A web crate test fails when the asset names any other
+absolute source path.
+
+The package owns its build settings, so a plain Cargo build for the target links it too.
+Its build script passes the Emscripten link settings to the binary, and its manifest sets
+`panic = "abort"` in the dev and release profiles. The command adds only the compiler
+flags, the path names and the linker map the audit reads. The package repeats the
+workspace lint table in its manifest and is linted for `wasm32-unknown-emscripten` with the
+browser crates. `just browser-test` runs the check after the browser cases.
+
+The build box's saved setup carries the SDK. Shared CI installs the same release because
+`.github/ci.toml` lists the package in `emscripten_crates`: merge groups build it with a
+plain `cargo build`, and the browser job runs the check.
 
 ## Browser integration qualification
 

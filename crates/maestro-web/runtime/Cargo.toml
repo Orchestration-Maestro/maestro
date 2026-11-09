@@ -21,6 +21,11 @@ web-sys = { version = "=0.3.106", features = [
     "ErrorEvent", "PromiseRejectionEvent", "AddEventListenerOptions", "Blob", "BlobPropertyBag",
 ] }
 
+# The runtime aborts on panic in every profile, so Cargo's plain build for its target compiles
+# it too: under unwinding, the bindings require unwind-safe closures and futures.
+[profile.dev]
+panic = "abort"
+
 [profile.release]
 opt-level = "s"
 lto = true

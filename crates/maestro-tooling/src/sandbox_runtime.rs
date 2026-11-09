@@ -18,31 +18,13 @@ const EMSCRIPTEN: &str = "6.0.10";
 /// Binding generator release the runtime's locked bindings require.
 const BINDGEN: &str = "0.2.129";
 /// The runtime package manifest, relative to the checkout.
-const MANIFEST: &str = "crates/maestro-web/runtime/Cargo.toml";
+pub(crate) const MANIFEST: &str = "crates/maestro-web/runtime/Cargo.toml";
 /// The runtime binary the package builds.
 const BINARY: &str = "maestro-sandbox-runtime";
 /// The generated script, relative to the checkout.
 pub(crate) const ASSET: &str = "crates/maestro-web/assets/maestro-sandbox-runtime.js";
 /// Rust target the runtime is compiled for.
-const TARGET: &str = "wasm32-unknown-emscripten";
-/// The allocator setting and the one archive that carries it, audited together.
-///
-/// The binding integration runs its start function before the static constructors,
-/// so an allocator that initialises itself in a constructor would be used before it
-/// is ready. This one initialises on first use.
-pub(crate) const ALLOCATOR: (&str, &str) = ("-sMALLOC=dlmalloc", "libdlmalloc.a");
-/// Linker settings that make the script start itself without help from the page.
-const LINK_SETTINGS: [&str; 9] = [
-    "-sWASM_BINDGEN",
-    "-sSINGLE_FILE=1",
-    "-sSINGLE_FILE_BINARY_ENCODE=0",
-    "-sWASM_ASYNC_COMPILATION=0",
-    "-sDYNAMIC_EXECUTION=0",
-    "-sENVIRONMENT=web",
-    ALLOCATOR.0,
-    "-Wno-experimental",
-    "-Wl,-Map",
-];
+pub(crate) const TARGET: &str = "wasm32-unknown-emscripten";
 
 /// Generate the asset, or with `--check` compare it with a fresh build.
 ///
@@ -99,22 +81,21 @@ fn tool(name: &str, release: &str) -> io::Result<()> {
 /// The compiler flags of the runtime build, as Cargo's separator-delimited encoded list.
 ///
 /// Cargo splits the plain flags variables at whitespace; the encoded form keeps a checkout
-/// path that contains spaces in one argument.
-fn rustflags(checkout: &Path, map: &Path) -> String {
+/// path that contains spaces in one argument. Each of `dependencies` pairs a package's source
+/// root with the name it is recorded under, so no builder's Cargo home reaches the script.
+/// The package's build script supplies the Emscripten link settings; only the linker map,
+/// which the audit reads, is added here.
+fn rustflags(checkout: &Path, map: &Path, dependencies: &[(String, String)]) -> String {
     let mut flags = vec![
         "-Cpanic=abort".to_owned(),
         "-Cllvm-args=-enable-emscripten-cxx-exceptions=0".to_owned(),
         "-Crelocation-model=static".to_owned(),
         format!("--remap-path-prefix={}=/checkout", checkout.display()),
     ];
-    for setting in LINK_SETTINGS {
-        let setting = if setting == "-Wl,-Map" {
-            format!("-Wl,-Map={}", map.display())
-        } else {
-            setting.to_owned()
-        };
-        flags.push(format!("-Clink-arg={setting}"));
+    for (root, name) in dependencies {
+        flags.push(format!("--remap-path-prefix={root}={name}"));
     }
+    flags.push(format!("-Clink-arg=-Wl,-Map={}", map.display()));
     flags.join("\x1f")
 }
 
@@ -130,10 +111,33 @@ fn scoped(script: &[u8]) -> Vec<u8> {
     wrapped
 }
 
+/// Each dependency package's source root, paired with `<name>-<version>`.
+///
+/// That is the name Cargo's path trimming gives a registry package, and it is the same on
+/// every machine, while the root sits under the builder's Cargo home.
+fn dependencies(cargo: &Path, checkout: &Path) -> io::Result<Vec<(String, String)>> {
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .cargo_path(cargo)
+        .current_dir(checkout)
+        .manifest_path(checkout.join(MANIFEST))
+        .other_options(vec!["--locked".into()])
+        .exec()
+        .map_err(io::Error::other)?;
+    Ok(metadata
+        .packages
+        .into_iter()
+        .filter(|package| package.source.is_some())
+        .filter_map(|package| {
+            let root = package.manifest_path.parent()?.to_string();
+            Some((root, format!("{}-{}", package.name, package.version)))
+        })
+        .collect())
+}
+
 /// Compile the runtime and return the generated script and the linker map.
 fn build(cargo: &Path, checkout: &Path, directory: &Path) -> io::Result<(PathBuf, PathBuf)> {
     let map = directory.join("runtime.map");
-    let flags = rustflags(checkout, &map);
+    let flags = rustflags(checkout, &map, &dependencies(cargo, checkout)?);
     let output = Command::new(cargo)
         .current_dir(checkout)
         .env("CARGO_TARGET_DIR", directory)

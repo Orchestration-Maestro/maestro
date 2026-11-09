@@ -76,9 +76,10 @@ fn an_unknown_selection_fails() {
     assert!(selection(&[OsString::from("-p")]).is_err());
 }
 
-/// The runtime package, outside the workspace, is linted by manifest path with warnings denied.
+/// The runtime package, outside the workspace, is linted by manifest path for the target it is
+/// built for, with warnings denied.
 #[test]
-fn the_runtime_package_is_linted_by_manifest_path() {
+fn the_runtime_package_is_linted_by_manifest_path_for_its_target() {
     let command: Vec<String> = runtime_arguments()
         .iter()
         .map(|argument| argument.to_string_lossy().into_owned())
@@ -87,6 +88,12 @@ fn the_runtime_package_is_linted_by_manifest_path() {
         command
             .windows(2)
             .any(|pair| pair == ["--manifest-path", "crates/maestro-web/runtime/Cargo.toml"])
+    );
+    assert!(
+        command
+            .windows(2)
+            .any(|pair| pair == ["--target", "wasm32-unknown-emscripten"]),
+        "{command:?}"
     );
     assert!(command.ends_with(&["--".to_owned(), "-D".to_owned(), "warnings".to_owned()]));
 }
