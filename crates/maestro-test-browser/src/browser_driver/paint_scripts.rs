@@ -4,7 +4,8 @@
 ///
 /// Screenshots stay in the page as decoded image data, so only counts cross the protocol.
 /// Pixel positions are CSS coordinates of each device pixel's centre. `count` applies the report
-/// observer's role-pixel rule: an opaque pixel with exactly the role's RGB channels. `dark`
+/// observer's role-pixel rule: an opaque pixel whose RGB channels are each within `tolerance`
+/// (default exact) of the role's. `dark`
 /// counts opaque pixels with no channel above `limit`. `extent`
 /// returns the box of the device-pixel centres where two captures differ inside `rect`, or null.
 pub(super) const PAINT: &str = r"(() => {
@@ -33,9 +34,9 @@ pub(super) const PAINT: &str = r"(() => {
     box: selector => { const r = element(selector).getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; },
     rgb: value => value.match(/[a-f0-9]{2}/gi).slice(0, 3).map(hex => parseInt(hex, 16)),
     colour: value => typeof value === 'string' ? __maestroPaint.rgb(JSON.parse(globalThis.colors)[value]) : value,
-    count: (label, rect, colour) => {
+    count: (label, rect, colour, tolerance = 0) => {
       let n = 0;
-      scan(label, (x, y, data, i) => { if (inside(x, y, rect) && colour.every((v, k) => data[i + k] === v) && data[i + 3] === 255) n++; });
+      scan(label, (x, y, data, i) => { if (inside(x, y, rect) && colour.every((v, k) => Math.abs(data[i + k] - v) <= tolerance) && data[i + 3] === 255) n++; });
       return n;
     },
     differ: (first, second, rect, outside) => {

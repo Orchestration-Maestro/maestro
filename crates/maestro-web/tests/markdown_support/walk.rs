@@ -1,7 +1,6 @@
 //! The recorded Markdown fixture walk, shared by every Markdown owner and run without eval.
 use super::BlockRow;
 use std::any::Any;
-use wasm_bindgen::{JsCast as _, JsValue};
 
 /// A Markdown owner that shows one document until the returned value is dropped.
 pub trait Mounter {
@@ -10,38 +9,9 @@ pub trait Mounter {
     fn mount(&mut self, content: &str, options: (bool, bool)) -> Box<dyn Any>;
 }
 
-/// Call a projection helper installed by `dom.js`.
-///
-/// # Panics
-/// Panics if the projections are not installed.
-#[must_use]
-pub fn call(name: &str, args: &js_sys::Array) -> JsValue {
-    let maestro = js_sys::Reflect::get(&js_sys::global(), &"maestro".into()).unwrap();
-    let function: js_sys::Function = js_sys::Reflect::get(&maestro, &name.into())
-        .unwrap()
-        .dyn_into()
-        .unwrap();
-    function.apply(&maestro, args).unwrap()
-}
-/// Install the projections through the page's module import, for pages that refuse eval.
-///
-/// # Panics
-/// Panics if the module cannot be imported.
-pub async fn install(import_module: &js_sys::Function) {
-    let url = wasm_bindgen::link_to!(module = "/tests/markdown_support/dom.js");
-    crate::contributions_support::settle(import_module.call1(&JsValue::NULL, &url.into()).unwrap())
-        .await
-        .unwrap();
-    set_formulas();
-}
-/// Publish the recorded formulas the structural comparison resolves.
-///
-/// # Panics
-/// Panics if the projections are not installed.
-pub fn set_formulas() {
-    let maestro = js_sys::Reflect::get(&js_sys::global(), &"maestro".into()).unwrap();
-    let formulas = js_sys::JSON::parse(include_str!("../fixtures/markdown/formulas.json")).unwrap();
-    js_sys::Reflect::set(&maestro, &"formulas".into(), &formulas).unwrap();
+/// Install the page projections the authored checks read.
+pub fn install() {
+    super::projection::install();
 }
 /// The shown document root.
 ///
@@ -49,7 +19,7 @@ pub fn set_formulas() {
 /// Panics if no document is shown.
 #[must_use]
 pub fn root() -> web_sys::Element {
-    call("root", &js_sys::Array::new()).dyn_into().unwrap()
+    super::projection::root().expect("a Markdown document is shown")
 }
 /// First difference between the shown document and reference markup, or "".
 ///
@@ -57,9 +27,7 @@ pub fn root() -> web_sys::Element {
 /// Panics if no document is shown.
 #[must_use]
 pub fn difference(html: &str) -> String {
-    call("diff", &js_sys::Array::of2(&root(), &html.into()))
-        .as_string()
-        .unwrap()
+    super::projection::difference(&root(), html)
 }
 /// First difference between the shown structure and a recorded tree, or "".
 ///
@@ -67,10 +35,7 @@ pub fn difference(html: &str) -> String {
 /// Panics if no document is shown.
 #[must_use]
 pub fn tree_difference(tree: &serde_json::Value) -> String {
-    let tree = js_sys::JSON::parse(&tree.to_string()).unwrap();
-    call("treeDiff", &js_sys::Array::of2(&root(), &tree))
-        .as_string()
-        .unwrap()
+    super::projection::tree_difference(tree)
 }
 /// Whether no document remains shown.
 fn cleared() -> bool {

@@ -785,6 +785,43 @@ fn escaped_angle_span_keeps_its_quote_marker_lines_as_text() {
     }
 }
 
+#[test]
+fn escaped_angle_span_keeps_a_quoted_continuation_marker_as_text() {
+    let escaped = maestro_markdown::MarkedOptions::Browser { escape_html: true };
+    for (source, expected) in [
+        ("> a <b\n> c\n", &["quote [paragraph a <b\n> c]"][..]),
+        ("> a <b\n>c\n", &["quote [paragraph a <b\n>c]"][..]),
+        (
+            "> a <b\n> c\n> d\n",
+            &["quote [paragraph a <b\n> c\nd]"][..],
+        ),
+        (
+            "> > a <b\n> > c\n",
+            &["quote [quote [paragraph a <b\n> > c]]"][..],
+        ),
+        (
+            "> - a <b\n> c\n",
+            &["quote [list [item [inline a <b\n> c]]]"][..],
+        ),
+        ("> a <b\n> ---\n", &["quote [paragraph a <b\n> ---]"][..]),
+    ] {
+        let document = maestro_markdown::parse_with_options(source.into(), escaped);
+        assert_eq!(block_shapes(&document.nodes), expected, "{source:?}");
+    }
+    for options in link_grammars()
+        .into_iter()
+        .chain([maestro_markdown::MarkedOptions::Documentation])
+        .filter(|options| *options != escaped)
+    {
+        let document = maestro_markdown::parse_with_options("> a <b\n> c\n".into(), options);
+        assert_eq!(
+            block_shapes(&document.nodes),
+            ["quote [paragraph a <b\nc]"],
+            "{options:?}"
+        );
+    }
+}
+
 /// Block kinds with their trimmed authored text, nesting containers in brackets.
 ///
 /// Authored text shows where each block starts and ends in the source, which is

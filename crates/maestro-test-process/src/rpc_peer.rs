@@ -13,7 +13,7 @@ use std::str::FromStr;
 /// Returns an error when preparation is missing, executable installation fails or the record
 /// cannot be written.
 pub fn install(entry: &Path, scenario: Scenario) -> io::Result<()> {
-    crate::executable::install_recorded(entry, "rpc-peer", scenario.name())
+    crate::install_family(entry, "rpc-peer", scenario.name())
 }
 
 /// A native peer's protocol or lifecycle behavior.

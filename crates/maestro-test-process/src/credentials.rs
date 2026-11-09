@@ -25,12 +25,7 @@ use std::path::Path;
 /// # }
 /// ```
 pub fn install(entry: &Path, scenario: Scenario) -> io::Result<()> {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .ok_or_else(|| io::Error::other("run just prepare-tests, then cargo nextest"))?;
-    crate::install_executable(Path::new(&artifact), entry)?;
-    let mut record = entry.as_os_str().to_owned();
-    record.push(".fixture");
-    std::fs::write(record, format!("credentials\n{}\n", scenario.name()))
+    crate::install_family(entry, "credentials", scenario.name())
 }
 
 /// The credential protocol an installed alias serves.

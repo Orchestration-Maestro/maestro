@@ -2,11 +2,12 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 
 pub use tests::*;
+pub mod projection;
 pub mod walk;
 
 #[cfg(test)]
 mod tests {
-    use super::walk;
+    use super::{projection, walk};
     use crate::support::{self, brand::pack};
     use maestro_theme::{BrandMode, BrandPack, SyntaxHighlighter, SyntectHighlighter};
     use maestro_web::{
@@ -146,17 +147,7 @@ mod tests {
                 let content = format!("{open}{}{close}", row.expression);
                 let block = mounter.mount(&content, (false, false));
                 let expected = math_expected(row, open);
-                publish("mathExpected", &expected.to_string().into());
-                publish("mathBranch", &row.branch.clone().into());
-                publish("mathSource", &content.into());
-                let promise = walk::call("measureMath", &js_sys::Array::new())
-                    .dyn_into::<js_sys::Promise>()
-                    .unwrap();
-                let result = wasm_bindgen_futures::JsFuture::from(promise)
-                    .await
-                    .unwrap()
-                    .as_string()
-                    .unwrap();
+                let result = projection::measure_math(&expected, &row.branch, &content).await;
                 assert_eq!(
                     result, "",
                     "{} display={} delimiter={open}",
@@ -461,8 +452,7 @@ mod tests {
             let _ = js(
                 "if (!document.getElementById('canvas')) { const c=document.createElement('canvas'); c.id='canvas'; c.width=800; c.height=600; document.body.appendChild(c); }",
             );
-            let _ = js(include_str!("dom.js"));
-            walk::set_formulas();
+            walk::install();
             let canvas = web_sys::window()
                 .unwrap()
                 .document()

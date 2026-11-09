@@ -309,12 +309,15 @@ package to `browser-exports` under Cargo's target directory, replacing the
 previous run's copy. If setup fails, nextest prints its output and stops before
 any browser test runs. The crate's build script generates one test per name in
 `exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
-64 loading exports, 196 contribution exports and 88 canvas exports. Each test
+69 loading exports, 196 contribution exports and 165 canvas exports. Each test
 serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in
 parallel like any others. A missing or non-callable export fails its own test.
-Packaging also
+`browser::exports::every_built_export_is_in_the_inventory` checks the other
+direction: every function the built module exports, apart from the binding
+initializers `default` and `initSync` and generated classes, must be in the
+inventory, and none is called. Packaging also
 builds the two runtime-module fixtures, each from its own manifest and lock with
 its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
@@ -415,8 +418,14 @@ must be in place before the document's own scripts. Each sandbox document runs i
 own renderer, which the browser driver learns of only after the document has run;
 only a provider runs early enough.
 
-`markdown_support/dom.js` is the remaining page-side script; it still installs
-the Markdown projection.
+The Markdown corpus needs no page script. `markdown_support/projection` does the
+comparison in Rust: it projects the shown document and the recorded reference
+markup into one neutral tree, compares that tree with the recorded semantic
+trees, resolves each formula through the recorded catalog, measures a mounted
+formula's typography at the recorder's settings, and reads the painted roles from
+computed styles. `install` publishes `root`, `diff` and `paintFailures` on
+`globalThis.maestro` for the authored one-line checks, so no check imports or
+evaluates a script first.
 
 One deliberate policy-negative export,
 `inline_programs_preserve_text_policies_and_order`, must produce exactly one
@@ -481,7 +490,7 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports, three contribution exports and two loading exports check the
+Eleven canvas exports, three contribution exports and two loading exports check the
 pixels the page paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
@@ -489,8 +498,10 @@ with `Page.captureScreenshot`, decodes the image with the browser's own decoder
 and keeps the pixels in the page, so only counts cross the protocol. It then
 changes only the decoration under test, captures again and restores the exact
 authored `style` attributes. A role pixel is an opaque pixel with exactly the
-role's RGB channels, the same rule the tool report witness uses. A scene that
-counts a role by name reads the colours the export publishes first with
+role's RGB channels, the same rule the tool report witness uses; the Markdown
+syntax and brand scenes accept channels within 1 of the role's, because text is
+antialiased. A
+scene that counts a role by name reads the colours the export publishes first with
 `support::reading_paint::publish_colors`. The call resolves `true` when every
 check holds. Otherwise it rejects with the failed check's message, which fails
 the export and the job:
@@ -508,6 +519,9 @@ the export and the job:
 | `thinking-rest`, `thinking-hover`, `thinking-expanded` | `thinking_dom_paints_brand_roles_and_disclosure_motion` | In both modes, the reasoning header's label and chevron paint exactly the muted role at rest and the text role under the native pointer: repainting either in that role's colour changes no pixel, while making it transparent changes some. At rest the chevron's ink is a right chevron, and once expanded a down chevron. |
 | `word-page` | `docx_artifact_dom_styles_and_safe_targets` | In both modes and both widths, the visible part of the first page paints white over more than half its pixels, and its text paints black ink, pixels with no channel above `0x60`, for every package with text. The limit allows for thin antialiased glyphs that never reach pure black. Dark mode's brand text colour is light, so text that loses its black fails there. |
 | `html-source`, `html-source-again` | `html_artifact_dom_keeps_frame_across_mode_changes` | In both modes, the shown listing paints the background role over more than half its box, and hiding its text changes pixels inside the bounded body and none outside it. After the listing is hidden and shown again, it paints exactly what the last `html-source` capture showed, so it kept its scroll position. |
+| `markdown-hover` | `markdown_hover_keeps_nontext_paint` | Moving the native pointer onto the link changes the link text's pixels and none of the linked image's, and leaves the corner pixel of the inline-code background as it was. |
+| `markdown-syntax` | `markdown_native_paints_all_syntax_roles` | In both packs and both modes, each highlighted token class paints pixels of the role its theme token names in `brand-roles.json`. |
+| `markdown-brand` | `markdown_native_paints_selected_brand_and_loaded_math_fonts` | In the default pack's two modes and the alternate dark pack, with and without thinking, the paragraph (muted while thinking, text otherwise), link, inline code, quote border, table header, formula error and listing border paint pixels of their roles inside the reading viewport. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
@@ -964,9 +978,11 @@ remain visible in GitHub but do not block the merge queue.
 
 ### Slowest-first test order
 
-The 64 tests that took more than 30 seconds in the baseline merge group have
-distinct priorities in `.config/nextest.toml`: 100 down to 37, longest first.
-Other tests retain priority 0. These are
+The tests that took more than 30 seconds in the baseline merge group, and have not
+been split since, hold distinct priorities in `.config/nextest.toml`, 100 down to 37
+by duration. The cold browser build always holds 100. A split test gives up its
+priority and its table row, which leaves a gap in the ranks. Other tests keep
+priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
 count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
@@ -1001,19 +1017,26 @@ build work or uneven fixed count assignments, so some imbalance may remain.
 The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
-worker proves descending order for the three slowest tooling tests, before an
-unprioritized short test. It uses a fixed 16-way split, independent of CI's
-`test_shard_count`, and compares every partition's membership with and
-without priorities, checks an exactly-once union and keeps an intentional
-selected failure visible. It does not run the expensive browser bodies.
+worker proves the cold browser build starts first, then the next two tooling
+tests in descending order, before an unprioritized short test. The split is
+fixed at 16 lanes, independent of CI's `test_shard_count`. It compares every
+partition's membership with and without priorities, checks an exactly-once
+union and keeps an intentional selected failure visible. It does not run the
+expensive browser bodies.
 
 #### Measured successful test durations and priorities (seconds)
 
+The cold browser build takes every core, so it holds priority 100 whatever its
+duration. Nextest starts tests in priority order and holds the queue until the
+next one fits. In merge-group run 42491037894, a test ranked above it ran alone
+for 17 seconds while three cores sat idle. Swapping those two ranks and
+replaying the shard's durations ends the shard 8 seconds sooner: the browser
+lanes then start together once the cold build finishes.
+
 | Priority | Package / test | Seconds |
 | ---: | --- | ---: |
-| 100 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
-| 99 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
-| 98 | `maestro-tooling` / `browser_author_build::browser_author_check_preserves_adjacent_locks` | 109.765 |
+| 100 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
+| 99 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
 | 97 | `maestro-tooling` / `browser_author_build::browser_author_checks_accept_valid_sources` | 105.572 |
 | 96 | `maestro-extensions-wasmtime` / `component_events::input::component_input_chains_text_preserves_images_and_forwards_sources` | 101.546 |
 | 95 | `maestro-tooling` / `browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources` | 101.208 |
@@ -1026,7 +1049,6 @@ selected failure visible. It does not run the expensive browser bodies.
 | 88 | `maestro-extensions-wasmtime` / `git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes` | 68.837 |
 | 87 | `maestro-tooling` / `browser_author_build::browser_assets_follow_relative_selected_identity` | 60.280 |
 | 86 | `maestro-tooling` / `browser_author_build::browser_author_hook_uses_resolved_configuration_directory` | 55.338 |
-| 85 | `maestro-tooling` / `browser_author_build::browser_author_trunk_rejects_stale_lock_without_writes` | 53.384 |
 | 84 | `maestro-extensions-wasmtime` / `extension_guide::extension_guide_builds_and_loads_from_a_clean_folder` | 52.177 |
 | 83 | `maestro-extensions-wasmtime` / `canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds` | 51.407 |
 | 82 | `maestro-tooling` / `browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots` | 51.184 |
@@ -1037,7 +1059,6 @@ selected failure visible. It does not run the expensive browser bodies.
 | 77 | `maestro-tooling` / `browser_author_build::browser_author_included_files_rebuild_without_source_changes` | 41.429 |
 | 76 | `maestro-extensions-wasm` / `tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings` | 40.680 |
 | 75 | `maestro-markdown` / `tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth` | 40.392 |
-| 74 | `maestro-tooling` / `browser_author_build::browser_build_rejects_missing_or_failing_inputs` | 39.254 |
 | 73 | `maestro-tooling` / `browser_author_build::browser_example_development_serves_rebuilt_external_assets` | 39.186 |
 | 72 | `maestro-extensions-wasm` / `tests::protected_paths_example::protected_paths_component_matches_the_hook` | 37.400 |
 | 71 | `maestro-tooling` / `build_recipes::maestro_selected_watch_rebuilds_cargo_configuration` | 37.229 |
@@ -1064,7 +1085,6 @@ selected failure visible. It does not run the expensive browser bodies.
 | 50 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_retains_supplied_question_metadata` | 32.017 |
 | 49 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_headless_and_empty_return_errors` | 31.997 |
 | 48 | `maestro-extensions-wasm` / `tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries` | 31.944 |
-| 47 | `maestro-test-conventions` / `architecture::forbidden_direct_edges_are_rejected` | 31.726 |
 | 46 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec` | 31.648 |
 | 45 | `maestro-extensions-wasm` / `tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name` | 31.576 |
 | 44 | `maestro-extensions-wasmtime` / `factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends` | 31.525 |
@@ -1087,14 +1107,15 @@ To refresh the ranks:
    successful retry rows. Exclude `SETUP PASS` and final-summary repeats. Check
    unique identities across shards against the summed summaries and eligible
    inventory; account separately for intentionally ignored probes and retries.
-3. Sort tests exceeding 30 seconds by descending duration. Remove old priority
-   fields, assign distinct descending priorities starting at 100 and leave other
-   tests at 0. For tied durations, order by binary then test name.
-   Never change an exception limit or selection filter to refresh a priority.
+3. Sort the tests over 30 seconds by descending duration. Drop the old priority
+   fields, give the cold browser build (`threads-required = "num-cpus"`)
+   priority 100 and the rest distinct descending priorities from 99. Leave every
+   other test at 0. Order tied durations by binary, then test name. Never refresh
+   a priority by changing an exception limit or selection filter.
 4. Update this evidence table and run the focused tooling regression:
    `cargo nextest run --locked -p maestro-tooling --test integration -E 'test(measured_priorities_order_tests_without_changing_shards)'`.
-   If the three slowest tooling identities change, update its controlled bodies
-   and expected order to match the new measurements.
+   If the two slowest tooling identities after the cold build change, update the
+   controlled bodies and expected order to match; the cold build stays first.
 5. Record the next merge-group run's slowest span and spread on #3613, with its
    inventory and revision. Explain setup, serialization or source changes rather
    than treating per-test duration sums as shard wall time.
@@ -1522,12 +1543,12 @@ crates compile in it: the workspace-sources setup below provides the registry un
 test reserves every core with `threads-required`, so other tests do not stretch its
 compiler jobs past the hang limit. The test checks one cold build and its outputs.
 Rebuilds after a change to an included file, a source error and its repair belong to
-`browser_author_included_files_rebuild_without_source_changes` and
-`browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup
-prints a warning and does not stop the run; the setup then announces the first lane alone,
-and the tests run the same recipes in turn and report the failure. Plain Cargo tests, and
-nextest runs without the setup, use the test build's own target directory as their only
-lane.
+`browser_author_included_files_rebuild_without_source_changes` and the
+`browser_library_build_rejects_` tests, one per spoiled input. A recipe that fails
+during setup prints a warning and does not stop the run; the setup then announces the
+first lane alone, and the tests run the same recipes in turn and report the failure.
+Plain Cargo tests, and nextest runs without the setup, use the test build's own target
+directory as their only lane.
 
 ### Cargo state of tooling fixtures
 
@@ -1838,6 +1859,25 @@ configured command. The stand-in inherits the child's environment, so the two
 `MAESTRO_*` variables above belong to the process that launches it. A `hold`
 record may omit `ready` when no caller reads that marker. A `holder` names its
 descendant by an installed alias, whose own record gives that descendant its work.
+
+Another family takes the same route: `install_family(alias, family, record)` copies
+the artifact and writes the family and its record, and `install_command`, the
+credential, Git and peer installers all call it. A test that installs a record of
+its own, such as an editor or a viewer, calls it directly instead of writing the
+`.fixture` file itself.
+
+A `hold` child waits on FIFOs that Rust's standard library cannot create.
+`gate::Gate::new(path)` uses `/usr/bin/mkfifo` on Linux and macOS to create the
+FIFO with owner-only read/write permissions, then keeps it open for reading and
+writing until the guard drops. The absolute executable path also works when a
+test replaces `PATH` with its fixtures. A failed creation returns an error
+without opening or removing an existing file. Pass `gate.path()` as `permit` and
+`gate.release()` lets one waiting child continue. Pass a second gate as `ready`
+and `gate.take(5)` waits for a child's `"ready"` bytes, so a test holds one child,
+observes it started, releases it and then observes the next, without a sleep or a
+poll. Dropping the guard removes the FIFO: a waiting child reads the end of the
+stream and ends, and a child that starts later finds no FIFO, so a failed test
+never leaves one blocked. The gate exists on Unix only.
 
 The conventions checker's architecture tests answer its Cargo metadata and compiler
 queries the same way. `Workspace::metadata_command` installs a `metadata` Cargo whose
@@ -2400,24 +2440,19 @@ Install the same artifact as `open`, `xdg-open`, `explorer.exe`, an editor name
 or `trash` when a test observes a desktop viewer launch, an edit or a session
 deletion. Write the family on the first line of `<alias>.fixture`, followed by a
 JSON object that the fixture parses before any effect; unknown fields and
-malformed values fail at once. The chat tests install these aliases through one
-helper in `tests/support/native_alias.rs`.
+malformed values fail at once. `maestro_test_process::install_family` installs the
+alias and writes that record.
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
     let directory = maestro_test_directory::Scratch::new()?;
     let editor = directory.path().join("ed");
-    std::fs::write(
-        editor.with_file_name("ed.fixture"),
-        format!("editor\n{}", serde_json::json!({
-            "argv": directory.path().join("argv"),
-            "before": directory.path().join("before"),
-            "content": b"edited\n",
-        })),
-    )?;
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor)?;
+    let record = serde_json::json!({
+        "argv": directory.path().join("argv"),
+        "before": directory.path().join("before"),
+        "content": b"edited\n",
+    });
+    maestro_test_process::install_family(&editor, "editor", &record.to_string())?;
     Ok(())
 }
 ```
