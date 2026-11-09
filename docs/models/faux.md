@@ -1,24 +1,26 @@
 # Scripted faux models
 
-`register_faux_provider` registers a temporary in-memory provider for tests and
-demos. It is opt-in, not part of the built-in provider set. All calls use the
-ordinary `complete`, `stream` and simple invocation interfaces.
+`register_faux_provider` adds a temporary in-memory provider for tests and demos.
+You opt in to it; it is not one of the built-in providers. Callers reach it
+through the ordinary `complete`, `stream` and simple invocation interfaces.
 
 ## Defaults
 
-Registration uses provider `faux` and an independently generated `faux` API
-identifier. Omitted or empty model lists create `faux-1`, named `Faux Model`,
-with text and image inputs, reasoning disabled and URL `http://localhost:0`.
-All input, output, cache-read and cache-write prices are zero. Its context window
-is 128,000 tokens and its maximum output is 16,384 tokens. Custom model names
-default to their model IDs; other omitted fields retain these defaults.
+Registration uses the provider `faux` and a separately generated `faux` API
+identifier. When the model list is omitted or empty, registration creates
+`faux-1`, named `Faux Model`, with text and image inputs, reasoning disabled and
+the URL `http://localhost:0`. Every price (input, output, cache-read and
+cache-write) is zero. The context window is 128,000 tokens and the maximum output
+is 16,384 tokens. A custom model's name defaults to its model ID, and any other
+omitted field takes the defaults above.
 
-`faux_assistant_message` defaults to API/provider `faux`, model `faux-1`, stop
-reason `Stop` and the current epoch timestamp in integer milliseconds. Response
-IDs and error messages are absent unless supplied; usage and costs start at zero.
-`faux_tool_call` generates a `tool` identifier unless one is supplied and keeps the
-argument value it is given, whatever its root kind. Text, thinking and tool content
-omit signatures; thinking omits the redacted flag.
+`faux_assistant_message` defaults to the API and provider `faux`, the model
+`faux-1`, the stop reason `Stop` and the current epoch timestamp in integer
+milliseconds. Response IDs and error messages stay absent unless you supply them;
+usage and costs start at zero. `faux_tool_call` generates a `tool` identifier
+unless you supply one, and it keeps the argument value as given, whatever its root
+kind. Text, thinking and tool content carry no signatures, and thinking carries no
+redacted flag.
 
 ## Two-turn tool flow
 
@@ -97,65 +99,75 @@ multi_model.unregister();
 # }
 ```
 
-The second turn prints ordered start, thinking, text and done event names. The
-last three lines are `true`, `0`, `2`. Run the async example on a caller's executor;
-default producers use their own timer-enabled runtime natively, or browser-local futures.
-Mode-aware registered calls use the supplied admission facility instead.
-No network credentials or server are needed.
+The second turn prints the event names in order: start, thinking, text and done.
+The last three lines are `true`, `0`, `2`. Run the async example on your own
+executor. Natively, the default producers use their own runtime with timers
+enabled; in a browser they use local futures. Mode-aware registered calls use the
+admission facility you supply instead. The example needs no network credentials
+and no server.
 
 ## Behavior
 
-- Responses are consumed in request-start FIFO order, including already-aborted
-  requests. Exhaustion returns `No more faux responses queued` with estimated
-  prompt usage. Factory or response-hook failures instead carry the supplied
-  error text and zero usage. The response hook receives status 200 and empty
-  headers before factory resolution, even on exhaustion. The simulator does not call
-  payload hooks; a factory may call the original hooks it receives.
-- `set_responses` replaces the remaining queue; `append_responses` adds to it.
-  Neither resets count or cache. `state.call_count()` is live across async
-  factories. Factories receive owned context, raw/simple options and selected model.
-- `models` exposes all descriptors; `get_model(None)` or `Some("")` returns the
-  first; an unknown nonempty identifier returns `None`. Optional overrides retain
-  explicit empty/false/zero values. Empty model lists use the default model.
-- `faux_assistant_message` accepts text, a single block or ordered blocks.
-  The text/thinking/tool builders supply unsigned content; every message owns fresh
-  zero usage. Metadata stays supplied, while invocation rewrites API/provider/model.
-- `unregister` removes only this registration's source. Replacing a registration
-  on the same API and ongoing producers survive the old handle's cleanup.
+- Responses are consumed in the order requests start (FIFO), already-aborted
+  requests included. When the queue is empty, the call returns
+  `No more faux responses queued` with estimated prompt usage. A factory or
+  response-hook failure carries the supplied error text and zero usage instead.
+  The response hook receives status 200 and empty headers before the factory
+  resolves, even on exhaustion. The simulator never calls payload hooks; a
+  factory may call the original hooks it receives.
+- `set_responses` replaces the remaining queue and `append_responses` adds to it.
+  Neither resets the call count or the cache. `state.call_count()` stays live
+  across async factories. A factory receives the owned context, the raw or simple
+  options and the selected model.
+- `models` exposes every descriptor. `get_model(None)` and `Some("")` return the
+  first, and an unknown nonempty identifier returns `None`. Optional overrides
+  keep explicit empty, false and zero values. An empty model list uses the default
+  model.
+- `faux_assistant_message` accepts text, one block or ordered blocks. The text,
+  thinking and tool builders produce unsigned content, and every message owns
+  fresh zero usage. Metadata stays as supplied, while invocation rewrites the
+  API, provider and model.
+- `unregister` removes only the source of this registration. A registration that
+  replaced it on the same API, and any producers still running, survive the old
+  handle's cleanup.
 - Usage estimates one token per four Unicode scalar values, rounded up. Content
-  and prompt separators preserve whitespace. Nonempty session IDs with omitted,
-  `Short` or `Long` retention enable caching; `Some(CacheRetention::None)` disables
-  both reads and writes without changing existing cache. Empty IDs behave as absent.
-- Tool arguments emit canonical compact JSON deltas in the spelling an authored
-  script writes: array-index keys first and each number as the double it names. The
-  usage estimate counts that same text. Partial arguments remain empty until tool
-  end. Partial observations within one block share its accumulation, but
-  retained earlier observations never gain subsequent content blocks. Terminal
-  messages retain original content metadata, while constructed partials are unsigned.
-- Unpaced chunks yield through native async; a positive `tokens_per_second` waits
-  for the chunk's estimated tokens divided by that rate. Chunk bounds default to
-  three–five tokens. Empty text/thinking still produce one empty delta.
-- Cancellation is checked before start, before each block and after each scheduled
-  chunk, not raced against hooks/factories. It keeps accumulated content and full
-  estimated usage, changes the timestamp and emits `Request was aborted` instead
-  of done. Dropping event/result observers does not stop production.
-- Use one scripted flow per registration. Register separate providers for
-  independent concurrent flows; caches are registration-local and session-local.
+  and prompt separators keep their whitespace. A nonempty session ID enables
+  caching when retention is omitted, `Short` or `Long`.
+  `Some(CacheRetention::None)` disables both reads and writes and leaves the
+  existing cache unchanged. An empty ID counts as absent.
+- Tool arguments emit canonical compact JSON deltas in the spelling the authored
+  script writes: array-index keys first, and each number as the double it names.
+  The usage estimate counts the same text. Partial arguments stay empty until the
+  tool ends. Partial observations within one block share its accumulation, but an
+  earlier observation you kept never gains later content blocks. Terminal
+  messages keep the original content metadata, and constructed partials are
+  unsigned.
+- Unpaced chunks yield through native async. A positive `tokens_per_second` waits
+  for the chunk's estimated tokens divided by that rate. Chunk sizes default to
+  three to five tokens. Empty text or thinking still produces one empty delta.
+- Cancellation is checked before the start, before each block and after each
+  scheduled chunk; it does not race hooks or factories. A cancelled call keeps the
+  accumulated content and the full estimated usage, changes the timestamp and
+  emits `Request was aborted` in place of done. Dropping event or result
+  observers does not stop production.
+- Script one flow per registration. Register a separate provider for each
+  independent concurrent flow; caches are local to the registration and the
+  session.
 
 ## Asynchronous factory definitions
 
-`FauxResponseFactory` retains a named owner implementing `Invoke` for both
-`FauxResponseInput<Local>` and `FauxResponseInput<Threaded>`. Its selected future
-uses that family's `Execution::Future`. Native owners remain `Send + Sync` even
-when accepting local request values. `FauxResponseOptions<E>` aliases
-`StreamOptionsInput<E>`: raw and simple variants keep their original fields.
-Callback definitions previously supplied as four-argument closures migrate to one
-generic response body with two concrete future-erasure declarations. See the
+`FauxResponseFactory` keeps a named owner that implements `Invoke` for both
+`FauxResponseInput<Local>` and `FauxResponseInput<Threaded>`. The future it
+selects uses that family's `Execution::Future`. Native owners stay `Send + Sync`
+even when they accept local request values. `FauxResponseOptions<E>` aliases
+`StreamOptionsInput<E>`, and its raw and simple variants keep their original
+fields. A callback written as a four-argument closure becomes one generic
+response body plus two concrete future-erasure declarations. See the
 [executable factory examples](../agent/api.md#messages-and-conversion).
 
 ### `scripted_factory_requires_both_families`
 
-A factory implementing only the threaded invocation cannot be queued:
+A factory that implements only the threaded invocation cannot be queued:
 
 ```compile_fail,E0277
 use maestro_models::{
@@ -175,15 +187,16 @@ let factory: FauxResponseFactory = Arc::new(ThreadedOnly);
 
 ## Corrected boundaries and native representation
 
-Prompt tokens are partitioned into disjoint input/read/write categories: caching
-uses input zero and write equals prompt minus read; total always equals prompt plus
-output. This avoids double-charging cache writes and independent suffix rounding.
-Unicode scalar boundaries avoid splitting supplementary characters or reusing a
-shared half-character as a cached prefix. Independent helpers never share mutable
-usage defaults.
+Prompt tokens split into disjoint input, read and write categories. With caching
+on, input is zero and write equals prompt minus read. The total always equals
+prompt plus output. This stops cache writes from being charged twice and stops
+suffixes from rounding independently. Counting by Unicode scalar boundaries never
+splits a supplementary character, and never reuses half of a shared character as a
+cached prefix. Separate helpers never share mutable usage defaults.
 
-Compact serde JSON keeps inserted map order (including numeric-like keys) and
-native floating-point spelling. Argument values remain intact. Opaque random
-suffixes use native formatting; generated identifiers retain independently
-created `tool:<milliseconds>:<opaque>`, `faux:<milliseconds>:<opaque>` and
-`faux-provider:<milliseconds>:<opaque>` forms. Explicit empty identifiers stay empty.
+Compact serde JSON keeps the order in which map keys were inserted (numeric-like
+keys included) and the native floating-point spelling. Argument values stay
+intact. Opaque random suffixes use native formatting. Generated identifiers keep
+three separately created forms: `tool:<milliseconds>:<opaque>`,
+`faux:<milliseconds>:<opaque>` and `faux-provider:<milliseconds>:<opaque>`. An
+explicit empty identifier stays empty.

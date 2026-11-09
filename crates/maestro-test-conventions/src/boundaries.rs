@@ -18,6 +18,9 @@ pub(crate) mod message_renderers;
 /// Single-owner rule for work polled once before a task facility takes it.
 mod inline_polls;
 
+/// Single-owner rule for start-anchored recognizer sources.
+mod anchored_sources;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -52,6 +55,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     application_exports::check(members)?;
     message_renderers::check(members)?;
     inline_polls::check(members)?;
+    anchored_sources::check(members)?;
     wit.finish()
 }
 

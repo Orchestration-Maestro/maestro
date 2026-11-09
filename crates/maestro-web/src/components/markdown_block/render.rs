@@ -63,6 +63,14 @@ pub(super) struct Prepared {
     pub(super) slot_attribute: String,
 }
 
+/// One pending step of an inline walk, innermost last.
+enum Span<'a> {
+    /// Write the remaining nodes of one sibling run.
+    Nodes(std::slice::Iter<'a, Node>),
+    /// Close a formatted span whose children are written.
+    Close(&'static str),
+}
+
 /// Where an inline run sits, deciding whether display formulas open blocks.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Flow {
@@ -74,6 +82,18 @@ enum Flow {
     Cell,
     /// A heading, which is inline only.
     Inline,
+}
+
+/// Open a formatted span and queue its children, then its closing tag.
+fn open<'a>(
+    tag: &'static str,
+    children: &'a [Node],
+    pending: &mut Vec<Span<'a>>,
+    out: &mut String,
+) {
+    let _ = write!(out, "<{tag}>");
+    pending.push(Span::Close(tag));
+    pending.push(Span::Nodes(children.iter()));
 }
 
 /// Escape text for HTML content and attribute values.
@@ -286,13 +306,36 @@ impl Writer<'_, '_> {
         wrapped(&body, wrap && inline, out);
     }
 
-    /// Write inline nodes.
+    /// Write inline nodes, keeping nested formatted spans on an explicit stack.
     fn inline(&mut self, nodes: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
-        for node in nodes {
-            self.inline_node(node, atoms, out);
+        let mut pending = vec![Span::Nodes(nodes.iter())];
+        while let Some(step) = pending.pop() {
+            match step {
+                Span::Close(tag) => {
+                    let _ = write!(out, "</{tag}>");
+                }
+                Span::Nodes(rest) => self.advance(rest, &mut pending, atoms, out),
+            }
         }
     }
-    /// Write one inline node under the selected surface policy.
+    /// Write the next node of a sibling run, queueing the rest and any span children.
+    fn advance<'a>(
+        &mut self,
+        mut rest: std::slice::Iter<'a, Node>,
+        pending: &mut Vec<Span<'a>>,
+        atoms: Atoms<'_, '_>,
+        out: &mut String,
+    ) {
+        let Some(node) = rest.next() else { return };
+        pending.push(Span::Nodes(rest));
+        match &node.kind {
+            Kind::Strong(c) => open("strong", c, pending, out),
+            Kind::Strike(c) => open("del", c, pending, out),
+            Kind::Emphasis(c) => open("em", c, pending, out),
+            _ => self.inline_node(node, atoms, out),
+        }
+    }
+    /// Write one inline node that holds no nested formatted span under the selected surface policy.
     fn inline_node(&mut self, node: &Node, atoms: Atoms<'_, '_>, out: &mut String) {
         match &node.kind {
             Kind::Text(text) => {
@@ -308,9 +351,6 @@ impl Writer<'_, '_> {
                 out.push_str("</code>");
             }
             Kind::Break => out.push_str("<br>"),
-            Kind::Strong(c) => self.tagged("strong", c, atoms, out),
-            Kind::Strike(c) => self.tagged("del", c, atoms, out),
-            Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
             Kind::Link(..) => self.link(node, atoms, out),
             Kind::Image(alt, meta) => match self.policy {
                 Policy::Transcript { .. } => image(meta, out),
@@ -373,12 +413,6 @@ impl Writer<'_, '_> {
             self.inline(children, atoms, out);
         }
         out.push_str(if refused { "" } else { "</a>" });
-    }
-    /// Write formatted children inside `tag`.
-    fn tagged(&mut self, tag: &str, children: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
-        let _ = write!(out, "<{tag}>");
-        self.inline(children, atoms, out);
-        let _ = write!(out, "</{tag}>");
     }
     /// Emit a typed local atom, preserving resolved operands without lookup by display text.
     fn atom(&mut self, (node, index): (&Node, usize), atoms: Atoms<'_, '_>, out: &mut String) {
@@ -464,12 +498,15 @@ fn title(text: &str, out: &mut String) {
 }
 /// Escaped text content of formatted children.
 fn plain(nodes: &[Node], out: &mut String) {
-    for node in nodes {
+    let mut pending = vec![nodes.iter()];
+    while let Some(mut rest) = pending.pop() {
+        let Some(node) = rest.next() else { continue };
+        pending.push(rest);
         match &node.kind {
             Kind::Text(text) => escape(&text.decoded, out),
             Kind::Code(code) => escape(code, out),
             Kind::Strong(c) | Kind::Strike(c) | Kind::Emphasis(c) | Kind::Link(c, ..) => {
-                plain(c, out);
+                pending.push(c.iter());
             }
             _ => {}
         }

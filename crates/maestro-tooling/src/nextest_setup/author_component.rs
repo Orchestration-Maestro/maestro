@@ -4,11 +4,11 @@
 //! from a prepared bundle installs the bundle's example there; any other run uses the test
 //! build's own example, or builds one.
 //!
-//! On Linux the example warms compiled code in a cache that only this run uses, and the run's
-//! tests inherit that cache through `XDG_CACHE_HOME`. Wasmtime prunes its user cache by age
-//! and size from every process that uses it, so on a host that runs several builds the shared
-//! cache can evict the code this setup warmed before the tests that read it have run. macOS
-//! and Windows ignore the variable, so there the example warms the engine's own cache.
+//! On every platform the example warms compiled code in a cache that only this run uses: it
+//! sits below an agent directory the run owns, and the run's tests inherit that directory
+//! through `MAESTRO_CODING_AGENT_DIR`. Wasmtime prunes its cache by age and size from every
+//! process that uses it, so on a host that runs several builds a shared cache can evict the
+//! code this setup warmed before the tests that read it have run.
 
 use std::ffi::OsString;
 use std::io;
@@ -22,8 +22,8 @@ use crate::exit_code;
 use crate::test_setup::{self, EXAMPLE, example_arguments, executable_name};
 use crate::workspace::{FIXTURES, Workspace};
 
-/// Prepare the components with a staged or built example and run it, then export the cache
-/// home the example warmed so the tests read the same compiled code.
+/// Prepare the components with a staged or built example and run it, then export the agent
+/// directory whose cache the example warmed so the tests read the same compiled code.
 ///
 /// # Errors
 /// Returns an unresolved artifact directory, a workspace without one component crate, a stale
@@ -31,19 +31,19 @@ use crate::workspace::{FIXTURES, Workspace};
 /// example that fails keeps its own status.
 pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let directory = artifact_directory()?;
-    let cache_home = test_setup::run_cache_home(&directory);
+    let agent_directory = test_setup::run_agent_directory(&directory);
     let status = if let Some(bundle) = prepared_bundle(checkout) {
-        run_prepared(cargo, checkout, &bundle, &directory, &cache_home)?
+        run_prepared(cargo, checkout, &bundle, &directory, &agent_directory)?
     } else {
         let workspace = Workspace::read(cargo, checkout)?;
         // The example is given the component crate, so a workspace without one fails here,
         // before a build.
         workspace.component_crate()?;
-        run_local(cargo, &workspace, &directory, &cache_home)?
+        run_local(cargo, &workspace, &directory, &agent_directory)?
     };
     // The example and the installation rewrite the file, so the entry follows them.
-    let mut entry = OsString::from("XDG_CACHE_HOME=");
-    entry.push(cache_home);
+    let mut entry = OsString::from(format!("{}=", test_setup::AGENT_DIRECTORY));
+    entry.push(agent_directory);
     export(&entry)?;
     Ok(status)
 }
@@ -56,7 +56,7 @@ fn run_prepared(
     checkout: &Path,
     bundle: &Path,
     directory: &Path,
-    cache_home: &Path,
+    agent_directory: &Path,
 ) -> io::Result<ExitCode> {
     let environment = environment_file()?;
     test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
@@ -65,7 +65,7 @@ fn run_prepared(
     }
     let example = directory.join("examples").join(executable_name());
     let mut command = Command::new(example);
-    command.env("XDG_CACHE_HOME", cache_home);
+    command.env(test_setup::AGENT_DIRECTORY, agent_directory);
     // The example takes the prepared components from its environment, so it only warms.
     for line in std::fs::read_to_string(&environment)?.lines() {
         if let Some((name, value)) = line.split_once('=') {
@@ -86,7 +86,7 @@ fn run_local(
     cargo: &Path,
     workspace: &Workspace,
     directory: &Path,
-    cache_home: &Path,
+    agent_directory: &Path,
 ) -> io::Result<ExitCode> {
     let profile = directory
         .file_name()
@@ -98,24 +98,24 @@ fn run_local(
         && fresh(workspace, &example)
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
-        return start(workspace, &example, cache_home);
+        return start(workspace, &example, agent_directory);
     }
     let example = test_setup::example_program(cargo, workspace.root(), workspace, target, profile)?;
     // Cargo may retain an outdated example; running it still allows preparation to finish.
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         eprintln!("Cargo kept the setup example; test binaries may compile components again.");
     }
-    start(workspace, &example, cache_home)
+    start(workspace, &example, agent_directory)
 }
 
-/// Run the setup example in the checkout with this process's environment and `cache_home` as
-/// its user cache, and the workspace it prepares as its arguments.
-fn start(workspace: &Workspace, example: &Path, cache_home: &Path) -> io::Result<ExitCode> {
+/// Run the setup example in the checkout with this process's environment and `agent_directory` as
+/// its agent directory, and the workspace it prepares as its arguments.
+fn start(workspace: &Workspace, example: &Path, agent_directory: &Path) -> io::Result<ExitCode> {
     let mut command = Command::new(example);
     command
         .current_dir(workspace.root())
         .args(example_arguments(workspace)?)
-        .env("XDG_CACHE_HOME", cache_home);
+        .env(test_setup::AGENT_DIRECTORY, agent_directory);
     Ok(exit_code(command.status()?))
 }
 

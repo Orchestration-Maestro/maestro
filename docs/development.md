@@ -1151,8 +1151,8 @@ namespace that does not end in that time or on more than one. The setup example'
 JSON path without building or warming components. Preparation queries that directory once
 on its host before seeding or warming; installation queries it again on the test host. A failed query,
 empty reply or nonabsolute path stops setup. Host paths are not stored in the bundle.
-`XDG_CACHE_HOME` still isolates preparation's Linux cache under its target directory;
-Windows and macOS use the locations the engine reports. Shared CI transfers
+`MAESTRO_CODING_AGENT_DIR` isolates preparation's cache under its target directory on every
+platform, because the engine keeps its cache below the agent directory. Shared CI transfers
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
@@ -1162,13 +1162,12 @@ copy of the example has, and writes the component paths to
 `NEXTEST_ENV`. The setup then gives the executables that same modification time, as
 below, so they share a compile-cache namespace with the installed code. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
-or compile pass. On Linux that cache belongs to the run alone: the setup queries and fills
-`component-cache` beside the profile directory and exports it as `XDG_CACHE_HOME`, so the
-tests read the code the setup warmed. The engine prunes its user cache by age and size
+or compile pass. On every platform that cache belongs to the run alone: the setup uses
+`run-agent` beside the profile directory as the run's agent directory, queries and fills
+the engine's cache below it, and exports the directory as `MAESTRO_CODING_AGENT_DIR`, so the
+tests read the code the setup warmed. The engine prunes its cache by age and size
 from every process that uses it; with a private cache, other builds on the same host
-cannot evict the warmed code while a long run is still going. macOS and Windows ignore
-`XDG_CACHE_HOME`, so their runs warm and read the engine's own cache directory and share
-it with other builds. Archived runs
+cannot evict the warmed code while a long run is still going. Archived runs
 require the bundle and fail without starting Cargo when it is missing or stale.
 Other runs reuse an existing manifest, rejecting stale or incomplete files; without
 a manifest they keep local auto-build. Archive strictness
@@ -1956,9 +1955,10 @@ preparation effects.
 
 `prepare_author_component --cache-directory` reports one absolute JSON path and
 creates no environment file, component, cache entry or observation log. The fixture
-uses an absolute `XDG_CACHE_HOME` or falls back to `HOME/.cache`; a relative fallback
-fails the query. The component setup always supplies an absolute `XDG_CACHE_HOME`, so
-the fallback is reachable only when the fixture runs outside that setup. The built alias
+reports `component-cache` below an absolute `MAESTRO_CODING_AGENT_DIR` and fails the query
+when the variable is missing or relative. The component setup always supplies an absolute
+agent directory, so the failure is reachable only when the fixture runs outside that
+setup. The built alias
 has a sibling record. When a test exercises product copying or relocation,
 set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
@@ -2502,7 +2502,7 @@ Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
 selected test starts; callers still check its exit status and scenario output.
 `env_clear()` preserves the inherited coverage profile destination and the
-compiled-code cache home the run's setup exports, and later caller edits can
+agent directory the run's setup exports, and later caller edits can
 override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
@@ -2523,7 +2523,7 @@ child, never an exiting one.
 Cases that read process variables go through `run_per_environment(test, cases,
 environment)`. It groups the cases by the edits `environment` returns and
 reruns the test once per group, in a child that applies exactly those edits
-after `env_clear()`, plus the compiled-code cache home the run's setup exports
+after `env_clear()`, plus the agent directory the run's setup exports
 and the parent's temporary directory, unless the case sets one. That directory
 comes from `maestro-test-directory::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
@@ -2543,9 +2543,12 @@ process-wide counter or files created per case, keeps its own child. Use
 `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
-and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
-which only Linux reads, so it reuses the setup's compiled code instead of
-compiling the component again.
+and loads a prepared component passes `run_agent_directory()` as
+`MAESTRO_CODING_AGENT_DIR`, so it reuses the setup's compiled code instead of
+compiling the component again. A test that gives an executable its own agent
+directory links the run's cache into it first with
+`maestro_test_process::link_files`, as the root-command harness in
+`crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child

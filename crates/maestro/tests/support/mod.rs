@@ -17,6 +17,7 @@ impl Root {
         for path in ["agent", "project"] {
             std::fs::create_dir(scratch.path().join(path)).unwrap();
         }
+        share_component_cache(&scratch.path().join("agent"));
         Self { scratch }
     }
     /// Root executable invocation with supplied literal arguments.
@@ -26,7 +27,6 @@ impl Root {
             .env_clear()
             .current_dir(self.path("project"))
             .env("HOME", self.scratch.path())
-            .envs(maestro_test_process::user_cache_home().map(|path| ("XDG_CACHE_HOME", path)))
             .env("PATH", std::env::var_os("PATH").unwrap_or_default())
             // A Windows process without its system root cannot open sockets.
             .envs(std::env::var_os("SYSTEMROOT").map(|root| ("SYSTEMROOT", root)))
@@ -51,6 +51,19 @@ impl Root {
     /// A path under the disposable root.
     pub fn path(&self, path: &str) -> std::path::PathBuf {
         self.scratch.path().join(path)
+    }
+}
+
+/// Links the compiled components of the run's agent directory into the component cache of
+/// `agent`, so an executable that uses `agent` loads the components the run prepared instead of
+/// compiling them again. Does nothing when the run exported no agent directory.
+pub fn share_component_cache(agent: &Path) {
+    if let Some(run) = maestro_test_process::run_agent_directory() {
+        maestro_test_process::link_files(
+            &maestro_extensions_wasmtime::component_cache_directory(run),
+            &maestro_extensions_wasmtime::component_cache_directory(agent),
+        )
+        .unwrap();
     }
 }
 
@@ -85,16 +98,34 @@ fn child_guard_reaps_during_unwind() {
     assert!(status.is_some(), "child survived selector failure");
 }
 
-#[cfg(unix)]
 #[test]
-fn root_command_keeps_the_user_compilation_cache() {
-    let command = Root::new().command(&[]);
-    let cache = command
-        .get_envs()
-        .find(|(name, _)| *name == "XDG_CACHE_HOME")
-        .and_then(|(_, value)| value);
-    let expected = maestro_test_process::user_cache_home();
-    assert_eq!(cache.map(Path::new), expected.as_deref());
+fn root_agent_reuses_the_component_cache_the_run_prepared() {
+    let run = Scratch::new().unwrap();
+    let text = run.path().to_str().unwrap().to_owned();
+    let selected = maestro_test_process::run_per_environment(
+        "root_agent_reuses_the_component_cache_the_run_prepared",
+        [text],
+        |run| {
+            std::collections::BTreeMap::from([(
+                maestro_test_process::AGENT_DIRECTORY,
+                Some(run.clone()),
+            )])
+        },
+    )
+    .unwrap();
+    if selected.is_some() {
+        let run = maestro_test_process::run_agent_directory().unwrap();
+        let prepared =
+            maestro_extensions_wasmtime::component_cache_directory(&run).join("modules/namespace");
+        std::fs::create_dir_all(&prepared).unwrap();
+        std::fs::write(prepared.join("entry"), b"compiled").unwrap();
+        let root = Root::new();
+        let shared = maestro_extensions_wasmtime::component_cache_directory(
+            root.path("agent").to_str().unwrap(),
+        )
+        .join("modules/namespace/entry");
+        assert_eq!(std::fs::read(shared).unwrap(), b"compiled");
+    }
 }
 
 #[cfg(unix)]

@@ -1,21 +1,26 @@
-//! Compiled bytes persist across loads without making the user cache mandatory.
+//! Compiled bytes persist across loads without making the component cache mandatory.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
-use super::components::{TracedBus, loader, local};
+use super::components::{files_below, load_empty_component};
 use super::example_process::record;
-use maestro_extensions::load_extensions;
-use maestro_extensions_wasmtime::component_engine;
+use maestro_extensions_wasmtime::{component_cache, component_engine};
 use maestro_test_directory::Scratch;
-use maestro_test_process::{CheckedChild, TestProcess, selection};
+use maestro_test_process::{
+    AGENT_DIRECTORY, CheckedChild, TestProcess, run_agent_directory, selection,
+};
 use std::{
-    cell::RefCell,
     collections::HashSet,
     path::Path,
     process::{Command, Stdio},
 };
 use wasmtime::{Cache, component::Component};
 
-/// Runs this test in a separate process with an isolated user cache and configuration.
+/// The compiled-code cache below the run's agent directory.
+fn run_cache() -> Cache {
+    component_cache(&run_agent_directory().unwrap()).unwrap()
+}
+
+/// Runs this test in a separate process with an agent directory, and so a cache, of its own.
 fn isolated(test: &str) -> bool {
     if selection().is_child() {
         return false;
@@ -24,8 +29,7 @@ fn isolated(test: &str) -> bool {
     let output = TestProcess::current(test)
         .unwrap()
         .case("isolated")
-        .env("XDG_CACHE_HOME", scratch.path().join("cache"))
-        .env("XDG_CONFIG_HOME", scratch.path().join("config"))
+        .env(AGENT_DIRECTORY, scratch.path().join("agent"))
         .output()
         .unwrap();
     assert!(
@@ -35,23 +39,6 @@ fn isolated(test: &str) -> bool {
         String::from_utf8_lossy(&output.stderr)
     );
     true
-}
-
-/// Every file below `directory`, empty when it does not exist yet.
-fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
-    let Ok(entries) = std::fs::read_dir(directory) else {
-        return Vec::new();
-    };
-    entries
-        .flat_map(|entry| {
-            let path = entry.unwrap().path();
-            if path.is_dir() {
-                files_below(&path)
-            } else {
-                vec![path]
-            }
-        })
-        .collect()
 }
 
 /// Removes a file the compile wrote. The cache worker renames or deletes its own statistics
@@ -66,7 +53,7 @@ fn remove_written(path: &Path) {
 /// compile that misses removes every file that appeared in the cache during the compile, so only
 /// an entry written earlier counts as a hit on any later run.
 fn cached_compile(path: &Path) -> usize {
-    let cache = Cache::from_file(None).unwrap();
+    let cache = run_cache();
     let before: HashSet<_> = files_below(cache.directory()).into_iter().collect();
     let engine = component_engine(Some(cache.clone())).unwrap();
     Component::from_file(&engine, path).unwrap();
@@ -178,7 +165,7 @@ fn setup_tool() -> std::path::PathBuf {
 
 /// Observes the real persistent cache without a process-local compiled-component map.
 fn observe_compilation() {
-    let cache = Cache::from_file(None).unwrap();
+    let cache = run_cache();
     let engine = component_engine(Some(cache.clone())).unwrap();
     let start = std::time::Instant::now();
     Component::from_file(
@@ -204,19 +191,21 @@ fn observe_compilation() {
     }
 }
 
-/// The user cache the tests inherit from the setup: the `XDG_CACHE_HOME` entry the setup wrote to
-/// `environment`, else the scratch root's `cache` directory when it exports none.
-fn exported_cache(environment: &Path, scratch: &Scratch) -> std::path::PathBuf {
+/// The agent directory the tests inherit from the setup: the entry the setup wrote to
+/// `environment`, else the scratch root's `agent` directory when it exports none.
+fn exported_agent(environment: &Path, scratch: &Scratch) -> std::path::PathBuf {
+    let prefix = format!("{AGENT_DIRECTORY}=");
     std::fs::read_to_string(environment)
         .unwrap()
         .lines()
-        .find_map(|line| line.strip_prefix("XDG_CACHE_HOME="))
-        .map_or_else(|| scratch.path().join("cache"), std::path::PathBuf::from)
+        .find_map(|line| line.strip_prefix(&prefix))
+        .map_or_else(|| scratch.path().join("agent"), std::path::PathBuf::from)
 }
 
 /// Runs setup in one executable and a second executable after it, with the archive signal shared
-/// CI gives nextest when `archived` is set. The second executable reads the user cache the setup
-/// exported, as nextest's tests do, and the scratch cache when the setup exported none.
+/// CI gives nextest when `archived` is set. The second executable reads the cache below the agent
+/// directory the setup exported, as nextest's tests do, and the scratch agent directory when the
+/// setup exported none.
 fn share_compiled_bytes(test: &str, archived: bool) {
     let scratch = Scratch::new().unwrap();
     let binaries = cache_consumers(scratch.path(), archived);
@@ -250,8 +239,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
                 "NEXTEST_LD_LIBRARY_PATH",
                 scratch.path().join("target/debug"),
             )
-            .env("XDG_CACHE_HOME", exported_cache(&environment, &scratch))
-            .env("XDG_CONFIG_HOME", scratch.path().join("config"))
+            .env(AGENT_DIRECTORY, exported_agent(&environment, &scratch))
             .env_remove("TEST_PREPARE_OUTPUT")
             .command()
             .unwrap();
@@ -390,23 +378,6 @@ fn removing_a_written_path_fails_on_an_error_other_than_a_missing_file() {
     remove_written(scratch.path());
 }
 
-/// Loads a valid empty component through the extension loader, which compiles it and then
-/// fails to start it as an extension. Returns its path and the failures reported.
-fn load_empty_component(scratch: &Scratch) -> (std::path::PathBuf, Vec<String>) {
-    let path = scratch.path().join("empty.wasm");
-    std::fs::write(&path, b"\0asm\x0d\0\x01\0").unwrap();
-    let supplied = path.to_str().unwrap().to_owned();
-    let errors = RefCell::new(Vec::new());
-    local(async {
-        let bus = TracedBus::new();
-        let loaded = load_extensions(vec![supplied], "/unused", &bus.controller, &loader())
-            .await
-            .unwrap();
-        errors.replace(loaded.errors.into_iter().map(|error| error.error).collect());
-    });
-    (path, errors.into_inner())
-}
-
 #[test]
 fn component_load_populates_the_user_compilation_cache() {
     if isolated("component_load_populates_the_user_compilation_cache") {
@@ -421,14 +392,13 @@ fn component_load_populates_the_user_compilation_cache() {
 }
 
 #[test]
-fn component_load_survives_an_unavailable_user_cache() {
-    if isolated("component_load_survives_an_unavailable_user_cache") {
+fn component_load_survives_an_unavailable_component_cache() {
+    if isolated("component_load_survives_an_unavailable_component_cache") {
         return;
     }
-    let root = std::path::PathBuf::from(std::env::var_os("XDG_CACHE_HOME").unwrap());
-    std::fs::create_dir_all(root.parent().unwrap()).unwrap();
-    std::fs::write(root, "not a directory").unwrap();
-    assert!(Cache::from_file(None).is_err());
+    let agent = run_agent_directory().unwrap();
+    std::fs::write(&agent, "not a directory").unwrap();
+    assert!(component_cache(&agent).is_none());
     let (_, errors) = load_empty_component(&Scratch::new().unwrap());
     assert_eq!(errors.len(), 1, "{errors:?}");
     assert!(

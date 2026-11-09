@@ -50,7 +50,7 @@ pub(super) async fn loaded_with_reporter(
             crate::tests::support::widgets(),
             crate::Installation {
                 version: "builtin-test-version".into(),
-                agent_dir: "/controlled-agent".into(),
+                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
             },
         ),
         "/".into(),
