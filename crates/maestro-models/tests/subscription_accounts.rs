@@ -281,13 +281,46 @@ fn serve_token_peer(listener: &std::net::TcpListener) {
 async fn write_peer(peer: &mut tokio::net::TcpStream, mut bytes: &[u8]) {
     while !bytes.is_empty() {
         peer.writable().await.unwrap();
-        match peer.try_write(bytes) {
-            Ok(count) => bytes = &bytes[count..],
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
-            Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => return,
-            Err(error) => panic!("{error}"),
+        match unsent(peer.try_write(bytes), bytes) {
+            Some(rest) => bytes = rest,
+            None => return,
         }
     }
+}
+#[cfg(not(target_arch = "wasm32"))]
+/// The bytes a write attempt left unsent, or `None` once the peer has closed.
+///
+/// # Panics
+/// Panics on a write failure other than a closed connection.
+fn unsent(result: std::io::Result<usize>, bytes: &[u8]) -> Option<&[u8]> {
+    match result {
+        Ok(count) => Some(&bytes[count..]),
+        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => Some(bytes),
+        Err(error) if crate::loopback::client_closed(&error) => None,
+        Err(error) => panic!("{error}"),
+    }
+}
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_peer_that_closed_ends_the_request_write() {
+    for kind in [
+        std::io::ErrorKind::BrokenPipe,
+        std::io::ErrorKind::ConnectionReset,
+        std::io::ErrorKind::ConnectionAborted,
+    ] {
+        assert_eq!(unsent(Err(kind.into()), b"request"), None, "{kind:?}");
+    }
+    assert_eq!(unsent(Ok(3), b"payload"), Some(&b"load"[..]));
+    assert_eq!(
+        unsent(Err(std::io::ErrorKind::WouldBlock.into()), b"request"),
+        Some(&b"request"[..])
+    );
+}
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+#[should_panic(expected = "permission denied")]
+fn a_write_failure_other_than_a_close_fails_the_request_write() {
+    unsent(Err(std::io::ErrorKind::PermissionDenied.into()), b"request");
 }
 #[cfg(not(target_arch = "wasm32"))]
 /// Read one complete HTTP response while keeping the admitted connection open.

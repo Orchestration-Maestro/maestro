@@ -16,9 +16,6 @@ mod login_provider_admission;
 mod message_rendering;
 mod model_selection;
 mod model_selector_support;
-#[cfg(unix)]
-#[path = "support/native_alias.rs"]
-mod native_alias;
 #[path = "support/occurrences.rs"]
 mod occurrences;
 use maestro_theme::test_support::palette;

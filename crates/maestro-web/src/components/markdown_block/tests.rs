@@ -190,6 +190,15 @@ fn escaped_angle_span_keeps_its_quote_marker_line_in_the_paragraph() {
 }
 
 #[test]
+fn escaped_angle_span_keeps_a_quoted_continuation_marker_in_the_paragraph() {
+    let html = prepare("> a <b\n> c", true).html;
+    assert_eq!(
+        html,
+        "<blockquote>\n<p>a &lt;b\n&gt; c</p>\n</blockquote>\n"
+    );
+}
+
+#[test]
 fn code_held_angles_keep_a_later_quote() {
     for source in ["Compare `a<b`.\n\n> note", "```\n<a\n```\n\n> note"] {
         let html = prepare(source, true).html;

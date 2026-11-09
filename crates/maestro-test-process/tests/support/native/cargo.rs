@@ -155,7 +155,7 @@ fn install(args: &[OsString]) -> io::Result<()> {
             .parent()
             .ok_or_else(|| io::Error::other("missing install bin directory"))?,
     )?;
-    std::fs::copy(std::env::current_exe()?, &binary)?;
+    super::replace_executable(&std::env::current_exe()?, &binary)?;
     executable(&binary)
 }
 
@@ -189,7 +189,7 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
         path.parent()
             .ok_or_else(|| io::Error::other("missing example directory"))?,
     )?;
-    std::fs::copy(source, &path)?;
+    super::replace_executable(&source, &path)?;
     executable(&path)?;
     if let Some(text) = declaration {
         let mut sibling = path.as_os_str().to_owned();

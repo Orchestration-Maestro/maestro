@@ -107,6 +107,28 @@ impl Driver {
         cleanup(result, closed)
     }
 
+    /// Require every function the served module exports to be one of `names`, without calling any.
+    ///
+    /// The bindings' initializers (`default`, `initSync`) and generated classes are not exports.
+    ///
+    /// # Errors
+    /// Returns initialization failures or every unlisted export.
+    async fn listed(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
+        let expression = format!(
+            "(async () => {{ const module = await import('/sandbox.js'); const listed = new Set({}); return Object.keys(module).filter(name => typeof module[name] === 'function' && !Function.prototype.toString.call(module[name]).startsWith('class') && !['default', 'initSync'].includes(name) && !listed.has(name)); }})()",
+            json!(names)
+        );
+        let unlisted = self
+            .check(&format!("{origin}/"), "inventory", &expression)
+            .await?;
+        if unlisted != json!([]) {
+            return Err(io::Error::other(format!(
+                "exports missing from the inventory: {unlisted}"
+            )));
+        }
+        Ok(())
+    }
+
     /// Ordered observations emitted by completed and failed assertions.
     fn lines(&self) -> &[String] {
         &self.lines
@@ -158,6 +180,14 @@ impl Browser {
     /// Returns navigation, assertion, page/crash/disconnect or cleanup failures.
     pub async fn check(&mut self, url: &str, name: &str, expression: &str) -> io::Result<Value> {
         self.driver.check(url, name, expression).await
+    }
+
+    /// Require every function the served module exports to be one of `names`, without calling any.
+    ///
+    /// # Errors
+    /// Returns initialization failures or every unlisted export.
+    pub async fn listed(&mut self, origin: &str, names: &[String]) -> io::Result<()> {
+        self.driver.listed(origin, names).await
     }
 
     /// Ordered observations emitted by completed and failed assertions.
@@ -253,6 +283,22 @@ pub async fn run_export(
     } else {
         Err(io::Error::other("host bundle changed while modules loaded"))
     }
+}
+
+/// Require every export the prepared package's module offers to be in the inventory.
+///
+/// # Errors
+/// Returns server, launch, inventory or cleanup failures, or every unlisted export.
+pub async fn check_inventory(executable: &Path, profile: &Path, root: &Path) -> io::Result<()> {
+    let names: Vec<String> = inputs::inventory(INVENTORY)?
+        .families
+        .into_iter()
+        .flat_map(|(_, names)| names)
+        .collect();
+    session(executable, profile, root, async |browser, origin| {
+        browser.listed(origin, &names).await
+    })
+    .await
 }
 
 /// Serve a package to one fresh browser for the action, closing both on every outcome.

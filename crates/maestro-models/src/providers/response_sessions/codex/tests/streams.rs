@@ -1036,11 +1036,40 @@ fn send_native_terminal(peer: &mut std::net::TcpStream) {
 fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
     use std::io::Read as _;
     let mut byte = [0];
-    match peer.read(&mut byte) {
+    assert_body_closed(peer.read(&mut byte));
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Accept the end of the stream or a closed connection as the client closing the body.
+///
+/// # Panics
+/// Panics on data, or on a failure other than a closed connection.
+fn assert_body_closed(outcome: std::io::Result<usize>) {
+    match outcome {
         Ok(0) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
+        Err(error) if maestro_test_process::loopback::client_closed(&error) => {}
         outcome => panic!("client did not close terminal body: {outcome:?}"),
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn every_closed_connection_kind_ends_the_terminal_body() {
+    assert_body_closed(Ok(0));
+    for kind in [
+        std::io::ErrorKind::BrokenPipe,
+        std::io::ErrorKind::ConnectionReset,
+        std::io::ErrorKind::ConnectionAborted,
+    ] {
+        assert_body_closed(Err(kind.into()));
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+#[should_panic(expected = "client did not close terminal body")]
+fn data_after_the_terminal_body_is_not_a_close() {
+    assert_body_closed(Ok(1));
 }
 
 #[cfg(not(target_arch = "wasm32"))]

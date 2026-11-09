@@ -52,6 +52,11 @@ pub(super) async fn fixture<T>(
         "export const answer='helper-ok'",
     )
     .unwrap();
+    fs::write(
+        root.path().join("sandbox.js"),
+        "export default async function(){};export function initSync(){throw Error('must not run')};export function ready(){throw Error('must not run')};export function extra(){throw Error('must not run')};export class Glue{};export const not_callable=9;",
+    )
+    .unwrap();
     fs::write(root.path().join("click_document.html"), CLICK_DOCUMENT).unwrap();
     let profile = Scratch::new().unwrap();
     let server = Server::start(root.path()).await.unwrap();

@@ -29,7 +29,7 @@ use std::str::FromStr;
 /// Returns an error when preparation is missing, executable installation fails or the record
 /// cannot be written.
 pub fn install(entry: &Path, scenario: Scenario) -> io::Result<()> {
-    crate::executable::install_recorded(entry, "git", scenario.name())
+    crate::install_family(entry, "git", scenario.name())
 }
 
 /// What a stand-in Git executable observes or produces.

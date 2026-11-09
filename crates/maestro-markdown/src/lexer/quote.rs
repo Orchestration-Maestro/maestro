@@ -10,14 +10,23 @@ pub(crate) struct QuoteEntry {
 }
 
 /// Rewrite unquoted setext spelling within this chunk before removing prefixes.
-pub(super) fn quote_source(source: &ScopeSource) -> ScopeSource {
+///
+/// A line whose marker `escaped` reports as displayed text keeps it.
+pub(super) fn quote_source(
+    source: &ScopeSource,
+    escaped: &dyn Fn(&ScopeSource) -> bool,
+) -> ScopeSource {
     let mut pending = Cursor::default();
     pending.append(source.clone());
     let mut output = Cursor::default();
     let mut first = true;
     while let Some(line) = pending.line() {
         let line = line.materialize();
-        let shown = crate::source::strip_quote(&line.text);
+        let shown = if escaped(&line) {
+            &*line.text
+        } else {
+            crate::source::strip_quote(&line.text)
+        };
         let mut piece = line.select(std::iter::once(
             line.text.len() - shown.len()..line.text.len(),
         ));

@@ -79,7 +79,8 @@ fn member(root: &Path, name: &str) {
     .unwrap();
 }
 
-/// Bundle installation verifies and copies the native setup example beside test artifacts.
+/// Bundle installation verifies and copies the native setup example beside test artifacts, and a
+/// later installation replaces the example from the earlier installation with a new file.
 #[test]
 fn bundle_export_installs_the_native_example() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
@@ -131,15 +132,24 @@ fn bundle_export_installs_the_native_example() {
 
     export(cargo, root, &bundle, &artifacts, &environment).unwrap();
 
-    assert_eq!(
-        std::fs::read(artifacts.join("examples").join(native)).unwrap(),
-        b"native example"
-    );
-    let exported = std::fs::read_to_string(environment).unwrap();
+    let installed = artifacts.join("examples").join(native);
+    assert_eq!(std::fs::read(&installed).unwrap(), b"native example");
+    let exported = std::fs::read_to_string(&environment).unwrap();
     assert_eq!(exported.lines().count(), FIXED_COMPONENTS.len());
     for line in exported.lines() {
         let (_, file) = line.split_once('=').unwrap();
         assert_eq!(std::fs::read(file).unwrap(), b"component");
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        // The open handle holds the installed file, so its replacement cannot reuse its identity.
+        let earlier = std::fs::File::open(&installed).unwrap();
+        export(cargo, root, &bundle, &artifacts, &environment).unwrap();
+        assert_ne!(
+            std::fs::metadata(&installed).unwrap().ino(),
+            earlier.metadata().unwrap().ino()
+        );
     }
 }
 

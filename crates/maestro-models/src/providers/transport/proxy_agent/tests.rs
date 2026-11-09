@@ -278,6 +278,26 @@ struct FailureCase {
 }
 
 #[test]
+fn closed_connection_kinds_end_a_rejected_exchange() {
+    use std::io::ErrorKind;
+    for kind in [
+        ErrorKind::BrokenPipe,
+        ErrorKind::ConnectionReset,
+        ErrorKind::ConnectionAborted,
+    ] {
+        socks::settle(Err::<(), _>(kind.into()))
+            .unwrap_or_else(|error| panic!("{kind:?}: {error}"));
+    }
+    for kind in [ErrorKind::PermissionDenied, ErrorKind::TimedOut] {
+        assert_eq!(
+            socks::settle(Err::<(), _>(kind.into())).unwrap_err().kind(),
+            kind
+        );
+    }
+    socks::settle(Ok(())).unwrap();
+}
+
+#[test]
 fn socks_handshake_failures_send_no_http_bytes() {
     run(async {
         let cases: Vec<FailureCase> = serde_json::from_str(include_str!(

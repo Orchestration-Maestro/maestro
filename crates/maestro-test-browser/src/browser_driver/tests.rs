@@ -141,7 +141,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
             ("execution", 27),
             ("loading", 69),
             ("contributions", 196),
-            ("canvas", 88)
+            ("canvas", 165)
         ]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
@@ -233,11 +233,6 @@ fn inventory_matches_authored_exports() {
         .iter()
         .flat_map(|file| source_exports(&root.join(file)))
         .collect::<Vec<_>>();
-    names.extend(
-        source_exports(&root.join("markdown_blocks.rs"))
-            .into_iter()
-            .filter(|name| name.starts_with("math_")),
-    );
     names.sort();
     let mut selected = inventory.families[3].1.clone();
     selected.sort();
@@ -260,6 +255,11 @@ const CANVAS_SOURCES: &[&str] = &[
     "tool_renderers_browser.rs",
     "offline_tool_cards_browser.rs",
     "code_blocks.rs",
+    "markdown_blocks.rs",
+    "markdown_blocks_browser.rs",
+    "docx_preview_browser.rs",
+    "export_markdown.rs",
+    "offline_tool_cards.rs",
 ];
 
 /// Authored source modules supplying the contribution inventory.
@@ -302,7 +302,9 @@ fn source_exports(path: &Path) -> Vec<String> {
         .filter(|pair| {
             matches!(
                 pair[0],
-                "#[wasm_bindgen]" | "#[wasm_bindgen::prelude::wasm_bindgen]"
+                "#[wasm_bindgen]"
+                    | "#[wasm_bindgen::prelude::wasm_bindgen]"
+                    | "#[cfg_attr(target_arch = \"wasm32\", wasm_bindgen::prelude::wasm_bindgen)]"
             )
         })
         .filter_map(|pair| pair[1].strip_prefix("pub "))
