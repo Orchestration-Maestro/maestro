@@ -56,6 +56,10 @@ the waiting form.
 A browser build has no file system, so file acquisition reports `Unsupported`
 there.
 
+The local-socket owner uses `try_acquire_write` on a socket path as its liveness proof:
+the held lock is a live server, a free one means the socket file is stale. The sidecar
+is `<socket name>.lock`; see [Sockets](workspace-daemon.md#sockets).
+
 Lock and recovery names append `.lock` and `.recovery` to the complete file name.
 A name fits within 255 bytes on Unix or 255 UTF-16 units on Windows. Only names
 that would exceed that limit are shortened: a cut file name at a character

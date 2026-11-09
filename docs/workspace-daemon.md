@@ -25,9 +25,22 @@ UTF-8 stem uses `maestro-client.sock`. Relative paths stay relative; selection d
 not canonicalize them. Socket filesystem operations resolve relative paths when
 called.
 
-Before binding, preparation creates parents, rejects a live listener with
-`maestro server is already running (socket busy at {path})`, and removes stale
-socket entries. Preparation inspects the entry in two cases only: a stale
+Before binding, preparation creates parents, claims the socket path, rejects a live
+listener with `maestro server is already running (socket busy at {path})`, and
+removes stale socket entries.
+
+The claim is a write lock on the sidecar file `<socket name>.lock`, created beside the
+socket and removed when the claim drops. It is the proof that a server is alive. If
+another holder already has the claim, preparation fails as busy and leaves the socket
+file alone, whatever a connection attempt would report: macOS refuses a connection
+while a live server's accept queue is full, exactly as it does for a socket file with
+no server, so a refusal alone never proves a socket stale. `prepare_socket_path`
+returns the claim as a `SocketClaim`; the server keeps it for as long as it holds the
+listener and drops it after removing its socket file. The operating system releases
+the claim when its holder exits, however it exits, so a crashed server's socket is
+reclaimed at once on every platform. Links to the socket share one claim.
+
+With the claim held, preparation inspects the entry in two cases only: a stale
 connection failure (connection refused, not found or timed out) and a native
 not-a-socket failure. Every other connection failure is returned unchanged and
 nothing is inspected. Inspection reads the entry's type without following a link,
@@ -564,6 +577,9 @@ filtered by a valid `MAESTRO_LOG` directive, and binds the API socket at
 `DaemonPaths::api_socket_path`.
 The socket is readable and writable by its owner only. A stale socket is replaced; a
 live one fails the start as address-in-use, and a file that is not a socket is kept.
+The server holds its [socket claim](#sockets) until it stops, so a second
+start fails as busy even while the first server's accept queue is full or its socket
+file has been removed.
 After binding, a daemon without workspaces opens one in the directory
 `MAESTRO_STARTUP_CWD` names, focused; a daemon that already has workspaces ignores it.
 Panes never inherit the variable. The server then logs `maestro server started` and

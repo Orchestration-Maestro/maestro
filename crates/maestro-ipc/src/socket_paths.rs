@@ -1,5 +1,6 @@
 //! Client-socket path selection from caller-supplied observations.
 
+use crate::local_socket::SocketClaim;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -50,11 +51,12 @@ fn derive_client_socket_from_api_socket(api_socket_path: &Path) -> PathBuf {
     parent.join(format!("{stem}-client.sock"))
 }
 
-/// Prepare a client socket path with its server-busy diagnostic.
+/// Prepare a client socket path with its server-busy diagnostic, returning the claim the
+/// server keeps while it listens.
 ///
 /// # Errors
 /// Returns the shared socket preparation failure.
-pub fn prepare_socket_path(path: &Path) -> io::Result<()> {
+pub fn prepare_socket_path(path: &Path) -> io::Result<SocketClaim> {
     crate::local_socket::prepare_socket_path(path, |path| {
         format!(
             "maestro server is already running (socket busy at {})",

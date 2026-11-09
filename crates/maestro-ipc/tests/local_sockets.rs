@@ -146,7 +146,7 @@ fn socket_private_listener_accepts_local_peer() {
     use std::os::unix::fs::PermissionsExt;
     let directory = Directory::new();
     let path = directory.path().join("private.sock");
-    local::prepare_socket_path(&path, |_| panic!("absent")).unwrap();
+    let _claim = local::prepare_socket_path(&path, |_| panic!("absent")).unwrap();
     let listener = local::bind_private_local_listener(&path).unwrap();
     local::restrict_socket_permissions(&path, 0o600).unwrap();
     let mut client = local::connect_local_stream(&path).unwrap();
@@ -228,17 +228,52 @@ fn socket_prepare_removes_stale_file() {
     let path = directory.path().join("stale.sock");
     drop(local::bind_local_listener(&path).unwrap());
     assert!(path.exists());
-    maestro_ipc::socket_paths::prepare_socket_path(&path).unwrap();
+    drop(maestro_ipc::socket_paths::prepare_socket_path(&path).unwrap());
     assert!(!path.exists());
     let _rebound = local::bind_local_listener(&path).unwrap();
     assert!(path.exists());
 }
 
 #[test]
+fn socket_claim_outranks_a_refused_connection() {
+    let directory = Directory::new();
+    let path = directory.path().join("claimed.sock");
+    let _claim = local::prepare_socket_path(&path, |_| panic!("absent")).unwrap();
+    drop(local::bind_local_listener(&path).unwrap());
+    let identity = local::socket_file_identity(&path).unwrap();
+    let native = local::connect_local_stream(&path).unwrap_err();
+    assert_eq!(native.kind(), io::ErrorKind::ConnectionRefused);
+    let error = local::prepare_socket_path(&path, |_| "busy".to_owned()).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
+    assert_eq!(error.to_string(), "busy");
+    assert_eq!(local::socket_file_identity(&path).unwrap(), identity);
+}
+
+#[test]
+fn socket_claim_release_makes_the_socket_stale_at_once() {
+    if maestro_test_process::run_alone("socket_claim_release_makes_the_socket_stale_at_once")
+        .unwrap()
+    {
+        return;
+    }
+    let directory = Directory::new();
+    let path = directory.path().join("released.sock");
+    let claim = local::prepare_socket_path(&path, |_| panic!("absent")).unwrap();
+    let listener = local::bind_local_listener(&path).unwrap();
+    let error = local::prepare_socket_path(&path, |_| "busy".to_owned()).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
+    assert!(path.exists());
+    drop((listener, claim));
+    let _next = local::prepare_socket_path(&path, |_| panic!("released")).unwrap();
+    assert!(!path.exists());
+}
+
+#[test]
 fn socket_prepare_creates_parents() {
     let directory = Directory::new();
     let path = directory.path().join("nested/deeper/new.sock");
-    local::prepare_socket_path(&path, |_| panic!("missing path is not busy")).unwrap();
+    let claim = local::prepare_socket_path(&path, |_| panic!("missing path is not busy")).unwrap();
+    drop(claim);
     assert!(path.parent().unwrap().is_dir());
     let _listener = local::bind_local_listener(&path).unwrap();
     assert!(path.exists());
