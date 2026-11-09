@@ -878,6 +878,10 @@ callbacks to the native argument validator. It permits no normal or build edge.
 `maestro-extensions-wasm` to `maestro-extensions-wasmtime`, declared as a native-only,
 non-optional development dependency, lets component tests build their engine from the
 product's one engine configuration. It permits no normal or build edge.
+`maestro-extensions-wasm` to `maestro-listeners`, declared as a native-only,
+non-optional development dependency, lets the controlled guest bus keep its
+callback registrations in the shared listener collection. It permits no normal or
+build edge.
 `maestro-extensions-wasm` to `maestro-listing` lets the guest crate read a
 directory in name order. The crate declares one portable build dependency for its
 build script, so the generated example-module inventory keeps that order, and the

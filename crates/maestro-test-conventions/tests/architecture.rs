@@ -3681,6 +3681,39 @@ fn guest_schema_validation_edge_is_native_development_only() {
     );
 }
 
+/// The guest's controlled bus fixture has one native development edge, never a product edge.
+#[test]
+fn guest_bus_fixture_listener_edge_is_native_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-listeners"]);
+    let declaration =
+        "listeners = { package = \"maestro-listeners\", path = \"../maestro-listeners\" }";
+    assert_eq!(
+        caller_declares(
+            &workspace,
+            "maestro-extensions-wasm",
+            &format!("[{NATIVE_DEV}]\n{declaration}")
+        ),
+        Ok(())
+    );
+    for table in [
+        "dependencies",
+        "build-dependencies",
+        "dev-dependencies",
+        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+    ] {
+        assert!(
+            caller_declares(
+                &workspace,
+                "maestro-extensions-wasm",
+                &format!("[{table}]\n{declaration}")
+            )
+            .is_err(),
+            "{table}"
+        );
+    }
+}
+
 /// The native process owner reads POSIX shell operands from the text leaf, which gains no edge.
 #[test]
 fn text_leaf_serves_the_process_owner_without_gaining_an_edge() {

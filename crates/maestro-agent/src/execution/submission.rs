@@ -4,7 +4,6 @@ use super::{
     AgentLoopOptionsRecord, AgentMessage, AgentSpawner, CustomAgentMessages, DiagnosticErrorInfo,
     EventStream, check_continuation, prepare_prompt, prepared_loop,
 };
-use std::io::Write;
 /// Concrete public entry signatures preserve the default generic arity.
 macro_rules! entries {
     ($mode:ty, $awaited:ty) => {
@@ -120,7 +119,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Submitted<C, E
         match result {
             Ok(messages) => self.stream.end(Some(messages)),
             Err(error) => {
-                let _ = writeln!(std::io::stderr(), "{}", error.message);
+                crate::diagnostics::write_stderr_line(&error.message);
             }
         }
     }

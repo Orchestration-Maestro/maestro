@@ -1,24 +1,24 @@
 # Keyboard shortcuts
 
-Open `/hotkeys` in an interactive session to see keys from your loaded bindings.
-Use this reference when editing `keybindings.json`; action IDs are case-sensitive.
-The [toolkit API](terminal/keybindings.md) is for embedding applications.
-[Terminal key forwarding](terminal/setup.md) covers terminal and tmux setup when
-a modified key never reaches Maestro.
+Open `/hotkeys` in an interactive session to see the keys your loaded bindings
+define. Use this page when you edit `keybindings.json`; action IDs are
+case-sensitive. The [toolkit API](terminal/keybindings.md) serves embedding
+applications. When a modified key never reaches Maestro, read
+[terminal key forwarding](terminal/setup.md) for terminal and tmux setup.
 
 ## Change a shortcut
 
 The file is `<agent directory>/keybindings.json`, normally
 `~/.maestro/agent/keybindings.json`. A nonempty `MAESTRO_CODING_AGENT_DIR`
-changes that directory. There is no project-local shortcut file. See
+changes that directory. Shortcuts have no project-local file. See
 [configuration roots](application/configuration.md#identity-and-roots).
 
-1. Back up an existing file before editing it. Store one JSON object in the file.
+1. Back up an existing file before you edit it. The file holds one JSON object.
 2. Set each action to a string, a list of strings, or `[]` to disable it.
-3. Run exact `/reload` while the session is idle, then open `/hotkeys`.
+3. Run the exact command `/reload` while the session is idle, then open `/hotkeys`.
 
-For example, this replaces the external-editor shortcut, gives upward movement
-two keys, and removes model cycling from Ctrl+P:
+This example replaces the external-editor shortcut, gives upward movement two
+keys, and frees Ctrl+P from model cycling:
 
 ```json
 {
@@ -28,18 +28,18 @@ two keys, and removes model cycling from Ctrl+P:
 }
 ```
 
-An override replaces the whole default list. Remove its property to restore the
-default; `null` is not a disable value. Unknown action IDs do nothing. Duplicate
-keys within an action collapse to one key. Key strings are not normalized before
-that, so `Ctrl+C` and `ctrl+c` count as two keys that name the same key. Prefer the
-spellings in the tables below.
+An override replaces the whole default list. Remove the property to restore the
+default; `null` does not disable an action. Unknown action IDs do nothing.
+Duplicate keys within an action collapse to one key. Maestro does not normalize key
+strings first, so `Ctrl+C` and `ctrl+c` count as two keys that name the same key.
+Use the spellings in the tables below.
 
-Unreadable files, invalid JSON and non-object roots load defaults without a file
-error. Wrong-typed properties (including lists with non-string members) are
-ignored. Reloading a missing or malformed file replaces existing overrides with
-defaults; it does not keep the previous working bindings. The loader does not
-rewrite the file. [Reload](chat/commands.md#reload) also reloads resources and
-extensions, clears the draft, and refuses to run during streaming or compaction.
+An unreadable file, invalid JSON or a non-object root loads the defaults without a
+file error. Maestro ignores wrong-typed properties, including lists with non-string
+members. Reloading a missing or malformed file replaces existing overrides with the
+defaults; the previous working bindings do not survive. The loader never rewrites
+the file. [Reload](chat/commands.md#reload) also reloads resources and extensions,
+clears the draft, and refuses to run during streaming or compaction.
 
 ### Reset multiplexer overrides
 
@@ -66,7 +66,7 @@ output errors propagate to the executable.
 
 ### Check collisions
 
-Rebinding a key does not remove it from other actions. For example:
+Rebinding a key does not remove it from other actions. In this example:
 
 ```json
 {
@@ -75,24 +75,24 @@ Rebinding a key does not remove it from other actions. For example:
 }
 ```
 
-Both actions retain Ctrl+X; this does not mean both run. The focused component's
-dispatch order decides which action receives input. Assign different keys
-rather than relying on dispatch order. The manager's `get_conflicts()` reports only
-keys explicitly assigned to multiple known actions. It does not report collisions
-with defaults, equivalent key spellings or terminal-byte aliases.
+Both actions keep Ctrl+X, but only one receives the input. The focused component's
+dispatch order decides which. Assign different keys instead of relying on that
+order. The manager's `get_conflicts()` reports only keys explicitly assigned to
+several known actions. It does not report collisions with defaults, equivalent key
+spellings or terminal-byte aliases.
 
-Some shared defaults are intentional: Ctrl+P cycles models in the editor but
-changes the path display in the session picker. Those controls belong to different
-focused components. By contrast, assigning Ctrl+P to cursor movement also requires
-disabling or moving `app.model.cycleForward`, which intercepts it in the editor.
+Some shared defaults are deliberate: Ctrl+P cycles models in the editor and changes
+the path display in the session picker, because the two controls belong to different
+focused components. Assigning Ctrl+P to cursor movement is different: you must also
+disable or move `app.model.cycleForward`, which intercepts the key in the editor.
 Extension shortcuts can intercept input before application and editor actions;
 see [extension shortcut dispatch](chat/extension-ui.md#shortcuts).
 
 ### Emacs-style vertical movement
 
-The editor already has Ctrl+A/E for line boundaries, Ctrl+B/F for character
-movement, Alt+B/F for words, and Ctrl+Y for deleted text. Add vertical movement
-without losing the default arrow keys:
+The editor already binds Ctrl+A/E to line boundaries, Ctrl+B/F to character
+movement, Alt+B/F to words and Ctrl+Y to deleted text. This adds vertical movement
+and keeps the default arrow keys:
 
 ```json
 {
@@ -102,12 +102,12 @@ without losing the default arrow keys:
 }
 ```
 
-Ctrl+N remains a named-session filter in the session picker. This example changes
-editor movement, not every selector's controls.
+Ctrl+N stays the named-session filter in the session picker. The example changes
+editor movement only, not the controls of every selector.
 
 ### Modal-style navigation without a mode switch
 
-Use Alt with home-row keys to keep unmodified letters available for typing:
+Alt with home-row keys leaves the unmodified letters free for typing:
 
 ```json
 {
@@ -118,11 +118,11 @@ Use Alt with home-row keys to keep unmodified letters available for typing:
 }
 ```
 
-These are alternate navigation keys, not a modal editor. There is no insert/normal
-mode switch in this configuration. Lists mean alternative keys, not multi-key
-sequences. To change list navigation too, bind `tui.select.up` and
-`tui.select.down` separately. Do not bind plain `h`, `j`, `k` or `l` unless you
-intend to consume those letters instead of typing them.
+These are alternate navigation keys, not a modal editor: the configuration has no
+insert/normal mode switch. A list holds alternative keys, never a multi-key
+sequence. To change list navigation too, bind `tui.select.up` and
+`tui.select.down` separately. Bind plain `h`, `j`, `k` or `l` only when you want
+those letters consumed instead of typed.
 
 ## Key notation and terminal limits
 
@@ -139,10 +139,10 @@ keys: `escape` (`esc`), `enter` (`return`), `tab`, `space`, `backspace` (`bs`), 
 `insert`, `clear`, `home`, `end`, `pageUp`, `pageDown`, `up`, `down`, `left`, `right`.
 The [key decoder reference](terminal/keys.md) gives the supported combinations.
 
-A binding can match only input that reaches Maestro. A terminal, desktop shortcut,
-SSH client or multiplexer may consume a key or send the same bytes for different
-keys. Changing JSON cannot recover an intercepted key. Try a different key first,
-then check the forwarding configuration of each layer. The terminal/tmux setup
+A binding matches only input that reaches Maestro. A terminal, desktop shortcut,
+SSH client or multiplexer may consume a key, or send the same bytes for different
+keys. Editing the JSON cannot recover an intercepted key. Try a different key
+first, then check the forwarding configuration of each layer. The terminal/tmux setup
 guide is tracked in [#2838](https://github.com/Orchestration-Maestro/maestro/issues/2838).
 
 Legacy input cannot always distinguish Ctrl+I from Tab, Ctrl+M from Enter or
@@ -154,10 +154,10 @@ and [native terminal negotiation](terminal/native-terminal.md).
 
 ## Default bindings
 
-Each table lists full IDs for use as JSON properties. Commas separate alternatives;
-`none` means `[]`. The tables describe registered actions, not keys active in every
-component. `/hotkeys` shows common editing/application controls and extension keys,
-not this entire action inventory.
+Each table lists the full IDs to use as JSON properties. Commas separate
+alternatives, and `none` means `[]`. The tables describe registered actions, not
+keys that every component honors. `/hotkeys` shows the common editing and
+application controls and the extension keys, not this whole action inventory.
 
 ### Writing and moving through text
 
@@ -189,10 +189,10 @@ not this entire action inventory.
 | `tui.input.tab` | `tab` | Completion or the component's Tab action |
 | `tui.input.copy` | `ctrl+c` | Reserved copy action; consumed by the toolkit editor |
 
-The multiline editor uses deleted-text history for yank/rotation; this is separate
+The multiline editor keeps a deleted-text history for yank and rotation, separate
 from the system clipboard. See [editor behavior](terminal/editor.md). The registered
-copy action does not perform a system-clipboard copy in the toolkit editor; the
-chat editor uses Ctrl+C for `app.clear`.
+copy action does not copy to the system clipboard in the toolkit editor; the chat
+editor uses Ctrl+C for `app.clear`.
 
 ### Choosing a list item
 
@@ -205,7 +205,7 @@ chat editor uses Ctrl+C for `app.clear`.
 | `tui.select.confirm` | `enter` | Accept the highlighted item |
 | `tui.select.cancel` | `escape`, `ctrl+c` | Leave the selection or clear its search first |
 
-Components differ in wrapping, paging and search behavior. See
+Wrapping, paging and search differ between components. See
 [selectors](chat/selectors.md) and [session-tree input](chat/tree-selector.md#configurable-input).
 
 ### Controlling the interactive session
@@ -248,8 +248,8 @@ For image tools, external-editor requirements and queue behavior, read
 | `app.session.delete` | `ctrl+d` | Request deletion of the selected session |
 | `app.session.deleteNoninvasive` | `ctrl+backspace` | Request deletion only with an empty search |
 
-The last six controls act inside session views, not as global editor commands.
-Deletion has a confirmation step; see [session picker](chat/session-selector.md).
+The last six controls act inside session views and are not global editor commands.
+Deletion asks for confirmation; see [session picker](chat/session-selector.md).
 
 ### Browsing branches
 
@@ -285,14 +285,13 @@ Open `/scoped-models`. Changes apply to the session immediately; saving writes
 
 ## Suspension on Unix, WSL and Windows
 
-On Unix, including WSL, press the bound suspend key (normally Ctrl+Z) to stop the
-process group and restore the shell's terminal. Run `fg` in that shell to resume
-and redraw. See the
-[suspend lifecycle](chat/interactive-mode.md#suspend).
+On Unix, including WSL, the bound suspend key (normally Ctrl+Z) stops the process
+group and restores the shell's terminal. Run `fg` in that shell to resume and
+redraw. See the [suspend lifecycle](chat/interactive-mode.md#suspend).
 
-Native Windows has no default suspend key. A manually assigned `app.suspend`
-shows `Suspend to background is not supported on Windows`; it does not emulate
-Unix job control. The registered Windows defaults above do not imply that the
+Native Windows has no default suspend key. A manually assigned `app.suspend` shows
+`Suspend to background is not supported on Windows` and does not emulate Unix job
+control. The registered Windows defaults above do not imply that the
 executable can open interactive mode there: native Windows startup is blocked by
 [#2844](https://github.com/Orchestration-Maestro/maestro/issues/2844).
 WSL runs the Unix path and is not that native-Windows case.
@@ -305,7 +304,7 @@ which key triggers the action. The longer label can wrap a hint or widen a table
 column.
 
 Every hint spells its keys from the live registry through `key_text`, `key_display_text` and
-`format_key_text`, and none writes a key by hand. `key_text` joins the keys bound to an action
+`format_key_text`; no hint writes a key by hand. `key_text` joins the keys bound to an action
 with `/` as written. `key_display_text` also starts each part with a capital letter
 (`Ctrl+Option+X`), and `format_key_text(key, capitalize)` applies the
 same spelling to a key list that is not a registry action, such as an extension shortcut.

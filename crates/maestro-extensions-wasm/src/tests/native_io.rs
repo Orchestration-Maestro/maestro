@@ -53,7 +53,7 @@ fn native_wait_rejects_preabort_before_arming() -> ExtensionResult<()> {
             .iter()
             .any(|line| line.starts_with("native-wait"))
     );
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     Ok(())
 }
 
@@ -72,7 +72,7 @@ fn native_wait_releases_its_signal_observer() -> ExtensionResult<()> {
                 .poll(&mut Context::from_waker(Waker::noop()))
                 .is_pending()
         );
-        assert_eq!(host.observed().bus.listeners.len(), 1);
+        assert_eq!(host.observed().bus.listeners().len(), 1);
         if outcome == "drop" {
             drop(wait);
         } else {
@@ -87,7 +87,7 @@ fn native_wait_releases_its_signal_observer() -> ExtensionResult<()> {
             };
             assert_eq!(super::block_on(wait), expected);
         }
-        assert!(host.observed().bus.listeners.is_empty());
+        assert!(host.observed().bus.listeners().is_empty());
     }
     Ok(())
 }
@@ -162,7 +162,7 @@ fn native_wait_keeps_the_original_host_signal() -> ExtensionResult<()> {
             .poll(&mut Context::from_waker(Waker::noop()))
             .is_pending()
     );
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     drop(original);
     assert_eq!(host.observed().shell.signal_drops.get(&flag.key()), None);
     flag.abort();
@@ -488,14 +488,14 @@ fn native_child_abort_keeps_the_original_signal() -> ExtensionResult<()> {
     let subscription =
         original_signal.subscribe(Rc::new(move |_| retained.kill(None).map(|_| ())))?;
     drop(original_signal);
-    assert_eq!(host.observed().bus.listeners.len(), 1);
+    assert_eq!(host.observed().bus.listeners().len(), 1);
     assert_eq!(host.abort(&flag), [Ok(())]);
     assert_eq!(
         super::block_on(child.wait())?.signal.as_deref(),
         Some("SIGTERM")
     );
     subscription.unsubscribe()?;
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     Ok(())
 }
 
@@ -669,11 +669,11 @@ fn native_response_close_keeps_caller_signal_live() -> ExtensionResult<()> {
     }))?;
     let body = response.body().unwrap();
     drop(response);
-    assert_eq!(host.observed().bus.listeners.len(), 1);
+    assert_eq!(host.observed().bus.listeners().len(), 1);
     body.close()?;
     assert!(!caller.aborted());
     drop(body);
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     assert!(!caller.aborted());
     Ok(())
 }

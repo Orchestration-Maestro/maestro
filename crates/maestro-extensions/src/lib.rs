@@ -15,7 +15,7 @@
 //! runtime.block_on(async {
 //!     let controller = create_event_bus(
 //!         Arc::new(|tail| { tokio::spawn(tail); }),
-//!         Arc::new(|diagnostic| eprint!("{diagnostic}")),
+//!         Arc::new(|diagnostic| maestro_agent::diagnostics::write_stderr(diagnostic)),
 //!     );
 //!     let events = controller.for_extension();
 //!     let received = Arc::new(Mutex::new(Vec::new()));

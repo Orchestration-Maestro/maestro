@@ -67,7 +67,7 @@ impl Driver {
         crate::component_adapter::install(std::rc::Rc::new(builder));
         let exports = Exports::new(host.clone());
         super::block_on(exports.start::<Rainbow>())?;
-        assert_eq!(host.observed().bus.listeners.len(), 1);
+        assert_eq!(host.observed().bus.listeners().len(), 1);
         let driver = Self { host, exports };
         driver.session_start()?;
         Ok(driver)
@@ -150,7 +150,7 @@ impl Drop for Driver {
             release(slot.factory);
         }
         let mut names = vec![
-            format!("event bus {}", self.host.observed().bus.listeners[0].1),
+            format!("event bus {}", self.host.observed().bus.listeners()[0].1),
             "event session_start".to_owned(),
         ];
         names.extend(std::iter::repeat_n("bus tail".to_owned(), self.tails()));
@@ -478,7 +478,7 @@ fn component_frames(
 #[test]
 fn rainbow_editor_component_animates_until_released() -> Result<(), String> {
     let mut harness = super::host::Harness::example("rainbow_editor")?;
-    let listener = harness.observed().bus.listeners[0].1;
+    let listener = harness.observed().bus.listeners()[0].1;
     component_session_start(&mut harness).map_err(|error| error.to_string())?;
     component_frames(&mut harness, &expected()).map_err(|error| error.to_string())?;
     assert_eq!(

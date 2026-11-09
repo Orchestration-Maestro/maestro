@@ -189,7 +189,7 @@ fn maestro_bus_keeps_prefix_tail_and_unsubscribe_ownership() -> ExtensionResult<
             })))
         }),
     )?;
-    let listener = host.observed().bus.listeners[0].1;
+    let listener = host.observed().bus.listeners()[0].1;
     let alias = subscription.clone();
     drop(subscription);
     super::block_on(bus.emit("prefix", json!("none")))?;
@@ -226,7 +226,7 @@ fn duplicate_registrations(host: &Controlled, bus: &crate::EventBus) -> Extensio
     let ids: Vec<u32> = host
         .observed()
         .bus
-        .listeners
+        .listeners()
         .iter()
         .map(|(_, id)| *id)
         .collect();
@@ -383,7 +383,7 @@ fn maestro_bus_callbacks_release_on_errors_and_reentry() -> ExtensionResult<()> 
             Ok(None)
         }),
     )?;
-    let id = host.observed().bus.listeners[0].1;
+    let id = host.observed().bus.listeners()[0].1;
     release(id);
     assert_eq!(host.observed().bus.removals, [2, 4]);
     drop(subscription);
@@ -406,7 +406,7 @@ fn tail_capture_release(host: &Controlled, bus: &crate::EventBus) -> ExtensionRe
     let listener_id = host
         .observed()
         .bus
-        .listeners
+        .listeners()
         .last()
         .expect("listener retained")
         .1;
@@ -422,7 +422,7 @@ fn tail_capture_release(host: &Controlled, bus: &crate::EventBus) -> ExtensionRe
     assert!(
         host.observed()
             .bus
-            .listeners
+            .listeners()
             .iter()
             .any(|(_, id)| *id == listener_id)
     );
@@ -465,7 +465,7 @@ fn maestro_bus_errors_leave_later_calls_usable() -> ExtensionResult<()> {
             Ok(None)
         }),
     )?;
-    let id = host.observed().bus.listeners[0].1;
+    let id = host.observed().bus.listeners()[0].1;
     let exports = Exports::new(host.clone());
     assert!(exports.invoke_listener(id, "{", &emitter).is_err());
     assert_eq!(*calls.borrow(), 0);
@@ -672,7 +672,7 @@ fn maestro_bus_facades_retain_the_same_host_resources() -> ExtensionResult<()> {
     super::block_on(bus_alias.emit("state", json!(3)))?;
     assert_eq!(host.observed().bus.emissions, [("state".into(), json!(3))]);
     let subscription = later.on("retained", Rc::new(|_, _| Ok(None)))?;
-    let id = host.observed().bus.listeners[0].1;
+    let id = host.observed().bus.listeners()[0].1;
     let alias_subscription = subscription.clone();
     drop(subscription);
     assert_eq!(
@@ -690,7 +690,7 @@ fn maestro_bus_facades_retain_the_same_host_resources() -> ExtensionResult<()> {
             .load(std::sync::atomic::Ordering::SeqCst),
         1
     );
-    assert_eq!(host.observed().bus.listeners, [("retained".into(), id)]);
+    assert_eq!(host.observed().bus.listeners(), [("retained".into(), id)]);
     assert!(host.observed().bus.removals.is_empty());
     release(id);
     drop(alias);
@@ -725,7 +725,7 @@ fn maestro_listener_tail_keeps_its_origin_and_can_resume_its_emitter() -> Extens
                 Ok(Some(Box::pin(finish_origin(bus, data, gate, entered))))
             }),
         )?;
-        let listener = host.observed().bus.listeners[0].1;
+        let listener = host.observed().bus.listeners()[0].1;
         bus.emit("start", json!("first")).await?;
         bus.emit("start", json!("second")).await?;
         let tails = host.observed().bus.tails.clone();

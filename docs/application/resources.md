@@ -123,7 +123,8 @@ one file per directory from the filesystem root down to the working directory,
 each path once. In each directory the first existing name of `AGENTS.md`,
 `AGENTS.MD`, `CLAUDE.md` and `CLAUDE.MD` is used. A file that exists but cannot
 be read writes `Warning: Could not read <path>: <error>` to standard error, in
-yellow when standard error is a terminal, and the next name is tried.
+yellow when standard error is a terminal, and the next name is tried. A closed
+standard error drops the warning; see [diagnostics](../diagnostics.md).
 
 ## System prompt
 

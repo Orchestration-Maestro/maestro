@@ -1,120 +1,118 @@
 # Interactive commands
 
-The interactive mode reads a few commands from the editor before ordinary
-input. Submitted text is trimmed with the shared whitespace rule first, and commands
-are recognized after the trim: BOM and no-break space count as whitespace, while
-U+0085 and zero-width space do not. The editor empties itself before calling back; a
-slash command never answers the waiting input and never enters the editor history.
-Any other text, including `/Model`, `/models`, `/model<Tab>term`,
-`/scoped-models extra`, `/login extra` and `/logout extra`, is ordinary input. A
-submission that is empty after the trim is dropped: it reaches neither the waiting
-input nor the history.
+The interactive mode checks each submission for a command before it treats the text
+as input. Maestro trims the text with the shared whitespace rule first, then
+recognizes commands: BOM and no-break space count as whitespace, while U+0085 and
+zero-width space do not. The editor empties itself before it calls back. A slash
+command never answers the waiting input and never enters the editor history.
+Any other text is ordinary input, including `/Model`, `/models`,
+`/model<Tab>term`, `/scoped-models extra`, `/login extra` and `/logout extra`.
+A submission that is empty after the trim is dropped: it reaches neither the
+waiting input nor the history.
 
-The mode handles shell input and the slash commands `/export`, `/import`, `/changelog`,
+The mode handles shell input and these slash commands: `/export`, `/import`, `/changelog`,
 `/model`, `/thinking`, `/scoped-models`, `/settings`, `/login`, `/logout`, `/name`, `/session`,
 `/debug`, `/hotkeys`, `/share`, `/copy`, `/fork`, `/clone`, `/tree`, `/resume`, `/new`,
-`/compact`, `/reload` and `/quit`. The offline viewer and packaged asset injection are not
-delivered yet (see
-[what is missing](#what-is-missing)).
+`/compact`, `/reload` and `/quit`. The offline viewer and packaged asset injection
+are not delivered yet; see [what is missing](#what-is-missing).
 
 `maestro_chat::InteractiveMode` exposes the bodies of the session commands as
-methods. Each method reads the runtime's current session when it is called, so it
-follows a session switch.
+methods. Each method reads the runtime's current session when called, so it follows
+a session switch.
 
 Editor submission routes `/name` or `/name ` followed by a name, `/session`,
 `/hotkeys` and `/debug` to those methods. Other text, such as `/names` or
-`/session extra`, is ordinary input. When a command fails, the failure goes to
-the terminal host.
+`/session extra`, is ordinary input. A failing command hands its failure to the
+terminal host.
 
-Extensions use the same mode through the [extension UI](extension-ui.md): dialogs
-restore the current editor when they settle, completion wrappers rebuild at once,
-and notifications use the transcript's status, warning and error rows.
+Extensions drive the same mode through the [extension UI](extension-ui.md):
+dialogs restore the current editor when they settle, completion wrappers rebuild
+at once, and notifications use the transcript's status, warning and error rows.
 
 ## Forking and cloning
 
 `/fork` and the configurable `app.session.fork` action open the earlier-message
-panel. It lists user messages in chronological order, with the newest selected.
+panel, which lists user messages in chronological order with the newest selected.
 Enter forks before the selected message, replays the new session and puts that
 message's text in the editor. The panel closes with `Forked to new session`.
 With no user messages, the mode shows `No messages to fork from` instead.
 
 Escape closes the fork panel, restores editor focus and keeps the draft that was
-there when the panel opened. This draft restoration differs from a successful
-fork, which replaces the draft with the selected message's text. An extension
-can veto a fork; that also closes the panel and keeps the draft.
+there when the panel opened. A successful fork differs: it replaces the draft with
+the selected message's text. An extension can veto a fork, which also closes the
+panel and keeps the draft.
 
-`/clone` copies the current branch through its exact leaf into a new session.
-After replacement callbacks finish, it replays that session, clears the editor
+`/clone` copies the current branch, through its exact leaf, into a new session.
+When the replacement callbacks finish, it replays that session, clears the editor
 and shows `Cloned to new session`. Without a leaf, it shows `Nothing to clone yet`.
-Cloning has no Escape cancellation; an extension can veto it. A veto leaves the
-session and transcript alone. A submitted command has already cleared the editor.
-Fork and clone failures show an error rather than a success notice.
+Escape cannot cancel a clone; an extension can veto it, which leaves the session
+and transcript alone. The submitted command has already cleared the editor.
+A fork or clone failure shows an error, not a success notice.
 
 ## Session tree
 
-`/tree` opens the current session's tree at its current leaf, using the saved tree
+`/tree` opens the current session's tree at its current leaf, with the saved tree
 filter. The configurable `app.session.tree` action opens the same panel. Selecting
 another entry offers `No summary`, `Summarize` and `Summarize with custom prompt`.
-The `branchSummary.skipPrompt` setting skips this question and navigates without a
+The `branchSummary.skipPrompt` setting skips that question and navigates without a
 summary. Selecting the current leaf shows `Already at this point` instead.
 
 Custom instructions may be empty. Cancelling their editor returns to the summary
-choices; cancelling the choices reopens the tree at the same entry. A summary
-shows a loader whose interrupt key cancels it. Cancelling a summary reopens that
-entry, while an extension veto closes navigation without changing the transcript.
+choices, and cancelling the choices reopens the tree at the same entry. A summary
+shows a loader, and the interrupt key cancels it; cancelling reopens that entry.
+An extension veto closes navigation and leaves the transcript unchanged.
 
-Successful navigation replays the selected branch and delivers input captured
-during compaction. Returned message text fills an empty or whitespace-only editor;
-an existing draft is kept. The panel's label action records or removes the selected
-entry's label through the session manager.
+A successful navigation replays the selected branch and delivers the input
+captured during compaction. Returned message text fills an empty or
+whitespace-only editor and never replaces an existing draft. The panel's label
+action records or removes the selected entry's label through the session manager.
 
-Pressing the interrupt key twice on an empty or whitespace-only editor opens the
-tree or the earlier-message fork panel, as the `doubleEscapeAction` setting says;
+Two interrupt-key presses on an empty or whitespace-only editor open the tree or
+the earlier-message fork panel, as the `doubleEscapeAction` setting directs;
 `none` turns this off. The second press must come strictly less than 500 ms after
-the first, and the setting is read on each press. A streaming response, a running
-shell command and shell mode take the interrupt key first.
+the first, and each press reads the setting. A streaming response, a running shell
+command and shell mode take the interrupt key first.
 
 ## Resuming a session
 
 `/resume` and the configurable `app.session.resume` action list the saved sessions
 of the current project; the selector's scope key lists every project instead.
-Choosing one closes the panel and resumes it through the runtime, then replays it
+Choosing a session closes the panel, resumes it through the runtime, replays it
 and shows `Resumed session`. An extension can cancel the switch, which changes
 nothing. Cancelling the selector puts the editor back, its exit key shuts the mode
 down, and its rename action records a trimmed, nonblank name in the chosen file.
 
 When the saved session's directory no longer exists, the mode asks whether to
-resume in the current directory instead. Declining shows `Resume cancelled`;
-accepting retries there and shows `Resumed session in current cwd`. A failed retry
-goes to the terminal host. Any other failure to resume is fatal: the mode shows
+resume in the current directory. Declining shows `Resume cancelled`; accepting
+retries there and shows `Resumed session in current cwd`. A failed retry goes to
+the terminal host. Any other resume failure is fatal: the mode shows
 `Failed to resume session: <reason>` and the process exits with status 1.
 
 ## `/quit`
 
 After the shared trim, exact `/quit` clears the editor and starts graceful
-shutdown before input, queue or history delivery, without requesting an extra
-frame. It also works while a response streams or the session compacts. `/QUIT`,
-`/quit extra` and `/quit` followed by U+0085 remain ordinary input.
+shutdown before any input, queue or history delivery, and requests no extra frame.
+It works while a response streams or the session compacts. `/QUIT`, `/quit extra`
+and `/quit` followed by U+0085 remain ordinary input.
 
 ## `/new`
 
 After the shared trim, exact `/new` clears the editor and starts a new session.
 The `app.session.new` editor action does the same but leaves the editor's text
-alone. It has no default key: bind one in `keybindings.json`, and a live
-remapping takes effect at once. `/NEW`, `/new extra` and `/newer` remain
-ordinary input.
+alone. It has no default key: bind one in `keybindings.json`, and a live remapping
+takes effect at once. `/NEW`, `/new extra` and `/newer` remain ordinary input.
 
-The command first stops working progress and empties the status rows. An
-extension can veto the switch through `session_before_switch`. A vetoed request
-keeps the session, its transcript, its queued input and its pending shell rows,
-and shows nothing.
+The command first stops working progress and empties the status rows. An extension
+can veto the switch through `session_before_switch`. A vetoed request keeps the
+session, its transcript, its queued input and its pending shell rows, and shows
+nothing.
 
 Once the new session starts, the mode clears the transcript, the pending area,
 the input queued during a compaction and the shell rows still waiting to move.
 It then replays the new session and shows `✓ New session started` in the accent
 colour. A shell command from the old session never reappears later.
 
-If the session cannot be created or replayed, the mode shows
+When the session cannot be created or replayed, the mode shows
 `Error: Failed to create session: <failure>`, stops the terminal and exits with
 status 1.
 
@@ -133,16 +131,16 @@ labels, do not count. With fewer than two, it shows
 alone. Otherwise it stops working progress, empties the status rows and starts
 the compaction.
 
-The compaction's own events show what happened: a summary row on success,
+The compaction's own events report the outcome: a summary row on success,
 `Error: Compaction cancelled` when an extension cancels it, or
-`Error: Compaction failed: <failure>`. Input submitted while it runs is delivered
-to the session once it ends. The command adds no message of its own.
+`Error: Compaction failed: <failure>`. Input submitted while it runs reaches the
+session once it ends. The command adds no message of its own.
 
 ## `/reload`
 
 Exact `/reload` clears the editor and reloads keybindings, extensions, skills,
 prompts and themes. `/reload extra` is ordinary input. A streaming response or a
-compaction refuses reload with a warning; a running shell command does not.
+compaction refuses the reload with a warning; a running shell command does not.
 
 The command resets extension UI, cancels abandoned dialogs and paints a bordered
 loading box before awaiting the application reload. It then refreshes the header,
@@ -151,31 +149,31 @@ transcript, before restoring the current editor with focus. Resource diagnostics
 and model-file errors appear even with quiet startup, followed by
 `Reloaded keybindings, extensions, skills, prompts, themes`.
 
-A failure after the box appears restores the editor captured after UI reset and
-shows `Reload failed: <reason>`. Changes made before the failure remain applied;
+A failure after the box appears restores the editor captured after the UI reset
+and shows `Reload failed: <reason>`. Changes made before the failure stay applied;
 the command does not roll them back. A reset failure goes to the terminal host
-instead, before application reload starts.
+instead, before the application reload starts.
 
 ## Extension command contexts
 
 Extension commands receive the interactive mode's session controls. Creating a
 session stops working progress and clears the status area; a successful creation
-replays the new session without the `/new` command's notice. Forking replays the
-new session, replaces the draft with the selected text (or empty text), and shows
+replays the new session without the `/new` notice. Forking replays the new
+session, replaces the draft with the selected text (or empty text) and shows
 `Forked to new session`. An extension veto leaves the transcript and draft alone.
-A creation or fork failure uses the fatal runtime error route.
+A creation or fork failure takes the fatal runtime error route.
 
 Tree navigation forwards the supplied summary controls and label. On success it
 replays the selected branch, fills a still-blank editor with nonempty returned
-text, shows `Navigated to selected point`, and starts delivery of input captured
-during compaction without waiting for that delivery. Cancellation changes no
-presentation; a navigation failure returns its original error to the caller.
+text, shows `Navigated to selected point` and starts delivering the input captured
+during compaction without waiting for it. Cancellation changes no presentation; a
+navigation failure returns its original error to the caller.
 
-Switching sessions uses the same resume operation and missing-directory prompt
-as `/resume`. Reload uses the same presentation and refusal conditions as
-`/reload`, but does not clear the draft first. Waiting for idle reads the current
-agent. These callbacks do not retain the mode when inactive; an admitted operation
-keeps it alive until it settles, and retired command contexts remain stale.
+Switching sessions uses the resume operation and the missing-directory prompt of
+`/resume`. Reload uses the presentation and refusal conditions of `/reload` but
+does not clear the draft first. Waiting for idle reads the current agent. These
+callbacks do not retain an inactive mode; an admitted operation keeps it alive
+until it settles, and retired command contexts stay stale.
 
 ## Shell input
 
@@ -184,31 +182,32 @@ Text starting with `!` runs a shell command instead of sending a prompt.
 - `!command` runs `command` and keeps its output in the model's context.
 - `!!command` runs the same way and records the output as excluded from the context.
 
-Boundaries around the prefix and the command are whitespace: `! ls ` runs `ls`. The
-shapes the editor accepts as whitespace are the ones the rest of the mode uses, so a
-non-breaking space or a byte-order mark next to the prefix counts as a boundary, while
-the next-line and zero-width-space characters do not.
+Whitespace marks the boundaries around the prefix and the command: `! ls ` runs
+`ls`. The editor accepts the same whitespace shapes as the rest of the mode, so a
+non-breaking space or a byte-order mark next to the prefix counts as a boundary,
+while the next-line and zero-width-space characters do not.
 
-A submission that holds only the prefix, `!` or `!!`, has no command to run and is
-delivered as ordinary input instead.
+A submission that holds only the prefix, `!` or `!!`, has no command to run and
+becomes ordinary input.
 
-While a shell command from the same session is still running, a new submission does not
+While a shell command from the same session still runs, a new submission does not
 start a second one. The editor shows
-`A bash command is already running. Press Esc to cancel it first.` as a warning, keeps the
-typed text in the editor so nothing is lost, and records no history entry.
+`A bash command is already running. Press Esc to cancel it first.` as a warning,
+keeps the typed text so nothing is lost, and records no history entry.
 
-The interrupt key cancels a running shell command when no response streams, and a
-streaming response keeps precedence over it: with both running, the key restores the
-queued text and stops the response, leaving the shell command to finish on its own.
+The interrupt key cancels a running shell command when no response streams. A
+streaming response takes precedence: with both running, the key restores the queued
+text and stops the response, and the shell command finishes on its own.
 
-An accepted shell command is recorded in the editor's history. When an agent response is
-streaming, the command's row appears in the pending area and moves into the transcript
-with the next ordinary submission; otherwise the row appears in the transcript at once.
-The row keeps its place above the queued messages while a refresh rebuilds them.
+The editor's history records each accepted shell command. While an agent response
+streams, the command's row appears in the pending area and moves into the
+transcript with the next ordinary submission; otherwise it appears in the
+transcript at once. The row keeps its place above the queued messages while a
+refresh rebuilds them.
 
-Extensions can answer a shell command through the `user_bash` event: returning a full
-result shows it without running a process and records it once, and returning operations
-runs the command through them instead of the local shell.
+An extension can answer a shell command through the `user_bash` event: a full
+result is shown without running a process and recorded once, and returned
+operations run the command instead of the local shell.
 
 ## `/export`
 
@@ -222,20 +221,19 @@ ending in exactly `.jsonl` writes the current branch as JSONL lines instead.
 ```
 
 Both formats reuse the [session export](../export.md) owners: the HTML document
-comes from the same serializer and native bundle that
-`AgentSession::export_to_html` uses, and the JSONL lines come from
-`AgentSession::export_to_jsonl`. The mode adds no serializer, no asset fallback
-and no second file writer.
+comes from the serializer and native bundle that `AgentSession::export_to_html`
+uses, and the JSONL lines come from `AgentSession::export_to_jsonl`. The mode adds
+no serializer, no asset fallback and no second file writer.
 
 A success shows `Session exported to: <path>` in the transcript's dim status
-colour, naming the path the export owner returned. JSONL returns the
-authored path resolved against the process directory; HTML returns the authored
-path, or `maestro-session-<session file name>.html` when no path was given.
+colour, with the path the export owner returned. For JSONL that is the authored
+path resolved against the process directory; for HTML it is the authored path, or
+`maestro-session-<session file name>.html` when no path was given.
 
 A recoverable failure shows `Failed to export session: <diagnostic>` in the
-transcript's error colour, with the diagnostic the export owner produced. A
-failure to render that notice goes to the terminal runtime's error route, which
-is the route the mode's shortcuts already use.
+transcript's error colour, with the diagnostic the export owner produced. When
+that notice cannot render, the failure takes the terminal runtime's error route,
+the route the mode's shortcuts already use.
 
 ## `/import`
 
@@ -393,13 +391,12 @@ characters unless the path starts with one.
 
 Only an exact lower-case `.jsonl` suffix selects JSONL. `.JSONL`,
 `archive.jsonl.bak`, `notes.jsonl-summary` and an absent or empty path all select
-HTML. The comparison stays case-sensitive on purpose: the reference command
-selects JSONL for that suffix alone.
+HTML. The comparison is case-sensitive by design: that suffix alone selects JSONL.
 
 ## Session name
 
 `handle_name_command(text)` takes the whole command text. It drops a leading
-`/name`, then the outer whitespace under the shared whitespace policy. U+FEFF is
+`/name`, then the outer whitespace under the shared whitespace policy; U+FEFF is
 trimmed and U+0085 is kept.
 
 - With no name left, it shows `Session name: <name>` in the dim colour, or the
@@ -445,12 +442,12 @@ replaces the debug log with a capture, creating its directory. The log is
 3. Each session message as one compact JSON line, in history order.
 
 After the write, the transcript shows `✓ Debug log written` and the log path, so
-the capture never contains its own notice. A failed write is returned, and no
-notice or frame follows.
+the capture never contains its own notice. A failed write is returned, with no
+notice or frame.
 
-The toolkit's global debug key (Shift+Ctrl+D) runs the same capture whatever has
-focus. The key handler does not keep the mode alive. A failure is handed to the
-terminal host, which reports it.
+The toolkit's global debug key (Shift+Ctrl+D) runs the same capture wherever focus
+sits. The key handler does not keep the mode alive, and the terminal host reports
+a failure.
 
 ## Selecting a model
 
@@ -474,8 +471,8 @@ refuses the model, for example because it has no credentials, the editor comes
 back and the refusal is shown as `Error: <message>`; a change the session already
 made is kept.
 
-The footer shows the provider before the model name when the candidates span
-more than one provider. The mode counts them at startup and after every scope
+The footer shows the provider before the model name when the candidates span more
+than one provider. The mode counts providers at startup and after every scope
 change.
 
 ## Thinking level
@@ -488,7 +485,7 @@ Choosing a level applies it, refreshes the footer and editor border, and shows
 `/thinking HIGH` selects `high`. An unknown or unsupported level changes nothing
 and shows `Unknown thinking level "<level>". Available levels: <levels>.`, listing
 only the current model's levels. A changed level is saved to the session and
-becomes the default, just as with the thinking-cycle shortcut or `/settings`.
+becomes the default, as it does with the thinking-cycle shortcut or `/settings`.
 
 The command appears in autocomplete as `Set thinking level` with the `<level>`
 hint. The command name itself is case-sensitive; `/THINKING`, `/thinkingx` and
@@ -523,12 +520,12 @@ keeping the session's edits and leaving the setting as it was.
 
 ## Changing settings
 
-`/settings` opens the settings panel in place of the editor over the current
-session and preferences: the panel reads the live session's compaction and queue
+`/settings` opens the settings panel in place of the editor, over the current
+session and preferences. The panel reads the live session's compaction and queue
 policies, the model's own thinking levels, the registered and discovered theme
 inventory, and the typed preference values. A stored value of the wrong JSON type
-counts as unset and the getter's default applies; the stored settings are never
-rewritten by a read.
+counts as unset and the getter's default applies; a read never rewrites the stored
+settings.
 
 Choosing a value applies it at once and saves it through the settings owner:
 session policies go to the session, which saves them, and the rest are written to
@@ -550,11 +547,10 @@ Failed to load theme "<name>": <error>
 Fell back to dark theme.
 ```
 
-Every theme choice keeps the supplied watch effects, so a selected custom theme
-is watched again after a preview or a commit. Escape closes the panel, restores
-the editor with its focus and requests a frame. Padding and completion height
-reach the default editor only; an installed custom editor does not receive them
-yet.
+Every theme choice keeps the supplied watch effects, so a selected custom theme is
+watched again after a preview or a commit. Escape closes the panel, restores the
+editor with its focus and requests a frame. Padding and completion height reach
+the default editor only; an installed custom editor does not receive them yet.
 
 ## Providers offered for API-key sign-in
 
@@ -579,9 +575,9 @@ runs no key command.
 
 ### API keys
 
-Choosing a key provider opens a dialog that asks `Enter API key:`. The pasted key
-is trimmed with the shared whitespace rule, so BOM and no-break space are removed
-while U+0085 and zero-width space are kept. An empty key shows
+Choosing a key provider opens a dialog that asks `Enter API key:`. The shared
+whitespace rule trims the pasted key: BOM and no-break space go, while U+0085 and
+zero-width space stay. An empty key shows
 `Error: Failed to save API key for <name>: API key cannot be empty.` Otherwise the
 key is saved for that provider on the current session, the editor comes back and
 the sign-in completes. Escape cancels without a message. A credential file that
@@ -595,8 +591,8 @@ directory. Closing the dialog puts the editor back; nothing is saved.
 ### Subscriptions
 
 Choosing a subscription opens its sign-in dialog and starts the provider's sign-in.
-The dialog shows the authorization link, opens it in the browser and shows the
-provider's instructions when they are not empty. A provider with a callback server
+The dialog shows the authorization link, opens it in the browser, and shows the
+provider's instructions when there are any. A provider with a callback server
 also accepts a pasted redirect under
 `Paste redirect URL below, or complete login in browser:`; empty text is ignored,
 every request for it sees the same answer, and the provider decides which of the
@@ -610,8 +606,7 @@ Each callback is shown before it returns, so a callback that cannot be shown
 returns that failure to the provider, which ends the sign-in before any credential
 is saved. Once the sign-in ends, a callback the provider kept can no longer show
 anything and returns an error. Escape cancels without a message; any other failure
-shows
-`Error: Failed to login to <name>: <error>` after the editor comes back.
+shows `Error: Failed to login to <name>: <error>` after the editor comes back.
 
 ### After signing in
 
@@ -632,8 +627,8 @@ the default model cannot be selected, an error follows with the reason:
 
 A failed selection keeps whatever the session already changed. Without such an
 error, the [subscription billing notice](#subscription-billing-notice) is checked
-for the selected or current model without holding up the sign-in. A refresh failure ends
-the sign-in with its error instead of a status line.
+for the selected or current model, without holding up the sign-in. A refresh
+failure ends the sign-in with its error instead of a status line.
 
 ## Removing stored credentials
 
@@ -643,11 +638,11 @@ variables, runtime keys and `models.json` are not choices and are never touched.
 With nothing saved it shows
 `No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.`
 
-Choices are ordered by the catalog's display name for each provider under the
-current locale, and providers whose display names compare equal keep the order
-they are stored in. A record that does not decode as a complete subscription or
-API key is listed by the store but is not offered, because the picker reads
-typed credentials only.
+Choices are ordered by each provider's catalog display name under the current
+locale, and providers whose display names compare equal keep their stored order.
+The store lists a record that does not decode as a complete subscription or API
+key, but the picker does not offer it, because the picker reads typed credentials
+only.
 
 Selecting puts the editor back and then removes that one credential from the
 current session, refreshes the catalog, updates the footer's provider count and
@@ -676,12 +671,12 @@ Warning: Anthropic subscription auth is active. Third-party harness usage draws 
 ```
 
 The check runs after a model is applied or cycled. A stored sign-in is enough;
-its key is not looked up or refreshed. Other providers, ordinary or missing keys
-and failed key lookups show nothing, and a later check may still show the notice.
-Setting `warnings.anthropicExtraUsage` to `false` turns the notice off; any other
-value leaves it on. The notice is shown at most once for the life of the
-interactive mode, even when its session is replaced, and checks that overlap
-show it once. Checking at startup comes with the prompt loop.
+Maestro neither looks up nor refreshes its key. Other providers, ordinary or
+missing keys and failed key lookups show nothing, and a later check may still show
+the notice. Setting `warnings.anthropicExtraUsage` to `false` turns the notice off;
+any other value leaves it on. The notice appears at most once for the life of the
+interactive mode, even when its session is replaced, and overlapping checks show it
+once. The startup check comes with the prompt loop.
 
 ## What is missing
 

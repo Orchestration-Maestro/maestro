@@ -1252,8 +1252,11 @@ platform's own separator.
 Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than
-their compiler inputs. It skips an executable when an exact linked library build
-is newer than it: advancing that binary would hide a rebuild from Cargo.
+their compiler inputs. On Unix it changes each time through a read-only handle and
+never opens an executable for writing: macOS can kill the next launch of an
+executable that was opened for writing after it ran. It skips an executable when
+an exact linked library build is newer than it: advancing that binary would hide
+a rebuild from Cargo.
 Cargo's `.fingerprint` records identify each direct and transitive library build
 by its fingerprint and metadata hash, independently of dependency aliases.
 A newer build of the same crate under another hash, including check-only metadata
@@ -1414,9 +1417,10 @@ of its size. The bundle manifest records whether it holds a graph; a build that 
 it out and the shards build it themselves. A shard's `nextest-setup browser-author` replaces
 `target/browser-author` with the staged graph, after checking that the checkout still holds
 the files the bundle was prepared from, and gives every file of it one modification time
-taken when it installs. Cargo rebuilds a unit when a source or an output it builds on is
-newer than its fingerprint, so a graph that is newer than the checkout and has no output
-newer than another leaves the recipes nothing to compile.
+taken when it installs, through a read-only handle on Unix. Cargo rebuilds a unit when a
+source or an output it builds on is newer than its fingerprint, so a graph that is newer
+than the checkout and has no output newer than another leaves the recipes nothing to
+compile.
 
 The setup runs before the first browser author test of a run, and only on a shard that runs
 one. Without a bundle it pays the whole cost itself. It lints
@@ -2549,6 +2553,13 @@ compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with
 `maestro_test_process::link_files`, as the root-command harness in
 `crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
+Test code that proves a diagnostic path survives a closed standard error uses
+`maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
+standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,
+which the child calls first so no write beats the pipe's closing. The parent calls
+`maestro_test_process::run_alone` before either, so no sibling test forks while the
+pipe's reading end is open. The [diagnostics guide](diagnostics.md#testing-a-diagnostic-path)
+shows the three together.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child

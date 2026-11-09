@@ -15,6 +15,8 @@ pub use execution::{
     run_agent_loop_continue,
 };
 
+/// Diagnostics written to standard error without failing their caller.
+pub mod diagnostics;
 /// Compact proxy requests and response reconstruction.
 pub mod remote;
 /// The Agent guide, compiled and run as documentation tests.

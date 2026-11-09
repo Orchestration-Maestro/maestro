@@ -3,7 +3,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 #[cfg(unix)]
-use crate::resource_fixtures::{child_stderr, directory_read_error, warnings};
+use crate::resource_fixtures::{
+    child_stderr, child_with_closed_stderr, directory_read_error, warnings,
+};
 use maestro_app::{ChangelogEntry, compare_versions, parse_changelog};
 use maestro_test_directory::Scratch;
 use serde::Deserialize;
@@ -234,6 +236,16 @@ fn changelog_missing_or_unreadable_is_empty() {
     if cfg!(not(unix)) {
         parse_read_failures(&base);
     }
+}
+
+/// A read failure whose warning cannot be written still yields no sections.
+#[cfg(unix)]
+#[test]
+fn changelog_read_failure_with_closed_standard_error_is_empty() {
+    child_with_closed_stderr(
+        "changelog_read_failure_with_closed_standard_error_is_empty",
+        parse_read_failures,
+    );
 }
 
 #[test]
