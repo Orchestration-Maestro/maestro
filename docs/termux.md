@@ -25,7 +25,7 @@ Maestro detects Termux from a nonempty `TERMUX_VERSION` in its environment.
 | Build, install and start Maestro on Android | Not qualified. No command is published. | [#2818](https://github.com/Orchestration-Maestro/maestro/issues/2818) |
 | Copy text to the Android clipboard | Implemented. Maestro runs `termux-clipboard-set` before any display helper. | [Copying text](application/clipboard.md) |
 | Paste an image from the clipboard | Not available on Termux. Maestro skips the read. | [Image paste](chat/interactive-mode.md#image-paste) |
-| `find` and `grep` search programs | Maestro does not download them on Android. It prints the `pkg install` line. | [Search tools](tools-search.md) |
+| `find` and `grep` search programs | Maestro does not download them on Android. It prints the `pkg install` line. | [Search tools](tools-search.md#search-programs) |
 | Screen redraw when the keyboard changes the height | Implemented. A height change keeps the scrollback. | [Terminal rendering](terminal/rendering.md#defaults) |
 
 An npm command from another tool is not a Maestro installer. Maestro is a Rust
@@ -45,8 +45,8 @@ executable; do not install it from a package registry.
    pkg install termux-api fd ripgrep
    ```
 
-Termux:API is optional. You need it for clipboard copy and for any shell command
-that reaches an Android device service.
+Termux:API is optional. You need it for the Termux clipboard route and for any
+shell command that reaches an Android device service.
 
 ## Grant shared storage
 
@@ -112,7 +112,7 @@ their order, and [reload](chat/commands.md#reload) lists what else it refreshes.
 ### The copy command fails
 
 Copying a long text can fail with `Failed to copy to clipboard`, and a short text
-can reach the clipboard only through the terminal sequence when `termux-clipboard-set`
+can reach the clipboard through the terminal sequence when `termux-clipboard-set`
 fails. Confirm that both parts are installed: the Termux:API app and the
 `termux-api` package. Then run the two clipboard commands from
 [Use the Android clipboard](#use-the-android-clipboard) outside Maestro. If they
