@@ -1,5 +1,5 @@
 //! Retained fenced-code captures over append-only source prefixes.
-use regress::Regex;
+use super::Anchored;
 use std::{ops::Range, sync::LazyLock};
 
 /// An admitted fence independent of source ownership.
@@ -24,8 +24,12 @@ pub(crate) enum Verdict {
 }
 
 /// Opening grammar, applied only to the first physical line.
-static OPEN: LazyLock<Option<Regex>> =
-    LazyLock::new(|| super::anchored(r" {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)"));
+static OPEN: LazyLock<Option<Anchored>> = LazyLock::new(|| {
+    Anchored::new(
+        r" {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)",
+        "",
+    )
+});
 
 /// Monotone physical-line cursor retaining only offsets and captures.
 #[derive(Default)]

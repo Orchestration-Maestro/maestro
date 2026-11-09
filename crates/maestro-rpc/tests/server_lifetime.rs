@@ -4,9 +4,17 @@
 use crate::support::{Child, Served, serve};
 use maestro_app::{ExtensionFactory, Local, SessionShutdownEvent};
 use maestro_test_directory::Scratch;
-use maestro_test_process::selection;
+use maestro_test_process::{CASE, TestProcess, selection};
+use std::convert::Infallible;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Read, Write};
+use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
+use std::process::Command;
 use std::rc::Rc;
+
+/// The case that runs as the process of a bash command.
+const HELD: &str = "held";
 
 /// How a `session_shutdown` handler behaves once it reports the shutdown.
 #[derive(Clone, Copy)]
@@ -67,50 +75,72 @@ fn served() -> Served {
     }
 }
 
-/// Whether the process `pid` has ended: gone, or a zombie nobody reaped yet.
-fn ended(pid: &str) -> bool {
-    let state = std::process::Command::new("ps")
-        .args(["-o", "stat=", "-p", pid])
-        .output()
+/// The process of a bash command, in the working directory the test prepared: it keeps the
+/// FIFO `report` open for writing until it ends and reports that it runs, then reports that
+/// it is alive once the test closes the FIFO `release`.
+fn hold() {
+    let mut report = File::options().write(true).open("report").unwrap();
+    report.write_all(b"running\n").unwrap();
+    File::open("release")
         .unwrap()
-        .stdout;
-    let state = String::from_utf8(state).unwrap();
-    state.trim().is_empty() || state.trim().starts_with('Z')
+        .read_to_end(&mut Vec::new())
+        .unwrap();
+    report.write_all(b"alive\n").unwrap();
 }
 
 /// A first SIGTERM or SIGHUP kills the shell commands still running, disposes the session
 /// and exits with 143 or 129.
 #[test]
 fn signals_clean_children_before_exit() {
-    if selection().is_child() {
+    let selected = selection();
+    if selected.case() == Some(HELD) {
+        hold();
+        return;
+    }
+    if selected.is_child() {
         serve(served());
     }
+    // The command names this executable through a link in its working directory, so it
+    // holds no path to quote.
+    let command = TestProcess::current("signals_clean_children_before_exit")
+        .unwrap()
+        .nocapture()
+        .invoke_with(|arguments| {
+            Ok::<_, Infallible>(format!("{CASE}={HELD} exec ./held {}", arguments.join(" ")))
+        })
+        .unwrap();
+    let line = serde_json::json!({"id": "b", "type": "bash", "command": command});
     for (signal, code) in [("TERM", 143), ("HUP", 129)] {
         let scratch = Scratch::new().unwrap();
-        let fifo = scratch.path().join("pid");
-        let made = std::process::Command::new("mkfifo")
-            .arg(&fifo)
+        let dir = scratch.path();
+        symlink(std::env::current_exe().unwrap(), dir.join("held")).unwrap();
+        let made = Command::new("mkfifo")
+            .args(["report", "release"])
+            .current_dir(dir)
             .status()
             .unwrap();
         assert!(made.success());
-        let mut child = Child::start(
-            "signals_clean_children_before_exit",
-            "serve",
-            scratch.path(),
-        );
-        let command = format!("echo $$ > {}; exec sleep 300", fifo.display());
-        let line = serde_json::json!({"id": "b", "type": "bash", "command": command});
+        let mut child = Child::start("signals_clean_children_before_exit", "serve", dir);
         child.send(format!("{line}\n").as_bytes());
-        let shell = std::fs::read_to_string(&fifo).unwrap().trim().to_owned();
-        assert!(!ended(&shell));
+        let mut report = BufReader::new(File::open(dir.join("report")).unwrap());
+        let mut running = String::new();
+        report.read_line(&mut running).unwrap();
+        assert_eq!(running, "running\n", "{signal}");
+        let release = File::options()
+            .write(true)
+            .open(dir.join("release"))
+            .unwrap();
         child.signal(signal);
         let (status, errors) = child.wait_open();
         assert_eq!(status.code(), Some(code), "{signal}");
         assert_eq!(errors, "disposing\n", "{signal}");
-        assert!(
-            ended(&shell),
-            "{signal}: the running shell command was killed"
-        );
+        // The server sent its kill before it exited, and a killed process runs none of its own
+        // code again, so only a process nothing killed reads the release and reports. The
+        // report ends once the held process has ended.
+        drop(release);
+        let mut rest = String::new();
+        report.read_to_string(&mut rest).unwrap();
+        assert_eq!(rest, "", "{signal}: the running shell command was killed");
     }
 }
 

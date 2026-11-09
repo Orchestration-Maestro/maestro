@@ -119,7 +119,7 @@ impl Harness {
             super::support::widgets_over(live.clone()),
             maestro_extensions_wasmtime::Installation {
                 version: "border-status-host".into(),
-                agent_dir: "/controlled-agent".into(),
+                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
             },
         );
         let owner = load_extension_from_factory(
@@ -494,8 +494,8 @@ fn border_status_editor_component_shortens_only_the_home_directory() {
             (COMPONENT, Some(component.clone())),
         ]);
         variables.extend(
-            maestro_test_process::user_cache_home()
-                .map(|path| ("XDG_CACHE_HOME", Some(path.to_string_lossy().into_owned()))),
+            maestro_test_process::run_agent_directory()
+                .map(|path| (maestro_test_process::AGENT_DIRECTORY, Some(path))),
         );
         variables
     };

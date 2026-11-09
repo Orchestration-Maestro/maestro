@@ -55,29 +55,47 @@ const FULL_QUEUE_ERRNO: rustix::io::Errno = rustix::io::Errno::AGAIN;
 #[cfg(not(target_vendor = "apple"))]
 const FULL_QUEUE_KIND: io::ErrorKind = io::ErrorKind::TimedOut;
 
-#[test]
-fn saturated_backlog_never_returns_an_unconnected_stream() {
+/// Connect nonblocking clients until the listener's accept queue is full, returning them so the
+/// queue stays full.
+fn fill_accept_queue(listener: &LocalListener, path: &Path) -> Vec<std::os::fd::OwnedFd> {
     use rustix::net::{SocketAddrUnix, connect, listen};
-    use std::time::{Duration, Instant};
-    let root = maestro_test_directory::Scratch::new_socket().unwrap();
-    let path = root.path().join("full.sock");
-    let listener = bind_local_listener(&path).unwrap();
-    let LocalListener::UdSocket(ref native) = listener;
+    let LocalListener::UdSocket(native) = listener;
     listen(native, 1).unwrap();
-    let address = SocketAddrUnix::new(&path).unwrap();
+    let address = SocketAddrUnix::new(path).unwrap();
     let mut clients = Vec::new();
     loop {
         let fd = nonblocking_local_socket().unwrap();
         match connect(&fd, &address) {
             Ok(()) => clients.push(fd),
-            Err(error) if error == FULL_QUEUE_ERRNO => break,
+            Err(error) if error == FULL_QUEUE_ERRNO => return clients,
             Err(error) => panic!("unexpected connect failure: {error}"),
         }
     }
+}
+
+#[test]
+fn saturated_backlog_never_returns_an_unconnected_stream() {
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
+    let path = root.path().join("full.sock");
+    let listener = bind_local_listener(&path).unwrap();
+    let _clients = fill_accept_queue(&listener, &path);
     let start = Instant::now();
     let result = connect_local_stream_until(&path, start + Duration::from_millis(75));
     assert!(start.elapsed() < Duration::from_secs(1));
     assert_eq!(result.unwrap_err().kind(), FULL_QUEUE_KIND);
+}
+
+#[test]
+fn claimed_server_with_a_full_accept_queue_keeps_its_socket() {
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
+    let path = root.path().join("claimed.sock");
+    let _claim = prepare_socket_path(&path, |_| panic!("absent")).unwrap();
+    let listener = bind_local_listener(&path).unwrap();
+    let identity = socket_file_identity(&path).unwrap();
+    let _clients = fill_accept_queue(&listener, &path);
+    let error = prepare_socket_path(&path, |_| "busy".to_owned()).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
+    assert_eq!(socket_file_identity(&path).unwrap(), identity);
 }
 
 #[test]

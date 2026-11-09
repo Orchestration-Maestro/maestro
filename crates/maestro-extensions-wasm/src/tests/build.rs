@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use wasmtime::Engine;
 use wasmtime::component::Component;
-use wasmtime::{Cache, Engine};
 
 #[path = "build/cargo.rs"]
 pub mod cargo;
@@ -43,7 +43,7 @@ pub fn example_component(name: &str) -> Result<PathBuf, String> {
     )
 }
 
-/// Compiles the component with the test host's engine and optional user cache.
+/// Compiles the component with the test host's engine and optional component cache.
 ///
 /// # Errors
 /// Returns Wasmtime's failure to configure the engine or to compile the component.
@@ -103,10 +103,13 @@ where
     Ok(())
 }
 
-/// Creates an async component engine with the optional user cache.
+/// Creates an async component engine with the cache below the run's agent directory, when the
+/// run exported one.
 ///
 /// # Errors
 /// Returns Wasmtime's failure to configure the engine.
 pub fn engine() -> wasmtime::Result<Engine> {
-    maestro_extensions_wasmtime::component_engine(Cache::from_file(None).ok())
+    let cache = maestro_test_process::run_agent_directory()
+        .and_then(|agent| maestro_extensions_wasmtime::component_cache(&agent));
+    maestro_extensions_wasmtime::component_engine(cache)
 }

@@ -451,7 +451,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
-| `maestro-ipc` | connect local sockets | — | below 0 |
+| `maestro-ipc` | connect local sockets | `maestro-lock` | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
@@ -648,13 +648,20 @@ for canonical targets and the existing external `sha2 =0.11.0`, which shortens l
 and record names for long file names.
 Only theme and application may depend on watch. Every crate that holds shared state
 behind a `Mutex` or an `RwLock` may depend on lock: settings, credentials, workspace,
-detection, session, models, agent, tools, extensions, application, the daemon, the
-runtime adapter, the terminal adapter, the interactive frontend and the command-line
-frontend, and the composed executable crate only as a native development dependency
+detection, session, models, agent, tools, extensions, application, the daemon, the runtime
+adapter, the terminal adapter, the interactive frontend and the command-line frontend, and
+the composed executable crate only as a native development dependency
 so its tests serialize one shared native fixture. The dependency is portable, so the
 shared-state operations are available to browser callers; file exclusion stays native.
 Application uses maestro-lock's recoverable in-place `replace` for component saves on
 native targets only, preserving native identity.
+
+`maestro-ipc` is the one native consumer of file exclusion outside shared state: before it
+removes a socket file, it takes `maestro-lock`'s `try_acquire_exclusion` on the
+socket path and keeps it, as a `SocketClaim`, for as long as the server holds its
+listener. Contention means a live server and the socket stays; an acquired lock means no
+server holds it, so the file is stale. The decision stays in `prepare_socket_path`;
+callers hold the returned claim and add no lock edge of their own.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -951,9 +958,10 @@ checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
 `TEMP` on Windows. The launcher observes the parent's directory through the
 owner's `temporary_root`, so a cleared child of `run_per_environment` keeps the
-parent's temporary directory unless its case sets one. `user_cache_home()` names the directory a
-child passes as `XDG_CACHE_HOME` to keep this process's user cache when it replaces
-`HOME` on Linux, the only platform whose cache location follows that variable. `local_zone_follows_tz()` states the
+parent's temporary directory unless its case sets one. `run_agent_directory()` names the directory a
+child passes as `MAESTRO_CODING_AGENT_DIR` to keep this run's component cache when it replaces
+`HOME`; the engine keeps that cache in `component-cache` below the agent directory on every
+platform. `local_zone_follows_tz()` states the
 premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
 Windows reads its system zone, so such a test reports the premise and returns there.
 

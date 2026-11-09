@@ -29,7 +29,7 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
             crate::tests::support::widgets(),
             crate::Installation {
                 version: "local-shell-test".into(),
-                agent_dir: "/controlled-agent".into(),
+                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
             },
         ),
         "/".into(),

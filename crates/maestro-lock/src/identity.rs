@@ -1,5 +1,5 @@
 //! Canonical native write targets with beside-target exclusion.
-use crate::{WriteLock, names::beside};
+use crate::{Exclusion, WriteLock, names::beside};
 use std::{
     fs::{self, File, OpenOptions, TryLockError},
     io,
@@ -14,12 +14,13 @@ use std::{
 /// # Errors
 /// Returns native resolution, lock or recovery errors before admitting the writer.
 pub fn acquire_write(path: &Path, through_symlinks: bool) -> io::Result<WriteLock> {
-    acquire_with(
+    exclude_with(
         path,
         through_symlinks,
         |file| file.lock().map_err(TryLockError::Error),
         Waiting::UntilFree,
     )
+    .and_then(replayed)
     .map_err(io::Error::from)
 }
 
@@ -42,7 +43,22 @@ pub fn acquire_write_bounded(
 /// # Errors
 /// Returns `TryLockError::WouldBlock` on contention, or a native resolution, lock or recovery error.
 pub fn try_acquire_write(path: &Path, through_symlinks: bool) -> Result<WriteLock, TryLockError> {
-    acquire_with(path, through_symlinks, File::try_lock, Waiting::Once)
+    exclude_with(path, through_symlinks, File::try_lock, Waiting::Once).and_then(replayed)
+}
+
+/// Attempts the same canonical exclusion once, leaving any pending publication record untouched.
+///
+/// The holder admits no write. It proves that no other holder owns the target, for a caller that
+/// must not modify the target or its recovery record, such as one deciding whether a path is
+/// claimed.
+///
+/// # Errors
+/// Returns `TryLockError::WouldBlock` on contention, or a native resolution or lock error.
+pub fn try_acquire_exclusion(
+    path: &Path,
+    through_symlinks: bool,
+) -> Result<Exclusion, TryLockError> {
+    exclude_with(path, through_symlinks, File::try_lock, Waiting::Once).map(Exclusion::new)
 }
 
 /// Whether a refused native open should wait for another holder to close.
@@ -54,8 +70,14 @@ enum Waiting {
     Once,
 }
 
+/// Completes a pending publication before the holder is admitted as a writer.
+fn replayed(guard: WriteLock) -> Result<WriteLock, TryLockError> {
+    crate::recovery::replay(&guard).map_err(TryLockError::Error)?;
+    Ok(guard)
+}
+
 /// Opens, locks and verifies a live name, reopening retired files without spending an attempt.
-fn acquire_with(
+fn exclude_with(
     path: &Path,
     follow: bool,
     mut lock: impl FnMut(&File) -> Result<(), TryLockError>,
@@ -75,15 +97,13 @@ fn acquire_with(
         if !still_named(&file, &sidecar).map_err(TryLockError::Error)? {
             continue;
         }
-        let guard = WriteLock {
+        return Ok(WriteLock {
             recovery: beside(&target, "", ".recovery"),
             target,
             #[cfg(not(windows))]
             sidecar,
             _file: file,
-        };
-        crate::recovery::replay(&guard).map_err(TryLockError::Error)?;
-        return Ok(guard);
+        });
     }
 }
 

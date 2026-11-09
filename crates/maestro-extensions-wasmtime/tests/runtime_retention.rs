@@ -1,8 +1,10 @@
 //! Replacement targets keep their own ownership while a later replacement runs.
 #![cfg(test)]
 use maestro_extensions::{
-    CommandContextOperations, ExtensionCommandContextActions, ExtensionRunner, Local,
-    NewSessionHandler, ReplacedSessionContext, create_event_bus_for, types::SessionChangeResult,
+    CommandContextOperations, ExtensionCommandContextActions, ExtensionContextActions,
+    ExtensionExecution, ExtensionRunner, Local, NewSessionHandler, ReplacedSessionContext,
+    create_event_bus_for,
+    types::{ProviderActions, SessionChangeResult},
 };
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
@@ -171,4 +173,114 @@ fn origin_and_target_aliases_release_without_cycles() {
         target_teardown.await.unwrap();
         drop(target);
     });
+}
+
+#[test]
+fn activation_failure_preserves_independent_registrations() {
+    local(async {
+        use super::provider_catalog::{provider_config, queued_runtime};
+        let (session, _) = super::session::runner_session("/activation-failure");
+        let catalog = session.model_registry.clone();
+        let runtime = queued_runtime(&json!([
+            {"name":"first-valid", "config":provider_config("kept-first")},
+            {"name":"refused", "config":provider_config("refused-model")},
+            {"name":"last-valid", "config":provider_config("kept-last")},
+        ]));
+        let events =
+            create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {})).for_extension();
+        let (_, runner, _) = super::retained_components::unbound_with_runtime(
+            events,
+            session,
+            "/activation-failure",
+            runtime.clone(),
+        )
+        .await;
+        let errors = Rc::new(RefCell::new(Vec::new()));
+        let seen = errors.clone();
+        drop(runner.on_error(Rc::new(move |error| {
+            seen.borrow_mut().push((
+                error.extension_path.clone(),
+                error.event.clone(),
+                error.error.clone(),
+            ));
+            Ok(())
+        })));
+        bind_refusing(&runner, &catalog);
+        assert_eq!(
+            *errors.borrow(),
+            [(
+                std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap(),
+                "register_provider".to_owned(),
+                "supplied activation refused".to_owned()
+            )]
+        );
+        assert!(catalog.find("refused", "refused-model").is_none());
+        assert!(
+            runtime
+                .pending_provider_registrations
+                .read()
+                .unwrap()
+                .is_empty()
+        );
+        assert_unrelated_providers_kept(&catalog, "after the failed activation");
+        later_registrations(&runner).await;
+        assert_unrelated_providers_kept(&catalog, "after later registrations");
+    });
+}
+
+/// Binds a supplied registration operation that refuses one provider and registers the rest.
+fn bind_refusing(
+    runner: &ExtensionRunner<Local>,
+    catalog: &maestro_extensions::SharedHandle<maestro_catalog::ModelRegistry>,
+) {
+    let native = catalog.clone();
+    runner
+        .bind_core(
+            Local::unbound_actions(),
+            ExtensionContextActions::default(),
+            ProviderActions {
+                register_provider: Some(Rc::new(move |name, config| {
+                    if name.contains("refused") {
+                        return Err("supplied activation refused".into());
+                    }
+                    Ok(native.register_provider(&name, config)?)
+                })),
+                unregister_provider: None,
+            },
+        )
+        .unwrap();
+}
+
+/// Both valid factory providers stay registered, the one before and the one after the refusal.
+fn assert_unrelated_providers_kept(
+    catalog: &maestro_extensions::SharedHandle<maestro_catalog::ModelRegistry>,
+    when: &str,
+) {
+    assert!(
+        catalog.find("first-valid", "kept-first").is_some(),
+        "earlier provider {when}"
+    );
+    assert!(
+        catalog.find("last-valid", "kept-last").is_some(),
+        "later provider {when}"
+    );
+}
+
+/// A later refusal reports to its own caller while a later valid registration still applies.
+async fn later_registrations(runner: &ExtensionRunner<Local>) {
+    use super::provider_catalog::{provider_call, provider_config};
+    let late = provider_call(
+        runner,
+        json!({"op":"register","provider":"refused-late","config":provider_config("late")}),
+    )
+    .await;
+    assert_eq!(late["error"], json!("supplied activation refused"));
+    assert_eq!(late["models"], json!([]));
+    let valid = provider_call(
+        runner,
+        json!({"op":"register","provider":"late-valid","config":provider_config("late")}),
+    )
+    .await;
+    assert_eq!(valid["error"], serde_json::Value::Null);
+    assert_eq!(valid["models"][0]["id"], json!("late"));
 }

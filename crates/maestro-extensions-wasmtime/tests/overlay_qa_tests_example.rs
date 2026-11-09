@@ -268,7 +268,7 @@ async fn runner(io: Option<Rc<Process>>) -> ExtensionRunner<Local> {
             super::support::widgets(),
             maestro_extensions_wasmtime::Installation {
                 version: "installed-component-host".into(),
-                agent_dir: "/controlled-agent".into(),
+                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
             },
             io,
             None,

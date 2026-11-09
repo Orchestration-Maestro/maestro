@@ -76,14 +76,11 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
     }
 }
 
-/// Resolve the fixture's absolute XDG or home-based cache without creating it during a query.
+/// Resolve the cache below the run's absolute agent directory without creating it during a query.
 fn cache_directory() -> io::Result<PathBuf> {
-    let cache = maestro_test_process::user_cache_home()
-        .ok_or_else(|| io::Error::other("missing fixture cache home"))?;
-    if !cache.is_absolute() {
-        return Err(io::Error::other("fixture cache home must be absolute"));
-    }
-    Ok(cache.join("wasmtime"))
+    let agent = maestro_test_process::run_agent_directory()
+        .ok_or_else(|| io::Error::other("fixture agent directory must be absolute"))?;
+    Ok(PathBuf::from(agent).join("component-cache"))
 }
 
 /// Export the ordinary fixed components, retaining prebuilt values where the scenario uses them.
@@ -117,7 +114,7 @@ fn entries(record: &Record, environment: &Path) -> io::Result<()> {
 
 /// Write the recorded cache namespaces, preserving an entry supplied by a base bundle.
 fn warm(record: &Record) -> io::Result<()> {
-    if std::env::var_os("XDG_CACHE_HOME").is_none() {
+    if maestro_test_process::run_agent_directory().is_none() {
         return Ok(());
     }
     let time = std::fs::metadata(std::env::current_exe()?)?

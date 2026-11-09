@@ -150,3 +150,26 @@ fn symbolic_link_lock_path_is_refused_without_touching_its_target() {
     );
     assert!(!target.exists());
 }
+
+#[test]
+fn exclusion_leaves_a_pending_publication_for_the_next_writer() {
+    let root = maestro_test_directory::Scratch::new().unwrap();
+    let target = root.path().join("settings.json");
+    let record = root.path().join("settings.json.recovery");
+    fs::write(&target, b"original").unwrap();
+    let pending = [&[0; 5][..], b"replacement"].concat();
+    fs::write(&record, &pending).unwrap();
+
+    let holder = maestro_lock::try_acquire_exclusion(&target, true).unwrap();
+    assert!(matches!(
+        maestro_lock::try_acquire_write(&target, true),
+        Err(TryLockError::WouldBlock)
+    ));
+    drop(holder);
+
+    assert_eq!(fs::read(&target).unwrap(), b"original");
+    assert_eq!(fs::read(&record).unwrap(), pending);
+    drop(maestro_lock::try_acquire_write(&target, true).unwrap());
+    assert_eq!(fs::read(&target).unwrap(), b"replacement");
+    assert!(!record.exists());
+}

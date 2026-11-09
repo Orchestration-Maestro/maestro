@@ -131,7 +131,7 @@ fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local>
                 crate::support::widgets(),
                 maestro_extensions_wasmtime::Installation {
                     version: maestro_app::configuration::config::VERSION.into(),
-                    agent_dir: "/controlled-agent".into(),
+                    agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
                 },
                 Rc::clone(&io),
                 None,

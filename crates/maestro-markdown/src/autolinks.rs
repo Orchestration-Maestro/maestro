@@ -1,5 +1,5 @@
 //! Bare addresses admitted only at reached native inline cursors.
-use crate::MarkedOptions;
+use crate::{MarkedOptions, rules::Anchored};
 use regress::Regex;
 use std::sync::LazyLock;
 /// Email local-part characters shared by admission and failed-run consumption.
@@ -27,7 +27,7 @@ const SOURCES: [(&str, &str); 3] = [
     ),
 ];
 /// Anchored web and email rules, with a shared failed local-part run alternative.
-static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
+static START: LazyLock<[Option<Anchored>; 3]> = LazyLock::new(|| {
     std::array::from_fn(|index| {
         let (source, flags) = SOURCES[index];
         let source = if index == 2 {
@@ -35,7 +35,7 @@ static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
         } else {
             source.to_owned()
         };
-        Regex::with_flags(&format!("^(?:{source})"), flags).ok()
+        Anchored::new(&source, flags)
     })
 });
 /// Reuse the selected URL suffix grammar.

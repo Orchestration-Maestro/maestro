@@ -173,23 +173,26 @@ fn an_unknown_group_is_refused() {
 fn a_case_removes_a_kept_variable_from_its_child() {
     let test = "a_case_removes_a_kept_variable_from_its_child";
     if !maestro_test_process::selection().is_child() {
-        // The raw child carries the compiled-code cache home the run's setup exports, so a
+        // The raw child carries the agent directory the run's setup exports, so a
         // cleared group child would keep it unless its case removes it.
         let output = TestProcess::current(test)
             .unwrap()
             .case("*")
-            .env("XDG_CACHE_HOME", "/controlled/cache")
+            .env(maestro_test_process::AGENT_DIRECTORY, "/controlled/agent")
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
         return;
     }
     let selected = run_per_environment(test, ["absent"], |_| {
-        BTreeMap::<&str, Option<&str>>::from([("XDG_CACHE_HOME", None)])
+        BTreeMap::<&str, Option<&str>>::from([(maestro_test_process::AGENT_DIRECTORY, None)])
     })
     .unwrap();
     if selected.is_some() {
-        assert_eq!(std::env::var_os("XDG_CACHE_HOME"), None);
+        assert_eq!(
+            std::env::var_os(maestro_test_process::AGENT_DIRECTORY),
+            None
+        );
     }
 }
 
