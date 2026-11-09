@@ -449,7 +449,8 @@ and keeps the pixels in the page, so only counts cross the protocol. It then
 changes only the decoration under test, captures again and restores the exact
 authored `style` attributes. A role pixel is an opaque pixel with exactly the
 role's RGB channels, the same rule the tool report witness uses; the Markdown
-scenes accept channels within 1 of the role's, because text is antialiased. A
+syntax and brand scenes accept channels within 1 of the role's, because text is
+antialiased. A
 scene that counts a role by name reads the colours the export publishes first with
 `support::reading_paint::publish_colors`. The call resolves `true` when every
 check holds. Otherwise it rejects with the failed check's message, which fails
@@ -470,7 +471,7 @@ the export and the job:
 | `html-source`, `html-source-again` | `html_artifact_dom_keeps_frame_across_mode_changes` | In both modes, the shown listing paints the background role over more than half its box, and hiding its text changes pixels inside the bounded body and none outside it. After the listing is hidden and shown again, it paints exactly what the last `html-source` capture showed, so it kept its scroll position. |
 | `markdown-hover` | `markdown_hover_keeps_nontext_paint` | Moving the native pointer onto the link changes the link text's pixels and none of the linked image's, and leaves the corner pixel of the inline-code background as it was. |
 | `markdown-syntax` | `markdown_native_paints_all_syntax_roles` | In both packs and both modes, each highlighted token class paints pixels of the role its theme token names in `brand-roles.json`. |
-| `markdown-brand` | `markdown_native_paints_selected_brand_and_loaded_math_fonts` | In every pack, mode and thinking state, the paragraph (muted while thinking, text otherwise), link, inline code, quote border, table header, formula error and listing border paint pixels of their roles inside the reading viewport. |
+| `markdown-brand` | `markdown_native_paints_selected_brand_and_loaded_math_fonts` | In the default pack's two modes and the alternate dark pack, with and without thinking, the paragraph (muted while thinking, text otherwise), link, inline code, quote border, table header, formula error and listing border paint pixels of their roles inside the reading viewport. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
