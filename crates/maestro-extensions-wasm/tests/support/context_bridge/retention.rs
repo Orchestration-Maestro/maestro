@@ -5,10 +5,11 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    CustomMessageInput, ExtensionCommandContext, ExtensionContext, ExtensionResult, JsonText,
-    MessageDelivery, NewSessionCommandData, NewSessionCommandOptions, Presence,
-    ReplacedSessionContext, SendMessageOptions, SendUserMessageOptions, SetupSession,
-    SwitchSessionOptions, TextContent, UserBlock, UserContent, UserMessageDelivery, WithSession,
+    CustomMessageInput, ExtensionAPI, ExtensionCommandContext, ExtensionContext, ExtensionResult,
+    ForkData, ForkOptions, ForkPosition, JsonText, MessageDelivery, NewSessionCommandData,
+    NewSessionCommandOptions, Presence, ReplacedSessionContext, SendMessageOptions,
+    SendUserMessageOptions, SetupSession, SwitchSessionOptions, TextContent, UserBlock,
+    UserContent, UserMessageDelivery, WithSession,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -22,6 +23,7 @@ thread_local! {
 
 /// Runs one retained-context request from the actual authored command frame.
 pub(super) async fn command(
+    api: &ExtensionAPI,
     context: &ExtensionCommandContext,
     request: &str,
 ) -> ExtensionResult<()> {
@@ -31,6 +33,9 @@ pub(super) async fn command(
         "replaced-messages" => replaced_messages(context).await?,
         "new-session" => new_session(context, detail).await?,
         "switch" => switch(context, detail).await?,
+        "fork" => fork(context, detail).await?,
+        "persistence" => persistence(api, context).await?,
+        "phases" => super::phases::command(api, context, detail).await?,
         "errors" => errors(context, detail).await?,
         "chain" => chain(context).await?,
         _ => return Err(format!("unknown retention request: {member}")),
@@ -105,7 +110,7 @@ fn drained() -> Vec<String> {
 }
 
 /// Reports a member's own value or its rejection without normalizing either one.
-fn observed(name: &str, result: ExtensionResult<Value>) -> Value {
+pub(super) fn observed(name: &str, result: ExtensionResult<Value>) -> Value {
     match result {
         Ok(value) => json!({ "name": name, "ok": value }),
         Err(error) => json!({ "name": name, "err": error }),
@@ -288,6 +293,82 @@ async fn switch(context: &ExtensionCommandContext, detail: &str) -> ExtensionRes
     let mut report = completed(result);
     report["path"] = json!(path);
     Ok(report)
+}
+
+/// Forwards the fork entry and each independently optional position and continuation.
+async fn fork(context: &ExtensionCommandContext, case: &str) -> ExtensionResult<Value> {
+    let options = |position, continued: bool| {
+        Some(ForkOptions {
+            data: ForkData { position },
+            with_session: continued.then(|| continuation("fork")),
+        })
+    };
+    let (entry, options) = match case {
+        "absent" => ("entry-absent", None),
+        "empty" => ("entry-empty", Some(ForkOptions::default())),
+        "before" => ("entry-before", options(Some(ForkPosition::Before), false)),
+        "at" => ("entry-at", options(Some(ForkPosition::At), false)),
+        "continuation" => ("entry-continuation", options(None, true)),
+        "before-continuation" => (
+            "entry-before-continuation",
+            options(Some(ForkPosition::Before), true),
+        ),
+        "at-continuation" => (
+            "entry-at-continuation",
+            options(Some(ForkPosition::At), true),
+        ),
+        _ => return Err(format!("unknown fork case: {case}")),
+    };
+    let result = context.fork(entry, options).await;
+    let mut report = completed(result);
+    report["entry"] = json!(entry);
+    Ok(report)
+}
+
+/// Writes through the supplied session in steps the host observes between its appends.
+async fn persistence(
+    api: &ExtensionAPI,
+    context: &ExtensionCommandContext,
+) -> ExtensionResult<Value> {
+    let events = api.events();
+    let setup: SetupSession = Box::new(move |session| {
+        Box::pin(async move {
+            let appended = |name: &'static str| events.emit("persistence-step", json!(name));
+            session.append_message(message("user", "persisted question")?)?;
+            appended("user").await?;
+            session.append_message(message("assistant", "persisted answer")?)?;
+            appended("assistant").await?;
+            session.append_session_info("persisted later name")?;
+            appended("later").await
+        })
+    });
+    let result = context
+        .new_session(Some(NewSessionCommandOptions {
+            setup: Some(setup),
+            data: NewSessionCommandData {
+                parent_session: None,
+            },
+            with_session: None,
+        }))
+        .await;
+    Ok(completed(result))
+}
+
+/// A complete message of the role, with one text answer.
+fn message(role: &str, text: &str) -> ExtensionResult<maestro_extensions_wasm::AgentMessage> {
+    let value = match role {
+        "user" => json!({ "role": "user", "content": text, "timestamp": 1 }),
+        _ => json!({
+            "role": "assistant", "content": [{ "type": "text", "text": text }],
+            "api": "fixture", "provider": "fixture", "model": "fixture",
+            "usage": {
+                "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0,
+                "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0 },
+            },
+            "stopReason": "stop", "timestamp": 2,
+        }),
+    };
+    serde_json::from_value(value).map_err(|error| error.to_string())
 }
 
 /// Reports genuine setup and continuation failures at the originating frame.

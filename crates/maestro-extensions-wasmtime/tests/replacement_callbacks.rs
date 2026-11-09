@@ -1,8 +1,9 @@
 //! Replacement operands and genuine callback failures cross the real authored frame.
 #![cfg(test)]
 use maestro_extensions::{
-    CommandContextOperations, CustomMessageInput, ExtensionCommandContextActions, ExtensionRunner,
-    Local, ReplacedSessionContext, create_event_bus_for, types::SessionChangeResult,
+    CommandContextOperations, CustomMessageInput, EventBus, ExtensionCommandContextActions,
+    ExtensionRunner, Local, ReplacedSessionContext, create_event_bus_for,
+    types::SessionChangeResult,
 };
 use maestro_models::UserContent;
 use maestro_session::message_records::{SendMessageOptions, SendUserMessageOptions};
@@ -23,13 +24,20 @@ struct Host {
     history: RefCell<Option<Rc<RefCell<maestro_session::SessionManager>>>>,
     /// Supplied continuations this run invoked.
     continuations: Rc<Cell<usize>>,
+    /// Whether the supplied operations answer that the replacement was cancelled.
+    cancelled: Cell<bool>,
 }
 
 /// Loads the component, binds the supplied operations and returns them.
 async fn loaded() -> (ExtensionRunner<Local>, Rc<Host>) {
     let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
+    loaded_on(bus.for_extension()).await
+}
+
+/// Loads the component over the caller's bus and binds the supplied operations.
+async fn loaded_on(events: EventBus<Local>) -> (ExtensionRunner<Local>, Rc<Host>) {
     let (session, history) = super::session::runner_session("/replacement-origin");
-    let (_, runner, _) = super::retained_components::loaded_in(bus.for_extension(), session).await;
+    let (_, runner, _) = super::retained_components::loaded_in(events, session).await;
     let host = Rc::new(Host::default());
     *host.history.borrow_mut() = Some(history);
     bind(&runner, &host);
@@ -38,10 +46,11 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<Host>) {
 
 /// Supplies the replacement operations the authored requests consume.
 fn bind(runner: &ExtensionRunner<Local>, host: &Rc<Host>) {
-    let (new, switch) = (host.clone(), host.clone());
+    let (new, fork, switch) = (host.clone(), host.clone(), host.clone());
     runner.bind_command_context(Some(ExtensionCommandContextActions::new(
         CommandContextOperations {
             new_session: new_session(&new),
+            fork: fork_from(&fork),
             switch_session: switch_to(&switch),
             ..super::context_actions::silent_command_operations()
         },
@@ -76,6 +85,31 @@ fn new_session(host: &Rc<Host>) -> maestro_extensions::NewSessionHandler {
                 host.continuations.set(host.continuations.get() + 1);
             }
             Ok(SessionChangeResult { cancelled: false })
+        })
+    })
+}
+
+/// Records the authored fork operands and drives its optional continuation.
+fn fork_from(host: &Rc<Host>) -> maestro_extensions::ForkHandler {
+    let host = host.clone();
+    Rc::new(move |entry, options| {
+        let host = host.clone();
+        Box::pin(async move {
+            host.calls.borrow_mut().push(json!({
+                "type": "fork",
+                "entry": entry,
+                "options": options.as_ref().map(|options| json!({
+                    "position": options.position,
+                    "with": options.with_session.is_some(),
+                })),
+            }));
+            let cancelled = host.cancelled.get();
+            if let Some(with) = options.and_then(|options| options.with_session)
+                && !cancelled
+            {
+                with(replaced("fork")).await?;
+            }
+            Ok(SessionChangeResult { cancelled })
         })
     })
 }
@@ -240,6 +274,125 @@ fn switch_cases() -> Vec<(&'static str, &'static str, Value)> {
             json!(true),
         ),
     ]
+}
+
+#[test]
+fn fork_forwards_position_without_adding_selected_text() {
+    local(async {
+        let (runner, host) = loaded().await;
+        for cancelled in [false, true] {
+            host.cancelled.set(cancelled);
+            for case in fork_cases() {
+                fork_case(&runner, &host, case, cancelled).await;
+            }
+        }
+    });
+}
+
+/// Forks once and checks the guest's cancelled-only result and the operands the host saw.
+async fn fork_case(
+    runner: &ExtensionRunner<Local>,
+    host: &Host,
+    (case, position, continued): (&str, Value, bool),
+    cancelled: bool,
+) {
+    host.calls.borrow_mut().clear();
+    let answer = report(runner, &format!("retention fork {case}")).await;
+    let entry = format!("entry-{case}");
+    let ran = continued && !cancelled;
+    let trace: &[&str] = if ran {
+        &["continuation:fork:/replacement-fork"]
+    } else {
+        &[]
+    };
+    let label = format!("{case} cancelled={cancelled}");
+    assert_eq!(
+        answer,
+        json!({ "cancelled": cancelled, "trace": trace, "entry": entry }),
+        "{label}"
+    );
+    let options = match case {
+        "absent" => Value::Null,
+        _ => json!({ "position": position, "with": continued }),
+    };
+    assert_eq!(
+        *host.calls.borrow(),
+        vec![json!({ "type": "fork", "entry": entry, "options": options })],
+        "{label}"
+    );
+}
+
+/// The fork option cases with the position and continuation each one sends.
+fn fork_cases() -> [(&'static str, Value, bool); 7] {
+    [
+        ("absent", Value::Null, false),
+        ("empty", Value::Null, false),
+        ("before", json!("before"), false),
+        ("at", json!("at"), false),
+        ("continuation", Value::Null, true),
+        ("before-continuation", json!("before"), true),
+        ("at-continuation", json!("at"), true),
+    ]
+}
+
+#[test]
+fn setup_writer_uses_real_session_persistence() {
+    local(async {
+        use maestro_session::session_manager::ReadonlySessionManager;
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let directory = scratch.path().to_string_lossy().into_owned();
+        let persisted = Rc::new(RefCell::new(
+            maestro_session::SessionManager::create("/persisted-cwd", Some(&directory), &directory)
+                .unwrap(),
+        ));
+        let steps = Rc::new(RefCell::new(Vec::new()));
+        let bus = create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
+        let events = bus.for_extension();
+        let (history, seen) = (persisted.clone(), steps.clone());
+        drop(events.on(
+            "persistence-step",
+            Rc::new(move |step, _| {
+                let file = history.borrow().get_session_file().map(str::to_owned);
+                seen.borrow_mut().push((
+                    step.as_str().unwrap().to_owned(),
+                    published(file.as_deref()),
+                ));
+                Ok(None)
+            }),
+        ));
+        let (runner, host) = loaded_on(events).await;
+        *host.history.borrow_mut() = Some(persisted);
+        let answer = report(&runner, "retention persistence").await;
+        assert_eq!(answer, json!({ "cancelled": false, "trace": [] }));
+        let header = |extra: &[&str]| -> Vec<String> {
+            ["session", "message", "message"]
+                .iter()
+                .chain(extra)
+                .map(|kind| (*kind).to_owned())
+                .collect()
+        };
+        assert_eq!(
+            *steps.borrow(),
+            [
+                ("user".to_owned(), vec![]),
+                ("assistant".to_owned(), header(&[])),
+                ("later".to_owned(), header(&["session_info"])),
+            ]
+        );
+    });
+}
+
+/// The record kinds the session file holds, or none while nothing is published.
+fn published(file: Option<&str>) -> Vec<String> {
+    let Some(text) = file.and_then(|path| std::fs::read_to_string(path).ok()) else {
+        return Vec::new();
+    };
+    text.lines()
+        .map(|line| {
+            let record: Value = serde_json::from_str(line).unwrap();
+            record["type"].as_str().unwrap().to_owned()
+        })
+        .collect()
 }
 
 #[test]

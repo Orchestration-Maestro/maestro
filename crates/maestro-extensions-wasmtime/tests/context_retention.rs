@@ -3,8 +3,8 @@
 use maestro_extensions::{
     CommandContextOperations, ContextUsage, CustomMessageInput, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, ReplacedSessionContext,
-    create_event_bus_for,
-    types::{ReloadHandler, SessionChangeResult},
+    create_event_bus_for, create_extension_runtime,
+    types::{FlagValue, ReloadHandler, SessionChangeResult},
 };
 use maestro_models::UserContent;
 use maestro_session::message_records::{SendMessageOptions, SendUserMessageOptions};
@@ -16,6 +16,8 @@ use std::{
 };
 
 use crate::components::local;
+use crate::replacement_host::{Host, Phase};
+use crate::retained_components::report;
 use crate::retained_contexts::STALE;
 
 /// Live values the supplied base and command bindings answer with.
@@ -538,4 +540,290 @@ fn sent_blocks(phase: &str) -> Value {
 /// Builds the wire record of the authored steered user message.
 fn sent_steer(phase: &str) -> Value {
     json!({ "message": format!("{phase} user steer"), "options": {"deliverAs":"steer"} })
+}
+
+/// The literal guidance of an action called while the factory still loads.
+const LOADING: &str =
+    "Extension runtime not initialized. Action methods cannot be called during extension loading.";
+
+/// The literal guidance of a model selection requested before the runtime binds.
+const UNBOUND_MODEL: &str = "Extension runtime not initialized";
+
+#[test]
+fn invalid_resource_access_is_catchable_before_guest_entry() {
+    local(async {
+        let outcomes = Rc::new(RefCell::new(Vec::new()));
+        let events =
+            create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {})).for_extension();
+        let seen = outcomes.clone();
+        drop(events.on(
+            "startup-actions",
+            Rc::new(move |data, _| {
+                seen.borrow_mut().push((*data).clone());
+                Ok(None)
+            }),
+        ));
+        let runtime = create_extension_runtime::<Local>();
+        runtime
+            .flag_values
+            .write()
+            .unwrap()
+            .insert("startup-actions".into(), FlagValue::Boolean(true));
+        let session = super::session::runner_session("/startup-actions").0;
+        let (_, runner, _) =
+            super::retained_components::loaded_with_runtime(events, session, "/fixture", runtime)
+                .await;
+        let rejected = |name, guidance| json!({ "name": name, "err": guidance });
+        assert_eq!(
+            *outcomes.borrow(),
+            [json!([
+                rejected("sendMessage", LOADING),
+                rejected("sendUserMessage", LOADING),
+                rejected("appendEntry", LOADING),
+                rejected("setSessionName", LOADING),
+                rejected("getSessionName", LOADING),
+                rejected("setActiveTools", LOADING),
+                rejected("getThinkingLevel", LOADING),
+                rejected("setThinkingLevel", LOADING),
+                rejected("setModel", UNBOUND_MODEL),
+            ])]
+        );
+        assert!(
+            runner.get_command("bridge-observe").is_some(),
+            "registered after the catches"
+        );
+        assert_eq!(report(&runner, "retention phases flag").await, json!(false));
+    });
+}
+
+/// Runs one phases request on the generation the supplied host serves.
+async fn phases(host: &Rc<Host>, request: &str) -> Value {
+    report(&host.current(), &format!("retention phases {request}")).await
+}
+
+/// One authored handler's announcement of the event it received.
+fn handled(handler: &str, event: &Value) -> Value {
+    json!({ "handler": handler, "event": event })
+}
+
+/// The three shutdown handlers' announcements of one shutdown event.
+fn shutdowns(event: &Value) -> Vec<Value> {
+    ["shutdown-first", "shutdown-second", "shutdown-third"]
+        .map(|handler| handled(handler, event))
+        .to_vec()
+}
+
+/// The authored announcement of the fresh generation's own session start.
+fn started(cwd: &str) -> Value {
+    json!({ "error": "session_start", "message": format!("hook:{cwd}|renderer barrier") })
+}
+
+/// The serving generation's operation result once its old frame resumed.
+fn resumed(cancelled: bool, cwd: &Value) -> Value {
+    json!({ "ok": { "cancelled": cancelled }, "cwd": cwd })
+}
+
+#[test]
+fn replacement_phases_keep_host_order() {
+    local(async {
+        let host = Host::new("/phases-origin").await;
+        let answer = phases(&host, "new shutdown before").await;
+        assert_eq!(answer, resumed(false, &json!({ "err": STALE })));
+        let mut expected = vec![handled("before-switch", &json!({ "reason": "new" }))];
+        expected.extend(complete_replacement());
+        assert_eq!(*host.log.borrow(), expected);
+        assert_eq!(host.generations.borrow().len(), 2);
+    });
+}
+
+#[test]
+fn reload_keeps_its_no_argument_contract() {
+    local(async {
+        let restored = Host::new("/reload-origin").await;
+        restored
+            .current()
+            .set_flag_value("retention-hooks".into(), FlagValue::Boolean(true));
+        let answer = phases(&restored, "reload shutdown").await;
+        assert_eq!(
+            answer,
+            json!({ "ok": { "reloaded": true }, "cwd": { "err": STALE } })
+        );
+        let mut expected = vec![json!("flags captured"), json!("shutdown")];
+        expected.extend(shutdowns(&json!({ "reason": "reload" })));
+        expected.extend([
+            json!("invalidated"),
+            json!("settings reloaded"),
+            json!("providers reset"),
+            json!("resources reloaded"),
+            json!("activation"),
+            json!("bound"),
+            started("/fresh-reload"),
+            handled(
+                "discover",
+                &json!({ "cwd": "/fresh-reload", "reason": "reload" }),
+            ),
+        ]);
+        assert_eq!(*restored.log.borrow(), expected, "no continuation callback");
+        assert_eq!(
+            phases(&restored, "flag").await,
+            json!(true),
+            "flag restored"
+        );
+        let plain = Host::new("/reload-plain").await;
+        phases(&plain, "reload").await;
+        assert_eq!(
+            phases(&plain, "flag").await,
+            json!(false),
+            "nothing to restore"
+        );
+    });
+}
+
+#[test]
+fn veto_finishes_without_shutdown_or_fresh_callbacks() {
+    local(async {
+        let cases = [
+            (
+                "new",
+                "veto-switch",
+                json!({ "reason": "new" }),
+                "before-switch",
+            ),
+            (
+                "switch",
+                "veto-switch",
+                json!({ "reason": "resume", "targetSessionFile": "/sessions/phases.jsonl" }),
+                "before-switch",
+            ),
+            (
+                "fork",
+                "veto-fork",
+                json!({ "entryId": "entry-phases", "position": "at" }),
+                "before-fork",
+            ),
+        ];
+        for (operation, veto, operands, handler) in cases {
+            let host = Host::new("/veto-origin").await;
+            let answer = phases(&host, &format!("{operation} shutdown before {veto}")).await;
+            assert_eq!(
+                answer,
+                resumed(true, &json!({ "ok": "/veto-origin" })),
+                "{operation}"
+            );
+            assert_eq!(
+                *host.log.borrow(),
+                [handled(handler, &operands), json!("vetoed")],
+                "{operation}"
+            );
+            assert_eq!(host.generations.borrow().len(), 1, "{operation}");
+        }
+        let host = Host::new("/veto-other").await;
+        let answer = phases(&host, "new before veto-fork").await;
+        assert_eq!(
+            answer,
+            resumed(false, &json!({ "err": STALE })),
+            "another operation's veto"
+        );
+        let reload = Host::new("/veto-reload").await;
+        let answer = phases(&reload, "reload before veto-switch veto-fork").await;
+        assert_eq!(
+            answer["ok"],
+            json!({ "reloaded": true }),
+            "reload has no veto"
+        );
+        assert!(!reload.log.borrow().contains(&json!("vetoed")));
+    });
+}
+
+#[test]
+fn shutdown_errors_are_isolated_before_invalidation() {
+    local(async {
+        let host = Host::new("/isolated-origin").await;
+        let answer = phases(&host, "new shutdown shutdown-fails").await;
+        assert_eq!(answer, resumed(false, &json!({ "err": STALE })));
+        let shutdown =
+            json!({ "reason": "new", "targetSessionFile": "/sessions/new-target.jsonl" });
+        let log = host.log.borrow();
+        let handlers: Vec<&Value> = log
+            .iter()
+            .filter(|entry| entry.get("handler").is_some())
+            .collect();
+        assert_eq!(
+            handlers,
+            shutdowns(&shutdown).iter().collect::<Vec<_>>(),
+            "every handler ran"
+        );
+        let position = |wanted: &Value| log.iter().position(|entry| entry == wanted).unwrap();
+        let failure = json!({ "error": "session_shutdown", "message": "literal shutdown failure" });
+        let (second, error, third) = (
+            position(&handled("shutdown-second", &shutdown)),
+            position(&failure),
+            position(&handled("shutdown-third", &shutdown)),
+        );
+        assert!(
+            second < error && error < third,
+            "reported where it happened"
+        );
+        assert!(
+            third < position(&json!("invalidated")),
+            "invalidation follows"
+        );
+        assert!(
+            log.contains(&json!({ "continuation": "/fresh-new" })),
+            "operation completed"
+        );
+    });
+}
+
+/// Every entry a complete new-session replacement logs when only shutdown handlers listen.
+fn complete_replacement() -> Vec<Value> {
+    let shutdown = json!({ "reason": "new", "targetSessionFile": "/sessions/new-target.jsonl" });
+    let mut entries = vec![json!("preparation"), json!("shutdown")];
+    entries.extend(shutdowns(&shutdown));
+    entries.extend([
+        json!("disposal"),
+        json!("invalidated"),
+        json!("activation"),
+        json!("bound"),
+        started("/fresh-new"),
+        json!("setup"),
+        json!({ "callback": "setup" }),
+        json!("continuation"),
+        json!({ "continuation": "/fresh-new" }),
+    ]);
+    entries
+}
+
+#[test]
+fn replacement_failures_keep_their_operation_phase() {
+    local(async {
+        let cases = [
+            (Phase::Preparation, 1, true),
+            (Phase::Shutdown, 5, true),
+            (Phase::Disposal, 6, true),
+            (Phase::Activation, 8, false),
+            (Phase::Setup, 11, false),
+            (Phase::Continuation, 13, false),
+        ];
+        for (phase, entries, valid) in cases {
+            let host = Host::new("/failing-origin").await;
+            host.failing.set(Some(phase));
+            let answer = phases(&host, "new shutdown").await;
+            assert_eq!(answer["err"], json!(phase.failure()), "{phase:?}");
+            let cwd = if valid {
+                json!({ "ok": "/failing-origin" })
+            } else {
+                json!({ "err": STALE })
+            };
+            assert_eq!(
+                answer["cwd"], cwd,
+                "{phase:?}: invalidation follows the phase"
+            );
+            assert_eq!(
+                *host.log.borrow(),
+                complete_replacement()[..entries],
+                "{phase:?}: nothing runs after the failure"
+            );
+        }
+    });
 }
