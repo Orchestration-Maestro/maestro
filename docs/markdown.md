@@ -107,8 +107,10 @@ Quote and list nesting runs on retained frames, not on native recursion: one fra
 stack drives quote chunks, list items and their block admission, so every deeper
 level holds heap frames instead of stack. Each nesting level is built from the same
 block structures a shallow document uses, with no container depth limit and no
-nesting error. Inline spans are the exception: nested emphasis, links and labels
-still interpret recursively on the native stack.
+nesting error. Inline spans follow the same rule: emphasis, strong, strike and
+link labels interpret from an explicit stack of windows, and the terminal and browser
+renderers write nested spans from explicit worklists, so span depth holds heap
+memory and never native stack.
 
 Finished containers publish their items, and replaced subtrees and dropped documents
 release their children. The walks that follow a document - inline-scope indexing,

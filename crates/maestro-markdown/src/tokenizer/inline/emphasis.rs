@@ -1,5 +1,5 @@
 //! Delimiter flanking and masked emphasis resolution.
-use super::Tokenizer;
+use super::{Tokenizer, tokens::Span};
 use crate::{Kind, rules, tokenizer::capture};
 use std::ops::Range;
 
@@ -39,12 +39,10 @@ impl Tokenizer<'_> {
     /// Select an eligible left delimiter and its matching masked right run.
     /// `masked` is the masked invocation source, its origin and the loop's previous character.
     pub(super) fn emphasis(
-        &mut self,
+        &self,
         range: Range<usize>,
         masked: (&str, usize, Option<char>),
-        atoms: &[Range<usize>],
-        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
-    ) -> Option<(usize, Kind)> {
+    ) -> Option<Span> {
         let (masked, origin, previous) = masked;
         let (width, delimiter) = self.opening(&range, previous)?;
         let suffix = &masked[range.start - origin + width..];
@@ -84,19 +82,15 @@ impl Tokenizer<'_> {
             if end > range.len() || end < trim * 2 {
                 return None;
             }
-            let children = self.tokens(
-                range.start + trim..range.start + end - trim,
-                atoms,
-                admission,
-            );
-            return Some((
-                end,
-                if trim == 1 {
-                    Kind::Emphasis(children)
+            return Some(Span {
+                size: end,
+                body: range.start + trim..range.start + end - trim,
+                wrap: if trim == 1 {
+                    Kind::Emphasis
                 } else {
-                    Kind::Strong(children)
+                    Kind::Strong
                 },
-            ));
+            });
         }
         None
     }
