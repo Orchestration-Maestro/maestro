@@ -262,8 +262,8 @@ impl maestro_app::SandboxRuntimeProvider<BrowserSandboxValue> for InputProvider 
             BrowserSandboxValue(value),
         )]))
     }
-    fn get_runtime(&self) -> Result<String, maestro_app::DiagnosticErrorInfo> {
-        Ok("function () {}".into())
+    fn get_runtime(&self) -> Result<maestro_app::Runtime, maestro_app::DiagnosticErrorInfo> {
+        Ok(maestro_app::Runtime::Empty)
     }
     fn get_description(&self) -> Result<String, maestro_app::DiagnosticErrorInfo> {
         Ok(String::new())

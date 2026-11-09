@@ -22,10 +22,6 @@ mod build;
 #[path = "../../src/tests/search_tools.rs"]
 mod search_tools;
 
-/// The fixture components of the component crate, relative to that crate.
-#[cfg(not(target_arch = "wasm32"))]
-const FIXTURES: &str = "tests/support";
-
 // The preparation module below reaches source discovery through this import, and so does the
 // listing of component names.
 #[cfg(not(target_arch = "wasm32"))]
@@ -59,10 +55,10 @@ fn main() -> Result<(), String> {
             );
             Ok(())
         }
-        [root, component, fixed] => prepare(root, component, fixed),
+        [root, component, package, fixed] => prepare(root, component, package, fixed),
         _ => Err(
-            "usage: prepare_author_component <workspace> <component crate> <fixed \
-                  components>"
+            "usage: prepare_author_component <workspace> <component crate> <component \
+                  package> <fixed components>"
                 .into(),
         ),
     }
@@ -96,19 +92,16 @@ fn fixed_components(names: &std::ffi::OsStr) -> Result<Vec<components::Fixed>, S
 fn prepare(
     workspace: &std::ffi::OsStr,
     component: &std::ffi::OsStr,
+    package: &std::ffi::OsStr,
     fixed: &std::ffi::OsStr,
 ) -> Result<(), String> {
     let workspace = std::path::Path::new(workspace);
     let root = std::path::Path::new(component);
+    let package = package
+        .to_str()
+        .ok_or("the component package name is not UTF-8")?;
     let fixed = fixed_components(fixed)?;
-    let shipped = workspace.join("examples/extensions");
-    let folders: Vec<std::path::PathBuf> = [
-        Some(root.join(FIXTURES)),
-        shipped.is_dir().then_some(shipped),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
+    let folders = components::folders(workspace, root);
     let mut names: Vec<String> = fixed
         .iter()
         .map(|(name, _, _)| (*name).to_owned())
@@ -119,7 +112,7 @@ fn prepare(
     })
     .map_err(|error| error.to_string())?;
     let targets: Vec<&str> = names.iter().map(String::as_str).collect();
-    let built = build::cargo::example_components(root, &targets)?;
+    let built = build::cargo::example_components(root, package, &targets)?;
     // Source discovery visits the markers in the order that produced the names above.
     let Some((supplied, marked)) = built.split_at_checked(fixed.len()) else {
         return Err("the build returned fewer components than requested".to_owned());
@@ -147,12 +140,13 @@ fn prepare(
 
 /// Names the pinned `rg` and `fd` executables the native search tests copy.
 ///
-/// The pins belong to the workspace's own tool configuration, so a workspace without them has
-/// no search tests to serve and exports nothing.
+/// The pins belong to the workspace's own tool configuration, so a workspace that pins neither
+/// program has no search tests to serve and exports nothing for it.
 ///
 /// # Errors
 ///
-/// Returns an error if a pin cannot be read or the search PATH holds no executable at that pin.
+/// Returns an error if the configuration cannot be read or the search PATH holds no executable
+/// at a pin.
 #[cfg(not(target_arch = "wasm32"))]
 fn search_tool_entries(workspace: &std::path::Path) -> Result<String, String> {
     let config = workspace.join("mise.toml");
@@ -162,12 +156,22 @@ fn search_tool_entries(workspace: &std::path::Path) -> Result<String, String> {
     let config = config
         .to_str()
         .ok_or("the tool configuration path is not UTF-8")?;
-    let rg_pin = mise_output(&["config", "get", "--file", config, "tools.ripgrep"])?;
-    let fd_pin = mise_output(&["config", "get", "--file", config, "tools.fd"])?;
+    // Once the whole file reads, a key lookup fails only for a key the file does not hold.
+    mise_output(&["config", "get", "--file", config])?;
     let search = std::env::var_os("PATH").ok_or_else(|| "PATH is not set".to_owned())?;
-    let rg = search_tools::pinned_search_tool("rg", "ripgrep", &rg_pin, &search)?;
-    let fd = search_tools::pinned_search_tool("fd", "fd", &fd_pin, &search)?;
-    Ok(format!("MAESTRO_TEST_RG={rg}\nMAESTRO_TEST_FD={fd}\n"))
+    let mut entries = String::new();
+    for (variable, name, tool) in [
+        ("MAESTRO_TEST_RG", "rg", "ripgrep"),
+        ("MAESTRO_TEST_FD", "fd", "fd"),
+    ] {
+        let key = format!("tools.{tool}");
+        let Ok(pin) = mise_output(&["config", "get", "--file", config, &key]) else {
+            continue;
+        };
+        let path = search_tools::pinned_search_tool(name, tool, &pin, &search)?;
+        writeln!(entries, "{variable}={path}").map_err(|error| error.to_string())?;
+    }
+    Ok(entries)
 }
 
 /// Reads stored tool pins without evaluating project configuration.

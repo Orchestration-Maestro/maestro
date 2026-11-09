@@ -9,5 +9,5 @@ mod presentation;
 
 pub use css::font_stack;
 pub use error::BrandError;
-pub use pack::{BrandFont, BrandMark, BrandType, PackData};
+pub use pack::{BrandFont, BrandMark, BrandType, PackData, SHIPPED_PACK};
 pub use presentation::{BrandGlyph, BrandMode, BrandPresentation, role_color};

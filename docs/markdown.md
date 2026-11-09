@@ -127,21 +127,27 @@ release their children. The walks that follow a document - inline-scope indexing
 terminal render rows, browser markup and the documentation checks - use explicit
 worklists.
 
-Depth costs work: each level reads its own operand again, so the cost grows with
-the square of the nesting depth. In a development build, a single line of 1,000
-quotes parses in about 0.1 s, 2,000 in about 0.3 s and 4,000 in about 1.3 s. A
-reply that reopens a quoted list on every repeat goes three containers deeper
-each time; in a release build it reaches depth 385 in about 0.1 s and depth 769
-in about 0.4 s.
+Each quote level reads its own operand again, so quotes nested on one line cost
+the square of their depth. In a development build, 1,000 quotes on one line parse
+in about 0.1 s, 2,000 in about 0.3 s and 4,000 in about 1.3 s. A reply that
+reopens a quoted list on every repeat goes three containers deeper each time; in
+a release build it reaches depth 385 in about 0.1 s and depth 769 in about 0.4 s.
+
+A nested list finds its lines at the ends its enclosing item recorded, so no
+level scans a line again for its terminator, and a line already at the item's
+indent skips the stop rules. Every level that holds an indented line also holds
+that line's indentation, so finding and testing an indented list's lines takes
+work in proportion to its source bytes. A lazy continuation line carries no
+indentation, and each open level admits it again.
 
 The constant stays small. Quote recognition copies each operand byte once while
 its prefix grows, and each growth step matches again only from the start of the
 last quoted unit of the previous match. An item's body extends one piece while
 its lines stay adjacent in the source its level already holds, so the
-level below reads those bytes in place instead of copying them. The stop rules
-run only on a line whose first byte after at most three spaces can begin one of
-them. Neither an item's classification nor its joined body grows with the
-levels above it.
+level below reads those bytes in place instead of copying them. A line short of
+the item's indent reaches the stop rules only when its first byte after at most
+three spaces can begin one of them. Neither an item's classification nor its
+joined body grows with the levels above it.
 
 `Node.authored` and quote bodies use `MappedText`, which owns shared UTF-8 text.
 Cloning a value keeps it alive after its document is dropped. Concatenation and

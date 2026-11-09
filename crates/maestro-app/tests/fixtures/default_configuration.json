@@ -1188,12 +1188,12 @@
   {
     "test": "required_hint_survives_resolved_prompt_discovery",
     "input": {
-      "text": "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+      "text": "---\ndescription: Review pull requests by URL with linked-issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nReview the GitHub PRs at these URLs: $@",
       "name": "required_hint_survives_resolved_prompt_discovery"
     },
     "expected": {
-      "description": "Review PRs from URLs with structured issue and code analysis",
-      "content": "You are given one or more GitHub PR URLs: $@",
+      "description": "Review pull requests by URL with linked-issue and code analysis",
+      "content": "Review the GitHub PRs at these URLs: $@",
       "argumentHint": "<PR-URL>",
       "scope": "user"
     }
@@ -1201,12 +1201,12 @@
   {
     "test": "optional_hint_survives_resolved_prompt_discovery",
     "input": {
-      "text": "---\ndescription: Finish the current task end-to-end with changelog, commit, and push\nargument-hint: \"[instructions]\"\n---\nWrap it. Additional instructions: $ARGUMENTS",
+      "text": "---\ndescription: Finish the current task through release-metadata audit, commit and push\nargument-hint: \"[instructions]\"\n---\nFinish this task end to end. Extra instructions: $ARGUMENTS",
       "name": "optional_hint_survives_resolved_prompt_discovery"
     },
     "expected": {
-      "description": "Finish the current task end-to-end with changelog, commit, and push",
-      "content": "Wrap it. Additional instructions: $ARGUMENTS",
+      "description": "Finish the current task through release-metadata audit, commit and push",
+      "content": "Finish this task end to end. Extra instructions: $ARGUMENTS",
       "argumentHint": "[instructions]",
       "scope": "user"
     }
@@ -1214,12 +1214,12 @@
   {
     "test": "missing_hint_stays_absent_after_discovery",
     "input": {
-      "text": "---\ndescription: Audit changelog entries before release\n---\nAudit changelog entries for all commits since the last release.",
+      "text": "---\ndescription: Audit release metadata before a release\n---\nAudit the release metadata for every commit since the last release.",
       "name": "missing_hint_stays_absent_after_discovery"
     },
     "expected": {
-      "description": "Audit changelog entries before release",
-      "content": "Audit changelog entries for all commits since the last release.",
+      "description": "Audit release metadata before a release",
+      "content": "Audit the release metadata for every commit since the last release.",
       "scope": "user"
     }
   },
@@ -1238,12 +1238,12 @@
   {
     "test": "special_hint_survives_resolved_prompt_discovery",
     "input": {
-      "text": "---\ndescription: Analyze GitHub issues (bugs or feature requests)\nargument-hint: \"<issue>\"\n---\nAnalyze GitHub issue(s): $ARGUMENTS",
+      "text": "---\ndescription: Analyze bug reports and feature requests from GitHub issues\nargument-hint: \"<issue>\"\n---\nAnalyze these GitHub issues: $ARGUMENTS",
       "name": "special_hint_survives_resolved_prompt_discovery"
     },
     "expected": {
-      "description": "Analyze GitHub issues (bugs or feature requests)",
-      "content": "Analyze GitHub issue(s): $ARGUMENTS",
+      "description": "Analyze bug reports and feature requests from GitHub issues",
+      "content": "Analyze these GitHub issues: $ARGUMENTS",
       "argumentHint": "<issue>",
       "scope": "user"
     }

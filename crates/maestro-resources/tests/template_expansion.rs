@@ -618,13 +618,13 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
     (
         &[(
             "pr.md",
-            "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+            "---\ndescription: Review pull requests by URL with linked-issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nReview the GitHub PRs at these URLs: $@",
         )],
         &[ExpectedTemplate {
             name: "pr",
-            description: "Review PRs from URLs with structured issue and code analysis",
+            description: "Review pull requests by URL with linked-issue and code analysis",
             hint: Some("<PR-URL>"),
-            content: "You are given one or more GitHub PR URLs: $@",
+            content: "Review the GitHub PRs at these URLs: $@",
             path: "native/pr.md",
             scope: SourceScope::Temporary,
             base: "native",
@@ -634,28 +634,28 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
         &[
             (
                 "pr.md",
-                "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+                "---\ndescription: Review pull requests by URL with linked-issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nReview the GitHub PRs at these URLs: $@",
             ),
             (
                 "wr.md",
-                "---\ndescription: Finish the current task end-to-end with changelog, commit, and push\nargument-hint: \"[instructions]\"\n---\nWrap it. Additional instructions: $ARGUMENTS",
+                "---\ndescription: Finish the current task through release-metadata audit, commit and push\nargument-hint: \"[instructions]\"\n---\nFinish this task end to end. Extra instructions: $ARGUMENTS",
             ),
         ],
         &[
             ExpectedTemplate {
                 name: "pr",
-                description: "Review PRs from URLs with structured issue and code analysis",
+                description: "Review pull requests by URL with linked-issue and code analysis",
                 hint: Some("<PR-URL>"),
-                content: "You are given one or more GitHub PR URLs: $@",
+                content: "Review the GitHub PRs at these URLs: $@",
                 path: "native/pr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
             },
             ExpectedTemplate {
                 name: "wr",
-                description: "Finish the current task end-to-end with changelog, commit, and push",
+                description: "Finish the current task through release-metadata audit, commit and push",
                 hint: Some("[instructions]"),
-                content: "Wrap it. Additional instructions: $ARGUMENTS",
+                content: "Finish this task end to end. Extra instructions: $ARGUMENTS",
                 path: "native/wr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
@@ -666,41 +666,41 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
         &[
             (
                 "cl.md",
-                "---\ndescription: Audit changelog entries before release\n---\nAudit changelog entries for all commits since the last release.",
+                "---\ndescription: Audit release metadata before a release\n---\nAudit the release metadata for every commit since the last release.",
             ),
             (
                 "pr.md",
-                "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+                "---\ndescription: Review pull requests by URL with linked-issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nReview the GitHub PRs at these URLs: $@",
             ),
             (
                 "wr.md",
-                "---\ndescription: Finish the current task end-to-end with changelog, commit, and push\nargument-hint: \"[instructions]\"\n---\nWrap it. Additional instructions: $ARGUMENTS",
+                "---\ndescription: Finish the current task through release-metadata audit, commit and push\nargument-hint: \"[instructions]\"\n---\nFinish this task end to end. Extra instructions: $ARGUMENTS",
             ),
         ],
         &[
             ExpectedTemplate {
                 name: "cl",
-                description: "Audit changelog entries before release",
+                description: "Audit release metadata before a release",
                 hint: None,
-                content: "Audit changelog entries for all commits since the last release.",
+                content: "Audit the release metadata for every commit since the last release.",
                 path: "native/cl.md",
                 scope: SourceScope::Temporary,
                 base: "native",
             },
             ExpectedTemplate {
                 name: "pr",
-                description: "Review PRs from URLs with structured issue and code analysis",
+                description: "Review pull requests by URL with linked-issue and code analysis",
                 hint: Some("<PR-URL>"),
-                content: "You are given one or more GitHub PR URLs: $@",
+                content: "Review the GitHub PRs at these URLs: $@",
                 path: "native/pr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
             },
             ExpectedTemplate {
                 name: "wr",
-                description: "Finish the current task end-to-end with changelog, commit, and push",
+                description: "Finish the current task through release-metadata audit, commit and push",
                 hint: Some("[instructions]"),
-                content: "Wrap it. Additional instructions: $ARGUMENTS",
+                content: "Finish this task end to end. Extra instructions: $ARGUMENTS",
                 path: "native/wr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
@@ -711,7 +711,7 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
         &[
             (
                 "cl.md",
-                "---\ndescription: Audit changelog entries before release\n---\nAudit changelog entries for all commits since the last release.",
+                "---\ndescription: Audit release metadata before a release\n---\nAudit the release metadata for every commit since the last release.",
             ),
             (
                 "empty-hint.md",
@@ -719,19 +719,19 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
             ),
             (
                 "pr.md",
-                "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+                "---\ndescription: Review pull requests by URL with linked-issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nReview the GitHub PRs at these URLs: $@",
             ),
             (
                 "wr.md",
-                "---\ndescription: Finish the current task end-to-end with changelog, commit, and push\nargument-hint: \"[instructions]\"\n---\nWrap it. Additional instructions: $ARGUMENTS",
+                "---\ndescription: Finish the current task through release-metadata audit, commit and push\nargument-hint: \"[instructions]\"\n---\nFinish this task end to end. Extra instructions: $ARGUMENTS",
             ),
         ],
         &[
             ExpectedTemplate {
                 name: "cl",
-                description: "Audit changelog entries before release",
+                description: "Audit release metadata before a release",
                 hint: None,
-                content: "Audit changelog entries for all commits since the last release.",
+                content: "Audit the release metadata for every commit since the last release.",
                 path: "native/cl.md",
                 scope: SourceScope::Temporary,
                 base: "native",
@@ -747,18 +747,18 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
             },
             ExpectedTemplate {
                 name: "pr",
-                description: "Review PRs from URLs with structured issue and code analysis",
+                description: "Review pull requests by URL with linked-issue and code analysis",
                 hint: Some("<PR-URL>"),
-                content: "You are given one or more GitHub PR URLs: $@",
+                content: "Review the GitHub PRs at these URLs: $@",
                 path: "native/pr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
             },
             ExpectedTemplate {
                 name: "wr",
-                description: "Finish the current task end-to-end with changelog, commit, and push",
+                description: "Finish the current task through release-metadata audit, commit and push",
                 hint: Some("[instructions]"),
-                content: "Wrap it. Additional instructions: $ARGUMENTS",
+                content: "Finish this task end to end. Extra instructions: $ARGUMENTS",
                 path: "native/wr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
@@ -769,7 +769,7 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
         &[
             (
                 "cl.md",
-                "---\ndescription: Audit changelog entries before release\n---\nAudit changelog entries for all commits since the last release.",
+                "---\ndescription: Audit release metadata before a release\n---\nAudit the release metadata for every commit since the last release.",
             ),
             (
                 "empty-hint.md",
@@ -777,23 +777,23 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
             ),
             (
                 "is.md",
-                "---\ndescription: Analyze GitHub issues (bugs or feature requests)\nargument-hint: \"<issue>\"\n---\nAnalyze GitHub issue(s): $ARGUMENTS",
+                "---\ndescription: Analyze bug reports and feature requests from GitHub issues\nargument-hint: \"<issue>\"\n---\nAnalyze these GitHub issues: $ARGUMENTS",
             ),
             (
                 "pr.md",
-                "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+                "---\ndescription: Review pull requests by URL with linked-issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nReview the GitHub PRs at these URLs: $@",
             ),
             (
                 "wr.md",
-                "---\ndescription: Finish the current task end-to-end with changelog, commit, and push\nargument-hint: \"[instructions]\"\n---\nWrap it. Additional instructions: $ARGUMENTS",
+                "---\ndescription: Finish the current task through release-metadata audit, commit and push\nargument-hint: \"[instructions]\"\n---\nFinish this task end to end. Extra instructions: $ARGUMENTS",
             ),
         ],
         &[
             ExpectedTemplate {
                 name: "cl",
-                description: "Audit changelog entries before release",
+                description: "Audit release metadata before a release",
                 hint: None,
-                content: "Audit changelog entries for all commits since the last release.",
+                content: "Audit the release metadata for every commit since the last release.",
                 path: "native/cl.md",
                 scope: SourceScope::Temporary,
                 base: "native",
@@ -809,27 +809,27 @@ const PROMPT_HINTS_RETAIN_OPTIONAL_STRING_VALUES_CASES: &[NativeCase<'_>] = &[
             },
             ExpectedTemplate {
                 name: "is",
-                description: "Analyze GitHub issues (bugs or feature requests)",
+                description: "Analyze bug reports and feature requests from GitHub issues",
                 hint: Some("<issue>"),
-                content: "Analyze GitHub issue(s): $ARGUMENTS",
+                content: "Analyze these GitHub issues: $ARGUMENTS",
                 path: "native/is.md",
                 scope: SourceScope::Temporary,
                 base: "native",
             },
             ExpectedTemplate {
                 name: "pr",
-                description: "Review PRs from URLs with structured issue and code analysis",
+                description: "Review pull requests by URL with linked-issue and code analysis",
                 hint: Some("<PR-URL>"),
-                content: "You are given one or more GitHub PR URLs: $@",
+                content: "Review the GitHub PRs at these URLs: $@",
                 path: "native/pr.md",
                 scope: SourceScope::Temporary,
                 base: "native",
             },
             ExpectedTemplate {
                 name: "wr",
-                description: "Finish the current task end-to-end with changelog, commit, and push",
+                description: "Finish the current task through release-metadata audit, commit and push",
                 hint: Some("[instructions]"),
-                content: "Wrap it. Additional instructions: $ARGUMENTS",
+                content: "Finish this task end to end. Extra instructions: $ARGUMENTS",
                 path: "native/wr.md",
                 scope: SourceScope::Temporary,
                 base: "native",

@@ -1,6 +1,6 @@
 //! Actual browser document, event-source and subscription lifetime witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
-use crate::sandbox_bootstrap_support::{Bundle, loader_document};
+use crate::sandbox_bootstrap_support::loader_document;
 use crate::sandbox_loading_support;
 use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
@@ -51,6 +51,52 @@ pub async fn standalone_runtime_keeps_helpers_without_parent_messaging() {
         )
         .unwrap();
     Fixture::standalone(&html).await;
+    sandbox.remove().unwrap();
+    Fixture::finish();
+}
+
+/// Every built-in helper set installs, and none leaves a compiler-reserved global behind.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn builtin_helpers_leave_the_capture_namespace_unused() {
+    use maestro_app::BuiltinRuntime::{Artifacts, Attachments, Console, FileDownload};
+    let sandbox = adapter();
+    let providers: Vec<_> = [Console, Attachments, FileDownload, Artifacts]
+        .map(|kind| {
+            SharedHandle::new(Builtin(kind))
+                as SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>
+        })
+        .into();
+    let html = sandbox
+        .prepare_html_document(
+            "builtins",
+            "<head></head>",
+            &providers,
+            Some(
+                maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
+                    is_html_artifact: true,
+                    is_standalone: false,
+                },
+            ),
+        )
+        .unwrap();
+    let observed = Fixture::defined(
+        &html,
+        "^__maestro[0-9]+$",
+        &[
+            "complete",
+            "listAttachments",
+            "returnDownloadableFile",
+            "getArtifact",
+        ],
+    )
+    .await;
+    assert_eq!(
+        js_sys::JSON::stringify(&observed)
+            .unwrap()
+            .as_string()
+            .unwrap(),
+        r#"[[],["function","function","function","function"]]"#
+    );
     sandbox.remove().unwrap();
     Fixture::finish();
 }
@@ -500,14 +546,13 @@ fn writer(sandbox: &maestro_web::SandboxIframe, url: bool) {
 /// Head script that reports the document has started, ahead of the loader.
 const STARTING: &str = "parent.postMessage({type:'bootstrap-starting'},'*')";
 
-/// Removal at each point of the bootstrap loader's startup settles the host once.
+/// Removal at each point of the runtime's startup settles the host once.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_removal_during_startup_settles_once() {
-    let bundle = Bundle::load().await;
     let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
-    // Before the host reads readiness, after it replies, before the served glue and after writing.
+    // Before the host reads readiness, after it replies, before the runtime and after writing.
     // For `url-pending` the fixture arms before loading, so its listener runs ahead of the host's.
     for (phase, signal) in [
         ("url-pending", "sandbox-ready"),
@@ -517,12 +562,7 @@ pub async fn bootstrap_removal_during_startup_settles_once() {
     ] {
         let url = phase.starts_with("url");
         writer(&sandbox, url);
-        let boot = if url {
-            bundle.inline(&bundle.wasm)
-        } else {
-            Bundle::served(&bundle.wasm)
-        };
-        let html = loader_document(STARTING, boot, "");
+        let html = loader_document(STARTING, "");
         if phase == "url-pending" {
             fixture.arm(signal);
         }
@@ -547,29 +587,38 @@ pub async fn bootstrap_removal_during_startup_settles_once() {
     Fixture::finish();
 }
 
-/// Head script recording the loader's uncaught error without reporting it.
+/// Head script recording the runtime's uncaught error without reporting it.
 const REFUSAL: &str = "addEventListener('error',e=>{self.refused=e.error.name;e.preventDefault()})";
 /// Body script reporting the installed helper and any refusal.
 const LOADED: &str =
     "parent.postMessage({type:'loaded',first:typeof listAttachments,refused:self.refused},'*')";
 
-/// Started and refused loader startups hold only the host's registrations and release them.
+/// Started and refused runtime startups hold only the host's registrations and release them.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_outcomes_release_host_registrations() {
-    let bundle = Bundle::load().await;
     let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
-    for (wasm, outcome) in [
-        (&bundle.wasm[..], [Some("function"), None]),
-        (&[0][..], [Some("undefined"), Some("CompileError")]),
+    // A frame policy without the WebAssembly permission refuses the module's compilation. The
+    // policy and the error recorder come first, so the inserted runtime meets both.
+    let refusing = format!(
+        "<meta http-equiv=\"Content-Security-Policy\" content=\"script-src 'unsafe-inline'\"><script>{REFUSAL}</script>"
+    );
+    for (prefix, outcome) in [
+        (
+            format!("<script>{REFUSAL}</script>"),
+            [Some("function"), None],
+        ),
+        (refusing, [Some("undefined"), Some("CompileError")]),
     ] {
         fixture.arm("loaded");
+        let helper = SharedHandle::new(Builtin(maestro_app::BuiltinRuntime::Attachments))
+            as SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>;
         sandbox
             .load_content(
                 "outcome",
-                &loader_document(REFUSAL, Bundle::served(wasm), LOADED),
-                vec![],
+                &format!("{prefix}{}", loader_document("", LOADED)),
+                vec![helper],
                 vec![],
             )
             .unwrap();
@@ -597,7 +646,6 @@ const REPLAY: &str = "addEventListener('message',e=>{const d=e.data;if(d?.type==
 /// The current frame's ready or error handshake settles once, ignoring replays and a replaced frame.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_url_handshake_settles_once() {
-    let bundle = Bundle::load().await;
     let fixture = Fixture::default();
     fixture.begin();
     let sandbox = adapter();
@@ -607,8 +655,11 @@ pub async fn bootstrap_url_handshake_settles_once() {
         sandbox
             .load_content(
                 &format!("handshake-{load}"),
-                &loader_document("", bundle.inline(&bundle.wasm), REPLAY),
-                vec![],
+                &loader_document("", REPLAY),
+                vec![
+                    SharedHandle::new(Builtin(maestro_app::BuiltinRuntime::Attachments))
+                        as SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>,
+                ],
                 vec![SharedHandle::new(Consumer(fixture.clone()))],
             )
             .unwrap();

@@ -64,12 +64,14 @@ fn assert_prepared_consumers(file: &Path, prepared: &HashMap<String, String>) {
     }
 }
 
-/// Fixed cross-package examples join the author examples in the same Cargo build.
+/// Fixed cross-package examples join the component crate's examples in the same Cargo build,
+/// each selected from its own package.
 #[test]
 fn subagent_component_build_selects_its_package_in_the_shared_batch() {
     let command = component_build::build_command(
         "cargo",
         Path::new("."),
+        "example-components",
         &["author_component", "component", "trigger_compact"],
         Path::new("target"),
     );
@@ -87,7 +89,11 @@ fn subagent_component_build_selects_its_package_in_the_shared_batch() {
 
     assert_eq!(
         selected("--package"),
-        ["maestro-extensions-wasm", "maestro-subagents"]
+        [
+            "maestro-extensions-wasm",
+            "maestro-subagents",
+            "example-components"
+        ]
     );
     assert_eq!(
         selected("--example"),
@@ -175,7 +181,8 @@ fn component_build_compiles_unprepared_examples_in_one_cargo_run() {
     }
     let directory = std::env::var_os("MAESTRO_COMPONENT_FIXTURE_ROOT").unwrap();
     let components =
-        component_build::example_components(Path::new(&directory), &["alpha", "beta"]).unwrap();
+        component_build::example_components(Path::new(&directory), "author", &["alpha", "beta"])
+            .unwrap();
     assert_eq!(
         components,
         [
@@ -306,6 +313,24 @@ fn cache_normalization_advances_every_binary_of_an_archived_run() {
     assert_eq!(modified(&bare), at(400));
     assert_eq!(modified(&beta), at(400));
     assert_eq!(modified(&newest), at(400));
+}
+
+/// On Unix, normalization changes modification times without opening an executable for writing:
+/// macOS can kill the next launch of an executable that was opened for writing after it ran. An
+/// executable its owner cannot write still takes the shared time.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_advances_executables_without_opening_them_for_writing() {
+    let scratch = Scratch::new().unwrap();
+    let deps = scratch.path().join("target/debug/deps");
+    let older = output(&deps, "older-1", true, 50);
+    output(&deps, "newest-1", true, 400);
+    let Some(_denied) = maestro_test_directory::deny(&older, 0o555).unwrap() else {
+        eprintln!("host permits writes despite denied file mode");
+        return;
+    };
+    normalize_run(scratch.path(), true);
+    assert_eq!(fs::metadata(&older).unwrap().modified().unwrap(), at(400));
 }
 
 /// Writes an executable with the linked-build records Cargo leaves beside it.

@@ -9,6 +9,13 @@ use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{fs, future::Future, io, path::PathBuf};
 
+/// The authored head that reports each click to its parent in a `pointer-done` message.
+///
+/// The sandbox witnesses hold their own copy, and nothing keeps the two equal. The driver
+/// and these regressions read only the report, posted and kept as `window.pointerDone`;
+/// the rest of either copy may differ.
+const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
+
 /// Run one browser test without enabling test-specific runtime features.
 pub(super) fn run<T>(future: impl Future<Output = T>) -> T {
     test_support::runtime().unwrap().block_on(future)
@@ -50,13 +57,7 @@ pub(super) async fn fixture<T>(
         "export default async function(){};export function initSync(){throw Error('must not run')};export function ready(){throw Error('must not run')};export function extra(){throw Error('must not run')};export class Glue{};export const not_callable=9;",
     )
     .unwrap();
-    fs::write(
-        root.path().join("click_document.html"),
-        include_str!(
-            "../../../maestro-web/tests/sandbox_loading_support/program_inputs/click_document.html"
-        ),
-    )
-    .unwrap();
+    fs::write(root.path().join("click_document.html"), CLICK_DOCUMENT).unwrap();
     let profile = Scratch::new().unwrap();
     let server = Server::start(root.path()).await.unwrap();
     let browser = Browser::launch(&executable, profile.path(), args).await;
@@ -129,7 +130,7 @@ pub(super) fn state() -> serde_json::Value {
 }
 
 /// Raise an actual unhandled srcdoc exception and await the document's load signal.
-pub(super) const POLICY: &str = r"async (script='window.complete()') => {
+pub(super) const POLICY: &str = r"async (script='__maestro0') => {
   const frame=document.createElement('iframe');frame.srcdoc='<script>'+script+'</script>';
   const loaded=new Promise(resolve=>frame.onload=resolve);document.body.append(frame);await loaded;
 }";

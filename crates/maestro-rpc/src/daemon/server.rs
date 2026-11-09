@@ -2,7 +2,7 @@
 //! socket it bound.
 use maestro_app::LineTooLarge;
 use maestro_app::daemon::{
-    AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketFileIdentity,
+    AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketClaim, SocketFileIdentity,
     bind_async_local_listener, is_connection_closed_error, prepare_socket_path,
     remove_socket_file_if_owned, restrict_socket_permissions, socket_file_identity,
     split_async_stream,
@@ -36,12 +36,14 @@ pub(super) struct Server {
     path: PathBuf,
     /// The socket file this server bound.
     identity: SocketFileIdentity,
+    /// The claim on the socket path, released after the socket file is removed.
+    _claim: SocketClaim,
 }
 
 impl Server {
     /// Binds a socket at `path` that only its owner may use, after removing a stale one.
     pub(super) fn bind(path: &Path) -> io::Result<Self> {
-        prepare_socket_path(path, |path| {
+        let claim = prepare_socket_path(path, |path| {
             format!(
                 "maestro is already running (socket busy at {})",
                 path.display()
@@ -55,6 +57,7 @@ impl Server {
             listener,
             path: path.to_path_buf(),
             identity,
+            _claim: claim,
         })
     }
 

@@ -33,7 +33,7 @@ pub trait DefaultEventBus: ExtensionExecution {
 
 /// Writes a bus diagnostic, which carries its own final newline, to standard error.
 pub(crate) fn report(text: &str) {
-    eprint!("{text}");
+    crate::diagnostics::write_stderr(text);
 }
 
 impl DefaultEventBus for Local {

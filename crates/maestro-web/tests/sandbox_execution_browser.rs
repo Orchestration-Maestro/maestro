@@ -70,7 +70,7 @@ pub async fn execution_prepends_console_and_notifies_providers() {
     let sandbox = adapter();
     for supplied_signal in [false, true] {
         let trace = Trace::default();
-        let provider: Provider = SharedHandle::new(Probe { label: "same", trace: trace.clone(), runtime: "function(){if(!window.console.log.toString().includes('sendRuntimeMessage'))throw Error('console missing');}".into(), start: Some(Rc::new(move |signal| { assert_eq!(signal.is_some(), supplied_signal); Ok(()) })), ..Probe::default() });
+        let provider: Provider = SharedHandle::new(Probe { label: "same", trace: trace.clone(), runtime: "function(){if(!window.__originalConsole||window.console.log===window.__originalConsole.log)throw Error('console missing');}".into(), start: Some(Rc::new(move |signal| { assert_eq!(signal.is_some(), supplied_signal); Ok(()) })), ..Probe::default() });
         let mut input = request("return 7", vec![provider.clone(), provider]);
         input.signal = supplied_signal.then(Cancellation::new);
         let result = sandbox.execute(input, vec![], false).await.unwrap();

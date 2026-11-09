@@ -10,6 +10,7 @@ repository.workspace = true
 interprocess = { workspace = true, features = ["tokio"] }
 rustix = { workspace = true, features = ["std", "net"] }
 socket2 = { version = "=0.6.5", default-features = false }
+maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

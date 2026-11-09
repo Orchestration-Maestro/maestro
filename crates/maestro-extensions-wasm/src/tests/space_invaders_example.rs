@@ -115,7 +115,7 @@ fn run(host: &mut Harness, case: &Value) -> Result<(), String> {
     assert_eq!(host.observed().bus.removals.len(), 1);
     assert_eq!(host.observed().bus.tails.len(), 1);
     assert!(
-        host.observed().bus.listeners.is_empty(),
+        host.observed().bus.listeners().is_empty(),
         "disposal removes the listener"
     );
     assert!(
@@ -238,7 +238,7 @@ fn space_invaders_component_runs_registered_command_and_restores_latest_save() -
         saves(&mut host),
         [corpus["cases"][0]["start"].clone(), Value::Null]
     );
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     assert!(host.observed().bus.unreleased.is_empty());
     Ok(())
 }
@@ -270,7 +270,7 @@ fn space_invaders_rows_fit_narrow_terminal_widths() -> Result<(), String> {
         });
         command(&mut host)?;
         assert!(saves(&mut host).is_empty());
-        assert!(host.observed().bus.listeners.is_empty());
+        assert!(host.observed().bus.listeners().is_empty());
         assert!(host.observed().bus.unreleased.is_empty());
     }
     Ok(())
@@ -303,7 +303,7 @@ fn space_invaders_rejected_save_keeps_input_usable() -> Result<(), String> {
             };
             assert_eq!(saves(&mut host), [saved]);
             assert!(host.observed().actions.entry_error.is_none());
-            assert!(host.observed().bus.listeners.is_empty());
+            assert!(host.observed().bus.listeners().is_empty());
             assert!(host.observed().bus.unreleased.is_empty());
         }
     }

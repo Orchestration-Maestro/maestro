@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use crate::recipe_support::executable;
+use crate::recipe_support::{executable, installed};
 use maestro_test_directory::Scratch;
 
 use tooling::workspace::{REGION_END, REGION_START};
@@ -141,6 +141,27 @@ fn example_index_renders_local_targets_without_a_shipped_folder() {
     );
 }
 
+/// A component crate with no fixture components of its own renders the shipped examples alone.
+#[test]
+fn example_index_renders_a_component_crate_without_fixture_components() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    consuming_workspace(root, true);
+    fs::remove_dir_all(root.join("crates/component-fixture/tests")).unwrap();
+
+    assert_eq!(
+        development(root, &["example-index"]).unwrap(),
+        ExitCode::SUCCESS
+    );
+
+    let rendered = region(root);
+    assert!(
+        rendered.contains("name = \"hello\"\npath = \"../../examples/extensions/hello.rs\"\n"),
+        "{rendered}"
+    );
+    assert!(!rendered.contains("tests/support"), "{rendered}");
+}
+
 /// An installed command started inside the workspace serves that workspace, not the tree it was
 /// built from, so a development run never renders into Maestro's own checkout.
 #[test]
@@ -190,11 +211,11 @@ const EMPTY: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b785
 /// The commit the fixture's dependency on Maestro is pinned at.
 const PINNED: &str = "4d5e6f";
 
-/// Pin the workspace's dependency on Maestro at `rev` in its lock.
-fn depend_on_maestro(root: &Path, rev: &str) {
+/// Pin the workspace's dependency on Maestro's `package` at `rev` in its lock.
+fn depend_on(root: &Path, package: &str, rev: &str) {
     let lock = fs::read_to_string(root.join("Cargo.lock")).unwrap();
     let pinned = format!(
-        "\n[[package]]\nname = \"maestro\"\nversion = \"0.0.0\"\n\
+        "\n[[package]]\nname = \"{package}\"\nversion = \"0.0.0\"\n\
          source = \"git+https://example.invalid/maestro?rev={rev}#{rev}\"\n"
     );
     fs::write(root.join("Cargo.lock"), lock + &pinned).unwrap();
@@ -246,7 +267,7 @@ fn executable_setup_exports_the_prepared_bundle() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     consuming_workspace(root, false);
-    depend_on_maestro(root, PINNED);
+    depend_on(root, "maestro", PINNED);
     let bundle = prepared_bundle(root, PINNED);
 
     let output = executable_setup(root, &bundle);
@@ -290,7 +311,7 @@ fn executable_setup_refuses_a_bundle_from_another_pinned_source() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     consuming_workspace(root, false);
-    depend_on_maestro(root, "9f8e7d");
+    depend_on(root, "maestro", "9f8e7d");
     let bundle = prepared_bundle(root, PINNED);
 
     let output = executable_setup(root, &bundle);
@@ -299,4 +320,80 @@ fn executable_setup_refuses_a_bundle_from_another_pinned_source() {
     let error = String::from_utf8_lossy(&output.stderr);
     assert!(error.contains("another source"), "{error}");
     assert!(!root.join("nextest-env").exists());
+}
+
+/// Run `git` in `root` and require it to succeed.
+fn git(root: &Path, args: &[&str]) {
+    let output = std::process::Command::new("git")
+        .current_dir(root)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// A workspace with no component crate yet still prepares the programs its tests start: the
+/// component, example and browser steps have no input there and are skipped, and the native
+/// fixture and the executable are installed from their locked source.
+#[test]
+fn prepare_without_a_component_crate_installs_the_locked_programs() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    consuming_workspace(root, false);
+    fs::write(
+        root.join("crates/component-fixture/Cargo.toml"),
+        "[package]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+    for package in ["maestro", "maestro-test-process"] {
+        depend_on(root, package, PINNED);
+    }
+    let record = format!(
+        "tooling-cargo\n{}\n{}\n",
+        env!("CARGO"),
+        root.join("example").display()
+    );
+    let cargo = installed(root, "cargo", &record);
+    git(root, &["init", "-q"]);
+    git(root, &["add", "."]);
+    let bundle = root.join("target/test-setup");
+
+    let arguments: Vec<std::ffi::OsString> = vec![
+        "prepare-test-setup".into(),
+        "prepare".into(),
+        bundle.clone().into(),
+        root.join("target/test-prepare").into(),
+    ];
+    assert_eq!(
+        tooling::run(&arguments, &cargo, root).unwrap(),
+        ExitCode::SUCCESS
+    );
+
+    let installs = fs::read_to_string(root.join("install-args")).unwrap();
+    let pinned = format!("--git https://example.invalid/maestro --rev {PINNED}");
+    assert!(
+        installs.contains(&format!(
+            "{pinned} maestro-test-process --example native_fixture "
+        )),
+        "{installs}"
+    );
+    assert!(
+        installs.contains(&format!("{pinned} maestro --bin maestro ")),
+        "{installs}"
+    );
+    assert_eq!(installs.lines().count(), 2, "{installs}");
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(bundle.join("components.json")).unwrap()).unwrap();
+    assert_eq!(manifest["components"], serde_json::json!({}));
+    assert_eq!(manifest.get("example"), None, "{manifest}");
+    assert_eq!(manifest["executable"]["source"]["rev"], PINNED);
+    for staged in [executable(EXECUTABLE), executable("native_fixture")] {
+        assert!(bundle.join(&staged).is_file(), "{staged}");
+    }
+    assert!(!bundle.join(executable("prepare_author_component")).exists());
+    assert!(!bundle.join("browser-author").exists());
 }

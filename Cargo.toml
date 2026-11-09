@@ -3,6 +3,11 @@ members = ["crates/*"]
 resolver = "3"
 
 [workspace.dependencies]
+oxc_allocator = { version = "=0.157.0", default-features = false }
+oxc_parser = { version = "=0.157.0", default-features = false }
+oxc_span = { version = "=0.157.0", default-features = false }
+oxc_ast = { version = "=0.157.0", default-features = false }
+oxc_ast_visit = { version = "=0.157.0", default-features = false }
 sha2 = { version = "=0.11.0", default-features = false }
 tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 chromiumoxide = { version = "=0.9.1", default-features = false }

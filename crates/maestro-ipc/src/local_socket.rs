@@ -3,7 +3,7 @@
 use rustix::io::Errno;
 use rustix::net::{SocketAddrUnix, connect};
 use socket2::{Domain, Socket, Type};
-use std::fs;
+use std::fs::{self, TryLockError};
 use std::io;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
 use std::path::Path;
@@ -116,7 +116,24 @@ pub fn split_async_stream(stream: AsyncLocalStream) -> (AsyncRecvHalf, AsyncSend
     stream.split()
 }
 
-/// Create parents and remove a stale socket, rejecting an active listener.
+/// Exclusive claim on a socket path, held for as long as a server keeps its listener.
+///
+/// The claim is an exclusion on the sidecar file `<socket name>.lock` beside the socket. The
+/// kernel drops it when the holder exits, however it exits, so a socket file left behind by a
+/// crashed server is never mistaken for a live one.
+#[derive(Debug)]
+#[must_use = "dropping the claim releases the path to the next server"]
+pub struct SocketClaim {
+    /// The retained exclusion; releasing it lets the next server claim the path.
+    _lock: maestro_lock::Exclusion,
+}
+
+/// Claim the socket path, create its parents and remove a stale socket, rejecting an active
+/// server.
+///
+/// Another claim on the path means a server is live: the socket stays, whatever a connection
+/// attempt would report. Apple kernels refuse a connection while a live server's accept queue is
+/// full, exactly as for a socket file with no server, so only the claim tells them apart.
 ///
 /// # Errors
 /// Returns address-in-use with caller text, already-exists for a non-socket entry
@@ -126,10 +143,26 @@ pub fn split_async_stream(stream: AsyncLocalStream) -> (AsyncRecvHalf, AsyncSend
 pub fn prepare_socket_path(
     path: &Path,
     busy_message: impl FnOnce(&Path) -> String,
-) -> io::Result<()> {
+) -> io::Result<SocketClaim> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
+    let claim = match maestro_lock::try_acquire_exclusion(path, true) {
+        Ok(lock) => SocketClaim { _lock: lock },
+        Err(TryLockError::WouldBlock) => {
+            return Err(io::Error::new(io::ErrorKind::AddrInUse, busy_message(path)));
+        }
+        Err(TryLockError::Error(error)) => return Err(error),
+    };
+    remove_unclaimed_socket(path, busy_message)?;
+    Ok(claim)
+}
+
+/// Remove the socket file nothing claims, rejecting a listener that answers anyway.
+fn remove_unclaimed_socket(
+    path: &Path,
+    busy_message: impl FnOnce(&Path) -> String,
+) -> io::Result<()> {
     if !path.exists() && !path.is_symlink() {
         return Ok(());
     }

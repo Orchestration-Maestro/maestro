@@ -57,7 +57,7 @@ pub(super) fn inventory(text: &str) -> io::Result<Inventory> {
         expected_error: raw.expected_error,
     };
     let mut names = HashSet::new();
-    for ((family, selected), count) in value.families.iter().zip([27, 64, 196, 165]) {
+    for ((family, selected), count) in value.families.iter().zip([27, 69, 196, 165]) {
         if selected.len() != count {
             return Err(io::Error::other(format!("{family} inventory count")));
         }
@@ -73,8 +73,8 @@ pub(super) fn inventory(text: &str) -> io::Result<Inventory> {
     if value.expected_error
         != (ExpectedError {
             export: "inline_programs_preserve_text_policies_and_order".into(),
-            name: "TypeError".into(),
-            message: "window.complete is not a function".into(),
+            name: "ReferenceError".into(),
+            message: "__maestro0 is not defined".into(),
             source: "about:srcdoc".into(),
             count: 1,
         })

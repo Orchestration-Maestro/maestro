@@ -34,12 +34,13 @@ use base::{Base, Supplied};
 use compiled_code::CompiledCode;
 use inputs::Inputs;
 use maestro_path::normalize_native;
-use plan::{Artifacts, component_inputs};
+use plan::Artifacts;
 use program::{Program, Source, Target};
 
 mod base;
 pub(crate) mod cargo_checks;
 mod compiled_code;
+mod examples;
 pub(crate) mod executable;
 mod inputs;
 pub(crate) mod native_fixture;
@@ -61,7 +62,7 @@ const BASE: &str = "TEST_PREPARE_BASE";
 /// The packages the setup example and the development tool that runs it are built from.
 const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 /// The packages the browser graph is built from.
-const BROWSER_PACKAGES: [&str; 2] = ["maestro-web", "maestro-tooling"];
+const BROWSER_PACKAGES: [&str; 2] = [browser_graph::PACKAGE, "maestro-tooling"];
 /// The package whose cold browser bootstrap test starts from the staged seed.
 const SEED_PACKAGE: &str = "maestro-tooling";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
@@ -89,8 +90,9 @@ struct Manifest {
     workspace_sources: Option<PathBuf>,
     /// Each component file, by the variable that exports it.
     components: BTreeMap<String, Component>,
-    /// Digest of the staged setup example.
-    example: String,
+    /// Digest of the staged setup example, when the workspace has a component crate.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    example: Option<String>,
     /// The code the example compiled, when the engine keeps it in its cache.
     compiled: Option<CompiledCode>,
     /// Digest of the staged executable, when the workspace builds it elsewhere.
@@ -157,34 +159,18 @@ pub(crate) fn fixed_components(workspace: &Workspace) -> Vec<Fixed> {
 /// Build and run the setup example separately, then stage its output in `output`.
 /// Components and compiled code come from the first bundle in the path
 /// list `TEST_PREPARE_BASE` names that was prepared from the same shared inputs.
+/// A workspace without a component crate has no components and no example to stage.
 fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::Result<()> {
     std::fs::create_dir_all(output)?;
     let workspace = Workspace::read(cargo, checkout)?;
-    let component = workspace.component_crate()?;
-    let artifacts = Artifacts::read(checkout, &workspace, &component)?;
-    let base = read_base(checkout, &artifacts.shared);
-    remove(&output.join(MANIFEST))?;
-    remove(&environment_file(target))?;
-    remove_directory(&preparation_agent(target))?;
-    let example = example_program(cargo, checkout, &workspace, target, "dev")?;
-    let cache_directory =
-        compiled_code::directory(&mut preparation_command(checkout, &example, target))?;
-    let (supplied, seeded) = match &base {
-        Some(base) => (
-            base.supplied(checkout)?,
-            base.seed(&cache_directory, &example)?,
-        ),
-        None => (Vec::new(), None),
+    let component = workspace.find_component_crate()?;
+    let artifacts = Artifacts::read(checkout, &workspace, component.as_ref())?;
+    let examples = if component.is_some() {
+        examples::stage(checkout, &workspace, &artifacts.shared, output, target)?
+    } else {
+        remove(&output.join(MANIFEST))?;
+        examples::Examples::default()
     };
-    run_example(cargo, &workspace, &example, target, &supplied)?;
-    let components = stage_components(checkout, output, target, &artifacts.shared, &supplied)?;
-    let reused = supplied.len();
-    let built = components.len().checked_sub(reused).ok_or_else(|| {
-        io::Error::other(format!(
-            "base supplied {reused} components but preparation staged only {}",
-            components.len()
-        ))
-    })?;
     native_fixture::prepare(cargo, checkout, &workspace, output, target)?;
     cargo_checks::prepare(
         cargo,
@@ -195,17 +181,17 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     )?;
     let workspace_sources = stage_browser(cargo, checkout, &workspace, output)?;
     let executable = executable::stage(cargo, checkout, &workspace, output, target)?;
-    check_unchanged(checkout, output, &artifacts, &components)?;
-    let (staged, compiled) = stage_example(output, &example, &cache_directory, seeded.as_deref())?;
+    check_unchanged(checkout, output, &artifacts, &examples.components)?;
     stage_tool(output)?;
+    let (reused, built) = (examples.reused, examples.built);
     let manifest = Manifest {
         shared: artifacts.shared,
         tool: artifacts.tool,
         browser: artifacts.browser,
         workspace_sources,
-        components,
-        example: digest(&std::fs::read(&staged)?),
-        compiled,
+        components: examples.components,
+        example: examples.example,
+        compiled: examples.compiled,
         executable,
     };
     std::fs::write(output.join(MANIFEST), serde_json::to_vec(&manifest)?)?;
@@ -237,20 +223,6 @@ fn check_unchanged(
     }
 }
 
-/// Stage the compiled code the example produced and the example itself in `output`.
-fn stage_example(
-    output: &Path,
-    example: &Path,
-    cache_directory: &Path,
-    seeded: Option<&Path>,
-) -> io::Result<(PathBuf, Option<CompiledCode>)> {
-    remove_directory(&output.join(COMPILED))?;
-    let compiled = CompiledCode::collect(cache_directory, example, &output.join(COMPILED), seeded)?;
-    let staged = output.join(executable_name());
-    copy(example, &staged)?;
-    Ok((staged, compiled))
-}
-
 /// Read the first bundle in `TEST_PREPARE_BASE` prepared from the same shared inputs.
 fn read_base(checkout: &Path, shared: &Inputs) -> Option<Base> {
     std::env::var_os(BASE).and_then(|list| {
@@ -271,48 +243,9 @@ fn preparation_agent(target: &Path) -> PathBuf {
     target.join("agent-home")
 }
 
-/// Stage each component the setup example exported in `output`, with the example files it was
-/// built from: those the example reported in Cargo's dependency file, or those the base recorded
-/// for a component it supplied. The file also exports what nextest hands the tests beside the
-/// components, so only the entries in the component namespace stage.
-fn stage_components(
-    checkout: &Path,
-    output: &Path,
-    target: &Path,
-    shared: &Inputs,
-    supplied: &[Supplied],
-) -> io::Result<BTreeMap<String, Component>> {
-    let shared = shared.files(checkout)?;
-    let mut components = BTreeMap::new();
-    for line in std::fs::read_to_string(environment_file(target))?.lines() {
-        let (variable, source) = line
-            .split_once('=')
-            .ok_or_else(|| io::Error::other(format!("invalid component entry: {line}")))?;
-        if validate_variable(variable).is_err() {
-            continue;
-        }
-        let staged = output.join(format!("{variable}.wasm"));
-        if Path::new(source) != staged {
-            copy(Path::new(source), &staged)?;
-        }
-        let inputs = match supplied.iter().find(|base| base.variable == variable) {
-            Some(base) => base.inputs.clone(),
-            None => component_inputs(checkout, Path::new(source), &shared)?,
-        };
-        components.insert(
-            variable.to_owned(),
-            Component {
-                file: digest(&std::fs::read(&staged)?),
-                inputs,
-            },
-        );
-    }
-    Ok(components)
-}
-
-/// Build the browser graph in the checkout and stage it in `output`, then stage the cold
-/// bootstrap seed when the workspace holds its package, and return the directory of the
-/// workspace sources the seed was compiled against.
+/// Build the browser graph in the checkout and stage it in `output` when the workspace holds
+/// the browser package, then stage the cold bootstrap seed when the workspace holds its package,
+/// and return the directory of the workspace sources the seed was compiled against.
 ///
 /// # Errors
 /// Returns the build commands that failed, so no shard has to build the graph or the seed again.
@@ -324,8 +257,10 @@ fn stage_browser(
 ) -> io::Result<Option<PathBuf>> {
     let staged = output.join(browser_graph::STAGED);
     remove_directory(&staged)?;
-    browser_graph::build(checkout, cargo.as_os_str())?;
-    browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)?;
+    if workspace.member(browser_graph::PACKAGE).is_some() {
+        browser_graph::build(checkout, cargo.as_os_str())?;
+        browser_graph::stage(&checkout.join(browser_graph::TARGET), &staged)?;
+    }
     if workspace.member(SEED_PACKAGE).is_none() {
         return Ok(None);
     }
@@ -409,7 +344,7 @@ pub(crate) fn example_program(
 }
 
 /// The arguments that tell the setup example which workspace to prepare: the workspace root,
-/// the component crate and the fixed components this workspace builds.
+/// the component crate, its package and the fixed components this workspace builds.
 ///
 /// # Errors
 /// Returns a workspace without one component crate.
@@ -419,7 +354,8 @@ pub(crate) fn example_arguments(workspace: &Workspace) -> io::Result<Vec<OsStrin
     let names: Vec<&str> = fixed.iter().map(|(name, _, _)| *name).collect();
     Ok(vec![
         workspace.root().as_os_str().to_owned(),
-        component.into_os_string(),
+        component.directory.into_os_string(),
+        component.package.into(),
         names.join(",").into(),
     ])
 }
@@ -524,9 +460,13 @@ fn export(
         verify(&path, &expected.file)?;
         lines.push(format!("{variable}={}\n", path.display()));
     }
+    let example = manifest
+        .example
+        .as_deref()
+        .ok_or_else(|| at(&output, "the bundle holds no setup example"))?;
     let name = executable_name();
     let staged = output.join(&name);
-    verify(&staged, &manifest.example)?;
+    verify(&staged, example)?;
     let compiled = output.join(COMPILED);
     if let Some(code) = &manifest.compiled {
         code.verify(&compiled)?;

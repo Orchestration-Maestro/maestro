@@ -1,0 +1,1 @@
+try{return 1}finally{for(let i=0;i<1;i++){try{return 2}finally{break}}}

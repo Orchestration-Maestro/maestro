@@ -1,1 +1,0 @@
-return [window.sandboxId,window['__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__'],window.attachment.text,S.literal,'__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__'];

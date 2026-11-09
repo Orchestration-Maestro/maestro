@@ -7,6 +7,37 @@ use crate::{
     source::{Cursor, ScopeSource, Segmented},
 };
 use maestro_text::{is_whitespace_scalar, truncate_utf16};
+use std::rc::Rc;
+
+/// The line ends an item recorded while it admitted its body, so a list inside that body
+/// frames each physical line without scanning it again.
+#[derive(Clone)]
+pub(crate) struct LineEnds {
+    /// Logical end of each terminated body line, terminator included, in ascending order.
+    ends: Rc<Vec<usize>>,
+    /// Start of the framed operand within the recorded body.
+    base: usize,
+}
+
+impl LineEnds {
+    /// The same line ends for an operand that starts `offset` bytes later.
+    pub(crate) fn after(&self, offset: usize) -> Self {
+        Self {
+            ends: Rc::clone(&self.ends),
+            base: self.base + offset,
+        }
+    }
+
+    /// End of the physical line that starts at `offset` in an operand of `length` bytes,
+    /// which is where a scan for its terminator would stop.
+    pub(super) fn line_end(&self, offset: usize, length: usize) -> usize {
+        let start = self.base + offset;
+        let index = self.ends.partition_point(|end| *end <= start);
+        self.ends
+            .get(index)
+            .map_or(length, |end| (end - self.base).min(length))
+    }
+}
 
 /// History at the last non-whitespace raw boundary, before final-list trimming.
 #[derive(Clone)]
@@ -134,6 +165,8 @@ pub(super) struct ItemLines {
     raw: Accumulated,
     /// Dedented spelling selected from the same shared source.
     body: Accumulated,
+    /// Logical end of each terminated line of `body`, the only places it holds a terminator.
+    ends: Rc<Vec<usize>>,
     /// Final admitted line, whose terminator separates it from the next.
     tail: ScopeSource,
     /// Raw end before trailing whitespace, which the list trims from its final item.
@@ -183,6 +216,7 @@ impl ItemLines {
             child: Child::default(),
             raw: source.clone().into(),
             body: body.into(),
+            ends: Rc::default(),
             tail: source.clone(),
             raw_end: source.text.trim_end_matches(is_whitespace_scalar).len(),
             blank,
@@ -207,6 +241,10 @@ impl ItemLines {
         let offset = end + separator.text.len();
         self.raw = source.select(start..offset).into();
         self.body.truncate(self.trimmed.body_end);
+        let kept = self
+            .ends
+            .partition_point(|end| *end <= self.trimmed.body_end);
+        Rc::make_mut(&mut self.ends).truncate(kept);
         let padding_end = separator.text.len() - usize::from(separator.text.ends_with('\n'));
         let mut padding = separator.select(std::iter::once(0..padding_end));
         if matches!(self.trimmed.padding, Padding::Expanded) {
@@ -236,28 +274,23 @@ impl ItemLines {
             self.phase = Phase::Finished;
             return true;
         }
-        if self.rules.interrupts(&source.text) {
-            return false;
-        }
-        let measured = original.replace("\t", "    ");
         let empty = original
             .text
             .trim_end_matches(is_whitespace_scalar)
             .is_empty();
-        // Only the first continuation indent decides alignment, so the scan stops there.
-        let aligned = empty
-            || measured
-                .text
-                .as_bytes()
-                .get(..self.indent)
-                .is_some_and(|prefix| prefix.iter().all(|byte| *byte == b' '));
-        if !aligned && (self.blank || self.previous_stops) {
+        let aligned = empty || indented(&original.text, self.indent);
+        // An aligned line starts past every stop rule's indentation, so only others test them.
+        if !aligned && (self.rules.interrupts(&source.text) || self.blank || self.previous_stops) {
             return false;
         }
+        let measured = original.replace("\t", "    ");
         let start = truncate_utf16(&measured.text, self.indent).len();
         if let Some(last) = self.tail.text.len().checked_sub(1) {
             self.body
                 .push(self.tail.select(std::iter::once(last..last + 1)));
+            if self.tail.text.ends_with('\n') {
+                Rc::make_mut(&mut self.ends).push(self.body.len());
+            }
         }
         let content = if aligned {
             measured.select(std::iter::once(start..measured.text.len()))
@@ -334,6 +367,14 @@ impl ItemLines {
         self.body.value()
     }
 
+    /// The body's line ends, for an operand that starts `base` bytes into the body.
+    pub(super) fn line_ends(&self, base: usize) -> LineEnds {
+        LineEnds {
+            ends: Rc::clone(&self.ends),
+            base,
+        }
+    }
+
     /// Final semantic boundary already measured during physical-line admission.
     pub(super) fn body_end(&self) -> usize {
         self.trimmed.body_end
@@ -348,6 +389,23 @@ impl ItemLines {
     pub(super) fn raw_end(&self) -> usize {
         self.raw_end
     }
+}
+
+/// Whether a line's leading spaces and tabs, each tab counting four columns as alignment
+/// expands it, reach `indent` columns; only that leading run is read.
+fn indented(line: &str, indent: usize) -> bool {
+    let mut columns = 0;
+    for byte in line.bytes() {
+        if columns >= indent {
+            return true;
+        }
+        columns += match byte {
+            b' ' => 1,
+            b'\t' => 4,
+            _ => return false,
+        };
+    }
+    columns >= indent
 }
 
 /// Whether the two physical lines that end an item carry a blank-line suffix.

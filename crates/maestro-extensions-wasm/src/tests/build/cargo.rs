@@ -7,14 +7,15 @@ use std::process::Command;
 /// Source marker traversal shared with component preparation.
 pub mod components;
 
-/// Uses a prepared example or builds the selected component in the host test output.
+/// Uses a prepared example or builds the selected component in the host test output. An example
+/// is one of the guest crate's own, or a fixed component of its package.
 ///
 /// # Errors
 /// Returns source-discovery failure, Cargo's diagnostic or a missing-component error.
 #[cfg(test)]
 pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<PathBuf, String> {
     if selection == ["--example", name] {
-        return example_components(directory, &[name])?
+        return example_components(directory, components::EXAMPLE_PACKAGE, &[name])?
             .pop()
             .ok_or_else(|| "the build reported no component".to_owned());
     }
@@ -22,14 +23,19 @@ pub fn component(directory: &Path, selection: &[&str], name: &str) -> Result<Pat
     artifact(&run(command)?, name)
 }
 
-/// Finds the component of each named example, in the order given.
+/// Finds the component of each named example, in the order given. An example that is not a fixed
+/// component belongs to `package`, the crate in `directory`.
 ///
 /// A supplied artifact is used as is; every other example builds in the host test output in one
 /// Cargo invocation, which compiles them in parallel.
 ///
 /// # Errors
 /// Returns source-discovery failure, Cargo's diagnostic or a missing-component error.
-pub fn example_components(directory: &Path, names: &[&str]) -> Result<Vec<PathBuf>, String> {
+pub fn example_components(
+    directory: &Path,
+    package: &str,
+    names: &[&str],
+) -> Result<Vec<PathBuf>, String> {
     let mut paths = names
         .iter()
         .map(|name| prepared_component(directory, name))
@@ -41,7 +47,13 @@ pub fn example_components(directory: &Path, names: &[&str]) -> Result<Vec<PathBu
         .map(|(name, _)| *name)
         .collect();
     if !missing.is_empty() {
-        let command = build_command(cargo_program(), directory, &missing, &target_directory()?);
+        let command = build_command(
+            cargo_program(),
+            directory,
+            package,
+            &missing,
+            &target_directory()?,
+        );
         let output = run(command)?;
         for (name, path) in names.iter().zip(&mut paths) {
             if path.is_none() {
@@ -52,21 +64,23 @@ pub fn example_components(directory: &Path, names: &[&str]) -> Result<Vec<PathBu
     Ok(paths.into_iter().flatten().collect())
 }
 
-/// The Cargo command that builds every named example component in one invocation.
+/// The Cargo command that builds every named example component in one invocation: a fixed
+/// component from its own package, every other example from `package`.
 pub fn build_command(
     cargo: impl AsRef<OsStr>,
     directory: &Path,
+    package: &str,
     names: &[&str],
     target_directory: &Path,
 ) -> Command {
     let mut packages = Vec::new();
     for name in names {
-        let package = components::FIXED_COMPONENTS
+        let selected = components::FIXED_COMPONENTS
             .iter()
             .find(|(target, _, _)| target == name)
-            .map_or(components::EXAMPLE_PACKAGE, |(_, package, _)| *package);
-        if !packages.contains(&package) {
-            packages.push(package);
+            .map_or(package, |(_, fixed, _)| *fixed);
+        if !packages.contains(&selected) {
+            packages.push(selected);
         }
     }
     let selection: Vec<&str> = packages
@@ -144,10 +158,7 @@ fn prepared_component(directory: &Path, name: &str) -> Result<Option<PathBuf>, S
     }
     let mut path = None;
     components::visit(
-        &[
-            directory.join("tests/support"),
-            directory.join("../../examples/extensions"),
-        ],
+        &components::folders(&directory.join("../.."), directory),
         &components::FIXED_COMPONENTS,
         |target, variable| {
             if target == name && path.is_none() {

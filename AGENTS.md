@@ -180,8 +180,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   theme/application may depend on watch. Every crate that holds
   shared state behind a mutex or read-write lock may depend on lock: settings,
   credentials, workspace, detection, session, models, agent, tools, extensions,
-  application, the daemon, the runtime adapter, the terminal adapter, the
-  interactive frontend and the command-line frontend, and the composed executable
+  application, the daemon, the runtime adapter, the terminal adapter, the interactive
+  frontend and the command-line frontend, and the composed executable
   crate only as a native development dependency so its tests serialize one shared
   native fixture. The edge is portable, so the shared-state operations serve
   browser callers; file exclusion stays native.
@@ -324,6 +324,8 @@ the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
 development edge for the product's one engine configuration, the native-only,
+non-optional `maestro-extensions-wasm` to `maestro-listeners` development edge for the
+controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the

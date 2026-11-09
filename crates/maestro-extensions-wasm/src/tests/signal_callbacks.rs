@@ -49,7 +49,7 @@ fn counting(runs: &Rc<Cell<usize>>) -> AbortListener {
 fn latest(host: &Controlled) -> u32 {
     host.observed()
         .bus
-        .listeners
+        .listeners()
         .last()
         .map(|(_, id)| *id)
         .unwrap()
@@ -130,10 +130,10 @@ fn dropped_execution_removes_its_signal_listener() -> ExtensionResult<()> {
     let mut execution = api.exec("held", &[], Some(options));
     let mut context = Context::from_waker(Waker::noop());
     assert!(execution.as_mut().poll(&mut context).is_pending());
-    assert_eq!(host.observed().bus.listeners.len(), 1);
+    assert_eq!(host.observed().bus.listeners().len(), 1);
     drop(execution);
     assert!(
-        host.observed().bus.listeners.is_empty(),
+        host.observed().bus.listeners().is_empty(),
         "the dropped execution kept its signal listener"
     );
     Ok(())
@@ -169,7 +169,7 @@ fn signal_rejected_admission_releases_captures() {
         Some("subscription denied Ω".into())
     );
     let rejected = host.observed().dropped[identity];
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     assert_eq!(
         host.observed().bus.removals.len(),
         1,

@@ -1,5 +1,7 @@
 //! Live attachment input projected into independent runtime snapshots.
-use super::sandbox_runtime_provider::{RuntimeProviderValue, SandboxRuntimeProvider};
+use super::sandbox_runtime_provider::{
+    BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRuntimeProvider,
+};
 use crate::browser::{
     tools::prompts::ATTACHMENTS_RUNTIME_DESCRIPTION, utils::attachment_utils::SharedAttachment,
 };
@@ -41,8 +43,8 @@ impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for AttachmentsRuntimePr
             V::attachment_array(&snapshot)?,
         )]))
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(include_str!("attachments_runtime_provider/runtime.js").into())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Builtin(BuiltinRuntime::Attachments))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(ATTACHMENTS_RUNTIME_DESCRIPTION.into())

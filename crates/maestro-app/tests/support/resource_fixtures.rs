@@ -476,17 +476,36 @@ pub fn child_stderr(test: &str, body: impl FnOnce(&str)) -> Option<(String, Stri
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
-    let output = maestro_test_process::TestProcess::current(test)
-        .unwrap()
-        .case("*")
-        .nocapture()
-        .env("HOME", format!("{base}/home"))
-        .env(CHILD_BASE, &base)
-        .output()
-        .unwrap();
+    let output = scratch_child(test, &base).nocapture().output().unwrap();
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(output.status.success(), "{stderr}");
     Some((base, stderr))
+}
+
+/// Runs `body` with a scratch base in a child whose standard error has no reader, and
+/// requires the child to exit successfully.
+pub fn child_with_closed_stderr(test: &str, body: impl FnOnce(&str)) {
+    if maestro_test_process::selection().is_child() {
+        maestro_test_process::wait_for_broken_stderr();
+        body(&std::env::var(CHILD_BASE).unwrap());
+        return;
+    }
+    if maestro_test_process::run_alone(test).unwrap() {
+        return;
+    }
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let base = scratch.path().display().to_string();
+    let status = maestro_test_process::run_with_broken_stderr(scratch_child(test, &base)).unwrap();
+    assert!(status.success(), "the child failed: {status}");
+}
+
+/// The child that re-runs `test` for every case with home `<base>/home` and scratch `base`.
+fn scratch_child(test: &str, base: &str) -> maestro_test_process::TestProcess {
+    maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .case("*")
+        .env("HOME", format!("{base}/home"))
+        .env(CHILD_BASE, base)
 }
 
 /// Runs the named recorded cases, each in its own root, in one isolated-home child.

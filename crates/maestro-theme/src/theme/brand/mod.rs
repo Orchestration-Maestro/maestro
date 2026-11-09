@@ -6,7 +6,7 @@ mod projection;
 
 use super::ThemeError;
 use super::loading::read_text;
-use maestro_brand::{BrandError, PackData};
+use maestro_brand::{BrandError, PackData, SHIPPED_PACK};
 pub use maestro_brand::{
     BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPresentation, BrandType,
 };
@@ -51,6 +51,26 @@ impl BrandPack {
             *variant = from_pack(variant);
         }
         Ok(Self { data })
+    }
+
+    /// Decode the pack Maestro ships, built into the crate, so a caller outside the
+    /// Maestro repository needs no copy of the pack file and no file system.
+    ///
+    /// Mark paths stay relative to the working directory, as for `parse("brand.json", ..)`.
+    ///
+    /// ```
+    /// use maestro_theme::{BrandMode, BrandPack};
+    ///
+    /// let pack = BrandPack::shipped()?;
+    /// let css = pack.presentation(BrandMode::Dark)?.css_properties();
+    /// assert!(css.contains_key("--maestro-color-text"));
+    /// # Ok::<(), maestro_theme::ThemeError>(())
+    /// ```
+    ///
+    /// # Errors
+    /// Returns the failures of [`BrandPack::parse`]; the shipped text decodes.
+    pub fn shipped() -> Result<Self, ThemeError> {
+        Self::parse("brand.json", SHIPPED_PACK)
     }
 }
 

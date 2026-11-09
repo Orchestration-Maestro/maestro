@@ -1,30 +1,17 @@
 //! Qualification of the shipped development prompt metadata.
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_resources::{LoadPromptTemplatesOptions, load_prompt_templates};
+use maestro_resources::{
+    LoadPromptTemplatesOptions, expand_prompt_template, load_prompt_templates,
+};
 use std::path::Path;
 
-/// Shipped names, descriptions, hints and authored argument lines.
-const EXPECTED: [(&str, &str, Option<&str>, Option<&str>); 4] = [
-    ("cl", "Audit changelog entries before release", None, None),
-    (
-        "is",
-        "Analyze GitHub issues (bugs or feature requests)",
-        Some("<issue>"),
-        Some("Analyze GitHub issue(s): $ARGUMENTS"),
-    ),
-    (
-        "pr",
-        "Review PRs from URLs with structured issue and code analysis",
-        Some("<PR-URL>"),
-        Some("You are given one or more GitHub PR URLs: $@"),
-    ),
-    (
-        "wr",
-        "Finish the current task end-to-end with changelog, commit, and push",
-        Some("[instructions]"),
-        Some("Additional instructions: $ARGUMENTS"),
-    ),
+/// Shipped names, argument hints and whether the body takes the typed arguments.
+const EXPECTED: [(&str, Option<&str>, bool); 4] = [
+    ("cl", None, false),
+    ("is", Some("<issue>"), true),
+    ("pr", Some("<PR-URL>"), true),
+    ("wr", Some("[instructions]"), true),
 ];
 
 #[test]
@@ -53,24 +40,20 @@ fn maestro_development_prompts_keep_argument_fields() {
             .collect::<Vec<_>>(),
         ["cl", "is", "pr", "wr"]
     );
-    for (template, (_, description, hint, argument)) in templates.iter().zip(EXPECTED) {
-        assert_eq!(
-            template.description, description,
-            "{} description",
-            template.name
+    for (template, (name, hint, takes_arguments)) in templates.iter().zip(EXPECTED) {
+        assert_eq!(template.argument_hint.as_deref(), hint, "{name} hint");
+        let expanded = expand_prompt_template(
+            &format!("/{name} first-sentinel second-sentinel"),
+            std::slice::from_ref(template),
         );
         assert_eq!(
-            template.argument_hint.as_deref(),
-            hint,
-            "{} hint",
-            template.name
+            expanded.contains("first-sentinel second-sentinel"),
+            takes_arguments,
+            "{name} receives the typed arguments"
         );
-        if let Some(argument) = argument {
-            assert!(
-                template.content.lines().any(|line| line == argument),
-                "{} literal arguments",
-                template.name
-            );
-        }
+        assert!(
+            !expanded.contains("$ARGUMENTS") && !expanded.contains("$@"),
+            "{name} leaves no argument marker"
+        );
     }
 }
