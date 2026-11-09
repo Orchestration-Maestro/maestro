@@ -1409,8 +1409,16 @@ Four things it needs are the workspace's own:
 
 - **The component crate** is the member crate whose manifest holds the generated
   example region between `# example-index:start` and `# example-index:end`.
-  `development example-index` renders into that crate, and preparation builds the
-  examples from it. No marked member, or two of them, fails with the crates named.
+  `development example-index` renders into that crate, and preparation builds its
+  examples from that crate's package; only Maestro's fixed components come from
+  their own packages. Two marked members fail with the crates named. Without a
+  marked member, `example-index` stops with the workspace named, and preparation
+  skips the components and the setup example; the native fixture, the Cargo
+  checks and the executable are still prepared. A bundle without a setup example
+  cannot run `nextest-setup author-component`; that setup stops with a message
+  naming the missing example.
+  The crate's own fixture folder, `tests/support`, is optional: without it the
+  index and preparation use the shipped examples alone.
 - **The shipped extension folder** is `examples/extensions` beside the workspace
   manifest. Without it the index renders the crate's own example targets alone and
   writes no index page and no guide lock.
@@ -1426,10 +1434,18 @@ Four things it needs are the workspace's own:
   `maestro --bin maestro`. The tool reads the repository and commit from
   `Cargo.lock`, so a pin move installs again.
 
-The two example programs must resolve: a workspace that neither holds nor locks
-their package stops preparation with a message naming it. Staging the `maestro`
-executable is the step that skips: a workspace holding that package builds it
-instead, and one that neither holds nor locks it stages nothing.
+The native fixture must resolve, and so must the setup example when the workspace
+has a component crate: a workspace that neither holds nor locks the package stops
+preparation with a message naming it. Staging the `maestro` executable is the step
+that skips: a workspace holding that package builds it instead, and one that
+neither holds nor locks it stages nothing.
+
+Two more steps run only where their input exists. The
+[browser graph](#browser-author-build) is built when the workspace holds
+`maestro-web`. The setup example exports `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD`,
+the pinned `rg` and `fd` the native search tests copy, for each program the
+workspace's `mise.toml` pins as `ripgrep` or `fd`; a workspace that pins neither
+exports neither.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,

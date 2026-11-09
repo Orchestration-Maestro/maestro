@@ -4,7 +4,7 @@ use maestro_brand::{BrandError, BrandMode, BrandPresentation, PackData, font_sta
 use std::fmt::Write as _;
 
 /// Embedded identity values.
-const BRAND: &str = include_str!("../../../../assets/brand/brand.json");
+const BRAND: &str = maestro_brand::SHIPPED_PACK;
 /// Embedded identity mark.
 const MARK: &str = include_str!("../../../../assets/brand/mark.svg");
 /// Callback layout; slots are title, style, mark, heading, message and details.

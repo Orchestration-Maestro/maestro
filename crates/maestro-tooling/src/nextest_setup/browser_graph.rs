@@ -38,6 +38,9 @@ pub(crate) const TARGET: &str = "target/browser-author";
 /// past nextest's 30-second slow flag on a four-core runner.
 pub(crate) const LANES: usize = 2;
 
+/// The package whose browser library the graph lints and builds.
+pub(crate) const PACKAGE: &str = "maestro-web";
+
 /// The bundle directory that holds the staged graph.
 pub(crate) const STAGED: &str = "browser-author";
 
@@ -105,7 +108,7 @@ pub(crate) fn build(checkout: &Path, cargo: &OsStr) -> io::Result<()> {
         "clippy",
         "--no-deps",
         "-p",
-        "maestro-web",
+        PACKAGE,
         "--target",
         "wasm32-unknown-unknown",
         "--locked",
