@@ -268,7 +268,7 @@ package to `browser-exports` under Cargo's target directory, replacing the
 previous run's copy. If setup fails, nextest prints its output and stops before
 any browser test runs. The crate's build script generates one test per name in
 `exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
-64 loading exports, 196 contribution exports and 164 canvas exports. Each test
+64 loading exports, 196 contribution exports and 165 canvas exports. Each test
 serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in

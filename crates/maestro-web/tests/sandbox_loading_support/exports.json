@@ -429,6 +429,7 @@
     "markdown_math_tracks_qualified_library_gaps",
     "markdown_native_first_frame_matches_reading_flow",
     "markdown_native_links_tables_and_code_keep_focus_and_selection",
+    "markdown_layout_newlines_beside_code_blocks_are_not_content",
     "markdown_native_paints_all_syntax_roles",
     "markdown_native_paints_selected_brand_and_loaded_math_fonts",
     "markdown_native_replacement_retains_or_releases_the_right_owner",
