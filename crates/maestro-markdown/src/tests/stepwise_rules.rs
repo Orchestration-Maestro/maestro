@@ -1,5 +1,5 @@
 //! Stepwise-spelled recognizers match exactly as their reference spellings do.
-use crate::rules;
+use crate::rules::{self, Anchored};
 use regress::Regex;
 
 /// Pieces that reach every text alternative: stops, hard breaks, mail runs, links and wide text.
@@ -40,7 +40,7 @@ const MARKUP_PIECES: [&str; 26] = [
 ];
 
 /// Compare the compiled recognizer with its reference spelling on generated windows.
-fn assert_same_matches(compiled: &Regex, reference: &Regex, pieces: &[&str], label: &str) {
+fn assert_same_matches(compiled: &Anchored, reference: &Regex, pieces: &[&str], label: &str) {
     let mut state = 0x9E37_79B9_7F4A_7C15_u64;
     let mut next = move || {
         state ^= state << 13;
@@ -52,11 +52,13 @@ fn assert_same_matches(compiled: &Regex, reference: &Regex, pieces: &[&str], lab
         let window: String = (0..=next() % 12)
             .map(|_| pieces[next() % pieces.len()])
             .collect();
-        let groups = |rule: &Regex| {
-            rule.find(&window)
-                .map(|found| found.groups().collect::<Vec<_>>())
-        };
-        assert_eq!(groups(compiled), groups(reference), "{label} {window:?}");
+        let compiled = compiled
+            .find(&window)
+            .map(|found| found.groups().collect::<Vec<_>>());
+        let reference = reference
+            .find(&window)
+            .map(|found| found.groups().collect::<Vec<_>>());
+        assert_eq!(compiled, reference, "{label} {window:?}");
     }
 }
 

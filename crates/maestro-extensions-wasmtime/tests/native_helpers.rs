@@ -200,6 +200,7 @@ fn check(name: &str) {
                 &mut row,
                 scratch.path().to_str().unwrap(),
                 &std::env::var("HOME").unwrap_or_default(),
+                &maestro_test_process::run_agent_directory().unwrap_or_default(),
             );
             let result = handler(row.to_string(), runner.create_command_context())
                 .await
@@ -256,8 +257,8 @@ fn isolate_paths(name: &str) -> bool {
             ("MAESTRO_HELPER_COMPONENT", Some(component.clone())),
         ]);
         variables.extend(
-            maestro_test_process::user_cache_home()
-                .map(|path| ("XDG_CACHE_HOME", Some(path.to_string_lossy().into_owned()))),
+            maestro_test_process::run_agent_directory()
+                .map(|path| (maestro_test_process::AGENT_DIRECTORY, Some(path))),
         );
         variables
     })
@@ -266,23 +267,24 @@ fn isolate_paths(name: &str) -> bool {
 }
 /// Expands only named fixture placeholders, leaving authored path spellings intact.
 ///
-/// `${SEP}` marks a separator that resolution writes, so it takes the host's spelling.
-fn expand(value: &mut Value, root: &str, home: &str) {
+/// `${AGENT}` is the agent directory the installation names. `${SEP}` marks a separator that resolution writes, so it takes the host's spelling.
+fn expand(value: &mut Value, root: &str, home: &str, agent: &str) {
     match value {
         Value::String(text) => {
             *text = text
                 .replace("${ROOT}", root)
                 .replace("${HOME}", home)
+                .replace("${AGENT}", agent)
                 .replace("${SEP}", std::path::MAIN_SEPARATOR_STR);
         }
         Value::Array(items) => {
             for item in items {
-                expand(item, root, home);
+                expand(item, root, home, agent);
             }
         }
         Value::Object(entries) => {
             for item in entries.values_mut() {
-                expand(item, root, home);
+                expand(item, root, home, agent);
             }
         }
         _ => {}

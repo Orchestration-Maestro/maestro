@@ -1,6 +1,6 @@
 //! Retained table captures over growing source, using bounded header and row grammar.
+use super::Anchored;
 use crate::MarkedOptions;
-use regress::Regex;
 use std::{ops::Range, sync::LazyLock};
 
 /// Source captures independent of table cell interpretation.
@@ -40,29 +40,30 @@ enum Phase {
 }
 
 /// Compile one complete row with the shared block interruptions.
-fn row(html: &str) -> Option<Regex> {
-    super::anchored(
+fn row(html: &str) -> Option<Anchored> {
+    Anchored::new(
         &[
             r"(?!(?: *\n|",
             &super::interruption(true, html),
             r")).*(?:\n|$)",
         ]
         .concat(),
+        "",
     )
 }
 
 /// Shared header spelling also used by paragraph interruption.
-static HEADER: LazyLock<Option<Regex>> =
-    LazyLock::new(|| super::anchored(&[super::TABLE_HEADER, r"(?:\n|$)"].concat()));
+static HEADER: LazyLock<Option<Anchored>> =
+    LazyLock::new(|| Anchored::new(&[super::TABLE_HEADER, r"(?:\n|$)"].concat(), ""));
 /// Ordinary caller row interruptions.
-static ROW: LazyLock<Option<Regex>> = LazyLock::new(|| row(&super::html_openers()));
+static ROW: LazyLock<Option<Anchored>> = LazyLock::new(|| row(&super::html_openers()));
 /// Literal-markup caller row interruptions.
-static LITERAL_ROW: LazyLock<Option<Regex>> = LazyLock::new(|| row(super::LITERAL_HTML_OPENERS));
+static LITERAL_ROW: LazyLock<Option<Anchored>> = LazyLock::new(|| row(super::LITERAL_HTML_OPENERS));
 
 /// Monotone line framing; only capture offsets survive each supplied prefix.
 pub(crate) struct Recognizer {
     /// Immutable caller row policy.
-    row: Option<&'static Regex>,
+    row: Option<&'static Anchored>,
     /// Current header, body or final-boundary position.
     phase: Phase,
     /// Shared monotone physical-line framing.

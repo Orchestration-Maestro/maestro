@@ -958,9 +958,10 @@ checks its returned output's prologue. `TestProcess::temp_dir(path)` sets the
 variables the child's temporary directory comes from: `TMPDIR` on Unix, `TMP` and
 `TEMP` on Windows. The launcher observes the parent's directory through the
 owner's `temporary_root`, so a cleared child of `run_per_environment` keeps the
-parent's temporary directory unless its case sets one. `user_cache_home()` names the directory a
-child passes as `XDG_CACHE_HOME` to keep this process's user cache when it replaces
-`HOME` on Linux, the only platform whose cache location follows that variable. `local_zone_follows_tz()` states the
+parent's temporary directory unless its case sets one. `run_agent_directory()` names the directory a
+child passes as `MAESTRO_CODING_AGENT_DIR` to keep this run's component cache when it replaces
+`HOME`; the engine keeps that cache in `component-cache` below the agent directory on every
+platform. `local_zone_follows_tz()` states the
 premise of a test that selects a time zone through `TZ`: Unix hosts follow it, while
 Windows reads its system zone, so such a test reports the premise and returns there.
 

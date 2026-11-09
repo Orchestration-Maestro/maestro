@@ -10,9 +10,9 @@
 //! `install` stages this command alone, for runs without a bundle. The staged command's
 //! `author-component` setup validates the components and the example against the checkout,
 //! installs the example beside the extracted test executables and the compiled code in the
-//! user cache, and writes the component paths for nextest. The `browser-author` setup validates
-//! and installs the browser graph, and the `workspace-sources` setup installs the registry units
-//! beside the sources they were compiled against.
+//! run's agent directory, and writes the component paths for nextest. The `browser-author` setup
+//! validates and installs the browser graph, and the `workspace-sources` setup installs the
+//! registry units beside the sources they were compiled against.
 
 use std::collections::BTreeMap;
 use std::env::consts::EXE_EXTENSION;
@@ -91,7 +91,7 @@ struct Manifest {
     components: BTreeMap<String, Component>,
     /// Digest of the staged setup example.
     example: String,
-    /// The code the example compiled, when the host keeps it in a user cache.
+    /// The code the example compiled, when the engine keeps it in its cache.
     compiled: Option<CompiledCode>,
     /// Digest of the staged executable, when the workspace builds it elsewhere.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -165,7 +165,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     let base = read_base(checkout, &artifacts.shared);
     remove(&output.join(MANIFEST))?;
     remove(&environment_file(target))?;
-    remove_directory(&cache_home(target))?;
+    remove_directory(&preparation_agent(target))?;
     let example = example_program(cargo, checkout, &workspace, target, "dev")?;
     let cache_directory =
         compiled_code::directory(&mut preparation_command(checkout, &example, target))?;
@@ -265,9 +265,10 @@ fn environment_file(target: &Path) -> PathBuf {
     target.join("nextest-env")
 }
 
-/// The target-local XDG cache home supplied to the setup example on Linux.
-fn cache_home(target: &Path) -> PathBuf {
-    target.join("cache-home")
+/// The target-local agent directory supplied to the setup example, below which the engine keeps
+/// its compiled-code cache.
+fn preparation_agent(target: &Path) -> PathBuf {
+    target.join("agent-home")
 }
 
 /// Stage each component the setup example exported in `output`, with the example files it was
@@ -429,7 +430,7 @@ pub(crate) fn executable_name() -> PathBuf {
 }
 
 /// Run the built example so it writes its component paths to the environment file of `target`
-/// and its compiled code under that build's cache home. It takes the `supplied` components from
+/// and its compiled code under that build's agent directory. It takes the `supplied` components from
 /// its environment instead of building them, and finds the workspace it prepares, the component
 /// crate and the fixed components this workspace builds through its arguments.
 fn run_example(
@@ -460,21 +461,24 @@ fn preparation_command(checkout: &Path, example: &Path, target: &Path) -> Comman
     let mut command = Command::new(example);
     command
         .current_dir(checkout)
-        .env("XDG_CACHE_HOME", cache_home(target));
+        .env(AGENT_DIRECTORY, preparation_agent(target));
     command
 }
 
-/// The directory beside the profile directory that holds the cache home a test run shares. It is
-/// separate from the preparation cache home, which each preparation deletes.
-const RUN_CACHE: &str = "component-cache";
+/// The variable that names the agent directory, below which the engine keeps compiled components.
+pub(crate) const AGENT_DIRECTORY: &str = "MAESTRO_CODING_AGENT_DIR";
 
-/// The user cache home a test run shares, beside its profile directory.
-pub(crate) fn run_cache_home(directory: &Path) -> PathBuf {
-    directory.parent().unwrap_or(directory).join(RUN_CACHE)
+/// The directory beside the profile directory that a test run uses as its agent directory. It is
+/// separate from the preparation agent directory, which each preparation deletes.
+const RUN_AGENT: &str = "run-agent";
+
+/// The agent directory a test run shares, beside its profile directory.
+pub(crate) fn run_agent_directory(directory: &Path) -> PathBuf {
+    directory.parent().unwrap_or(directory).join(RUN_AGENT)
 }
 
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// that run's cache home, and write the component paths to `environment`. Nothing is installed
+/// that run's agent directory, and write the component paths to `environment`. Nothing is installed
 /// or written unless every check passes.
 ///
 /// # Errors
@@ -490,7 +494,7 @@ pub(crate) fn install_bundle(
 }
 
 /// Validate and install the bundle, and install its compiled code in the cache directory the
-/// installed example reports for this run's cache home.
+/// installed example reports for this run's agent directory.
 fn export(
     cargo: &Path,
     checkout: &Path,
@@ -534,7 +538,7 @@ fn export(
         let cache_directory = compiled_code::directory(
             Command::new(&installed)
                 .current_dir(checkout)
-                .env("XDG_CACHE_HOME", run_cache_home(directory)),
+                .env(AGENT_DIRECTORY, run_agent_directory(directory)),
         )?;
         code.install(&compiled, &cache_directory, &installed)?;
     }

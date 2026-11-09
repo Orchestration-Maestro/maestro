@@ -212,15 +212,13 @@ impl<'a> Tokenizer<'a> {
     }
 
     /// Caller-selected deletion uses the same recursive inline grammar.
-    fn deletion(
-        &mut self,
-        range: Range<usize>,
-        atoms: &[Range<usize>],
-        admission: Option<&mut crate::inline::InlineAdmission<'_>>,
-    ) -> Option<(usize, Kind)> {
-        let (consumed, body) = self.delimiters.deletion(&self.source.text, &range)?;
-        let children = self.tokens(body, atoms, admission);
-        Some((consumed, Kind::Strike(children)))
+    fn deletion(&self, range: Range<usize>) -> Option<tokens::Span> {
+        let (size, body) = self.delimiters.deletion(&self.source.text, &range)?;
+        Some(tokens::Span {
+            size,
+            body,
+            wrap: Kind::Strike,
+        })
     }
 
     /// Admit native operands through the token-producing recognizers.
