@@ -21,8 +21,9 @@ so a dead terminal or a closed pipe must not turn one into a crash. Both writers
 both reach; the application re-exports it for frontends.
 
 Production code in the product crates uses these two functions for every line it
-writes to standard error. Development tools and test harnesses, which only run in
-a terminal you are watching, keep the print macros.
+writes to standard error. The workspace conventions check rejects `eprint!` and
+`eprintln!` there. Development tools and test code, which only run in a terminal
+you are watching, keep the print macros.
 
 ## Where Maestro writes diagnostics
 
@@ -42,12 +43,16 @@ a terminal you are watching, keep the print macros.
 standard error is a pipe with no reader. The child calls
 `maestro_test_process::wait_for_broken_stderr` first, so no write can beat the
 pipe's closing, then runs the code under test. The test passes when the child
-exits with success.
+exits with success. The parent first calls `maestro_test_process::run_alone`, so
+no sibling test forks while the pipe's reading end is still open.
 
 ```rust
 if maestro_test_process::selection().is_child() {
     maestro_test_process::wait_for_broken_stderr();
     maestro_app::diagnostics::write_stderr_line("nobody reads this");
+    return;
+}
+if maestro_test_process::run_alone("my_test").unwrap() {
     return;
 }
 let status = maestro_test_process::run_with_broken_stderr(

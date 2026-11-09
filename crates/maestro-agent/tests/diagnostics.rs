@@ -4,7 +4,7 @@
 
 use maestro_agent::diagnostics::{write_stderr, write_stderr_line};
 use maestro_test_process::{
-    TestProcess, run_with_broken_stderr, selection, wait_for_broken_stderr,
+    TestProcess, run_alone, run_with_broken_stderr, selection, wait_for_broken_stderr,
 };
 
 /// Both writers return to their caller when the pipe behind standard error is closed.
@@ -12,6 +12,9 @@ use maestro_test_process::{
 fn diagnostics_return_when_standard_error_is_closed() {
     const TEST: &str = "diagnostics_return_when_standard_error_is_closed";
     if !selection().is_child() {
+        if run_alone(TEST).unwrap() {
+            return;
+        }
         let status =
             run_with_broken_stderr(TestProcess::current(TEST).unwrap().env_clear().case("*"))
                 .unwrap();

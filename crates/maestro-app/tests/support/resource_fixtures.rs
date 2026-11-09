@@ -490,6 +490,9 @@ pub fn child_with_closed_stderr(test: &str, body: impl FnOnce(&str)) {
         body(&std::env::var(CHILD_BASE).unwrap());
         return;
     }
+    if maestro_test_process::run_alone(test).unwrap() {
+        return;
+    }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
     let status = maestro_test_process::run_with_broken_stderr(scratch_child(test, &base)).unwrap();

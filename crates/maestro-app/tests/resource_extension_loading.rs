@@ -207,17 +207,19 @@ fn emit_failing_listener() {
 /// A listener failure that cannot be written to a closed standard error does not stop the bus.
 #[test]
 fn default_event_bus_survives_closed_standard_error_on_listener_failure() {
+    const TEST: &str = "default_event_bus_survives_closed_standard_error_on_listener_failure";
     if maestro_test_process::selection().is_child() {
         maestro_test_process::wait_for_broken_stderr();
         emit_failing_listener();
         return;
     }
+    if maestro_test_process::run_alone(TEST).unwrap() {
+        return;
+    }
     let status = maestro_test_process::run_with_broken_stderr(
-        maestro_test_process::TestProcess::current(
-            "default_event_bus_survives_closed_standard_error_on_listener_failure",
-        )
-        .unwrap()
-        .case("*"),
+        maestro_test_process::TestProcess::current(TEST)
+            .unwrap()
+            .case("*"),
     )
     .unwrap();
     assert!(status.success(), "the bus failed: {status}");

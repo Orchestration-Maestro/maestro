@@ -11,7 +11,8 @@ use crate::{TestProcess, TestProcessError};
 /// The child prints its own output as it happens, so a diagnostic written with a print macro
 /// reaches the broken pipe instead of the harness capture. It stays idle in
 /// [`wait_for_broken_stderr`] until this process has dropped the reading end, so no write
-/// can win the race against the pipe's closing.
+/// can win the race against the pipe's closing. The calling test starts with [`crate::run_alone`],
+/// so no sibling test forks while the pipe's reading end is open.
 ///
 /// # Errors
 ///

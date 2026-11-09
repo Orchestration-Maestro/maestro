@@ -3,7 +3,9 @@
 
 use std::io::Write;
 
-use maestro_test_process::{TestProcess, run_with_broken_stderr, wait_for_broken_stderr};
+use maestro_test_process::{
+    TestProcess, run_alone, run_with_broken_stderr, wait_for_broken_stderr,
+};
 
 /// Child body: once released, writing to standard error fails.
 #[test]
@@ -16,6 +18,9 @@ fn stderr_write_fails_child() {
 
 #[test]
 fn child_finds_standard_error_closed_when_released() {
+    if run_alone("child_finds_standard_error_closed_when_released").unwrap() {
+        return;
+    }
     let status =
         run_with_broken_stderr(TestProcess::child(stderr_write_fails_child).unwrap()).unwrap();
     assert!(status.success(), "the child's write succeeded: {status}");

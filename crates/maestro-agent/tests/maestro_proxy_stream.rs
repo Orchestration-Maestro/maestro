@@ -1507,6 +1507,9 @@ fn proxy_unknown_event_with_closed_standard_error_continues() {
 async fn proxy_unknown_event_with_closed_standard_error_continues_case() {
     const TEST: &str = "proxy_unknown_event_with_closed_standard_error_continues";
     if !maestro_test_process::selection().is_child() {
+        if maestro_test_process::run_alone(TEST).unwrap() {
+            return;
+        }
         let status = maestro_test_process::run_with_broken_stderr(
             maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
