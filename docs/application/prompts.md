@@ -66,8 +66,8 @@ The documentation section of the system prompt carries this line:
 
 > - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
 
-Resolve documentation and example paths in the directories that section names,
-never in the session's working directory.
+The line tells the model to resolve documentation and example paths in the
+directories that section names, never in the session's working directory.
 
 With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
 is `- Use bash for file operations like ls, rg, find`. When any of those search

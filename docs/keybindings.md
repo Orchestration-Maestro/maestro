@@ -83,7 +83,7 @@ spellings or terminal-byte aliases.
 
 Some shared defaults are deliberate: Ctrl+P cycles models in the editor and changes
 the path display in the session picker, because the two controls belong to different
-focused components. Assigning Ctrl+P to cursor movement is different: you also
+focused components. Assigning Ctrl+P to cursor movement is different: you must also
 disable or move `app.model.cycleForward`, which intercepts the key in the editor.
 Extension shortcuts can intercept input before application and editor actions;
 see [extension shortcut dispatch](chat/extension-ui.md#shortcuts).

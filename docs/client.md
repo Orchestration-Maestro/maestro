@@ -39,8 +39,8 @@ When `start` fails before the child runs, for example because the copying thread
 cannot be created, the client stays unstarted and leaves no child behind.
 
 The client runs on the caller's Tokio local executor, so use it inside a
-`tokio::task::LocalSet`. The tasks that read the child's streams and run the
-deadlines run there.
+`tokio::task::LocalSet`. The tasks that read the child's streams and drive the
+deadlines live there.
 
 ## Commands
 
