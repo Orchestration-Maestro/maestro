@@ -927,9 +927,11 @@ remain visible in GitHub but do not block the merge queue.
 
 ### Slowest-first test order
 
-The 64 tests that took more than 30 seconds in the baseline merge group have
-distinct priorities in `.config/nextest.toml`, 100 down to 37 by duration. The
-cold browser build always holds 100. Other tests keep priority 0. These are
+The tests that took more than 30 seconds in the baseline merge group, and have not
+been split since, hold distinct priorities in `.config/nextest.toml`, 100 down to 37
+by duration. The cold browser build always holds 100. A split test gives up its
+priority and its table row, which leaves a gap in the ranks. Other tests keep
+priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
 count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
@@ -984,7 +986,6 @@ lanes then start together once the cold build finishes.
 | ---: | --- | ---: |
 | 100 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
 | 99 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
-| 98 | `maestro-tooling` / `browser_author_build::browser_author_check_preserves_adjacent_locks` | 109.765 |
 | 97 | `maestro-tooling` / `browser_author_build::browser_author_checks_accept_valid_sources` | 105.572 |
 | 96 | `maestro-extensions-wasmtime` / `component_events::input::component_input_chains_text_preserves_images_and_forwards_sources` | 101.546 |
 | 95 | `maestro-tooling` / `browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources` | 101.208 |
@@ -997,7 +998,6 @@ lanes then start together once the cold build finishes.
 | 88 | `maestro-extensions-wasmtime` / `git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes` | 68.837 |
 | 87 | `maestro-tooling` / `browser_author_build::browser_assets_follow_relative_selected_identity` | 60.280 |
 | 86 | `maestro-tooling` / `browser_author_build::browser_author_hook_uses_resolved_configuration_directory` | 55.338 |
-| 85 | `maestro-tooling` / `browser_author_build::browser_author_trunk_rejects_stale_lock_without_writes` | 53.384 |
 | 84 | `maestro-extensions-wasmtime` / `extension_guide::extension_guide_builds_and_loads_from_a_clean_folder` | 52.177 |
 | 83 | `maestro-extensions-wasmtime` / `canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds` | 51.407 |
 | 82 | `maestro-tooling` / `browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots` | 51.184 |
@@ -1008,7 +1008,6 @@ lanes then start together once the cold build finishes.
 | 77 | `maestro-tooling` / `browser_author_build::browser_author_included_files_rebuild_without_source_changes` | 41.429 |
 | 76 | `maestro-extensions-wasm` / `tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings` | 40.680 |
 | 75 | `maestro-markdown` / `tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth` | 40.392 |
-| 74 | `maestro-tooling` / `browser_author_build::browser_build_rejects_missing_or_failing_inputs` | 39.254 |
 | 73 | `maestro-tooling` / `browser_author_build::browser_example_development_serves_rebuilt_external_assets` | 39.186 |
 | 72 | `maestro-extensions-wasm` / `tests::protected_paths_example::protected_paths_component_matches_the_hook` | 37.400 |
 | 71 | `maestro-tooling` / `build_recipes::maestro_selected_watch_rebuilds_cargo_configuration` | 37.229 |
@@ -1035,7 +1034,6 @@ lanes then start together once the cold build finishes.
 | 50 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_retains_supplied_question_metadata` | 32.017 |
 | 49 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_headless_and_empty_return_errors` | 31.997 |
 | 48 | `maestro-extensions-wasm` / `tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries` | 31.944 |
-| 47 | `maestro-test-conventions` / `architecture::forbidden_direct_edges_are_rejected` | 31.726 |
 | 46 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec` | 31.648 |
 | 45 | `maestro-extensions-wasm` / `tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name` | 31.576 |
 | 44 | `maestro-extensions-wasmtime` / `factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends` | 31.525 |
@@ -1470,12 +1468,12 @@ crates compile in it: the workspace-sources setup below provides the registry un
 test reserves every core with `threads-required`, so other tests do not stretch its
 compiler jobs past the hang limit. The test checks one cold build and its outputs.
 Rebuilds after a change to an included file, a source error and its repair belong to
-`browser_author_included_files_rebuild_without_source_changes` and
-`browser_build_rejects_missing_or_failing_inputs`. A recipe that fails during setup
-prints a warning and does not stop the run; the setup then announces the first lane alone,
-and the tests run the same recipes in turn and report the failure. Plain Cargo tests, and
-nextest runs without the setup, use the test build's own target directory as their only
-lane.
+`browser_author_included_files_rebuild_without_source_changes` and the
+`browser_library_build_rejects_` tests, one per spoiled input. A recipe that fails
+during setup prints a warning and does not stop the run; the setup then announces the
+first lane alone, and the tests run the same recipes in turn and report the failure.
+Plain Cargo tests, and nextest runs without the setup, use the test build's own target
+directory as their only lane.
 
 ### Cargo state of tooling fixtures
 

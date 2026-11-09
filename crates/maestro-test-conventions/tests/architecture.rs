@@ -195,6 +195,7 @@ fn production_cycles_are_rejected() {
     }
 }
 
+#[test]
 fn leaf_internal_dependencies_are_rejected() {
     for (leaf, class) in [
         ("maestro-path", "core"),
@@ -246,6 +247,7 @@ fn leaf_internal_dependencies_are_rejected() {
     }
 }
 
+#[test]
 fn core_to_dedicated_dependency_is_rejected() {
     let workspace = Workspace::new();
     workspace.member("maestro-app", "maestro-app", "");
@@ -442,66 +444,84 @@ fn unknown_scoped_member_is_rejected() {
     );
 }
 
-#[test]
-fn forbidden_direct_edges_are_rejected() {
-    forbidden_policy_matrix();
-    for (from, to) in [
-        ("maestro-agent", "maestro-settings"),
-        ("maestro-session", "maestro-tools"),
-        ("maestro-cli", "maestro-session"),
-        ("maestro-chat", "maestro-rpc"),
-        ("maestro-web", "maestro-models"),
-        ("maestro-app", "maestro-chat"),
-        ("maestro-app", "maestro-extensions-wasmtime"),
-        ("maestro-tools", "maestro-extensions"),
-        ("maestro-tools", "maestro-app"),
-        ("maestro", "maestro-agent"),
-        ("maestro-agent", "maestro-app"),
-        ("maestro-app", "maestro-pattern"),
-        ("maestro-process", "maestro-tools"),
-        ("maestro-process", "maestro-packages"),
-        ("maestro-process", "maestro-tui"),
-        ("maestro-models", "maestro-process"),
-        ("maestro-cli", "maestro-process"),
-        ("maestro-chat", "maestro-process"),
-        ("maestro-rpc", "maestro-process"),
-        ("maestro-web", "maestro-process"),
-        ("maestro-text", "maestro-tools"),
+/// Define one test per forbidden edge, each rejecting it in every declaration form.
+macro_rules! forbidden_edge_tests {
+    ($($name:ident: $from:literal => $to:literal,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                assert_edge_is_forbidden($from, $to);
+            }
+        )*
+    };
+}
+
+forbidden_edge_tests! {
+    agent_to_settings_edge_is_rejected: "maestro-agent" => "maestro-settings",
+    session_to_tools_edge_is_rejected: "maestro-session" => "maestro-tools",
+    cli_to_session_edge_is_rejected: "maestro-cli" => "maestro-session",
+    chat_to_rpc_edge_is_rejected: "maestro-chat" => "maestro-rpc",
+    web_to_models_edge_is_rejected: "maestro-web" => "maestro-models",
+    app_to_chat_edge_is_rejected: "maestro-app" => "maestro-chat",
+    app_to_extensions_wasmtime_edge_is_rejected: "maestro-app" => "maestro-extensions-wasmtime",
+    tools_to_extensions_edge_is_rejected: "maestro-tools" => "maestro-extensions",
+    tools_to_app_edge_is_rejected: "maestro-tools" => "maestro-app",
+    root_to_agent_edge_is_rejected: "maestro" => "maestro-agent",
+    agent_to_app_edge_is_rejected: "maestro-agent" => "maestro-app",
+    app_to_pattern_edge_is_rejected: "maestro-app" => "maestro-pattern",
+    process_to_tools_edge_is_rejected: "maestro-process" => "maestro-tools",
+    process_to_packages_edge_is_rejected: "maestro-process" => "maestro-packages",
+    process_to_tui_edge_is_rejected: "maestro-process" => "maestro-tui",
+    models_to_process_edge_is_rejected: "maestro-models" => "maestro-process",
+    cli_to_process_edge_is_rejected: "maestro-cli" => "maestro-process",
+    chat_to_process_edge_is_rejected: "maestro-chat" => "maestro-process",
+    rpc_to_process_edge_is_rejected: "maestro-rpc" => "maestro-process",
+    web_to_process_edge_is_rejected: "maestro-web" => "maestro-process",
+    text_to_tools_edge_is_rejected: "maestro-text" => "maestro-tools",
+}
+
+/// Every declaration form of `from` depending on `to` is rejected, and the corrected
+/// foundation passes.
+fn assert_edge_is_forbidden(from: &str, to: &str) {
+    let workspace = Workspace::new();
+    workspace.list(&[(from, support::class(from)), (to, support::class(to))]);
+    workspace.member("to", to, "");
+    for (kind, extra) in [
+        ("dependencies", ""),
+        ("build-dependencies", ""),
+        ("dev-dependencies", ""),
+        ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
+        ("dependencies", ", optional = true"),
+        ("target.'cfg(target_os = \"none\")'.dependencies", ""),
+        ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
     ] {
-        let workspace = Workspace::new();
-        workspace.list(&[(from, support::class(from)), (to, support::class(to))]);
-        workspace.member("to", to, "");
-        for (kind, extra) in [
-            ("dependencies", ""),
-            ("build-dependencies", ""),
-            ("dev-dependencies", ""),
-            ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
-            ("dependencies", ", optional = true"),
-            ("target.'cfg(target_os = \"none\")'.dependencies", ""),
-            ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
-        ] {
-            workspace.member(
-                "from",
-                from,
-                &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../to\"{extra} }}"),
-            );
-            assert_eq!(
-                check_workspace(workspace.root.path()),
-                Err(if is_leaf(from) {
-                    format!("{from} must not depend on workspace crate {to}")
-                } else if kind.ends_with("dev-dependencies") {
-                    format!(
-                        "internal dev dependency requires declared dependency-free test support: {from} -> {to}"
-                    )
-                } else {
-                    format!("forbidden production dependency: {from} -> {to}")
-                })
-            );
-        }
-        let corrected = Workspace::new();
-        corrected.foundation(&[from, to]);
-        assert_eq!(check_workspace(corrected.root.path()), Ok(()));
+        workspace.member(
+            "from",
+            from,
+            &format!("[{kind}]\nalias = {{ package = {to:?}, path = \"../to\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(if is_leaf(from) {
+                format!("{from} must not depend on workspace crate {to}")
+            } else if kind.ends_with("dev-dependencies") {
+                format!(
+                    "internal dev dependency requires declared dependency-free test support: {from} -> {to}"
+                )
+            } else {
+                format!("forbidden production dependency: {from} -> {to}")
+            })
+        );
     }
+    let corrected = Workspace::new();
+    corrected.foundation(&[from, to]);
+    assert_eq!(check_workspace(corrected.root.path()), Ok(()));
+}
+
+#[cfg(unix)]
+#[test]
+fn production_policy_edges_are_rejected_in_one_probe() {
+    policy_edge_matrix(false);
 }
 
 #[test]
@@ -736,12 +756,27 @@ fn documentation_checks_may_reuse_the_markdown_owner() {
 }
 
 #[test]
-fn permitted_downward_edges_pass_without_absent_crates() {
+fn fixture_owner_declarations_follow_the_caller_policy() {
     support_declarations_match_owner(FIXTURES, FIXTURE_CALLERS);
+}
+
+#[test]
+fn documented_foundation_graph_matches_the_policy_table() {
     assert!(documented_foundation_graph_matches_policy(
         FOUNDATION_SPECIFICATION
     ));
-    for &(from, targets) in support::policy::POLICY {
+}
+
+/// Parts the policy rows are dealt to, one test each, so the checks run side by side.
+const PERMITTED_EDGE_PARTS: usize = 4;
+
+/// Every `part`-th policy row passes with each of its permitted edges declared in every form.
+fn permitted_edges_pass(part: usize) {
+    for &(from, targets) in support::policy::POLICY
+        .iter()
+        .skip(part)
+        .step_by(PERMITTED_EDGE_PARTS)
+    {
         let workspace = Workspace::new();
         workspace.foundation(&[&[from], targets].concat());
         if targets.is_empty() {
@@ -750,6 +785,26 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             check_permitted_declarations(&workspace, from, targets);
         }
     }
+}
+
+#[test]
+fn permitted_downward_edges_pass_without_absent_crates_in_the_first_part() {
+    permitted_edges_pass(0);
+}
+
+#[test]
+fn permitted_downward_edges_pass_without_absent_crates_in_the_second_part() {
+    permitted_edges_pass(1);
+}
+
+#[test]
+fn permitted_downward_edges_pass_without_absent_crates_in_the_third_part() {
+    permitted_edges_pass(2);
+}
+
+#[test]
+fn permitted_downward_edges_pass_without_absent_crates_in_the_fourth_part() {
+    permitted_edges_pass(3);
 }
 
 const DECLARATIONS: &[(&str, &str)] = &[
@@ -1599,13 +1654,6 @@ fn maestro_conventions_rejects_foreign_target_reverse_edges() {
         workspace.member("maestro-agent", "maestro-agent", "");
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
-}
-
-fn forbidden_policy_matrix() {
-    leaf_internal_dependencies_are_rejected();
-    core_to_dedicated_dependency_is_rejected();
-    #[cfg(unix)]
-    policy_edge_matrix(false);
 }
 
 #[cfg(unix)]
