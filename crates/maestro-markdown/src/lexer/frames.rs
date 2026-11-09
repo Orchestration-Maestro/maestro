@@ -251,7 +251,7 @@ impl Quote {
         if self.frame.finished {
             return Next::Publish;
         }
-        let Some(current) = self.frame.next(lexer.options) else {
+        let Some(current) = self.frame.next(lexer) else {
             return Next::Publish;
         };
         let Some(extent) = self
@@ -262,7 +262,8 @@ impl Quote {
             return Next::Rejected;
         };
         self.frame.consumed = self.frame.consumed.max(extent.end);
-        let chunk: Segmented = quote_source(&current).into();
+        let chunk: Segmented =
+            quote_source(&current, &|line| lexer.has_escaped_marker(line)).into();
         if self.frame.text.len() != 0 {
             self.frame.text.newline();
         }
@@ -398,13 +399,7 @@ impl<E> Lexer<'_, E> {
         if crate::source::strip_quote(&first.text).len() == first.text.len() {
             return None;
         }
-        let marker = first
-            .text
-            .bytes()
-            .take_while(|byte| *byte == b' ')
-            .count()
-            .min(3);
-        if self.is_escaped_closer(source, marker) {
+        if self.has_escaped_marker(&first) {
             return None;
         }
         let (raw, matched) = quote_prefix(source, rules::block_blockquote(self.options)?)?;
@@ -567,14 +562,16 @@ impl QuoteFrame {
     }
 
     /// Resume at the next lazy-plus-quoted run, preserving its following lookahead.
-    fn next(&mut self, options: crate::MarkedOptions) -> Option<ScopeSource> {
+    fn next<E>(&mut self, lexer: &Lexer<'_, E>) -> Option<ScopeSource> {
+        let options = lexer.options;
         let mut chunk = Cursor::default();
         let mut quoted = false;
         while let Some(line) = self.pending.line() {
             let line = line.materialize();
             #[cfg(test)]
             crate::tests::WORK.with_borrow_mut(|work| work.quote_lines += 1);
-            let marker = crate::source::strip_quote(&line.text).len() != line.text.len();
+            let marker = crate::source::strip_quote(&line.text).len() != line.text.len()
+                && !lexer.has_escaped_marker(&line);
             let separator = self.list_separator && &*line.text == "\n";
             self.list_separator = separator;
             if quoted && !marker || !separator && !self.admits(&line.text, marker, options) {
