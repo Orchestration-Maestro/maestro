@@ -192,7 +192,7 @@ refresh use conversation routing, including a supplied sender and
 [the conversation's proxy](#proxy-routing). Container and instance metadata stay direct,
 named role sources included, and do not use the supplied sender. Default connectors keep
 connection pools by SDK timeout settings and apply the SDK's connection and
-response-header deadlines. There is no body-read deadline. A supplied sender keeps its
+response-header deadlines. They apply no body-read deadline. A supplied sender keeps its
 own timeout policy.
 
 ## Proxy routing

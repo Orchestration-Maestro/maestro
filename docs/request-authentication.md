@@ -36,12 +36,11 @@ things. The first is an existing credentials path: `GOOGLE_APPLICATION_CREDENTIA
 or the home directory's `.config/gcloud/application_default_credentials.json`
 when that variable is absent or empty. The second is a nonempty
 `GOOGLE_CLOUD_PROJECT` or `GCLOUD_PROJECT`, plus a nonempty
-`GOOGLE_CLOUD_LOCATION`. An
-explicit path that does not exist gets no fallback. The check tests existence
-only, directories and native symlink semantics included, and caches the result,
-true or false, for the life of the process. A relative path resolves against the
-current working directory. Credential paths keep native operating-system
-characters, including non-UTF-8 paths on Unix.
+`GOOGLE_CLOUD_LOCATION`. An explicit path that does not exist gets no fallback. The
+check tests existence only, directories and native symlink semantics included, and
+caches the result, true or false, for the life of the process. A relative path
+resolves against the current working directory. Credential paths keep native
+operating-system characters, including non-UTF-8 paths on Unix.
 
 Amazon Bedrock recognizes any one of these: a nonempty `AWS_PROFILE`, the pair
 `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, `AWS_BEARER_TOKEN_BEDROCK`,
@@ -61,8 +60,8 @@ a browser.
 The code calls the standard Rust environment, home-directory and filesystem
 facilities directly. A non-Unicode API-key value counts as absent, the home lookup
 falls back to the native account entry, and path joining does not normalize
-components lexically. No runtime-specific environment recovery exists, so no
-import-readiness race can occur.
+components lexically. No runtime-specific environment recovery or import-readiness
+race exists.
 
 ## Controlled example
 

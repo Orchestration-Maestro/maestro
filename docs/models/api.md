@@ -260,8 +260,8 @@ indices, not part of the final answer text.
 `StreamOptions::default()` sets no universal timeout, retry or cache policy.
 Empty options leave each choice to the selected adapter. The focused guides give
 the defaults, header precedence, token limits, cache handling and unused fields
-for each adapter. An explicit zero, false or empty value is not the same as an
-absent one. Provider-specific extras and nullable fields are listed in
+for each adapter. Do not assume an explicit zero, false or empty value is equivalent
+to an absent one. Provider-specific extras and nullable fields are listed in
 [module linkage](module-linkage.md#raw-extras).
 
 `Usage` reports input, output, cache-read, cache-write and total tokens, and
@@ -298,8 +298,8 @@ text and the reported usage, then continues with the partial assistant message i
 received. The next request omits the aborted attempt, while stored history can
 keep it. Cancellation stops local work; it does not undo remote effects. With an
 injected client for the message protocol, reads end on their own and cancellation
-is checked before each read. HTTP transport reads race cancellation. Body
-ownership therefore differs between the two.
+is checked before each read. HTTP transport reads race cancellation. Do not assume
+the two own the body the same way.
 
 Payload hooks receive and return the selected `PayloadHookInput`. The hook can
 keep, edit or replace its JSON, and both public and cloud content generation use

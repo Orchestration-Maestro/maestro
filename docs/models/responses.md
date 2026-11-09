@@ -39,7 +39,7 @@ A payload hook may replace the request with any non-null JSON value. The replace
 uses the shared [compact JSON conversion](arguments.md#streamed-arguments), and a null
 replacement fails before transport. Response hooks complete before Start and before the
 streamed body is processed. If a payload hook disables streaming, the response body is
-consumed before the response hook runs, because a non-event response cannot feed the event
+consumed before the response hook runs; a non-event response cannot feed the event
 reducer. The transport, metadata and maximum retry-delay preferences are unused here. The
 endpoint uses the shared
 [HTTP transport](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport)
@@ -119,14 +119,14 @@ changes the `model` of the initial payload; it does not change the selected mode
 or rates.
 
 Before `on_payload`, the initial payload uses the supplied session ID, cut to 64 Unicode
-characters, as `prompt_cache_key`. An empty string is used too, whatever the retention. The
-payload serializes `model`, `input`, `stream`, then `prompt_cache_key` when supplied, then
-`store: false`; without a session ID, `store` follows `stream`. It omits retention, service
-tier and metadata. Reasoning uses the shared effort mapping, without the standard endpoint's
-account-provider exception, and a summary-only request selects the literal `medium`. The
-hook can replace the entire payload, these selections and omissions included. Usage uses the
-model rates without service-tier scaling. Hooks, HTTP retries, timeouts and cancellation
-use the [transport](chat-completions.md#transport),
+characters, as `prompt_cache_key`, including an empty string, independently of retention.
+The payload serializes `model`, `input`, `stream`, then `prompt_cache_key` when supplied,
+then `store: false`; without a session ID, `store` follows `stream`. It omits retention,
+service tier and metadata. Reasoning uses the shared effort mapping, without the standard
+endpoint's account-provider exception, and a summary-only request selects the literal
+`medium`. The hook can replace the entire payload, these selections and omissions
+included. Usage uses the model rates without service-tier scaling. Hooks, HTTP retries,
+timeouts and cancellation use the [transport](chat-completions.md#transport),
 [JSON conversion](arguments.md#streamed-arguments) and
 [response reduction](#event-reduction). The transport and maximum
 retry-delay preferences are unused here.
@@ -234,10 +234,10 @@ reasoning signature, text and call arguments. Events without an index share one 
 
 Completion publishes the final nonempty ID and the model-priced usage before any tier
 callbacks. Resolution runs only with pricing, outside message locks. Priced usage is
-published before the status is selected, even when that selection fails. Only a stop outcome is
-upgraded to tool use, and only when a call exists. Reported input, output, total and cached
-token counts default to zero when absent, null or zero. Numbers pass through, and any other
-value returns a native typed-read error.
+published before the status is selected, even when that selection fails. Only a stop
+outcome is upgraded to tool use, and only when a call exists. Reported input, output,
+total and cached token counts default to zero when absent, null or zero. Numbers pass
+through, and any other value returns a native typed-read error.
 
 Direct errors render `Error Code {code}: {message}`. A failed response prefers a truthy
 error, then a truthy incomplete reason, and otherwise uses no-details text. Selected SDK
