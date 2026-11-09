@@ -641,14 +641,16 @@ fn credential_raw_backend_keeps_persisted_field_domains() {
 }
 
 /// Supplies complete authored models without borrowing a native registration record.
-fn provider_config(id: &str) -> Value {
+pub(super) fn provider_config(id: &str) -> Value {
     json!({"baseUrl":"https://queue.invalid", "apiKey":"queue-key", "api":"openai-completions",
         "models":[{"id":id,"name":id,"reasoning":false,"input":["text"],
         "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":128,"maxTokens":16}]})
 }
 
 /// Supplies literal factory operations before the production loader starts.
-fn queued_runtime(operations: &Value) -> std::rc::Rc<maestro_extensions::ExtensionRuntime<Local>> {
+pub(super) fn queued_runtime(
+    operations: &Value,
+) -> std::rc::Rc<maestro_extensions::ExtensionRuntime<Local>> {
     let runtime = maestro_extensions::create_extension_runtime::<Local>();
     runtime.flag_values.write().unwrap().insert(
         "provider-operations".into(),
@@ -708,7 +710,7 @@ fn provider_registration_queues_and_removes_before_bind() {
 }
 
 /// Executes one author-side operation and returns the retained catalog observation.
-async fn provider_call(runner: &ExtensionRunner<Local>, operation: Value) -> Value {
+pub(super) async fn provider_call(runner: &ExtensionRunner<Local>, operation: Value) -> Value {
     observe(runner, &format!("provider control {operation}")).await
 }
 
