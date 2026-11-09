@@ -1,14 +1,15 @@
 //! Child probes and the interface matrix of the checked test process.
 #![cfg(test)]
 
+mod agent_directory;
 mod checked_runs;
 mod child_helpers;
 mod command_route;
 mod environment_groups;
 mod executor;
 mod gate;
+mod linked_files;
 mod native_aliases;
-mod user_cache;
 mod windows_console;
 
 use std::ffi::OsStr;

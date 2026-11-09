@@ -132,7 +132,7 @@ async fn growth_runner() -> (
         crate::tests::support::widgets(),
         crate::Installation {
             version: "installed-component-host".into(),
-            agent_dir: "/controlled-agent".into(),
+            agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
         },
     )(api)
     .await

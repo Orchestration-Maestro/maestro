@@ -28,6 +28,7 @@ impl ExtensionUIContextPort for Ui {
 
 /// Loads the single shipped component with an isolated agent directory and supplied UI.
 async fn loaded(root: &Path) -> (Rc<ExtensionRunner<Local>>, Rc<Ui>) {
+    let linked = link_run_cache(root);
     let path = std::env::var("MAESTRO_TOOL_OVERRIDE_COMPONENT").unwrap();
     let bus = super::components::TracedBus::new();
     let runtime = create_extension_runtime::<Local>();
@@ -56,7 +57,40 @@ async fn loaded(root: &Path) -> (Rc<ExtensionRunner<Local>>, Rc<Ui>) {
     ));
     let ui = Rc::new(Ui::default());
     runner.set_ui_context(Some(ExtensionUIContext::new(ui.clone())));
+    // A load that compiled again would add files to the cache the run prepared.
+    if let Some(linked) = linked {
+        assert_eq!(cached_files(root), linked);
+    }
     (runner, ui)
+}
+
+/// The sorted compiled-code files in the component cache of the agent directory `root`. The
+/// cache's statistics and cleanup bookkeeping change on every load, so they do not count.
+fn cached_files(root: &Path) -> Vec<std::path::PathBuf> {
+    let mut files = super::components::files_below(
+        &maestro_extensions_wasmtime::component_cache_directory(root),
+    );
+    files.retain(|file| {
+        file.extension()
+            .is_none_or(|extension| extension != "stats")
+            && !file
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with('.'))
+    });
+    files.sort();
+    files
+}
+
+/// Starts the agent directory `root`, which keeps the component's access log, with the code the
+/// run prepared. Returns the files it holds then, or `None` when the run prepared none.
+fn link_run_cache(root: &Path) -> Option<Vec<std::path::PathBuf>> {
+    let run = maestro_test_process::run_agent_directory()?;
+    maestro_test_process::link_files(
+        &maestro_extensions_wasmtime::component_cache_directory(run),
+        &maestro_extensions_wasmtime::component_cache_directory(root),
+    )
+    .unwrap();
+    Some(cached_files(root))
 }
 
 /// Calls the real registered read through the host's standard tool wrapper.

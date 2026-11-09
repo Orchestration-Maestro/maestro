@@ -1026,6 +1026,17 @@ fn on_small_stack<T: Send + 'static>(case: impl FnOnce() -> T + Send + 'static) 
         .expect("worker panicked")
 }
 
+/// Run one case on a worker thread whose stack makes one native frame per nested span
+/// observable at a depth debug can afford.
+fn on_reduced_stack<T: Send + 'static>(case: impl FnOnce() -> T + Send + 'static) -> T {
+    std::thread::Builder::new()
+        .stack_size(128 * 1024)
+        .spawn(case)
+        .expect("worker thread")
+        .join()
+        .expect("worker panicked")
+}
+
 #[test]
 fn deep_quote_blocks_export_on_a_small_stack() {
     let html = on_small_stack(|| {
@@ -1044,4 +1055,26 @@ fn deep_nested_items_render_on_a_small_stack() {
     assert_eq!(html.matches("<ul>").count(), 2_000);
     assert_eq!(html.matches("<li>").count(), 2_000);
     assert!(html.contains("deepest-leaf"));
+}
+
+#[test]
+fn deep_formatted_spans_render_on_a_small_stack() {
+    let depth = 1_000;
+    let html =
+        on_reduced_stack(move || prepare(&format!("{0}x{0}", "**".repeat(depth)), false).html);
+    let expected = format!(
+        "<p>{}x{}</p>\n",
+        "<strong>".repeat(depth),
+        "</strong>".repeat(depth)
+    );
+    assert_eq!(html, expected);
+}
+
+#[test]
+fn deep_formatted_image_alternatives_render_on_a_small_stack() {
+    let depth = 2_000;
+    let html = on_reduced_stack(move || {
+        prepare(&format!("![{0}x{0}](u)", "**".repeat(depth)), false).html
+    });
+    assert_eq!(html, "<p><img src=\"u\" alt=\"x\"></p>\n");
 }

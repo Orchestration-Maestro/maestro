@@ -203,11 +203,17 @@ impl Tokenizer<'_> {
 
 /// Ordinary link labels cannot publish nested anchors; images and code stay opaque.
 fn contains_link(nodes: &[crate::Node]) -> bool {
-    nodes.iter().any(|node| match &node.kind {
-        Kind::Link(_, _, _, metadata) => metadata.link_type != LinkType::Autolink,
-        Kind::Strong(children) | Kind::Emphasis(children) | Kind::Strike(children) => {
-            contains_link(children)
+    let mut pending: Vec<&crate::Node> = nodes.iter().collect();
+    while let Some(node) = pending.pop() {
+        match &node.kind {
+            Kind::Link(_, _, _, metadata) if metadata.link_type != LinkType::Autolink => {
+                return true;
+            }
+            Kind::Strong(children) | Kind::Emphasis(children) | Kind::Strike(children) => {
+                pending.extend(children);
+            }
+            _ => {}
         }
-        _ => false,
-    })
+    }
+    false
 }

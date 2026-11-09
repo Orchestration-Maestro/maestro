@@ -130,14 +130,14 @@ fn author_cache_query_has_no_preparation_effects() {
         "tooling-author\n{\"scenario\":\"cached\",\"engine\":\"fixture\"}\n",
     )
     .unwrap();
-    let cache = root.path().join("private cache");
+    let agent = root.path().join("private agent");
     let environment = root.path().join("nextest-env");
 
     let output = Command::new(alias)
         .arg("--cache-directory")
         .current_dir(root.path())
         .env("MAESTRO_NATIVE_RECORD", root.path().join("author-record"))
-        .env("XDG_CACHE_HOME", &cache)
+        .env(maestro_test_process::AGENT_DIRECTORY, &agent)
         .env("NEXTEST_ENV", &environment)
         .output()
         .unwrap();
@@ -149,10 +149,10 @@ fn author_cache_query_has_no_preparation_effects() {
     );
     assert_eq!(
         serde_json::from_slice::<PathBuf>(&output.stdout).unwrap(),
-        cache.join("wasmtime")
+        agent.join("component-cache")
     );
     assert!(!environment.exists());
-    assert!(!cache.exists());
+    assert!(!agent.exists());
     assert!(!root.path().join("seen").exists());
 }
 

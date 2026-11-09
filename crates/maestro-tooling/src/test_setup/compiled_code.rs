@@ -1,6 +1,6 @@
 //! The code the setup example compiled, carried in the bundle from preparation to a shard.
 //!
-//! The pinned engine keeps compiled components in one namespace of the user cache, named for the
+//! The pinned engine keeps compiled components in one namespace of its cache, named for the
 //! engine and the modification time of the executable that ran. Preparation collects that
 //! namespace; a shard installs it under the time its own executables share, so the example and
 //! the test processes find every component already compiled.
