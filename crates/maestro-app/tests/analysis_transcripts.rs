@@ -629,7 +629,10 @@ fn printed_through(lines: &std::sync::mpsc::Receiver<String>, header: &str) -> V
         let done = line.starts_with("Analyzing ") || line.starts_with("Aggregating ");
         seen.push(line);
         if done {
-            assert!(seen[seen.len() - 1].starts_with(header), "{seen:?}");
+            assert!(
+                seen.last().is_some_and(|last| last.starts_with(header)),
+                "{seen:?}"
+            );
             return seen;
         }
     }
