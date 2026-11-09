@@ -1804,11 +1804,10 @@ test replaces `PATH` with its fixtures. A failed creation returns an error
 without opening or removing an existing file. Pass `gate.path()` as `permit` and
 `gate.release()` lets one waiting child continue. Pass a second gate as `ready`
 and `gate.take(5)` waits for a child's `"ready"` bytes, so a test holds one child,
-observes it started,
-releases it and then observes the next, without a sleep or a poll. Dropping the
-guard removes the FIFO: a waiting child reads the end of the stream and ends, and
-a child that starts later finds no FIFO, so a failed test never leaves one blocked.
-The gate exists on Unix only.
+observes it started, releases it and then observes the next, without a sleep or a
+poll. Dropping the guard removes the FIFO: a waiting child reads the end of the
+stream and ends, and a child that starts later finds no FIFO, so a failed test
+never leaves one blocked. The gate exists on Unix only.
 
 The conventions checker's architecture tests answer its Cargo metadata and compiler
 queries the same way. `Workspace::metadata_command` installs a `metadata` Cargo whose
