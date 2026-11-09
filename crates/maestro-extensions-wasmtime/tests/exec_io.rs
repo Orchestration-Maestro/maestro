@@ -255,7 +255,7 @@ fn release(socket: tokio::net::TcpStream) -> Option<tokio::net::TcpStream> {
 }
 
 #[test]
-fn a_killed_childs_socket_counts_as_closed_for_every_closed_kind() {
+fn a_killed_child_socket_counts_as_closed_for_every_closed_kind() {
     use std::io::ErrorKind;
     assert!(closed(&Ok(0)));
     assert!(!closed(&Ok(1)));

@@ -310,7 +310,7 @@ fn a_peer_that_closed_ends_the_request_write() {
     ] {
         assert_eq!(unsent(Err(kind.into()), b"request"), None, "{kind:?}");
     }
-    assert_eq!(unsent(Ok(3), b"request"), Some(&b"uest"[..]));
+    assert_eq!(unsent(Ok(3), b"payload"), Some(&b"load"[..]));
     assert_eq!(
         unsent(Err(std::io::ErrorKind::WouldBlock.into()), b"request"),
         Some(&b"request"[..])
