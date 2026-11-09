@@ -79,7 +79,7 @@ fn member(root: &Path, name: &str) {
 }
 
 /// Bundle installation verifies and copies the native setup example beside test artifacts, and a
-/// later installation puts a new file in place of the example an earlier run launched.
+/// later installation replaces the example from the earlier installation with a new file.
 #[test]
 fn bundle_export_installs_the_native_example() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
