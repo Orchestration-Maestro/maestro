@@ -9,7 +9,11 @@ use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{fs, future::Future, io, path::PathBuf};
 
-/// The authored head that reports each click to its parent, as the sandbox witnesses mount it.
+/// The authored head that reports each click to its parent in a `pointer-done` message.
+///
+/// The sandbox witnesses hold their own copy, and nothing keeps the two equal. The driver
+/// and these regressions read only the report, posted and kept as `window.pointerDone`;
+/// the rest of either copy may differ.
 const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
 
 /// Run one browser test without enabling test-specific runtime features.

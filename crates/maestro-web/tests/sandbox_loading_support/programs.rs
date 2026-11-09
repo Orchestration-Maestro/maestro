@@ -137,7 +137,8 @@ pub(crate) async fn marker_witness() {
     super::Fixture::finish();
 }
 
-/// An authored head reporting each click to its parent.
+/// An authored head reporting each click to its parent. The browser driver's regressions
+/// hold their own copy, and nothing keeps the two equal.
 const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
 /// An authored document with a policy and a parser-time observation.
 const ARTIFACT: &str = r#"<html><head><meta http-equiv="Content-Security-Policy" content="img-src 'none'"><title>artifact</title><script>S.before=!!S.runtime;</script></head><body><img src="/pixel.png" onerror="S.blocked=true" onload="S.blocked=false"></body></html>"#;
