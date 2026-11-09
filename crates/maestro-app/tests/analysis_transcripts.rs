@@ -619,15 +619,17 @@ impl std::io::Write for Lines {
     }
 }
 
-/// The lines the command prints up to and including the first one that starts with `prefix`.
+/// The lines the command prints up to and including its next analysis or aggregation header,
+/// which must start with `header`.
 #[cfg(unix)]
-fn printed_until(lines: &std::sync::mpsc::Receiver<String>, prefix: &str) -> Vec<String> {
+fn printed_through(lines: &std::sync::mpsc::Receiver<String>, header: &str) -> Vec<String> {
     let mut seen = Vec::new();
     loop {
-        let line = lines.recv().expect("the command prints the awaited line");
-        let done = line.starts_with(prefix);
+        let line = lines.recv().expect("the command prints the next header");
+        let done = line.starts_with("Analyzing ") || line.starts_with("Aggregating ");
         seen.push(line);
         if done {
+            assert!(seen[seen.len() - 1].starts_with(header), "{seen:?}");
             return seen;
         }
     }
@@ -656,17 +658,14 @@ fn two_files_with_summaries(base: &str) -> (String, String) {
     (project, output)
 }
 
-/// Install a `maestro` child that records `start` on `lifetimes` the moment it executes, then
-/// runs a held child that waits on `permit`, prints one text event and the end of its turn and
-/// records `ended` on `lifetimes`.
+/// Install a `maestro` child that waits on `permit`, prints one text event and the end of its
+/// turn, then records `ended` on `ends`.
 ///
-/// Every child writes to the one FIFO, so its contents are the order of child starts and ends.
-/// The start is recorded before the child reads its input or reaches the permit, so it is the
-/// earliest mark a child can make.
+/// Every child records on the one FIFO, so its contents are the order in which children end.
 #[cfg(unix)]
 fn held_child(
     base: &str,
-    lifetimes: &maestro_test_process::gate::Gate,
+    ends: &maestro_test_process::gate::Gate,
     permit: &maestro_test_process::gate::Gate,
 ) {
     let events = format!(
@@ -674,45 +673,32 @@ fn held_child(
         r#"{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"first"}}"#,
         r#"{"type":"turn_end"}"#
     );
-    let bin = Path::new(base).join("bin");
-    let mark = |bytes: &'static [u8; 5]| {
-        serde_json::json!({
-            "path": lifetimes.path(),
-            "cwd": false,
-            "variable": null,
-            "bytes": bytes,
-        })
-    };
     crate::native::command(
-        bin.as_path(),
-        "held",
+        Path::new(base).join("bin").as_path(),
+        "maestro",
         &serde_json::json!({
             "scenario": "hold",
             "ready": null,
             "permit": permit.path(),
             "stdout": events.as_bytes(),
             "stderr": [],
-            "append": mark(b"ended"),
-        }),
-    );
-    crate::native::command(
-        bin.as_path(),
-        "maestro",
-        &serde_json::json!({
-            "scenario": "forward",
-            "marker": mark(b"start"),
-            "program": "held",
+            "append": {
+                "path": ends.path(),
+                "cwd": false,
+                "variable": null,
+                "bytes": b"ended",
+            },
         }),
     );
 }
 
 #[cfg(unix)]
 #[test]
-fn analysis_starts_each_child_only_after_the_previous_one_ends() {
+fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
     use maestro_test_process::gate::Gate;
     let path = "$BASE/bin";
     with_environment(
-        "analysis_starts_each_child_only_after_the_previous_one_ends",
+        "analysis_children_end_in_file_order_with_the_aggregating_child_last",
         &[("PATH", path)],
         |base| {
             let (project, output) = two_files_with_summaries(base);
@@ -720,10 +706,9 @@ fn analysis_starts_each_child_only_after_the_previous_one_ends() {
                 // The gates and the receiver belong to this closure, so a failed assertion
                 // releases every child and the command's blocked print.
                 let (sender, lines) = std::sync::mpsc::sync_channel(0);
-                let lifetimes =
-                    Gate::new(&Path::new(base).join("lifetimes")).expect("the lifetimes gate");
+                let ends = Gate::new(&Path::new(base).join("ends")).expect("the ends gate");
                 let permit = Gate::new(&Path::new(base).join("permit")).expect("the permit gate");
-                held_child(base, &lifetimes, &permit);
+                held_child(base, &ends, &permit);
                 let arguments = ["--analyze", "--output", &output, &project].map(str::to_owned);
                 let command = scope.spawn(move || {
                     let mut stdout = Lines {
@@ -737,33 +722,30 @@ fn analysis_starts_each_child_only_after_the_previous_one_ends() {
                         &mut Vec::new(),
                     ))
                 });
-                // Each child records its start when it executes, stays held until released, then
-                // records its end. A child that executed before the previous one ended puts its
-                // start ahead of that end in the shared FIFO, so reading the events in order
-                // shows the lifetimes never overlap. Absence of an early start cannot be waited
-                // for without a timer, so the witness is bounded: it catches every concurrent
-                // implementation whose second child executes before the first child's release
-                // reaches the first child and the first child ends, a path with more steps than
-                // the second child's single exec.
-                let event = |what: &str| lifetimes.take(5).unwrap_or_else(|_| panic!("{what}"));
-                printed_until(&lines, "Analyzing session-transcripts-000.txt");
-                assert_eq!(event("the first child starts"), b"start");
+                // Each release lets exactly one child finish, so the end markers arrive in the
+                // order the run completes its children. The child's own output is printed only
+                // after its end, and the next header only after that output.
+                let ended = || {
+                    assert_eq!(ends.take(5).expect("a child ends"), b"ended");
+                };
+                printed_through(&lines, "Analyzing session-transcripts-000.txt");
                 permit.release().expect("the first child is released");
-                assert_eq!(event("the first child ends"), b"ended");
-                let first = printed_until(&lines, "Analyzing session-transcripts-001.txt");
-                assert!(first.contains(&"  first".to_owned()), "{first:?}");
+                ended();
+                let second = printed_through(&lines, "Analyzing session-transcripts-001.txt");
+                assert!(second.contains(&"  first".to_owned()), "{second:?}");
                 assert!(
-                    first.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
-                    "{first:?}"
+                    second.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
+                    "{second:?}"
                 );
-                assert_eq!(event("the second child starts"), b"start");
                 permit.release().expect("the second child is released");
-                assert_eq!(event("the second child ends"), b"ended");
-                let second = printed_until(&lines, "Aggregating findings into final summary...");
-                assert!(second.contains(&"  -> session-transcripts-001.summary.txt".to_owned()));
-                assert_eq!(event("the aggregating child starts"), b"start");
+                ended();
+                let third = printed_through(&lines, "Aggregating findings");
+                assert!(
+                    third.contains(&"  -> session-transcripts-001.summary.txt".to_owned()),
+                    "{third:?}"
+                );
                 permit.release().expect("the aggregating child is released");
-                assert_eq!(event("the aggregating child ends"), b"ended");
+                ended();
                 while lines.recv().is_ok() {}
                 let code = command
                     .join()
