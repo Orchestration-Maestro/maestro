@@ -1049,6 +1049,9 @@ fn signal_lists_share_native_signal_validation() {
             .spawn()
             .unwrap();
         let mut output = BufReader::new(child.stdout.take().unwrap());
+        // `Child::wait` closes standard input, and the child ends normally on that end of
+        // input; holding it makes the signal the only way the child can end.
+        let _held_input = child.stdin.take().unwrap();
         let mut marker = String::new();
         while marker != "ready\n" {
             marker.clear();
