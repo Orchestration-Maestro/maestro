@@ -371,8 +371,15 @@ stay JavaScript or HTML files beside their tests:
 Tests read these sources as text and hand them to the product unchanged.
 [The frame-side input issue](https://github.com/Orchestration-Maestro/maestro/issues/4134)
 tracks replacing them once the sandbox has a Rust runtime.
-`markdown_support/dom.js` is the remaining page-side script; it still installs
-the Markdown projection.
+
+The Markdown corpus needs no page script. `markdown_support/projection` does the
+comparison in Rust: it projects the shown document and the recorded reference
+markup into one neutral tree, compares that tree with the recorded semantic
+trees, resolves each formula through the recorded catalog, measures a mounted
+formula's typography at the recorder's settings, and reads the painted roles from
+computed styles. `install` publishes `root`, `diff` and `paintFailures` on
+`globalThis.maestro` for the authored one-line checks, so no check imports or
+evaluates a script first.
 
 One deliberate policy-negative export,
 `inline_programs_preserve_text_policies_and_order`, must produce exactly one
