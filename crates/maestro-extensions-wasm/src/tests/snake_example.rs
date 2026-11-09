@@ -90,7 +90,7 @@ fn run(
         "the custom view was built and disposed"
     );
     assert!(
-        host.observed().bus.listeners.is_empty(),
+        host.observed().bus.listeners().is_empty(),
         "disposal unsubscribes the game"
     );
     assert!(
@@ -282,7 +282,7 @@ fn snake_rejects_invalid_saved_positions() -> Result<(), String> {
         );
         assert_eq!(command(&mut host), Err("Invalid Snake save".into()));
         assert!(saves(&mut host).is_empty());
-        assert!(host.observed().bus.listeners.is_empty());
+        assert!(host.observed().bus.listeners().is_empty());
     }
     Ok(())
 }
