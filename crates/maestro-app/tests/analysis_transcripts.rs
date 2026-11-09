@@ -656,12 +656,14 @@ fn two_files_with_summaries(base: &str) -> (String, String) {
     (project, output)
 }
 
-/// Install a `maestro` child that announces on `ready`, waits on `permit`, then prints one
-/// text event and the end of its turn.
+/// Install a `maestro` child that announces `ready` on `lifetimes`, waits on `permit`, then
+/// prints one text event and the end of its turn and records `ended` on `lifetimes`.
+///
+/// Every child writes to the one FIFO, so its contents are the order of child starts and ends.
 #[cfg(unix)]
 fn held_child(
     base: &str,
-    ready: &maestro_test_process::gate::Gate,
+    lifetimes: &maestro_test_process::gate::Gate,
     permit: &maestro_test_process::gate::Gate,
 ) {
     let events = format!(
@@ -674,10 +676,16 @@ fn held_child(
         "maestro",
         &serde_json::json!({
             "scenario": "hold",
-            "ready": ready.path(),
+            "ready": lifetimes.path(),
             "permit": permit.path(),
             "stdout": events.as_bytes(),
             "stderr": [],
+            "append": {
+                "path": lifetimes.path(),
+                "cwd": false,
+                "variable": null,
+                "bytes": b"ended",
+            },
         }),
     );
 }
@@ -696,9 +704,10 @@ fn analysis_starts_each_child_only_after_the_previous_one_ends() {
                 // The gates and the receiver belong to this closure, so a failed assertion
                 // releases every child and the command's blocked print.
                 let (sender, lines) = std::sync::mpsc::sync_channel(0);
-                let ready = Gate::new(&Path::new(base).join("ready")).expect("the ready gate");
+                let lifetimes =
+                    Gate::new(&Path::new(base).join("lifetimes")).expect("the lifetimes gate");
                 let permit = Gate::new(&Path::new(base).join("permit")).expect("the permit gate");
-                held_child(base, &ready, &permit);
+                held_child(base, &lifetimes, &permit);
                 let arguments = ["--analyze", "--output", &output, &project].map(str::to_owned);
                 let command = scope.spawn(move || {
                     let mut stdout = Lines {
@@ -712,27 +721,29 @@ fn analysis_starts_each_child_only_after_the_previous_one_ends() {
                         &mut Vec::new(),
                     ))
                 });
-                // The first child runs and stays held.
+                // Each child records its start, stays held until released, then records its end.
+                // A child started before the previous one ended puts its start ahead of that
+                // end in the shared FIFO, so reading the events in order proves the lifetimes
+                // never overlap.
+                let event = |what: &str| lifetimes.take(5).unwrap_or_else(|_| panic!("{what}"));
                 printed_until(&lines, "Analyzing session-transcripts-000.txt");
-                assert_eq!(ready.take(5).expect("the first child starts"), b"ready");
+                assert_eq!(event("the first child starts"), b"ready");
                 permit.release().expect("the first child is released");
-                // The second child is announced only after the first printed its result.
+                assert_eq!(event("the first child ends"), b"ended");
                 let first = printed_until(&lines, "Analyzing session-transcripts-001.txt");
                 assert!(first.contains(&"  first".to_owned()), "{first:?}");
                 assert!(
                     first.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
                     "{first:?}"
                 );
-                assert_eq!(ready.take(5).expect("the second child starts"), b"ready");
+                assert_eq!(event("the second child starts"), b"ready");
                 permit.release().expect("the second child is released");
-                // The aggregating child follows the second one.
+                assert_eq!(event("the second child ends"), b"ended");
                 let second = printed_until(&lines, "Aggregating findings into final summary...");
                 assert!(second.contains(&"  -> session-transcripts-001.summary.txt".to_owned()));
-                assert_eq!(
-                    ready.take(5).expect("the aggregating child starts"),
-                    b"ready"
-                );
+                assert_eq!(event("the aggregating child starts"), b"ready");
                 permit.release().expect("the aggregating child is released");
+                assert_eq!(event("the aggregating child ends"), b"ended");
                 while lines.recv().is_ok() {}
                 let code = command
                     .join()
