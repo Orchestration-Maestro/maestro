@@ -20,9 +20,9 @@ so a dead terminal or a closed pipe must not turn one into a crash. Both writers
 `maestro_agent::diagnostics`, the lowest crate the agent loop and the application
 both reach; the application re-exports it for frontends.
 
-Production code in the product crates uses these two functions for every line it
-writes to standard error. The workspace conventions check rejects `eprint!` and
-`eprintln!` there. Development tools and test code, which only run in a terminal
+Production code in the product crates uses these two functions for its diagnostics.
+The workspace conventions check rejects `eprint!` and `eprintln!` there. The
+pseudo-terminal entry writes to standard error directly, outside this guide. Development tools and test code, which only run in a terminal
 you are watching, keep the print macros.
 
 ## Where Maestro writes diagnostics

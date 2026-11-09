@@ -8,6 +8,7 @@ pub mod contributions;
 pub mod presentation_data;
 pub mod utils;
 
+#[doc(inline)]
 pub use maestro_agent::diagnostics;
 
 #[cfg(not(target_arch = "wasm32"))]

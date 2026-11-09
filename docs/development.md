@@ -2546,6 +2546,13 @@ variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME
 and loads a prepared component passes `user_cache_home()` as `XDG_CACHE_HOME`,
 which only Linux reads, so it reuses the setup's compiled code instead of
 compiling the component again.
+Test code that proves a diagnostic path survives a closed standard error uses
+`maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
+standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,
+which the child calls first so no write beats the pipe's closing. The parent calls
+`maestro_test_process::run_alone` before either, so no sibling test forks while the
+pipe's reading end is open. The [diagnostics guide](diagnostics.md#testing-a-diagnostic-path)
+shows the three together.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
