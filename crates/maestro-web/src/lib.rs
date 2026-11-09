@@ -110,8 +110,8 @@ pub use tools::artifacts::HtmlArtifact;
 pub use tools::artifacts::{Artifact, ArtifactsPanel, ArtifactsParams};
 
 pub use maestro_app::{
-    SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,
-    create_javascript_repl_tool,
+    BuiltinRuntime, Runtime, SandboxFile, SandboxResult, SandboxRuntimeProvider,
+    SandboxUrlProvider, create_javascript_repl_tool,
 };
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;

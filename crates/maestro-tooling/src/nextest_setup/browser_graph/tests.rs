@@ -55,6 +55,26 @@ fn browser_author_group_admits_one_test_per_lane() {
     assert_eq!(admitted, Some(i64::try_from(LANES).unwrap()));
 }
 
+/// On Unix the installed graph takes its time without write access, as normalization gives
+/// executables theirs, so a file its owner cannot write still takes the time.
+#[cfg(unix)]
+#[test]
+fn tree_time_reaches_files_without_opening_them_for_writing() {
+    let scratch = Scratch::new().unwrap();
+    let script = scratch.path().join("build/dependency-1/build-script-build");
+    fs::create_dir_all(script.parent().unwrap()).unwrap();
+    fs::write(&script, b"script\n").unwrap();
+    let Some(_denied) = maestro_test_directory::deny(&script, 0o555).unwrap() else {
+        eprintln!("host permits writes despite denied file mode");
+        return;
+    };
+    let time = UNIX_EPOCH + Duration::from_secs(1_000_000_000);
+
+    set_tree_time(scratch.path(), time).unwrap();
+
+    assert_eq!(fs::metadata(&script).unwrap().modified().unwrap(), time);
+}
+
 /// Build the package at `root` into `target` and return Cargo's report.
 fn build(root: &Path, target: &Path) -> String {
     let output = Command::new(env!("CARGO"))

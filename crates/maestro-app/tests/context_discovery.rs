@@ -2,8 +2,8 @@
 //! working directory, and the warning for one that cannot be read.
 #![cfg(unix)]
 use crate::resource_fixtures::{
-    Entry, Root, child_stderr, directory_read_error, loader_case, on_task_set, run_loader_case,
-    warnings,
+    Entry, Root, child_stderr, child_with_closed_stderr, directory_read_error, loader_case,
+    on_task_set, run_loader_case, warnings,
 };
 use maestro_app::load_project_context_files;
 use serde::Deserialize;
@@ -115,18 +115,32 @@ fn unreadable_context_candidate_warns_and_falls_through() {
     assert_eq!(warnings(&stderr), [read_warning("", &unreadable)]);
 }
 
+/// Name of the recorded case whose system prompt file cannot be read.
+const UNREADABLE_SYSTEM_FILE: &str = "unreadable_system_file_keeps_its_path";
+
+/// Loads the recorded unreadable system prompt case under `base` and checks its result.
+fn load_unreadable_system_file(base: &str) {
+    let case = loader_case(UNREADABLE_SYSTEM_FILE);
+    let root = Root::new(base, UNREADABLE_SYSTEM_FILE);
+    let observed = on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
+    assert_eq!(observed, loader_case(UNREADABLE_SYSTEM_FILE).expected);
+}
+
+/// The system prompt keeps its path when the warning about it cannot be written.
+#[test]
+fn unreadable_system_prompt_file_with_closed_standard_error_keeps_its_path() {
+    child_with_closed_stderr(
+        "unreadable_system_prompt_file_with_closed_standard_error_keeps_its_path",
+        load_unreadable_system_file,
+    );
+}
+
 #[test]
 fn unreadable_system_prompt_file_warns_and_keeps_its_path() {
-    let name = "unreadable_system_file_keeps_its_path";
+    let name = UNREADABLE_SYSTEM_FILE;
     let Some((base, stderr)) = child_stderr(
         "unreadable_system_prompt_file_warns_and_keeps_its_path",
-        |base| {
-            let case = loader_case(name);
-            let root = Root::new(base, name);
-            let observed =
-                on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
-            assert_eq!(observed, loader_case(name).expected);
-        },
+        load_unreadable_system_file,
     ) else {
         return;
     };

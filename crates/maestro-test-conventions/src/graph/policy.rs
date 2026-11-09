@@ -32,6 +32,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-rpc", "maestro-tui-crossterm"),
     ("maestro-extensions-wasm", "maestro-models"),
     ("maestro-extensions-wasm", "maestro-extensions-wasmtime"),
+    ("maestro-extensions-wasm", "maestro-listeners"),
     ("maestro-detection", "maestro-text"),
     ("maestro-cli", "maestro-listeners"),
     ("maestro-chat", "maestro-models"),

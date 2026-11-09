@@ -5,6 +5,7 @@ use maestro_app::SettingsManager;
 use maestro_app::daemon::{
     App, DaemonPaths, STARTUP_CWD_ENV, current_process_is_detached_server_daemon, logging,
 };
+use maestro_app::diagnostics::write_stderr_line;
 use maestro_app::rpc_mode::DaemonWorkspaceOperations;
 use maestro_app::rpc_types::workspace_schema::ServerCapabilities;
 use std::path::{Path, PathBuf};
@@ -36,8 +37,10 @@ pub async fn run_server<C: FnMut() -> u128>(
     let path = PathBuf::from(paths.api_socket_path());
     let server = Server::bind(&path).inspect_err(|error| {
         if error.kind() == io::ErrorKind::AddrInUse {
-            eprintln!("error: maestro server is already running");
-            eprintln!("api socket: {}", path.display());
+            write_stderr_line(&format!(
+                "error: maestro server is already running\napi socket: {}",
+                path.display()
+            ));
         }
     })?;
     app.seed_startup_workspace(std::env::var_os(STARTUP_CWD_ENV).map(PathBuf::from));
@@ -70,9 +73,11 @@ pub async fn run_server<C: FnMut() -> u128>(
 
 /// Writes the ready message: the server runs, with its bound API socket and its log.
 fn announce(api_socket: &Path, paths: &DaemonPaths) {
-    eprintln!("maestro server running; you can use any maestro CLI command in another terminal.");
-    eprintln!("api socket: {}", api_socket.display());
-    eprintln!("logs: {}", paths.log_path(LOG_ROLE));
+    write_stderr_line(&format!(
+        "maestro server running; you can use any maestro CLI command in another terminal.\napi socket: {}\nlogs: {}",
+        api_socket.display(),
+        paths.log_path(LOG_ROLE)
+    ));
 }
 
 /// What a ping reports the server can do; live handoff stays off until the server performs

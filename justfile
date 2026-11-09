@@ -277,6 +277,10 @@ browser-chat-example *args:
 browser-test: prepare-tests
     cargo run --quiet --locked -p maestro-tooling --bin development -- browser-test
 
+# Rebuild the generated in-frame sandbox runtime with the pinned Emscripten SDK; pass --check to compare.
+sandbox-runtime *args:
+    cargo run --quiet --locked -p maestro-tooling --bin development -- sandbox-runtime {{args}}
+
 # Generate the extension index, example targets and workspace-derived guide lock.
 example-index:
     cargo run --quiet --locked -p maestro-tooling --bin development -- example-index

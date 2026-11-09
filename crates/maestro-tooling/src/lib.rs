@@ -42,6 +42,8 @@ mod member_graph;
 pub mod nextest_setup;
 /// Per-test admission for reserved callback ports.
 mod nextest_wrapper;
+/// Emscripten build and link audit of the in-frame sandbox runtime.
+mod sandbox_runtime;
 /// Pinned native search program resolution.
 mod search_tools;
 /// Reusable test-setup staging and validation.
@@ -103,6 +105,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),
         Some("browser-export-setup") => browser_export_setup::run(args, checkout),
+        Some("sandbox-runtime") => sandbox_runtime::run(args, cargo, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
@@ -212,9 +215,10 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
 }
 
 /// Run every real-browser case, the driver regressions, each export and the report, as one
-/// nextest run, so the hang limit bounds and names each case and one run reports them all.
+/// nextest run, so the hang limit bounds and names each case and one run reports them all. A
+/// stale generated sandbox runtime fails the run after it.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    let status = Command::new(cargo)
+    let regressed = Command::new(cargo)
         .current_dir(checkout)
         .args([
             "nextest",
@@ -229,7 +233,26 @@ fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
             "test(/^browser::/)",
         ])
         .status()?;
-    Ok(exit_code(status))
+    let generated = Command::new(cargo)
+        .current_dir(checkout)
+        .args([
+            "run",
+            "--quiet",
+            "--locked",
+            "-p",
+            "maestro-tooling",
+            "--bin",
+            "development",
+            "--",
+            "sandbox-runtime",
+            "--check",
+        ])
+        .status()?;
+    Ok(exit_code(if regressed.success() {
+        generated
+    } else {
+        regressed
+    }))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

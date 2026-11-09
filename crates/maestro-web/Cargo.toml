@@ -15,6 +15,11 @@ name = "chat"
 crate-type = ["cdylib"]
 
 [dependencies]
+oxc_allocator.workspace = true
+oxc_parser.workspace = true
+oxc_span.workspace = true
+oxc_ast.workspace = true
+oxc_ast_visit.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 url = "=2.5.8"

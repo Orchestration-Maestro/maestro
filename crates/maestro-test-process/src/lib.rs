@@ -13,6 +13,9 @@
 //! and a cleared child keeps the one the run's setup exported, so neither recompiles the
 //! components the run prepared.
 //!
+//! A test whose product writes diagnostics to standard error proves it survives a broken
+//! pipe there with [`run_with_broken_stderr`] and, in the child, [`wait_for_broken_stderr`].
+//!
 //! This crate alone spells the variable that carries a case into its child, [`CASE`]. A caller
 //! selects the role with [`TestProcess::case`] and reads it back through [`selection`], and
 //! passes any fixture data the child needs in its own variable.
@@ -31,6 +34,7 @@
 
 mod agent_directory;
 mod alone;
+mod broken_stderr;
 pub mod child;
 #[cfg(windows)]
 mod console;
@@ -48,6 +52,7 @@ mod test_process;
 
 pub use agent_directory::{AGENT_DIRECTORY, link_files, run_agent_directory};
 pub use alone::run_alone;
+pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
 #[cfg(windows)]
 pub use console::on_console;
 pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_environment, selection};

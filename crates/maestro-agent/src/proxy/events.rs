@@ -160,10 +160,10 @@ impl Reducer {
         let kind = value.get("type").and_then(serde_json::Value::as_str);
         if !kind.is_some_and(|kind| KINDS.contains(&kind)) {
             #[cfg(not(target_arch = "wasm32"))]
-            eprintln!(
+            crate::diagnostics::write_stderr_line(&format!(
                 "Unhandled proxy event type: {}",
                 kind.unwrap_or("undefined")
-            );
+            ));
             return Ok(());
         }
         let event = serde_json::from_value(value).map_err(|error| error.to_string())?;

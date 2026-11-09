@@ -315,6 +315,24 @@ fn cache_normalization_advances_every_binary_of_an_archived_run() {
     assert_eq!(modified(&newest), at(400));
 }
 
+/// On Unix, normalization changes modification times without opening an executable for writing:
+/// macOS can kill the next launch of an executable that was opened for writing after it ran. An
+/// executable its owner cannot write still takes the shared time.
+#[cfg(unix)]
+#[test]
+fn cache_normalization_advances_executables_without_opening_them_for_writing() {
+    let scratch = Scratch::new().unwrap();
+    let deps = scratch.path().join("target/debug/deps");
+    let older = output(&deps, "older-1", true, 50);
+    output(&deps, "newest-1", true, 400);
+    let Some(_denied) = maestro_test_directory::deny(&older, 0o555).unwrap() else {
+        eprintln!("host permits writes despite denied file mode");
+        return;
+    };
+    normalize_run(scratch.path(), true);
+    assert_eq!(fs::metadata(&older).unwrap().modified().unwrap(), at(400));
+}
+
 /// Writes an executable with the linked-build records Cargo leaves beside it.
 #[cfg(unix)]
 fn binary(

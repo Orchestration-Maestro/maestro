@@ -24,6 +24,8 @@ mod fixture_selection;
 mod generated;
 /// Workspace membership and dependency graph checks.
 mod graph;
+/// Handwritten JavaScript in crate sources.
+mod handwritten_scripts;
 /// Single-target integration-test packaging checks.
 mod integration_tests;
 /// Native platform viewer ownership.
@@ -40,6 +42,8 @@ mod real_paths;
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
+/// Standard error diagnostics outside tests.
+mod standard_error;
 /// Test-owned temporary directory checks.
 mod temp_directories;
 /// Nextest's default budget and documented slow-test exceptions.
@@ -149,6 +153,7 @@ mod time_limits;
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     test_budget::check(root)?;
     config_scripts::check(root)?;
+    handwritten_scripts::check(root)?;
     let (metadata, packages) = graph::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
@@ -167,6 +172,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| example_helpers::check(&members),
         &|| temp_directories::check(&members),
         &|| real_paths::check(&members),
+        &|| standard_error::check(&members),
         &|| test_input_routes::check(root, &members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.

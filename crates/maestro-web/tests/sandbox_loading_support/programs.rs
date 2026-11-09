@@ -3,7 +3,10 @@ use super::native::{equal, equal_json, program_sources};
 use super::{Provider, adapter};
 use crate::browser_fixture_support::{get, global, invoke, object, post_from};
 use crate::contributions_support::settle;
+use crate::sandbox_bootstrap_support::OBSERVER;
+use crate::sandbox_program_inputs::{MARKER_PROVIDER, MARKER_USER, PROVIDER, USER};
 use maestro_app::SharedHandle;
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
 use std::{
     cell::{Cell, RefCell},
@@ -134,27 +137,15 @@ pub(crate) async fn marker_witness() {
     super::Fixture::finish();
 }
 
-/// A provider runtime defining one marker-looking literal.
-const MARKER_PROVIDER: &str = include_str!("program_inputs/marker_provider.js");
-/// User code returning every marker-looking value it can read.
-const MARKER_USER: &str = include_str!("program_inputs/marker_user.js");
-/// A provider runtime observing its own text, data, loading order and an optional policy.
-const PROVIDER: &str = include_str!("program_inputs/provider.js");
-/// User code observing loading order, module resolution and a preserved carriage return.
-const USER: &str = include_str!("program_inputs/user.js");
-/// An authored head reporting each click to its parent.
-const CLICK_DOCUMENT: &str = include_str!("program_inputs/click_document.html");
+/// An authored head reporting each click to its parent. The browser driver's regressions
+/// hold their own copy, and nothing keeps the two equal.
+const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
 /// An authored document with a policy and a parser-time observation.
-const ARTIFACT: &str = include_str!("program_inputs/artifact.html");
+const ARTIFACT: &str = r#"<html><head><meta http-equiv="Content-Security-Policy" content="img-src 'none'"><title>artifact</title><script>S.before=!!S.runtime;</script></head><body><img src="/pixel.png" onerror="S.blocked=true" onload="S.blocked=false"></body></html>"#;
 /// Raw provider data that looks like markup.
 const RAW: &str = r"</ScRiPt> <!--<script> </script> 雪";
 /// The raw value the user code returns.
 const USER_RAW: &str = r"</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪";
-/// The generated head carrier bootstrap the policy admits by hash.
-const HEAD_BOOT: &str = include_str!("program_inputs/head_boot.js");
-/// The generated body carrier bootstrap the policy admits by hash.
-const BODY_BOOT: &str = include_str!("program_inputs/body_boot.js");
-
 /// Prepared programs mounted in frames copied from the production frame, observed in place.
 #[derive(Clone, Default)]
 pub struct Fixture;
@@ -367,15 +358,16 @@ impl Fixture {
     /// Run the exact-text, ordering and policy observations on a production frame's attributes.
     pub(crate) async fn program_checks(html: &str, tt_html: &str, url: bool) {
         assert!(
-            html.contains("<template><svg><script>"),
-            "runtime uses inert template carrier, not a resource"
+            html.contains("<template data-maestro-sandbox-provider"),
+            "providers use inert template carriers, not a resource"
         );
         let sources = program_sources(html);
         let (runtime, module) = (&sources[0], &sources[1]);
         assert!(runtime.contains(PROVIDER), "provider input is unchanged");
+        let (statements, returned) = USER.split_once("return ").unwrap();
         assert!(
-            module.contains(USER),
-            "user input is unchanged including CR"
+            module.contains(statements) && module.contains(returned.trim_end_matches(';')),
+            "user statements and returned expression are unchanged including CR"
         );
         let mounted = mount(html, url, Host::Plain).await;
         exact(&mounted.inspect().await, runtime, url);
@@ -410,7 +402,10 @@ impl Fixture {
             sources[0].contains(MARKER_PROVIDER),
             "provider source byte-exact"
         );
-        assert!(sources[1].contains(MARKER_USER), "user source byte-exact");
+        assert!(
+            sources[1].contains(&format!("'{marker}'")),
+            "user literal byte-exact"
+        );
         let mounted = mount(html, false, Host::Plain).await;
         let s = mounted.inspect().await;
         equal(
@@ -514,7 +509,7 @@ impl Fixture {
         );
         equal(
             &read("head"),
-            &"style,script,meta,title,script".into(),
+            &"style,meta,title,script".into(),
             "head element order at public loading interface",
         );
     }
@@ -574,18 +569,17 @@ fn exact(s: &JsValue, runtime: &str, url: bool) {
     let scaffolds = js_sys::Array::of3(&read("head"), &read("body"), &read("scaffold"));
     equal_json(
         &scaffolds,
-        r#"["style,script","script",0]"#,
+        r#"["style","",0]"#,
         "no carrier scaffolds remain",
     );
     equal(&read("origin"), &"null".into(), "opaque sandbox origin");
 }
 
-/// Under a host policy admitting `allowed` hashes, the runtime runs and the module completes
-/// exactly as `expected` says.
-async fn admission(html: &str, label: &str, allowed: &[String], expected: (bool, bool)) {
+/// Under the host `policy`, the supplied provider runs and the module completes exactly as
+/// `expected` says.
+async fn admission(html: &str, label: &str, policy: &str, expected: (bool, bool)) {
     let (runs, completes) = expected;
-    let policy = format!("script-src 'self' {}", allowed.join(" "));
-    let mounted = mount(html, false, Host::Policy(&policy)).await;
+    let mounted = mount(html, false, Host::Policy(policy)).await;
     let s = mounted.inspect().await;
     let (runtime, started) = (
         get(&s, "runtime").is_truthy(),
@@ -594,7 +588,7 @@ async fn admission(html: &str, label: &str, allowed: &[String], expected: (bool,
     equal(
         &runtime.into(),
         &runs.into(),
-        &format!("{label} runtime admission"),
+        &format!("{label} provider admission"),
     );
     equal(
         &started.into(),
@@ -608,14 +602,14 @@ async fn admission(html: &str, label: &str, allowed: &[String], expected: (bool,
             &format!("{label} completion"),
         );
     }
-    web_sys::console::log_1(&format!("POLICY {label}: runtime={runtime} module={started}").into());
+    web_sys::console::log_1(&format!("POLICY {label}: provider={runtime} module={started}").into());
     mounted.host.remove();
 }
 
-/// Only hash-admitted carriers run under a host policy, and Trusted Types keep completion.
-async fn policies(html: &str, tt_html: &str, runtime: &str, module: &str) {
+/// Only hash-admitted scripts run under a host policy, and Trusted Types keep completion.
+async fn policies(html: &str, tt_html: &str, provider: &str, module: &str) {
     let mut hashes = Vec::new();
-    for text in [HEAD_BOOT, BODY_BOOT, runtime, module] {
+    for text in [BUNDLE, provider, module] {
         hashes.push(digest(text).await);
     }
     let encoded = |text: &str| {
@@ -623,28 +617,57 @@ async fn policies(html: &str, tt_html: &str, runtime: &str, module: &str) {
             .replace('<', "&lt;")
             .replace('\r', "&#13;")
     };
-    let markup = vec![
+    let observed = html.replacen("<head>", &format!("<head><script>{OBSERVER}</script>"), 1);
+    let markup = [
         hashes[0].clone(),
-        hashes[1].clone(),
-        digest(&encoded(runtime)).await,
+        digest(&encoded(provider)).await,
         digest(&encoded(module)).await,
+        digest(OBSERVER).await,
     ];
+    let wasm = "'wasm-unsafe-eval'";
     let scenarios = [
-        ("all", hashes.clone(), true, true),
-        ("missing module", hashes[..3].to_vec(), true, false),
+        ("all", wasm, hashes.clone(), true, true),
+        ("missing module", wasm, hashes[..2].to_vec(), true, false),
+        // The admitted module reads the runtime's outcome observer: the one designated page error.
         (
             "missing runtime",
-            vec![hashes[0].clone(), hashes[1].clone(), hashes[3].clone()],
+            wasm,
+            vec![hashes[1].clone(), hashes[2].clone()],
             false,
             false,
         ),
-        ("encoded markup", markup, false, false),
-        ("unmatched", vec![digest("unrelated").await], false, false),
+        (
+            "unmatched",
+            wasm,
+            vec![digest("unrelated").await],
+            false,
+            false,
+        ),
     ];
-    for (label, allowed, runs, completes) in scenarios {
-        admission(html, label, &allowed, (runs, completes)).await;
+    for (label, permission, allowed, runs, completes) in scenarios {
+        let policy = format!("script-src 'self' {permission} {}", allowed.join(" "));
+        admission(html, label, &policy, (runs, completes)).await;
     }
-    let trusted = "script-src 'self' 'unsafe-inline'; require-trusted-types-for 'script'";
+    // A carrier the policy refuses stops installation; the observer absorbs the reported failure.
+    let policy = format!("script-src 'self' {wasm} {}", markup.join(" "));
+    admission(&observed, "encoded markup", &policy, (false, false)).await;
+    refused_compilation(&observed, &hashes).await;
+    trusted_types(html, tt_html).await;
+}
+
+/// Without the WebAssembly permission the bundle cannot compile its module, so nothing installs.
+/// An admitted observer records the refused compilation and the module's failure.
+async fn refused_compilation(observed: &str, hashes: &[String]) {
+    let mut allowed = hashes.to_vec();
+    allowed.push(digest(OBSERVER).await);
+    let policy = format!("script-src 'self' {}", allowed.join(" "));
+    admission(observed, "missing wasm permission", &policy, (false, false)).await;
+}
+
+/// Trusted Types keep completion, inherited with an HTML-only default and set inside the frame.
+async fn trusted_types(html: &str, tt_html: &str) {
+    let trusted =
+        "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; require-trusted-types-for 'script'";
     let mounted = mount(html, false, Host::TrustedTypes(trusted)).await;
     equal(
         &get(&mounted.inspect().await, "value"),

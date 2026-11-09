@@ -201,7 +201,7 @@ fn custom_message_provider_forwards_cancellation_until_body_consumption_ends() -
         result.read().unwrap().stop_reason,
         crate::StopReason::Aborted
     );
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     assert_eq!(host.observed().native_http.requests.len(), 1);
     assert!(
         open.pop().unwrap().send(()).is_err(),
@@ -241,7 +241,7 @@ fn custom_message_provider_times_out_headers_after_ten_minutes_and_retries() -> 
         "attempt deadline must not cancel the caller"
     );
     assert!(
-        observed.bus.listeners.is_empty(),
+        observed.bus.listeners().is_empty(),
         "caller forwarding must be removed"
     );
     assert_eq!(
