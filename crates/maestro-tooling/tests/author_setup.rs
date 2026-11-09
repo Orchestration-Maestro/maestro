@@ -55,9 +55,11 @@ fn with_search_programs(test: &str) -> bool {
 fn path_without_search_programs() -> std::ffi::OsString {
     std::env::join_paths(
         std::env::split_paths(&std::env::var_os("PATH").unwrap()).filter(|directory| {
-            !["rg", "fd"]
-                .iter()
-                .any(|name| directory.join(name).is_file())
+            !["rg", "fd"].iter().any(|name| {
+                directory
+                    .join(format!("{name}{}", std::env::consts::EXE_SUFFIX))
+                    .is_file()
+            })
         }),
     )
     .unwrap()

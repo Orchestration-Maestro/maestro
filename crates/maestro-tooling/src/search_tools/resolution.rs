@@ -48,3 +48,6 @@ pub fn executable_text(name: &str, path: &std::path::Path) -> Result<String, Str
         .map(str::to_owned)
         .ok_or_else(|| format!("{name}: executable path is not UTF-8: {}", path.display()))
 }
+
+#[cfg(test)]
+mod tests;
