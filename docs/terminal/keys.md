@@ -212,8 +212,8 @@ Lock do not prevent it. It returns `None` when alt, ctrl, super or any other
 modifier bit is held, for control characters (`C0`, `DEL` and `C1`), for navigation
 keypad codes and for the protocol's reserved functional range `U+E000` to `U+F8FF`.
 
-`decode_printable_key` also accepts the modifyOtherKeys form, tolerates the lock
-bits the same way and keeps private-use characters as text. A release or repeat
+`decode_printable_key` also accepts the modifyOtherKeys form, which tolerates the
+lock bits the same way and keeps private-use characters as text. A release or repeat
 report types its character too; the caller decides whether to insert it.
 
 ```rust
