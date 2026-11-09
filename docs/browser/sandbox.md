@@ -184,16 +184,18 @@ callbacks and completion. A parser SyntaxError before module entry reaches the
 same observer; the browser remains the final gate for semantic early errors.
 
 `provider` accepts one expression and emits a capture assignment, without an
-invocation. A native setter restores the original global descriptor before Rust
-calls the captured function with the sandbox identifier. The function still runs
-synchronously while its classic script is current. Anonymous functions keep their
-empty name, and provider changes to the restored property remain visible. A provider
-that sets `window.onerror` keeps its handler. The runtime watches for thrown errors through
-that property, passes each error to the handler the provider set, and returns the property
-holding it. Native callability checks ignore a function's own `call` property. A provider
-that throws, an
-expression that throws before it yields a function and a non-callable expression each stop
-later installation with their native error.
+invocation. The assignment carries the expression's completion: `[true, value]` when it
+yields a value, `[false, error]` when it throws. A native setter restores the original
+global descriptor before Rust calls the captured function with the sandbox identifier.
+The function still runs synchronously while its classic script is current. Anonymous
+functions keep their empty name, and provider changes to the restored property remain
+visible. The runtime never touches `window.onerror`, so a provider that sets it, by
+assignment or with `Object.defineProperty`, keeps its handler. Native callability checks
+ignore a function's own `call` property. A provider that throws, an expression that throws
+before it yields a function and a non-callable expression each stop later installation
+with their native error, reported once. A carrier the browser refuses to run, such as one
+with a semantic early error, never reports a completion; installation stops with
+`TypeError: provider did not complete` after the browser's own report.
 The capture property must be configurable when already present; failed installation
 is reported rather than overwriting a protected property.
 

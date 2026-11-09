@@ -12,6 +12,9 @@ const ID: &str = "probe:\"雪]";
 const HEAD: &str = "window.S={first:typeof listAttachments,count:typeof listAttachments==='function'?listAttachments().length:-1,trace:self.__sandboxInstallTrace?[...__sandboxInstallTrace]:null,id:self.sandboxId}";
 /// First authored body script: helper type and live global reads.
 const BODY: &str = "S.second=typeof listAttachments;if(S.second==='function'){attachments.push({id:'b',fileName:'b.txt',mimeType:'text/plain',size:2});S.live=listAttachments().map(a=>a.id).join()}";
+/// Script that keeps a reported runtime failure from reaching the driver as an uncaught error.
+const MUTED: &str =
+    "for(const t of['error','unhandledrejection'])addEventListener(t,e=>e.preventDefault())";
 /// Supplied provider recording its own position in the installation trace.
 const TRACE_PROVIDER: &str = "function(id){if(1<2&&id)(self.__sandboxInstallTrace??=[]).push('provider:'+id+':'+typeof listAttachments)}";
 /// Supplied provider that turns Trusted Types to `none` inside the frame.
@@ -316,41 +319,59 @@ async fn provider_failures(bundle: &Bundle) {
     }
 }
 
-/// A provider expression that throws before it yields a function stops later installation.
+/// A provider expression that throws before it yields a function stops later installation and is
+/// reported once, and a provider the browser refuses to run stops it after the browser's report.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_provider_expression_failure_stops_installation() {
     let bundle = Bundle::load();
+    let configuration = config(&["provider", "attachments"]);
     let state = provider_document(
         &bundle,
-        &config(&["provider", "attachments"]),
+        &configuration,
         &["(()=>{throw new TypeError('expression failure')})()"],
         "S.helper=typeof listAttachments",
     )
     .await;
     assert_eq!(state["helper"], "string");
-    let errors = state["errors"].as_array().unwrap();
-    assert_eq!(errors.len(), 2);
-    assert!(
-        errors
-            .iter()
-            .all(|error| error.as_str() == Some("TypeError: expression failure"))
+    assert_eq!(state["errors"], json!(["TypeError: expression failure"]));
+    let refused = provider_document(
+        &bundle,
+        &configuration,
+        &["function(){let a;let a}"],
+        "S.helper=typeof listAttachments",
+    )
+    .await;
+    assert_eq!(refused["helper"], "string");
+    let errors = refused["errors"].as_array().unwrap();
+    assert!(errors[0].as_str().unwrap().starts_with("SyntaxError:"));
+    assert_eq!(
+        errors.get(1).and_then(Value::as_str),
+        Some("TypeError: provider did not complete")
     );
 }
 
-/// A provider that installs its own error handler keeps it, and one that does so before throwing still stops installation.
+/// A provider that installs its own error handler, by assignment or by defining the property, keeps
+/// it, and one that does so before throwing still stops installation.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn bootstrap_provider_error_handler_writes_survive_installation() {
     let bundle = Bundle::load();
     let configuration = config(&["provider", "attachments"]);
-    let kept = provider_document(
-        &bundle,
-        &configuration,
-        &["function(){window.savedHandler=()=>true;window.onerror=window.savedHandler}"],
-        "S.helper=typeof listAttachments;S.kept=window.onerror===window.savedHandler",
-    )
-    .await;
-    assert_eq!(kept["helper"], "function");
-    assert_eq!(kept["kept"], true);
+    for write in [
+        "window.onerror=window.savedHandler",
+        "Object.defineProperty(window,'onerror',{value:window.savedHandler,writable:true,configurable:true})",
+    ] {
+        let kept = provider_document(
+            &bundle,
+            &configuration,
+            &[&format!(
+                "function(){{window.savedHandler=()=>true;{write}}}"
+            )],
+            "S.helper=typeof listAttachments;S.kept=window.onerror===window.savedHandler",
+        )
+        .await;
+        assert_eq!(kept["helper"], "function", "{write}");
+        assert_eq!(kept["kept"], true, "{write}");
+    }
     let thrown = provider_document(
         &bundle,
         &configuration,
@@ -507,7 +528,8 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
     let all = artifact_hashes(&runtime).await;
     let authored = digests(&[HEAD, BODY]).await;
     let encoded = encode(&runtime.providers[0]);
-    let encoded = digests(&[&runtime.boot, &encoded, HEAD, BODY]).await;
+    let encoded = digests(&[MUTED, &runtime.boot, &encoded, HEAD, BODY]).await;
+    let muted = artifact(&format!("<script>{MUTED}</script>"), &runtime);
     let strict =
         format!("script-src 'self' {all} 'wasm-unsafe-eval'; require-trusted-types-for 'script'");
     let mut observed = vec![
@@ -522,13 +544,6 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
             &html,
             "unmatched loader",
             &format!("script-src 'self' {authored} 'wasm-unsafe-eval'"),
-            false,
-        )
-        .await,
-        policy_row(
-            &html,
-            "encoded provider markup",
-            &format!("script-src 'self' {encoded} 'wasm-unsafe-eval'"),
             false,
         )
         .await,
@@ -548,11 +563,22 @@ pub async fn bootstrap_policy_matrix_keeps_hash_and_trusted_types_results() {
         json!([
             full,
             {"first":"undefined","trace":null,"scaffold":1},
-            {"first":"function","trace":null,"scaffold":0},
             full,
             full,
             {"first":"function","trace":[format!("provider:{ID}:function")],"scaffold":0},
         ])
+    );
+    // A provider the policy blocks never reports its completion, so installation stops there, as
+    // it would inside one runtime script: the configuration block and the runtime script stay.
+    let mount = Mount {
+        policy: &format!("script-src 'self' {encoded} 'wasm-unsafe-eval'"),
+        ..Mount::default()
+    };
+    let (blocked, _) = observe(&muted, mount).await;
+    receipt(&format!("policy encoded provider markup: {blocked}"));
+    assert_eq!(
+        fields(&blocked, &["first", "trace", "head"]),
+        json!({"first":"function","trace":null,"head":"script,script,script,script"})
     );
 }
 

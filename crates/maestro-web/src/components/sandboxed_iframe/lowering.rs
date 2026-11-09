@@ -119,7 +119,9 @@ pub fn program(source: &str) -> Result<Compiled, Error> {
 
 /// Compile a supplied provider expression for synchronous capture and invocation from Rust.
 ///
-/// A sequence expression prevents assignment from inferring a name for an anonymous
+/// The capture receives the expression's completion: `[true, value]` when it yields a
+/// value and `[false, error]` when it throws, so a failure stops installation without the
+/// browser's error reporting. An array element never infers a name for an anonymous
 /// function. The supplied expression retains classic-script scope and strictness.
 ///
 /// # Errors
@@ -136,8 +138,10 @@ pub fn provider(source: &str) -> Result<Compiled, Error> {
     }
     let mut names = Names::default();
     names.visit_program(&parsed);
-    let capture = names.fresh();
-    let code = format!("{capture}=(0,(\n{source}\n));");
+    let (capture, error) = (names.fresh(), names.fresh());
+    let code = format!(
+        "try{{{capture}=[true,(\n{source}\n)];}}catch({error}){{{capture}=[false,{error}];}}"
+    );
     Ok(Compiled { code, capture })
 }
 
