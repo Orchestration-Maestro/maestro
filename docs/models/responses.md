@@ -1,7 +1,7 @@
 # Response endpoints
 
 The standard endpoint is available under
-`providers::responses::openai_responses`; `OpenAIResponsesOptions` is also exported
+`providers::responses_api::openai`; `OpenAIResponsesOptions` is also exported
 at the package root. Conversion and event reduction remain crate-internal.
 
 The raw and simple `_for` counterparts take a fourth `ProviderSpawner<E>`
@@ -75,7 +75,7 @@ async fn controlled() {
 
 ## Cloud invocation
 
-`providers::responses::azure_openai_responses` provides
+`providers::responses_api::azure_transport` provides
 `stream_azure_openai_responses` and `stream_simple_azure_openai_responses`;
 `AzureOpenAIResponsesOptions` is also exported at the package root. Output uses
 `azure-openai-responses` even when the supplied descriptor names another API;

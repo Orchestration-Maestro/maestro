@@ -40,7 +40,7 @@ its entry handles. It returns the prompts and generated entries.
 only generated entries. Empty history and an assistant tail are rejected before
 observations or request conversion; custom tails are converted by the caller.
 
-Local awaited operations take `agent_loop::LocalAgentLoopOptions`:
+Local awaited operations take `execution::LocalAgentLoopOptions`:
 `RegisteredDispatch { signal, spawn }` requires the caller's provider task facility;
 `ReplacementStream { signal, stream_fn }` requires no provider submission.
 Threaded awaited options and function arity are unchanged. Configuration payload

@@ -5,7 +5,7 @@ For selecting a theme and writing a complete custom file, read
 
 `maestro-theme` builds typed terminal themes. A `Theme` holds one prepared ANSI
 prefix per plane and color name, a stored `ColorMode`, and optional name and source path.
-Every public item lives in the `theme` module and is re-exported at the crate root.
+Every public item lives in the `palette` module and is re-exported at the crate root.
 
 ```rust
 use maestro_theme::{ColorMode, ThemeColor, load_theme_from_path};

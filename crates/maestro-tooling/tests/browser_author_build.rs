@@ -1,7 +1,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 
-use crate::toolchain_support;
+use crate::compiler;
 
 use crate::recipe_support;
 use recipe_support::Workspace;
@@ -73,7 +73,7 @@ fn fail_setup(stage: &str) {
         return;
     }
     let status = recipe_support::setup_status(
-        toolchain_support::command(env!("CARGO_BIN_EXE_development"))
+        compiler::command(env!("CARGO_BIN_EXE_development"))
             .args(["nextest-setup", "fixture-sources", "workspace"])
             .current_dir(browser.workspace.path()),
     );
@@ -1695,14 +1695,14 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
     )
     .unwrap();
     success(
-        &toolchain_support::command(env!("CARGO"))
+        &compiler::command(env!("CARGO"))
             .current_dir(browser.workspace.path())
             .args(["metadata", "--offline", "--format-version", "1"])
             .output()
             .unwrap(),
     );
     success(
-        &toolchain_support::command(env!("CARGO"))
+        &compiler::command(env!("CARGO"))
             .current_dir(browser.workspace.path())
             .args(["metadata", "--locked", "--offline", "--format-version", "1"])
             .output()
@@ -1756,7 +1756,7 @@ fn browser_author_shared_launcher_uses_invoking_checkout() {
     fs::create_dir_all(&target).unwrap();
     let target = target.canonicalize().unwrap();
     success(
-        &toolchain_support::command(env!("CARGO"))
+        &compiler::command(env!("CARGO"))
             .current_dir(browser.workspace.path())
             .args(["build", "--locked", "-p", "maestro-tooling", "--bins"])
             .env("CARGO_TARGET_DIR", &target)
@@ -2074,7 +2074,7 @@ fn browser_native_refusals_preserve_errors_and_adapter_status() {
     )
     .unwrap_err();
     assert_eq!(error.to_string(), "missing browser operation");
-    let output = toolchain_support::command(env!("CARGO_BIN_EXE_browser-cargo-locked"))
+    let output = compiler::command(env!("CARGO_BIN_EXE_browser-cargo-locked"))
         .arg("metadata")
         .env("MAESTRO_BROWSER_CARGO", browser.path("nonexistent-cargo"))
         .output()

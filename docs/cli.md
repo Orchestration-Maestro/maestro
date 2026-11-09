@@ -180,7 +180,7 @@ at EOF supplies no decision. These operations accept caller-owned streams and
 file effects. The library entry composes them; native executable wiring remains
 separate.
 
-`presentation::prompt_for_missing_session_cwd` offers Continue and Cancel using
+`feedback::prompt_for_missing_session_cwd` offers Continue and Cancel using
 an application-supplied selection component. It loads the theme and keybindings
 before constructing its frame writer, forwards saved cursor and clear-on-shrink
 policies, and returns the fallback directory only for Continue. Cancellation,

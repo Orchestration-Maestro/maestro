@@ -2,7 +2,7 @@
 
 use std::{fs, path::Path};
 
-use crate::toolchain_support;
+use crate::compiler;
 
 /// Measured slow tests start first without changing partition membership or hiding failures.
 #[test]
@@ -144,7 +144,7 @@ fn browser_workspace_source_tests_receive_the_workspace_sources_setup() {
 /// Run one-worker nextest and retain completion order, including the intentional failure.
 /// A private Cargo home avoids registry-cache locks held by unrelated builds.
 fn run_nextest(root: &Path, config: &Path, partition: Option<&str>) -> Vec<String> {
-    let mut command = toolchain_support::fixture_command("cargo", root, None).unwrap();
+    let mut command = compiler::fixture_command("cargo", root, None).unwrap();
     command
         .args([
             "nextest",

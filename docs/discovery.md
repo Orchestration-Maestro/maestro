@@ -1,7 +1,7 @@
 # Session discovery and working-directory diagnosis
 
 `SessionManager::list` and `SessionManager::list_all` summarize stored sessions
-without opening them as histories, and `session_cwd` reports a stored working
+without opening them as histories, and `cwd` reports a stored working
 directory that no longer exists. File framing, record shapes and date parsing
 belong to [session history](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md)
 and the [session format](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_format.md);

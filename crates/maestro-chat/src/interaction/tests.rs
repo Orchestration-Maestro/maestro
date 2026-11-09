@@ -63,7 +63,7 @@ use maestro_theme::{
 };
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, Text, candidates as tui_autocomplete, interface::InputHandler,
+    EditorComponent, Text, candidates, interface::InputHandler,
 };
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;
@@ -1046,15 +1046,12 @@ impl AutocompleteProvider for Numbered {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: tui_autocomplete::CursorPosition,
-        _options: tui_autocomplete::CompletionOptions<'a, Self::Signal>,
+        _cursor: candidates::CursorPosition,
+        _options: candidates::CompletionOptions<'a, Self::Signal>,
     ) -> Pin<
         Box<
             dyn Future<
-                    Output = Result<
-                        Option<AutocompleteSuggestions>,
-                        tui_autocomplete::CompletionError,
-                    >,
+                    Output = Result<Option<AutocompleteSuggestions>, candidates::CompletionError>,
                 > + 'a,
         >,
     > {
@@ -1075,11 +1072,11 @@ impl AutocompleteProvider for Numbered {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: tui_autocomplete::CursorPosition,
+        _cursor: candidates::CursorPosition,
         item: &AutocompleteItem,
         _prefix: &str,
-    ) -> tui_autocomplete::CompletionResult {
-        tui_autocomplete::CompletionResult {
+    ) -> candidates::CompletionResult {
+        candidates::CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),

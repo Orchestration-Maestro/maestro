@@ -1466,7 +1466,7 @@ lane.
 Cargo locks the package cache of its home while it resolves, even with
 `--offline`, so two tests that start `cargo` in one home wait for each other.
 Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
-`toolchain_support::fixture_command` creates beside the fixture. The recipe
+`compiler::fixture_command` creates beside the fixture. The recipe
 tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.

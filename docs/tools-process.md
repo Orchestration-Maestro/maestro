@@ -291,9 +291,9 @@ releasing its master. Graceful shutdown keeps the runtime and notification consu
 alive until pending hooks finish; destroying the runtime cancels them and closes
 their masters.
 
-The platform-independent `foreground` module owns `ForegroundJob` and
-`ForegroundProcess` observations. Linux retains their existing `pty::foreground`
-paths as re-exports. The Linux-only `pty::foreground` module reads live process
+The platform-independent `jobs` module owns `ForegroundJob` and
+`ForegroundProcess` observations. Linux retains their existing `terminal::jobs`
+paths as re-exports. The Linux-only `terminal::jobs` module reads live process
 groups, arguments, native working directories, raw environment values and session
 membership. `session_processes_by_id` takes the original session identity, which terminal
 setup establishes as the spawned child's PID; it does not need a live leader.

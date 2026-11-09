@@ -1,7 +1,7 @@
 //! Registration and invocation of the authored-agent tool.
 
 use crate::{
-    discovery::{self as agents, AgentConfig, AgentScope},
+    discovery::{self, AgentConfig, AgentScope},
     runs::{
         Progress, SingleResult, SubagentDetails, TaskItem, fallback, process_child::Run,
         tool_result,
@@ -82,7 +82,7 @@ async fn execute(
 ) -> ExtensionResult<AgentToolResult> {
     let params: Params = serde_json::from_value(params).map_err(|error| error.to_string())?;
     let cwd = ctx.cwd()?;
-    let discovery = agents::discover_agents(&api, &cwd, params.agent_scope)?;
+    let discovery = discovery::discover_agents(&api, &cwd, params.agent_scope)?;
     let mut details = SubagentDetails {
         mode: "single".into(),
         agent_scope: params.agent_scope,

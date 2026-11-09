@@ -448,7 +448,7 @@ fn settings_session_modes_use_distinct_live_policies() {
 /// Each of the four choices must reach the live agent the session executes prompts on, so
 /// the next request is built with it: the session prompts `self.agent`
 /// (`agent_session/prompting.rs:73`) and the request options read that same agent's
-/// `transport` (`maestro-agent/src/agent/execution.rs:234`).
+/// `transport` (`maestro-agent/src/runtime/execution.rs:234`).
 #[test]
 fn settings_transport_change_reaches_the_live_agent() {
     isolated(

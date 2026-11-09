@@ -2,7 +2,7 @@
 use super::{
     FileEntry, LabelEntry, ReadonlySessionManager, SessionEntry, SessionManager, SessionTreeNode,
     conversions::invalid,
-    history::{self as context, ecma_whitespace, truthy},
+    history::{self, ecma_whitespace, truthy},
 };
 use maestro_request::presence::Presence;
 use serde_json::{Map, Value};
@@ -63,7 +63,7 @@ impl ReadonlySessionManager for SessionManager {
             .filter(|id| !id.is_empty())
             .and_then(|id| self.get_entry(id))
         {
-            Some(leaf) => context::ancestor_path(leaf, |id| self.get_entry(id)),
+            Some(leaf) => history::ancestor_path(leaf, |id| self.get_entry(id)),
             None => Ok(Vec::new()),
         }
     }

@@ -101,7 +101,7 @@ converted into `ToolRenderResultBinding` with `Into::into`.
 ## Caller-local construction
 
 Root factory names and explicit `::<C>` calls keep their thread-safe defaults.
-`maestro_tools::local` (also `tools::local` and each factory owner's `local`
+`maestro_tools::local` (also `registry::local` and each factory owner's `local`
 module) constructs the same definitions with `Rc` callbacks and local futures.
 Choose the namespace before construction; an erased tool is not converted between
 execution families. `ToolDefinitionRecord` and `ToolDefRecord` are the common

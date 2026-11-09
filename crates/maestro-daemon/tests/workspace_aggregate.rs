@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use maestro_daemon::{terminal::model::TerminalState, workspace::summary as aggregate};
+use maestro_daemon::{terminal::model::TerminalState, workspace::summary};
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_workspace::{
     spaces::{Workspace, WorkspaceTopology},
@@ -28,7 +28,7 @@ fn workspace_rollup_all_unknown() {
     let ws = &topology.workspaces[0];
     let terminal = terminal_for_pane(ws, ws.tabs[0].root_pane);
     let terminals = HashMap::from([(terminal.id.clone(), terminal)]);
-    let (state, seen) = aggregate::aggregate_state(ws, &terminals);
+    let (state, seen) = summary::aggregate_state(ws, &terminals);
     assert_eq!(state, AgentState::Unknown);
     assert!(seen);
 }
@@ -76,7 +76,7 @@ fn workspace_rollup_priority() {
     second_terminal.state = AgentState::Working;
     terminals.insert(second_terminal.id.clone(), second_terminal);
 
-    let (state, seen) = aggregate::aggregate_state(ws, &terminals);
+    let (state, seen) = summary::aggregate_state(ws, &terminals);
 
     assert_eq!(state, AgentState::Working);
     assert!(seen);
@@ -117,7 +117,7 @@ fn workspace_rollup_done_unseen_beats_working() {
     let root = ws.tabs[0].panes.get_mut(&root_id).unwrap();
     root.seen = false;
 
-    let (state, seen) = aggregate::aggregate_state(ws, &terminals);
+    let (state, seen) = summary::aggregate_state(ws, &terminals);
 
     assert_eq!(state, AgentState::Idle);
     assert!(!seen);
@@ -135,7 +135,7 @@ fn daemon_pane_details_prefers_agent_name_over_detected_agent_label() {
     terminal.set_agent_name("planner".into());
     terminals.insert(terminal.id.clone(), terminal);
 
-    let labels: Vec<_> = aggregate::pane_details(ws, &terminals)
+    let labels: Vec<_> = summary::pane_details(ws, &terminals)
         .into_iter()
         .map(|detail| (detail.label, detail.agent_label, detail.agent))
         .collect();
@@ -186,7 +186,7 @@ fn daemon_pane_details_includes_tab_context_for_multi_tab_workspace() {
         .unwrap();
     terminals.insert(review_terminal.id.clone(), review_terminal);
 
-    let labels: Vec<_> = aggregate::pane_details(ws, &terminals)
+    let labels: Vec<_> = summary::pane_details(ws, &terminals)
         .into_iter()
         .map(|detail| (detail.label, detail.agent_label, detail.agent))
         .collect();
@@ -214,7 +214,7 @@ fn daemon_pane_details_use_tab_vector_index_not_stable_public_tab_number() {
     terminal.detected_agent = Some(Agent::Codex);
     terminals.insert(terminal.id.clone(), terminal);
 
-    let details = aggregate::pane_details(ws, &terminals);
+    let details = summary::pane_details(ws, &terminals);
     let survivor = details
         .iter()
         .find(|detail| detail.pane_id == survivor_pane)

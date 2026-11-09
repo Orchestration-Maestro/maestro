@@ -56,7 +56,7 @@ width, quoted delimiters or unconsumed trailing text.
 
 `parsed_arguments(&str) -> serde_json::Value` delegates to `parse_streaming_json`
 and keeps whatever root the text spells, an object included. It is available at
-the crate root, `arguments` and `arguments::json_parse` paths.
+the crate root, `parameters` and `parameters::json_parse` paths.
 
 `sanitize_surrogates(&[u16]) -> String` preserves BMP text and valid UTF-16 pairs,
 removing unmatched surrogate units. Ordinary Rust strings need no cleanup.

@@ -161,7 +161,7 @@ use `<agent dir>/daemons/<name>/`.
 | Announcement state | `announcements.json` | Agent directory |
 | Remote resources | `remote/` | Agent directory |
 
-Detection paths use canonical agent labels. `paths::action_path_component` encodes
+Detection paths use canonical agent labels. `locations::action_path_component` encodes
 arbitrary action identities into one component, including separators, percent
 signs, Windows reserved stems and trailing dots. Long components keep a prefix
 and a SHA-256 suffix within 120 ASCII bytes. Action configuration and state share

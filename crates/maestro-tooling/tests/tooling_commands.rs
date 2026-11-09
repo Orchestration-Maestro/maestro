@@ -1,9 +1,9 @@
 #![cfg(test)]
 
+use crate::compiler;
 #[cfg(unix)]
 use crate::recipe_support;
 use crate::recipe_support::write_input;
-use crate::toolchain_support;
 
 use std::fs;
 use std::io;
@@ -58,10 +58,9 @@ fn child_toolchain_uses_declared_pin() {
     check_declared_children(&fixture);
     let declaration = include_str!("../../../rust-toolchain.toml");
     assert!(
-        toolchain_support::declare_toolchain(&fixture.root.path().join("missing"), declaration)
-            .is_err()
+        compiler::declare_toolchain(&fixture.root.path().join("missing"), declaration).is_err()
     );
-    assert!(toolchain_support::declare_toolchain(&fixture.child, declaration).is_err());
+    assert!(compiler::declare_toolchain(&fixture.child, declaration).is_err());
     assert!(
         std::env::vars_os().collect::<Vec<_>>() == before,
         "parent environment changed"
@@ -103,7 +102,7 @@ fn assert_incomplete_default() {
 
 /// Link the already installed compiler without installing or changing its files.
 fn prepare_incomplete_toolchain(home: &Path) -> PathBuf {
-    let output = toolchain_support::command("rustc")
+    let output = compiler::command("rustc")
         .args(["--print", "sysroot"])
         .output()
         .unwrap();
@@ -125,7 +124,7 @@ fn prepare_incomplete_toolchain(home: &Path) -> PathBuf {
 
 /// Require compiler output, Cargo metadata and a real recipe below the declaration.
 fn check_declared_children(fixture: &Fixture) {
-    let sysroot = toolchain_support::command("rustc")
+    let sysroot = compiler::command("rustc")
         .current_dir(fixture.root.path())
         .args(["--print", "sysroot"])
         .output()
@@ -153,7 +152,7 @@ fn check_declared_children(fixture: &Fixture) {
         "probe:\n    rustc --print sysroot\n",
     )
     .unwrap();
-    let recipe = toolchain_support::command("just")
+    let recipe = compiler::command("just")
         .current_dir(fixture.root.path())
         .arg("probe")
         .output()
@@ -176,7 +175,7 @@ fn check_declared_metadata(fixture: &Fixture) {
     .unwrap();
     fs::create_dir(fixture.root.path().join("src")).unwrap();
     fs::write(fixture.root.path().join("src/lib.rs"), "").unwrap();
-    let metadata = toolchain_support::command("cargo")
+    let metadata = compiler::command("cargo")
         .current_dir(fixture.root.path())
         .args([
             "metadata",
@@ -203,7 +202,7 @@ fn child_toolchain_preserves_parent_profile_destination() {
     const PROBE: &str = "MAESTRO_TOOLCHAIN_ENV_PROBE";
     if std::env::var_os(PROBE).is_some() {
         let before: Vec<_> = std::env::vars_os().collect();
-        let mut child = toolchain_support::command("sh");
+        let mut child = compiler::command("sh");
         let output = child
             .args(["-c", "test -z \"${LLVM_PROFILE_FILE+x}${RUSTFLAGS+x}${CARGO_ENCODED_RUSTFLAGS+x}${__CARGO_LLVM_COV_RUSTC_WRAPPER+x}\" && test \"$RUSTC_WRAPPER\" = original-wrapper"])
             .output()
@@ -294,7 +293,7 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
 /// Generate a fixture's lock file with its Cargo state kept in a private home.
 fn generate_private_lock(root: &Path) {
     assert!(
-        toolchain_support::fixture_command(env!("CARGO"), root, None)
+        compiler::fixture_command(env!("CARGO"), root, None)
             .unwrap()
             .arg("generate-lockfile")
             .status()
@@ -316,7 +315,7 @@ fn prepared_probe() -> PathBuf {
 
 /// Inspect actual parent counters after the instrumented process exits normally.
 fn assert_profile_counters(profile: &Path) {
-    let directory = toolchain_support::command("rustc")
+    let directory = compiler::command("rustc")
         .current_dir(profile.parent().unwrap())
         .args(["--print", "target-libdir"])
         .output()
@@ -424,11 +423,8 @@ impl Fixture {
         let spelled = parent.path().join("Maestro's tooling fixture");
         fs::create_dir(&spelled).unwrap();
         let root = maestro_test_directory::Scratch::new_in(&spelled).unwrap();
-        toolchain_support::declare_toolchain(
-            root.path(),
-            include_str!("../../../rust-toolchain.toml"),
-        )
-        .unwrap();
+        compiler::declare_toolchain(root.path(), include_str!("../../../rust-toolchain.toml"))
+            .unwrap();
         fs::create_dir(root.path().join("receipt")).unwrap();
         fs::create_dir_all(root.path().join(".maestro/agent")).unwrap();
         let source = root.path().join("child.rs");
@@ -461,7 +457,7 @@ impl Fixture {
             .env("HOME", self.root.path())
             .env("PATH", self.root.path())
             .current_dir(self.root.path());
-        if let Some(channel) = toolchain_support::channel() {
+        if let Some(channel) = compiler::channel() {
             command = command.env("RUSTUP_TOOLCHAIN", channel);
         }
         for (index, arg) in args.iter().enumerate() {
@@ -487,7 +483,7 @@ impl Fixture {
 /// Compile the fixture program beneath its declared toolchain root.
 fn compile_fixture(root: &Path, source: &Path, child: &Path) {
     assert!(
-        toolchain_support::command("rustc")
+        compiler::command("rustc")
             .current_dir(root)
             .arg(source)
             .arg("-o")
@@ -3378,10 +3374,7 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
         .env("MAESTRO_FIXTURE_CARGO", workspace.join("bin/cargo"))
         .env("MAESTRO_RECEIPT", workspace.join("receipt"))
         .env("CARGO_TARGET_DIR", workspace.join("target"))
-        .env(
-            "CARGO_HOME",
-            toolchain_support::home(workspace.parent().unwrap()),
-        )
+        .env("CARGO_HOME", compiler::home(workspace.parent().unwrap()))
         .env(
             "PATH",
             format!(
@@ -3390,7 +3383,7 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
                 std::env::var("PATH").unwrap()
             ),
         );
-    if let Some(channel) = toolchain_support::channel() {
+    if let Some(channel) = compiler::channel() {
         command = command.env("RUSTUP_TOOLCHAIN", channel);
     }
     command
@@ -3401,7 +3394,7 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
 #[cfg(unix)]
 fn consumer_toolchain(workspace: &Path) -> Command {
     let mut command =
-        toolchain_support::fixture_command("cargo", workspace.parent().unwrap(), None).unwrap();
+        compiler::fixture_command("cargo", workspace.parent().unwrap(), None).unwrap();
     command.current_dir(workspace);
     command
 }
@@ -3827,8 +3820,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
 /// Build a dependency-free workspace with a transitive library and an author example. The
 /// transitive library's build script has its own file name, which names its Cargo crate.
 fn cache_fixture(root: &Path) {
-    toolchain_support::declare_toolchain(root, include_str!("../../../rust-toolchain.toml"))
-        .unwrap();
+    compiler::declare_toolchain(root, include_str!("../../../rust-toolchain.toml")).unwrap();
     for (path, text) in [
         (
             "Cargo.toml",
@@ -3880,7 +3872,7 @@ fn cache_fixture(root: &Path) {
 
 /// Run Cargo with fixture-local state and build outputs.
 fn cache_cargo(root: &Path, args: &[&str]) {
-    let result = toolchain_support::fixture_command(env!("CARGO"), root, None)
+    let result = compiler::fixture_command(env!("CARGO"), root, None)
         .unwrap()
         .env("CARGO_TARGET_DIR", root.join("target"))
         .args(args)
@@ -4470,7 +4462,7 @@ fn example_test_modules_resolve_nested_modules() {
     let executable = root
         .path()
         .join(format!("nested{}", std::env::consts::EXE_SUFFIX));
-    let output = toolchain_support::command("rustc")
+    let output = compiler::command("rustc")
         .arg(&main)
         .arg("-o")
         .arg(&executable)

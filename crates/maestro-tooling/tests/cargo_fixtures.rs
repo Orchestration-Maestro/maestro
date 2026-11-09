@@ -1,7 +1,7 @@
 //! Cargo fixture cache isolation through the shared command builder.
 
+use crate::compiler;
 use crate::recipe_support::{self, Workspace};
-use crate::toolchain_support;
 use crate::tooling_closure::{dependency_entries, tooling_local_dependencies};
 use maestro_test_directory::Scratch;
 use std::fs;
@@ -19,7 +19,7 @@ fn fixture_cargo_resolution_uses_private_home() {
         "[package]\nname = 'cache-fixture'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
     )
     .unwrap();
-    let output = toolchain_support::fixture_command(env!("CARGO"), root.path(), None)
+    let output = compiler::fixture_command(env!("CARGO"), root.path(), None)
         .unwrap()
         .args(["metadata", "--offline", "--format-version", "1"])
         .output()
@@ -70,7 +70,7 @@ fn fixture_cargo_resolution_uses_supplied_sources() {
         ),
     )
     .unwrap();
-    let output = toolchain_support::fixture_command(env!("CARGO"), root.path(), Some(&sources))
+    let output = compiler::fixture_command(env!("CARGO"), root.path(), Some(&sources))
         .unwrap()
         .args(["metadata", "--offline", "--format-version", "1"])
         .output()
@@ -163,7 +163,7 @@ const WRAPPER_ROOT: &str = "MAESTRO_FIXTURE_WRAPPER_ROOT";
 /// parent set.
 #[cfg(unix)]
 fn build_fixture(root: &Path) {
-    let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
+    let output = compiler::fixture_command(env!("CARGO"), root, None)
         .unwrap()
         .args(["build", "--offline"])
         .output()
@@ -275,7 +275,7 @@ fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
     const NAME: &str = "fixture_command_wraps_only_a_wrapper_the_command_keeps";
     if std::env::var_os(REPORT).is_some() {
         let root = Scratch::new().unwrap();
-        let command = toolchain_support::fixture_command("true", root.path(), None).unwrap();
+        let command = compiler::fixture_command("true", root.path(), None).unwrap();
         let env = |name: &str| {
             command
                 .get_envs()
@@ -342,7 +342,7 @@ fn prepared_sources_resolve_registry_crates_offline() {
     )
     .unwrap();
     let sources = recipe_support::prepared_sources();
-    let output = toolchain_support::fixture_command(env!("CARGO"), root.path(), Some(&sources))
+    let output = compiler::fixture_command(env!("CARGO"), root.path(), Some(&sources))
         .unwrap()
         .args(["metadata", "--format-version", "1"])
         .output()

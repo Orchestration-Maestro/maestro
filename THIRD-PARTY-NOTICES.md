@@ -828,7 +828,7 @@ under the same license. Changes include one locked concrete terminal, reuse of
 engine reads and encoders, supplied process facts and time observations, and
 caller-owned rendering and scheduling. Semantic character-key policy in
 `crates/maestro-terminal/src/input/key_encode/` derives from the input encoder;
-keyboard-stack replay in `src/kitty/key.rs` and `src/formatter/vt.rs` derives from
+keyboard-stack replay in `src/kitty/key.rs` and `src/formatting/vt.rs` derives from
 the pane keyboard tracker. The encoder retains Unicode codepoints rather than
 truncating unmapped control characters to a byte.
 Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its

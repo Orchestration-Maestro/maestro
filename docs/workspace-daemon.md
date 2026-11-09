@@ -316,7 +316,7 @@ master. Export retains terminal modes, keyboard negotiation and the display titl
 primary-screen replay keeps up to 8 KiB of complete recent lines. Import starts
 paused without taking process ownership. Commit releases the old reader;
 `assume_handoff_ownership` makes the imported owner responsible for session shutdown.
-`terminal::runtime_registry::TerminalRuntimeRegistry` stores runtimes directly by
+`terminal::owners::TerminalRuntimeRegistry` stores runtimes directly by
 durable terminal identity and coordinates reader pause, ownership and redraw.
 
 `maestro_daemon::render_signal::RenderSignal` coalesces render work while retaining
@@ -505,7 +505,7 @@ code-point field; that value stays local. Ingress masks unknown modifier bits,
 uses the wire repeat count over the native record's count and normalizes releases
 last. A non-key event returns unchanged to its routing caller.
 
-`input::mouse` accepts supplied host geometry without reading the terminal.
+`ingress::mouse` accepts supplied host geometry without reading the terminal.
 Host pixel coordinates are one-based; cells and pane rectangles are zero-based.
 Pane pixel results are one-based and scaled with integer arithmetic. Report
 parsing requires a complete numeric SGR report. Relocation preserves the button
@@ -540,7 +540,7 @@ At the deadline the error names every socket that still accepts connections.
 
 ## Daemon client and status
 
-`api::client::DaemonClient` keeps one endpoint: a named-daemon selection or an
+`service::transport::DaemonClient` keeps one endpoint: a named-daemon selection or an
 explicit socket path, kept exactly as given. Each request opens its own
 connection, writes one canonical line and reads one reply line. Ordinary requests
 set no timeout. `request_value_with_timeout` applies the supplied duration to
@@ -549,7 +549,7 @@ the platform's invalid-input error. `request` decodes the shared response and
 returns a failure with its correlation, command, code and message.
 
 Status is a live ping, never a file. `DaemonClient::status` and
-`api::read_runtime_status_at` return the daemon's version, protocol and
+`service::read_runtime_status_at` return the daemon's version, protocol and
 capabilities. The reader returns no status for an absent socket, a refused
 connection or a daemon that does not answer in time; any other failure keeps its
 original diagnostic. `platform::current_process_is_detached_server_daemon`
@@ -653,7 +653,7 @@ the leaf swap and the pane transfer have one implementation.
 The handlers in `app/api/panes/` for input, rename, read and the agent reports resolve
 their pane like the reads do, and hand the work to the owners that already exist.
 
-- **Keys.** A request key goes through `key_combo::parse_key_combo` after the legacy
+- **Keys.** A request key goes through `keys::parse_key_combo` after the legacy
   `C-c`, `c-c` and `+` spellings are mapped, then through the pane's terminal encoder, so
   the live keyboard modes decide the bytes. All keys are encoded before the first write.
   Text is framed by `PaneRuntime::paste_payload`, the same framing a paste uses.
@@ -747,7 +747,7 @@ inputs.
 
 ## File logging
 
-`logging::init_file_logging` takes `DaemonPaths`, a role and the caller's observed
+`diagnostics::init_file_logging` takes `DaemonPaths`, a role and the caller's observed
 `MAESTRO_LOG` value. Roles `in-process`, `client` and `daemon` write
 `maestro-in-process.log`, `maestro-client.log` and `maestro-daemon.log` in the
 selected daemon folder. `help_log_paths_summary` describes those locations.
@@ -881,14 +881,14 @@ Use `maestro_daemon::git::checkouts` from a blocking worker. For example, list t
 checkouts of a repository without opening a workspace:
 
 ```rust
-use maestro_daemon::git::checkouts as worktree;
+use maestro_daemon::git::checkouts;
 use std::path::Path;
 
-let entries = worktree::list(Path::new("/projects/repository"))?;
+let entries = checkouts::list(Path::new("/projects/repository"))?;
 for entry in entries {
     println!("{}", entry.path.display());
 }
-Ok::<(), worktree::WorktreeError>(())
+Ok::<(), checkouts::WorktreeError>(())
 ```
 
 These library operations add, remove and list checkouts. They do not expose socket
@@ -902,7 +902,7 @@ removal refusals can be classified regardless of the daemon's locale.
 `branch_to_path_slug` makes a folder name from lowercase ASCII letters and digits
 joined by single dashes, or `worktree` when none remains. `worktrees_root` resolves
 `daemon.worktreesDirectory`, whose default is `~/.maestro/worktrees`. It uses the
-shared native tilde expansion with a supplied home, normally `paths::home_directory`.
+shared native tilde expansion with a supplied home, normally `locations::home_directory`.
 An exact `~` or a leading `~/` expands; Windows also accepts `~\`. Unsupported
 spellings and paths without an available home stay literal. Relative results lie
 below the current directory. `default_checkout_path` appends the repository name

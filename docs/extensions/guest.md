@@ -1173,7 +1173,7 @@ See [native helpers](guest_operations.md) for synchronous terminal operations.
 
 ## Standard operating-system interfaces
 
-`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+`registry::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
 under the host's temporary root, with mode `0700` on Unix and the default
 Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
 

@@ -571,7 +571,7 @@ Toast delivery defaults to `off` with a one-second delay. Delays from 0 through
 3,600 seconds are accepted. Workspace placement defaults to bottom-right;
 clipboard notifications default on at bottom-center.
 
-The sibling `theme`, `sound` and `tab_bar` modules retain theme aliases and
+The sibling `appearance`, `audio` and `tabs` modules retain theme aliases and
 custom color strings, per-agent sound overrides and ordered tab entries. Sound
 paths resolve against a supplied agent directory. `NotificationShowSound::None`
 never selects a file. Tab commands default to a five-second refresh interval

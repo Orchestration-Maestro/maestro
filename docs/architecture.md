@@ -175,10 +175,10 @@ Feature owners retain serialization, symbolic-link policy and scheduling.
 
 The process owner `maestro-process` is declared core below layer 0 and depends only
 on `maestro-text` for POSIX shell operand serialization. Only tools, packages, credentials,
-detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
+detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `children` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
-Linux pane terminals use the separate `pty` module, with setup, foreground facts
+Linux pane terminals use the separate `terminal` module, with setup, foreground facts
 and an owned I/O actor. The `byte_queue` module owns ordered buffers and partial-write
 offsets shared by that actor and native terminal output; callers keep readiness and
 shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).

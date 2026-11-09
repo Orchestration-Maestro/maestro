@@ -3,7 +3,7 @@
 use maestro_detection::agents::{
     Agent, agent_label, identify_agent_in_job, identify_agent_in_process, parse_agent_label,
 };
-use maestro_process::terminal::jobs::{self as foreground, ForegroundJob, ProcessDetectionMode};
+use maestro_process::terminal::jobs::{self, ForegroundJob, ProcessDetectionMode};
 
 /// Agent identity confirmation.
 pub mod observations;
@@ -128,13 +128,11 @@ pub fn probe_foreground_process(
         pid,
         foreground_pgid,
         foreground_pgid
-            .and_then(foreground::foreground_group_leader_job)
+            .and_then(jobs::foreground_group_leader_job)
             .as_ref(),
-        || foreground::foreground_job(pid, mode),
+        || jobs::foreground_job(pid, mode),
         |pid| {
-            parse_agent_env_hint(
-                foreground::process_environment_value(pid, "MAESTRO_AGENT").as_deref(),
-            )
+            parse_agent_env_hint(jobs::process_environment_value(pid, "MAESTRO_AGENT").as_deref())
         },
     )
 }

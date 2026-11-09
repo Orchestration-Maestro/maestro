@@ -19,7 +19,7 @@ use super::{
 };
 use maestro_process::{
     jobs::ForegroundProcess,
-    terminal::jobs::{self as foreground, ProcessDetectionMode},
+    terminal::jobs::{self, ProcessDetectionMode},
 };
 use maestro_protocol::{
     rpc_types::RpcCommand,
@@ -47,7 +47,7 @@ pub(super) struct Located {
 fn process_record(process: ForegroundProcess) -> PaneProcessInfoProcess {
     PaneProcessInfoProcess {
         pid: process.pid,
-        cwd: foreground::process_cwd(process.pid).map(|cwd| cwd.display().to_string()),
+        cwd: jobs::process_cwd(process.pid).map(|cwd| cwd.display().to_string()),
         name: process.name,
         argv0: process.argv0,
         argv: process.argv,
@@ -60,7 +60,7 @@ fn observe_foreground(
     child: u32,
     mode: ProcessDetectionMode,
 ) -> Option<(u32, Vec<PaneProcessInfoProcess>)> {
-    let job = foreground::foreground_job(child, mode)?;
+    let job = jobs::foreground_job(child, mode)?;
     let processes = job.processes.into_iter().map(process_record).collect();
     Some((job.process_group_id, processes))
 }

@@ -26,7 +26,7 @@ fn nested_layout_keeps_axes_and_ratios() {
 use super::support::snapshot::{assert_error, capture, encoded, history, populated, read};
 use maestro_workspace::persist::{
     load_history,
-    records::{self as snapshot, WorkspaceSnapshot},
+    records::{self, WorkspaceSnapshot},
 };
 use serde_json::{Value, json};
 use std::fs;
@@ -219,7 +219,7 @@ fn capture_node_preserves_both_split_axes() {
         }),
     };
     assert_eq!(
-        serde_json::to_value(snapshot::capture_node(&node)).unwrap(),
+        serde_json::to_value(records::capture_node(&node)).unwrap(),
         json!({"Split":{"direction":"Horizontal","ratio":0.25,"first":{"Pane":9},"second":{"Split":{"direction":"Vertical","ratio":0.75,"first":{"Pane":31},"second":{"Pane":99}}}}})
     );
 }
