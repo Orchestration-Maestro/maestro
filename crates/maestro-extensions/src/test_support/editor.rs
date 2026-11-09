@@ -1,27 +1,46 @@
-//! A custom editor for witnesses: the toolkit editor behind an interceptor, the interrupt and
-//! the application actions its keybindings bind.
-use maestro_extensions::types::{ActionHandlers, CustomEditorComponent, ExtensionShortcutCallback};
-use maestro_extensions::{Component, InputHandler};
+//! The toolkit editor behind an interceptor, the interrupt and the application actions its
+//! keybindings bind.
+use crate::types::{
+    ActionHandlers, CustomEditorComponent, ExtensionEditor, ExtensionShortcutCallback,
+};
 use maestro_tui::editor_component::TextCallback;
-use maestro_tui::{Cancellation, Editor, EditorComponent, KeybindingsManager};
+use maestro_tui::{
+    Cancellation, Component, Editor, EditorComponent, Focusable, KeybindingsManager,
+    interface::InputHandler,
+};
 use std::{cell::RefCell, rc::Rc};
 
 /// The toolkit editor with an interceptor, an interrupt handler and application actions.
-pub struct CustomEditor {
+pub(super) struct CustomEditor {
     /// The toolkit editor.
-    pub editor: Editor,
+    editor: Editor,
     /// The keybindings the actions are matched with.
-    pub keybindings: KeybindingsManager,
+    keybindings: KeybindingsManager,
     /// The application actions.
-    pub handlers: ActionHandlers,
+    handlers: ActionHandlers,
     /// The interrupt handler.
-    pub escape: RefCell<Option<Rc<dyn Fn()>>>,
+    escape: RefCell<Option<Rc<dyn Fn()>>>,
     /// The empty-editor exit handler.
-    pub ctrl_d: RefCell<Option<Rc<dyn Fn()>>>,
+    ctrl_d: RefCell<Option<Rc<dyn Fn()>>>,
     /// The image-paste handler.
-    pub paste_image: RefCell<Option<Rc<dyn Fn()>>>,
+    paste_image: RefCell<Option<Rc<dyn Fn()>>>,
     /// The interceptor.
-    pub extension: RefCell<Option<ExtensionShortcutCallback>>,
+    extension: RefCell<Option<ExtensionShortcutCallback>>,
+}
+
+impl CustomEditor {
+    /// `editor` with no handlers, matching actions with `keybindings`.
+    pub(super) fn new(editor: Editor, keybindings: KeybindingsManager) -> Self {
+        Self {
+            editor,
+            keybindings,
+            handlers: Rc::default(),
+            escape: RefCell::default(),
+            ctrl_d: RefCell::default(),
+            paste_image: RefCell::default(),
+            extension: RefCell::default(),
+        }
+    }
 }
 
 impl Component for CustomEditor {
@@ -31,7 +50,7 @@ impl Component for CustomEditor {
     fn input_handler(&self) -> Option<&dyn InputHandler> {
         Some(self)
     }
-    fn focusable(&self) -> Option<&dyn maestro_extensions::presentation::Focusable> {
+    fn focusable(&self) -> Option<&dyn Focusable> {
         self.editor.focusable()
     }
 }
@@ -111,7 +130,7 @@ impl CustomEditorComponent for CustomEditor {
     }
 }
 
-impl maestro_extensions::presentation::ExtensionEditor for CustomEditor {
+impl ExtensionEditor for CustomEditor {
     fn editor(&self) -> &Editor {
         &self.editor
     }

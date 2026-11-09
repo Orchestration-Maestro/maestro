@@ -126,9 +126,9 @@ port! {
         /// Returns the native read-only preset in its original insertion order.
         fn create_read_only_tool_definitions(cwd: String, options: crate::ToolsOptions) -> Vec<crate::ToolDef>;
         /// Returns the native all preset in its original insertion order.
-        fn create_all_tools(cwd: String, options: crate::ToolsOptions) -> indexmap::IndexMap<crate::ToolName, crate::Tool>;
+        fn create_all_tools(cwd: String, options: crate::ToolsOptions) -> crate::IndexMap<crate::ToolName, crate::Tool>;
         /// Returns the native all preset in its original insertion order.
-        fn create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> indexmap::IndexMap<crate::ToolName, crate::ToolDef>;
+        fn create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> crate::IndexMap<crate::ToolName, crate::ToolDef>;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.

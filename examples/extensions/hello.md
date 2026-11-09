@@ -1,12 +1,13 @@
 # Hello
 
-The `hello` tool greets the supplied name. Its controlled run invokes the
-factory on the controlled host and the built component.
+The `hello` tool greets the supplied name. Its controlled runs load the built
+component into the production engine through the
+[test harness](../../docs/extensions/testing.md) and call the registered tool.
 
 ## Controlled runs
 
 ```sh
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
 CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib -- hello_component_greets_through_the_host
+  -p maestro-extensions-wasmtime --test integration -- hello_example::
 ```
