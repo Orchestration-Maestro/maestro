@@ -106,11 +106,7 @@ const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
 fn cargo_home_hiding_wrapper(root: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
     let wrapper = root.join("rustc-wrapper");
     if !wrapper.exists() {
-        crate::executable::install_recorded(
-            &wrapper,
-            "tooling-wrapper",
-            r#"{"scenario":"hide-home"}"#,
-        )?;
+        crate::install_family(&wrapper, "tooling-wrapper", r#"{"scenario":"hide-home"}"#)?;
     }
     Ok(wrapper)
 }

@@ -1,5 +1,4 @@
 //! Isolated native browser helpers, never a live desktop service.
-use crate::native_alias;
 use maestro_chat::LoginDialogPlatform;
 use maestro_tui::Component;
 use std::{
@@ -48,12 +47,12 @@ pub fn launch() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
         if program != "missing" {
-            native_alias::install(
-                scratch.path(),
-                program,
+            maestro_test_process::install_family(
+                &scratch.path().join(program),
                 "browser_launch",
-                &serde_json::json!({ "port": port }),
-            );
+                &serde_json::json!({ "port": port }).to_string(),
+            )
+            .expect("the prepared viewer installs");
         }
         let command = maestro_test_process::TestProcess::current(
             "native_browser_launch_is_detached_and_uses_one_literal_argument",
