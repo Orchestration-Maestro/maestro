@@ -3,7 +3,7 @@
 use super::calendar::{Day, local_midnight};
 use super::formatting::{cost as amount, pad_end, pad_start};
 use super::jsonl::trimmed_lines;
-use super::{cost_session_base, is_journal};
+use super::{is_journal, session_base};
 use crate::utils::numbers::decimal_integer_prefix;
 use chrono::{Local, NaiveDate, TimeDelta};
 use maestro_session::SessionDir;
@@ -69,7 +69,7 @@ pub fn main(
         stderr.write_all(REQUIRED.as_bytes())?;
         return Ok(ExitCode::from(1));
     };
-    let sessions = maestro_session::sessions_dir(&cost_session_base()?, &project);
+    let sessions = maestro_session::sessions_dir(&session_base()?, &project);
     if !std::path::Path::new(sessions.as_str()).exists() {
         writeln!(
             stderr,

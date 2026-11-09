@@ -39,7 +39,7 @@ mod example_index;
 /// Path dependencies between workspace members.
 mod member_graph;
 /// Setup commands that nextest runs before the tests that need them.
-mod nextest_setup;
+pub mod nextest_setup;
 /// Per-test admission for reserved callback ports.
 mod nextest_wrapper;
 /// Reusable test-setup staging and validation.
@@ -209,38 +209,25 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Run the real-browser regressions, then the export inventory even when a regression fails, so
-/// one run reports every case; the first failure's status is the command's.
+/// Run every real-browser case, the driver regressions, each export and the report, as one
+/// nextest run, so the hang limit bounds and names each case and one run reports them all.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    let mut regressions = Command::new(cargo);
-    regressions.current_dir(checkout).args([
-        "nextest",
-        "run",
-        "--locked",
-        "-p",
-        "maestro-test-browser",
-        "--run-ignored",
-        "only",
-        "--no-fail-fast",
-        "-E",
-        "test(/^browser::/)",
-    ]);
-    let mut inventory = Command::new(cargo);
-    inventory.current_dir(checkout).args([
-        "run",
-        "--quiet",
-        "--locked",
-        "-p",
-        "maestro-test-browser",
-        "--",
-    ]);
-    let regressed = regressions.status()?;
-    let inventoried = inventory.status()?;
-    Ok(exit_code(if regressed.success() {
-        inventoried
-    } else {
-        regressed
-    }))
+    let status = Command::new(cargo)
+        .current_dir(checkout)
+        .args([
+            "nextest",
+            "run",
+            "--locked",
+            "-p",
+            "maestro-test-browser",
+            "--run-ignored",
+            "only",
+            "--no-fail-fast",
+            "-E",
+            "test(/^browser::/)",
+        ])
+        .status()?;
+    Ok(exit_code(status))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

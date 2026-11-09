@@ -5,7 +5,6 @@
 use std::error::Error;
 use std::fmt;
 use std::io;
-use std::path::Path;
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -71,7 +70,7 @@ impl Error for Chain {
 #[test]
 fn runtime_clock_tracks_monotonic_elapsed_time() {
     run_set(true, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
+        let host = ProcessTuiRuntime::new(local, String::new());
         assert_eq!(host.now(), Duration::ZERO);
         std::thread::sleep(Duration::from_millis(20));
         assert_eq!(
@@ -87,7 +86,7 @@ fn runtime_clock_tracks_monotonic_elapsed_time() {
 #[test]
 fn timers_defer_from_scheduling_and_detach_on_handle_drop() {
     run_set(true, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
+        let host = ProcessTuiRuntime::new(local, String::new());
         let origin = Instant::now();
 
         let (sender, mut fired) = unbounded_channel();
@@ -125,7 +124,7 @@ fn timers_defer_from_scheduling_and_detach_on_handle_drop() {
 #[test]
 fn cancelled_timers_drop_captures_without_firing() {
     run_set(true, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
+        let host = ProcessTuiRuntime::new(local, String::new());
         for (label, delay, polled_first) in [
             ("before polling", Duration::from_millis(50), false),
             ("while waiting", Duration::from_millis(50), true),
@@ -195,7 +194,7 @@ fn reentrant_callback(host: Rc<ProcessTuiRuntime>, log: Log) -> RenderCallback {
 #[test]
 fn local_futures_defer_and_allow_callback_reentry() {
     run_set(true, |local| async move {
-        let host = Rc::new(ProcessTuiRuntime::new(local));
+        let host = Rc::new(ProcessTuiRuntime::new(local, String::new()));
 
         let (sender, mut log) = unbounded_channel();
         let non_send = Rc::new(());
@@ -224,7 +223,7 @@ fn report_scenario() {
         flag.store(true, std::sync::atomic::Ordering::SeqCst);
     }));
     run_set(true, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
+        let host = ProcessTuiRuntime::new(local, String::new());
         let (sender, mut reported) = unbounded_channel();
         drop(host.schedule(
             Duration::ZERO,
@@ -315,7 +314,7 @@ fn dropping_local_set_releases_pending_work() {
     let (timer_held, timer_released) = witness();
     let (future_held, future_released) = witness();
     runtime.block_on(local.run_until(async {
-        let host = ProcessTuiRuntime::new(Rc::clone(&local));
+        let host = ProcessTuiRuntime::new(Rc::clone(&local), String::new());
         let timer = host.schedule(
             Duration::from_secs(3600),
             Box::new(move || {
@@ -381,54 +380,18 @@ fn checked_context(host: &ProcessTuiRuntime) -> LogContext {
 }
 
 #[test]
-fn log_context_uses_native_home_and_current_wall_time() {
-    if is_child() {
-        run_set(true, |local| async move {
-            let context = checked_context(&ProcessTuiRuntime::new(local));
-            match std::env::var_os("MAESTRO_EXPECT_HOME") {
-                Some(home) => {
-                    assert_eq!(context.home, Path::new(&home));
-                    let destination = context.home.join(".maestro").join("agent");
-                    assert_eq!(destination.is_relative(), !Path::new(&home).is_absolute());
-                }
-                None => assert_eq!(context.home, std::env::home_dir().unwrap_or_default()),
-            }
-        });
-        return;
-    }
+fn log_context_reports_the_supplied_agent_directory_and_current_wall_time() {
     run_set(true, |local| async move {
-        checked_context(&ProcessTuiRuntime::new(local));
+        let directory = "/agent fixture/\u{e9}";
+        let context = checked_context(&ProcessTuiRuntime::new(local, directory.to_owned()));
+        assert_eq!(context.agent_dir, directory);
     });
-    #[cfg(unix)]
-    for home in [
-        Some(std::ffi::OsStr::new("/maestro-home-fixture")),
-        Some(std::ffi::OsStr::new("rel/home")),
-        Some(std::ffi::OsStr::new("/with space/home")),
-        Some(std::ffi::OsStr::new("")),
-        Some(<std::ffi::OsStr as std::os::unix::ffi::OsStrExt>::from_bytes(b"/bytes-\xff-home")),
-        None,
-    ] {
-        rerun(
-            "log_context_uses_native_home_and_current_wall_time",
-            |process| {
-                let process = process.env("TZ", "Pacific/Auckland");
-                let process = match home {
-                    Some(home) => process.env("HOME", home),
-                    None => process.env_remove("HOME"),
-                };
-                match home {
-                    Some(exact) => process.env("MAESTRO_EXPECT_HOME", exact),
-                    None => process,
-                }
-            },
-        );
-    }
 }
 
 #[test]
 fn real_driver_wakes_scheduled_work() {
     run_set(false, |local| async move {
-        let host = ProcessTuiRuntime::new(local);
+        let host = ProcessTuiRuntime::new(local, String::new());
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let _timer = host.schedule(
             Duration::from_millis(10),

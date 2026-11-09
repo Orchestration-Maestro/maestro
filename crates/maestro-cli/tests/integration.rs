@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod agent_directory_logs;
 mod file_inputs;
 mod initial_inputs;
 mod input_arguments;
