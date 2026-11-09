@@ -330,6 +330,21 @@ and reads no template or font. Read failures retain the I/O error; decoder failu
 wrapped as `Invalid brand pack <path>: <cause>`. Mark paths become the pack's directory
 joined with the authored relative path ([lexical path joining](../crates/maestro-path/src/lib.rs)).
 
+`BrandPack::shipped()` decodes the pack Maestro ships, compiled into the crate, so an
+example or extension builds the default pack from the dependency and carries no copy of
+`brand.json`. It reads no file and runs on `wasm32-unknown-unknown`. It returns the same
+pack as `BrandPack::parse("brand.json", <file text>)`, so mark paths stay relative to the
+working directory:
+
+```rust
+use maestro_theme::{BrandMode, BrandPack};
+
+let pack = BrandPack::shipped()?;
+let css = pack.presentation(BrandMode::Dark)?.css_properties();
+assert!(css.contains_key("--maestro-color-text"));
+# Ok::<(), maestro_theme::ThemeError>(())
+```
+
 `BrandMode`, `BrandFont`, `BrandType`, `BrandMark`, `BrandGlyph` and
 `BrandPresentation` remain re-exported through `maestro_theme` and
 `maestro_theme::theme`. Their [pure projections](brand.md#projection) belong to

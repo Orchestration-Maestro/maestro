@@ -1,19 +1,21 @@
 //! HTML artifact bodies observed through the native document.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::browser_fixture_support::{object, set};
 use crate::contributions_support::{
     Clipboard, Recorded, container, document, host, localized_view, published, select, text, view,
 };
 use crate::native_html_artifact_support::{
     LOGGING, QUIET, before, failing, frame, listed, logged, marker, srcdoc,
 };
-use maestro_app::{DiagnosticErrorInfo, SandboxRuntimeProvider, SharedHandle};
+use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHandle};
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::{
     HtmlArtifact,
     browser::sandbox_value::BrowserSandboxValue,
     dom::{DomContent as _, DomRoot, DomView},
 };
 use std::{cell::Cell, rc::Rc};
-use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
+use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, Node};
 
 /// A provider whose every read fails the test, proving a detached body never consults it.
@@ -24,7 +26,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Unread {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         panic!("detached body read provider data")
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
         panic!("detached body read the provider runtime")
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
@@ -185,7 +187,7 @@ fn reload_current(view: &DomView) {
         reload.unchecked_ref::<web_sys::HtmlElement>().click();
         assert!(
             srcdoc(&root).ends_with(&format!(
-                "{source}<script>if (window.complete) window.complete();</script>"
+                "{source}<script>window.__maestroComplete</script>"
             )),
             "reload did not use current source"
         );
@@ -209,10 +211,7 @@ fn reload_current(view: &DomView) {
         before + 1,
         "reload retries the failed assignment"
     );
-    assert!(
-        srcdoc(&root)
-            .ends_with("<p>failed</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(srcdoc(&root).ends_with("<p>failed</p><script>window.__maestroComplete</script>"));
     parent.remove();
 }
 /// Replacement compares current source, even when the old listing has not been updated.
@@ -243,10 +242,7 @@ fn replace_unlisted_source(view: &DomView) {
     assert_eq!(reads.get(), 2, "retained header reloads the replacement");
     replacement.update(&root, view).unwrap();
     assert_eq!(reads.get(), 2, "equal update remains suppressed");
-    assert!(
-        srcdoc(&root)
-            .ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(srcdoc(&root).ends_with("<p>quiet</p><script>window.__maestroComplete</script>"));
     parent.remove();
 }
 /// Detaching removes the frame and its route; reconnecting loads the source once more.
@@ -303,12 +299,10 @@ pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module:
     let parent = container();
     parent.append_child(&root.node).unwrap();
     let document = srcdoc(&root);
-    assert!(before(&document, "window[\"first\"]", "window[\"second\"]"));
+    assert!(before(&document, "[\"first\",", "[\"second\","));
     assert!(before(&document, "runtime_first", "runtime_second"));
     assert!(document.contains("\"artifact-forward.html\""));
-    assert!(
-        document.ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(document.ends_with("<p>quiet</p><script>window.__maestroComplete</script>"));
     assert!(!frame(&root).unwrap().has_attribute("src"));
     let header = artifact.get_header_buttons(&view).unwrap();
     addresses(&root, &mut artifact).await;
@@ -406,7 +400,7 @@ fn providers(root: &DomRoot, artifact: &mut HtmlArtifact) {
     artifact.runtime_providers = vec![marker("third", &reads)];
     artifact.execute_content(QUIET).unwrap();
     let document = srcdoc(root);
-    assert!(document.contains("window[\"third\"]") && !document.contains("window[\"first\"]"));
+    assert!(document.contains("[\"third\",") && !document.contains("[\"first\","));
     artifact.runtime_providers.clear();
     artifact.execute_content(QUIET).unwrap();
     assert!(!srcdoc(root).contains("window[\"third\"]"));
@@ -482,46 +476,73 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Editing {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok("() => {}".to_owned())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content("() => {}".to_owned()))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
     }
 }
-/// Message methods posted after the value domains, with the line kind each selects.
-const METHODS: [(&str, &str); 12] = [
-    ("'log'", "log"),
-    ("'warn'", "log"),
-    ("'info'", "log"),
-    ("'debug'", "log"),
-    ("'error'", "error"),
-    ("undefined", "log"),
-    ("null", "log"),
-    ("42", "log"),
-    ("true", "log"),
-    ("{}", "log"),
-    ("[]", "log"),
-    ("'ERROR'", "log"),
+/// Message methods posted after the value domains, as JSON text or `None` for a message
+/// without one, with the line kind each selects.
+const METHODS: [(Option<&str>, &str); 12] = [
+    (Some("\"log\""), "log"),
+    (Some("\"warn\""), "log"),
+    (Some("\"info\""), "log"),
+    (Some("\"debug\""), "log"),
+    (Some("\"error\""), "error"),
+    (None, "log"),
+    (Some("null"), "log"),
+    (Some("42"), "log"),
+    (Some("true"), "log"),
+    (Some("{}"), "log"),
+    (Some("[]"), "log"),
+    (Some("\"ERROR\""), "log"),
 ];
-/// A page posting raw messages to its parent: every recorded value domain, ignored message
-/// types, every method kind, then the texts a provider edits in place.
-fn messages_page(cases: &serde_json::Value) -> String {
-    // The artifact document constructs the native operands it posts, inside the isolated frame.
-    let operand = include_str!("native_artifact_console_support/operand.js");
-    let methods = METHODS.map(|(method, _)| method).join(",");
-    format!(
-        "<script type=\"module\">{operand}
-const send = message => window.parent.postMessage({{...message, sandboxId: window.sandboxId}}, '*');
-for (const [kind, value] of {cases}) send(kind === 'missing' ? {{type: 'console'}} : {{type: 'console', text: operand(kind, value)}});
-send({{text: 'ignored'}});
-for (const type of [null, 'download', 'console-other', 17, false, {{}}, [], 'Console']) send({{type, text: 'ignored'}});
-for (const method of [{methods}]) send(method === undefined ? {{type: 'console', text: 'line'}} : {{type: 'console', method, text: 'line'}});
-send({{type: 'console', text: 'edit-me'}});
-send({{type: 'console', text: 'delete-me'}});
-send({{type: 'console', marker: 'add'}});
-</script>"
-    )
+/// An artifact document that announces it listens, then posts each message of a list its
+/// parent sends back to the parent with the sandbox identifier.
+const ECHO: &str = "<script>addEventListener('message', event => { if (event.source === parent && Array.isArray(event.data)) for (const message of event.data) parent.postMessage({...message, sandboxId: window.sandboxId}, '*'); }); parent.postMessage({type: 'echo-ready'}, '*');</script>";
+/// The raw messages the document posts: every recorded value domain, ignored message types,
+/// every method kind, then the texts a provider edits in place.
+fn messages(cases: &[crate::native_artifact_console_support::Value]) -> js_sys::Array {
+    let console = |key: &str, value: &JsValue| -> JsValue {
+        object(&[("type", &"console".into()), (key, value)]).into()
+    };
+    let messages = js_sys::Array::new();
+    for case in cases {
+        messages.push(&if case.kind == "missing" {
+            object(&[("type", &"console".into())]).into()
+        } else {
+            let operand =
+                crate::native_artifact_console_support::operand(&case.kind, &case.operand);
+            console("text", &operand)
+        });
+    }
+    messages.push(&object(&[("text", &"ignored".into())]));
+    for kind in [
+        "null",
+        "\"download\"",
+        "\"console-other\"",
+        "17",
+        "false",
+        "{}",
+        "[]",
+        "\"Console\"",
+    ] {
+        let kind = js_sys::JSON::parse(kind).unwrap();
+        messages.push(&object(&[("type", &kind), ("text", &"ignored".into())]));
+    }
+    for (method, _) in METHODS {
+        let line = console("text", &"line".into());
+        if let Some(method) = method {
+            set(&line, "method", &js_sys::JSON::parse(method).unwrap());
+        }
+        messages.push(&line);
+    }
+    messages.push(&console("text", &"edit-me".into()));
+    messages.push(&console("text", &"delete-me".into()));
+    messages.push(&console("marker", &"add".into()));
+    messages
 }
 /// Only console messages append, keeping each raw text, the error kind only for `error`, and
 /// the frame lives exactly as long as the connected root.
@@ -531,19 +552,24 @@ pub async fn html_artifact_dom_routes_logs_and_releases_its_frame(import_module:
     let _host = host(&view, &import_module);
     guidance(&view);
     let cases = crate::native_artifact_console_support::cases().values;
-    let operands: Vec<_> = cases
-        .iter()
-        .map(|case| serde_json::json!([case.kind, case.operand]))
-        .collect();
     let mut artifact = HtmlArtifact::new();
     artifact.filename = "routes.html".to_owned();
     artifact.runtime_providers.push(SharedHandle::new(Editing));
-    artifact
-        .set_content(messages_page(&serde_json::Value::Array(operands)))
-        .unwrap();
+    artifact.set_content(ECHO.to_owned()).unwrap();
     let root = artifact.mount(&view).unwrap();
     let parent = container();
+    let listening = crate::sandbox_execution_support::Fixture::watch("echo-ready");
     parent.append_child(&root.node).unwrap();
+    crate::contributions_support::settle(listening.into())
+        .await
+        .unwrap();
+    // The values are built here; the frame posts their structured clones as its own messages.
+    frame(&root)
+        .unwrap()
+        .content_window()
+        .unwrap()
+        .post_message(&messages(&cases), "*")
+        .unwrap();
     let (returned, painted) = expected_lines(&cases);
     logged(&root, &artifact, &view.i18n, &returned.join("\n")).await;
     crate::native_html_artifact_support::expand(&root);
@@ -1096,10 +1122,7 @@ async fn mounted_download(
     assert_eq!(reads.get(), 4);
     control(&header, 1).click();
     assert_eq!(reads.get(), 5, "reload loads once");
-    assert!(
-        srcdoc(&root)
-            .ends_with("<p>quiet</p><script>if (window.complete) window.complete();</script>")
-    );
+    assert!(srcdoc(&root).ends_with("<p>quiet</p><script>window.__maestroComplete</script>"));
     assert_eq!(
         artifact.get_logs(&view.i18n).unwrap(),
         "No logs for literal$&雪.html"
@@ -1177,8 +1200,45 @@ struct Completions {
     /// Every case in order.
     cases: Vec<Completion>,
 }
-/// A provider whose runtime records each completion with its position and readiness, script
+/// A provider runtime that records each completion with its position and readiness, script
 /// errors and loading, then posts them as one console line after the page loads.
+///
+/// A provider runs as a classic script before the document's own scripts. The frame's renderer
+/// is a separate target the browser driver learns of only after its document has run, so no
+/// observer from outside the frame can be in place before those scripts.
+const PROBE: &str = r"() => {
+  const complete = window.complete;
+  const events = [];
+  let errors = 0;
+  window.events = events;
+  window.complete = function (...args) {
+    const script = document.currentScript;
+    events.push({
+      completion: true,
+      ready: document.readyState,
+      parent: script.parentElement.tagName,
+      previous: script.previousElementSibling?.tagName || null,
+    });
+    return complete.apply(this, args);
+  };
+  // Counted syntax errors are handled here, so the page reports none of its own.
+  window.addEventListener('error', event => {
+    if (event.error?.name === 'SyntaxError') errors += 1;
+    event.preventDefault();
+  });
+  document.addEventListener('DOMContentLoaded', () => events.push('dom-ready'));
+  window.addEventListener('load', () => window.parent.postMessage({
+    type: 'console',
+    sandboxId: window.sandboxId,
+    text: JSON.stringify({
+      events,
+      errors,
+      completions: events.filter(event => event && event.completion).length,
+      body: [...(document.body?.children || [])].map(node => node.tagName),
+    }),
+  }, '*'));
+}";
+/// A provider whose runtime is [`PROBE`].
 struct Probe;
 impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
     fn get_data(
@@ -1186,8 +1246,8 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(include_str!("native_html_artifact_support/probe.js").to_owned())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content(PROBE.to_owned()))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
@@ -1196,8 +1256,8 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
 /// The authored part of a prepared document, without the injected runtime.
 fn authored(document: &str) -> String {
     let start = document.find("<style>\nhtml, body {").unwrap();
-    let end_marker = "s.remove()}</script>";
-    let end = document[start..].find(end_marker).unwrap() + start + end_marker.len();
+    let end_marker = format!("<script>{BUNDLE}</script>");
+    let end = document[start..].find(&end_marker).unwrap() + start + end_marker.len();
     format!("{}{}", &document[..start], &document[end..])
 }
 /// The completion signal follows the whole source exactly once, where the page parser places

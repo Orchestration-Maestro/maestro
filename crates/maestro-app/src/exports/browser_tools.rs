@@ -5,7 +5,9 @@ pub use crate::browser::tools::extract_document::{
 };
 
 /// Sandbox SDK provider contract.
-pub use crate::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+pub use crate::browser::components::sandbox::sandbox_runtime_provider::{
+    BuiltinRuntime, Runtime, SandboxRuntimeProvider,
+};
 
 /// Sandbox SDK download, result and URL callback records.
 pub use crate::browser::components::sandboxed_iframe::{

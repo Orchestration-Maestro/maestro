@@ -1,9 +1,19 @@
 //! Controlled bus imports and recorded payloads.
+use maestro_listeners::Listeners;
 use serde_json::Value;
+use std::cell::RefCell;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
 };
+
+/// One callback registered on a channel; each registration is its own record.
+struct Registration {
+    /// Channel the callback listens on.
+    channel: String,
+    /// Callback identity; several registrations may share it.
+    id: u32,
+}
 
 /// Host subscription points to one callback identity.
 pub struct Subscription {
@@ -31,8 +41,8 @@ pub struct Bank {
     pub emissions: Vec<(String, Value)>,
     /// Actual emitter resource and attempted payload, including rejected emission.
     pub renderer_emissions: Vec<(usize, String, Value)>,
-    /// Registered channel and callback pairs.
-    pub listeners: Vec<(String, u32)>,
+    /// Registrations in order; reading takes a snapshot, so a shared bank can be read.
+    registrations: RefCell<Listeners<Arc<Registration>>>,
     /// Emit-time callback identities retained for the generated local walk.
     pub snapshots: Vec<Option<Vec<u32>>>,
     /// Announced independent tails.
@@ -58,7 +68,10 @@ impl Bank {
         if let Some(error) = &self.registration_error {
             return Err(error.clone());
         }
-        self.listeners.push((channel.into(), id));
+        self.registrations.borrow_mut().add(Arc::new(Registration {
+            channel: channel.into(),
+            id,
+        }));
         Ok(Subscription {
             id,
             drops: Arc::clone(&self.subscription_drops),
@@ -70,7 +83,13 @@ impl Bank {
             return Err(error.clone());
         }
         self.removals.push(subscription.id);
-        self.listeners.retain(|(_, id)| *id != subscription.id);
+        for registration in self.snapshot() {
+            if registration.id == subscription.id {
+                self.registrations
+                    .borrow_mut()
+                    .remove(Arc::as_ptr(&registration));
+            }
+        }
         Ok(())
     }
     /// Records data and captures the matching callbacks for controlled delivery.
@@ -83,11 +102,31 @@ impl Bank {
             serde_json::from_str(data).map_err(|e| e.to_string())?,
         ));
         Ok(self
-            .listeners
+            .snapshot()
             .iter()
-            .filter(|(name, _)| name == channel)
-            .map(|(_, id)| *id)
+            .filter(|registration| registration.channel == channel)
+            .map(|registration| registration.id)
             .collect())
+    }
+    /// Removes the first registration on `channel` and returns its callback identity.
+    pub fn take_first(&mut self, channel: &str) -> Option<u32> {
+        let first = self
+            .snapshot()
+            .into_iter()
+            .find(|registration| registration.channel == channel)?;
+        self.registrations.borrow_mut().remove(Arc::as_ptr(&first));
+        Some(first.id)
+    }
+    /// Registered channel and callback identity pairs, in registration order.
+    pub fn listeners(&self) -> Vec<(String, u32)> {
+        self.snapshot()
+            .iter()
+            .map(|registration| (registration.channel.clone(), registration.id))
+            .collect()
+    }
+    /// The live registrations, retained independently of later edits.
+    fn snapshot(&self) -> Vec<Arc<Registration>> {
+        self.registrations.borrow_mut().snapshot()
     }
     /// Announces a tail without polling it.
     pub fn tail(&mut self, id: u32) -> Result<(), String> {

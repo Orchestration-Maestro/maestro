@@ -21,6 +21,10 @@ retain the decoder's finite-number domain without additional range checks.
 `BrandMark` retains authored path strings. Standalone record deserialization does
 not perform whole-pack admission or measurement checks.
 
+`SHIPPED_PACK` is the text of the pack Maestro ships, compiled into the crate from
+`assets/brand/brand.json`, the one place the file is read. Callback pages and the
+[theme library](theme.md#brand-pack) take the pack from it.
+
 ## Projection
 
 `PackData::presentation(BrandMode)` borrows resolved values. It checks the selected

@@ -5,24 +5,26 @@ last drew and writes only what changed, so a spinner redraws one row and the
 terminal's scrollback stays intact. It never switches to the alternate screen, and
 each update is one synchronized write (`CSI ? 2026 h` … `CSI ? 2026 l`).
 
-The writer performs no terminal I/O and starts no timers of its own. A
-`Terminal` receives the bytes. A `TuiRuntime` supplies the monotonic clock, defers
-render callbacks and reports the log context, so the same writer runs under a native
-event loop, a browser or a test with a manual clock. The writer reads the process
-environment for its switches and writes its diagnostic files itself, which is why those
-effects need a native target. `TerminalImage` is the shared image state its components already use; the
-writer queries and updates the cell size through that same instance.
+The writer performs no terminal I/O and starts no timers of its own. A `Terminal`
+receives the bytes. A `TuiRuntime` supplies the monotonic clock, defers render
+callbacks and reports the log context, so the same writer runs under a native event
+loop, a browser or a test with a manual clock. The writer reads the process
+environment for its switches and writes its diagnostic files itself, so those
+effects need a native target. `TerminalImage` is the shared image state its
+components already use; the writer queries and updates the cell size through that
+same instance.
 
 `TuiRuntime::spawn_local` hands the host a fallible future, such as an editor's
 completion request, to run on the current thread. The host never polls it before
-`spawn_local` returns, owns it until it finishes and reports an error it returns; the
-toolkit never prints that error. The native host that does so is
-[`ProcessTuiRuntime`](native-terminal.md#the-runtime-host); tests use a controlled host that polls the futures it was given when the test asks.
+`spawn_local` returns, owns it until it finishes and reports any error it returns;
+the toolkit never prints that error. The native host that does so is
+[`ProcessTuiRuntime`](native-terminal.md#the-runtime-host). Tests use a controlled
+host that polls the futures it was given when the test asks.
 
-Focused input uses [`InputHandler::try_handle_input`](components.md#components).
-A failure prevents the subsequent render request. The terminal callback submits
-the original boxed error to the writer's `TuiRuntime::spawn_local`; the host reports
-it using the same policy as other fallible work, without a deferred render error.
+Focused input uses [`InputHandler::try_handle_input`](components.md#components). A
+failure prevents the next render request. The terminal callback submits the
+original boxed error to the writer's `TuiRuntime::spawn_local`, and the host reports
+it with the same policy as other fallible work, with no deferred render error.
 
 ```rust
 # use std::cell::RefCell;
@@ -123,11 +125,12 @@ assert_eq!(sent.borrow().concat(), "\x1b[?2026h\r\x1b[2Kdone\x1b[0m\x1b]8;;\x07\
 | Differential record | off | `MAESTRO_TUI_DEBUG=1` |
 
 A boolean variable is on only when it is exactly `1`; the constructor argument wins
-over the variable. The writer places the terminal cursor at the first `CURSOR_MARKER`
-on the last visible row that holds one and shows it only when this setting is on; with
-no marker, or with the setting off, the cursor stays hidden. A focused component is the
-one that emits the marker, but the writer does not check focus. Turning the setting off
-hides the cursor at once, and any change asks for a frame.
+over the variable. The writer places the terminal cursor at the first
+`CURSOR_MARKER` on the last visible row that holds one, and shows it only when this
+setting is on. With no marker, or with the setting off, the cursor stays hidden. A
+focused component is the one that emits the marker, but the writer does not check
+focus. Turning the setting off hides the cursor at once, and any change asks for a
+frame.
 
 ## How a frame is drawn
 
@@ -135,119 +138,131 @@ Every text line ends with a reset of styles and of the open hyperlink, so one li
 cannot leak into the next, and the Thai and Lao AM vowels are decomposed for the
 terminal. Image lines are written untouched.
 
-1. **First frame.** The lines are written from the current position without clearing
-   anything, so earlier output stays in the scrollback.
+1. **First frame.** The writer writes the lines from the current position without
+   clearing anything, so earlier output stays in the scrollback.
 2. **Changed rows.** The writer finds the first and last rows that differ, moves the
    cursor there and rewrites every row in between, erasing each before drawing it.
    Rows added below the bottom of the screen scroll it by as many rows as they need
    before they are drawn.
-3. **Shorter frames.** The rows that disappeared are erased and the cursor returns to
-   the last row of the new content. A frame with no rows erases row zero as well.
-4. **Full redraws.** The screen and scrollback are cleared and every line is drawn
-   again when the width changes, when the height changes (unless the mobile-height
-   exception applies, which keeps the scrollback), when clear-on-shrink is on, the overlay stack is empty and the
-   frame is shorter than the most rows ever drawn, when erasing rows would scroll the
-   viewport up, when a changed row has scrolled out of the viewport and when a redraw
-   is forced.
+3. **Shorter frames.** The writer erases the rows that disappeared and returns the
+   cursor to the last row of the new content. A frame with no rows erases row zero
+   as well.
+4. **Full redraws.** The writer clears the screen and scrollback and draws every
+   line again when any of these holds:
+   - the width changes;
+   - the height changes, unless the mobile-height exception applies, which keeps the
+     scrollback;
+   - clear-on-shrink is on, the overlay stack is empty and the frame is shorter than
+     the most rows ever drawn;
+   - erasing rows would scroll the viewport up;
+   - a changed row has scrolled out of the viewport;
+   - a redraw is forced.
 
-Components render in order by walking the array of children held when the frame starts,
-by position, while the position is below that array's current length: one that an earlier
-component adds to that array is rendered in the same frame only if the walk reaches its
-position, and one that is removed ahead of the walk is skipped. A removal at or before
-the position being rendered shifts the later children back, so the next one is skipped.
-Clearing the writer or assigning another array during the frame starts a new array; the
-frame keeps rendering the old one to its end and renders nothing added to the new one.
-`invalidate` walks the array the same way, and a container does the same with its own
-children. The writer then invalidates the live overlay stack, including hidden
+Components render in order. The walk covers the array of children held when the
+frame starts, by position, while the position is below that array's current length.
+A child that an earlier component adds to that array renders in the same frame only
+if the walk reaches its position, and a child removed ahead of the walk is skipped.
+A removal at or before the position being rendered shifts the later children back,
+so the next one is skipped. Clearing the writer or assigning another array during
+the frame starts a new array: the frame keeps rendering the old one to its end and
+renders nothing added to the new one.
+
+`invalidate` walks the array the same way, and a container does the same with its
+own children. The writer then invalidates the live overlay stack, including hidden
 entries; see [retained overlays](overlays.md) for its lifecycle.
 
 Visible overlays are composed after base rendering and before cursor-marker
-extraction. A nonempty stack pads the buffer to at least terminal height, even
+extraction. A nonempty stack pads the buffer to at least the terminal height, even
 when every overlay is hidden.
 
-`full_redraws` counts the full redraws begun. The logical end of the content and the
-row the terminal cursor is on are tracked separately, because placing the hardware
-cursor moves it away from the end of the content.
+`full_redraws` counts the full redraws begun. The writer tracks the logical end of
+the content and the row the terminal cursor is on separately, because placing the
+hardware cursor moves it away from the end of the content.
 
 ## Images
 
-The ids of Kitty images are read from each line's first graphics sequence: the
-first valid `i` parameter, as a decimal or exponent literal or an unsigned `0x`,
-`0b` or `0o` literal that is a whole number from 1 to 4294967295. Before a changed
-span is drawn, the images on the retained rows it covers are deleted, each id once and
-in the order first seen. The span is widened to end at the last retained image line
-below its start, so an image is deleted and drawn again when a row above it changes.
-A full redraw deletes every image of the previous frame before clearing the screen.
+The writer reads the IDs of Kitty images from each line's first graphics sequence:
+the first valid `i` parameter, as a decimal or exponent literal or an unsigned
+`0x`, `0b` or `0o` literal that is a whole number from 1 to 4294967295. Before it
+draws a changed span, it deletes the images on the retained rows the span covers,
+each ID once and in the order first seen. The span is widened to end at the last
+retained image line below its start, so an image is deleted and drawn again when a
+row above it changes. A full redraw deletes every image of the previous frame before
+it clears the screen.
 
 ## Render requests
 
 `request_render(false)` queues a frame at least 16 ms after the previous one starts
 and merges any further request until then. `request_render(true)` forgets the
 retained frame and queues an immediate redraw of everything. Both routes defer
-composition while the terminal reports more than 256 KiB of pending output, retrying
-after 10 ms without consuming redraw intent or advancing frame cadence. The retry
-composes the latest state. The host always defers
-the callback, even for a zero delay, and the callback's `io::Result` is returned to
-whoever drives the host. A component may request another frame while it renders; the
-request is kept and queued after the current frame. `stop` cancels the pending frame,
-including the immediate one a forced request queued, and forgets any request, so
-`start` after a `stop` draws again, and requests made while stopped are dropped.
-`render_pending_frame` draws the frame a pending request asked for and consumes that
-request without queueing another, and it draws nothing while the writer is stopped.
-Backed-up output does not defer that frame: a caller that stops the writer next still
-shows its last change, and the stop drains the bytes it wrote.
+composition while the terminal reports more than 256 KiB of pending output,
+retrying after 10 ms without consuming redraw intent or advancing frame cadence. The
+retry composes the latest state.
 
-The terminal's resize callback makes this same ordinary request and holds the writer only
-weakly, so it never keeps a dropped writer alive.
+The host always defers the callback, even for a zero delay, and the callback's
+`io::Result` goes to whoever drives the host. A component may request another frame
+while it renders; Maestro keeps the request and queues it after the current frame.
+`stop` cancels the pending frame, including the immediate one a forced request
+queued, and forgets any request, so `start` after a `stop` draws again, and
+requests made while stopped are dropped.
+
+`render_pending_frame` draws the frame a pending request asked for and consumes that
+request without queueing another; it draws nothing while the writer is stopped.
+Backed-up output does not defer that frame: a caller that stops the writer next
+still shows its last change, and the stop drains the bytes it wrote.
+
+The terminal's resize callback makes this same ordinary request and holds the writer
+only weakly, so it never keeps a dropped writer alive.
 
 ## Input
 
-`start` installs the terminal's input callback. Each chunk goes through, in order:
+`start` installs the terminal's input callback. Each chunk passes through these
+stages, in order:
 
-1. The input listeners, in the order they were added. The list is walked live: a
-   listener added by an earlier one runs in the same dispatch and a removed one is
-   skipped. A listener passes the input on, consumes it or replaces it. A replacement,
-   even an empty one, is what the later listeners see; input that is still empty after
-   the last listener is delivered to nothing.
-   `add_input_listener` returns a function that removes the listener and may be called
-   again harmlessly; dropping it does not remove the listener. Registration admits one
-   callback per identity, so adding a live one again keeps its first position, and a
-   callback removed and added again takes the last position. The listeners live in the
-   shared [collection](../architecture.md); clearing them all costs work proportional to
+1. The input listeners, in the order they were added. The walk is live: a listener
+   added by an earlier one runs in the same dispatch, and a removed one is skipped.
+   A listener passes the input on, consumes it or replaces it. A replacement, even
+   an empty one, is what the later listeners see; input that is still empty after
+   the last listener is delivered to nothing. `add_input_listener` returns a
+   function that removes the listener and may be called again harmlessly; dropping
+   it does not remove the listener. Registration admits one callback per identity,
+   so adding a live one again keeps its first position, and a callback removed and
+   added again takes the last position. The listeners live in the shared
+   [collection](../architecture.md); clearing them all costs work proportional to
    their number.
 2. The cell-size reply check. A chunk that is exactly `ESC [ 6 ; height ; width t`
    with ASCII digits is a reply and is never forwarded. A zero value or one beyond
-   32 bits is dropped and leaves the measured size alone; any other reply updates the
-   shared cell size, invalidates every component and asks for a frame. Anything else,
-   including a bare escape, negative or fractional numbers, a trailing newline or a
-   fragment, is ordinary input.
+   32 bits is dropped and leaves the measured size alone; any other reply updates
+   the shared cell size, invalidates every component and asks for a frame. Anything
+   else, including a bare escape, negative or fractional numbers, a trailing newline
+   or a fragment, is ordinary input.
 3. The debug key, `shift+ctrl+d`, when `set_on_debug` installed a callback.
 4. [Overlay input repair](overlays.md#focus-and-controls) runs before key-release
-   filtering. The resulting focused component, if it can take input. Key-release events are dropped
-   unless it asks for them with `wants_key_release`. A frame is requested after
-   each delivery.
+   filtering. Then the resulting focused component receives the chunk, if it can
+   take input. Key-release events are dropped unless it asks for them with
+   `wants_key_release`. A frame is requested after each delivery.
 
 `set_focus` clears the focus flag of the previous component and sets it on the new
 one at once, without requesting a frame. A component that cannot hold focus is not
-flagged. Because the flag changes before `set_focus` returns, a component that calls it
-from inside its own input or render callback, and one nested in a container that was
-never added to the writer, sees the change in the rest of that callback.
+flagged. Because the flag changes before `set_focus` returns, a component that calls
+it from inside its own input or render callback, and one nested in a container that
+was never added to the writer, sees the change in the rest of that callback.
 
-A component may also call `invalidate`, on the writer or on a container, from inside its
-own input or render callback. Each call invalidates the children its walk reaches, in
-order, before it returns. A running component that is one of them is invalidated, and so
-are the ones still to render in that frame that the walk reaches, which lose their cached
-rendering before they render. A child is invalidated once per visit, so a child listed
-twice is invalidated twice when no edit during the walk changes the array. A focused
-component that is neither among the children nor in the overlay stack is not
-invalidated.
+A component may also call `invalidate`, on the writer or on a container, from inside
+its own input or render callback. Each call invalidates the children its walk
+reaches, in order, before it returns. A running component that is one of them is
+invalidated, and so are the ones still to render in that frame that the walk
+reaches; those lose their cached rendering before they render. A child is
+invalidated once per visit, so a child listed twice is invalidated twice when no
+edit during the walk changes the array. A focused component that is neither among
+the children nor in the overlay stack is not invalidated.
 
-The cell size is only requested at startup when the terminal supports images.
+Maestro requests the cell size at startup only when the terminal supports images.
 
 ## Errors and diagnostics
 
-A text line wider than the terminal is never drawn. Before any frame is written the
-writer checks every line; for the first oversized one it writes a crash report to
+A text line wider than the terminal is never drawn. Before any frame is written, the
+writer checks every line. For the first oversized one it writes a crash report to
 `maestro-crash.log` in the agent directory the runtime reports (`~/.maestro/agent`
 unless `MAESTRO_CODING_AGENT_DIR` names another), restores the terminal (as `stop`
 does) and fails the frame with
@@ -265,16 +280,17 @@ The report lists the width, the offending row and every rendered line with its
 measured width. Truncate component output to the width it is given; the writer does
 not clip it.
 
-With `MAESTRO_DEBUG_REDRAW=1` each full redraw appends one line to
+With `MAESTRO_DEBUG_REDRAW=1`, each full redraw appends one line to
 `maestro-debug.log` in that directory, created on the first write:
 `[{time}] fullRender: {reason} (prev={rows}, new={rows}, height={height})`. The
 reasons are `first render`, `terminal width changed (a -> b)`,
 `terminal height changed (a -> b)`, `clearOnShrink (maxLinesRendered=n)`,
-`deleted lines moved viewport up (row < top)` and `firstChanged < viewportTop (row < top)`.
-A forced redraw reports the retained extent as `-1`.
+`deleted lines moved viewport up (row < top)` and
+`firstChanged < viewportTop (row < top)`. A forced redraw reports the retained
+extent as `-1`.
 
-With `MAESTRO_TUI_DEBUG=1` each differential update writes its first changed row,
-cursor rows, the new and retained lines and the exact bytes to
+With `MAESTRO_TUI_DEBUG=1`, each differential update writes its first changed row,
+the cursor rows, the new and retained lines and the exact bytes to
 `/tmp/tui/render-{unix_ms}-{nonce}.log`.
 
 Every diagnostic writer creates its directory. A failed log effect fails the frame.

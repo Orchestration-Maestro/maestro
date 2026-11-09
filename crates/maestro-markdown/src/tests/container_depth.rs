@@ -377,6 +377,15 @@ fn deep_item_stop_rules_stay_proportional_to_the_source() {
     );
 }
 
+#[test]
+fn deep_item_framing_stays_proportional_to_the_source() {
+    let measured = [75, 300].map(|levels| item_text_charge(levels, |work| work.framing_bytes));
+    assert!(
+        stays_proportional(measured),
+        "item line framing bytes per authored byte {measured:?}"
+    );
+}
+
 /// Work one fresh parse of the repeated resumption message charges, with its authored size.
 fn resumption_work(repeats: usize) -> (super::Work, usize) {
     let source = resumption_message(repeats);

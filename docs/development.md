@@ -202,6 +202,45 @@ scripts under `crates/maestro-theme/scripts`; they run their author work on nati
 targets, and their browser entrypoints do nothing. Native usage messages and
 generated filenames are unchanged.
 
+## Sandbox runtime bundle
+
+The in-frame sandbox runtime is a Rust program in `crates/maestro-web/runtime`, built for
+`wasm32-unknown-emscripten` into one classic script that the web crate embeds from
+`crates/maestro-web/assets/maestro-sandbox-runtime.js`. The package has its own manifest and
+lock, outside the workspace, so the chat application never builds for the frame.
+
+Install Emscripten SDK 6.0.10 and the Rust standard library for the target, then put
+`emcc` and the wasm-bindgen CLI 0.2.129 on `PATH`:
+
+```sh
+rustup target add wasm32-unknown-emscripten
+CARGO_BUILD_JOBS=3 just sandbox-runtime          # regenerate the asset
+CARGO_BUILD_JOBS=3 just sandbox-runtime --check  # fail when the asset is stale
+```
+
+Change the runtime package, regenerate, and commit the asset with the source. Never edit
+the asset. The command refuses a missing or unpinned compiler (naming the tool and its
+release), a library outside the audited list and script text that an inline script cannot
+carry. It wraps the script in a function so no glue name reaches the frame's global scope,
+and passes the compiler flags in Cargo's encoded form so a checkout path with spaces
+builds.
+
+The command records the checkout as `/checkout` and each dependency's sources as
+`<name>-<version>`. These stable names keep the asset the same on every machine: no Cargo
+home or checkout path reaches the embedded module. A web crate test fails when the asset
+names any other absolute source path.
+
+A plain Cargo build for the target links the runtime with the package's own settings.
+Its build script passes the Emscripten link settings to the binary; its manifest sets
+`panic = "abort"` in the dev and release profiles. The generator command adds only compiler
+flags, source path names and the linker map for the audit. The package repeats the
+workspace lint table in its manifest. Browser linting checks it for
+`wasm32-unknown-emscripten`. `just browser-test` checks the bundle after the browser cases.
+
+The build box's saved setup carries the SDK. Shared CI installs the same release because
+`.github/ci.toml` lists the package in `emscripten_crates`: merge groups build it with a
+plain `cargo build`, and the browser job runs the check.
+
 ## Browser integration qualification
 
 Lint the browser library, examples and complete integration target with the
@@ -224,7 +263,9 @@ CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
 (supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
-binding. The browser executable must be an absolute path. The shared workflow owns
+binding. It also rebuilds the sandbox runtime and compares it with the checked-in
+bundle, which needs Emscripten SDK 6.0.10 on `PATH` (see
+[Sandbox runtime bundle](#sandbox-runtime-bundle)). The browser executable must be an absolute path. The shared workflow owns
 tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are
@@ -352,25 +393,28 @@ It has four forms: a method (through a proxy whose `apply` trap hands the Rust h
 the original function, the receiver and the arguments), a getter, an accessor or a
 value. Test-owned observers, such as the contribution page's mutation recorders,
 selections, animation seeks and frame intervals, call the page's own objects
-through `js_sys` and `web_sys`. Sources the
-product runs inside an isolated frame stand in for model or user content, so they
-stay JavaScript or HTML files beside their tests:
+through `js_sys` and `web_sys`.
 
-- `native_html_artifact_support/probe.js` is a runtime provider's source.
-- `native_artifact_console_support/operand.js` is the artifact document's operand
-  constructor.
-- `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
-  probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
-  driver's served `/sandbox.html`, it writes a load message's code only when the
-  frame's parent sent it.
-- `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
-  and authored documents the program witnesses prepare, plus the generated carrier
-  bootstraps their policies admit by hash.
+Content the product runs inside an isolated frame is Rust test data too, kept as
+string constants beside the tests that hand it to the product. Supplied programs and
+provider runtimes sit in `sandbox_program_inputs.rs`, which the program witnesses and
+the compiler tests share. Authored documents sit in
+`sandbox_loading_support/programs.rs` and `sandbox_loading_support/routes.rs`, and
+the URL bootstrap in `sandbox_execution_support/mod.rs`. The bootstrap and the routing
+URL document stand in for the page a host serves at its sandbox URL. Like the
+driver's served `/sandbox.html`, the bootstrap writes a load message's code only when
+the frame's parent sent it.
 
-Tests read these sources as text and hand them to the product unchanged.
-[The frame-side input issue](https://github.com/Orchestration-Maestro/maestro/issues/4134)
-tracks replacing them once the sandbox has a Rust runtime.
+The raw console witness builds its native operands in Rust and posts them into an
+artifact document, which posts each one back to its parent as its own message.
+
+The completion witness keeps its observer as a supplied provider, the `PROBE`
+constant in `native_html_artifact_browser.rs`. It records where the completion signal
+runs, the document's readiness, syntax errors and the body once loading ends, so it
+must be in place before the document's own scripts. Each sandbox document runs in its
+own renderer, which the browser driver learns of only after the document has run;
+only a provider runs early enough.
+
 `markdown_support/dom.js` is the remaining page-side script; it still installs
 the Markdown projection.
 
@@ -1252,8 +1296,12 @@ platform's own separator.
 Before running the example, the setup's cache normalization (`nextest-setup normalize-component-cache`) gives executable
 artifacts in the profile directory, `deps` and `examples` their newest existing
 modification time. This advances older outputs without making them older than
-their compiler inputs. It skips an executable when an exact linked library build
-is newer than it: advancing that binary would hide a rebuild from Cargo.
+their compiler inputs. On Unix it changes each time through a read-only handle and
+never opens an executable for writing: macOS can kill the next launch of an
+executable that was opened for writing after it ran. It skips an executable when
+an exact linked library build is newer than it: advancing that binary would hide
+a rebuild from Cargo. For the same macOS reason, preparation and setup replace a
+file they stage or install instead of copying over it.
 Cargo's `.fingerprint` records identify each direct and transitive library build
 by its fingerprint and metadata hash, independently of dependency aliases.
 A newer build of the same crate under another hash, including check-only metadata
@@ -1347,6 +1395,10 @@ target/test-setup/development prepare-test-setup prepare target/test-setup targe
 target/test-setup/development nextest-setup author-component
 ```
 
+Preparation keeps the running tool intact when it is already in the output
+directory. `prepare-test-setup install` does the same. Staging from another
+directory replaces the destination file instead of rewriting it.
+
 The tool takes its checkout from the workspace root above the directory it starts
 in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
 workspace. A command that reads no workspace, such as `prepare-test-setup install`,
@@ -1362,8 +1414,16 @@ Four things it needs are the workspace's own:
 
 - **The component crate** is the member crate whose manifest holds the generated
   example region between `# example-index:start` and `# example-index:end`.
-  `development example-index` renders into that crate, and preparation builds the
-  examples from it. No marked member, or two of them, fails with the crates named.
+  `development example-index` renders into that crate, and preparation builds its
+  examples from that crate's package; only Maestro's fixed components come from
+  their own packages. Two marked members fail with the crates named. Without a
+  marked member, `example-index` stops with the workspace named, and preparation
+  skips the components and the setup example; the native fixture, the Cargo
+  checks and the executable are still prepared. A bundle without a setup example
+  cannot run `nextest-setup author-component`; that setup stops with a message
+  naming the missing example.
+  The crate's own fixture folder, `tests/support`, is optional: without it the
+  index and preparation use the shipped examples alone.
 - **The shipped extension folder** is `examples/extensions` beside the workspace
   manifest. Without it the index renders the crate's own example targets alone and
   writes no index page and no guide lock.
@@ -1379,10 +1439,18 @@ Four things it needs are the workspace's own:
   `maestro --bin maestro`. The tool reads the repository and commit from
   `Cargo.lock`, so a pin move installs again.
 
-The two example programs must resolve: a workspace that neither holds nor locks
-their package stops preparation with a message naming it. Staging the `maestro`
-executable is the step that skips: a workspace holding that package builds it
-instead, and one that neither holds nor locks it stages nothing.
+The native fixture must resolve, and so must the setup example when the workspace
+has a component crate: a workspace that neither holds nor locks the package stops
+preparation with a message naming it. Staging the `maestro` executable is the step
+that skips: a workspace holding that package builds it instead, and one that
+neither holds nor locks it stages nothing.
+
+Two more steps run only where their input exists. The
+[browser graph](#browser-author-build) is built when the workspace holds
+`maestro-web`. The setup example exports `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD`,
+the pinned `rg` and `fd` the native search tests copy, for each program the
+workspace's `mise.toml` pins as `ripgrep` or `fd`; a workspace that pins neither
+exports neither.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
@@ -1414,9 +1482,10 @@ of its size. The bundle manifest records whether it holds a graph; a build that 
 it out and the shards build it themselves. A shard's `nextest-setup browser-author` replaces
 `target/browser-author` with the staged graph, after checking that the checkout still holds
 the files the bundle was prepared from, and gives every file of it one modification time
-taken when it installs. Cargo rebuilds a unit when a source or an output it builds on is
-newer than its fingerprint, so a graph that is newer than the checkout and has no output
-newer than another leaves the recipes nothing to compile.
+taken when it installs, through a read-only handle on Unix. Cargo rebuilds a unit when a
+source or an output it builds on is newer than its fingerprint, so a graph that is newer
+than the checkout and has no output newer than another leaves the recipes nothing to
+compile.
 
 The setup runs before the first browser author test of a run, and only on a shard that runs
 one. Without a bundle it pays the whole cost itself. It lints
@@ -1679,7 +1748,9 @@ preparation instead of adding a target-directory search or a runtime compiler.
 Call `install_executable(artifact, destination)` with that explicit path. The
 caller's disposable directory owns the alias. Installation runs inside the same
 artifact and waits for the copy's writer to close; the test runner never opens a
-writable executable that a sibling child could inherit. Copies have independent
+writable executable that a sibling child could inherit. Installing over an
+existing alias replaces its file instead of rewriting it, so an alias that
+already ran is never changed in place. Copies have independent
 modification times. A new copy keeps the artifact's time on macOS and Windows
 and takes the copy time on Linux, so a test that compares an alias's time with
 other files sets that time itself. Windows aliases use the native `.exe` suffix.
@@ -2549,6 +2620,13 @@ compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with
 `maestro_test_process::link_files`, as the root-command harness in
 `crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
+Test code that proves a diagnostic path survives a closed standard error uses
+`maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
+standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,
+which the child calls first so no write beats the pipe's closing. The parent calls
+`maestro_test_process::run_alone` before either, so no sibling test forks while the
+pipe's reading end is open. The [diagnostics guide](diagnostics.md#testing-a-diagnostic-path)
+shows the three together.
 Read child roles through `maestro_test_process::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
@@ -2676,6 +2754,7 @@ a hang or runaway memory as a finding.
 | `terminal-escapes` | `maestro_terminal::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
+| `sandbox-lowering` | `maestro_web::components::sandboxed_iframe::lowering::{program, provider}` for supplied bodies and provider expressions |
 | `git-worktrees` | `maestro_daemon::git::worktree::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
 
 The text targets skip input that is not UTF-8, because their callers only pass
@@ -2694,6 +2773,7 @@ finding:
 | `terminal-escapes` | 4096 | 10 | 2048 |
 | `protocol-frames` | 4096 | 10 | 2048 |
 | `tool-call-arguments` | 4096 | 10 | 2048 |
+| `sandbox-lowering` | 4096 | 10 | 2048 |
 | `git-worktrees` | 4096 | 10 | 2048 |
 
 The Markdown limits keep the largest seed whole. Under the instrumented fuzz

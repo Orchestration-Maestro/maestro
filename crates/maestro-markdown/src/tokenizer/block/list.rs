@@ -8,6 +8,7 @@ use crate::{
 };
 use maestro_text::is_whitespace_scalar;
 mod state;
+pub(crate) use state::LineEnds;
 use state::{CompletedItem, ItemLines};
 
 /// Marker identity and indentation at the start of one list item.
@@ -152,6 +153,14 @@ impl ItemSlot<'_> {
         }
     }
 
+    /// Line ends the trailing item recorded for its body; a replayed item frames its own.
+    fn line_ends(&self, base: usize) -> Option<LineEnds> {
+        match self {
+            Self::Open(item) => Some(item.line_ends(base)),
+            Self::Stopped(_) => None,
+        }
+    }
+
     /// The final semantic boundary only the trailing item's trim still reads.
     fn body_end(&self) -> Option<usize> {
         match self {
@@ -191,6 +200,8 @@ pub(crate) struct ListEntry {
     pub(crate) state: Box<ListState>,
     /// Bytes the first marker already consumed.
     pub(crate) offset: usize,
+    /// Line ends the enclosing item recorded for this operand, when it has them.
+    pub(crate) lines: Option<LineEnds>,
 }
 
 /// Where a completed list level delivers its node.
@@ -213,6 +224,8 @@ pub(crate) struct ListFrame {
     items: Vec<Node>,
     /// Remaining physical lines.
     pending: Cursor,
+    /// Line ends the enclosing item recorded, which frame lines instead of `pending`.
+    lines: Option<LineEnds>,
     /// Where this level delivers its node.
     target: ListTarget,
     /// Next action of this level.
@@ -251,7 +264,16 @@ struct Next {
 impl ListFrame {
     /// Start one list level over its recognized operand.
     pub(crate) fn new(entry: ListEntry, target: ListTarget) -> Self {
-        Self::start(entry.source, entry.state, entry.offset, Vec::new(), target)
+        let ListEntry {
+            source,
+            state,
+            offset,
+            lines,
+        } = entry;
+        Self {
+            lines,
+            ..Self::start(source, state, offset, Vec::new(), target)
+        }
     }
 
     /// Start one list level resuming a trailing item's retained history.
@@ -281,6 +303,7 @@ impl ListFrame {
             offset,
             items,
             pending: Cursor::default(),
+            lines: None,
             target,
             phase: ListPhase::Replay(0),
         }
@@ -315,10 +338,9 @@ impl ListFrame {
 
     /// Admit the next physical line, or admit the trailing item once lines end.
     fn lines<E>(&mut self, lexer: &mut Lexer<'_, E>) -> Option<Step> {
-        let Some(line) = self.pending.line() else {
+        let Some(line) = self.next_line() else {
             return Some(self.begin_item(lexer, false, None, None));
         };
-        let line = line.materialize();
         let state = self.state.as_deref_mut()?;
         if state.item.append(&line) {
             self.offset += line.text.len();
@@ -328,6 +350,18 @@ impl ListFrame {
         Some(match next {
             Some(marker) => self.begin_item(lexer, true, Some(Next { line, marker }), None),
             None => self.begin_item(lexer, false, None, None),
+        })
+    }
+
+    /// Frame the next physical line, by the enclosing item's recorded line ends when present.
+    fn next_line(&mut self) -> Option<ScopeSource> {
+        let Some(lines) = &self.lines else {
+            return self.pending.line().map(Cursor::materialize);
+        };
+        let length = self.source.len();
+        (self.offset < length).then(|| {
+            let end = lines.line_end(self.offset, length);
+            self.source.select(self.offset..end).materialize()
         })
     }
 
@@ -373,6 +407,7 @@ impl ListFrame {
         // Only the final list item is trimmed of its trailing whitespace.
         let end = item.body_end().filter(|_| !following);
         let (body, prefix) = operand(item.body(), end);
+        let length = body.len();
         let child = item.child();
         let rest = lexer.reopen(&body, prefix, child);
         self.phase = ListPhase::Item {
@@ -387,7 +422,10 @@ impl ListFrame {
         };
         lexer.top = child.enter_top();
         let output = child.take_output();
-        Step::Push(Frame::Run(lexer.block_run(rest, output, Level::Item)))
+        let lines = item.line_ends(prefix + length - rest.len());
+        Step::Push(Frame::Run(
+            lexer.block_run(rest, output, Level::Item).framed(lines),
+        ))
     }
 
     /// Run the actions that follow one item's admission.
@@ -486,6 +524,7 @@ impl<E> Lexer<'_, E> {
                 completed: Vec::new(),
             }),
             offset,
+            lines: None,
         })
     }
 }

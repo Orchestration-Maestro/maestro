@@ -1,25 +1,25 @@
 //! Source-derived document preparation observations.
-use super::document::insert_runtime;
-/// Read parser-restored program text from the carrier envelopes.
-fn programs(html: &str) -> String {
-    html.split("<svg")
-        .skip(1)
-        .map(|part| {
-            part.split_once("<script")
-                .unwrap()
-                .1
-                .split_once('>')
-                .unwrap()
-                .1
-                .split_once("</script>")
-                .unwrap()
-                .0
-                .replace("&#13;", "\r")
-                .replace("&lt;", "<")
-                .replace("&amp;", "&")
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+use super::document::{insert_runtime, prepare};
+use super::{PrepareHtmlOptions, runtime::COMPLETION_PROPERTY};
+use crate::components::sandbox::runtime_bundle::BUNDLE;
+use maestro_app::{BuiltinRuntime, Runtime};
+
+/// Options for a loaded HTML artifact.
+const ARTIFACT: PrepareHtmlOptions = PrepareHtmlOptions {
+    is_html_artifact: true,
+    is_standalone: false,
+};
+
+/// Prepare a document with the quoted identifier `"id"` and no globals.
+fn document(code: &str, runtimes: &[Runtime], options: PrepareHtmlOptions) -> String {
+    prepare(code, "id", &[], runtimes, options).unwrap()
+}
+
+/// The configuration block's text, restored as the parser sees it.
+fn configuration(html: &str) -> serde_json::Value {
+    let after = html.split("data-maestro-sandbox>").nth(1).unwrap();
+    let text = after.split("</script>").next().unwrap();
+    serde_json::from_str(text).unwrap()
 }
 
 #[test]
@@ -40,115 +40,157 @@ fn html_runtime_uses_first_matching_insertion_point() {
 #[test]
 fn repl_wrapper_treats_html_literals_as_code() {
     let source = "return '<html><head>literal</head></html>';";
-    let html = super::document::wrap(source, "RUNTIME");
-    assert!(html.starts_with("<!DOCTYPE html>\n<html>\n<head>\n\tRUNTIME"));
-    let program = programs(&html);
-    assert!(program.contains(source));
-    assert!(html.contains("<svg display=\"none\"><script type=\"module\">"));
-    assert!(program.contains("await window.complete(null, returnValue)"));
-    assert!(program.contains("await window.complete({"));
-    assert!(programs(&super::document::wrap("", "RUNTIME")).contains("const userCodeFunc"));
-    assert!(!super::PrepareHtmlOptions::default().is_html_artifact);
-    assert!(!super::PrepareHtmlOptions::default().is_standalone);
+    let html = document(source, &[], PrepareHtmlOptions::default());
+    assert!(html.starts_with("<!DOCTYPE html>\n<html>\n<head>\n\t<style>"));
+    assert_eq!(
+        html.matches("<svg display=\"none\" data-maestro-sandbox-program>")
+            .count(),
+        1
+    );
+    assert!(html.contains("&lt;html>&lt;head>literal&lt;/head>&lt;/html>"));
+    assert_eq!(
+        configuration(&html)["program"]
+            .as_str()
+            .map(|key| key.starts_with("__maestro")),
+        Some(true)
+    );
+    assert!(!PrepareHtmlOptions::default().is_html_artifact);
+    assert!(!PrepareHtmlOptions::default().is_standalone);
 }
 
 #[test]
-fn inline_carriers_preserve_text_and_exact_boot_scripts() {
-    let source = "&<\r>\"\0雪";
-    let encoded = "&amp;&lt;&#13;>\"\0雪";
-    let runtime = super::runtime::assemble("id", source, &[], true).unwrap();
-    assert!(runtime.contains(&format!("<template><svg><script>window.sandboxId = \"id\";\n{encoded}\n\n</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>")));
-    let html = super::document::wrap(source, "RUNTIME");
-    let program = [
-        include_str!("repl-prefix.js"),
-        "\n\t\t\t\t\t",
-        source,
-        include_str!("repl-suffix.js"),
-    ]
-    .concat()
-    .replace('&', "&amp;")
-    .replace('<', "&lt;")
-    .replace('\r', "&#13;");
-    assert_eq!(
-        html,
-        format!(
-            "<!DOCTYPE html>\n<html>\n<head>\n\tRUNTIME\n</head>\n<body>\n\t<svg display=\"none\"><script type=\"module\">{program}</script></svg><script>document.currentScript.previousElementSibling.remove()</script>\n</body>\n</html>"
-        )
+fn inline_carriers_preserve_text_and_encode_parser_hazards() {
+    let provider = "function(id){return \"&<\\r>雪\\0\"} /* &<\r> */";
+    let html = document("", &[Runtime::Content(provider.into())], ARTIFACT);
+    assert!(
+        html.contains("<template data-maestro-sandbox-provider data-maestro-capture=\"__maestro")
     );
-    assert!(programs(&html).contains(source));
+    assert!(html.contains("&amp;&lt;\\r>雪\\0\"} /* &amp;&lt;&#13;> */"));
+    let program = document("return 1; /* &<\r> */", &[], PrepareHtmlOptions::default());
+    assert!(program.contains("/* &amp;&lt;&#13;> */"));
 }
 
 #[test]
 fn standalone_documents_omit_online_helpers() {
     for artifact in [false, true] {
         for standalone in [false, true] {
-            let runtime = super::runtime::assemble("id", "", &[], standalone).unwrap();
-            let html = super::document::prepare(
+            let html = document(
                 "CODE",
-                &runtime,
-                super::PrepareHtmlOptions {
+                &[],
+                PrepareHtmlOptions {
                     is_html_artifact: artifact,
                     is_standalone: standalone,
                 },
             );
-            let program = programs(&html);
-            assert_eq!(program.contains("window.sendRuntimeMessage"), !standalone);
-            assert_eq!(
-                program.contains("document.addEventListener('click'"),
-                !standalone
-            );
+            let config = configuration(&html);
+            assert_eq!(config["standalone"], standalone);
             assert!(html.contains("font-size: initial;"));
+            assert_eq!(html.contains("data-maestro-sandbox-program"), !artifact);
             assert_eq!(
-                html.contains("<svg display=\"none\"><script type=\"module\">"),
+                config.get("program").is_some() || config.get("programError").is_some(),
                 !artifact
             );
-            assert!(!program.contains("window.console.log ="));
         }
     }
 }
 
 #[test]
-fn generated_scripts_preserve_provider_order() {
-    let functions = vec![
-        "function(id){window.first=id}".into(),
-        "function(id){window.second=id}".into(),
+fn runtime_insertion_orders_carriers_configuration_and_bundle() {
+    let runtimes = [
+        Runtime::Builtin(BuiltinRuntime::Console),
+        Runtime::Content("function(id){window.first=id}".into()),
+        Runtime::Empty,
+        Runtime::Builtin(BuiltinRuntime::Artifacts),
+        Runtime::Content("function(id){window.second=id}".into()),
+        Runtime::Builtin(BuiltinRuntime::Attachments),
+        Runtime::Builtin(BuiltinRuntime::FileDownload),
+        Runtime::Builtin(BuiltinRuntime::Console),
     ];
-    let html = super::runtime::assemble(
-        "quoted\"雪",
-        "window[\"2\"] = 2;\nwindow[\"a\"] = 3;",
-        &functions,
-        false,
-    )
-    .unwrap();
-    let program = programs(&html);
+    let globals = [
+        ("\"2\"".to_owned(), "2".to_owned()),
+        ("\"a\"".to_owned(), "{\"b\":null}".to_owned()),
+    ];
+    let html = prepare("", "quoted\"雪", &globals, &runtimes, ARTIFACT).unwrap();
     let positions: Vec<_> = [
-        "window.sandboxId =",
-        "window[\"2\"]",
-        "window[\"a\"]",
-        "window.sendRuntimeMessage",
-        "window.first",
-        "window.second",
-        "document.addEventListener('click'",
+        "window.first=id",
+        "window.second=id",
+        "<script type=\"application/json\" data-maestro-sandbox>",
+        &format!("<script>{BUNDLE}</script>"),
     ]
-    .map(|needle| program.find(needle).unwrap())
+    .map(|needle| html.find(needle).unwrap())
     .into();
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
-    assert!(program.contains("})(\"quoted\\\"雪\");"));
+    assert_eq!(
+        html.matches("<template data-maestro-sandbox-provider")
+            .count(),
+        2
+    );
+    let config = configuration(&html);
+    assert_eq!(config["sandboxId"], "quoted\"雪");
+    assert_eq!(
+        config["globals"],
+        serde_json::json!([[ "2", 2], ["a", {"b": null}]])
+    );
+    assert_eq!(
+        config["runtime"],
+        serde_json::json!([
+            "console",
+            "provider",
+            "artifacts",
+            "provider",
+            "attachments",
+            "fileDownload",
+            "console"
+        ])
+    );
+    assert_eq!(config["completion"], COMPLETION_PROPERTY);
 }
 
 #[test]
-fn marker_looking_runtime_and_user_text_are_never_template_syntax() {
-    let markers = "__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__";
-    let runtime = super::runtime::assemble(markers, markers, &[markers.into()], true).unwrap();
-    let html = super::document::wrap(markers, &runtime);
-    assert_eq!(html.matches("<template><svg><script>").count(), 1);
+fn marker_looking_input_is_inert_text() {
+    let markers = "__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__ </script><!--";
+    let globals = [(format!("\"{markers}\""), format!("\"{markers}\""))];
+    let html = prepare(
+        &format!("return '{markers}';"),
+        markers,
+        &globals,
+        &[Runtime::Content(format!(
+            "function(){{return '{markers}'}}"
+        ))],
+        PrepareHtmlOptions::default(),
+    )
+    .unwrap();
     assert_eq!(
-        html.matches("<svg display=\"none\"><script type=\"module\">")
+        html.matches("<template data-maestro-sandbox-provider")
             .count(),
         1
     );
-    assert!(html.contains(&format!("<head>\n\t{runtime}\n</head>\n<body>\n\t<svg")));
-    assert_eq!(programs(&html).matches(markers).count(), 5);
+    assert_eq!(html.matches("data-maestro-sandbox-program>").count(), 1);
+    let config = configuration(&html);
+    assert_eq!(config["sandboxId"], markers);
+    assert_eq!(config["globals"][0][1], markers);
+    let block = html
+        .split_once("data-maestro-sandbox>")
+        .unwrap()
+        .1
+        .split_once("</script>")
+        .unwrap()
+        .0;
+    assert!(!block.contains('<'));
+}
+
+#[test]
+fn refused_supplied_content_is_reported_not_emitted() {
+    let html = document("return )(", &[], PrepareHtmlOptions::default());
+    assert!(!html.contains("data-maestro-sandbox-program>"));
+    assert!(
+        configuration(&html)["programError"]
+            .as_str()
+            .is_some_and(|text| !text.is_empty())
+    );
+    assert!(configuration(&html).get("program").is_none());
+    let refusal = prepare("", "id", &[], &[Runtime::Content("1; 2".into())], ARTIFACT);
+    assert!(refusal.is_err());
 }
 
 mod execution;

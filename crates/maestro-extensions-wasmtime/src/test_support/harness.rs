@@ -13,7 +13,7 @@ use maestro_extensions::{
     runner::ExtensionRunnerSession,
     test_support::{
         FauxModelDefinition, FauxProviderRegistration, RegisterFauxProviderOptions, ToolkitWidgets,
-        register_faux_provider,
+        diagnostics, register_faux_provider,
     },
     types::ProviderActions,
 };
@@ -91,7 +91,7 @@ impl Harness {
             faux,
             bus: create_event_bus_for::<Local>(
                 Rc::new(|tail| drop(tokio::task::spawn_local(tail))),
-                Rc::new(|text: &str| eprint!("{text}")),
+                Rc::new(diagnostics::write_stderr),
             ),
             runtime: create_extension_runtime::<Local>(),
             loader: module_loader(widgets, options.agent_dir),
@@ -123,7 +123,7 @@ impl Harness {
                 session_manager: self.session_manager.clone(),
                 model_registry: self.model_registry.clone(),
             },
-            Rc::new(|text: &str| eprint!("{text}")),
+            Rc::new(diagnostics::write_stderr),
             LiveTheme::default(),
         ));
         runner

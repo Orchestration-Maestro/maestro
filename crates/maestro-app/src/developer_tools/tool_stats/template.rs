@@ -8,10 +8,6 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::io;
 
-/// The shared identity pack the page takes its colors and fonts from.
-const BRAND: &str = include_str!("../../../../../assets/brand/brand.json");
-/// The pack's own path, used only to place its mark files.
-const BRAND_PATH: &str = "assets/brand/brand.json";
 /// The two pinned page libraries, written as script sources and not bundled.
 const TAILWIND: &str = "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4";
 /// The chart library.
@@ -44,7 +40,7 @@ pub(super) fn render(
 
 /// The page's colors, fonts and radii as custom properties.
 fn properties() -> Result<BTreeMap<String, String>, String> {
-    let pack = BrandPack::parse(BRAND_PATH, BRAND).map_err(|error| error.to_string())?;
+    let pack = BrandPack::shipped().map_err(|error| error.to_string())?;
     Ok(pack
         .presentation(BrandMode::Dark)
         .map_err(|error| error.to_string())?

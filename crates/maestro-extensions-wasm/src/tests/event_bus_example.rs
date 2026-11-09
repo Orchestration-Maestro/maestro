@@ -435,7 +435,7 @@ fn notifications_since(observed: &Observed, mark: Mark) -> Vec<Notification> {
 fn registered(observed: &Observed) -> Registered {
     Registered {
         starts: observed.registrations("event session_start").len(),
-        listeners: observed.bus.listeners.clone(),
+        listeners: observed.bus.listeners(),
         commands: observed.registrations.commands.clone(),
     }
 }

@@ -14,7 +14,7 @@
 //! # Ok::<(), maestro_models::DiagnosticErrorInfo>(())
 //! ```
 use super::sandbox_runtime_provider::{
-    RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
+    BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use crate::browser::components::sandboxed_iframe::{SandboxError, SandboxValue};
 use indexmap::IndexMap;
@@ -153,8 +153,8 @@ impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for ConsoleRuntimeProvid
     fn get_data(&self) -> Result<IndexMap<String, V>, DiagnosticErrorInfo> {
         Ok(IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(include_str!("console_runtime_provider/runtime.js").into())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Builtin(BuiltinRuntime::Console))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())

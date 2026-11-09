@@ -39,13 +39,24 @@ pub(super) fn set_tree_time(directory: &Path, time: SystemTime) -> io::Result<()
         if kind.is_dir() {
             set_tree_time(&entry.path(), time)?;
         } else if kind.is_file() {
-            std::fs::File::options()
-                .write(true)
-                .open(entry.path())?
-                .set_modified(time)?;
+            set_modified(&entry.path(), time)?;
         }
     }
     Ok(())
+}
+
+/// Give the file at `path` the modification time `time` without opening it for writing.
+///
+/// macOS can kill the next launch of an executable that was opened for writing after it ran, and
+/// Unix changes the times of a file its caller owns through a read-only handle. Windows changes
+/// times only through a handle with write access.
+///
+/// # Errors
+/// Returns a failed open or time change.
+fn set_modified(path: &Path, time: SystemTime) -> io::Result<()> {
+    let mut options = std::fs::File::options();
+    options.read(cfg!(unix)).write(!cfg!(unix));
+    options.open(path)?.set_modified(time)
 }
 
 /// Whether nextest runs an archive, where nothing is rebuilt and every executable is current.
@@ -118,10 +129,7 @@ pub(super) fn normalize(directory: &Path, archived: bool) -> io::Result<Outcome>
     if let Some(newest) = current.iter().map(|(_, modified)| *modified).max() {
         for (artifact, modified) in &current {
             if *modified != newest {
-                std::fs::File::options()
-                    .write(true)
-                    .open(artifact)?
-                    .set_modified(newest)?;
+                set_modified(artifact, newest)?;
             }
         }
     }

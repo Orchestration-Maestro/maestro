@@ -4,7 +4,7 @@ use maestro_app::browser::components::{
     sandbox::sandbox_runtime_provider::{SandboxRespond, SandboxRuntimeProvider},
     sandboxed_iframe::{SandboxEnvironment, SandboxExecution},
 };
-use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
+use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, Runtime, SharedHandle};
 use maestro_web::{SandboxIframe, browser::sandbox_value::BrowserSandboxValue};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast, prelude::*};
@@ -46,15 +46,15 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Probe {
         }
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
         if self.failure == Some("runtime") {
             return Err(DiagnosticErrorInfo::error("runtime failure"));
         }
-        Ok(if self.runtime.is_empty() {
+        Ok(Runtime::Content(if self.runtime.is_empty() {
             "function(){}".into()
         } else {
             self.runtime.clone()
-        })
+        }))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok("controlled helper".into())
@@ -495,10 +495,7 @@ impl Fixture {
     /// Bootstrap document that announces itself to its parent with `signal`.
     #[must_use]
     pub(crate) fn bootstrap_document(signal: &str) -> String {
-        // The document writes the code of a load message only when its parent sent it.
-        include_str!("bootstrap.html")
-            .trim_end()
-            .replace("__TYPE__", &serde_json::Value::from(signal).to_string())
+        BOOTSTRAP.replace("__TYPE__", &serde_json::Value::from(signal).to_string())
     }
     /// Dispatch a handshake message carrying the bootstrap diagnostic, from the current frame
     /// or else from the page itself.
@@ -551,6 +548,10 @@ impl Fixture {
         native_value(name, value);
     }
 }
+
+/// The URL bootstrap: it writes the code of a load message only when its parent sent it, and
+/// announces itself with the `__TYPE__` message type.
+const BOOTSTRAP: &str = r"<script>addEventListener('message',e=>{if(e.source===parent&&e.data.type==='sandbox-load'){document.open();document.write(e.data.code);document.close();}});parent.postMessage({type:__TYPE__},'*');</script>";
 
 /// Refuse setting any frame attribute.
 fn attribute_refusal() -> Patch {

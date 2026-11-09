@@ -2,50 +2,51 @@
 
 `maestro_app::RpcClient` runs Maestro in RPC mode as a child process and drives its
 session through typed methods. The commands, answers and events it exchanges are
-described in [the daemon protocol](daemon-protocol.md); this page covers the client's
-own behaviour.
+described in [the daemon protocol](daemon-protocol.md); this page covers what the
+client itself does.
 
 ## Launching the child
 
-`RpcClient::new(RpcClientOptions)` only stores the options. `start` launches the
-child and `stop` ends it; a stopped client can be started again.
+`RpcClient::new(RpcClientOptions)` stores the options and launches nothing. `start`
+launches the child, `stop` ends it, and a stopped client can start again.
 
 - `cli_path` selects the executable. Without it the client runs `dist/maestro`
-  (`dist/maestro.exe` on Windows). A relative path is resolved against the child's
+  (`dist/maestro.exe` on Windows). A relative path resolves against the child's
   working directory. The client never searches `PATH` and never builds anything.
-- `cwd` is the child's working directory; without it the child inherits the
+- `cwd` sets the child's working directory; without it the child inherits the
   current one.
 - `env` adds or replaces variables on top of the inherited environment.
-- A nonempty `provider` or `model` adds `--provider` or `--model`. `args` follow
-  them unchanged, after `--mode rpc`. No shell is involved.
+- A nonempty `provider` or `model` adds `--provider` or `--model`. `args` come
+  next, unchanged, after `--mode rpc`. No shell is involved.
 
-`start` fails with `Client already started` while a child runs. It waits 100 ms and
-reports a child that exited in that time, with its exit code (`null` when a signal
-ended it) and its diagnostic text. That child still counts as started until `stop`.
+`start` fails with `Client already started` while a child runs. It waits 100 ms,
+then reports a child that exited in that time, with its exit code (`null` when a
+signal ended it) and its diagnostic text. That child still counts as started until
+`stop`.
 
-The child's stderr is kept as it arrives and copied to the caller's stderr by a
-separate thread, so a slow reader of that stream never holds up answers or
+The client keeps the child's stderr as it arrives and a separate thread copies it
+to the caller's stderr, so a slow reader of that stream never delays answers or
 deadlines. `get_stderr` returns the text every child of the client has written so
 far.
 
-`stop` stops delivering the child's output, sends the ordinary termination signal,
-kills the child if it is still running one second later, and waits until it is
-reaped. Only the direct child is signalled. `stop` also waits until every stderr
-byte read so far has been copied, but not for the end of that stream, which a
-descendant of the child can keep open.
+`stop` ends delivery of the child's output, sends the ordinary termination signal,
+kills the child if it still runs one second later, and waits until the child is
+reaped. Only the direct child receives a signal. `stop` also waits until the copy
+has caught up with every stderr byte read so far. It does not wait for the stream to
+end, because a descendant of the child can keep it open.
 
 When `start` fails before the child runs, for example because the copying thread
-cannot be created, the client stays unstarted and no child is left behind.
+cannot be created, the client stays unstarted and leaves no child behind.
 
 The client runs on the caller's Tokio local executor, so use it inside a
-`tokio::task::LocalSet`. The tasks that read the child's streams and run the
+`tokio::task::LocalSet`. The tasks that read the child's streams and drive the
 deadlines live there.
 
 ## Commands
 
 Each of the 29 session commands is a method, such as `prompt`, `get_state`,
 `set_model` or `clone`. `clone` is the session command that duplicates the active
-branch; the client itself cannot be cloned. Requests are numbered `req_1`, `req_2`
+branch; the client itself is not cloneable. Requests are numbered `req_1`, `req_2`
 and onwards, and the counter continues across restarts. Answers are matched to
 their request by identifier, in any order.
 
@@ -60,10 +61,10 @@ A method fails with:
   arrives. A request sent while the client is stopping fails this way when the stop
   ends.
 
-Whichever comes first decides the outcome: the answer, the stop or exit, or the
-30 seconds, which count from when the request is sent. A request awaited late still
-gets that outcome, and a timeout carries the diagnostic text as it stood at the
-deadline. An answer that arrives after the 30 seconds goes to the event callbacks.
+The first of these decides the outcome: the answer, the stop or exit, or the
+30 seconds, counted from the moment the request is sent. A request awaited late
+still gets that outcome, and a timeout carries the diagnostic text as it stood at
+the deadline. An answer that arrives after the 30 seconds goes to the event callbacks.
 
 `get_last_assistant_text` returns a `Presence<String>`: missing when the session has
 no assistant message, and `null` or the text when it answers with one of them.
@@ -71,19 +72,19 @@ no assistant message, and `null` or the text when it answers with one of them.
 ## Events
 
 `on_event` registers a callback for every record the child writes that answers no
-pending request, including records that are not objects. Lines that are not JSON,
-and `null`, are ignored. Callbacks run in registration order. Registering the same
+pending request, including records that are not objects. The client ignores lines
+that are not JSON, and `null`. Callbacks run in registration order. Registering the same
 callback twice delivers each record twice. A callback added during a delivery
-receives that record too. A callback that fails stops the delivery of that record to
-the callbacks after it.
+receives that record too. A callback that fails stops delivery of that record to the
+callbacks after it.
 
-`on_event` returns the operation that removes that registration. Calling it again
-does nothing; dropping it keeps the registration.
+`on_event` returns the operation that removes the registration. Calling it again
+changes nothing, and dropping it keeps the registration.
 
 ## Waiting for a run
 
-`wait_for_idle` and `collect_events` register when they are called, so an
-`agent_end` that arrived before does not count. `wait_for_idle` completes at the next
+`wait_for_idle` and `collect_events` register when called, so an `agent_end` that
+arrived earlier does not count. `wait_for_idle` completes at the next
 `agent_end`, and `collect_events` returns every event through it. Both wait 60
 seconds unless given a timeout, counted from the call. They fail with
 `Timeout waiting for agent to become idle. Stderr: <text>` or
@@ -96,7 +97,7 @@ and a stop or an `agent_end` before it still counts when the wait is awaited lat
 session writes before its answer are kept. When the prompt fails, the collection
 ends with it.
 
-Dropping a request or a wait releases only what it registered; nothing is sent to
+Dropping a request or a wait releases only what it registered and sends nothing to
 the session.
 
 ```rust,ignore
@@ -112,8 +113,8 @@ client.stop().await?;
 
 ## Example
 
-`crates/maestro-app/examples/rpc_client_demo` is an interactive terminal client
-built on these methods:
+`crates/maestro-app/examples/rpc_client_demo` is an interactive terminal client that
+uses these methods:
 
 ```sh
 cargo run -p maestro-app --example rpc_client_demo -- path/to/maestro

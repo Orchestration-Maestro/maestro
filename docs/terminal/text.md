@@ -1,15 +1,19 @@
 # Styled terminal text
 
 `maestro-tui` measures, wraps, truncates and slices text that carries terminal
-escapes. A grapheme cluster with an escape written inside it is one grapheme in
-every operation.
+escapes. Every operation treats a grapheme cluster with an escape written inside it
+as one grapheme.
 
 ## Escapes
 
-A recognized escape is a CSI sequence (`ESC [` up to and including the first `m`,
-`G`, `K`, `H` or `J`) or an OSC or APC string (`ESC ]` or `ESC _` up to and
-including the first BEL or `ESC \`). Any other text, including an escape with no
-terminator, is visible text. A recognized escape takes no cells.
+A recognized escape is one of two forms:
+
+- a CSI sequence: `ESC [` up to and including the first `m`, `G`, `K`, `H` or `J`;
+- an OSC or APC string: `ESC ]` or `ESC _` up to and including the first BEL or
+  `ESC \`.
+
+Any other text, including an escape with no terminator, is visible text. A
+recognized escape takes no cells.
 
 - A CSI sequence that ends in `m` is a style escape when only digits and semicolons
   lie between its last `ESC [` and that `m`; they are its parameters.
@@ -18,42 +22,45 @@ terminator, is visible text. A recognized escape takes no cells.
 - Every other recognized escape is metadata, such as a prompt marker, the cursor
   marker or an erase sequence.
 
-A style escape applies its parameters one by one, left to right. `0`, and an empty
-list, reset attributes and colours but leave the hyperlink open. `1` to `5`, `7`, `8`
-and `9` turn on bold, dim, italic, underline, blink, inverse, hidden and
-strikethrough. `21` turns off bold, `22` bold and dim, and `23` to `25` and `27` to
-`29` turn off italic, underline, blink, inverse, hidden and strikethrough. `30` to
-`37` and `90` to `97` set the foreground, `40` to `47` and `100` to `107` the
-background, and `39` and `49` clear them. `38` or `48` followed by `5;n` or
-`2;r;g;b` sets an indexed or true colour. Any other parameter changes nothing.
+A style escape applies its parameters one by one, left to right:
 
-Where an operation re-establishes the style in effect, which is at the start of a
-line that follows another line from `wrap_text_with_ansi` and of the part after an
-overlay from `extract_segments`, it writes one `ESC [ … m` with the active
-attributes in the order bold, dim, italic, underline, blink, inverse, hidden,
-strikethrough, then the foreground, then the background. Indexed and true colours
-keep their parameters as written and the other colours are written as plain
+- `0`, and an empty list, reset attributes and colours but leave the hyperlink open.
+- `1` to `5`, `7`, `8` and `9` turn on bold, dim, italic, underline, blink, inverse,
+  hidden and strikethrough.
+- `21` turns off bold, `22` turns off bold and dim, and `23` to `25` and `27` to
+  `29` turn off italic, underline, blink, inverse, hidden and strikethrough.
+- `30` to `37` and `90` to `97` set the foreground, `40` to `47` and `100` to `107`
+  set the background, and `39` and `49` clear them.
+- `38` or `48` followed by `5;n` or `2;r;g;b` sets an indexed or true colour.
+- Any other parameter changes nothing.
+
+Some operations re-establish the style in effect: at the start of a line that
+follows another line from `wrap_text_with_ansi`, and at the start of the part after
+an overlay from `extract_segments`. There the operation writes one `ESC [ … m` with
+the active attributes in the order bold, dim, italic, underline, blink, inverse,
+hidden, strikethrough, then the foreground, then the background. Indexed and true
+colours keep their parameters as written, and the other colours are written as plain
 decimals. The open hyperlink follows, with the parameters and terminator of its
 opener. A style with nothing active writes nothing.
 
 ## Measuring
 
-`visible_width(text)` returns the terminal columns of `text`. Recognized escapes
-take none and a tab takes three. A grapheme cluster is measured as a whole: wide
-and fullwidth characters, complete emoji sequences and regional indicators, alone
-or in flags, take two columns, and a cluster made only of marks, ignorable characters
-and control characters other than the tab takes none.
+`visible_width(text)` returns the terminal columns of `text`. Recognized escapes take
+none and a tab takes three. Maestro measures a grapheme cluster as a whole: wide and
+fullwidth characters, complete emoji sequences and regional indicators, alone or in
+flags, take two columns, and a cluster made only of marks, ignorable characters and
+control characters other than the tab takes none.
 
-`expand_tabs(text)` replaces displayed tab bytes with three spaces, preserving
+`expand_tabs(text)` replaces displayed tab bytes with three spaces and preserves
 recognized escapes (including tabs inside their payloads). Unlike measuring or
-truncating a tab, it emits space bytes; it borrows text when no tab is present.
+truncating a tab, it emits space bytes; it borrows the text when no tab is present.
 Use it before clipping a painted row that must not contain terminal tab stops.
 
 `get_segmenter(text)` yields each grapheme cluster with its UTF-8 byte position.
 `extract_ansi_code(text, pos)` returns the recognized escape that starts at byte
-`pos` with its byte length, or `None`. `normalize_terminal_output(text)` rewrites
-the Thai and Lao AM vowels (`U+0E33`, `U+0EB3`) as the pairs `U+0E4D U+0E32` and
-`U+0ECD U+0EB2`, and returns text without them borrowed.
+`pos` with its byte length, or `None`. `normalize_terminal_output(text)` rewrites the
+Thai and Lao AM vowels (`U+0E33`, `U+0EB3`) as the pairs `U+0E4D U+0E32` and
+`U+0ECD U+0EB2`, and borrows text that has none of them.
 
 ```rust
 use maestro_tui::{extract_ansi_code, get_segmenter, visible_width};
@@ -130,26 +137,26 @@ assert_eq!(
 
 ## Truncating
 
-`truncate_to_width(text, max_width, options)` returns `""` when `max_width` is
-zero. The ellipsis defaults to `...`.
+`truncate_to_width(text, max_width, options)` returns `""` when `max_width` is zero.
+The ellipsis defaults to `...`.
 
-- Text that measures at most `max_width` is returned without the ellipsis, even
-  when the ellipsis is wider than `max_width`. Its only changes are that a
-  hyperlink still open at its end is closed and that a text with no visible
-  characters keeps only its metadata escapes.
-- Longer text is cut. When the ellipsis is narrower than `max_width`, the result is
-  a prefix of whole graphemes followed by the ellipsis. The prefix takes graphemes
-  from the start while their cells total at most `max_width` minus the cells of the
+- Text that measures at most `max_width` is returned without the ellipsis, even when
+  the ellipsis is wider than `max_width`. Its only changes are that a hyperlink still
+  open at its end is closed and that a text with no visible characters keeps only
+  its metadata escapes.
+- Longer text is cut. When the ellipsis is narrower than `max_width`, the result is a
+  prefix of whole graphemes followed by the ellipsis. The prefix takes graphemes from
+  the start while their cells total at most `max_width` minus the cells of the
   ellipsis, and stops at the first one that does not fit. A full reset follows the
   prefix and another follows the ellipsis; a hyperlink open at the end of either is
   closed first. A result with no prefix and no ellipsis is empty.
-- The result is measured as emitted, because the prefix and the ellipsis can join
-  into a grapheme of another width, such as a flag from two halves or a base with a
-  variation selector. When joining makes the result wider than `max_width`, the
-  prefix loses graphemes until it fits.
+- Maestro measures the result as emitted, because the prefix and the ellipsis can
+  join into a grapheme of another width, such as a flag from two halves or a base
+  with a variation selector. When joining makes the result wider than `max_width`,
+  the prefix loses graphemes until it fits.
 - When the text is cut and the ellipsis alone is as wide as `max_width` or wider,
-  only the ellipsis is returned, framed by resets and cut to the whole graphemes
-  that fit in `max_width`; it is empty when its first grapheme does not fit.
+  only the ellipsis is returned, framed by resets and cut to the whole graphemes that
+  fit in `max_width`; it is empty when its first grapheme does not fit.
 - With `pad`, spaces are added until the finished result measures `max_width`.
 
 ```rust
@@ -169,15 +176,15 @@ assert_eq!(truncate_to_width("anything", 0, TruncateOptions::default()), "");
 
 ## Selecting columns
 
-`slice_with_width(line, start_col, length, strict)` returns the graphemes that
-start in the columns `start_col..start_col + length` and the cells they occupy;
-`slice_by_column` returns only their text. A grapheme that starts left of
-`start_col` is left out, and one that crosses the right edge is kept, or left out
-when `strict` is set. A non-empty selection starts with the escapes written before
-its first grapheme, in their original order, and closes a hyperlink still open at
-its end. A tab takes three columns, as in `visible_width`, so a slice and an overlay
-composited at a column line up with the measured line. A length of zero,
-or a range that starts beyond the end of the line, selects nothing.
+`slice_with_width(line, start_col, length, strict)` returns the graphemes that start
+in the columns `start_col..start_col + length` and the cells they occupy;
+`slice_by_column` returns only their text. A grapheme that starts left of `start_col`
+is left out, and one that crosses the right edge is kept, or left out when `strict`
+is set. A non-empty selection starts with the escapes written before its first
+grapheme, in their original order, and closes a hyperlink still open at its end. A
+tab takes three columns, as in `visible_width`, so a slice and an overlay composited
+at a column line up with the measured line. A length of zero, or a range that starts
+beyond the end of the line, selects nothing.
 
 `extract_segments(line, before_end, after_start, after_len, strict_after)` returns
 the graphemes that start before `before_end` and those that start in
@@ -186,11 +193,11 @@ overlap, the part before keeps the graphemes. The part after starts with the sty
 in effect at its first grapheme, and `strict_after` leaves out a grapheme that
 crosses its right edge. Metadata escapes stay in place in either part: between its
 graphemes, in front of its first grapheme and at its end when the line ends inside
-it. Those under the overlay are dropped.
+it. Metadata escapes under the overlay are dropped.
 
-`apply_background_to_line(line, width, bg_fn)` pads `line` with spaces up to
-`width` columns, never truncates it, and returns the result of calling `bg_fn` once
-on the padded text.
+`apply_background_to_line(line, width, bg_fn)` pads `line` with spaces up to `width`
+columns, never truncates it, and returns the result of calling `bg_fn` once on the
+padded text.
 
 ```rust
 use maestro_tui::{apply_background_to_line, extract_segments};
@@ -205,8 +212,8 @@ assert_eq!(framed, "<hi   >");
 
 ## Classifying characters
 
-`is_whitespace_char(text)` and `is_punctuation_char(text)` are true when at least
-one scalar of `text` matches and false for the empty string. Whitespace is the set
-of the ECMAScript definition, which includes the byte-order mark and the no-break
-space and excludes U+0085 and U+200B. Punctuation is any of
+`is_whitespace_char(text)` and `is_punctuation_char(text)` are true when at least one
+scalar of `text` matches, and false for the empty string. Whitespace is the set of
+the ECMAScript definition, which includes the byte-order mark and the no-break space
+and excludes U+0085 and U+200B. Punctuation is any of
 ``(){}[]<>.,;:'"!?+-=*/\|&%^$#@~` ``.

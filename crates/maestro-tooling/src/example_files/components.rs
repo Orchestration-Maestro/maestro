@@ -43,7 +43,20 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
     Ok(())
 }
 
-/// The package whose examples the source markers select.
+/// The folders whose source markers name components: the component crate's own fixture folder
+/// and the shipped extension folder at the workspace root, each when it exists.
+#[must_use]
+pub fn folders(workspace: &Path, component: &Path) -> Vec<PathBuf> {
+    [
+        component.join("tests/support"),
+        workspace.join("examples/extensions"),
+    ]
+    .into_iter()
+    .filter(|folder| folder.is_dir())
+    .collect()
+}
+
+/// The guest package: it holds the setup example and Maestro's own fixed components.
 pub const EXAMPLE_PACKAGE: &str = "maestro-extensions-wasm";
 
 /// The target, package and export of each component prepared without a source marker.

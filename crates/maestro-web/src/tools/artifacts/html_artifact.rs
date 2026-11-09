@@ -2,7 +2,7 @@
 use crate::{
     I18n, SandboxIframe,
     browser::sandbox_value::BrowserSandboxValue,
-    components::preview_code_toggle::ViewMode,
+    components::{preview_code_toggle::ViewMode, sandboxed_iframe::COMPLETION_PROPERTY},
     dom::{DomContent, DomRoot, DomView},
     tools::{
         artifacts::console::{Console, LogEntry},
@@ -156,7 +156,7 @@ fn sandbox_id(filename: &str) -> String {
 }
 /// Append the completion signal after the whole source, which the page parser then places.
 fn complete_html(html: &str) -> String {
-    format!("{html}<script>if (window.complete) window.complete();</script>")
+    format!("{html}<script>window.{COMPLETION_PROPERTY}</script>")
 }
 impl DomContent for HtmlArtifact {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {

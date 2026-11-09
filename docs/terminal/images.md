@@ -1,13 +1,13 @@
 # Inline images
 
-Renders images inline for terminals that support the Kitty graphics protocol
-(Kitty, Ghostty, `WezTerm`) or iTerm2 inline images. Falls back to a text placeholder
-on unsupported terminals.
+Maestro renders images inline in terminals that support the Kitty graphics protocol
+(Kitty, Ghostty, `WezTerm`) or iTerm2 inline images. On any other terminal it
+shows a text placeholder instead.
 
-Dimensions are read automatically from PNG, JPEG, GIF and WebP headers.
-Kitty payloads are sent unchanged with `f=100`, so they must already be PNG.
-Converting other formats is the caller's responsibility; the later
-`chat-tool-execution` delivery owns conversion for tool output.
+Maestro reads dimensions from PNG, JPEG, GIF and WebP headers automatically. Kitty
+payloads are sent unchanged with `f=100`, so they must already be PNG. Converting
+other formats is the caller's job; the later `chat-tool-execution` delivery owns
+conversion for tool output.
 
 ```rust
 use maestro_tui::{Component, Image, ImageOptions, ImageTheme, TerminalImage};
@@ -31,64 +31,70 @@ uniform Kitty IDs in `1..=0xffff_fffe`. Browser defaults have no environment hin
 `new` replaces both input sources without changing rendering callers; supplied ID
 sources must honor that range. Callbacks run without a terminal-state borrow.
 
-Detection is case-insensitive without trimming. A nonempty `TMUX` or a `TERM`
-starting with `tmux` or `screen` disables images and hyperlinks. Next, a
-`TERM_PROGRAM` equal to `PANE_TERM_PROGRAM` (`maestro`), which the workspace daemon
-sets for pane children, disables images and enables hyperlinks, with true color
-only for `COLORTERM` `truecolor` or `24bit`, before any marker a pane child can
-inherit from the terminal around the daemon. Otherwise Kitty,
-Ghostty and `WezTerm` hints precede iTerm2 hints. `VSCode` and Alacritty enable true
-color and hyperlinks without image support. Unknown terminals enable true color
-only for exact `COLORTERM` values `truecolor` or `24bit`.
+Detection is case-insensitive and never trims. The checks run in this order:
 
-`get_capabilities` caches detection; `detect_capabilities` does not. Override with
-`set_capabilities`, or clear only that cache with `reset_capabilities_cache`.
-Cells start at 9×18 pixels. `set_cell_dimensions` updates the pair only when both
-members are positive.
+1. A nonempty `TMUX`, or a `TERM` starting with `tmux` or `screen`, disables images
+   and hyperlinks.
+2. A `TERM_PROGRAM` equal to `PANE_TERM_PROGRAM` (`maestro`), which the workspace
+   daemon sets for pane children, disables images and enables hyperlinks. True color
+   is on only for a `COLORTERM` of `truecolor` or `24bit`. This check comes before
+   any marker a pane child can inherit from the terminal around the daemon.
+3. Otherwise, Kitty, Ghostty and `WezTerm` hints take precedence over iTerm2 hints.
+4. `VSCode` and Alacritty enable true color and hyperlinks without image support.
+5. Unknown terminals enable true color only for the exact `COLORTERM` values
+   `truecolor` or `24bit`.
+
+`get_capabilities` caches detection; `detect_capabilities` does not. Override the
+result with `set_capabilities`, or clear only that cache with
+`reset_capabilities_cache`. Cells start at 9×18 pixels. `set_cell_dimensions`
+updates the pair only when both members are positive.
 
 ## Placement and fallback
 
-`render_image` defaults to 80 cells, preserves aspect ratio for iTerm2, and allows
+`render_image` defaults to 80 cells, preserves aspect ratio for iTerm2 and allows
 Kitty's terminal-side cursor motion. Direct calls do not allocate IDs. With
-`max_height_cells`, `calculate_image_cell_size` scales the image up or down until
-it fills the width bound or the height bound, whichever it reaches first: Kitty
-receives those columns and rows, iTerm2 the columns with an automatic height.
-Without a height bound the width alone decides. `Image` defaults to at most 60
-cells, constrained by viewport width minus two, and to a height bound as tall in
-pixels as that width is wide, so a portrait image stays a square box; its
-`max_height_cells` overrides that bound. Terminal height plays no part. `Image`
-disables Kitty's terminal-side cursor motion. Empty reserved rows precede the final line,
-which moves the cursor up to draw; Kitty also restores it down. A single-row image
-needs no cursor motion.
+`max_height_cells`, `calculate_image_cell_size` scales the image up or down until it
+fills the width bound or the height bound, whichever it reaches first. Kitty
+receives those columns and rows; iTerm2 receives the columns with an automatic
+height. Without a height bound, the width alone decides.
+
+`Image` defaults to at most 60 cells, constrained by viewport width minus two, and
+to a height bound as tall in pixels as that width is wide, so a portrait image stays
+in a square box; its `max_height_cells` overrides that bound. Terminal height plays
+no part. `Image` disables Kitty's terminal-side cursor motion. Empty reserved rows
+precede the final line, which moves the cursor up to draw; Kitty also restores it
+down. A single-row image needs no cursor motion.
 
 Explicit dimensions override headers. Unknown or invalid header dimensions become
 800×600. Zero geometry, zero maximum width and viewports of width 0–2 take the
-styled text fallback before allocating an ID. The fallback is one line: the styled
-`[Image: <name> [<mime>] <w>x<h>]` truncated to the viewport with `...`, empty at
-width 0. The name shows the home directory, or a path below it, as `~` and the rest;
-a sibling that only shares the home's leading text stays as written. With
-hyperlinks on, an absolute name links to its percent-encoded `file:` URL; a
-relative name is never linked. Geometry uses an exact integer-ratio ceiling, at least one row for
-positive inputs; an unrepresentable row count returns absence.
+styled text fallback before an ID is allocated.
+
+The fallback is one line: the styled `[Image: <name> [<mime>] <w>x<h>]`, truncated
+to the viewport with `...` and empty at width 0. The name shows the home directory,
+or a path below it, as `~` and the rest; a sibling that only shares the home's
+leading text stays as written. With hyperlinks on, an absolute name links to its
+percent-encoded `file:` URL; a relative name is never linked. Geometry uses an exact
+integer-ratio ceiling, at least one row for positive inputs; an unrepresentable row
+count returns absence.
 
 Same-width output is cached even when terminal state changes. `invalidate` drops
-only cached output, retaining dimensions and the supplied or first allocated Kitty
-ID. Resize also re-renders. Invalidate explicitly after changing terminal support
-or cell measurements.
+only the cached output and keeps the dimensions and the supplied or first allocated
+Kitty ID. A resize also re-renders. Invalidate explicitly after changing terminal
+support or cell measurements.
 
 ## Header and wire helpers
 
 Header inspection is not full image validation or decoding. PNG checks its first
 four signature bytes and a 24-byte minimum; JPEG recognizes SOF0/1/2 in bounded
 segments; GIF checks exact version signatures; WebP recognizes VP8, VP8L and VP8X
-with their respective header minima. MIME dispatch accepts only exact
-`image/png`, `image/jpeg`, `image/gif` and `image/webp` literals. Zero parsed
-sizes, malformed segments and truncated headers return absence.
+with their respective header minima. MIME dispatch accepts only the exact literals
+`image/png`, `image/jpeg`, `image/gif` and `image/webp`. Zero parsed sizes,
+malformed segments and truncated headers return absence.
 
-Readers accept standard or URL-safe base64, padded or unpadded, Unicode whitespace
-and unused trailing bits. Other garbage, excess padding, incomplete quartets and
-embedded byte-order marks return absence. Protocol encoders leave the supplied
-already-encoded ASCII payload unchanged. Kitty chunks contain at most 4096 bytes;
-iTerm2 encodes only a supplied nonempty UTF-8 filename. Quiet Kitty delete helpers
-free image data. `hyperlink` wraps verbatim text and URL in OSC 8 sequences without
-capability checks or sanitization.
+Readers accept standard or URL-safe base64, padded or unpadded, with Unicode
+whitespace and unused trailing bits. Other garbage, excess padding, incomplete
+quartets and embedded byte-order marks return absence. Protocol encoders leave the
+supplied already-encoded ASCII payload unchanged. Kitty chunks hold at most 4096
+bytes; iTerm2 encodes only a supplied nonempty UTF-8 filename. The quiet Kitty
+delete helpers free image data. `hyperlink` wraps verbatim text and URL in OSC 8
+sequences, with no capability check or sanitization.
