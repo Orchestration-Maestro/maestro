@@ -154,7 +154,7 @@ async fn execute(
     replies: &Replies,
 ) -> wasmtime::Result<()> {
     // The engine is shared; each instance still owns its worker, store and compiled code.
-    let engine = process_engine()?;
+    let engine = process_engine(&state.installation.agent_dir)?;
     let component = Component::from_file(&engine, path)?;
     let mut linker = Linker::new(&engine);
     lifecycle::link(&mut linker)?;

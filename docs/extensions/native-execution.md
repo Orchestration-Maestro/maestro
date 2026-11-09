@@ -7,8 +7,12 @@ local extension factory for an already-built component whose host widgets `widge
 The `Installation { version, agent_dir }` value comes from the application
 configuration owner. Construction does not discover files or compile source.
 
-Compiled artifacts use Wasmtime's user cache (`$XDG_CACHE_HOME/wasmtime`, or
-`~/.cache/wasmtime` by default on Linux); cache failures fall back to compilation,
+Compiled artifacts are cached in `component-cache` inside the agent directory
+that `Installation::agent_dir` names, on every platform. Moving the agent
+directory, with `MAESTRO_CODING_AGENT_DIR` for example, moves the cache with it.
+A relative agent directory resolves against the working directory, like every
+other path below it. The cache is configured once per process, by the first
+component loaded. A directory the engine cannot use falls back to compilation,
 and each load creates a fresh Store.
 
 On x86-64, extension code is compiled for the baseline feature level, not for the exact CPU

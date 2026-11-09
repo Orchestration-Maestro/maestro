@@ -595,10 +595,10 @@ fn adapter_route_does_not_discard_os_configuration() {
 }
 
 /// Variables the environment probe reports.
-const VARS: &str = "LLVM_PROFILE_FILE,XDG_CACHE_HOME,MTP_AMBIENT,MTP_SET,MTP_OTHER,PATH";
+const VARS: &str = "LLVM_PROFILE_FILE,MAESTRO_CODING_AGENT_DIR,MTP_AMBIENT,MTP_SET,MTP_OTHER,PATH";
 
-/// The compiled-code cache home the outer child hands its cleared descendants.
-const CACHE_HOME: &str = "/controlled/cache";
+/// The agent directory the outer child hands its cleared descendants.
+const AGENT: &str = "/controlled/agent";
 
 /// Report `process`'s view of [`VARS`].
 fn view(process: TestProcess) -> BTreeMap<String, String> {
@@ -618,7 +618,7 @@ fn check_edits(profile: Option<&str>) {
     assert_eq!(inherited["PATH"], hex("outer-path"));
     let kept = profile.map_or_else(|| "-".to_owned(), hex);
     assert_eq!(inherited["LLVM_PROFILE_FILE"], kept);
-    assert_eq!(inherited["XDG_CACHE_HOME"], hex(CACHE_HOME));
+    assert_eq!(inherited["MAESTRO_CODING_AGENT_DIR"], hex(AGENT));
     let cleared = view(plain(&name).env_clear());
     assert_eq!(cleared["PATH"], "-");
     assert_eq!(
@@ -628,7 +628,7 @@ fn check_edits(profile: Option<&str>) {
         ),
         ("-", kept.as_str())
     );
-    assert_eq!(cleared["XDG_CACHE_HOME"], hex(CACHE_HOME));
+    assert_eq!(cleared["MAESTRO_CODING_AGENT_DIR"], hex(AGENT));
     let profile_root = Scratch::new().unwrap();
     let overridden_destination = profile_root.path().join("overridden-%p");
     let overridden = view(
@@ -681,7 +681,7 @@ fn environment_edits_keep_order_profile_bytes_cache_home_and_parent_state() {
             .env("MTP_OUTER_ROOT", scratch.path())
             .env("MTP_AMBIENT", "outer")
             .env("PATH", "outer-path")
-            .env("XDG_CACHE_HOME", CACHE_HOME);
+            .env("MAESTRO_CODING_AGENT_DIR", AGENT);
         match ambient {
             Some(profile) => command.env("LLVM_PROFILE_FILE", profile),
             None => command.env_remove("LLVM_PROFILE_FILE"),
