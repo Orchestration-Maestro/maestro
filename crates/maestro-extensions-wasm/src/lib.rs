@@ -99,6 +99,8 @@ pub use compaction::{CompactionPreparation, CompactionResult, CompactionSettings
 #[cfg(target_arch = "wasm32")]
 #[doc(hidden)]
 pub use component_adapter::Glue;
+/// The insertion-ordered map the tool presets return.
+pub use indexmap::IndexMap;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
 pub use maestro_request::auth_storage::{AuthSource, AuthStatus};
 pub use maestro_request::diagnostics::{

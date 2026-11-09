@@ -1,8 +1,31 @@
-//! Controlled-test support shared by the engine's component and host witnesses.
+//! Test support over the production engine: a harness that loads built components with the
+//! scripted provider, and the gates and receipts the engine's own witnesses await.
+//!
+//! [`maestro_extensions`] and the scripted provider's types are re-exported, so a package test
+//! names the runner, its events and the provider's scripts through this crate alone.
 
 use std::cell::RefCell;
 
 use tokio::sync::{Notify, mpsc, oneshot};
+
+mod harness;
+pub use harness::{
+    Harness, HarnessOptions, Loaded, unconfigured_command_operations, unconfigured_context_actions,
+};
+pub use maestro_extensions;
+pub use maestro_extensions::test_support::{
+    FauxModelDefinition, FauxProviderRegistration, FauxResponseStep, ToolkitWidgets,
+};
+
+/// Runs `test` to completion on a current-thread runtime inside a local task set, which loaded
+/// components need for their native work.
+///
+/// # Errors
+/// Returns the runtime's construction failure.
+pub fn local<T>(test: impl Future<Output = T>) -> std::io::Result<T> {
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    Ok(tokio::task::LocalSet::new().block_on(&runtime, test))
+}
 
 /// Release a waiting callback only after the test observed it enter.
 ///

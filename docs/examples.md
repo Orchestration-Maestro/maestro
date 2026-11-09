@@ -37,10 +37,13 @@ crate. Build its `component` example rather than the shared extension-example cr
    `// maestro-component: MAESTRO_<NAME>_COMPONENT`. The `component_preparation` tooling
    test fails when a test builds an unmarked example. The file stem names its Cargo target; for
    `<dir>/main.rs`, the directory name is used with hyphens replaced by underscores. Keep an existing variable's spelling unchanged.
-3. Add guest tests as `src/tests/<name>_example.rs`. The build script discovers
-   those modules. Executable integration tests also use `<name>_example` as
-   their module name; nextest selects every `_example::` module for component
-   setup without adding it to the filter.
+3. Test the built component on the [test harness](extensions/testing.md) in
+   `crates/maestro-extensions-wasmtime/tests/<name>_example.rs`, and declare the
+   module in that crate's `tests/integration.rs`. The `<name>_example` module
+   name lets nextest select it for component setup without a filter entry.
+   Guest tests of other examples stay in
+   `crates/maestro-extensions-wasm/src/tests/<name>_example.rs`, which that
+   crate's build script discovers.
 4. Run `just example-index` and the example's controlled tests.
 
 Component preparation reads the source markers at run time, builds each marked
