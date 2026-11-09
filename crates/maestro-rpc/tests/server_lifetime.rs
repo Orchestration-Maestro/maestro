@@ -5,6 +5,8 @@ use crate::support::{Child, Served, serve};
 use maestro_app::{ExtensionFactory, Local, SessionShutdownEvent};
 use maestro_test_directory::Scratch;
 use maestro_test_process::selection;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Read};
 use std::os::unix::process::ExitStatusExt;
 use std::rc::Rc;
 
@@ -98,19 +100,27 @@ fn signals_clean_children_before_exit() {
             "serve",
             scratch.path(),
         );
-        let command = format!("echo $$ > {}; exec sleep 300", fifo.display());
+        // The shell keeps the FIFO open for writing until it ends, and reports a sleep that
+        // nothing killed.
+        let command = format!(
+            "exec 3> {}; echo $$ >&3; sleep 300; echo alive >&3",
+            fifo.display()
+        );
         let line = serde_json::json!({"id": "b", "type": "bash", "command": command});
         child.send(format!("{line}\n").as_bytes());
-        let shell = std::fs::read_to_string(&fifo).unwrap().trim().to_owned();
-        assert!(!ended(&shell));
+        let mut held = BufReader::new(File::open(&fifo).unwrap());
+        let mut shell = String::new();
+        held.read_line(&mut shell).unwrap();
+        assert!(!ended(shell.trim()));
         child.signal(signal);
         let (status, errors) = child.wait_open();
         assert_eq!(status.code(), Some(code), "{signal}");
         assert_eq!(errors, "disposing\n", "{signal}");
-        assert!(
-            ended(&shell),
-            "{signal}: the running shell command was killed"
-        );
+        // A kill only queues the signal, so the shell can outlive the server for a moment;
+        // the FIFO reaches its end once the killed shell has ended.
+        let mut rest = String::new();
+        held.read_to_string(&mut rest).unwrap();
+        assert_eq!(rest, "", "{signal}: the running shell command was killed");
     }
 }
 
