@@ -180,8 +180,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   theme/application may depend on watch. Every crate that holds
   shared state behind a mutex or read-write lock may depend on lock: settings,
   credentials, workspace, detection, session, models, agent, tools, extensions,
-  application, the daemon, the local-socket transport, the runtime adapter, the terminal
-  adapter, the interactive frontend and the command-line frontend, and the composed executable
+  application, the daemon, the runtime adapter, the terminal adapter, the interactive
+  frontend and the command-line frontend, and the composed executable
   crate only as a native development dependency so its tests serialize one shared
   native fixture. The edge is portable, so the shared-state operations serve
   browser callers; file exclusion stays native.

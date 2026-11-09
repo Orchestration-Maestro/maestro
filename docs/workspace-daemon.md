@@ -29,7 +29,7 @@ Before binding, preparation creates parents, claims the socket path, rejects a l
 listener with `maestro server is already running (socket busy at {path})`, and
 removes stale socket entries.
 
-The claim is a write lock on the sidecar file `<socket name>.lock`, created beside the
+The claim is an exclusion on the sidecar file `<socket name>.lock`, created beside the
 socket and removed when the claim drops. It is the proof that a server is alive. If
 another holder already has the claim, preparation fails as busy and leaves the socket
 file alone, whatever a connection attempt would report: macOS refuses a connection

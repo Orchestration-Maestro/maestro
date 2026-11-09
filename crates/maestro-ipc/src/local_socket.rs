@@ -118,7 +118,7 @@ pub fn split_async_stream(stream: AsyncLocalStream) -> (AsyncRecvHalf, AsyncSend
 
 /// Exclusive claim on a socket path, held for as long as a server keeps its listener.
 ///
-/// The claim is a write lock on the sidecar file `<socket name>.lock` beside the socket. The
+/// The claim is an exclusion on the sidecar file `<socket name>.lock` beside the socket. The
 /// kernel drops it when the holder exits, however it exits, so a socket file left behind by a
 /// crashed server is never mistaken for a live one.
 #[derive(Debug)]

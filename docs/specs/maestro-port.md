@@ -648,16 +648,16 @@ for canonical targets and the existing external `sha2 =0.11.0`, which shortens l
 and record names for long file names.
 Only theme and application may depend on watch. Every crate that holds shared state
 behind a `Mutex` or an `RwLock` may depend on lock: settings, credentials, workspace,
-detection, session, models, agent, tools, extensions, application, the daemon, the
-local-socket transport, the runtime adapter, the terminal adapter, the interactive frontend and the command-line
-frontend, and the composed executable crate only as a native development dependency
+detection, session, models, agent, tools, extensions, application, the daemon, the runtime
+adapter, the terminal adapter, the interactive frontend and the command-line frontend, and
+the composed executable crate only as a native development dependency
 so its tests serialize one shared native fixture. The dependency is portable, so the
 shared-state operations are available to browser callers; file exclusion stays native.
 Application uses maestro-lock's recoverable in-place `replace` for component saves on
 native targets only, preserving native identity.
 
 `maestro-ipc` is the one native consumer of file exclusion outside shared state: before it
-removes a socket file, it takes `maestro-lock`'s single-attempt write exclusion on the
+removes a socket file, it takes `maestro-lock`'s `try_acquire_exclusion` on the
 socket path and keeps it, as a `SocketClaim`, for as long as the server holds its
 listener. Contention means a live server and the socket stays; an acquired lock means no
 server holds it, so the file is stale. The decision stays in `prepare_socket_path`;
