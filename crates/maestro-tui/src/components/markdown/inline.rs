@@ -15,6 +15,54 @@ pub(super) enum Style<'a> {
     /// Heading decoration by level.
     Heading(usize),
 }
+/// The styling a formatted span applies once its children are rendered.
+enum Wrap<'a> {
+    /// Italic emphasis.
+    Italic,
+    /// Bold emphasis.
+    Bold,
+    /// Struck-through text.
+    Strikethrough,
+    /// Link label with its authored spelling and destination.
+    Link {
+        /// Authored label spelling.
+        label: &'a str,
+        /// Destination.
+        href: &'a str,
+    },
+}
+
+/// One run of sibling nodes being rendered, with the styling of the span that opened it.
+struct Run<'a> {
+    /// Siblings still to render.
+    nodes: std::vec::IntoIter<&'a Node>,
+    /// Text rendered so far.
+    result: String,
+    /// Styling the opening span applies to this run, absent for the outermost run.
+    wrap: Option<Wrap<'a>>,
+}
+impl<'a> Run<'a> {
+    /// Start a run over `nodes`.
+    fn new(nodes: Vec<&'a Node>, wrap: Option<Wrap<'a>>) -> Self {
+        Self {
+            nodes: nodes.into_iter(),
+            result: String::new(),
+            wrap,
+        }
+    }
+}
+
+/// The children and styling of a formatted span, or nothing for any other node.
+fn span(node: &Node) -> Option<(&[Node], Wrap<'_>)> {
+    match &node.kind {
+        Kind::Emphasis(children) => Some((children, Wrap::Italic)),
+        Kind::Strong(children) => Some((children, Wrap::Bold)),
+        Kind::Strike(children) => Some((children, Wrap::Strikethrough)),
+        Kind::Link(children, label, href, _) => Some((children, Wrap::Link { label, href })),
+        _ => None,
+    }
+}
+
 impl Renderer<'_> {
     /// Applies one parent style to text.
     pub(super) fn style(&self, text: &str, style: Style<'_>) -> String {
@@ -48,60 +96,84 @@ impl Renderer<'_> {
             .collect::<Vec<_>>()
             .join("\n")
     }
-    /// Reuses the parent's prefix through nested formatted spans.
+    /// Reuses the parent's prefix through nested formatted spans, one run per open span.
     fn inline_with_prefix<'a>(
         &self,
         nodes: impl IntoIterator<Item = &'a Node>,
         style: Style<'_>,
         prefix: &str,
     ) -> String {
-        let mut result = String::new();
-        for node in nodes {
-            let (text, restore) = match &node.kind {
-                Kind::Text(text) => (self.plain_inline(&text.decoded, style), false),
-                Kind::Html(text)
-                | Kind::HtmlBlock(text)
-                | Kind::Image(text, _)
-                | Kind::Heading(_, _, text)
-                | Kind::Table(super::nodes::Table { authored: text, .. }) => {
-                    (self.plain_inline(text, style), false)
-                }
-                Kind::Quote(_, text) => (self.plain_inline(&text.to_owned_string(), style), false),
-                Kind::Code(text) => ((self.theme.code)(&self.clean(text)), true),
-                Kind::Emphasis(children) => (
-                    (self.theme.italic)(&self.inline_with_prefix(children, style, prefix)),
-                    true,
-                ),
-                Kind::Strong(children) => (
-                    (self.theme.bold)(&self.inline_with_prefix(children, style, prefix)),
-                    true,
-                ),
-                Kind::Strike(children) => (
-                    (self.theme.strikethrough)(&self.inline_with_prefix(children, style, prefix)),
-                    true,
-                ),
-                Kind::Link(children, label, href, _) => (
-                    self.link(
-                        &self.inline_with_prefix(children, style, prefix),
-                        label,
-                        href,
-                    ),
-                    true,
-                ),
-                Kind::Break => ("\n".to_owned(), false),
-                _ => (String::new(), false),
-            };
-            result.push_str(&text);
-            if restore {
-                result.push_str(prefix);
+        let mut runs = vec![Run::new(nodes.into_iter().collect(), None)];
+        loop {
+            if let Some(rendered) = self.step(&mut runs, style, prefix) {
+                return rendered;
             }
         }
+    }
+    /// Renders the next node of the innermost run, or closes the run when it is exhausted;
+    /// the outermost run's text is the result.
+    fn step(&self, runs: &mut Vec<Run<'_>>, style: Style<'_>, prefix: &str) -> Option<String> {
+        let Some(run) = runs.last_mut() else {
+            return Some(String::new());
+        };
+        let Some(node) = run.nodes.next() else {
+            return self.close(runs, prefix);
+        };
+        if let Some((children, wrap)) = span(node) {
+            runs.push(Run::new(children.iter().collect(), Some(wrap)));
+        } else {
+            let (text, restore) = self.leaf(&node.kind, style);
+            run.result.push_str(&text);
+            if restore {
+                run.result.push_str(prefix);
+            }
+        }
+        None
+    }
+    /// Pops the exhausted innermost run and styles it into its parent; the outermost run's
+    /// text is returned.
+    fn close(&self, runs: &mut Vec<Run<'_>>, prefix: &str) -> Option<String> {
+        let Run {
+            mut result, wrap, ..
+        } = runs.pop()?;
         if !prefix.is_empty() {
             while result.ends_with(prefix) {
                 result.truncate(result.len() - prefix.len());
             }
         }
-        result
+        let (Some(wrap), Some(parent)) = (wrap, runs.last_mut()) else {
+            return Some(result);
+        };
+        parent.result.push_str(&self.wrapped(&wrap, &result));
+        parent.result.push_str(prefix);
+        None
+    }
+    /// Renders one node that holds no nested inline children; the flag asks for the parent
+    /// prefix to be restored after it.
+    fn leaf(&self, kind: &Kind, style: Style<'_>) -> (String, bool) {
+        match kind {
+            Kind::Text(text) => (self.plain_inline(&text.decoded, style), false),
+            Kind::Html(text)
+            | Kind::HtmlBlock(text)
+            | Kind::Image(text, _)
+            | Kind::Heading(_, _, text)
+            | Kind::Table(super::nodes::Table { authored: text, .. }) => {
+                (self.plain_inline(text, style), false)
+            }
+            Kind::Quote(_, text) => (self.plain_inline(&text.to_owned_string(), style), false),
+            Kind::Code(text) => ((self.theme.code)(&self.clean(text)), true),
+            Kind::Break => ("\n".to_owned(), false),
+            _ => (String::new(), false),
+        }
+    }
+    /// Applies a formatted span's own styling to its rendered children.
+    fn wrapped(&self, wrap: &Wrap<'_>, content: &str) -> String {
+        match wrap {
+            Wrap::Italic => (self.theme.italic)(content),
+            Wrap::Bold => (self.theme.bold)(content),
+            Wrap::Strikethrough => (self.theme.strikethrough)(content),
+            Wrap::Link { label, href } => self.link(content, label, href),
+        }
     }
     /// Selects clickable transport or the printed destination suffix.
     fn link(&self, content: &str, label: &str, href: &str) -> String {

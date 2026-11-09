@@ -2,6 +2,7 @@
 use crate::{InlineAtom, InlineContext, Kind, MarkedOptions, Node, parse};
 use std::cell::RefCell;
 
+mod anchored_rules;
 mod code_progress;
 mod code_span_windows;
 mod container_depth;
@@ -10,6 +11,7 @@ mod deletion_scanning;
 mod emphasis_work;
 mod fixture_corpus;
 mod html_progress;
+mod inline_depth;
 mod link_windows;
 pub(crate) use crate::test_support::nodes;
 mod opener_work;
