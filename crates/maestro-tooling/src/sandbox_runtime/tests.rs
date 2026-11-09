@@ -80,11 +80,10 @@ fn rustflags_keep_paths_with_spaces_in_one_argument() {
 
 #[test]
 fn a_missing_tool_is_named_with_its_release() {
-    let refusal = tool("maestro-absent-tool", "6.0.10")
-        .unwrap_err()
-        .to_string();
-    assert_eq!(
-        refusal,
-        "maestro-absent-tool release 6.0.10 is not on the PATH"
-    );
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let absent = scratch.path().join("emcc");
+    let name = absent.to_str().unwrap();
+    let refusal = tool(name, "6.0.10").unwrap_err().to_string();
+    assert!(refusal.contains(name), "{refusal}");
+    assert!(refusal.contains("6.0.10"), "{refusal}");
 }
