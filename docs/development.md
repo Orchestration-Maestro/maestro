@@ -268,12 +268,15 @@ package to `browser-exports` under Cargo's target directory, replacing the
 previous run's copy. If setup fails, nextest prints its output and stops before
 any browser test runs. The crate's build script generates one test per name in
 `exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
-64 loading exports, 196 contribution exports and 88 canvas exports. Each test
+64 loading exports, 196 contribution exports and 164 canvas exports. Each test
 serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in
 parallel like any others. A missing or non-callable export fails its own test.
-Packaging also
+`browser::exports::every_built_export_is_in_the_inventory` checks the other
+direction: every function the built module exports, apart from the binding
+initializers `default` and `initSync` and generated classes, must be in the
+inventory, and none is called. Packaging also
 builds the two runtime-module fixtures, each from its own manifest and lock with
 its own binding glue, into a copy of the fixture package.
 It builds the prototype sandbox runtime the same way, with classic-script glue
@@ -444,7 +447,7 @@ A local pass is not hosted-CI proof; activation requires a successful shared job
 
 ### Screenshot evidence
 
-Eight canvas exports, three contribution exports and two loading exports check the
+Eleven canvas exports, three contribution exports and two loading exports check the
 pixels the page paints. Each one draws a state and awaits
 `support::reading_paint::observe(scene)`, which calls the page's
 `readingPaint(scene)`. The driver answers the call: it captures the visible page
@@ -452,8 +455,10 @@ with `Page.captureScreenshot`, decodes the image with the browser's own decoder
 and keeps the pixels in the page, so only counts cross the protocol. It then
 changes only the decoration under test, captures again and restores the exact
 authored `style` attributes. A role pixel is an opaque pixel with exactly the
-role's RGB channels, the same rule the tool report witness uses. A scene that
-counts a role by name reads the colours the export publishes first with
+role's RGB channels, the same rule the tool report witness uses; the Markdown
+syntax and brand scenes accept channels within 1 of the role's, because text is
+antialiased. A
+scene that counts a role by name reads the colours the export publishes first with
 `support::reading_paint::publish_colors`. The call resolves `true` when every
 check holds. Otherwise it rejects with the failed check's message, which fails
 the export and the job:
@@ -471,6 +476,9 @@ the export and the job:
 | `thinking-rest`, `thinking-hover`, `thinking-expanded` | `thinking_dom_paints_brand_roles_and_disclosure_motion` | In both modes, the reasoning header's label and chevron paint exactly the muted role at rest and the text role under the native pointer: repainting either in that role's colour changes no pixel, while making it transparent changes some. At rest the chevron's ink is a right chevron, and once expanded a down chevron. |
 | `word-page` | `docx_artifact_dom_styles_and_safe_targets` | In both modes and both widths, the visible part of the first page paints white over more than half its pixels, and its text paints black ink, pixels with no channel above `0x60`, for every package with text. The limit allows for thin antialiased glyphs that never reach pure black. Dark mode's brand text colour is light, so text that loses its black fails there. |
 | `html-source`, `html-source-again` | `html_artifact_dom_keeps_frame_across_mode_changes` | In both modes, the shown listing paints the background role over more than half its box, and hiding its text changes pixels inside the bounded body and none outside it. After the listing is hidden and shown again, it paints exactly what the last `html-source` capture showed, so it kept its scroll position. |
+| `markdown-hover` | `markdown_hover_keeps_nontext_paint` | Moving the native pointer onto the link changes the link text's pixels and none of the linked image's, and leaves the corner pixel of the inline-code background as it was. |
+| `markdown-syntax` | `markdown_native_paints_all_syntax_roles` | In both packs and both modes, each highlighted token class paints pixels of the role its theme token names in `brand-roles.json`. |
+| `markdown-brand` | `markdown_native_paints_selected_brand_and_loaded_math_fonts` | In the default pack's two modes and the alternate dark pack, with and without thinking, the paragraph (muted while thinking, text otherwise), link, inline code, quote border, table header, formula error and listing border paint pixels of their roles inside the reading viewport. |
 | `link-hover` | `copy_link_native_slot_composition_preserves_reading_selection` | No screenshot: the driver moves the native pointer onto the message text, so its hover listener sees a trusted event. |
 
 Each passed check prints `PAINT <export> <scene> <check> pixels=<count>`, so the
