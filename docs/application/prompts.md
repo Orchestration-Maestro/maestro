@@ -24,11 +24,11 @@ ends the prompt:
    becomes the expanded template. The skill block is
    `<skill name="<name>" location="<file>">`, the line
    `References are relative to <directory>.`, a blank line, the skill body without
-   its frontmatter and trimmed, and `</skill>`. The block is read back by the
-   application's `parse_skill_block`. The native transcript uses it, and it is
-   available to browser builds, which do not call it yet. An unknown
-   skill keeps the text. A skill file that cannot be read is reported with the file
-   as its path and event `skill_expansion`, and the text is kept.
+   its frontmatter and trimmed, and `</skill>`. The application's
+   `parse_skill_block` reads the block back. The native transcript uses it; browser
+   builds expose it but do not call it yet. An unknown skill leaves the text
+   unchanged. When the skill file cannot be read, Maestro reports the file as the
+   path under event `skill_expansion` and keeps the text.
 4. While a response streams, the session queues the prompt instead, as a steering
    message or a follow-up, whichever `streaming_behavior` asks for. Without a choice
    it refuses the prompt with
@@ -45,43 +45,44 @@ ends the prompt:
    together. A system prompt from those handlers replaces the base prompt for this
    turn; otherwise the base prompt is restored.
 
-`preflight_result` hears once whether the prompt was accepted: `true` when a
-command ran, a handler handled the input, the prompt was queued or the agent is
-about to be prompted, and `false` when a step failed. `prompt` returns after the
+`preflight_result` reports once whether the prompt was accepted. It reports `true`
+when a command ran, a handler handled the input, the prompt was queued or the agent
+is about to be prompted, and `false` when a step failed. `prompt` returns after the
 agent and any retry settle. The prompt starts when `prompt` is called, so its
 steps up to the first wait (a command, the input handlers, queueing while a response
 streams, a refusal) have already run before the returned future is first polled.
 The prompt belongs to the session: the future only observes the result, and
 dropping it leaves the prompt running to the end.
 
-The base prompt is the system prompt construction built, or the one
+The base prompt is the system prompt that construction built, or the one
 `set_active_tools_by_name` last built for the active tools.
 
-A failure supplied by an extension handler or listener, by shell operations or by a
-credential lookup keeps its name, code and stack when the session returns it.
+When the session returns a failure from an extension handler or listener, from shell
+operations or from a credential lookup, the failure keeps its name, code and stack.
 
 ## Default system prompt
 
-The documentation section says:
+The documentation section of the system prompt carries this line:
 
 > - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
 
-Documentation and example paths use the directories named in that section, not
-the session's working directory.
+Resolve documentation and example paths in the directories that section names,
+never in the session's working directory.
 
 With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
 is `- Use bash for file operations like ls, rg, find`. When any of those search
-tools is selected, or `bash` is absent, no exploration guideline is emitted.
+tools is selected, or `bash` is absent, the prompt carries no exploration
+guideline.
 
 ## Queues
 
 `steer` and `follow_up` queue a user message on the agent after skill and template
-expansion. The text of a registered command cannot be queued:
+expansion. A registered command's text cannot be queued:
 `Extension command "/<name>" cannot be queued. Use prompt() or execute the command
 when not streaming.` Slash text that names no command is queued unchanged.
 
-The session mirrors the queued texts. Each change is announced with a
-`QueueUpdate` event that carries both lists. `get_steering_messages`,
+The session mirrors the queued texts. Each change emits a `QueueUpdate` event that
+carries both lists. `get_steering_messages`,
 `get_follow_up_messages` and `pending_message_count` read the mirrors.
 `clear_queue` empties both mirrors and the agent's queues, announces the change and
 returns the texts that were pending.
@@ -101,12 +102,12 @@ returns the texts that were pending.
 `send_user_message` always starts a turn. Block content becomes its text blocks
 joined with newlines, followed by its images. Commands, skills and templates do not
 expand, and the `input` handlers see the source as `extension`. While a response
-streams it needs a delivery choice, as a prompt does.
+streams, it needs a delivery choice, as a prompt does.
 
 ## Direct shell commands
 
-`execute_bash` runs a command in the session directory and records the result
-under the command as given. A configured command prefix goes on its own line before
+`execute_bash` runs a command in the session directory and records the result under
+the command as given. A configured command prefix goes on its own line before
 the command that runs. A configured shell path runs it unless the options supply
 the shell operations. Progress chunks reach the caller in arrival order.
 `abort_bash` stops the running command, which is then recorded as cancelled without
@@ -125,12 +126,12 @@ record when given, and a truncated result keeps the path of its full output.
 
 ## Qualified delivery
 
-Prompt and message delivery, skill and template expansion, and queueing are checked
-through the real session by
+Three checks drive the real session through prompt and message delivery, skill and
+template expansion, and queueing:
 [`agent_session_prompt_checks`](../../crates/maestro-app/tests/agent_session_prompt_checks.rs),
 [`agent_session_queue_checks`](../../crates/maestro-app/tests/agent_session_queue_checks.rs)
 and
 [`queued_slash_command_followup_checks`](../../crates/maestro-app/tests/queued_slash_command_followup_checks.rs).
 Each case compares the fields its recorded operation holds: the session history and
-queue mirrors, and, for a case that makes one, the received provider requests, the
-tool results a run produced or the error it reported.
+queue mirrors and, where the case produces them, the received provider requests, the
+tool results of a run or the reported error.
