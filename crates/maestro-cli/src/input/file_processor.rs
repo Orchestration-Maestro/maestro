@@ -224,7 +224,7 @@ impl NativeFileArgumentOperations {
     /// Report one fatal file input on the standard error stream and exit.
     fn report(&self, error: &FileArgumentError) -> ! {
         let message = Theme::red(&error.to_string(), self.styles_enabled);
-        eprintln!("{message}");
+        maestro_app::diagnostics::write_stderr_line(&message);
         std::process::exit(1);
     }
 }

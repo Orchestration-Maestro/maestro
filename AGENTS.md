@@ -324,6 +324,8 @@ the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
 development edge for component tests of the native schema validator,
 the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
 development edge for the product's one engine configuration, the native-only,
+non-optional `maestro-extensions-wasm` to `maestro-listeners` development edge for the
+controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the

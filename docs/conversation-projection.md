@@ -1,40 +1,42 @@
 # Conversation projection
 
-`transform_messages` borrows conversation messages and a target model, returning
+`transform_messages` borrows conversation messages and a target model, and returns
 an independently owned request history. It does not edit stored history, tool
-arguments or declarations. It returns no errors or logs; callback panics propagate
-normally.
+arguments or declarations. It returns no errors and writes no logs; a panic in a
+callback propagates normally.
 
-Replay identity includes provider, API and model ID. Compatible signed or redacted
-thinking is retained; unsigned blank thinking is omitted. Across identities,
-redacted and blank thinking is omitted, usable thinking becomes unsigned text,
-and ordinary text loses its signature. Nonempty tool reasoning signatures are
-removed across identities; explicitly empty tool signatures remain present.
-Emitted text is never trimmed. Other response and result metadata is retained.
+Replay identity is the provider, the API and the model ID together. When the
+identity matches, signed or redacted thinking is kept and unsigned blank thinking
+is dropped. When it differs, redacted and blank thinking are dropped, usable
+thinking becomes unsigned text, and ordinary text loses its signature. A nonempty
+tool reasoning signature is removed across identities; an explicitly empty one
+stays present. Emitted text is never trimmed. All other response and result
+metadata is kept.
 
 A target without image input receives `(image omitted: model does not support images)`
-for user images and `(tool image omitted: model does not support images)` for tool
-images. A newly inserted placeholder is suppressed when the preceding output
-block already has that exact text. Ordinary text is never deduplicated.
+in place of user images and `(tool image omitted: model does not support images)`
+in place of tool images. Maestro skips a newly inserted placeholder when the
+preceding output block already holds that exact text. Ordinary text is never
+deduplicated.
 
-The optional normalizer receives each cross-model call's original ID, the actual
-target descriptor and the unchanged source assistant, in history/content order.
-`None` disables ID rewriting only. All callbacks run before result synthesis,
-even for assistant responses that are later omitted. Empty normalized IDs are
-valid and the returned ID is used exactly as supplied.
+The optional normalizer receives, for each cross-model call, the original ID, the
+target descriptor and the unchanged source assistant, in history and content
+order. `None` disables ID rewriting only. All callbacks run before result
+synthesis, even for assistant responses that are later omitted. An empty
+normalized ID is valid, and Maestro uses the returned ID exactly as supplied.
 
-Real tool results match the first unanswered original call occurrence in the
-current assistant batch. Associations end at every user/assistant boundary;
+A real tool result matches the first unanswered original call occurrence in the
+current assistant batch. Associations end at every user/assistant boundary, and
 equal normalized IDs do not merge occurrences. Unmatched and extra real results
-are retained in their supplied order. Before each user/assistant boundary and
-at history end, missing calls receive error results with their projected ID,
-declared name, unsigned `No result provided` text, absent details and their own
-current epoch-millisecond timestamp. Errored and aborted assistants are omitted,
-after repairing the preceding batch, and contribute no missing results themselves.
+keep their supplied order. Before each user/assistant boundary and at the end of
+the history, each missing call receives an error result with its projected ID, its
+declared name, the unsigned text `No result provided`, absent details and its own
+current epoch-millisecond timestamp. Errored and aborted assistants are dropped
+after the preceding batch is repaired, and they add no missing results themselves.
 
 ## Controlled example
 
-No provider registration, credentials or network calls are needed:
+This example needs no provider registration, credentials or network calls:
 
 ```rust
 use maestro_models::{Message, Model, UserContent, transform_messages};

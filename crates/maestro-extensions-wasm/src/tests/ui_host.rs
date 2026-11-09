@@ -487,7 +487,7 @@ pub fn on_terminal_input(
 pub fn listeners_on(observed: &Observed, channel: &str) -> Vec<u32> {
     observed
         .bus
-        .listeners
+        .listeners()
         .iter()
         .filter(|(it, _)| it == channel)
         .map(|(_, id)| *id)
@@ -529,7 +529,7 @@ pub fn unit_answer(answer: Result<(), String>) -> Value {
 pub fn terminal_listeners(observed: &Observed) -> Vec<u32> {
     observed
         .bus
-        .listeners
+        .listeners()
         .iter()
         .filter(|(channel, _)| channel.starts_with("terminal "))
         .map(|(_, id)| *id)

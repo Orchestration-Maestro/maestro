@@ -95,7 +95,7 @@ fn finish(host: &Controlled) {
         release(id);
     }
     let mut names = vec![
-        format!("event bus {}", host.observed().bus.listeners[0].1),
+        format!("event bus {}", host.observed().bus.listeners()[0].1),
         "event session_start".into(),
     ];
     names.extend(

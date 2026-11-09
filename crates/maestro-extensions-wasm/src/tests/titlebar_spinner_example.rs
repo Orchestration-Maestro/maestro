@@ -46,9 +46,9 @@ impl Driver {
     fn new() -> Result<Self, String> {
         let (host, exports) = super::block_on(start::<TitlebarSpinner>())?;
         host.observe().actions.raw = Some(json!("project").to_string());
-        assert_eq!(host.observed().bus.listeners.len(), 1);
+        assert_eq!(host.observed().bus.listeners().len(), 1);
         assert!(titles(&host.observed()).is_empty());
-        let listener = host.observed().bus.listeners[0].1;
+        let listener = host.observed().bus.listeners()[0].1;
         Ok(Self {
             host,
             exports,
@@ -205,7 +205,7 @@ fn titlebar_spinner_lifecycle_cancels_pending_waits() -> Result<(), String> {
             assert_eq!(poll(&mut restarted), Poll::Ready(Ok(())));
         }
     }
-    assert!(driver.host.observed().bus.listeners.is_empty());
+    assert!(driver.host.observed().bus.listeners().is_empty());
     driver.host.observe().actions.raw = Some(json!("").to_string());
     driver.event("session_shutdown", "/")?;
     assert_eq!(
@@ -365,7 +365,7 @@ fn titlebar_spinner_component_runs_lifecycle() -> Result<(), String> {
     for ending in ["agent_start", "agent_end", "session_shutdown"] {
         let mut harness = super::block_on(super::host::Harness::from_compiled(&engine, &component))
             .map_err(|error| error.to_string())?;
-        let listener = harness.observed().bus.listeners[0].1;
+        let listener = harness.observed().bus.listeners()[0].1;
         component_lifecycle(&mut harness, ending).map_err(|error| error.to_string())?;
         let shutdown = harness
             .callback("event session_shutdown")

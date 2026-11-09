@@ -2,6 +2,8 @@
 
 The [Agent guide](agent/api.md) walks through installation, events, options and tools; the
 [proxy client](proxy.md) supplies a `stream_fn` body for remote dispatch.
+The [diagnostics guide](diagnostics.md) covers the standard-error writers the agent loop and the
+application share.
 
 `maestro-agent` owns live conversation state, shared message and executable-tool
 entries, and independent steering and follow-up input queues.

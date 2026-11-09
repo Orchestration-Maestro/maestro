@@ -1,52 +1,59 @@
 # Terminal widgets
 
-The passive `Box`, `Text` and `Spacer` widgets implement the [component
-contract](components.md): `Box` lays its children out inside padding over an optional
-background, `Text` shows word-wrapped text, and `Spacer` shows empty rows. None of them
-accepts input, takes focus or wants key-release events. `Box` here is
-`maestro_tui::Box`, not `std::boxed::Box`; a glob import of the crate root would hide the
-standard one.
+The passive `Box`, `Text` and `Spacer` widgets implement the
+[component contract](components.md). `Box` lays its children out inside padding over
+an optional background, `Text` shows word-wrapped text, and `Spacer` shows empty
+rows. None of them accepts input, takes focus or wants key-release events. `Box`
+here is `maestro_tui::Box`, not `std::boxed::Box`; a glob import of the crate root
+would hide the standard one.
 
-A background is any `Rc<dyn Fn(&str) -> String>`. For displayed rows, a widget passes it
-one row at a time, padded with spaces up to the viewport width, and shows what it returns,
-so it can wrap the row in a colour escape. Box also passes the raw sample `"test"` and uses
-its result only to decide whether to repaint. A widget does not measure what a background
-returns.
+A background is any `Rc<dyn Fn(&str) -> String>`. For displayed rows, a widget
+passes it one row at a time, padded with spaces up to the viewport width, and shows
+what it returns, so it can wrap the row in a colour escape. Box also passes the raw
+sample `"test"` and uses its result only to decide whether to repaint. A widget does
+not measure what a background returns.
 
-Every method takes `&self`, so a background or a child may call back into the widget that
-is rendering it. A widget never holds a borrow of its own state while it runs a
+Every method takes `&self`, so a background or a child may call back into the widget
+that is rendering it. A widget never holds a borrow of its own state while it runs a
 background or another component.
 
 ## Box
 
-`Box::new(padding_x, padding_y, bg_fn)` renders its children one after another, indents
-every child row by `padding_x` spaces and adds `padding_y` blank rows above and below.
-`Box::default()` pads one column and one row and has no background. Horizontal padding is
-never more than half the viewport width, rounded down, and the children are rendered at
-the width that remains, which can be zero. Each row is padded with spaces up to the
-viewport width before the background styles it. A child row wider than the viewport is
-not cut, so children and backgrounds answer for the width of their own output.
+`Box::new(padding_x, padding_y, bg_fn)` renders its children one after another,
+indents every child row by `padding_x` spaces and adds `padding_y` blank rows above
+and below. `Box::default()` pads one column and one row and has no background.
+Horizontal padding is never more than half the viewport width, rounded down, and the
+children render at the width that remains, which can be zero. Each row is padded with
+spaces up to the viewport width before the background styles it. A child row wider
+than the viewport is not cut, so children and backgrounds answer for the width of
+their own output.
 
-A `Box` holds the same child array its callers can edit; replacing it leaves a running
-walk on its original array. `children` returns the array itself, `set_children` makes
-another array the one the box renders, `add_child` appends, `remove_child` removes the
-first occurrence of a handle and ignores a missing one, and `clear` installs a new empty
-array that a handle kept from before no longer reaches. The walk rules of a
-[`Container`](components.md) apply: a render or an invalidation walks the array held when
-it starts, reading each position when it is reached.
+A `Box` holds the same child array its callers can edit; replacing it leaves a
+running walk on its original array. The child methods behave as follows:
 
-A box with no child row renders nothing, without padding rows and without calling the
-background. Otherwise a `Box` rerenders its children and samples a configured background
-(the row it returns for the text `test`) before deciding whether to reuse the composed
-rows. They are reused when the width, the ordered child rows and the sample are all
-unchanged since they were composed. `add_child`, `clear`, a `remove_child` that found its
-child, `set_bg_fn` and `invalidate` drop them, and `invalidate` drops them before it
-invalidates the children.
+- `children` returns the array itself.
+- `set_children` makes another array the one the box renders.
+- `add_child` appends.
+- `remove_child` removes the first occurrence of a handle and ignores a missing one.
+- `clear` installs a new empty array that a handle kept from before no longer
+  reaches.
+
+The walk rules of a [`Container`](components.md) apply: a render or an invalidation
+walks the array held when it starts, reading each position when it is reached.
+
+A box with no child row renders nothing, with no padding rows and no call to the
+background. Otherwise a `Box` rerenders its children and samples a configured
+background (the row it returns for the text `test`) before it decides whether to
+reuse the composed rows. It reuses them when the width, the ordered child rows and
+the sample are all unchanged since they were composed. `add_child`, `clear`, a
+`remove_child` that found its child, `set_bg_fn` and `invalidate` drop the composed
+rows, and `invalidate` drops them before it invalidates the children.
 
 A child or background that changes the box while it renders does not make the render
 fail. The render finishes with the child rows it collected and with the background in
-effect at each call. If `set_bg_fn`, `invalidate`, `add_child`, `remove_child` (that found
-its child) or `clear` was called during the render, its rows are not kept for reuse.
+effect at each call. If `set_bg_fn`, `invalidate`, `add_child`, `remove_child` (that
+found its child) or `clear` was called during the render, Maestro does not keep its
+rows for reuse.
 
 ```rust
 use std::rc::Rc;
@@ -71,31 +78,32 @@ assert_eq!(panel.render(11)[1], "\x1b[44m Content   \x1b[49m");
 
 ## Text
 
-`Text::new(text, padding_x, padding_y, custom_bg_fn)` shows `text` between `padding_x`
-columns on each side and `padding_y` blank rows above and below; `Text::default()` is
-empty, with one column and one row of padding. Text with no non-whitespace scalar renders
-no rows at all, padding included; other text is wrapped after each tab becomes three
-spaces. Whitespace here is the tab, line feed, vertical tab, form feed, carriage return,
-space, no-break space, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F, U+3000
-and U+FEFF. The next-line control U+0085, U+180E and the zero-width space U+200B are
-text. See [styled text](text.md) for wrapping behavior.
+`Text::new(text, padding_x, padding_y, custom_bg_fn)` shows `text` between
+`padding_x` columns on each side and `padding_y` blank rows above and below;
+`Text::default()` is empty, with one column and one row of padding. Text with no
+non-whitespace scalar renders no rows at all, padding included; other text is wrapped
+after each tab becomes three spaces. Whitespace here is the tab, line feed, vertical
+tab, form feed, carriage return, space, no-break space, U+1680, U+2000 to U+200A,
+U+2028, U+2029, U+202F, U+205F, U+3000 and U+FEFF. The next-line control U+0085,
+U+180E and the zero-width space U+200B count as text. See [styled text](text.md) for
+wrapping behavior.
 
 Horizontal padding is never more than half the viewport width, rounded down. The wrap
 width is the width that remains, but at least one. A wrapped row wider than the cells
-that remain is cut to the whole graphemes that fit, so an overwide grapheme is omitted
-instead of split. That happens only when one grapheme is wider than the remaining cells or
-when no cell remains, and then the cut row keeps its place in the output without the
-omitted grapheme. Every row is padded with spaces up to the viewport width before the
-background styles it. The
-background receives the content rows in order, then one call for each of the `padding_y`
-blank rows, and each blank row is shown above and below.
+that remain is cut to the whole graphemes that fit, so an overwide grapheme is
+omitted instead of split. That happens only when one grapheme is wider than the
+remaining cells or when no cell remains, and then the cut row keeps its place in the
+output without the omitted grapheme. Every row is padded with spaces up to the
+viewport width before the background styles it. The background receives the content
+rows in order, then one call for each of the `padding_y` blank rows, and each blank
+row is shown above and below.
 
 `Text` reuses its rows for an unchanged width until `set_text`, `set_custom_bg_fn` or
 `invalidate` drops them; `set_text` with equal text counts. It does not sample a
 background: when the state a background reads changes, call `invalidate`. A setter or
-`invalidate` called while the text renders keeps its rows out of the cache, so the next
-render shows the new values. The current render continues with the text it started with;
-a replaced background applies from the next row on.
+`invalidate` called while the text renders keeps its rows out of the cache, so the
+next render shows the new values. The current render continues with the text it
+started with; a replaced background applies from the next row on.
 
 ```rust
 use std::rc::Rc;
@@ -152,7 +160,7 @@ input.handle_input("\r");
 assert_eq!(*submitted.borrow(), "initial");
 ```
 
-Default bindings:
+The default bindings are:
 
 - Enter submits.
 - Ctrl+A / Ctrl+E move to the start / end.
@@ -164,56 +172,61 @@ Default bindings:
 - Left/Right arrows, Backspace and Delete move or delete a grapheme at the cursor.
 
 Submit and cancel callbacks run synchronously; nested calls read the current
-callbacks. Replacing the value retains or clamps its logical cursor position and
-preserves history and pending paste; changing the value ends an active yank chain.
-Edits segment the prefix or suffix at the cursor, including cross-boundary joins.
+callbacks. Replacing the value keeps or clamps the logical cursor position and
+preserves history and any pending paste; changing the value ends an active yank
+chain. Edits segment the prefix or suffix at the cursor, including cross-boundary
+joins.
+
 A completed paste removes CR/LF, expands tabs to four spaces and captures one undo
-snapshot before dispatching its suffix. Rendering returns one string; widths at
-most two show only the clipped prompt without a cursor, and a focused wider view
-emits the hardware cursor marker. Tabs outside recognized terminal escapes display
-as three spaces; escape payloads, stored text and the editing position stay
-unchanged. A cursor mapped to the selected text's end gets a reserved blank cell. Input has no rendering cache.
+snapshot before it dispatches its suffix. Rendering returns one string. At widths of
+two or less it shows only the clipped prompt, without a cursor; a focused wider view
+emits the hardware cursor marker. Tabs outside recognized terminal escapes display as
+three spaces; escape payloads, stored text and the editing position stay unchanged. A
+cursor mapped to the selected text's end gets a reserved blank cell. Input has no
+rendering cache.
 
 ### Shared editing history
 
-`kill_ring::KillRing` stores deleted text: `push` ignores empty strings, and its
+`kill_ring::KillRing` stores deleted text. `push` ignores empty strings, and its
 explicit `KillRingOptions` select prepending or appending to the newest entry when
 accumulating. `peek` borrows that entry; `rotate` moves it to the front only when
 there are at least two entries; `length` counts entries. Ctrl+Y yanks and Alt+Y
 rotates an active yank.
 
 `undo_stack::UndoStack<S>` stores `S::clone()` on `push` and transfers the newest
-snapshot on `pop`. `clear` drops snapshots and `length` counts them. Input's
-snapshots own their text; an arbitrary shared-handle `Clone` is not a deep copy.
-Ctrl+- restores an input snapshot without rewinding the kill ring. Consecutive
-non-whitespace typing shares a snapshot; a whitespace-containing chunk starts one.
+snapshot on `pop`. `clear` drops snapshots and `length` counts them. Input's snapshots
+own their text; an arbitrary shared-handle `Clone` is not a deep copy. Ctrl+-
+restores an input snapshot without rewinding the kill ring. Consecutive
+non-whitespace typing shares a snapshot; a chunk that contains whitespace starts a
+new one.
 
 ## Loader
 
 `Loader::new(tui, spinner_color_fn, message_color_fn, message, indicator)` starts an
-optional animated indicator beside a message; an absent message is `Loading...`.
-The default indicator cycles through ten spinner frames at 80 ms. Explicit
+optional animated indicator beside a message; an absent message is `Loading...`. The
+default indicator cycles through ten spinner frames at 80 ms. Explicit
 `LoaderIndicatorOptions` display their frames without spinner coloring, even when
-both fields are absent. An empty frame list hides the indicator, and a single
-frame stays static. Message coloring applies in either mode.
+both fields are absent. An empty frame list hides the indicator, and a single frame
+stays static. Message coloring applies in either mode.
 
-`stop` retains the displayed content. `start` refreshes it and restarts the interval
+`stop` keeps the displayed content. `start` refreshes it and restarts the interval
 without resetting the frame. `set_message` refreshes the message even while stopped;
 `set_indicator` resets the frame and starts again. Cloned handles share this state.
-Rendering prepends one empty row to [Text](#text)'s result, with horizontal padding
-1 and vertical padding 0. Render and invalidation do not rerun the color callbacks.
+Rendering prepends one empty row to the result of [Text](#text), with horizontal
+padding 1 and vertical padding 0. Render and invalidation do not rerun the color
+callbacks.
 
 Absent, nonpositive and NaN intervals use 80 ms. Only two or more frames with a
-finite representable delay animate; positive delays below the native quantum use
-1 ns. Infinite or unrepresentable positive delays leave the initialized display
-without a finite tick. The loader uses the writer's existing runtime and ordinary
-render requests. Dropping the last handle cancels its animation timer.
+finite representable delay animate; positive delays below the native quantum use 1
+ns. Infinite or unrepresentable positive delays leave the initialized display without
+a finite tick. The loader uses the writer's existing runtime and ordinary render
+requests. Dropping the last handle cancels its animation timer.
 
-`maestro_tui::tui::RepeatingTimer` owns repeated callbacks on `TuiRuntime::schedule`.
-Construction schedules the first callback after the supplied interval. Each tick
-rearms before invoking caller code; dropping the non-cloneable handle cancels the
-pending continuation, including during its callback. Loader and countdown policy
-remain in their callers; both reuse this owner.
+`maestro_tui::tui::RepeatingTimer` owns repeated callbacks on
+`TuiRuntime::schedule`. Construction schedules the first callback after the supplied
+interval. Each tick rearms before it invokes caller code; dropping the non-cloneable
+handle cancels the pending continuation, including during its callback. Loader and
+countdown policy stay with their callers, and both reuse this owner.
 
 ```rust
 use std::rc::Rc;
@@ -237,16 +250,16 @@ fn show_status(tui: TUI) {
 ## `CancellableLoader`
 
 `CancellableLoader::new(loader)` composes a [Loader](#loader) with a shared
-cancellation signal. `loader()` exposes the embedded owner for animation and
-message operations; rendering and invalidation delegate to it.
+cancellation signal. `loader()` exposes the embedded owner for animation and message
+operations; rendering and invalidation delegate to it.
 
-A matching current `tui.select.cancel` binding (Escape or Ctrl+C by default)
-aborts the signal before calling the installed `on_abort` callback, if any.
-Each matching input calls the current callback again; removing it does not
-prevent cancellation. `signal()` borrows the retained signal for explicit
-cloning, and `aborted()` reads its state. See
-[`maestro-cancellation`](../../crates/maestro-cancellation/README.md) for signal
-observation. `dispose()` stops the embedded loader without aborting its signal.
+A matching current `tui.select.cancel` binding (Escape or Ctrl+C by default) aborts
+the signal before it calls the installed `on_abort` callback, if any. Each matching
+input calls the current callback again; removing it does not prevent cancellation.
+`signal()` borrows the retained signal for explicit cloning, and `aborted()` reads
+its state. See [`maestro-cancellation`](../../crates/maestro-cancellation/README.md)
+for signal observation. `dispose()` stops the embedded loader without aborting its
+signal.
 
 ```rust
 use std::rc::Rc;
@@ -269,20 +282,19 @@ fn show_cancellable_status(tui: TUI) {
 ## `SelectList`
 
 `SelectList` selects command records with the existing [keybindings](keybindings.md).
-Up/down wrap through nonempty matches. Enter confirms and Escape cancels by default;
-these controls use the current keybindings. There are no page controls. `set_filter`
-matches a case-insensitive prefix of the command value
-and resets selection without notification. Explicit selection also does not notify.
-The selected-item getter, confirmation and custom truncation context retain the original
-command handle, independent of its display label. The theme's `selected_prefix` callback
-is declared but never invoked.
+Up and down wrap through nonempty matches. Enter confirms and Escape cancels by
+default; these controls use the current keybindings. There are no page controls.
+`set_filter` matches a case-insensitive prefix of the command value and resets the
+selection without notification. Explicit selection also does not notify. The
+selected-item getter, the confirmation and the custom truncation context keep the
+original command handle, independent of its display label. The theme's
+`selected_prefix` callback is declared but never invoked.
 
 The empty-match message is `  No matching commands`; the scroll counter is
 `  ({selected + 1}/{count})`. Rows compose `→ ` for selection or two spaces otherwise
-before styling and clipping.
-Final styled command rows and the empty message preserve fitting bytes at nonzero
-widths and use no-ellipsis clipping otherwise. Description layout uses the
-[styled-text helpers](text.md).
+before styling and clipping. Final styled command rows and the empty message keep
+fitting bytes at nonzero widths and otherwise use no-ellipsis clipping. Description
+layout uses the [styled-text helpers](text.md).
 
 ```rust
 use std::rc::Rc;
@@ -306,25 +318,28 @@ assert_eq!(commands.get_selected_item().unwrap().value, "open");
 ## `SettingsList`
 
 `SettingsList` optionally searches labels through the [shared matcher](completion.md).
-Its persistent search editor is [Input](#input). The confirmation key (Enter by default),
-or a single space when higher-priority movement bindings do not match, opens a supplied
-submenu before considering value cycling. `update_value` updates the first matching ID
-without invoking change notification. A submenu's repeatable completion callable can be
-retained: a supplied value is stored and notified before the child closes; no supplied
-value only closes it. Completion restores the saved opener index when one remains.
-Change callbacks return `true` to accept the value, or `false` to restore the
-previous displayed value. Constructor records are owned; theme callables can read
-their own live captured state.
+Its persistent search editor is [Input](#input). The confirmation key (Enter by
+default), or a single space when higher-priority movement bindings do not match,
+opens a supplied submenu before value cycling is considered. `update_value` updates
+the first matching ID without invoking change notification.
+
+A submenu's repeatable completion callable can be kept: a supplied value is stored
+and notified before the child closes, and no supplied value only closes it.
+Completion restores the saved opener index when one remains. Change callbacks return
+`true` to accept the value, or `false` to restore the previous displayed value.
+Constructor records are owned; theme callables can read their own live captured
+state.
 
 An empty original list shows `  No settings available`; an empty search result shows
 `  No matching settings`. The main-list hint is
 `  Enter/Space to change · Esc to cancel`, or, with search enabled,
 `  Type to search · Enter/Space to change · Esc to cancel`. The scroll counter is
-`  ({selected + 1}/{count})`. Original-empty messages use no-ellipsis clipping;
-matching-result messages, composed setting rows and hints use the text helper's default
-truncation. Descriptions use delegated wrapping, then indentation and styling. Each
-completed description row preserves fitting bytes at nonzero widths and otherwise uses
-no-ellipsis clipping.
+`  ({selected + 1}/{count})`.
+
+Original-empty messages use no-ellipsis clipping; matching-result messages, composed
+setting rows and hints use the text helper's default truncation. Descriptions use
+delegated wrapping, then indentation and styling. Each completed description row
+keeps fitting bytes at nonzero widths and otherwise uses no-ellipsis clipping.
 
 ```rust
 use std::rc::Rc;
@@ -351,5 +366,5 @@ assert_eq!(settings.render(80)[0], "→ Color  on");
 
 ## Markdown
 
-[`Markdown`](markdown.md) renders styled blocks with supplied theme and
-highlighting callbacks, padding and retained rows.
+[`Markdown`](markdown.md) renders styled blocks with the theme and highlighting
+callbacks you supply, plus padding and retained rows.
