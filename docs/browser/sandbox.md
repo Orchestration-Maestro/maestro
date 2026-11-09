@@ -66,10 +66,10 @@ outside the audited list, or when the text is not safe inside an inline script. 
 list is the Rust crate object, `libc.a`, `libdlmalloc.a`, `libclang_rt.builtins*.a` and the
 compiler builtins. The browser integration command runs the same check.
 
-The runtime package owns its Emscripten link settings in its build script, including the
-dlmalloc allocator, and aborts on panic in every profile. The generator adds only compiler
-flags, the linker map and stable source names (`/checkout` and `<name>-<version>`), so
-every machine builds the same bytes.
+The runtime package's build script sets the Emscripten link settings, including the
+dlmalloc allocator. The package aborts on panic in every profile. The generator adds only
+compiler flags, the linker map and stable source names (`/checkout` and `<name>-<version>`),
+so every machine builds the same bytes.
 
 A prepared document carries, at the runtime insertion point and in this order:
 

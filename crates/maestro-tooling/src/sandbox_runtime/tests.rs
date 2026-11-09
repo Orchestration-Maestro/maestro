@@ -82,7 +82,7 @@ fn rustflags_keep_paths_with_spaces_in_one_argument() {
 /// script is the same whichever Cargo home built it.
 #[test]
 fn dependency_sources_are_recorded_without_the_cargo_home() {
-    let root = "/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/js-sys-0.3.106";
+    let root = "/somewhere/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/js-sys-0.3.106";
     let flags = rustflags(
         Path::new("/work/maestro"),
         Path::new("/work/maestro/target/sandbox-runtime/runtime.map"),
