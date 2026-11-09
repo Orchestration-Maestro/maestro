@@ -1,5 +1,6 @@
 //! Context files, system prompt files and the warning written when one cannot be read.
 use super::{ContextFile, DefaultEventBus, DefaultResourceLoader, ResourceKind, overrides::apply};
+use crate::diagnostics::write_stderr_line;
 use maestro_models::system_prompt::CONTEXT_FILE_NAMES;
 use maestro_path::join;
 use maestro_resources::{
@@ -16,9 +17,9 @@ use std::{
 /// Writes `text` to standard error, in yellow when standard error is a terminal.
 fn warn(text: &str) {
     if io::stderr().is_terminal() {
-        eprintln!("\u{1b}[33m{text}\u{1b}[39m");
+        write_stderr_line(&format!("\u{1b}[33m{text}\u{1b}[39m"));
     } else {
-        eprintln!("{text}");
+        write_stderr_line(text);
     }
 }
 
