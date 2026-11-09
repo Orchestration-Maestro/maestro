@@ -76,7 +76,15 @@ pub(super) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
 
 /// Require a tool on the path to report exactly the pinned release.
 fn tool(name: &str, release: &str) -> io::Result<()> {
-    let output = Command::new(name).arg("--version").output()?;
+    let output = Command::new(name)
+        .arg("--version")
+        .output()
+        .map_err(|error| match error.kind() {
+            io::ErrorKind::NotFound => {
+                io::Error::other(format!("{name} release {release} is not on the PATH"))
+            }
+            _ => error,
+        })?;
     let text = String::from_utf8_lossy(&output.stdout);
     let first = text.lines().next().unwrap_or_default();
     if output.status.success() && first.split_whitespace().any(|word| word == release) {

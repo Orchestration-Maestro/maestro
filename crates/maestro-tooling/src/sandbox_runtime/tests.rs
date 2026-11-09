@@ -1,6 +1,6 @@
 //! Audit decisions over generated script text and linker maps.
 use super::audit::{libraries, script};
-use super::rustflags;
+use super::{rustflags, tool};
 use std::path::Path;
 
 /// Linker map lines of the audited runtime build.
@@ -76,4 +76,15 @@ fn rustflags_keep_paths_with_spaces_in_one_argument() {
         )
     );
     assert!(arguments.contains(&"-Clink-arg=-sWASM_BINDGEN"));
+}
+
+#[test]
+fn a_missing_tool_is_named_with_its_release() {
+    let refusal = tool("maestro-absent-tool", "6.0.10")
+        .unwrap_err()
+        .to_string();
+    assert_eq!(
+        refusal,
+        "maestro-absent-tool release 6.0.10 is not on the PATH"
+    );
 }
