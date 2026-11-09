@@ -152,6 +152,9 @@ fn records<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     })
 }
 
+/// The text of the pack Maestro ships, built into the crate so it needs no file system.
+pub const SHIPPED_PACK: &str = include_str!("../../../assets/brand/brand.json");
+
 impl PackData {
     /// Decode an object pack, keeping final duplicate values, then check measurements.
     ///

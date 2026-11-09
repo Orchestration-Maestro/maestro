@@ -1217,3 +1217,19 @@ fn shared_brand_types_keep_the_theme_import_paths() {
     let error = PackData::parse("{").err().unwrap();
     assert!(error.source().unwrap().is::<serde_json::Error>());
 }
+
+#[test]
+fn shipped_pack_decodes_like_the_pack_file() {
+    let shipped = BrandPack::shipped().unwrap();
+    let file = forge();
+    for mode in MODES {
+        assert_eq!(
+            shipped.theme_json(mode).unwrap(),
+            file.theme_json(mode).unwrap()
+        );
+        assert_eq!(
+            shipped.presentation(mode).unwrap().css_properties(),
+            file.presentation(mode).unwrap().css_properties()
+        );
+    }
+}
