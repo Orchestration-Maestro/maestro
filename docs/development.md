@@ -378,24 +378,28 @@ It has four forms: a method (through a proxy whose `apply` trap hands the Rust h
 the original function, the receiver and the arguments), a getter, an accessor or a
 value. Test-owned observers, such as the contribution page's mutation recorders,
 selections, animation seeks and frame intervals, call the page's own objects
-through `js_sys` and `web_sys`. Sources the
-product runs inside an isolated frame stand in for model or user content, so they
-stay JavaScript or HTML files beside their tests:
+through `js_sys` and `web_sys`.
 
-- `native_html_artifact_support/probe.js` is a runtime provider's source.
-- `native_artifact_console_support/operand.js` is the artifact document's operand
-  constructor.
-- `sandbox_loading_support/frame_content.html` and `frame_url.html` are the routing
-  probe documents.
-- `sandbox_execution_support/bootstrap.html` is the URL bootstrap. Like the
-  driver's served `/sandbox.html`, it writes a load message's code only when the
-  frame's parent sent it.
-- `sandbox_loading_support/program_inputs/` holds the provider runtimes, user programs
-  and authored documents the program witnesses prepare.
+Content the product runs inside an isolated frame is Rust test data too, kept as
+string constants beside the tests that hand it to the product. Supplied programs and
+provider runtimes sit in `sandbox_program_inputs.rs`, which the program witnesses and
+the compiler tests share. Authored documents sit in
+`sandbox_loading_support/programs.rs` and `sandbox_loading_support/routes.rs`, and
+the URL bootstrap in `sandbox_execution_support/mod.rs`. The bootstrap and the routing
+URL document stand in for the page a host serves at its sandbox URL. Like the
+driver's served `/sandbox.html`, the bootstrap writes a load message's code only when
+the frame's parent sent it.
 
-Tests read these sources as text and hand them to the product unchanged.
-[The frame-side input issue](https://github.com/Orchestration-Maestro/maestro/issues/4134)
-tracks replacing them once the sandbox has a Rust runtime.
+The raw console witness builds its native operands in Rust and posts them into an
+artifact document, which posts each one back to its parent as its own message.
+
+The completion witness keeps its observer as a supplied provider, the `PROBE`
+constant in `native_html_artifact_browser.rs`. It records where the completion signal
+runs, the document's readiness, syntax errors and the body once loading ends, so it
+must be in place before the document's own scripts. Each sandbox document runs in its
+own renderer, which the browser driver learns of only after the document has run;
+only a provider runs early enough.
+
 `markdown_support/dom.js` is the remaining page-side script; it still installs
 the Markdown projection.
 

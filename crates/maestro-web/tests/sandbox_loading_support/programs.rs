@@ -4,6 +4,7 @@ use super::{Provider, adapter};
 use crate::browser_fixture_support::{get, global, invoke, object, post_from};
 use crate::contributions_support::settle;
 use crate::sandbox_bootstrap_support::OBSERVER;
+use crate::sandbox_program_inputs::{MARKER_PROVIDER, MARKER_USER, PROVIDER, USER};
 use maestro_app::SharedHandle;
 use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
@@ -136,18 +137,10 @@ pub(crate) async fn marker_witness() {
     super::Fixture::finish();
 }
 
-/// A provider runtime defining one marker-looking literal.
-const MARKER_PROVIDER: &str = include_str!("program_inputs/marker_provider.js");
-/// User code returning every marker-looking value it can read.
-const MARKER_USER: &str = include_str!("program_inputs/marker_user.js");
-/// A provider runtime observing its own text, data, loading order and an optional policy.
-const PROVIDER: &str = include_str!("program_inputs/provider.js");
-/// User code observing loading order, module resolution and a preserved carriage return.
-const USER: &str = include_str!("program_inputs/user.js");
 /// An authored head reporting each click to its parent.
-const CLICK_DOCUMENT: &str = include_str!("program_inputs/click_document.html");
+const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
 /// An authored document with a policy and a parser-time observation.
-const ARTIFACT: &str = include_str!("program_inputs/artifact.html");
+const ARTIFACT: &str = r#"<html><head><meta http-equiv="Content-Security-Policy" content="img-src 'none'"><title>artifact</title><script>S.before=!!S.runtime;</script></head><body><img src="/pixel.png" onerror="S.blocked=true" onload="S.blocked=false"></body></html>"#;
 /// Raw provider data that looks like markup.
 const RAW: &str = r"</ScRiPt> <!--<script> </script> 雪";
 /// The raw value the user code returns.

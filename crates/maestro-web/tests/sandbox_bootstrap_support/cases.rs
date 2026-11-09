@@ -198,7 +198,7 @@ pub(crate) fn cleanup() -> Vec<(&'static str, Value)> {
 /// Real tool inputs, plus early errors that the browser must still refuse.
 pub(crate) fn admission() -> Vec<(&'static str, Value)> {
     let mut cases = vec![(
-        include_str!("../sandbox_loading_support/program_inputs/user.js"),
+        crate::sandbox_program_inputs::USER,
         json!({"log":["complete"],"error":null,"value":"</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪","helper":"helper-ok"}),
     )];
     for source in [

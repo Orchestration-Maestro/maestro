@@ -68,6 +68,7 @@ mod sandbox_execution_browser;
 mod sandbox_exports;
 mod sandbox_loading_browser;
 mod sandbox_lowering;
+mod sandbox_program_inputs;
 mod session_documents;
 mod session_download_browser;
 mod session_downloads;

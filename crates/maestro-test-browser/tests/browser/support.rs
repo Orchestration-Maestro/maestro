@@ -9,6 +9,9 @@ use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{fs, future::Future, io, path::PathBuf};
 
+/// The authored head that reports each click to its parent, as the sandbox witnesses mount it.
+const CLICK_DOCUMENT: &str = r"<head><script>document.addEventListener('click',e=>parent.postMessage(window.pointerDone={type:'pointer-done',prevented:e.defaultPrevented,trusted:e.isTrusted,atTarget:e.composedPath().includes(document.getElementById('target'))},'*'),true);</script></head>";
+
 /// Run one browser test without enabling test-specific runtime features.
 pub(super) fn run<T>(future: impl Future<Output = T>) -> T {
     test_support::runtime().unwrap().block_on(future)
@@ -45,13 +48,7 @@ pub(super) async fn fixture<T>(
         "export const answer='helper-ok'",
     )
     .unwrap();
-    fs::write(
-        root.path().join("click_document.html"),
-        include_str!(
-            "../../../maestro-web/tests/sandbox_loading_support/program_inputs/click_document.html"
-        ),
-    )
-    .unwrap();
+    fs::write(root.path().join("click_document.html"), CLICK_DOCUMENT).unwrap();
     let profile = Scratch::new().unwrap();
     let server = Server::start(root.path()).await.unwrap();
     let browser = Browser::launch(&executable, profile.path(), args).await;

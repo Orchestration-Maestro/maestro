@@ -5,8 +5,8 @@ use maestro_web::components::sandboxed_iframe::lowering;
 #[test]
 fn supplied_tool_inputs_are_accepted() {
     for source in [
-        include_str!("sandbox_loading_support/program_inputs/user.js"),
-        include_str!("sandbox_loading_support/program_inputs/marker_user.js"),
+        crate::sandbox_program_inputs::USER,
+        crate::sandbox_program_inputs::MARKER_USER,
         "for(let i=0;i<1;i++){try{return 1}finally{continue}}",
         "function f(){return 1}var f;return f();",
         "return f();function f(){return 1}function f(){return 2}",
@@ -14,8 +14,8 @@ fn supplied_tool_inputs_are_accepted() {
         lowering::program(source).unwrap();
     }
     let supplied = [
-        include_str!("sandbox_loading_support/program_inputs/provider.js"),
-        include_str!("sandbox_loading_support/program_inputs/marker_provider.js"),
+        crate::sandbox_program_inputs::PROVIDER,
+        crate::sandbox_program_inputs::MARKER_PROVIDER,
         "function(id){window.id=id}",
         "id=>{window.id=id}",
     ];

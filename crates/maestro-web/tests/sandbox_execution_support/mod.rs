@@ -495,10 +495,7 @@ impl Fixture {
     /// Bootstrap document that announces itself to its parent with `signal`.
     #[must_use]
     pub(crate) fn bootstrap_document(signal: &str) -> String {
-        // The document writes the code of a load message only when its parent sent it.
-        include_str!("bootstrap.html")
-            .trim_end()
-            .replace("__TYPE__", &serde_json::Value::from(signal).to_string())
+        BOOTSTRAP.replace("__TYPE__", &serde_json::Value::from(signal).to_string())
     }
     /// Dispatch a handshake message carrying the bootstrap diagnostic, from the current frame
     /// or else from the page itself.
@@ -551,6 +548,10 @@ impl Fixture {
         native_value(name, value);
     }
 }
+
+/// The URL bootstrap: it writes the code of a load message only when its parent sent it, and
+/// announces itself with the `__TYPE__` message type.
+const BOOTSTRAP: &str = r"<script>addEventListener('message',e=>{if(e.source===parent&&e.data.type==='sandbox-load'){document.open();document.write(e.data.code);document.close();}});parent.postMessage({type:__TYPE__},'*');</script>";
 
 /// Refuse setting any frame attribute.
 fn attribute_refusal() -> Patch {
