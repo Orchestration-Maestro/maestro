@@ -1,11 +1,12 @@
-//! Exact injected source for both sandbox channels.
+//! Channel selection and identifier quoting of the injectable runtime script.
 use maestro_web::RuntimeMessageBridge;
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::components::sandbox::runtime_message_bridge::{
     RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
 use serde::Deserialize;
 
-/// Complete source-derived input and expected output.
+/// Complete source-derived input.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct BridgeCase {
@@ -13,8 +14,8 @@ struct BridgeCase {
     context: String,
     /// Unmodified caller identifier.
     sandbox_id: String,
-    /// Complete injectable source.
-    expected: String,
+    /// Complete injectable source of the channel that keeps its own script.
+    expected: Option<String>,
 }
 
 #[test]
@@ -33,6 +34,21 @@ fn bridge_sources_quote_sandbox_identifiers() {
             sandbox_id: &case.sandbox_id,
         })
         .unwrap();
-        assert_eq!(actual, case.expected, "source row {index}");
+        if let Some(expected) = case.expected {
+            assert_eq!(actual, expected, "source row {index}");
+            continue;
+        }
+        let rest = actual
+            .strip_prefix("var Module={arguments:")
+            .unwrap_or_else(|| panic!("arguments prefix at row {index}"));
+        let mut values = serde_json::Deserializer::from_str(rest).into_iter::<serde_json::Value>();
+        let arguments = values.next().unwrap().unwrap();
+        assert_eq!(
+            arguments,
+            serde_json::json!(["frame-bridge", case.sandbox_id]),
+            "arguments row {index}"
+        );
+        let remainder = &rest[values.byte_offset()..];
+        assert_eq!(remainder, format!("}};{BUNDLE}"), "script row {index}");
     }
 }

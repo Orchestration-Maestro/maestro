@@ -1,7 +1,7 @@
 //! Artifact storage offered to sandboxed code, online through host messages and
 //! offline through an injected snapshot.
 use super::sandbox_runtime_provider::{
-    RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
+    BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use crate::browser::components::messages::{ArtifactAction, ArtifactMessage, CustomAgentMessages};
 use crate::browser::tools::artifacts::{
@@ -240,8 +240,8 @@ where
             V::artifact_snapshot(snapshot)?,
         )]))
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(include_str!("artifacts_runtime_provider/runtime.js").into())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Builtin(BuiltinRuntime::Artifacts))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(match self.access {

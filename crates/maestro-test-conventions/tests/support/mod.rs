@@ -35,6 +35,14 @@ impl Workspace {
         workspace
     }
 
+    /// A workspace with the one core member `maestro-text`.
+    pub fn with_text_member() -> Self {
+        let workspace = Self::new();
+        workspace.member("text", "maestro-text", "");
+        workspace.list(&[("maestro-text", "core")]);
+        workspace
+    }
+
     pub fn member(&self, directory: &str, name: &str, dependencies: &str) {
         let root = self.root.path().join("crates").join(directory);
         fs::create_dir_all(root.join("src")).unwrap();

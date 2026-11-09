@@ -12,18 +12,40 @@ pub type SandboxRespond<V> =
 /// Browser-local response callback preserving caller failures.
 #[cfg(target_arch = "wasm32")]
 pub type SandboxRespond<V> = SharedHandle<dyn Fn(V) -> Result<(), DiagnosticErrorInfo>>;
-/// Supplied data and self-contained function source for injection.
+/// A Maestro-owned helper set the sandbox runtime bundle installs.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BuiltinRuntime {
+    /// Artifact listing, reading, writing and deletion.
+    Artifacts,
+    /// Synchronous attachment listing and reads.
+    Attachments,
+    /// Console forwarding, error capture and one-shot completion.
+    Console,
+    /// Byte-preserving file returns.
+    FileDownload,
+}
+/// One ordered runtime entry a provider contributes to a sandbox document.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Runtime {
+    /// A helper set implemented by the sandbox runtime bundle.
+    Builtin(BuiltinRuntime),
+    /// Supplied function source that receives the sandbox identifier.
+    Content(String),
+    /// No runtime entry.
+    Empty,
+}
+/// Supplied data and a runtime selection for injection.
 pub trait SandboxRuntimeProvider<V: SandboxValue = serde_json::Value>: Native {
     /// Obtain owned globals in insertion order.
     ///
     /// # Errors
     /// Returns the provider's diagnostic.
     fn get_data(&self) -> Result<indexmap::IndexMap<String, V>, DiagnosticErrorInfo>;
-    /// Obtain the complete function source.
+    /// Obtain the runtime selection.
     ///
     /// # Errors
     /// Returns the provider's diagnostic.
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo>;
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo>;
     /// Obtain model-facing helper guidance.
     ///
     /// # Errors

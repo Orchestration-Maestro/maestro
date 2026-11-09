@@ -1,8 +1,9 @@
-//! Page-side observations of prepared sandbox documents and their parser-restored programs.
+//! Page-side observations of prepared sandbox documents written into real frames.
 use crate::browser_fixture_support::{
     Patch, construct, get, global, invoke, object, set, signal, variadic,
 };
 use crate::contributions_support::settle;
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::{Element, HtmlIFrameElement};
@@ -91,17 +92,20 @@ pub(crate) fn finish() {
     }
 }
 
-/// The program texts a prepared document carries: its inert runtime, then its module.
+/// The program texts a prepared document carries: its inert provider carriers, then its module.
 pub(crate) fn program_sources(html: &str) -> Vec<String> {
     let parser = web_sys::DomParser::new().unwrap();
     let parsed = parser
         .parse_from_string(html, web_sys::SupportedType::TextHtml)
         .unwrap();
-    let template = parsed.query_selector("template").unwrap().unwrap();
-    let carried = js_sys::Array::from(&get(&get(&template, "content"), "children"));
     let mut scripts: Vec<Element> = Vec::new();
-    for child in carried.iter() {
-        collect(child.unchecked_ref(), "script", &mut scripts);
+    let templates = parsed.query_selector_all("template").unwrap();
+    for index in 0..templates.length() {
+        let template: Element = templates.item(index).unwrap().unchecked_into();
+        let carried = js_sys::Array::from(&get(&get(&template, "content"), "children"));
+        for child in carried.iter() {
+            collect(child.unchecked_ref(), "script", &mut scripts);
+        }
     }
     let vector = parsed.query_selector_all("svg script").unwrap();
     for index in 0..vector.length() {
@@ -122,6 +126,38 @@ fn collect(root: &Element, selector: &str, found: &mut Vec<Element>) {
     for index in 0..below.length() {
         found.push(below.item(index).unwrap().unchecked_into());
     }
+}
+
+/// The inert configuration block of a prepared document, as JSON.
+pub(crate) fn configuration(html: &str) -> serde_json::Value {
+    let (_, rest) = html
+        .split_once("<script type=\"application/json\" data-maestro-sandbox>")
+        .unwrap();
+    serde_json::from_str(rest.split_once("</script>").unwrap().0).unwrap()
+}
+
+/// The marker that starts a prepared program's scaffold.
+const SCAFFOLD: &str =
+    "<svg display=\"none\" data-maestro-sandbox-program><script type=\"module\">";
+
+/// Write `parts` in order into a fresh same-origin frame, calling `between` after each part
+/// except the last, so a witness can act between two stages of parsing.
+pub(crate) async fn written(
+    parts: &[&str],
+    mut between: impl FnMut(&JsValue),
+) -> HtmlIFrameElement {
+    let frame = realm().await;
+    let window = window_of(&frame);
+    let document = get(&window, "document");
+    invoke(&document, "open", &[]).unwrap();
+    for (index, part) in parts.iter().enumerate() {
+        invoke(&document, "write", &[&(*part).into()]).unwrap();
+        if index + 1 < parts.len() {
+            between(&window);
+        }
+    }
+    invoke(&document, "close", &[]).unwrap();
+    frame
 }
 
 /// Lines of `text` that are not line comments.
@@ -163,92 +199,55 @@ pub(crate) fn window_of(frame: &HtmlIFrameElement) -> JsValue {
     frame.content_window().unwrap().into()
 }
 
-/// Evaluate a prepared program in `window`'s realm.
-fn evaluate(window: &JsValue, program: &str) -> Result<JsValue, JsValue> {
-    invoke(window, "eval", &[&program.into()])
-}
-
-/// Text of the document parts outside the generated carriers, restored as the parser left them.
-fn restored(html: &str, scripts: &[String]) -> String {
-    let head = regress::Regex::new(
-        r"<template><svg><script>[\s\S]*?</script></svg></template><script>[\s\S]*?</script>",
-    )
-    .unwrap();
-    let mut html = match head.find(html) {
-        Some(found) => format!(
-            "{}<script></script>{}",
-            &html[..found.start()],
-            &html[found.end()..]
-        ),
-        None => html.to_owned(),
-    };
-    if let Some(module) = scripts.get(1).filter(|module| !module.is_empty()) {
-        let body = regress::Regex::new(r#"<svg display="none"><script type="module">[\s\S]*?</script></svg><script>[\s\S]*?</script>"#).unwrap();
-        if let Some(found) = body.find(&html) {
-            html = format!(
-                "{}<script type=\"module\">\n{module}\t</script>{}",
-                &html[..found.start()],
-                &html[found.end()..]
-            );
-        }
-    }
-    html
-}
-
-/// Compare a generated document and execute its parser-restored programs.
+/// Compare a generated document and execute it in a real frame.
 pub(crate) async fn observe_document(name: &str, html: &str, output: &JsValue) {
     let scripts = program_sources(html);
-    let html = restored(html, &scripts);
+    let config = configuration(html);
     let expected = |key: &str| get(output, key);
-    let suffix = &html[html.find("</script>").unwrap() + 9..];
+    let marker = format!("<script>{BUNDLE}</script>");
+    let suffix = &html[html.find(&marker).unwrap() + marker.len()..];
+    // The lowered program is observed by running it; only its envelope is compared here.
+    let authored = match suffix.find(SCAFFOLD) {
+        Some(at) => {
+            let end = suffix[at..].find("</script></svg>").unwrap() + at;
+            format!("{}{}", &suffix[..at + SCAFFOLD.len()], &suffix[end..])
+        }
+        None => suffix.to_owned(),
+    };
     equal(
         &html[..html.find("<style>").unwrap()].into(),
         &expected("prefix"),
         &format!("{name} prefix"),
     );
     equal(
-        &without_comments(suffix).into(),
+        &without_comments(&authored).into(),
         &without_comments(&expected("suffix").as_string().unwrap()).into(),
         &format!("{name} suffix"),
     );
+    let module = usize::from(suffix.contains(SCAFFOLD));
     equal(
-        &scripts.len().into(),
+        &(1 + module).into(),
         &expected("script_count"),
         &format!("{name} scripts"),
     );
-    let runtime = &scripts[0];
-    equal(
-        &runtime.contains("window.sendRuntimeMessage").into(),
-        &expected("bridge"),
-        &format!("{name} bridge"),
-    );
-    equal(
-        &runtime.contains("document.addEventListener('click'").into(),
-        &expected("navigation"),
-        &format!("{name} navigation"),
-    );
-    let compiled = js_sys::Reflect::construct(
-        global("Function").unchecked_ref::<js_sys::Function>(),
-        &js_sys::Array::of1(&runtime.into()),
-    );
-    let parse_error = compiled.is_err();
-    equal(
-        &parse_error.into(),
-        &expected("script_parse_error"),
-        &format!("{name} program parse"),
-    );
-    let frame = realm().await;
-    let window = window_of(&frame);
-    evaluate(&window, runtime).unwrap();
-    observe_values(name, runtime, &window);
-    if expected("completions").is_truthy() {
-        completions(name, &scripts[1], &window, output).await;
+    for key in ["bridge", "navigation"] {
+        equal(
+            &(!config["standalone"].as_bool().unwrap()).into(),
+            &expected(key),
+            &format!("{name} {key}"),
+        );
     }
+    if expected("completions").is_truthy() {
+        completions(name, html, &scripts[scripts.len() - 1], output).await;
+        return;
+    }
+    let frame = written(&[html], |_| {}).await;
+    observe_values(name, &config, &window_of(&frame));
     frame.remove();
 }
 
 /// The values a prepared runtime defines on its window, by case name.
-fn observe_values(name: &str, runtime: &str, window: &JsValue) {
+fn observe_values(name: &str, config: &serde_json::Value, window: &JsValue) {
     let value = || get(window, "value");
     let label = |part: &str| format!("{name}{part}");
     match name {
@@ -259,16 +258,17 @@ fn observe_values(name: &str, runtime: &str, window: &JsValue) {
         ),
         "runtime_closing_script" => equal(&get(window, "literal"), &"</script>".into(), name),
         "invalid_key" => equal(&get(window, "hyphen-name"), &1.into(), name),
-        "numeric_keys" => numeric_keys(name, runtime, window),
+        "numeric_keys" => numeric_keys(name, config, window),
         "merge_order" => {
             let read = js_sys::Array::of3(&get(window, "a"), &get(window, "b"), &get(window, "c"));
             equal_json(&read, r#"[1,"new",3]"#, name);
-            let position = |key: &str| runtime.find(&format!("window[\"{key}\"]")).unwrap();
-            assert!(
-                position("a") < position("b") && position("b") < position("c"),
-                "{}",
-                label(" insertion order")
-            );
+            let keys: Vec<_> = config["globals"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|pair| pair[0].as_str().unwrap().to_owned())
+                .collect();
+            assert_eq!(keys, ["a", "b", "c"], "{}", label(" insertion order"));
         }
         "provider_id_override" => {
             equal(&get(window, "sandboxId"), &"provider override".into(), name);
@@ -313,30 +313,16 @@ fn calls(window: &JsValue) -> JsValue {
     js_sys::Array::from(&get(window, "calls")).into()
 }
 
-/// Generated numeric keys keep canonical order on a plain object, and the window's indexed
+/// Generated numeric keys keep canonical order in the configuration, and the window's indexed
 /// setters keep them off the window.
-fn numeric_keys(name: &str, runtime: &str, window: &JsValue) {
-    let supplied = js_sys::Object::new();
-    let listener = Closure::<dyn Fn()>::new(|| {});
-    let document = object(&[("addEventListener", listener.as_ref())]);
-    js_sys::Function::new_with_args("window,document", runtime)
-        .call2(&JsValue::UNDEFINED, &supplied, &document)
-        .unwrap();
-    let read = |key: &str| get(&supplied, key);
-    equal_json(
-        &js_sys::Array::of3(&read("1"), &read("2"), &read("a")),
-        r#"["one","two",3]"#,
-        &format!("{name} generated values"),
-    );
-    let keys: js_sys::Array = js_sys::Object::keys(&supplied)
+fn numeric_keys(name: &str, config: &serde_json::Value, window: &JsValue) {
+    let keys: Vec<_> = config["globals"]
+        .as_array()
+        .unwrap()
         .iter()
-        .filter(|key| ["1", "2", "a"].iter().any(|known| key == *known))
+        .map(|pair| pair[0].as_str().unwrap().to_owned())
         .collect();
-    equal_json(
-        &keys,
-        r#"["1","2","a"]"#,
-        &format!("{name} canonical order"),
-    );
+    assert_eq!(keys, ["1", "2", "a"], "{name} canonical order");
     assert!(
         get(window, "1").is_undefined() && get(window, "2").is_undefined() && get(window, "a") == 3,
         "{name} native Window indexed setters"
@@ -348,25 +334,24 @@ fn numeric_keys(name: &str, runtime: &str, window: &JsValue) {
     );
 }
 
-/// Run the prepared module with recorded completions and diagnostics.
-async fn completions(name: &str, module: &str, window: &JsValue, output: &JsValue) {
+/// Run the prepared program in a real frame with recorded completions and diagnostics.
+///
+/// The runtime installs from the first part of the document; the witness then replaces the
+/// completion hooks before the program's scaffold is parsed.
+async fn completions(name: &str, html: &str, module: &str, output: &JsValue) {
     let (completions, logs) = (js_sys::Array::new(), js_sys::Array::new());
+    let (done, finish) = signal();
     let recorded = completions.clone();
     let callback = variadic(move |args| {
         recorded.push(&js_sys::Array::of2(&"callback".into(), &args.get(0)));
         js_sys::Promise::resolve(&JsValue::UNDEFINED).into()
     });
-    set(
-        window,
-        "__completionCallbacks",
-        &js_sys::Array::of1(&callback),
-    );
     let completed = completions.clone();
     let complete = variadic(move |args| {
         completed.push(&args);
+        finish.call0(&JsValue::UNDEFINED).unwrap();
         js_sys::Promise::resolve(&JsValue::UNDEFINED).into()
     });
-    set(window, "complete", &complete);
     let logged = logs.clone();
     let error = variadic(move |args| {
         let texts: js_sys::Array = args
@@ -376,8 +361,19 @@ async fn completions(name: &str, module: &str, window: &JsValue, output: &JsValu
         logged.push(&texts);
         JsValue::UNDEFINED
     });
-    set(&get(window, "console"), "error", &error);
-    settle(evaluate(window, module).unwrap()).await.unwrap();
+    let at = html.find(SCAFFOLD).unwrap_or(html.len());
+    assert!(html[at..].contains(module.lines().next().unwrap_or_default()));
+    let frame = written(&[&html[..at], &html[at..]], |window| {
+        set(
+            window,
+            "__completionCallbacks",
+            &js_sys::Array::of1(&callback),
+        );
+        set(window, "complete", &complete);
+        set(&get(window, "console"), "error", &error);
+    })
+    .await;
+    settle(done.into()).await.unwrap();
     let projected = js_sys::JSON::parse(&stringify(&completions).unwrap()).unwrap();
     if name.starts_with("repl_error") {
         let last = get(&js_sys::Array::from(&projected).at(-1), "0");
@@ -390,6 +386,7 @@ async fn completions(name: &str, module: &str, window: &JsValue, output: &JsValu
         &format!("{name} completions"),
     );
     equal(&logs, &get(output, "logs"), &format!("{name} diagnostics"));
+    frame.remove();
 }
 
 /// Whether an error carries a nonempty native stack.
@@ -407,6 +404,25 @@ fn native_text(value: &JsValue) -> String {
         .unwrap()
         .as_string()
         .unwrap()
+}
+
+/// The `window` names matching `pattern` after `html` is written into a fresh frame, followed
+/// by the type of each named helper.
+pub(crate) async fn defined(html: &str, pattern: &str, helpers: &[&str]) -> JsValue {
+    let frame = written(&[html], |_| {}).await;
+    let window = window_of(&frame);
+    let expression = regress::Regex::new(pattern).unwrap();
+    let names: js_sys::Array =
+        js_sys::Object::get_own_property_names(window.unchecked_ref::<js_sys::Object>())
+            .iter()
+            .filter(|name| expression.find(&name.as_string().unwrap()).is_some())
+            .collect();
+    let types: js_sys::Array = helpers
+        .iter()
+        .map(|helper| JsValue::from(get(&window, helper).js_typeof().as_string().unwrap()))
+        .collect();
+    frame.remove();
+    js_sys::Array::of2(&names, &types).into()
 }
 
 /// Observe native registration synchronously around standalone runtime execution.
@@ -436,7 +452,10 @@ pub(crate) async fn standalone(html: &str) {
             original.apply(&this, &args)
         }),
     ];
-    evaluate(&window, &program_sources(html)[0]).unwrap();
+    let document = get(&window, "document");
+    invoke(&document, "open", &[]).unwrap();
+    invoke(&document, "write", &[&html.into()]).unwrap();
+    invoke(&document, "close", &[]).unwrap();
     equal(
         &invoke(&window, "localHelper", &[]).unwrap(),
         &"offline".into(),
@@ -462,8 +481,6 @@ pub(crate) async fn standalone(html: &str) {
 /// Execute the wrapper with controlled ordered completion gates.
 pub(crate) async fn callbacks(html: &str, input: &serde_json::Value, expected: &serde_json::Value) {
     let events = js_sys::Array::new();
-    let frame = realm().await;
-    let window = window_of(&frame);
     let mode = input["callbacks"].as_str().unwrap_or_default();
     let (gate, release) = signal();
     let (ready, started) = signal();
@@ -473,9 +490,14 @@ pub(crate) async fn callbacks(html: &str, input: &serde_json::Value, expected: &
     } else {
         js_sys::Array::of2(callbacks[0].as_ref(), callbacks[1].as_ref())
     };
-    set(&window, "__completionCallbacks", &registered);
-    let _recorders = completion_recorders(&window, &events);
-    let operation = evaluate(&window, &program_sources(html)[1]).unwrap();
+    let (done, finish) = signal();
+    let at = html.find(SCAFFOLD).unwrap();
+    let recorders = RefCell::new(None);
+    let frame = written(&[&html[..at], &html[at..]], |window| {
+        set(window, "__completionCallbacks", &registered);
+        *recorders.borrow_mut() = Some(completion_recorders(window, &events, &finish));
+    })
+    .await;
     if mode == "gated" {
         settle(ready.into()).await.unwrap();
         equal_json(
@@ -485,12 +507,13 @@ pub(crate) async fn callbacks(html: &str, input: &serde_json::Value, expected: &
         );
         release.call0(&JsValue::UNDEFINED).unwrap();
     }
-    settle(operation).await.unwrap();
+    settle(done.into()).await.unwrap();
     equal_json(
         &events,
         &expected["events"].to_string(),
         "ordered completion observations",
     );
+    drop(recorders);
     frame.remove();
 }
 
@@ -536,6 +559,7 @@ fn completion_callbacks(
 fn completion_recorders(
     window: &JsValue,
     events: &js_sys::Array,
+    finished: &js_sys::Function,
 ) -> (Closure<dyn Fn(JsValue)>, Completion) {
     let diagnostics = events.clone();
     let error = Closure::<dyn Fn(JsValue)>::new(move |message: JsValue| {
@@ -543,6 +567,7 @@ fn completion_recorders(
     });
     set(&get(window, "console"), "error", error.as_ref());
     let completed = events.clone();
+    let finished = finished.clone();
     let complete = Closure::<dyn Fn(JsValue, JsValue) -> js_sys::Promise>::new(
         move |error: JsValue, value: JsValue| {
             let message = if error.is_truthy() {
@@ -557,6 +582,7 @@ fn completion_recorders(
                 value
             };
             completed.push(&js_sys::Array::of3(&"complete".into(), &message, &value));
+            finished.call0(&JsValue::UNDEFINED).unwrap();
             js_sys::Promise::resolve(&JsValue::UNDEFINED)
         },
     );
@@ -574,7 +600,7 @@ pub(crate) async fn navigation(
     expected: &serde_json::Value,
 ) {
     let events = js_sys::Array::new();
-    let frame = realm().await;
+    let frame = written(&[html], |_| {}).await;
     let window = window_of(&frame);
     let document: web_sys::Document = get(&window, "document").unchecked_into();
     let base = document.create_element("base").unwrap();
@@ -585,7 +611,6 @@ pub(crate) async fn navigation(
         .unwrap()
         .append_child(&base)
         .unwrap();
-    evaluate(&window, &program_sources(html)[0]).unwrap();
     let kind = input["kind"].as_str().unwrap();
     let target = navigation_target(&document, kind, input["href"].as_str());
     if !target.is_connected() {

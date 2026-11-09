@@ -20,7 +20,8 @@ From `docs/specs/maestro-port.md`.
 - **Tool arguments:** The model-supplied argument value of any JSON root kind, completed from accumulated JSON before execution.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
 - **Sandbox host:** The supplied platform owner of hidden JavaScript execution; the application keeps output and download formatting. See [browser tools](docs/application/browser-tools.md#javascript-execution).
-- **Sandbox runtime provider:** A retained source of owned globals, complete injectable function source, helper descriptions and optional lifecycle/message hooks.
+- **Sandbox runtime provider:** A retained source of owned globals, an ordered runtime selection, helper descriptions and optional lifecycle/message hooks. Built-ins select Rust implementations; supplied content remains executable input.
+- **Sandbox runtime bundle:** The matching prebuilt WebAssembly runtime and generated browser bindings used to install selected sandbox helpers in an isolated document, including standalone output. See [runtime bundle](docs/browser/sandbox.md#runtime-bundle-and-script-policy).
 - **Sandbox value:** A caller-owned return value with fallible REPL display, without a mandatory JSON transport.
 - **Model-request projection:** The selected-model view of supplied conversation context, not the stored branch or a history write.
 - **Catalog override:** Partial nested metadata supplied by local model files over base catalog entries.

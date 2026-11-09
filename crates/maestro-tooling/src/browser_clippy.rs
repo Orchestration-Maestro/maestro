@@ -5,7 +5,7 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
-use crate::exit_code;
+use crate::{exit_code, sandbox_runtime};
 
 #[cfg(test)]
 mod tests;
@@ -34,7 +34,36 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
     }
     let mut child = Command::new(cargo);
     child.current_dir(checkout).args(arguments(&packages));
-    Ok(exit_code(child.status()?))
+    let status = child.status()?;
+    if !status.success() || !packages.contains(&RUNTIME_OWNER) {
+        return Ok(exit_code(status));
+    }
+    let mut runtime = Command::new(cargo);
+    runtime.current_dir(checkout).args(runtime_arguments());
+    Ok(exit_code(runtime.status()?))
+}
+
+/// The workspace member whose in-frame runtime package the lint also covers.
+const RUNTIME_OWNER: &str = "maestro-web";
+
+/// The lint command for the in-frame runtime package, which sits outside the workspace.
+///
+/// The package is linted for the target it is built for, under Cargo's default profile, so
+/// code that only compiles with the generator's flags fails here.
+fn runtime_arguments() -> Vec<OsString> {
+    [
+        "clippy",
+        "--locked",
+        "--target",
+        sandbox_runtime::TARGET,
+        "--manifest-path",
+        sandbox_runtime::MANIFEST,
+        "--",
+        "-D",
+        "warnings",
+    ]
+    .map(OsString::from)
+    .into()
 }
 
 /// The shared CI lint command over `packages`, one package argument per crate.

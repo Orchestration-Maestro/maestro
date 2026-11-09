@@ -7,6 +7,7 @@ use std::process::Command;
 
 use cargo_metadata::Metadata;
 
+use super::examples::stage_components;
 use super::inputs::listed;
 use super::inputs::{Inputs, locked_closure};
 use super::plan::{Artifacts, closure_directories, component_inputs, plan};
@@ -116,7 +117,7 @@ fn bundle_export_installs_the_native_example() {
         browser: inputs,
         workspace_sources: None,
         components,
-        example: digest(b"native example"),
+        example: Some(digest(b"native example")),
         compiled: None,
         executable: None,
     };
@@ -142,12 +143,9 @@ fn bundle_export_installs_the_native_example() {
     }
 }
 
-/// A workspace that builds on Maestro plans its own component crate's components, and none of
-/// the fixed components or example inputs whose packages it does not hold.
-#[test]
-fn a_consuming_workspace_plans_its_own_components_alone() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
-    let root = scratch.path();
+/// A workspace that builds on Maestro: its one member is the component crate
+/// `crates/component-fixture`, whose package is `example-components`.
+fn consuming_workspace(root: &Path) -> Workspace {
     std::fs::write(
         root.join("Cargo.toml"),
         "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
@@ -165,16 +163,44 @@ fn a_consuming_workspace_plans_its_own_components_alone() {
     std::fs::write(
         component.join("Cargo.toml"),
         format!(
-            "[package]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n\
+            "[package]\nname = \"example-components\"\nversion = \"0.1.0\"\n\
              {}{}\n",
             crate::workspace::REGION_START,
             crate::workspace::REGION_END
         ),
     )
     .unwrap();
+    Workspace::read(Path::new(env!("CARGO")), root).unwrap()
+}
 
-    let workspace = Workspace::read(Path::new(env!("CARGO")), root).unwrap();
-    let planned = plan(&workspace, &component).unwrap();
+/// The setup example builds the component crate's own package, which the arguments name beside
+/// the crate, and no fixed component the workspace does not hold.
+#[test]
+fn the_setup_example_builds_the_component_crate_package() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    let workspace = consuming_workspace(root);
+
+    let arguments = example_arguments(&workspace).unwrap();
+
+    assert_eq!(
+        arguments[1..],
+        [
+            OsString::from(root.join("crates/component-fixture")),
+            OsString::from("example-components"),
+            OsString::new(),
+        ]
+    );
+}
+
+/// A workspace that builds on Maestro plans its own component crate's components, and none of
+/// the fixed components or example inputs whose packages it does not hold.
+#[test]
+fn a_consuming_workspace_plans_its_own_components_alone() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    let workspace = consuming_workspace(root);
+    let planned = plan(&workspace, Some(&workspace.component_crate().unwrap())).unwrap();
 
     assert!(fixed_components(&workspace).is_empty());
     assert!(
@@ -272,7 +298,7 @@ fn closure_workspace(root: &Path) {
 fn shared_digest(root: &Path) -> String {
     let workspace = Workspace::read(Path::new(env!("CARGO")), root).unwrap();
     let component = workspace.component_crate().unwrap();
-    Artifacts::read(root, &workspace, &component)
+    Artifacts::read(root, &workspace, Some(&component))
         .unwrap()
         .shared
         .digest
@@ -337,7 +363,7 @@ fn component_digest_follows_the_dependency_manifest_and_the_example_crate_manife
 fn workspace_plan(root: &Path) -> super::plan::Plan {
     let workspace = Workspace::read(Path::new(env!("CARGO")), root).unwrap();
     let component = workspace.component_crate().unwrap();
-    plan(&workspace, &component).unwrap()
+    plan(&workspace, Some(&component)).unwrap()
 }
 
 /// Whether a `test_prepare_inputs` pattern covers a file: the pattern names the file, or it is a

@@ -64,12 +64,14 @@ fn assert_prepared_consumers(file: &Path, prepared: &HashMap<String, String>) {
     }
 }
 
-/// Fixed cross-package examples join the author examples in the same Cargo build.
+/// Fixed cross-package examples join the component crate's examples in the same Cargo build,
+/// each selected from its own package.
 #[test]
 fn subagent_component_build_selects_its_package_in_the_shared_batch() {
     let command = component_build::build_command(
         "cargo",
         Path::new("."),
+        "example-components",
         &["author_component", "component", "trigger_compact"],
         Path::new("target"),
     );
@@ -87,7 +89,11 @@ fn subagent_component_build_selects_its_package_in_the_shared_batch() {
 
     assert_eq!(
         selected("--package"),
-        ["maestro-extensions-wasm", "maestro-subagents"]
+        [
+            "maestro-extensions-wasm",
+            "maestro-subagents",
+            "example-components"
+        ]
     );
     assert_eq!(
         selected("--example"),
@@ -175,7 +181,8 @@ fn component_build_compiles_unprepared_examples_in_one_cargo_run() {
     }
     let directory = std::env::var_os("MAESTRO_COMPONENT_FIXTURE_ROOT").unwrap();
     let components =
-        component_build::example_components(Path::new(&directory), &["alpha", "beta"]).unwrap();
+        component_build::example_components(Path::new(&directory), "author", &["alpha", "beta"])
+            .unwrap();
     assert_eq!(
         components,
         [

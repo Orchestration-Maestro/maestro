@@ -23,6 +23,11 @@ font bundle; native tests enable the dev-only egui default fonts.
 | web-sys | 0.3.106 | public native event/element types; wasm-only platform effects | MIT |
 | wasm-bindgen-futures | 0.4.79 | wasm-only, default/std request promises and local future dispatch | MIT |
 | custom-element | 0.1.5 | wasm-only; autonomous light-DOM element classes and their shipped 43-line subclass shim | MIT |
+| oxc_allocator | 0.157.0 | defaults off; parser arena | MIT |
+| oxc_parser | 0.157.0 | defaults off; supplied body and expression grammar | MIT |
+| oxc_span | 0.157.0 | defaults off; source ranges and script/module selection | MIT |
+| oxc_ast | 0.157.0 | defaults off; supplied-content syntax tree | MIT |
+| oxc_ast_visit | 0.157.0 | defaults off; scope-aware return and identifier traversal | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
 Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
@@ -107,9 +112,18 @@ adds no new package versions. Unicode data retains its Unicode-3.0 requirement.
 Sandbox routing reuses the locked browser bindings with the `HtmlIFrameElement`,
 `MessageEvent` and `EventTarget` web-sys features. Raw values use native js-sys
 JSON/string operations; listener work uses wasm-bindgen-futures. No package
-version, executor or native dependency is added. The embedded messaging scripts
-are host-required assets, not a JavaScript frontend implementation. See
-[sandbox messaging](../browser/sandbox.md).
+version, executor or native dependency is added.
+
+The in-frame runtime is a separate package, `crates/maestro-web/runtime`, with its own
+manifest and lock outside the workspace. It uses the same exact pins (wasm-bindgen 0.2.129,
+wasm-bindgen-futures 0.4.79, js-sys 0.3.106, web-sys 0.3.106 with the Window, Document,
+HtmlElement, Element, Node, Event, EventTarget, MessageEvent, ErrorEvent,
+PromiseRejectionEvent, AddEventListenerOptions, Blob and BlobPropertyBag features) and builds
+for `wasm32-unknown-emscripten` with Emscripten 6.0.10. The generated script is a build
+artifact of the repository tooling; the linked C library, allocator and glue are listed in the
+[third-party notices](../../THIRD-PARTY-NOTICES.md#sandbox-runtime-bundle). See
+[sandbox messaging](../browser/sandbox.md) and the
+[runtime bundle](../browser/sandbox.md#runtime-bundle-and-script-policy).
 
 Owned native reading surfaces additionally enable `web-sys/ResizeObserver` on
 that same locked version. This feature adds no package dependency. The existing
@@ -175,6 +189,26 @@ Internal markup and error-tooltip wording may differ without changing the render
 formula or its error branch. The adapter-derived source shares the math MIT notice.
 Parsing is the shared [Markdown owner](../markdown.md), reached through the
 application edge; no browser binding feature is added.
+
+## Supplied-content compiler
+
+The five Oxc crates are pinned exactly through workspace dependencies. Rust lowers
+supplied asynchronous bodies to inline native modules and supplied provider
+expressions to capture assignments. Browser APIs and values stay native. The
+compiler runs in the bootstrap qualification path and prepares every supplied
+provider and program of a production document.
+
+The parser diagnoses malformed syntax. The browser remains the final gate for
+semantic early errors, such as unresolved labels and duplicate declarations.
+No semantic analyzer, interpreter, eval permission or Function constructor is added.
+The 23 added locked package identities use MIT, MIT OR Apache-2.0 and Unicode-3.0;
+`unicode-id-start` requires both an MIT/Apache-2.0 choice and Unicode-3.0. No existing
+external package version changes.
+The qualification corpus includes real tool inputs, finally cancellation,
+iterator cleanup, function-scoped bindings and generated-name collisions. All four
+built-in provider inputs also run through capture; the browser checks that they
+leave the reserved numeric capture namespace unused. See
+[compiler qualification](../browser/sandbox.md#supplied-content-compiler-qualification).
 
 ## Isolated author fixture
 

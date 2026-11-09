@@ -30,8 +30,9 @@ Callback pages escape `&`, `<`, `>`, double quotes and apostrophes in caller
 message and details text. Other characters and whitespace remain unchanged;
 existing entities are escaped again. Error details are omitted only when absent
 or empty. Both documents retain the centered dark callback layout and fixed
-authentication wording. Embedded `assets/brand/brand.json` supplies the dark
-semantic colors and ordered display, body and mono font stacks.
+authentication wording. The shipped pack (`maestro_brand::SHIPPED_PACK`, compiled from
+`assets/brand/brand.json`) supplies the dark semantic colors and ordered display, body
+and mono font stacks.
 [Shared brand projection](../brand.md) owns complete pack admission, selected-mode
 resolution and CSS font encoding.
 `assets/brand/mark.svg` supplies the fitted mark, whose original tokens are filled

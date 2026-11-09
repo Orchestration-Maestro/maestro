@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::run;
 use maestro_app::browser::{components::sandboxed_iframe::*, tools::javascript_repl::*};
-use maestro_app::{SandboxResult, SandboxUrlProvider};
+use maestro_app::{Runtime, SandboxResult, SandboxUrlProvider};
 use maestro_models::DiagnosticErrorInfo;
 use std::sync::Arc;
 
@@ -438,8 +438,8 @@ impl maestro_app::SandboxRuntimeProvider<Payload> for OwnedProvider {
         )]
         .into())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok("function(){ return 42; }".into())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content("function(){ return 42; }".into()))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Err(DiagnosticErrorInfo::error("description unavailable"))
@@ -479,7 +479,10 @@ fn repl_provider_contract_keeps_owned_data_runtime_and_hooks() {
         assert_eq!(data.keys().collect::<Vec<_>>(), ["retained"]);
         let payload = data.shift_remove("retained").unwrap();
         assert!(Arc::ptr_eq(&payload.value, &value));
-        assert_eq!(provider.get_runtime().unwrap(), "function(){ return 42; }");
+        assert_eq!(
+            provider.get_runtime().unwrap(),
+            Runtime::Content("function(){ return 42; }".into())
+        );
         assert_eq!(
             provider.get_description().unwrap_err().message,
             "description unavailable"
@@ -661,8 +664,8 @@ impl maestro_app::SandboxRuntimeProvider for FailingDescription {
     ) -> Result<indexmap::IndexMap<String, serde_json::Value>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(String::new())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Empty)
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Err(DiagnosticErrorInfo::error(self.0.clone()))

@@ -49,6 +49,15 @@ fn declares_workspace(text: &str) -> bool {
         .is_ok_and(|table| table.contains_key("workspace"))
 }
 
+/// The member crate whose manifest holds the generated example region.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct ComponentCrate {
+    /// The crate directory.
+    pub(crate) directory: PathBuf,
+    /// The crate's package name, which selects its examples in a Cargo build.
+    pub(crate) package: String,
+}
+
 /// A workspace: its root, the Cargo that resolves it, and that resolution.
 pub(crate) struct Workspace {
     /// The workspace root directory.
@@ -76,6 +85,11 @@ impl Workspace {
     /// The root directory the workspace was read at.
     pub(crate) fn root(&self) -> &Path {
         &self.root
+    }
+
+    /// The Cargo executable that resolves the workspace.
+    pub(crate) fn cargo(&self) -> &Path {
+        &self.cargo
     }
 
     /// The resolved members and their manifests.
@@ -126,28 +140,45 @@ impl Workspace {
     /// # Errors
     /// Returns an unreadable manifest, or an error naming the crates when none, or more than
     /// one, holds the region.
-    pub(crate) fn component_crate(&self) -> io::Result<PathBuf> {
+    pub(crate) fn component_crate(&self) -> io::Result<ComponentCrate> {
+        self.find_component_crate()?.ok_or_else(|| {
+            io::Error::other(format!(
+                "no member crate of {} holds {REGION_START}",
+                self.root.display()
+            ))
+        })
+    }
+
+    /// The crate whose manifest holds the generated example region, when one does.
+    ///
+    /// # Errors
+    /// Returns an unreadable manifest, or an error naming the crates when more than one holds
+    /// the region.
+    pub(crate) fn find_component_crate(&self) -> io::Result<Option<ComponentCrate>> {
         let mut marked = Vec::new();
         for member in members(&self.metadata) {
             let manifest = member.manifest_path.as_std_path();
             let text = fs::read_to_string(manifest)
                 .map_err(|error| io::Error::other(format!("{}: {error}", manifest.display())))?;
             if text.contains(REGION_START) && text.contains(REGION_END) {
-                marked.push(directory(manifest));
+                marked.push(ComponentCrate {
+                    directory: directory(manifest),
+                    package: member.name.to_string(),
+                });
             }
         }
-        match marked.as_slice() {
-            [component] => Ok(component.clone()),
-            [] => Err(io::Error::other(format!(
-                "no member crate of {} holds {REGION_START}",
-                self.root.display()
-            ))),
-            _ => Err(io::Error::other(format!(
+        if marked.len() > 1 {
+            let directories: Vec<PathBuf> = marked
+                .into_iter()
+                .map(|component| component.directory)
+                .collect();
+            return Err(io::Error::other(format!(
                 "more than one member crate of {} holds {REGION_START}: {}",
                 self.root.display(),
-                self.names(&marked)?
-            ))),
+                self.names(&directories)?
+            )));
         }
+        Ok(marked.pop())
     }
 
     /// The member crate that holds the standalone guide fixture.
@@ -238,7 +269,7 @@ mod tests {
             "[workspace]\nmembers = [\"crates/*\"]\n",
         )
         .unwrap();
-        crate_at(root, "crates/component", &marked("component"));
+        crate_at(root, "crates/component", &marked("example-components"));
         crate_at(
             root,
             "crates/plain",
@@ -269,14 +300,18 @@ mod tests {
         assert!(super::root(Path::new("/")).is_err());
     }
 
-    /// Exactly one marked manifest names the component crate, so a rename cannot pick another.
+    /// Exactly one marked manifest names the component crate and its package, so a rename cannot
+    /// pick another; without one the workspace has no component crate.
     #[test]
     fn the_component_crate_is_the_one_marked_manifest() {
         let scratch = fixture();
         let workspace = read(scratch.path());
         assert_eq!(
             workspace.component_crate().unwrap(),
-            scratch.path().join("crates/component")
+            ComponentCrate {
+                directory: scratch.path().join("crates/component"),
+                package: "example-components".to_owned(),
+            }
         );
         crate_at(scratch.path(), "crates/second", &marked("second"));
         let error = read(scratch.path())
@@ -291,10 +326,9 @@ mod tests {
             unmarked.replace("second", "component"),
         )
         .unwrap();
-        let error = read(scratch.path())
-            .component_crate()
-            .unwrap_err()
-            .to_string();
+        let workspace = read(scratch.path());
+        assert_eq!(workspace.find_component_crate().unwrap(), None);
+        let error = workspace.component_crate().unwrap_err().to_string();
         assert!(error.contains("no member crate"), "{error}");
     }
 
@@ -311,7 +345,7 @@ mod tests {
             root.join("crates/plain")
         );
         assert_eq!(
-            workspace.component_crate().unwrap(),
+            workspace.component_crate().unwrap().directory,
             root.join("crates/component")
         );
     }
@@ -351,7 +385,7 @@ mod tests {
         let scratch = fixture();
         let root = scratch.path();
         let workspace = read(root);
-        let component = workspace.component_crate().unwrap();
+        let component = workspace.component_crate().unwrap().directory;
         assert_eq!(workspace.climb(&component).unwrap(), "../../");
         assert_eq!(
             format!(

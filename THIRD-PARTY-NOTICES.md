@@ -1386,3 +1386,75 @@ Versions and licence choices are recorded in the
 Command metadata and shell completions use clap 4.6.7 and clap_complete 4.6.5,
 licensed under MIT OR Apache-2.0. Their clap_builder, clap_lex and anstyle
 runtime dependencies use MIT OR Apache-2.0 as well.
+
+## Sandbox runtime bundle
+
+The generated sandbox runtime script (`crates/maestro-web/assets/maestro-sandbox-runtime.js`)
+is built with Emscripten 6.0.10 from the runtime package. Its JavaScript glue and
+the following archives it links are third-party code. The build tooling refuses any
+other linked library.
+
+- The Emscripten glue, its C library additions and its stack helpers are by the
+  Emscripten authors. They are offered under the MIT license and the University of
+  Illinois/NCSA Open Source License; this bundle uses them under MIT.
+- The C library is musl, with Emscripten's changes.
+- The allocator is dlmalloc 2.8.6 by Doug Lea, released to the public domain.
+- The Rust standard library, compiler builtins and the locked crates it embeds
+  are MIT OR Apache-2.0, as for the rest of the browser build.
+
+```text
+Emscripten
+
+Copyright (c) 2010-2014 Emscripten authors, see AUTHORS file.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+```text
+musl libc
+
+Copyright © 2005-2020 Rich Felker, et al.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+```text
+dlmalloc 2.8.6
+
+This is a version (aka dlmalloc) of malloc/free/realloc written by
+Doug Lea and released to the public domain, as explained at
+http://creativecommons.org/publicdomain/zero/1.0/
+```

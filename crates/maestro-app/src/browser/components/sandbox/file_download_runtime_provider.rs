@@ -6,7 +6,7 @@ use maestro_lock::{read, write};
 pub type DownloadableFile<V = serde_json::Value> = SandboxFile<V, V>;
 
 use super::sandbox_runtime_provider::{
-    RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
+    BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use indexmap::IndexMap;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
@@ -70,8 +70,8 @@ impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for FileDownloadRuntimeP
     fn get_data(&self) -> Result<IndexMap<String, V>, DiagnosticErrorInfo> {
         Ok(IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(include_str!("file_download_runtime_provider/runtime.js").into())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Builtin(BuiltinRuntime::FileDownload))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok("returnDownloadableFile(filename, content, mimeType?) - Create downloadable file for user (one-time download, not accessible later)".into())

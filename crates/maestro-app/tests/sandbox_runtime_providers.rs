@@ -4,7 +4,7 @@
 use crate::support::run;
 use maestro_app::browser::components::sandbox::{
     console_runtime_provider::ConsoleRuntimeProvider,
-    sandbox_runtime_provider::SandboxRuntimeProvider,
+    sandbox_runtime_provider::{BuiltinRuntime, Runtime, SandboxRuntimeProvider},
 };
 
 #[test]
@@ -15,17 +15,9 @@ fn console_provider_defaults_and_runtime() {
     assert!(provider.get_logs().read().unwrap().is_empty());
     assert!(!provider.is_completed());
     assert!(provider.get_completion_error().is_none());
-    assert!(
-        provider
-            .get_runtime()
-            .unwrap()
-            .starts_with("(_sandboxId) => {")
-    );
     assert_eq!(
         provider.get_runtime().unwrap(),
-        ConsoleRuntimeProvider::<serde_json::Value>::new()
-            .get_runtime()
-            .unwrap()
+        Runtime::Builtin(BuiltinRuntime::Console)
     );
 }
 
@@ -170,17 +162,9 @@ fn download_provider_defaults_and_runtime() {
         provider.get_description().unwrap(),
         "returnDownloadableFile(filename, content, mimeType?) - Create downloadable file for user (one-time download, not accessible later)"
     );
-    assert!(
-        provider
-            .get_runtime()
-            .unwrap()
-            .starts_with("(_sandboxId) => {")
-    );
     assert_eq!(
         provider.get_runtime().unwrap(),
-        FileDownloadRuntimeProvider::<Value>::new()
-            .get_runtime()
-            .unwrap()
+        Runtime::Builtin(BuiltinRuntime::FileDownload)
     );
 }
 
@@ -466,30 +450,20 @@ impl ArtifactPresentation for SourceOnly {
 }
 
 #[test]
-fn runtime_sources_keep_complete_functions() {
-    #[derive(serde::Deserialize)]
-    #[serde(deny_unknown_fields)]
-    struct Source {
-        name: String,
-        source: String,
-    }
-    let fixture: Vec<Source> =
-        serde_json::from_str(include_str!("fixtures/sandbox_runtime_sources.json")).unwrap();
+fn built_in_providers_select_their_runtime_helpers() {
     let console = ConsoleRuntimeProvider::<Value>::new();
     let attachments = AttachmentsRuntimeProvider::<Value>::new(Arc::default());
     let files = FileDownloadRuntimeProvider::<Value>::new();
     let panel = ArtifactsPanel::new(Arc::new(SourceOnly));
     let artifacts = ArtifactsRuntimeProvider::new(&panel, None, false);
-    let providers: [(&str, &dyn SandboxRuntimeProvider); 4] = [
-        ("ConsoleRuntimeProvider", &console),
-        ("AttachmentsRuntimeProvider", &attachments),
-        ("FileDownloadRuntimeProvider", &files),
-        ("ArtifactsRuntimeProvider", &artifacts),
+    let providers: [(&dyn SandboxRuntimeProvider, BuiltinRuntime); 4] = [
+        (&console, BuiltinRuntime::Console),
+        (&attachments, BuiltinRuntime::Attachments),
+        (&files, BuiltinRuntime::FileDownload),
+        (&artifacts, BuiltinRuntime::Artifacts),
     ];
-    assert_eq!(fixture.len(), providers.len());
-    for (expected, (name, provider)) in fixture.iter().zip(providers) {
-        assert_eq!(expected.name, name);
-        assert_eq!(provider.get_runtime().unwrap(), expected.source);
+    for (provider, expected) in providers {
+        assert_eq!(provider.get_runtime().unwrap(), Runtime::Builtin(expected));
     }
 }
 
@@ -689,7 +663,7 @@ impl SandboxIframe for ProviderHost {
             let mut events = Vec::new();
             for provider in request.runtime_providers {
                 events
-                    .push(json!({"data":provider.get_data()?, "runtime":provider.get_runtime()?}));
+                    .push(json!({"data":provider.get_data()?, "runtime":format!("{:?}", provider.get_runtime()?)}));
                 events.push(json!({"replies":exchange(provider.as_ref(), json!({"type":"console", "text":"host log"})).await?}));
                 events.push(json!({"replies":exchange(provider.as_ref(), json!({"type":"file-returned", "content":"host file"})).await?}));
             }
@@ -771,7 +745,7 @@ fn assert_host_events(
     assert_eq!(events.len(), 9);
     assert_eq!(
         events[0],
-        json!({"data":{},"runtime":providers[0].get_runtime().unwrap()})
+        json!({"data":{},"runtime":format!("{:?}", providers[0].get_runtime().unwrap())})
     );
     assert_eq!(events[1], json!({"replies":[{"success":true}]}));
     assert_eq!(events[2], json!({"replies":[]}));
@@ -779,12 +753,15 @@ fn assert_host_events(
         events[3]["data"]["attachments"][0]["fileName"],
         if index == 0 { "image.png" } else { "live.png" }
     );
-    assert_eq!(events[3]["runtime"], providers[1].get_runtime().unwrap());
+    assert_eq!(
+        events[3]["runtime"],
+        format!("{:?}", providers[1].get_runtime().unwrap())
+    );
     assert_eq!(events[4], json!({"replies":[]}));
     assert_eq!(events[5], json!({"replies":[]}));
     assert_eq!(
         events[6],
-        json!({"data":{},"runtime":providers[2].get_runtime().unwrap()})
+        json!({"data":{},"runtime":format!("{:?}", providers[2].get_runtime().unwrap())})
     );
     assert_eq!(events[7], json!({"replies":[]}));
     assert_eq!(events[8], json!({"replies":[{"success":true}]}));

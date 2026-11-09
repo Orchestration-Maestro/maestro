@@ -1,9 +1,9 @@
 //! Strict recorded sandbox inputs and public-boundary replay.
-use maestro_app::SandboxFile;
 use maestro_app::browser::{
     components::{sandbox::sandbox_runtime_provider::SandboxRuntimeProvider, sandboxed_iframe::*},
     tools::javascript_repl::*,
 };
+use maestro_app::{Runtime, SandboxFile};
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -174,8 +174,8 @@ impl SandboxRuntimeProvider for Provider {
     fn get_data(&self) -> Result<indexmap::IndexMap<String, Value>, DiagnosticErrorInfo> {
         Ok([("id".into(), json!(self.0))].into())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok("function(){ return 42; }".into())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content("function(){ return 42; }".into()))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(self.0.clone())
