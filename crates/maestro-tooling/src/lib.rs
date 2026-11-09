@@ -44,6 +44,8 @@ pub mod nextest_setup;
 mod nextest_wrapper;
 /// Emscripten build and link audit of the in-frame sandbox runtime.
 mod sandbox_runtime;
+/// Pinned native search program resolution.
+mod search_tools;
 /// Reusable test-setup staging and validation.
 mod test_setup;
 /// Filesystem watching and Cargo compilation dispatch.

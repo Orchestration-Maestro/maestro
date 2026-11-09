@@ -98,8 +98,6 @@ mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
 pub(crate) mod schema_host;
-mod search_tool_resolution;
-mod search_tools;
 mod selection_events;
 mod session_actions;
 mod session_corpus;

@@ -46,6 +46,7 @@ mod inputs;
 pub(crate) mod native_fixture;
 mod plan;
 mod program;
+mod search;
 #[cfg(test)]
 mod tests;
 
@@ -71,8 +72,8 @@ const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"]
 /// What the tool and the browser graph read besides the crates and the shared inputs: the locked
 /// dependencies and the assets.
 const LOCKED_INPUTS: [&str; 2] = ["Cargo.lock", "assets"];
-/// What the setup example reads besides those: the example sources.
-const EXAMPLE_INPUTS: [&str; 1] = ["examples"];
+/// What the setup example reads besides those: the example sources and tool pins.
+const EXAMPLE_INPUTS: [&str; 2] = ["examples", "mise.toml"];
 
 /// What `prepare` records and `export` checks.
 #[derive(Serialize, Deserialize)]
@@ -90,6 +91,8 @@ struct Manifest {
     workspace_sources: Option<PathBuf>,
     /// Each component file, by the variable that exports it.
     components: BTreeMap<String, Component>,
+    /// Digests of the staged pinned search programs, keyed by native program name.
+    search: BTreeMap<String, String>,
     /// Digest of the staged setup example, when the workspace has a component crate.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     example: Option<String>,
@@ -165,6 +168,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
     let workspace = Workspace::read(cargo, checkout)?;
     let component = workspace.find_component_crate()?;
     let artifacts = Artifacts::read(checkout, &workspace, component.as_ref())?;
+    let search = search::stage(checkout, output)?;
     let examples = if component.is_some() {
         examples::stage(checkout, &workspace, &artifacts.shared, output, target)?
     } else {
@@ -190,6 +194,7 @@ fn prepare(cargo: &Path, checkout: &Path, output: &Path, target: &Path) -> io::R
         browser: artifacts.browser,
         workspace_sources,
         components: examples.components,
+        search,
         example: examples.example,
         compiled: examples.compiled,
         executable,
@@ -373,15 +378,19 @@ pub(crate) fn executable_name() -> PathBuf {
 /// its environment instead of building them, and finds the workspace it prepares, the component
 /// crate and the fixed components this workspace builds through its arguments.
 fn run_example(
-    cargo: &Path,
+    output: &Path,
     workspace: &Workspace,
     example: &Path,
     target: &Path,
     supplied: &[Supplied],
 ) -> io::Result<()> {
     let mut run = preparation_command(workspace.root(), example, target);
-    run.args(example_arguments(workspace)?);
-    run.env("CARGO", cargo)
+    run.args(example_arguments(workspace)?).arg("--prepared");
+    for (variable, _, _) in crate::search_tools::PROGRAMS {
+        run.env_remove(variable);
+    }
+    run.envs(search::paths(output));
+    run.env("CARGO", workspace.cargo())
         .env("NEXTEST_ENV", environment_file(target));
     for name in inherited_components(std::env::vars_os().map(|(name, _)| name)) {
         run.env_remove(name);
@@ -455,7 +464,7 @@ fn export(
     {
         return Err(at(&output, "missing prepared fixed component"));
     }
-    let mut lines = Vec::new();
+    let mut lines = vec![search::export(&output, &manifest.search)?];
     for (variable, expected) in &manifest.components {
         validate_variable(variable).map_err(|error| at(&output, &error))?;
         expected.inputs.verify(checkout, &output)?;

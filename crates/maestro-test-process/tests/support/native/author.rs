@@ -7,6 +7,9 @@ use std::path::{Path, PathBuf};
 use maestro_test_process::child::write_stdout;
 use serde::Deserialize;
 
+#[path = "../../../../maestro-tooling/src/search_tools.rs"]
+mod search_tools;
+
 /// Engine identities whose namespaces the preparation tests distinguish.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -52,18 +55,28 @@ impl Record {
 
 /// Query the selected cache or run the recorded preparation without interpreting source text.
 pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
-    match args {
+    let tools = match args {
         [argument] if argument == "--cache-directory" => {
             write_stdout(&serde_json::to_vec(&cache_directory()?)?)?;
             return write_stdout(b"\n");
         }
-        [_workspace, _component, _package, _fixed] => {}
+        [workspace, _component, _package, _fixed] => {
+            search_tools::resolve(Path::new(workspace)).map_err(io::Error::other)?
+        }
+        [_workspace, _component, _package, _fixed, mode] if mode == "--prepared" => {
+            search_tools::PROGRAMS
+                .into_iter()
+                .filter_map(|(variable, _, _)| {
+                    std::env::var(variable).ok().map(|path| (variable, path))
+                })
+                .collect()
+        }
         _ => return Err(io::Error::other("unknown author preparation arguments")),
-    }
+    };
     let environment = std::env::var_os("NEXTEST_ENV")
         .ok_or_else(|| io::Error::other("missing author environment output"))?;
     match record {
-        Record::Malformed => std::fs::write(environment, "invalid\n"),
+        Record::Malformed => std::fs::write(&environment, "invalid\n"),
         Record::Marked => marked(Path::new(&environment)),
         _ => {
             entries(record, Path::new(&environment))?;
@@ -73,7 +86,12 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             }
             Ok(())
         }
+    }?;
+    let mut file = std::fs::File::options().append(true).open(environment)?;
+    for (variable, path) in tools {
+        writeln!(file, "{variable}={path}")?;
     }
+    Ok(())
 }
 
 /// Resolve the cache below the run's absolute agent directory without creating it during a query.
