@@ -2,8 +2,8 @@
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionResult, config,
-    frontmatter::{FrontmatterValue, parse_frontmatter},
-    tools::path_utils::{guest_path, resolve},
+    metadata::{FrontmatterValue, parse_frontmatter},
+    registry::path_utils::{guest_path, resolve},
     utils::is_whitespace_char,
 };
 use serde::{Deserialize, Serialize};
@@ -133,7 +133,7 @@ fn load(api: &ExtensionAPI, directory: &str, source: &str) -> ExtensionResult<Ve
 /// Accepts named, described definitions and the optional comma-separated tool selection.
 fn definition(
     api: &ExtensionAPI,
-    parsed: maestro_extensions_wasm::frontmatter::ParsedFrontmatter,
+    parsed: maestro_extensions_wasm::metadata::ParsedFrontmatter,
     source: &str,
     file_path: String,
 ) -> ExtensionResult<Option<AgentConfig>> {

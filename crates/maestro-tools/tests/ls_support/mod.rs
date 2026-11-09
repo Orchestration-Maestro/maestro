@@ -12,8 +12,8 @@ use maestro_tools::{
     LsOperations, LsToolDetails, LsToolInput, LsToolOptions, ToolRenderPhase,
     ToolRenderResultOptions, create_ls_tool, create_ls_tool_definition,
     output::{
+        limits::{TruncationBy, TruncationResult},
         render_utils::strip_ansi,
-        truncate::{TruncationBy, TruncationResult},
     },
 };
 use maestro_tui::{ImageProtocol, Text, tui::ComponentHandle};

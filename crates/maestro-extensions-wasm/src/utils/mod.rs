@@ -4,7 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-pub mod event_stream;
+pub mod events;
 
 use crate::{ExtensionAPI, ExtensionResult};
 

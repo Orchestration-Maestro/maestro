@@ -11,8 +11,8 @@ use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tools::{
     BashError, BashResult,
     process::{
-        bash::local::create_local_bash_operations,
-        bash_executor::local::{BashExecutorOptions, execute_bash_with_operations},
+        command::local::create_local_bash_operations,
+        executor::local::{BashExecutorOptions, execute_bash_with_operations},
     },
 };
 use std::rc::Rc;

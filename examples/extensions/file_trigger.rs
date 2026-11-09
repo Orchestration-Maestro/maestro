@@ -7,7 +7,7 @@
 )]
 use maestro_extensions_wasm::{
     CustomMessageInput, ExtensionAPI, ExtensionContext, ExtensionFuture, ExtensionResult,
-    NotificationType, Presence, SendMessageOptions, UserContent, fs::FsWatcher,
+    NotificationType, Presence, SendMessageOptions, UserContent, filesystem::FsWatcher,
 };
 use std::{cell::RefCell, rc::Rc};
 

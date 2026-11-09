@@ -10,10 +10,10 @@ use maestro_models::UserBlock;
 use maestro_theme::{
     ColorMode, LiveTheme, SyntaxHighlighter, SyntaxSpan, Theme, ThemeColor, ThemeOptions,
 };
-use maestro_tools::output::render_utils::strip_ansi;
-use maestro_tools::output::truncate::{
+use maestro_tools::output::limits::{
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, TruncationBy, TruncationResult,
 };
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tools::{
     ReadToolDetails, ToolRenderContext, ToolRenderResultOptions, create_read_tool_definition,
 };

@@ -14,7 +14,7 @@ use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch};
 use maestro_tools::{
     FindGlobOptions, FindOperations, FindToolDetails, FindToolInput, FindToolOptions, ToolsManager,
-    create_find_tool, create_find_tool_definition, output::truncate::TruncationBy,
+    create_find_tool, create_find_tool_definition, output::limits::TruncationBy,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};

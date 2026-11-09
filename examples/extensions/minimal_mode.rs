@@ -8,7 +8,7 @@
 use maestro_extensions_wasm::{
     Component, ExtensionAPI, ExtensionFuture, ExtensionResult, Presence, Text, Theme, Tool,
     ToolDefinition, ToolMetadata, ToolName, ToolRenderResultLike, ToolRenderResultOptions,
-    ToolsOptions, UserBlock, tools::path_utils, utils::trim,
+    ToolsOptions, UserBlock, registry::path_utils, utils::trim,
 };
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};

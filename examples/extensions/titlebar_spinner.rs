@@ -10,7 +10,7 @@ use std::{rc::Rc, time::Duration};
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    HookFuture, Subscription, tools::path_utils,
+    HookFuture, Subscription, registry::path_utils,
 };
 
 /// Frames in display order, one every 80 milliseconds.

@@ -177,7 +177,7 @@ port! {
     }
     infallible {
         /// Returns independently retained native operations.
-        fn native_io() -> Rc<dyn crate::io::NativeIo>;
+        fn native_io() -> Rc<dyn crate::effects::NativeIo>;
         /// Returns the supplied host bus.
         fn events() -> crate::EventBus;
     }
@@ -231,7 +231,7 @@ impl ExtensionAPI {
         file_path: String,
         operation: impl FnOnce() -> ExtensionFuture<'static, T> + 'static,
     ) -> ExtensionFuture<'static, T> {
-        crate::tools::file_mutation_queue::run(&*self.0, file_path, operation)
+        crate::registry::file_mutation_queue::run(&*self.0, file_path, operation)
     }
 
     /// Encodes ordinary operands without introducing another native algorithm.

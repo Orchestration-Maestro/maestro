@@ -10,8 +10,9 @@ use maestro_extensions_wasm::{
     TextContent, Theme, ToolDefinition, ToolMetadata, ToolRenderResultLike,
     ToolRenderResultOptions, UserBlock,
     child_process::{SpawnOptions, Stdio},
+    registry as tools,
     streams::Readable,
-    tools, utils,
+    utils,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};

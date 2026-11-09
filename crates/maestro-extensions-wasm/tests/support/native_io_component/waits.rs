@@ -6,7 +6,7 @@
 )]
 use maestro_extensions_wasm::{
     AbortListener, AbortSignal, ExtensionCommandContext, ExtensionFuture, ExtensionResult,
-    SignalPort, Subscription, SubscriptionPort, io::NativeIo,
+    SignalPort, Subscription, SubscriptionPort, effects::NativeIo,
 };
 use std::{
     cell::{Cell, RefCell},

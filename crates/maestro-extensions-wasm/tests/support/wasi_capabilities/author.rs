@@ -8,8 +8,8 @@ use maestro_extensions_wasm::{
     CommandOptions, ExtensionAPI, ExtensionContext, ExtensionEvent, ExtensionEventResult,
     ExtensionFuture, HookResult,
     child_process::{SpawnOptions, Stdio},
+    registry::path_utils::guest_path,
     streams::read_to_end,
-    tools::path_utils::guest_path,
 };
 use serde_json::{Value, json};
 use std::{cell::Cell, rc::Rc};

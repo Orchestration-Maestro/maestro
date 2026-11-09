@@ -940,7 +940,7 @@ fn native_watch_close_releases_its_registration() -> ExtensionResult<()> {
         host.notify_watch(index)?;
         assert_eq!(calls.get(), 1);
     }
-    let slot = Rc::new(RefCell::new(None::<Rc<dyn crate::fs::FsWatcher>>));
+    let slot = Rc::new(RefCell::new(None::<Rc<dyn crate::filesystem::FsWatcher>>));
     let retained = slot.clone();
     let captured = Rc::new(());
     let released = Rc::downgrade(&captured);

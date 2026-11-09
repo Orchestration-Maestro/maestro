@@ -14,8 +14,8 @@ pub use abort_controller::AbortController;
 pub use maestro_text::line_framing::ByteLineDecoder;
 pub mod utils;
 #[cfg(target_arch = "wasm32")]
-pub use utils::event_stream::create_assistant_message_event_stream;
-pub use utils::event_stream::{AssistantMessageEventStream, EventStream, EventStreamPort};
+pub use utils::events::create_assistant_message_event_stream;
+pub use utils::events::{AssistantMessageEventStream, EventStream, EventStreamPort};
 mod autocomplete;
 pub use autocomplete::*;
 mod editor_component;
@@ -27,9 +27,9 @@ pub use event_bus::*;
 mod background;
 pub use background::{Background, BackgroundTask};
 mod bash_executor;
-pub mod tools;
+pub mod registry;
 pub use bash_executor::*;
-pub use tools::{
+pub use registry::{
     ALL_TOOL_NAMES, BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations,
     BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, DetectImageMimeType, EditOperations, EditToolDetails,
@@ -44,16 +44,16 @@ pub use tools::{
 pub mod bindings;
 /// Native child resources.
 pub mod child_process;
-pub mod compaction;
+/// Native operation capability.
+pub mod effects;
 mod exec;
 /// Native filesystem notifications.
-pub mod fs;
+pub mod filesystem;
 /// Native HTTP resources.
 pub mod http;
-/// Native operation capability.
-pub mod io;
 /// Raw byte resources.
 pub mod streams;
+pub mod summarization;
 pub use exec::{ExecOptions, ExecResult};
 #[cfg(any(test, target_arch = "wasm32"))]
 mod component_adapter;
@@ -79,11 +79,11 @@ pub use keys::{
     is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
 };
 /// Native fuzzy matching over original caller-owned items.
-pub mod fuzzy;
-pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};
+pub mod matching;
+pub use matching::{FuzzyMatch, fuzzy_filter, fuzzy_match};
 /// Native metadata parsing with complete typed values.
-pub mod frontmatter;
-pub use frontmatter::{parse_frontmatter, parse_yaml, strip_frontmatter};
+pub mod metadata;
+pub use metadata::{parse_frontmatter, parse_yaml, strip_frontmatter};
 /// Native application installation identity.
 pub mod config;
 mod tui;
@@ -94,8 +94,6 @@ mod theme;
 pub use theme::*;
 
 pub use agent::*;
-pub use compaction::utils::serialize_conversation;
-pub use compaction::{CompactionPreparation, CompactionResult, CompactionSettings, FileOperations};
 #[cfg(target_arch = "wasm32")]
 #[doc(hidden)]
 pub use component_adapter::Glue;
@@ -118,6 +116,10 @@ pub use maestro_request::types::{
 };
 pub use messages::*;
 pub use session_manager::*;
+pub use summarization::utils::serialize_conversation;
+pub use summarization::{
+    CompactionPreparation, CompactionResult, CompactionSettings, FileOperations,
+};
 pub use system_prompt::*;
 pub use types::*;
 
@@ -133,13 +135,13 @@ mod schema_error;
 
 /// Immediate model invocation and eager completion.
 #[cfg(target_arch = "wasm32")]
-pub mod stream;
+pub mod streaming;
 #[cfg(target_arch = "wasm32")]
-pub use stream::{complete, complete_simple, stream, stream_simple, stream_simple_via};
+pub use streaming::{complete, complete_simple, stream, stream_simple, stream_simple_via};
 
 pub mod wasi;
 
-pub mod package_manager;
+pub mod packages;
 pub mod settings_manager;
-pub use package_manager::DefaultPackageManager;
+pub use packages::DefaultPackageManager;
 pub use settings_manager::SettingsManager;

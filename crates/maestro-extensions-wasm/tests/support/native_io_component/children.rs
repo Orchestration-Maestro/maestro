@@ -8,7 +8,7 @@ use maestro_extensions_wasm::{
     CommandOptions, ExtensionAPI, ExtensionCommandContext, ExtensionContext, ExtensionFuture,
     ExtensionResult, Subscription,
     child_process::{ChildProcess, ExitStatus, SpawnOptions, Stdio},
-    io::NativeIo,
+    effects::NativeIo,
     streams::{Readable, Writable},
 };
 use serde::Deserialize;

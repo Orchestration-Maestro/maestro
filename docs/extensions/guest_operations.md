@@ -572,7 +572,7 @@ null-to-empty-map normalization apply only to `parse_frontmatter`.
 owner. `compaction::utils::serialize_conversation` uses its existing transcript
 serializer, including tool-result clipping and argument JSON spelling.
 
-`tools::truncate` provides head and tail selection with complete accounting,
+`registry::limits` provides head and tail selection with complete accounting,
 scalar-aware line clipping and size formatting. Missing limits select the host's
 defaults: 2000 lines, 51200 bytes and 500 line characters. Size formatting accepts
 the native floating-point domain, including signed zero and nonfinite values.
