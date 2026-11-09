@@ -220,6 +220,10 @@ pub struct Routed {
     pub url: String,
     /// Listener address used to wake shutdown.
     address: std::net::SocketAddr,
+    /// Listening socket shared with the accept loop and held until this server is dropped, so
+    /// the shutdown wake-up always reaches a live backlog, whether or not the loop already
+    /// stopped.
+    _listener: std::sync::Arc<TcpListener>,
     /// Shared accept-loop shutdown signal.
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
     /// Accept-loop join handle, consumed by finish or drop.
@@ -227,15 +231,10 @@ pub struct Routed {
 }
 
 impl Routed {
-    /// Wake the accept loop; refusal or peer closure means the listener already stopped.
+    /// Wake the accept loop; the held listener keeps the connection from being refused.
     fn stop_accepting(&self) -> std::io::Result<()> {
         self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
-        match TcpStream::connect(self.address) {
-            Err(error) if error.kind() == ErrorKind::ConnectionRefused || client_closed(&error) => {
-                Ok(())
-            }
-            other => other.map(drop),
-        }
+        TcpStream::connect(self.address).map(drop)
     }
 
     /// Stop accepting connections and wait until every admitted request was answered.
@@ -369,15 +368,44 @@ pub fn start_routed(handler: Handler) -> TestResult<Routed> {
 /// # Errors
 /// Returns bind or local-address lookup failures.
 pub fn start_routed_at(address: &str, handler: Handler) -> TestResult<Routed> {
-    let listener = TcpListener::bind(address)?;
+    let listener = std::sync::Arc::new(TcpListener::bind(address)?);
     let address = listener.local_addr()?;
+    let accepting = std::sync::Arc::clone(&listener);
     let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let stopped = std::sync::Arc::clone(&stop);
-    let worker = std::thread::spawn(move || serve_until_stopped(&listener, &stopped, &handler));
+    let worker = std::thread::spawn(move || serve_until_stopped(&accepting, &stopped, &handler));
     Ok(Routed {
         url: format!("http://{address}"),
         address,
+        _listener: listener,
         stop,
         worker: Some(worker),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::Ordering;
+    use std::sync::mpsc::sync_channel;
+
+    /// A routed server whose accept loop already ended still accepts connections on its address,
+    /// so the wake-up from `finish` lands and the worker's own result is reported.
+    #[test]
+    fn routed_server_keeps_listening_after_its_worker_stops() {
+        let (ended, worker_state) = sync_channel::<()>(0);
+        let worker_state = std::sync::Mutex::new(worker_state);
+        let server = start_routed(std::sync::Arc::new(move |_| {
+            let _held = &worker_state;
+            Ok(())
+        }))
+        .unwrap();
+        server.stop.store(true, Ordering::SeqCst);
+        // The accept loop sees the flag on this connection and returns.
+        TcpStream::connect(server.address).unwrap();
+        // The handler lives as long as the worker: the send fails once the worker was dropped.
+        assert!(ended.send(()).is_err());
+        TcpStream::connect(server.address).expect("the server still listens");
+        server.finish().unwrap();
+    }
 }
