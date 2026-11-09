@@ -1411,6 +1411,9 @@ Native search tests call `maestro_test_process::install_search_program("fd", bin
 (or `"rg"`) to copy the exported program into their own directory. The helper keeps
 the program's permissions and returns its installed path. The caller retains the
 directory guard and controls its manager, child `PATH` or child variables.
+The tooling search-setup tests use the same exports to install private programs
+for their preparation and local-setup children. Their runner needs neither
+program on `PATH`; archived-export children also exclude the private directory.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,

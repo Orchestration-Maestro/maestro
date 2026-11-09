@@ -8,9 +8,67 @@ use std::process::{Command, ExitCode, Output};
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 
+/// Search setup tests work when their runner cannot discover either search program.
+#[test]
+fn author_search_setups_are_independent_of_runner_path() {
+    for test in [
+        "archived_author_setup_exports_search_programs_without_path",
+        "local_author_setup_resolves_search_pins_from_path",
+        "preparation_rejects_an_unavailable_search_pin",
+    ] {
+        assert_success(
+            &TestProcess::named(format!("author_setup::{test}"))
+                .unwrap()
+                .env("PATH", path_without_search_programs())
+                .output()
+                .unwrap(),
+        );
+    }
+}
+
+/// Run a setup test with private copies of the prepared search programs on PATH.
+fn with_search_programs(test: &str) -> bool {
+    if selection().case() == Some("search-programs") {
+        return true;
+    }
+    let bin = Scratch::new().unwrap();
+    for name in ["rg", "fd"] {
+        maestro_test_process::install_search_program(name, bin.path()).unwrap();
+    }
+    let path = std::env::join_paths(
+        std::iter::once(bin.path().to_path_buf())
+            .chain(std::env::split_paths(&path_without_search_programs())),
+    )
+    .unwrap();
+    assert_success(
+        &TestProcess::current(test)
+            .unwrap()
+            .case("search-programs")
+            .env("PATH", path)
+            .output()
+            .unwrap(),
+    );
+    false
+}
+
+/// The runner's PATH with every directory containing a search program removed.
+fn path_without_search_programs() -> std::ffi::OsString {
+    std::env::join_paths(
+        std::env::split_paths(&std::env::var_os("PATH").unwrap()).filter(|directory| {
+            !["rg", "fd"]
+                .iter()
+                .any(|name| directory.join(name).is_file())
+        }),
+    )
+    .unwrap()
+}
+
 /// Preparation carries the pinned programs into a relocated archive without a search PATH.
 #[test]
 fn archived_author_setup_exports_search_programs_without_path() {
+    if !with_search_programs("archived_author_setup_exports_search_programs_without_path") {
+        return;
+    }
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
@@ -19,14 +77,7 @@ fn archived_author_setup_exports_search_programs_without_path() {
     let moved = root.join("relocated setup");
     fs::rename(root.join("target/test-setup"), &moved).unwrap();
 
-    let search = std::env::join_paths(
-        std::env::split_paths(&std::env::var_os("PATH").unwrap()).filter(|directory| {
-            !["rg", "fd"]
-                .iter()
-                .any(|name| directory.join(name).is_file())
-        }),
-    )
-    .unwrap();
+    let search = path_without_search_programs();
     let output = export_command(root, &moved, true)
         .env("PATH", search)
         .env_remove("MAESTRO_TEST_RG")
@@ -58,6 +109,9 @@ fn archived_author_setup_exports_search_programs_without_path() {
 /// A setup without a prepared bundle keeps resolving the workspace pins from PATH.
 #[test]
 fn local_author_setup_resolves_search_pins_from_path() {
+    if !with_search_programs("local_author_setup_resolves_search_pins_from_path") {
+        return;
+    }
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);
@@ -131,6 +185,9 @@ fn local_author_setup_rebuilds_after_search_resolver_edits() {
 /// A pin unavailable at its required version fails preparation before publishing a manifest.
 #[test]
 fn preparation_rejects_an_unavailable_search_pin() {
+    if !with_search_programs("preparation_rejects_an_unavailable_search_pin") {
+        return;
+    }
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     fixture(root);

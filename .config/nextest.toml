@@ -13,8 +13,8 @@ slow-timeout = { period = "30s", terminate-after = 4 }
 command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
-# Native searches also copy the pinned search programs this setup exports.
-filter = "package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro-tools) & test(/^(find|grep)_execution::/)) | (package(maestro-app) & test(/^tools_search_checks::/)) | (package(maestro-tui) & test(/^native_attachment_completion::native_(attachment_search_|literal_queries_|filename_records_)/)) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(host_operations::) | test(/_example::/)))"
+# Native searches and tooling's search setup tests copy the programs this setup exports.
+filter = "(package(maestro-tooling) & test(/^author_setup::(author_search_setups_|archived_author_setup_exports_search_programs_|local_author_setup_resolves_search_pins_|preparation_rejects_an_unavailable_search_pin)/)) | package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro-tools) & test(/^(find|grep)_execution::/)) | (package(maestro-app) & test(/^tools_search_checks::/)) | (package(maestro-tui) & test(/^native_attachment_completion::native_(attachment_search_|literal_queries_|filename_records_)/)) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(host_operations::) | test(/_example::/)))"
 setup = "author-component"
 
 [scripts.setup.cargo-checks]
