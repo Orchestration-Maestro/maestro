@@ -26,6 +26,7 @@ use super::normalize::set_tree_time;
 use super::{cargo, export, nonempty, prepared_bundle};
 use crate::copy_assets::copy_tree;
 use crate::test_setup::{install_browser_graph, remove_directory};
+use crate::toolchain;
 
 /// The checkout directory the graph is built in, which is also the first lane.
 pub(crate) const TARGET: &str = "target/browser-author";
@@ -151,8 +152,7 @@ pub(crate) fn install(staged: &Path, target: &Path) -> io::Result<()> {
 /// A command for `program` in the checkout, without the runner's instrumentation and with the
 /// compiler wrapper that preceded coverage restored.
 pub(crate) fn command(program: impl AsRef<OsStr>, checkout: &Path, target: &Path) -> Command {
-    let mut command = Command::new(program);
-    command.current_dir(checkout);
+    let mut command = toolchain::command(program, checkout);
     isolate(&mut command, target);
     command.env("CARGO_BUILD_JOBS", "3");
     command

@@ -10,13 +10,14 @@
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
 
 use sha2::{Digest, Sha256};
 
 use super::export;
 use crate::copy_assets::copy_tree;
 use crate::test_setup::hex;
+use crate::toolchain;
 
 /// Compile and prune the registry units of the cold browser bootstrap.
 mod seed;
@@ -141,8 +142,8 @@ fn member_manifests(checkout: &Path) -> io::Result<Vec<PathBuf>> {
 /// Stage one source set and publish its configuration only after Cargo succeeds.
 fn vendor(cargo: &Path, checkout: &Path, directory: &Path, scope: Scope) -> io::Result<()> {
     let fixtures = checkout.join(FIXTURES);
-    let mut command = Command::new(cargo);
-    command.current_dir(checkout).args(["vendor", "--offline"]);
+    let mut command = toolchain::command(cargo, checkout);
+    command.args(["vendor", "--offline"]);
     let manifest = match scope {
         Scope::Fixtures => {
             let closure = directory.join("closure");

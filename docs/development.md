@@ -1420,6 +1420,12 @@ Preparation keeps the running tool intact when it is already in the output
 directory. `prepare-test-setup install` does the same. Staging from another
 directory replaces the destination file instead of rewriting it.
 
+Every Cargo command that preparation and the nextest setups start runs on the
+toolchain rustup activates in the workspace being prepared, so a dependency that ships its
+own `rust-toolchain` file, or a machine default that differs from the workspace pin,
+cannot change the compiler. A `RUSTUP_TOOLCHAIN` the tool inherited stands, because rustup
+ranks it above the workspace files. A machine without rustup runs Cargo as it is.
+
 The tool takes its checkout from the workspace root above the directory it starts
 in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
 workspace. A command that reads no workspace, such as `prepare-test-setup install`,
