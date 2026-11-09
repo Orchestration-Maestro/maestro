@@ -1418,8 +1418,9 @@ it out and the shards build it themselves. A shard's `nextest-setup browser-auth
 `target/browser-author` with the staged graph, after checking that the checkout still holds
 the files the bundle was prepared from, and gives every file of it one modification time
 taken when it installs, through a read-only handle on Unix. Cargo rebuilds a unit when a
-source or an output it builds on is newer than its fingerprint, so a graph that is newer than the checkout and has no output
-newer than another leaves the recipes nothing to compile.
+source or an output it builds on is newer than its fingerprint, so a graph that is newer
+than the checkout and has no output newer than another leaves the recipes nothing to
+compile.
 
 The setup runs before the first browser author test of a run, and only on a shard that runs
 one. Without a bundle it pays the whole cost itself. It lints
