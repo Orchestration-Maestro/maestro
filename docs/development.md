@@ -1367,7 +1367,9 @@ Four things it needs are the workspace's own:
   their own packages. Two marked members fail with the crates named. Without a
   marked member, `example-index` stops with the workspace named, and preparation
   skips the components and the setup example; the native fixture, the Cargo
-  checks and the executable are still prepared.
+  checks and the executable are still prepared. A bundle without a setup example
+  cannot run `nextest-setup author-component`; that setup stops with a message
+  naming the missing example.
   The crate's own fixture folder, `tests/support`, is optional: without it the
   index and preparation use the shipped examples alone.
 - **The shipped extension folder** is `examples/extensions` beside the workspace
