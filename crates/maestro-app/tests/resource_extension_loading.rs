@@ -193,17 +193,41 @@ fn default_event_bus_runs_threaded_tails_on_the_task_set() {
     }));
 }
 
+/// Emits on a default bus whose only listener fails.
+fn emit_failing_listener() {
+    let local = Rc::new(LocalSet::new());
+    let bus = Local::default_event_bus(&local);
+    drop(bus.on("probe", Rc::new(|_, _| Err("listener failed".into()))));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    runtime.block_on(local.run_until(bus.emit("probe", json!({}))));
+}
+
+/// A listener failure that cannot be written to a closed standard error does not stop the bus.
+#[test]
+fn default_event_bus_survives_closed_standard_error_on_listener_failure() {
+    if maestro_test_process::selection().is_child() {
+        maestro_test_process::wait_for_broken_stderr();
+        emit_failing_listener();
+        return;
+    }
+    let status = maestro_test_process::run_with_broken_stderr(
+        maestro_test_process::TestProcess::current(
+            "default_event_bus_survives_closed_standard_error_on_listener_failure",
+        )
+        .unwrap()
+        .case("*"),
+    )
+    .unwrap();
+    assert!(status.success(), "the bus failed: {status}");
+}
+
 /// A failing listener's message is written to standard error as the bus formats it.
 #[test]
 fn default_event_bus_reports_listener_failures_on_stderr() {
     if maestro_test_process::selection().is_child() {
-        let local = Rc::new(LocalSet::new());
-        let bus = Local::default_event_bus(&local);
-        drop(bus.on("probe", Rc::new(|_, _| Err("listener failed".into()))));
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap();
-        runtime.block_on(local.run_until(bus.emit("probe", json!({}))));
+        emit_failing_listener();
         return;
     }
     let output = maestro_test_process::TestProcess::current(

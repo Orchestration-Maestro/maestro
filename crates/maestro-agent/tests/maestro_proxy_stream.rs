@@ -1495,6 +1495,34 @@ async fn proxy_unknown_event_warns_and_continues_case() {
         }
         return;
     }
+    run_with_skipped_events().await;
+}
+
+/// A warning that cannot be written to a closed standard error does not stop the stream.
+#[test]
+fn proxy_unknown_event_with_closed_standard_error_continues() {
+    support::run_io(proxy_unknown_event_with_closed_standard_error_continues_case());
+}
+/// Drive the scenario of `proxy_unknown_event_with_closed_standard_error_continues`.
+async fn proxy_unknown_event_with_closed_standard_error_continues_case() {
+    const TEST: &str = "proxy_unknown_event_with_closed_standard_error_continues";
+    if !maestro_test_process::selection().is_child() {
+        let status = maestro_test_process::run_with_broken_stderr(
+            maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .env_clear()
+                .case("*"),
+        )
+        .unwrap();
+        assert!(status.success(), "the stream failed: {status}");
+        return;
+    }
+    maestro_test_process::wait_for_broken_stderr();
+    run_with_skipped_events().await;
+}
+
+/// Stream two events the proxy skips ahead of the canonical answer and check the answer.
+async fn run_with_skipped_events() {
     let skipped = [
         line(r#"{"type":"future_event"}"#),
         line(r#"{"contentIndex":0}"#),

@@ -53,7 +53,7 @@ stop reason, usage, cost and message without repricing.
 
 A discriminant that is unknown, or missing (shown as `undefined`), prints
 `Unhandled proxy event type: <type>` to standard error on native targets and the event is
-skipped.
+skipped. A closed standard error drops the line; see [diagnostics](diagnostics.md).
 
 ## Failures
 

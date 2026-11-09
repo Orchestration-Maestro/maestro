@@ -1,6 +1,7 @@
 //! Child probes and the interface matrix of the checked test process.
 #![cfg(test)]
 
+mod broken_stderr;
 mod checked_runs;
 mod child_helpers;
 mod command_route;

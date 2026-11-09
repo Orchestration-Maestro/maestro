@@ -3,6 +3,7 @@
 mod browser_loop;
 mod browser_owned;
 mod continuations;
+mod diagnostics;
 mod hook_boundaries;
 mod live_subscriptions;
 mod loop_turns;

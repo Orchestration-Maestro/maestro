@@ -13,6 +13,9 @@
 //! cleared child keeps the cache home the run's setup exported, so neither recompiles the
 //! components the run prepared.
 //!
+//! A test whose product writes diagnostics to standard error proves it survives a broken
+//! pipe there with [`run_with_broken_stderr`] and, in the child, [`wait_for_broken_stderr`].
+//!
 //! This crate alone spells the variable that carries a case into its child, [`CASE`]. A caller
 //! selects the role with [`TestProcess::case`] and reads it back through [`selection`], and
 //! passes any fixture data the child needs in its own variable.
@@ -27,6 +30,7 @@
 //! executable in the runner. These children have no libtest output or argument parsing.
 
 mod alone;
+mod broken_stderr;
 mod cache;
 pub mod child;
 #[cfg(windows)]
@@ -44,6 +48,7 @@ mod setup;
 mod test_process;
 
 pub use alone::run_alone;
+pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
 pub use cache::user_cache_home;
 #[cfg(windows)]
 pub use console::on_console;
