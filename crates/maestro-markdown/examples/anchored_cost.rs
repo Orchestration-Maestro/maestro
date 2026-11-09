@@ -1,9 +1,9 @@
 //! Release-mode measurement of parse time against paragraph length.
 //!
-//! Run `cargo run --release -p maestro-markdown --example anchored_cost`. A paragraph of
-//! plain sentences starts none of the start-anchored recognizers, so every reached cursor
-//! makes each of them miss. Doubling the sentences should about double the time; a ratio near
-//! four means a miss costs the length of the text after the cursor.
+//! Run `~/.local/bin/capped cargo run --release -p maestro-markdown --example anchored_cost`.
+//! A paragraph of plain sentences starts none of the start-anchored recognizers, so every
+//! reached cursor makes each of them miss. Doubling the sentences should about double the
+//! time; a ratio near four means a miss costs the length of the text after the cursor.
 use maestro_markdown::{MarkedOptions, parse_with_options};
 use std::hint::black_box;
 use std::time::Instant;

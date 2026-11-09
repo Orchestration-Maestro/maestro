@@ -70,13 +70,16 @@ including after consumed escaped punctuation. Browser protocol matching is
 case-insensitive, while its `www.` prefix is lowercase.
 The recognizer skips failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
-Every block and inline recognizer that matches only at the start of the remaining text
-(escapes, tags, links, hard breaks, autolinks, delimiter runs, bare addresses, text runs,
+Escapes, tags, links, hard breaks, autolinks, delimiter runs, bare addresses, text runs,
 headings, thematic breaks, list markers, blank-line runs, table rows, fence openers and the
-paragraph and setext predicates) shares one start-anchored owner. A miss stops at the first
-start position instead of retrying at each later one, so doubling the sentences of a plain
-paragraph about doubles the parse time. One attempt still costs what its pattern spends from
-that start: an unterminated `<!--` scans the rest of the text once.
+paragraph and setext predicates match only at the start of the remaining text, and share one
+start-anchored owner. A miss stops at the first start position instead of retrying at each
+later one, so doubling the sentences of a plain paragraph about doubles the parse time. One
+attempt still costs what its pattern spends from that start: an unterminated `<!--` scans the
+rest of the text once. The HTML block opener and closer, the list item stops and the
+punctuation test keep a plain recognizer, each matched against one physical line. The block
+quote keeps one too: the container engine holds its type, and quote workloads measure
+near-linear.
 
 The parser retains link titles, destinations and inline labels; image destinations,
 titles and alt children; table alignments, cell children and original source ranges;
