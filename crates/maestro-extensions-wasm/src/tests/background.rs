@@ -110,7 +110,7 @@ impl Driver {
 
 impl Drop for Driver {
     fn drop(&mut self) {
-        let listeners = self.host.observed().bus.listeners.clone();
+        let listeners = self.host.observed().bus.listeners();
         let mut names: Vec<_> = listeners
             .iter()
             .map(|(_, id)| format!("event bus {id}"))
@@ -211,7 +211,7 @@ fn background_tasks_started_together_each_run() -> Result<(), String> {
     }
     assert_eq!(done(&host.observed()), [json!("b"), json!("a")]);
     drop((task_a, task_b));
-    let listener = host.observed().bus.listeners[0].1;
+    let listener = host.observed().bus.listeners()[0].1;
     super::example_support::release_all(
         &host,
         &[

@@ -446,12 +446,7 @@ impl Controlled {
         let channel = abort_channel(flag);
         let mut results = Vec::new();
         loop {
-            let next = {
-                let mut observed = self.observed.borrow_mut();
-                let listeners = &mut observed.bus.listeners;
-                let index = listeners.iter().position(|(name, _)| *name == channel);
-                index.map(|index| listeners.remove(index).1)
-            };
+            let next = self.observed.borrow_mut().bus.take_first(&channel);
             let Some(id) = next else {
                 return results;
             };

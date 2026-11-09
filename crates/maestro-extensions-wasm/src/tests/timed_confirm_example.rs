@@ -234,7 +234,7 @@ fn timed_signal_distinguishes_approval_cancellation_and_timeout() -> Result<(), 
             assert!(clock.is_closed(), "answering drops the unfinished wait");
         }
         assert_receipts(&host.observed().transcript[mark..], &case);
-        assert!(host.observed().bus.listeners.is_empty());
+        assert!(host.observed().bus.listeners().is_empty());
     }
     release_all(
         &host,

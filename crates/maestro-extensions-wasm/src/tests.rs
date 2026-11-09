@@ -43,6 +43,7 @@ mod build_cargo;
 mod build_warm;
 mod bus_callbacks;
 pub(crate) mod bus_host;
+mod bus_host_registrations;
 pub(crate) mod catalog_host;
 mod completion_contract;
 mod component_driver;
