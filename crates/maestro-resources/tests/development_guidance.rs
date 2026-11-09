@@ -6,24 +6,24 @@ use std::path::Path;
 
 /// Shipped names, descriptions, hints and authored argument lines.
 const EXPECTED: [(&str, &str, Option<&str>, Option<&str>); 4] = [
-    ("cl", "Audit changelog entries before release", None, None),
+    ("cl", "Audit release metadata before a release", None, None),
     (
         "is",
-        "Analyze GitHub issues (bugs or feature requests)",
+        "Analyze bug reports and feature requests from GitHub issues",
         Some("<issue>"),
-        Some("Analyze GitHub issue(s): $ARGUMENTS"),
+        Some("Analyze these GitHub issues: $ARGUMENTS"),
     ),
     (
         "pr",
-        "Review PRs from URLs with structured issue and code analysis",
+        "Review pull requests by URL with linked-issue and code analysis",
         Some("<PR-URL>"),
-        Some("You are given one or more GitHub PR URLs: $@"),
+        Some("Review the GitHub PRs at these URLs: $@"),
     ),
     (
         "wr",
-        "Finish the current task end-to-end with changelog, commit, and push",
+        "Finish the current task through release-metadata audit, commit and push",
         Some("[instructions]"),
-        Some("Additional instructions: $ARGUMENTS"),
+        Some("Extra instructions: $ARGUMENTS"),
     ),
 ];
 
