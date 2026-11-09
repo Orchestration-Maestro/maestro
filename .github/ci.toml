@@ -1,8 +1,9 @@
 privileged_trigger_workflows = [".github/workflows/ci-guards.yml", ".github/workflows/post-landing.yml"]
 git_sources = ["https://github.com/bytecodealliance/wasmtime"]
-additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_a/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_b/Cargo.toml"]
+additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml", "crates/maestro-web/runtime/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_a/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_b/Cargo.toml"]
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-markdown", "maestro-models", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
 wasm_examples = { "maestro-catalog" = ["browser_catalog_check"], "maestro-models" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
+emscripten_crates = ["maestro-sandbox-runtime"]
 browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]
 test_tools = true
 test_prepare = "cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup prepare \"$TEST_PREPARE_OUTPUT\" \"${CARGO_TARGET_DIR:-target/test-prepare}\""

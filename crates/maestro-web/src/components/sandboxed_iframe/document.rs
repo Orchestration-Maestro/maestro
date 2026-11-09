@@ -1,26 +1,26 @@
 //! Document envelopes carrying parser-created inline programs.
+use super::lowering;
+use super::runtime::{self, Insertion, Program};
+use maestro_app::{DiagnosticErrorInfo, Runtime};
 
 /// Encode ampersands, less-than signs and CR for SVG foreign-content program text.
-fn encode_program(code: &str) -> String {
+pub(super) fn encode_program(code: &str) -> String {
     code.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('\r', "&#13;")
 }
 
-/// Move the admitted classic script out of an inert template and remove it after execution.
-pub(super) fn head_program(code: &str) -> String {
+/// Keep the module parser-inserted inside a non-rendering SVG the runtime removes.
+fn body_program(code: &str) -> String {
     format!(
-        "<style>\nhtml, body {{\n\tfont-size: initial;\n}}\n</style>\n<template><svg><script>{}</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>",
+        "<svg display=\"none\" data-maestro-sandbox-program><script type=\"module\">{}</script></svg>",
         encode_program(code)
     )
 }
 
-/// Keep the module parser-inserted while removing its non-rendering SVG scaffold.
-fn body_program(code: &str) -> String {
-    format!(
-        "<svg display=\"none\"><script type=\"module\">{}</script></svg><script>document.currentScript.previousElementSibling.remove()</script>",
-        encode_program(code)
-    )
+/// Reset the font size, then place the runtime insertion.
+fn head_runtime(runtime: &str) -> String {
+    format!("<style>\nhtml, body {{\n\tfont-size: initial;\n}}\n</style>{runtime}")
 }
 
 /// Insert after the first head prefix, then html prefix, or prepend.
@@ -35,25 +35,43 @@ pub(super) fn insert_runtime(code: &str, runtime: &str) -> String {
         .unwrap_or(0);
     format!("{}{runtime}{}", &code[..index], &code[index..])
 }
-/// Wrap JavaScript in the asynchronous completion envelope.
-pub(super) fn wrap(code: &str, runtime: &str) -> String {
-    let program = [
-        include_str!("repl-prefix.js"),
-        "\n\t\t\t\t\t",
-        code,
-        include_str!("repl-suffix.js"),
-    ]
-    .concat();
-    let body = body_program(&program);
+/// Wrap a program scaffold in a complete document after the runtime insertion.
+pub(super) fn wrap(body: &str, runtime: &str) -> String {
     format!(
         "<!DOCTYPE html>\n<html>\n<head>\n\t{runtime}\n</head>\n<body>\n\t{body}\n</body>\n</html>"
     )
 }
-/// Select authored HTML injection independently of standalone runtime selection.
-pub(super) fn prepare(code: &str, runtime: &str, options: super::PrepareHtmlOptions) -> String {
-    if options.is_html_artifact {
-        insert_runtime(code, runtime)
-    } else {
-        wrap(code, runtime)
-    }
+/// Prepare authored HTML or a supplied asynchronous body with its runtime insertion.
+///
+/// # Errors
+/// Returns a supplied provider the parser refused or a serialization failure.
+pub(super) fn prepare(
+    code: &str,
+    id: &str,
+    globals: &[(String, String)],
+    runtimes: &[Runtime],
+    options: super::PrepareHtmlOptions,
+) -> Result<String, DiagnosticErrorInfo> {
+    let compiled = (!options.is_html_artifact).then(|| lowering::program(code));
+    let program = match &compiled {
+        None => Program::None,
+        Some(Ok(program)) => Program::Captured(program.capture().to_owned()),
+        Some(Err(error)) => Program::Refused(error.to_string()),
+    };
+    let runtime = head_runtime(&runtime::assemble(&Insertion {
+        id,
+        globals,
+        runtimes,
+        standalone: options.is_standalone,
+        program: &program,
+    })?);
+    Ok(match compiled {
+        None => insert_runtime(code, &runtime),
+        Some(compiled) => {
+            let body = compiled
+                .map(|program| body_program(program.code()))
+                .unwrap_or_default();
+            wrap(&body, &runtime)
+        }
+    })
 }

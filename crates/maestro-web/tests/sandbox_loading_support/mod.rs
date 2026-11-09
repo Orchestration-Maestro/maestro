@@ -1,7 +1,7 @@
 //! Browser transactions and source-derived raw-value fixture construction.
-use maestro_app::DiagnosticErrorInfo;
 use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+use maestro_app::{DiagnosticErrorInfo, Runtime};
 use maestro_web::browser::sandbox_value::BrowserSandboxValue;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
 use wasm_bindgen::{JsCast as _, prelude::*};
@@ -83,11 +83,11 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
             })
             .collect()
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
         if self.failure.as_deref() == Some("runtime") {
             return Err(DiagnosticErrorInfo::error("provider failed"));
         }
-        Ok(self.runtime.clone())
+        Ok(Runtime::Content(self.runtime.clone()))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
@@ -220,6 +220,10 @@ impl Fixture {
     pub(crate) fn finish() {
         native::finish();
     }
+    /// Names defined on a window after the document is written into a fresh frame, by pattern.
+    pub(crate) async fn defined(html: &str, pattern: &str, helpers: &[&str]) -> JsValue {
+        native::defined(html, pattern, helpers).await
+    }
     /// Observe native registration synchronously around standalone runtime execution.
     pub(crate) async fn standalone(html: &str) {
         native::standalone(html).await;
@@ -293,5 +297,21 @@ impl Fixture {
     /// Observe the mounted native validation document, or accepted recovered input.
     pub(crate) async fn validation_check(&self, expected: &str, css: &str) {
         self.routes.validation_check(expected, css).await;
+    }
+}
+
+/// A provider selecting one built-in helper set.
+pub struct Builtin(pub maestro_app::BuiltinRuntime);
+impl SandboxRuntimeProvider<BrowserSandboxValue> for Builtin {
+    fn get_data(
+        &self,
+    ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
+        Ok(indexmap::IndexMap::new())
+    }
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Builtin(self.0))
+    }
+    fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
+        Ok(String::new())
     }
 }

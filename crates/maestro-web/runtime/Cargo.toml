@@ -1,0 +1,53 @@
+[package]
+name = "maestro-sandbox-runtime"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "In-frame sandbox runtime, built for the Emscripten target by the repository tooling."
+license = "MIT"
+
+[workspace]
+
+[[bin]]
+name = "maestro-sandbox-runtime"
+path = "src/main.rs"
+
+[dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+js-sys = "=0.3.106"
+web-sys = { version = "=0.3.106", features = [
+    "Window", "Document", "HtmlElement", "Element", "Node", "Event", "EventTarget", "MessageEvent",
+    "ErrorEvent", "PromiseRejectionEvent", "AddEventListenerOptions", "Blob", "BlobPropertyBag",
+] }
+
+# The runtime aborts on panic in every profile, so Cargo's plain build for its target compiles
+# it too: under unwinding, the bindings require unwind-safe closures and futures.
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[lints]
+workspace = true
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+forbidden_lint_groups = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "forbid", priority = -1 }
+missing_docs_in_private_items = "forbid"
+redundant_clone = "forbid"
+too_many_arguments = "forbid"
+fn_params_excessive_bools = "forbid"
+too_many_lines = "forbid"
+cognitive_complexity = "forbid"
+excessive_nesting = "forbid"
+unwrap_used = "forbid"
+expect_used = "forbid"
+panic = "forbid"

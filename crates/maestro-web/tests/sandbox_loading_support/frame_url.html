@@ -1,7 +1,0 @@
-<script>
-window.addEventListener('message',e=>{
- if(e.data.type==='runtime-response'){parent.postMessage({type:'response-received',reply:e.data},'*');}
- if(e.data.type==='send-ready'){parent.postMessage({type:'sandbox-ready'},'*');parent.postMessage({type:'ready-sent'},'*');}
- if(e.data.type==='send-error'){parent.postMessage({type:'sandbox-error',error:'bootstrap problem',stack:'native stack'},'*');parent.postMessage({type:'error-sent'},'*');}
- if(e.data.type==='sandbox-load'){parent.postMessage({type:'code-received',id:e.data.sandboxId,code:e.data.code},'*');parent.postMessage({type:'open-external-url',url:'https://example.org/extension'},'*');parent.postMessage({type:'url-done'},'*');}
-});parent.postMessage({type:'url-mounted',mode:__MODE__},'*');</script>

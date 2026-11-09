@@ -829,18 +829,30 @@ fn creation_failure(mode: &str, observed: &Rc<RefCell<Observed>>) -> Patch {
     })
 }
 
+/// The document [`content`] returns.
+const CONTENT: &str = r#"<html><head></head><body><a href="https://example.org/fixture"><span>link</span></a><script>
+window.addEventListener('message', e=>{if(e.data.type==='click-now'){document.querySelector('span').click(); parent.postMessage({type:'clicked'},'*');}if(e.data.type==='send-probe'){sendRuntimeMessage({type:'console',method:'log',text:'normal',args:[]}).then(()=>parent.postMessage({type:'probe-done'},'*'));}});
+parent.postMessage({type:'loaded',first:window.firstProvider,second:window.secondProvider},'*');</script></body></html>"#;
+
+/// The document [`url`] encodes, with `__MODE__` standing for the loading mode.
+const URL: &str = r"<script>
+window.addEventListener('message',e=>{
+ if(e.data.type==='runtime-response'){parent.postMessage({type:'response-received',reply:e.data},'*');}
+ if(e.data.type==='send-ready'){parent.postMessage({type:'sandbox-ready'},'*');parent.postMessage({type:'ready-sent'},'*');}
+ if(e.data.type==='send-error'){parent.postMessage({type:'sandbox-error',error:'bootstrap problem',stack:'native stack'},'*');parent.postMessage({type:'error-sent'},'*');}
+ if(e.data.type==='sandbox-load'){parent.postMessage({type:'code-received',id:e.data.sandboxId,code:e.data.code},'*');parent.postMessage({type:'open-external-url',url:'https://example.org/extension'},'*');parent.postMessage({type:'url-done'},'*');}
+});parent.postMessage({type:'url-mounted',mode:__MODE__},'*');</script>";
+
 /// The probe document a srcdoc load mounts: inside the isolated frame it clicks its nested
 /// link or sends a console line on request, and reports its providers when loaded.
 pub(crate) fn content() -> &'static str {
-    include_str!("frame_content.html").trim_end()
+    CONTENT
 }
 
 /// A URL bootstrap whose handshake the test drives: inside the isolated frame it reports what
 /// it receives and sends readiness or an error on request.
 pub(crate) fn url(mode: &str) -> String {
-    let document = include_str!("frame_url.html")
-        .trim_end()
-        .replace("__MODE__", &serde_json::Value::from(mode).to_string());
+    let document = URL.replace("__MODE__", &serde_json::Value::from(mode).to_string());
     format!(
         "data:text/html,{}",
         String::from(js_sys::encode_uri_component(&document))

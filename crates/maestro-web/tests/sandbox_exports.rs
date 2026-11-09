@@ -4,7 +4,7 @@ use maestro_app::browser::components::sandbox::sandbox_runtime_provider::{
     SandboxRespond, SandboxRuntimeProvider,
 };
 use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
-use maestro_app::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
+use maestro_app::{BoxFuture, DiagnosticErrorInfo, Runtime, SharedHandle};
 use maestro_web::browser::sandbox_value::BrowserSandboxValue;
 use maestro_web::components::sandbox::runtime_message_bridge::{
     MessageType, RuntimeMessageBridgeOptions, RuntimeMessageContext,
@@ -24,8 +24,8 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
         Ok(indexmap::IndexMap::new())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(String::new())
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Empty)
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())

@@ -115,8 +115,9 @@ help is the shared attachments description. Online returned files are collected,
 not downloaded by the host; the injected helper retains its standalone offline
 browser-download branch.
 
-Each provider returns a complete injectable function. Native tests check host
-behavior and full source equivalence; browser builds check adapter signatures.
+Each provider selects its built-in helper set with a `Runtime::Builtin` entry; the
+runtime bundle implements the helpers in the frame. Native tests check host behavior and
+each provider's selection; browser builds check adapter signatures.
 Real iframe events, native values and download effects remain qualified by
 [browser smoke checks](https://github.com/Orchestration-Maestro/maestro/issues/825).
 See [sandbox messaging](../browser/sandbox.md) for transport ownership.

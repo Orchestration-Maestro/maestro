@@ -2,7 +2,7 @@
   "cases": [
     {
       "source": "",
-      "html": "<script>if (window.complete) window.complete();</script>",
+      "html": "<script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -10,7 +10,7 @@
           "completion": true,
           "ready": "loading",
           "parent": "HEAD",
-          "previous": "SCRIPT"
+          "previous": "STYLE"
         },
         "dom-ready"
       ],
@@ -18,7 +18,7 @@
     },
     {
       "source": "test",
-      "html": "test<script>if (window.complete) window.complete();</script>",
+      "html": "test<script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -36,7 +36,7 @@
     },
     {
       "source": "<p>snow 雪😀</p>",
-      "html": "<p>snow 雪😀</p><script>if (window.complete) window.complete();</script>",
+      "html": "<p>snow 雪😀</p><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -55,7 +55,7 @@
     },
     {
       "source": "<html></html>",
-      "html": "<html></html><script>if (window.complete) window.complete();</script>",
+      "html": "<html></html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -73,7 +73,7 @@
     },
     {
       "source": "<HTML></HTML>",
-      "html": "<HTML></HTML><script>if (window.complete) window.complete();</script>",
+      "html": "<HTML></HTML><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -91,7 +91,7 @@
     },
     {
       "source": "x</html>y</html>",
-      "html": "x</html>y</html><script>if (window.complete) window.complete();</script>",
+      "html": "x</html>y</html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -109,7 +109,7 @@
     },
     {
       "source": "</Html>",
-      "html": "</Html><script>if (window.complete) window.complete();</script>",
+      "html": "</Html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -127,7 +127,7 @@
     },
     {
       "source": "﻿<html>\r\n<&>\u0000</html>",
-      "html": "﻿<html>\r\n<&>\u0000</html><script>if (window.complete) window.complete();</script>",
+      "html": "﻿<html>\r\n<&>\u0000</html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -145,7 +145,7 @@
     },
     {
       "source": "<script>const s=\"</html>\";</script>",
-      "html": "<script>const s=\"</html>\";</script><script>if (window.complete) window.complete();</script>",
+      "html": "<script>const s=\"</html>\";</script><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -161,7 +161,7 @@
     },
     {
       "source": "<!-- </html> -->",
-      "html": "<!-- </html> --><script>if (window.complete) window.complete();</script>",
+      "html": "<!-- </html> --><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -169,7 +169,7 @@
           "completion": true,
           "ready": "loading",
           "parent": "HEAD",
-          "previous": "SCRIPT"
+          "previous": "STYLE"
         },
         "dom-ready"
       ],
@@ -177,7 +177,7 @@
     },
     {
       "source": "雪\r\n</html>",
-      "html": "雪\r\n</html><script>if (window.complete) window.complete();</script>",
+      "html": "雪\r\n</html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -195,7 +195,7 @@
     },
     {
       "source": "plain\u0000text",
-      "html": "plain\u0000text<script>if (window.complete) window.complete();</script>",
+      "html": "plain\u0000text<script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -213,7 +213,7 @@
     },
     {
       "source": "<html>  </html>",
-      "html": "<html>  </html><script>if (window.complete) window.complete();</script>",
+      "html": "<html>  </html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -231,7 +231,7 @@
     },
     {
       "source": "<!doctype html><html><head><title>plain</title></head><body><p>end</p></body></html>",
-      "html": "<!doctype html><html><head><title>plain</title></head><body><p>end</p></body></html><script>if (window.complete) window.complete();</script>",
+      "html": "<!doctype html><html><head><title>plain</title></head><body><p>end</p></body></html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -250,7 +250,7 @@
     },
     {
       "source": "<html><body><script>events.push(\"authored\")</script><p>end</p></body></html>",
-      "html": "<html><body><script>events.push(\"authored\")</script><p>end</p></body></html><script>if (window.complete) window.complete();</script>",
+      "html": "<html><body><script>events.push(\"authored\")</script><p>end</p></body></html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -271,7 +271,7 @@
     },
     {
       "source": "<html><body><div title=\"</html>\">data</div></body></html>",
-      "html": "<html><body><div title=\"</html>\">data</div></body></html><script>if (window.complete) window.complete();</script>",
+      "html": "<html><body><div title=\"</html>\">data</div></body></html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -290,7 +290,7 @@
     },
     {
       "source": "<html><body><script>window.value=\"</html>\";events.push(\"authored\")</script></body></html>",
-      "html": "<html><body><script>window.value=\"</html>\";events.push(\"authored\")</script></body></html><script>if (window.complete) window.complete();</script>",
+      "html": "<html><body><script>window.value=\"</html>\";events.push(\"authored\")</script></body></html><script>window.__maestroComplete</script>",
       "completions": 1,
       "errors": 0,
       "events": [
@@ -310,7 +310,7 @@
     },
     {
       "source": "<html><body><!-- open",
-      "html": "<html><body><!-- open<script>if (window.complete) window.complete();</script>",
+      "html": "<html><body><!-- open<script>window.__maestroComplete</script>",
       "completions": 0,
       "errors": 0,
       "events": [
@@ -320,7 +320,7 @@
     },
     {
       "source": "<html><body><script>window.value=1;",
-      "html": "<html><body><script>window.value=1;<script>if (window.complete) window.complete();</script>",
+      "html": "<html><body><script>window.value=1;<script>window.__maestroComplete</script>",
       "completions": 0,
       "errors": 1,
       "events": [

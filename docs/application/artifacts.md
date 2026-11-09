@@ -99,7 +99,7 @@ built, so callers build providers per view operation to observe a replaced
 conversation.
 
 `ArtifactsRuntimeProvider` gives sandboxed code access to these artifacts. It
-injects a snapshot of every artifact at `get_data`, embeds its helper source at
+injects a snapshot of every artifact at `get_data`, selects the artifact helpers at
 `get_runtime`, answers `artifact-operation` messages for `list`, `get`,
 `createOrUpdate` and `delete`, and returns one of the two guidance constants for
 its access mode. Reads answer from the live map. Writes run the panel's own
@@ -107,7 +107,7 @@ commands, so a command the panel rejects replies with its failure text and recor
 nothing, while an accepted write appends its history entry to the conversation
 collection when one was supplied. Read-only access refuses the write actions
 before any command runs, keeps no history and has no view effects, and reads
-keep working. The embedded helper finds an existing empty artifact by presence
+keep working. The artifact helpers find an existing empty artifact by presence
 rather than by content and serializes non-string content once.
 
 ## Browser integration

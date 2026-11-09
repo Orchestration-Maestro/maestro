@@ -20,6 +20,14 @@ maestro-resources = { path = "../crates/maestro-resources" }
 maestro-terminal = { path = "../crates/maestro-terminal" }
 maestro-tui = { path = "../crates/maestro-tui" }
 maestro-test-browser = { path = "../crates/maestro-test-browser" }
+maestro-web = { path = "../crates/maestro-web" }
+
+[[bin]]
+name = "sandbox-lowering"
+path = "fuzz_targets/sandbox_lowering.rs"
+test = false
+doc = false
+bench = false
 
 [[bin]]
 name = "browser-resource-paths"

@@ -1,7 +1,7 @@
 //! Providers, sources and frame observations shared by the HTML artifact browser witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{text, until};
-use maestro_app::{DiagnosticErrorInfo, SandboxRuntimeProvider, SharedHandle};
+use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHandle};
 use maestro_web::{
     I18n, browser::sandbox_value::BrowserSandboxValue, dom::DomRoot,
     tools::artifacts::html_artifact::HtmlArtifact,
@@ -38,8 +38,11 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Marker {
         }
         Ok([(self.name.to_owned(), BrowserSandboxValue(self.name.into()))].into())
     }
-    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
-        Ok(format!("() => {{ window.runtime_{} = true; }}", self.name))
+    fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
+        Ok(Runtime::Content(format!(
+            "() => {{ window.runtime_{} = true; }}",
+            self.name
+        )))
     }
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Ok(String::new())
