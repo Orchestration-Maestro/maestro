@@ -219,11 +219,12 @@ CARGO_BUILD_JOBS=3 just sandbox-runtime --check  # fail when the asset is stale
 ```
 
 Change the runtime package, regenerate, and commit the asset with the source. Never edit
-the asset. The command refuses a missing or unpinned compiler, naming the tool and its release,
-a library outside the audited list and script text that an inline script cannot carry. It wraps the script in a function so no glue name
-reaches the frame's global scope, and passes the compiler flags in Cargo's encoded form so a
-checkout path with spaces builds. The package repeats the workspace lint table in its manifest and
-is linted with the browser crates. `just browser-test` runs the check after the browser cases.
+the asset. The command refuses a missing or unpinned compiler (naming the tool and its
+release), a library outside the audited list and script text that an inline script cannot
+carry. It wraps the script in a function so no glue name reaches the frame's global scope,
+and passes the compiler flags in Cargo's encoded form so a checkout path with spaces
+builds. The package repeats the workspace lint table in its manifest and is linted with
+the browser crates. `just browser-test` runs the check after the browser cases.
 The build box's saved setup carries the SDK. Shared CI browser jobs install the same release
 because `.github/ci.toml` lists the package in `emscripten_crates`.
 

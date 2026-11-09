@@ -91,8 +91,8 @@ The only addition to the frame's policy is `'wasm-unsafe-eval'`. The change adds
 same-origin permission, `unsafe-eval`, wildcard origin, `blob:` or `data:` source. Hash
 policies still refuse unmatched scripts. A provider the policy refuses never runs, so
 installation stops there and the runtime reports `TypeError: provider did not complete`.
-A frame without `'wasm-unsafe-eval'` installs
-nothing: the module fails to compile and the carriers stay inert.
+A frame without `'wasm-unsafe-eval'` installs nothing: the module fails to compile and the
+carriers stay inert.
 
 The generator wraps the bundle in a function, so its Emscripten and binding names stay out
 of the frame's global scope. Authored scripts may declare `Module`, `abort` or `preRun`
