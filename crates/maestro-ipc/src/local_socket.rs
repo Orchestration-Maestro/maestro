@@ -125,7 +125,7 @@ pub fn split_async_stream(stream: AsyncLocalStream) -> (AsyncRecvHalf, AsyncSend
 #[must_use = "dropping the claim releases the path to the next server"]
 pub struct SocketClaim {
     /// The retained exclusion; releasing it lets the next server claim the path.
-    _lock: maestro_lock::WriteLock,
+    _lock: maestro_lock::Exclusion,
 }
 
 /// Claim the socket path, create its parents and remove a stale socket, rejecting an active
@@ -147,7 +147,7 @@ pub fn prepare_socket_path(
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let claim = match maestro_lock::try_acquire_write(path, true) {
+    let claim = match maestro_lock::try_acquire_exclusion(path, true) {
         Ok(lock) => SocketClaim { _lock: lock },
         Err(TryLockError::WouldBlock) => {
             return Err(io::Error::new(io::ErrorKind::AddrInUse, busy_message(path)));

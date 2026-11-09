@@ -39,6 +39,8 @@ returns the claim as a `SocketClaim`; the server keeps it for as long as it hold
 listener and drops it after removing its socket file. The operating system releases
 the claim when its holder exits, however it exits, so a crashed server's socket is
 reclaimed at once on every platform. Links to the socket share one claim.
+Taking the claim is exclusion only: it never writes the socket path or replays a
+recovery record beside it.
 
 With the claim held, preparation inspects the entry in two cases only: a stale
 connection failure (connection refused, not found or timed out) and a native

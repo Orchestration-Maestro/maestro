@@ -36,6 +36,12 @@ contended attempts. `try_acquire_write` makes one attempt. The bounded and
 single-attempt forms report contention as `TryLockError::WouldBlock`; other
 failures retain their native errors.
 
+`try_acquire_exclusion` makes one attempt too, but it only proves that no other
+holder owns the target. It returns an `Exclusion` that admits no write, and it
+neither reads nor replays a pending recovery record, so the target and its record
+stay as they were. Use it to ask whether a path is claimed; use the write forms to
+change the target.
+
 The lock is `<target>.lock` beside the canonical target. Missing paths use their
 deepest existing canonical ancestor plus the remaining components. The caller
 selects whether to follow final symbolic links. Linked aliases share exclusion
@@ -56,7 +62,7 @@ the waiting form.
 A browser build has no file system, so file acquisition reports `Unsupported`
 there.
 
-The local-socket owner uses `try_acquire_write` on a socket path as its liveness proof:
+The local-socket owner uses `try_acquire_exclusion` on a socket path as its liveness proof:
 the held lock is a live server, a free one means the socket file is stale. The sidecar
 is `<socket name>.lock`; see [Sockets](workspace-daemon.md#sockets).
 

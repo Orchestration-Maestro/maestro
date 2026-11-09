@@ -269,6 +269,20 @@ fn socket_claim_release_makes_the_socket_stale_at_once() {
 }
 
 #[test]
+fn socket_prepare_keeps_a_non_socket_target_and_its_pending_record() {
+    let directory = Directory::new();
+    let path = directory.path().join("chosen.sock");
+    let record = directory.path().join("chosen.sock.recovery");
+    fs::write(&path, b"original").unwrap();
+    let pending = [&[0; 5][..], b"replacement"].concat();
+    fs::write(&record, &pending).unwrap();
+    let error = local::prepare_socket_path(&path, |_| panic!("not live")).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::AlreadyExists);
+    assert_eq!(fs::read(&path).unwrap(), b"original");
+    assert_eq!(fs::read(&record).unwrap(), pending);
+}
+
+#[test]
 fn socket_prepare_creates_parents() {
     let directory = Directory::new();
     let path = directory.path().join("nested/deeper/new.sock");
