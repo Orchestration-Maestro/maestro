@@ -78,14 +78,13 @@ generation. The old command frame resumes after all of it.
 Reload takes no arguments and has no `with_session` callback. Return after
 awaiting it, as in the [reload example](registration.md#reload-and-return).
 
-The component adapter is qualified against a host that captures the flag values,
-announces `session_shutdown` with reason `reload` and invalidates the old
-contexts. It then reloads settings, resets providers and reloads resources,
-activates a fresh generation with the captured flags restored, announces
-`session_start` and `resources_discover` with reason `reload`, and resumes the old
-command frame. That frame's context does not become fresh again: its guarded
-reads reject as stale. Previously obtained raw objects remain usable under their
-own ownership.
+Reload captures the flag values, announces `session_shutdown` with reason `reload`
+and invalidates the old contexts. It then reloads settings, resets providers and
+reloads resources, activates a fresh generation with the captured flags restored,
+announces `session_start` and `resources_discover` with reason `reload`, and
+resumes the old command frame. That frame's context does not become fresh again:
+its guarded reads reject as stale. Previously obtained raw objects remain usable
+under their own ownership.
 
 The application's reload does not invalidate the old contexts yet, so a frame that
 awaits it can still read through its old context. Issue #4397 tracks the change.
