@@ -114,7 +114,10 @@ fn checks(
         ]);
         checks.push((BROWSER, browser, BROWSER_EXAMPLE));
     }
-    if let (Some(guide), Some(guest)) = (workspace.guide(), workspace.package(GUEST)?) {
+    // Finding the guest package resolves every dependency, which only the guide build needs.
+    if let Some(guide) = workspace.guide()
+        && let Some(guest) = workspace.package(GUEST)?
+    {
         let project = target.join("guide-project");
         project_files(checkout, &project, &guide, &guest)?;
         let mut author = command(cargo, &project, target);

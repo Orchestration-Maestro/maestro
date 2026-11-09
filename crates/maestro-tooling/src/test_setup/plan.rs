@@ -19,7 +19,7 @@ use super::{
 };
 use crate::dep_info;
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
-use crate::workspace::{FIXTURES, Workspace};
+use crate::workspace::{ComponentCrate, FIXTURES, Workspace};
 use maestro_path::normalize_native;
 
 /// The workspace-level gate that marks an edge as native only.
@@ -50,15 +50,15 @@ pub(super) struct Artifacts {
 }
 
 impl Artifacts {
-    /// Digest the inputs of each artifact in `checkout`.
+    /// Digest the inputs of each artifact in `checkout`, for the `component` crate when the
+    /// workspace has one.
     ///
     /// # Errors
-    /// Returns a component crate that is not a member, a missing built package, or a failed
-    /// listing or read.
+    /// Returns a missing built package, or a failed listing or read.
     pub(super) fn read(
         checkout: &Path,
         workspace: &Workspace,
-        component: &Path,
+        component: Option<&ComponentCrate>,
     ) -> io::Result<Self> {
         let plan = plan(workspace, component)?;
         let locked = locked_closure(checkout, &plan.dependencies)?;
@@ -209,32 +209,18 @@ fn component_paths(
     (shared, manifests)
 }
 
-/// What each artifact hashes, from the workspace metadata.
+/// What each artifact hashes, from the workspace metadata. Without a component crate the
+/// components are the fixed ones the workspace builds, if any.
 ///
 /// # Errors
-/// Returns a component crate that is not a member, or a failed metadata read.
-pub(super) fn plan(workspace: &Workspace, component: &Path) -> io::Result<Plan> {
+/// Returns a failed metadata read.
+pub(super) fn plan(workspace: &Workspace, component: Option<&ComponentCrate>) -> io::Result<Plan> {
     let metadata = workspace.metadata();
-    let members = members(metadata);
-    let component_package = members
-        .iter()
-        .find(|package| {
-            package.manifest_path.parent().is_some_and(|directory| {
-                normalize_native(directory.as_std_path()) == normalize_native(component)
-            })
-        })
-        .map(|package| package.name.as_str())
-        .ok_or_else(|| {
-            io::Error::other(format!(
-                "{} holds the example region but is not a workspace member",
-                component.display()
-            ))
-        })?;
     let packages: BTreeSet<&str> = FIXED_COMPONENTS
         .iter()
         .map(|(_, package, _)| *package)
-        .chain([component_package])
         .filter(|name| workspace.member(name).is_some())
+        .chain(component.map(|component| component.package.as_str()))
         .collect();
     let built = |package: &Package| packages.contains(package.name.as_str());
     let components = closure_packages(
@@ -255,10 +241,12 @@ pub(super) fn plan(workspace: &Workspace, component: &Path) -> io::Result<Plan> 
     // The examples are hashed one by one, beside the shared inputs.
     let (mut shared, manifests) = component_paths(metadata, &components, built);
     shared.extend(SHARED_INPUTS.map(str::to_owned));
-    shared.insert(format!(
-        ":(exclude){}/{FIXTURES}",
-        workspace.relative(component)?
-    ));
+    if let Some(component) = component {
+        shared.insert(format!(
+            ":(exclude){}/{FIXTURES}",
+            workspace.relative(&component.directory)?
+        ));
+    }
     let fixed = SHARED_INPUTS.into_iter().chain(LOCKED_INPUTS);
     Ok(Plan {
         shared,

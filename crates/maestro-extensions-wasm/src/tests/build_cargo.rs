@@ -8,7 +8,13 @@ use super::build::cargo::build_command;
 #[test]
 fn one_cargo_invocation_builds_every_selected_example() {
     let names = ["author_component", "context_bridge", "snake"];
-    let command = build_command("cargo", Path::new("."), &names, Path::new("target"));
+    let command = build_command(
+        "cargo",
+        Path::new("."),
+        env!("CARGO_PKG_NAME"),
+        &names,
+        Path::new("target"),
+    );
     let arguments: Vec<String> = command
         .get_args()
         .map(|argument| argument.to_string_lossy().into_owned())

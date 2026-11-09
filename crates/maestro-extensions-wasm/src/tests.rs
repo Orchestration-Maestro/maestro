@@ -46,6 +46,7 @@ pub(crate) mod bus_host;
 pub(crate) mod catalog_host;
 mod completion_contract;
 mod component_driver;
+mod consuming_preparation;
 mod context_catalog;
 pub(crate) mod controlled;
 mod controlled_driver;
