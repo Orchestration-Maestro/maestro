@@ -4312,6 +4312,7 @@ version = "0.1.0"
 dependencies = [
  "interprocess",
  "maestro-dependencies",
+ "maestro-lock",
  "maestro-test-directory",
  "maestro-test-process",
  "rustix",
