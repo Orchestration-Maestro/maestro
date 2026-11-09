@@ -70,12 +70,13 @@ including after consumed escaped punctuation. Browser protocol matching is
 case-insensitive, while its `www.` prefix is lowercase.
 The recognizer skips failed email-local runs without retrying each suffix;
 this does not bound the cost of parsing emphasis or other inline grammar.
-Recognizers that match only at the start of the remaining text (escapes, tags, links,
-hard breaks, autolinks, delimiter runs, bare addresses, headings, thematic breaks and
-list markers) share one start-anchored owner. A miss stops at the first start position, so
-it costs a constant, not the length of the text after the cursor. In a release build, a
-paragraph of 800 sentences parses in about 10 ms, and doubling the sentences about doubles
-the time.
+Every block and inline recognizer that matches only at the start of the remaining text
+(escapes, tags, links, hard breaks, autolinks, delimiter runs, bare addresses, text runs,
+headings, thematic breaks, list markers, blank-line runs, table rows, fence openers and the
+paragraph and setext predicates) shares one start-anchored owner. A miss stops at the first
+start position instead of retrying at each later one, so doubling the sentences of a plain
+paragraph about doubles the parse time. One attempt still costs what its pattern spends from
+that start: an unterminated `<!--` scans the rest of the text once.
 
 The parser retains link titles, destinations and inline labels; image destinations,
 titles and alt children; table alignments, cell children and original source ranges;
