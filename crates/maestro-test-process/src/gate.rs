@@ -7,8 +7,7 @@
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
-
-use rustix::fs::{CWD, Mode, mkfifoat};
+use std::process::Command;
 
 /// A FIFO created and held open for reading and writing by the test.
 ///
@@ -42,9 +41,21 @@ impl Gate {
     ///
     /// # Errors
     ///
-    /// Returns the failure to create the FIFO, which includes an existing `path`, or to open it.
+    /// Returns the failure to run `mkfifo`, create the FIFO (including an existing `path`),
+    /// or open it.
     pub fn new(path: &Path) -> io::Result<Self> {
-        mkfifoat(CWD, path, Mode::RUSR | Mode::WUSR).map_err(io::Error::from)?;
+        // The system executable stays reachable when a test replaces PATH with its fixtures.
+        let output = Command::new("/usr/bin/mkfifo")
+            .args(["-m", "600", "--"])
+            .arg(path)
+            .output()?;
+        if !output.status.success() {
+            return Err(io::Error::other(format!(
+                "cannot create gate at {}: {}",
+                path.display(),
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
         let fifo = OpenOptions::new().read(true).write(true).open(path)?;
         Ok(Self {
             path: path.to_owned(),

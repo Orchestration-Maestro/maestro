@@ -1797,10 +1797,14 @@ its own, such as an editor or a viewer, calls it directly instead of writing the
 `.fixture` file itself.
 
 A `hold` child waits on FIFOs that Rust's standard library cannot create.
-`gate::Gate::new(path)` makes the FIFO and keeps it open for reading and writing
-until the guard drops. Pass `gate.path()` as `permit` and `gate.release()` lets
-one waiting child continue. Pass a second gate as `ready` and `gate.take(5)` waits
-for a child's `"ready"` bytes, so a test holds one child, observes it started,
+`gate::Gate::new(path)` uses `/usr/bin/mkfifo` on Linux and macOS to create the
+FIFO with owner-only read/write permissions, then keeps it open for reading and
+writing until the guard drops. The absolute executable path also works when a
+test replaces `PATH` with its fixtures. A failed creation returns an error
+without opening or removing an existing file. Pass `gate.path()` as `permit` and
+`gate.release()` lets one waiting child continue. Pass a second gate as `ready`
+and `gate.take(5)` waits for a child's `"ready"` bytes, so a test holds one child,
+observes it started,
 releases it and then observes the next, without a sleep or a poll. Dropping the
 guard removes the FIFO: a waiting child reads the end of the stream and ends, and
 a child that starts later finds no FIFO, so a failed test never leaves one blocked.

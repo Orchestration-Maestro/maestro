@@ -36,6 +36,17 @@ fn gate_release_lets_a_held_child_finish() {
     assert_eq!(output.stdout, b"tail");
 }
 
+/// A failed FIFO creation never opens or removes an existing file at the gate path.
+#[test]
+fn gate_creation_preserves_an_existing_file() {
+    let root = Scratch::new().unwrap();
+    let path = root.path().join("existing gate");
+    std::fs::write(&path, b"keep").unwrap();
+
+    assert!(Gate::new(&path).is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), b"keep");
+}
+
 /// A gate dropped before its release ends the held child instead of leaving it blocked.
 #[test]
 fn gate_drop_ends_a_held_child() {
