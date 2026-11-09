@@ -16,6 +16,8 @@ use std::io;
 mod console;
 /// HTML artifact source listing scenes.
 mod html;
+/// Markdown block hover, syntax and brand scenes.
+mod markdown;
 /// Visible boxes, their pixel counts and glyph shapes.
 mod region;
 /// Reasoning disclosure scenes.
@@ -141,6 +143,9 @@ impl Page<'_> {
             "console-rest" | "console-hover" | "console-focus" | "console-collapsed"
             | "console-expanded" | "console-copy" | "console-copied" => {
                 console::observe(self, scene).await
+            }
+            "markdown-hover" | "markdown-syntax" | "markdown-brand" => {
+                markdown::observe(self, scene).await
             }
             "thinking-rest" | "thinking-hover" | "thinking-expanded" => {
                 thinking::observe(self, scene).await

@@ -547,8 +547,11 @@ struct HeldProvider {
     release: std::sync::mpsc::Sender<()>,
     /// Teardown also wakes an accept if startup failed before the attempt.
     stopped: std::sync::Arc<std::sync::atomic::AtomicBool>,
-    /// Listener used only for the teardown wake-up.
+    /// Address of the teardown wake-up.
     address: std::net::SocketAddr,
+    /// Listening socket shared with the serving thread and held until this provider is dropped,
+    /// so the wake-up is never refused after the thread returned.
+    _listener: std::sync::Arc<std::net::TcpListener>,
     /// Original serving thread, joined exactly once.
     worker: Option<std::thread::JoinHandle<()>>,
 }
@@ -560,14 +563,15 @@ impl HeldProvider {
             atomic::{AtomicBool, Ordering},
             mpsc,
         };
-        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let listener = Arc::new(std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap());
         let address = listener.local_addr().unwrap();
+        let accepting = Arc::clone(&listener);
         let stopped = Arc::new(AtomicBool::new(false));
         let closing = Arc::clone(&stopped);
         let (sent, request) = mpsc::channel();
         let (release, released) = mpsc::channel();
         let worker = std::thread::spawn(move || {
-            let (mut stream, _) = listener.accept().unwrap();
+            let (mut stream, _) = accepting.accept().unwrap();
             if closing.load(Ordering::Relaxed) {
                 return;
             }
@@ -581,6 +585,7 @@ impl HeldProvider {
             release,
             stopped,
             address,
+            _listener: listener,
             worker: Some(worker),
         }
     }
@@ -590,9 +595,31 @@ impl Drop for HeldProvider {
         self.stopped
             .store(true, std::sync::atomic::Ordering::Relaxed);
         let _ = self.release.send(());
-        drop(std::net::TcpStream::connect(self.address));
+        std::net::TcpStream::connect(self.address).unwrap();
         self.worker.take().unwrap().join().unwrap();
     }
+}
+
+/// Once the serving thread has finished, the provider's address still accepts connections, so the
+/// teardown wake-up is never refused.
+#[test]
+fn held_provider_keeps_listening_after_its_worker_stops() {
+    use std::io::Write;
+    let provider = HeldProvider::new();
+    let body = br#"{"model":"controlled"}"#;
+    let mut client = std::net::TcpStream::connect(provider.address).unwrap();
+    write!(
+        client,
+        "POST /v1 HTTP/1.1\r\ncontent-length: {}\r\n\r\n",
+        body.len()
+    )
+    .unwrap();
+    client.write_all(body).unwrap();
+    assert_eq!(provider.request.recv().unwrap()["model"], "controlled");
+    provider.release.send(()).unwrap();
+    // The request sender belongs to the serving thread: the channel closes once the thread ended.
+    assert!(provider.request.recv().is_err());
+    std::net::TcpStream::connect(provider.address).expect("the provider still listens");
 }
 
 #[test]

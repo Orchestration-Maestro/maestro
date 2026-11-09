@@ -152,6 +152,17 @@ impl<'a, E> Lexer<'a, E> {
         })
     }
 
+    /// Whether the line starts with a quote marker the escaped browser policy displays as
+    /// text, so the line carries no quote prefix.
+    pub(super) fn has_escaped_marker(&self, line: &ScopeSource) -> bool {
+        let marker = line.text.bytes().take_while(|byte| *byte == b' ').count();
+        marker <= 3
+            && line.text.as_bytes().get(marker) == Some(&b'>')
+            && line.native(&(marker..marker + 1)).is_some_and(|native| {
+                tokenizer::is_escaped_span_close(&self.escaped_spans, native.start)
+            })
+    }
+
     /// Recognize the container a dispatch step admits through its own frame.
     fn container(&mut self, source: &Segmented) -> Option<Pending> {
         self.quote_entry(source)

@@ -462,6 +462,29 @@ mod tests {
         drop(block);
     }
 
+    /// A layout newline beside an authored code block is not compared as content.
+    ///
+    /// # Panics
+    /// Panics if the page does not separate the blocks with a layout newline.
+    #[wasm_bindgen]
+    pub fn markdown_layout_newlines_beside_code_blocks_are_not_content() {
+        let mut surface = Surface::new();
+        let mut block = MarkdownBlock::new(surface.host());
+        block.content = "<pre>x</pre>\n\n<pre>y</pre>".into();
+        block.escape_html = false;
+        surface.settle(&mut block);
+        let shown = crate::markdown_support::walk::root().inner_html();
+        assert!(
+            shown.contains("</pre>\n"),
+            "the page separates the blocks with a layout newline: {shown}"
+        );
+        assert_eq!(
+            Surface::difference(&shown.replace("</pre>\n", "</pre>")),
+            ""
+        );
+        drop(block);
+    }
+
     /// Ordinary, thinking, error, inline and display math, code, tables and controls paint with the selected pack.
     #[wasm_bindgen]
     pub async fn markdown_native_paints_selected_brand_and_loaded_math_fonts() {

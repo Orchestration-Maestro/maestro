@@ -738,19 +738,77 @@ fn viewer_program() -> &'static str {
 /// Install the controlled viewer that announces its own launch on `port`.
 #[cfg(not(windows))]
 fn install_viewer(directory: &std::path::Path, program: &str, port: u16) {
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
-        .expect("run just prepare-tests, then run these tests with cargo nextest");
     std::fs::create_dir_all(directory).expect("the viewer directory is creatable");
-    let entry = directory.join(program);
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &entry)
-        .expect("the viewer installs");
-    let mut record = entry.as_os_str().to_owned();
-    record.push(".fixture");
-    std::fs::write(
-        record,
-        format!("browser_launch\n{}", serde_json::json!({"port": port})),
+    maestro_test_process::install_family(
+        &directory.join(program),
+        "browser_launch",
+        &serde_json::json!({"port": port}).to_string(),
     )
-    .expect("the viewer record is writable");
+    .expect("the viewer installs");
+}
+
+/// Run the report in the named test with `program` installed as the viewer, then read the
+/// viewer's announcement.
+///
+/// The report starts the viewer its own platform selects when `platform` is `None`, and the
+/// viewer `platform` selects otherwise, so one test can witness an arm that its host never runs.
+#[cfg(not(windows))]
+fn witness_viewer(test: &str, program: &'static str, platform: Option<&'static str>) {
+    let path = "$BASE/bin";
+    with_environment(test, &[("PATH", path)], |base| {
+        let listener =
+            std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port is bound");
+        let port = listener
+            .local_addr()
+            .expect("the bound address is readable")
+            .port();
+        install_viewer(
+            std::path::Path::new(base).join("bin").as_path(),
+            program,
+            port,
+        );
+        let sessions = maestro_path::join(&[base, "sessions"]);
+        write(&sessions, &[("a.jsonl", String::new())]);
+        let output = maestro_path::join(&[base, "report.html"]);
+        let arguments = arguments(&["--sessions-dir", &sessions, "--output", &output]);
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        let code = match platform {
+            None => maestro_app::developer_tools::tool_stats::main(
+                &arguments,
+                &clock,
+                &mut stdout,
+                &mut stderr,
+            ),
+            Some(platform) => maestro_app::developer_tools::tool_stats::main_with_opener(
+                &arguments,
+                &clock,
+                &|page| maestro_app::utils::platform_opener(page, platform),
+                &mut stdout,
+                &mut stderr,
+            ),
+        }
+        .expect("the report writes its page");
+        assert_eq!(code, std::process::ExitCode::SUCCESS);
+        // The viewer announces its own program name and one literal operand.
+        let (mut launched, _) = listener.accept().expect("the viewer starts");
+        let mut announced = String::new();
+        BufReader::new(launched.try_clone().expect("the announcement is readable"))
+            .read_line(&mut announced)
+            .expect("the viewer announces its launch");
+        let (named, operands): (String, Vec<String>) =
+            serde_json::from_str(announced.trim_end()).expect("the launch is recorded as JSON");
+        assert_eq!(named, program);
+        assert_eq!(operands, std::slice::from_ref(&output));
+        // The complete page exists while the viewer still waits.
+        let page = std::fs::read_to_string(&output).expect("the page is written");
+        assert!(page.starts_with("<!doctype html>"), "{page:.40}");
+        launched.write_all(b"!").expect("the viewer is released");
+        let mut done = String::new();
+        launched
+            .read_to_string(&mut done)
+            .expect("the viewer finishes");
+        assert_eq!(done, "done");
+    });
 }
 
 // Windows resolves the viewer through its own directories before `PATH`, so the
@@ -758,54 +816,21 @@ fn install_viewer(directory: &std::path::Path, program: &str, port: u16) {
 #[cfg(not(windows))]
 #[test]
 fn tool_report_starts_the_platform_viewer_with_the_written_page() {
-    let path = "$BASE/bin";
-    with_environment(
+    witness_viewer(
         "tool_report_starts_the_platform_viewer_with_the_written_page",
-        &[("PATH", path)],
-        |base| {
-            let program = viewer_program();
-            let listener =
-                std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port is bound");
-            let port = listener
-                .local_addr()
-                .expect("the bound address is readable")
-                .port();
-            install_viewer(
-                std::path::Path::new(base).join("bin").as_path(),
-                program,
-                port,
-            );
-            let sessions = maestro_path::join(&[base, "sessions"]);
-            write(&sessions, &[("a.jsonl", String::new())]);
-            let output = maestro_path::join(&[base, "report.html"]);
-            let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-            let code = maestro_app::developer_tools::tool_stats::main(
-                &arguments(&["--sessions-dir", &sessions, "--output", &output]),
-                &clock,
-                &mut stdout,
-                &mut stderr,
-            )
-            .expect("the report writes its page");
-            assert_eq!(code, std::process::ExitCode::SUCCESS);
-            // The viewer announces its own program name and one literal operand.
-            let (mut launched, _) = listener.accept().expect("the viewer starts");
-            let mut announced = String::new();
-            BufReader::new(launched.try_clone().expect("the announcement is readable"))
-                .read_line(&mut announced)
-                .expect("the viewer announces its launch");
-            let (named, operands): (String, Vec<String>) =
-                serde_json::from_str(announced.trim_end()).expect("the launch is recorded as JSON");
-            assert_eq!(named, program);
-            assert_eq!(operands, std::slice::from_ref(&output));
-            // The complete page exists while the viewer still waits.
-            let page = std::fs::read_to_string(&output).expect("the page is written");
-            assert!(page.starts_with("<!doctype html>"), "{page:.40}");
-            launched.write_all(b"!").expect("the viewer is released");
-            let mut done = String::new();
-            launched
-                .read_to_string(&mut done)
-                .expect("the viewer finishes");
-            assert_eq!(done, "done");
-        },
+        viewer_program(),
+        None,
+    );
+}
+
+// The Windows arm is selected by the platform observation, so its program name and literal
+// operand are witnessed here without the system directories that Windows searches first.
+#[cfg(not(windows))]
+#[test]
+fn tool_report_starts_the_windows_viewer_with_the_written_page() {
+    witness_viewer(
+        "tool_report_starts_the_windows_viewer_with_the_written_page",
+        "explorer.exe",
+        Some("windows"),
     );
 }

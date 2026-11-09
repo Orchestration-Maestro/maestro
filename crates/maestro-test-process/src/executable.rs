@@ -95,23 +95,24 @@ pub fn install_search_program(program: &str, directory: &Path) -> io::Result<Pat
 /// Returns a missing preparation variable, a failed installation or a failed record write. The
 /// caller creates the entry's parent directory.
 pub fn install_command(entry: &Path, record: &str) -> io::Result<()> {
-    install_recorded(entry, "command", record)
+    install_family(entry, "command", record)
 }
 
-/// Install the prepared artifact as `entry` and write its fixture family and scenario record.
+/// Install the prepared artifact as `entry` with `family`'s `record`.
 ///
-/// The record is the two lines `family` and `scenario` beside the alias, which the installed
-/// program reads instead of harness arguments.
+/// The record is the two lines `family` and `record` beside the alias, which the installed
+/// program reads instead of harness arguments. The family names the fixture the artifact
+/// runs and the record is that family's own text.
 ///
 /// # Errors
 ///
 /// Returns a missing preparation variable, a failed installation or a failed record write.
 /// The caller creates the entry's parent directory.
-pub(crate) fn install_recorded(entry: &Path, family: &str, scenario: &str) -> io::Result<()> {
+pub fn install_family(entry: &Path, family: &str, record: &str) -> io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| io::Error::other("run just prepare-tests, then cargo nextest"))?;
     install_executable(Path::new(&artifact), entry)?;
-    let mut record = entry.as_os_str().to_owned();
-    record.push(".fixture");
-    std::fs::write(record, format!("{family}\n{scenario}\n"))
+    let mut path = entry.as_os_str().to_owned();
+    path.push(".fixture");
+    std::fs::write(path, format!("{family}\n{record}\n"))
 }

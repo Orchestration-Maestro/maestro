@@ -158,21 +158,21 @@ filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author
 threads-required = "num-cpus"
 
 # Priorities rank successful whole-test durations above 30s in merge-group
-# run 40795869386, longest first (100 downwards). Other tests keep priority 0.
+# run 40795869386, longest first (100 downwards), except the cold-start test.
+# Other tests keep priority 0.
 # They only order tests within a shard; limits come from the rules above.
 # See docs/development.md#slowest-first-test-order for evidence and refresh steps.
+# The cold-start test takes every core, so it ranks first whatever its duration: nextest starts
+# tests in priority order and holds the queue until it fits, so any test ranked above it would
+# run alone beside idle cores while it waited.
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_check_repairs_formatting)"
-priority = 100
-
-[[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
 priority = 99
 
 [[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_check_preserves_adjacent_locks)"
-priority = 98
+filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_bootstraps_from_empty_build_state)"
+priority = 100
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_checks_accept_valid_sources)"
@@ -223,10 +223,6 @@ filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author
 priority = 86
 
 [[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_trunk_rejects_stale_lock_without_writes)"
-priority = 85
-
-[[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=extension_guide::extension_guide_builds_and_loads_from_a_clean_folder)"
 priority = 84
 
@@ -265,10 +261,6 @@ priority = 76
 [[profile.default.overrides]]
 filter = "package(=maestro-markdown) & test(=tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth)"
 priority = 75
-
-[[profile.default.overrides]]
-filter = "package(=maestro-tooling) & test(=browser_author_build::browser_build_rejects_missing_or_failing_inputs)"
-priority = 74
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_example_development_serves_rebuilt_external_assets)"
@@ -373,10 +365,6 @@ priority = 49
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries)"
 priority = 48
-
-[[profile.default.overrides]]
-filter = "package(=maestro-test-conventions) & test(=architecture::forbidden_direct_edges_are_rejected)"
-priority = 47
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec)"

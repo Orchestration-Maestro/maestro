@@ -281,12 +281,15 @@ fn stage_browser(
     Ok(Some(normalize_native(&directory)))
 }
 
-/// Copy this command into `output`, where the nextest setup entries run it.
+/// Copy this command into `output`, keeping it intact when it already runs there.
 fn stage_tool(output: &Path) -> io::Result<()> {
-    copy(
-        &std::env::current_exe()?,
-        &output.join(executable(EXPORTER, EXE_EXTENSION)),
-    )
+    let source = maestro_realpath::canonicalize(std::env::current_exe()?)?;
+    let destination =
+        maestro_realpath::canonicalize(output)?.join(executable(EXPORTER, EXE_EXTENSION));
+    if source == destination {
+        return Ok(());
+    }
+    copy(&source, &destination)
 }
 
 /// Build the setup example in `target` with the Cargo `profile`, or install it when the
@@ -557,8 +560,12 @@ pub(crate) fn executable(name: &str, extension: &str) -> PathBuf {
     Path::new(name).with_extension(extension)
 }
 
-/// Copy a file, naming it when the copy fails.
+/// Copy a file to a new file at `to`, naming the path that failed.
+///
+/// An earlier file at `to` is removed, not rewritten: macOS keeps the code signature it checked
+/// when an executable ran and can kill the next launch of a file whose bytes changed in place.
 fn copy(from: &Path, to: &Path) -> io::Result<()> {
+    remove(to).map_err(|error| at(to, &error))?;
     std::fs::copy(from, to)
         .map(drop)
         .map_err(|error| at(from, &error))

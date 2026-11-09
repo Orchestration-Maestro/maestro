@@ -603,12 +603,12 @@ fn editor_dialog_observes_live_bindings_but_captures_help() {
 /// Installs a controlled Unix editor from the prepared native artifact.
 #[cfg(unix)]
 fn install(name: &str, record: &Value) {
-    crate::native_alias::install(
-        &maestro_test_directory::temporary_root(),
-        name,
+    maestro_test_process::install_family(
+        &maestro_test_directory::temporary_root().join(name),
         "editor",
-        record,
-    );
+        &record.to_string(),
+    )
+    .expect("the prepared editor installs");
 }
 /// Installs a controlled Unix editor that records its launch, then writes `content`.
 #[cfg(unix)]
