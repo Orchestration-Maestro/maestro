@@ -51,12 +51,58 @@ Reusing a captured command context after successful replacement is incorrect:
 [stale capture example](registration.md#avoid-captured-contexts). Previously
 extracted raw history is still old history, not a route to the new session.
 
+## Host phases around a replacement
+
+The application owns these phases. The component adapter is qualified against a
+host that runs a replacement in this order. Extensions hear `session_before_switch`
+(new and switch) or `session_before_fork` and may veto. The old generation then
+hears `session_shutdown`, the host releases the old UI and invalidates the old
+contexts, and the host activates a fresh generation, binds it and announces
+`session_start`. Setup and the continuation run last, against the fresh
+generation. The old command frame resumes after all of it.
+
+- A veto finishes the operation with `cancelled: true`. No shutdown, setup,
+  continuation, fresh generation or invalidation follows, and the old context
+  stays valid. A veto cancels only its own operation: a fork veto does not stop
+  a new session. Reload has no veto event.
+- Shutdown handlers fail independently. A failing handler is reported with its
+  extension and event name, the remaining handlers still run, and invalidation
+  still follows.
+- A failing phase ends the operation with that phase's error. Nothing after it
+  runs and nothing before it is rolled back. A failure before invalidation
+  (preparation, shutdown, UI release) leaves the old context valid; a later one
+  (activation, setup, continuation) leaves it stale.
+
 ## Reload ends the old handler
 
-Reload takes no arguments. Return after awaiting it, as in the
-[reload example](registration.md#reload-and-return). An old command frame can
-resume after reload, but its context does not become fresh again. Previously
-obtained raw objects remain usable under their own ownership.
+Reload takes no arguments and has no `with_session` callback. Return after
+awaiting it, as in the [reload example](registration.md#reload-and-return).
+
+The host captures the flag values, announces `session_shutdown` with reason
+`reload`, reloads settings and resources, resets providers and invalidates the old
+contexts. It then activates a fresh generation with the captured flags restored,
+announces `session_start` and `resources_discover` with reason `reload`, and
+resumes the old command frame. That frame's context does not become fresh again:
+its guarded reads reject as stale. Previously obtained raw objects remain usable
+under their own ownership.
+
+## Actions while loading
+
+A factory that calls an action before the runtime binds it gets a catchable error:
+`Extension runtime not initialized. Action methods cannot be called during
+extension loading.` for messages, entries, session names, tool selection and
+thinking level, and `Extension runtime not initialized` for a model selection.
+The call never reaches a host operation and is not queued. Catch the error and
+keep registering; the factory's other work completes.
+
+## A failed activation keeps unrelated providers
+
+Provider registrations a factory made while loading apply when the host binds the
+runtime. If the host's registration operation fails for one provider, that failure
+is reported to the error listeners as a `register_provider` error attributed to the
+extension. The providers registered before and after it stay registered, and the
+queue is empty afterwards. A later registration that fails reports its own error
+to its caller and leaves every earlier provider in place.
 
 ## Application and component boundaries
 
@@ -75,9 +121,6 @@ Component execution, faults, resource disposal and pending stream work belong to
 the [component runtime](https://github.com/Orchestration-Maestro/maestro/issues/206).
 The [component execution guide](native-execution.md) lists which retained reads,
 views and replacement callbacks stay usable past their originating callback.
-Reload and the host phases around a replacement need authored traces this domain
-does not own; the [remaining runtime retention rows](https://github.com/Orchestration-Maestro/maestro/issues/4280)
-track them.
 Application UI integration and component host bindings remain with the
 [UI integration](https://github.com/Orchestration-Maestro/maestro/issues/203)
 and [host bindings](https://github.com/Orchestration-Maestro/maestro/issues/210)
