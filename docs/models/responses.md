@@ -234,8 +234,8 @@ reasoning signature, text and call arguments. Events without an index share one 
 
 Completion publishes the final nonempty ID and the model-priced usage before any tier
 callbacks. Resolution runs only with pricing, outside message locks. Priced usage is
-published before the status is selected, even when that selection fails. A stop outcome is
-upgraded to tool use only when a call exists. Reported input, output, total and cached
+published before the status is selected, even when that selection fails. Only a stop outcome is
+upgraded to tool use, and only when a call exists. Reported input, output, total and cached
 token counts default to zero when absent, null or zero. Numbers pass through, and any other
 value returns a native typed-read error.
 
