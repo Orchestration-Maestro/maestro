@@ -40,6 +40,8 @@ mod real_paths;
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
+/// Standard error diagnostics outside tests.
+mod standard_error;
 /// Test-owned temporary directory checks.
 mod temp_directories;
 /// Nextest's default budget and documented slow-test exceptions.
@@ -167,6 +169,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| example_helpers::check(&members),
         &|| temp_directories::check(&members),
         &|| real_paths::check(&members),
+        &|| standard_error::check(&members),
         &|| test_input_routes::check(root, &members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.

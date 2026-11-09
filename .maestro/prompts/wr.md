@@ -1,47 +1,46 @@
 ---
-description: Finish the current task end-to-end with changelog, commit, and push
+description: Finish the current task through release-metadata audit, commit and push
 argument-hint: "[instructions]"
 ---
-Wrap it.
+Finish this task end to end.
 
-Additional instructions: $ARGUMENTS
+Extra instructions: $ARGUMENTS
 
-Determine context from the conversation history first.
+Work out the context from the conversation history first.
 
 Rules for context detection:
-- If the conversation already mentions a GitHub issue or PR, use that existing context.
-- If the work came from `/is` or `/pr`, assume the issue or PR context is already known from the conversation and from the analysis work already done.
-- If there is no GitHub issue or PR in the conversation history, treat this as non-GitHub work.
+- If the conversation already mentions a GitHub issue or PR, use that context.
+- If the work came from `/is` or `/pr`, assume the issue or PR is already known from the conversation and from the analysis already done.
+- If the conversation names no GitHub issue or PR, treat the work as non-GitHub work.
 
-Follow these steps under the repository's existing approval rules. Additional
-instructions do not bypass safeguards without the approval those rules require.
+Follow these steps under the repository's existing approval rules. Extra
+instructions never bypass a safeguard without the approval those rules require.
 
-1. Audit generated-release metadata for the relevant crates: conventional commits,
+1. Audit the generated release metadata of the relevant crates: conventional commits,
    PR descriptions and available release notes. Do not edit CHANGELOG.md.
-2. If this task is tied to a GitHub issue or PR and a final comment has not already
-   been posted in this session, draft it in my tone and preview the exact text.
-   Post at most one final comment under the existing authorization, using
+2. If the task ties to a GitHub issue or PR and this session has not posted a final
+   comment yet, draft one in my tone and preview the exact text. Post at most one
+   final comment under the existing authorization, with
    `gh issue comment --body-file` or `gh pr comment --body-file`.
-3. Stage only files you changed in this session using explicit paths. Inspect
-   `git status` and the staged diff; commit only owned changes.
-4. If this task is tied to exactly one GitHub issue, include `Closes #<number>`
-   in the commit message. If tied to multiple issues, stop for an explicit choice.
-   Without an issue, including PR-only context, do not invent a closure trailer.
-5. Check the current branch. If on the integration branch, select an authorized
-   feature branch instead of pushing directly to the integration branch.
-6. Run required checks (`just check` and `just test` as prescribed in AGENTS.md)
-   before committing. Keep commit hooks; use a signed conventional commit with
-   a subject at most 71 characters and message lines at most 80 columns.
+3. Stage only the files you changed in this session, by explicit path. Inspect
+   `git status` and the staged diff; commit only changes you own.
+4. If the task ties to exactly one GitHub issue, put `Closes #<number>` in the
+   commit message. If it ties to several issues, stop and ask which to close.
+   Without an issue, including PR-only context, do not invent a closing trailer.
+5. Check the current branch. On the integration branch, pick an authorized
+   feature branch instead of pushing to the integration branch.
+6. Run the required checks (`just check` and `just test`, as AGENTS.md prescribes)
+   before you commit. Keep the commit hooks. Use a signed conventional commit with
+   a subject of at most 71 characters and message lines of at most 80 columns.
 7. Push the authorized feature branch and follow the repository's protected PR
-   and merge-queue procedure under its existing approval boundary. These
-   instructions do not independently authorize opening, posting or merging.
+   and merge-queue procedure within its existing approval boundary. These
+   instructions do not by themselves authorize opening, posting or merging.
 
 Constraints:
 - Never stage unrelated files.
 - Never use `git add .` or `git add -A`.
 - Never bypass hooks or protected delivery.
-- If this is not GitHub issue or PR work, do not post a GitHub comment.
-- If a final issue or PR comment was already posted in this session, do not post
-  another one unless I explicitly ask.
-- Reuse known conversation context; stop for genuine ambiguity, not to ask again
+- For work that is not tied to a GitHub issue or PR, do not post a GitHub comment.
+- If this session already posted a final issue or PR comment, post no other unless I explicitly ask.
+- Reuse the known conversation context; stop only for genuine ambiguity, never to ask again
   for an issue or PR already supplied.

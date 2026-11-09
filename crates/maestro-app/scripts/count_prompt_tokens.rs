@@ -103,7 +103,9 @@ async fn run(
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or_default();
     if api_key.is_empty() {
-        eprintln!("Error: ANTHROPIC_API_KEY environment variable not set");
+        maestro_app::diagnostics::write_stderr_line(
+            "Error: ANTHROPIC_API_KEY environment variable not set",
+        );
         return Ok(ExitCode::FAILURE);
     }
     let formatter = LocaleNumberFormat::new(&|key| std::env::var(key).ok())?;

@@ -147,7 +147,7 @@ impl Drop for Driver {
         }
         self.host.release_footer();
         let mut names = vec![
-            format!("event bus {}", self.host.observed().bus.listeners[0].1),
+            format!("event bus {}", self.host.observed().bus.listeners()[0].1),
             "event agent_start".to_owned(),
             "event agent_end".to_owned(),
             "event session_shutdown".to_owned(),

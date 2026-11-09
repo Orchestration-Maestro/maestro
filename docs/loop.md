@@ -27,7 +27,8 @@ The wrappers share execution with the awaited operations below, using the suppli
 configuration and invocation overrides. Prompt history is copied at submission,
 retaining its entry handles; admitted continuations keep the supplied history live.
 On producer rejection, native execution attempts to write the
-original diagnostic message plus a newline to stderr and leaves the stream
+original diagnostic message plus a newline to stderr, dropping it when stderr is
+closed ([diagnostics](diagnostics.md)), and leaves the stream
 unsettled without manufacturing a terminal event. Browser-host diagnostic
 visibility is not yet provided; the rejected stream likewise remains unsettled.
 The caller owns execution, including driving submitted tasks to completion.

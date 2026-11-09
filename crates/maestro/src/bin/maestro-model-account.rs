@@ -8,7 +8,7 @@ use std::{error::Error, sync::Arc};
 /// Run the standalone account grammar, not session startup.
 fn main() {
     let status = execute().unwrap_or_else(|error| {
-        eprintln!("Error: {error}");
+        maestro_app::diagnostics::write_stderr_line(&format!("Error: {error}"));
         1
     });
     std::process::exit(status);

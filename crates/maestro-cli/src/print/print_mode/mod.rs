@@ -132,12 +132,7 @@ impl PrintEffects {
     pub(crate) fn native() -> Self {
         Self {
             write_stdout: Rc::new(maestro_app::output_guard::write_raw_stdout),
-            write_stderr_line: Rc::new(|line| {
-                let mut text = String::with_capacity(line.len() + 1);
-                text.push_str(line);
-                text.push('\n');
-                drop(io::Write::write_all(&mut io::stderr(), text.as_bytes()));
-            }),
+            write_stderr_line: Rc::new(maestro_app::diagnostics::write_stderr_line),
             flush_stdout: Rc::new(maestro_app::output_guard::flush_raw_stdout),
             kill_children: Rc::new(kill_tracked_detached_children),
             signals: Rc::new(NativeSignals),

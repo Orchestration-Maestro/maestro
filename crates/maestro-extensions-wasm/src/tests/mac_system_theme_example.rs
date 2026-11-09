@@ -80,7 +80,7 @@ fn mac_system_theme_tracks_appearance_and_cancels_waits() -> Result<(), String> 
     reply(&host, " true\n", 0, false);
     event(&host, &exports, "session_start")?;
     assert_eq!(themes(&host.observed().transcript), [json!(["dark"])]);
-    let listener = host.observed().bus.listeners[0].1;
+    let listener = host.observed().bus.listeners()[0].1;
     let key = host.observed().bus.tails[0];
     let mut tail: ExtensionFuture<'static, ()> = Box::pin(Exports::<Controlled>::invoke_tail(key));
     let (entered, open) = hold(&host);
@@ -105,7 +105,7 @@ fn mac_system_theme_tracks_appearance_and_cancels_waits() -> Result<(), String> 
     assert!(open.is_closed(), "shutdown drops its timer immediately");
     assert_eq!(poll(&mut restarted), Poll::Ready(Ok(())));
     event(&host, &exports, "session_shutdown")?;
-    assert!(host.observed().bus.listeners.is_empty());
+    assert!(host.observed().bus.listeners().is_empty());
     observations_and_release(&host, listener)?;
     Ok(())
 }
@@ -215,7 +215,7 @@ async fn component_event(
 fn mac_system_theme_component_uses_controlled_process_and_clock() -> Result<(), String> {
     let mut harness = super::host::Harness::example("mac_system_theme")?;
     component_lifecycle(&mut harness)?;
-    assert!(harness.observed().bus.listeners.is_empty());
+    assert!(harness.observed().bus.listeners().is_empty());
     for (_, result) in super::block_on(harness.release_all()) {
         result.map_err(|e| e.to_string())?;
     }

@@ -1281,6 +1281,24 @@ fn raw_output_uses_application_guard() {
     assert!(!output_guard::is_stdout_taken_over());
 }
 
+/// The native diagnostic effect writes the line and its newline to standard error.
+#[test]
+fn native_stderr_line_ends_with_a_newline() {
+    if maestro_test_process::selection().is_child() {
+        (PrintEffects::native().write_stderr_line)("diagnostic");
+        return;
+    }
+    let output =
+        maestro_test_process::TestProcess::current("native_stderr_line_ends_with_a_newline")
+            .unwrap()
+            .case("*")
+            .nocapture()
+            .output()
+            .unwrap();
+    assert!(output.status.success());
+    assert_eq!(String::from_utf8(output.stderr).unwrap(), "diagnostic\n");
+}
+
 #[test]
 fn every_prompt_and_text_block_reaches_the_run_once() {
     on_task_set(async {
