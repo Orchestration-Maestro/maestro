@@ -141,7 +141,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
             ("execution", 27),
             ("loading", 64),
             ("contributions", 196),
-            ("canvas", 164)
+            ("canvas", 165)
         ]
     );
     let value: Value = serde_json::from_str(INVENTORY).unwrap();
