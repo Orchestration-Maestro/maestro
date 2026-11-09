@@ -150,7 +150,7 @@ extracts assistant tool paths from the discarded history and split prefixes, not
 from the kept suffix. Branch preparation scans every built-in branch-summary
 details record, even outside its retained message budget, then extracts paths from
 the assistant messages it visits before each budget check. It does not carry
-compaction details. Because the two sources differ, tracking stays cumulative
+compaction details. Each operation keeps its own source, so tracking stays cumulative
 across repeated compactions and nested branch summaries without mixing policies.
 Shared helpers remove modified paths from the read-only lists and append the
 optional sections:
@@ -234,7 +234,7 @@ summaries or the exported conversation text. Arguments pair by name for object
 roots; array and string roots pair their positions instead (`echo(0=1, 1=2)`), and
 other roots name none. Only tool-result text is clipped, at 2000 Unicode scalar
 values, with an omitted-character notice; user and assistant text stay complete.
-Branch preparation leaves tool results out altogether, so its context comes from
+Branch preparation leaves tool results out altogether, so their context comes from
 the tool calls.
 
 `generate_summary_with_usage` returns `GeneratedSummary`, which holds the summary
