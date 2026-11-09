@@ -1565,9 +1565,11 @@ fn assert_example_check_preserves_damaged_lock(lock: fn(&Browser) -> std::path::
     let damaged = browser_support::authored(&browser);
     assert!(!browser.run("browser-example-check").status.success());
     assert_eq!(browser_support::authored(&browser), damaged);
+    assert_no_browser_distribution(&browser);
     fs::write(path, original).unwrap();
     success(&browser.run("browser-example-check"));
     assert_eq!(browser_support::authored(&browser), before);
+    assert_no_browser_distribution(&browser);
 }
 
 #[test]
