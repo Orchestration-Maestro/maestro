@@ -36,10 +36,8 @@ fn maestro_editor_undoes_single_line_paste_atomically() {
     support::run("maestro_editor_undoes_single_line_paste_atomically");
 }
 #[test]
-fn maestro_editor_decodes_csi_u_ctrl_letter_sequences_inside_bracketed_paste_tmux_popup() {
-    support::run(
-        "maestro_editor_decodes_csi_u_ctrl_letter_sequences_inside_bracketed_paste_tmux_popup",
-    );
+fn maestro_editor_bracketed_paste_reads_csi_u_ctrl_letters_in_a_tmux_popup() {
+    support::run("maestro_editor_bracketed_paste_reads_csi_u_ctrl_letters_in_a_tmux_popup");
 }
 #[test]
 fn maestro_editor_undoes_multi_line_paste_atomically() {

@@ -156,7 +156,7 @@ impl Owner {
                 .starts_with('/')
     }
 
-    /// Whether the text before the cursor on the first line is empty or one slash.
+    /// Whether the first line holds nothing, or one slash, before the cursor.
     fn at_start_of_message(&self, before: &str) -> bool {
         let text = before.trim_matches(is_whitespace_scalar);
         self.state.borrow().current.cursor.line == 0 && (text.is_empty() || text == "/")
