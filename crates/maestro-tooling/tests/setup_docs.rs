@@ -76,13 +76,39 @@ fn commands(text: &str) -> Vec<Vec<String>> {
     blocks
 }
 
-/// Whether `command` starts nextest on a package the setup serves.
+/// Whether `command` starts nextest on a package the setup serves: a package selected by `-p` or
+/// `--package`, spaced or joined with `=`, or the whole workspace.
 fn runs_served_nextest(command: &str, served: &[String]) -> bool {
     let words: Vec<_> = command.split_whitespace().collect();
+    let names = |name: &str| served.iter().any(|package| package == name);
     command.contains("nextest run")
-        && words
-            .windows(2)
-            .any(|pair| pair[0] == "-p" && served.iter().any(|package| package == pair[1]))
+        && (words.contains(&"--workspace")
+            || words
+                .windows(2)
+                .any(|pair| matches!(pair[0], "-p" | "--package") && names(pair[1]))
+            || words.iter().any(|word| {
+                word.strip_prefix("--package=")
+                    .or_else(|| word.strip_prefix("-p="))
+                    .is_some_and(names)
+            }))
+}
+
+/// Every Markdown page that documents a command: the docs, the examples, the contributing guide
+/// and each crate's README.
+fn documented_pages(root: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    for directory in ["docs", "examples"] {
+        markdown(&root.join(directory), &mut files);
+    }
+    files.push(root.join("CONTRIBUTING.md"));
+    let mut crates: Vec<_> = fs::read_dir(root.join("crates"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path().join("README.md"))
+        .filter(|readme| readme.is_file())
+        .collect();
+    crates.sort();
+    files.extend(crates);
+    files
 }
 
 /// The first command of `block` that starts a served nextest run before any step stages the tool.
@@ -101,10 +127,7 @@ fn unstaged_run(block: Vec<String>, served: &[String]) -> Option<String> {
 #[test]
 fn documented_nextest_commands_stage_the_setup_tool_first() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let mut files = Vec::new();
-    for directory in ["docs", "examples"] {
-        markdown(&root.join(directory), &mut files);
-    }
+    let files = documented_pages(&root);
     let served = served_packages();
     let mut missing = Vec::new();
     for file in files {
@@ -149,4 +172,38 @@ fn documented_nextest_commands_stage_the_tool_for_setup_consumers() {
         unstaged_run(block, &served).as_deref(),
         Some("cargo nextest run --locked -p maestro-app")
     );
+}
+
+/// Every spelling that selects a served package, or the whole workspace, must stage the tool.
+#[test]
+fn documented_nextest_commands_stage_the_tool_for_every_package_spelling() {
+    let served = vec!["maestro-app".to_owned()];
+    for command in [
+        "cargo nextest run --locked --package maestro-app",
+        "cargo nextest run --locked --package=maestro-app",
+        "cargo nextest run --locked -p=maestro-app",
+        "cargo nextest run --locked --workspace",
+    ] {
+        assert_eq!(
+            unstaged_run(vec![command.to_owned()], &served).as_deref(),
+            Some(command)
+        );
+    }
+    assert_eq!(
+        unstaged_run(
+            vec!["cargo nextest run --locked --package maestro-text".to_owned()],
+            &served
+        ),
+        None
+    );
+}
+
+/// The checked pages include the contributing guide and every crate README.
+#[test]
+fn documented_pages_include_the_contributing_guide_and_crate_readmes() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let pages = documented_pages(&root);
+
+    assert!(pages.contains(&root.join("CONTRIBUTING.md")));
+    assert!(pages.contains(&root.join("crates/maestro-agent/README.md")));
 }

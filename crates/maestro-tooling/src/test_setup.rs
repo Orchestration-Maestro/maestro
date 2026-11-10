@@ -425,24 +425,13 @@ pub(crate) fn run_agent_directory(directory: &Path) -> PathBuf {
 }
 
 /// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// that run's agent directory, and write the component paths to `environment`. Nothing is installed
-/// or written unless every check passes.
+/// the cache directory the installed example reports for that run's agent directory, and write
+/// the component paths to `environment`. Nothing is installed or written unless every check
+/// passes.
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
-pub(crate) fn install_bundle(
-    cargo: &Path,
-    checkout: &Path,
-    output: &Path,
-    directory: &Path,
-    environment: &Path,
-) -> io::Result<()> {
-    export(cargo, checkout, output, directory, environment)
-}
-
-/// Validate and install the bundle, and install its compiled code in the cache directory the
-/// installed example reports for this run's agent directory.
-fn export(
+pub(crate) fn export(
     cargo: &Path,
     checkout: &Path,
     output: &Path,
@@ -587,6 +576,6 @@ pub(crate) fn remove_directory(path: &Path) -> io::Result<()> {
 }
 
 /// An error that names `path`, which the bare operating-system error omits.
-fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
+pub(crate) fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
     io::Error::other(format!("{}: {reason}", path.display()))
 }
