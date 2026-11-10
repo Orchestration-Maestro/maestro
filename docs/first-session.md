@@ -17,7 +17,7 @@ plus your platform's native C/C++ build tools. Enable mise in your shell, then r
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
 mise install
-mise exec -- just setup
+just setup
 cargo build --release --locked -p maestro
 ```
 

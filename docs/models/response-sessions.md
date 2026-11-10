@@ -55,7 +55,7 @@ an absent or empty session leaves caller-supplied affinity headers intact.
 Run the controlled request witnesses without live credentials:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo test --locked -p maestro-models response_sessions
+cargo test --locked -p maestro-models response_sessions
 ```
 
 An explicitly requested reasoning effort uses the descriptor's mapping when

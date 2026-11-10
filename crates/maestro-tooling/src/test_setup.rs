@@ -609,6 +609,6 @@ pub(crate) fn remove_directory(path: &Path) -> io::Result<()> {
 }
 
 /// An error that names `path`, which the bare operating-system error omits.
-fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
+pub(crate) fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
     io::Error::other(format!("{}: {reason}", path.display()))
 }
