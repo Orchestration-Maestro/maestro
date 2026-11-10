@@ -424,25 +424,26 @@ pub(crate) fn run_agent_directory(directory: &Path) -> PathBuf {
     directory.parent().unwrap_or(directory).join(RUN_AGENT)
 }
 
-/// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// the cache directory the installed example reports for that run's agent directory, and write
-/// the component paths to `environment`. Nothing is installed or written unless every check
-/// passes.
+/// Validate the bundle in `output`, install its example in `directory`, and write the component
+/// paths to `environment`. Nothing is installed or written unless every check passes.
+///
+/// The compiled code is returned rather than installed: the engine names its cache namespace for
+/// the example's modification time, which only the caller's time normalization settles.
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
-pub(crate) fn export(
+pub(crate) fn install_bundle(
     cargo: &Path,
     checkout: &Path,
     output: &Path,
     directory: &Path,
     environment: &Path,
-) -> io::Result<()> {
+) -> io::Result<Option<CompiledInstall>> {
     let output = maestro_realpath::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
     }
-    let manifest = read_manifest(&output)?;
+    let mut manifest = read_manifest(&output)?;
     manifest.shared.verify(checkout, &output)?;
     manifest.tool.verify(checkout, &output)?;
     let workspace = Workspace::read(cargo, checkout)?;
@@ -474,15 +475,47 @@ pub(crate) fn export(
     let installed = directory.join("examples").join(name);
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
-    if let Some(code) = &manifest.compiled {
+    std::fs::write(environment, lines.concat())?;
+    Ok(manifest.compiled.take().map(|code| CompiledInstall {
+        code,
+        staged: compiled,
+        example: installed,
+        checkout: checkout.to_path_buf(),
+        agent_directory: run_agent_directory(directory),
+    }))
+}
+
+/// The compiled code of a bundle whose setup example is installed, waiting for the example to
+/// reach its final modification time.
+pub(crate) struct CompiledInstall {
+    /// The staged compiled-code files and their namespace.
+    code: CompiledCode,
+    /// The directory that holds the staged files.
+    staged: PathBuf,
+    /// The installed setup example, whose modification time names the namespace.
+    example: PathBuf,
+    /// The checkout the example runs in.
+    checkout: PathBuf,
+    /// The agent directory of the run, below which the engine keeps its cache.
+    agent_directory: PathBuf,
+}
+
+impl CompiledInstall {
+    /// Install the code in the cache directory the example reports for the run's agent
+    /// directory, in the namespace named for the example's current modification time.
+    ///
+    /// # Errors
+    /// Returns a failed cache-directory query or copy.
+    pub(crate) fn install(&self) -> io::Result<()> {
         let cache_directory = compiled_code::directory(
-            Command::new(&installed)
-                .current_dir(checkout)
-                .env(AGENT_DIRECTORY, run_agent_directory(directory)),
+            Command::new(&self.example)
+                .current_dir(&self.checkout)
+                .env(AGENT_DIRECTORY, &self.agent_directory),
         )?;
-        code.install(&compiled, &cache_directory, &installed)?;
+        self.code
+            .install(&self.staged, &cache_directory, &self.example)
+            .map(drop)
     }
-    std::fs::write(environment, lines.concat())
 }
 
 /// Install the browser graph of the bundle in `output` at `target`.
