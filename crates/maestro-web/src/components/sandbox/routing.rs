@@ -31,9 +31,9 @@ impl RuntimeMessageBridge {
     /// Generate the runtime script that installs one channel's messaging and the shared
     /// completion registration.
     ///
-    /// The frame channel is the sandbox runtime bundle preceded by the channel and
-    /// identifier as program arguments. The extension user-script channel keeps its own
-    /// script until that world is qualified for the bundle's WebAssembly policy.
+    /// Every channel is the sandbox runtime bundle preceded by the channel's role and the
+    /// identifier as program arguments: `frame-bridge` for a frame talking to its parent
+    /// window, `user-script` for an extension user script using native messaging.
     ///
     /// ```rust
     /// use maestro_web::RuntimeMessageBridge;
@@ -56,26 +56,12 @@ impl RuntimeMessageBridge {
     pub fn generate_bridge_code(
         options: RuntimeMessageBridgeOptions<'_>,
     ) -> Result<String, DiagnosticErrorInfo> {
-        let serialized = |value: &serde_json::Value| {
-            compact_json(value).map_err(|error| DiagnosticErrorInfo::error(error.to_string()))
+        let role = match options.context {
+            RuntimeMessageContext::SandboxIframe => "frame-bridge",
+            RuntimeMessageContext::UserScript => "user-script",
         };
-        match options.context {
-            RuntimeMessageContext::SandboxIframe => {
-                let arguments =
-                    serialized(&serde_json::json!(["frame-bridge", options.sandbox_id]))?;
-                Ok(format!("var Module={{arguments:{arguments}}};{BUNDLE}"))
-            }
-            RuntimeMessageContext::UserScript => {
-                let id = serialized(&serde_json::Value::String(options.sandbox_id.into()))?;
-                let body = include_str!("../../../assets/user_script_bridge/user_script.js")
-                    .trim()
-                    .replacen("__SANDBOX_ID__", &id, 1);
-                Ok(
-                    include_str!("../../../assets/user_script_bridge/runtime.js")
-                        .trim()
-                        .replacen("__SEND_RUNTIME_MESSAGE__", &body, 1),
-                )
-            }
-        }
+        let arguments = compact_json(&serde_json::json!([role, options.sandbox_id]))
+            .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
+        Ok(format!("var Module={{arguments:{arguments}}};{BUNDLE}"))
     }
 }

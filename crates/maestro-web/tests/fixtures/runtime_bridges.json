@@ -53,67 +53,54 @@
   },
   {
     "context": "user-script",
-    "sandboxId": "sandbox",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"sandbox\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "sandbox"
   },
   {
     "context": "user-script",
-    "sandboxId": "",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": ""
   },
   {
     "context": "user-script",
-    "sandboxId": "quote\" slash\\",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"quote\\\" slash\\\\\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "quote\" slash\\"
   },
   {
     "context": "user-script",
-    "sandboxId": "\u0000\b\f\n\r\t",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"\\u0000\\b\\f\\n\\r\\t\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "\u0000\b\f\n\r\t"
   },
   {
     "context": "user-script",
-    "sandboxId": "é漢字🚀",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"é漢字🚀\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "é漢字🚀"
   },
   {
     "context": "user-script",
-    "sandboxId": "﻿",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"﻿\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "﻿"
   },
   {
     "context": "user-script",
-    "sandboxId": "  ",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"  \"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "  "
   },
   {
     "context": "user-script",
-    "sandboxId": "</script><script>danger()</script>",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"</script><script>danger()</script>\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "</script><script>danger()</script>"
   },
   {
     "context": "user-script",
-    "sandboxId": "__SANDBOX_ID__",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"__SANDBOX_ID__\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "__SANDBOX_ID__"
   },
   {
     "context": "user-script",
-    "sandboxId": "7",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"7\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "7"
   },
   {
     "context": "user-script",
-    "sandboxId": "a/b:c",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"a/b:c\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "a/b:c"
   },
   {
     "context": "user-script",
-    "sandboxId": "\\u0061",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"\\\\u0061\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "\\u0061"
   },
   {
     "context": "user-script",
-    "sandboxId": "__SEND_RUNTIME_MESSAGE__",
-    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"__SEND_RUNTIME_MESSAGE__\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+    "sandboxId": "__SEND_RUNTIME_MESSAGE__"
   }
 ]

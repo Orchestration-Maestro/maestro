@@ -25,7 +25,6 @@ mod generated;
 /// Workspace membership and dependency graph checks.
 mod graph;
 /// Handwritten JavaScript in crate sources.
-mod handwritten_scripts;
 /// Single-target integration-test packaging checks.
 mod integration_tests;
 /// Native platform viewer ownership.
@@ -52,6 +51,7 @@ mod test_budget;
 mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
+mod tracked_scripts;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
 ///
@@ -153,7 +153,7 @@ mod time_limits;
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     test_budget::check(root)?;
     config_scripts::check(root)?;
-    handwritten_scripts::check(root)?;
+    tracked_scripts::check(root)?;
     let (metadata, packages) = graph::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
