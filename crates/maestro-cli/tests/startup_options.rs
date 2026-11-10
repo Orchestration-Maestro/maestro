@@ -102,7 +102,7 @@ fn explicit_model_and_provider_keep_catalog_diagnostics() {
     assert_eq!(unknown.diagnostics.len(), 1);
     assert_eq!(
         unknown.diagnostics[0].message,
-        r#"Unknown provider "missing". Use --list-models to see available providers/models."#
+        r#"Unknown provider "missing". See --list-models for the available providers and models."#
     );
 
     let scope = [scoped(&catalog, "alpha", "two", None)];

@@ -276,7 +276,7 @@ mod entry {
                 );
                 assert_eq!(
                     e.stderr(),
-                    "\u{1b}[31mError: @file arguments are not supported in RPC mode\u{1b}[39m\n"
+                    "\u{1b}[31mError: RPC mode does not accept @file arguments\u{1b}[39m\n"
                 );
                 let args = ["--mode", "rpc", "--fork", "f", "--session", "s"];
                 assert_eq!(
@@ -463,7 +463,7 @@ mod entry {
                 assert_eq!(status, 0, "{case}");
                 let notice = format!(
                     "Session found in different project: {project}\n\
-                     Fork this session into current directory? [y/N] "
+                     Fork this session into the current directory? [y/N] "
                 );
                 let accepted = matches!(case, "yes" | "upper-cr" | "print");
                 let declined = matches!(case, "no" | "padded");
@@ -1058,7 +1058,7 @@ mod entry {
                     assert_eq!(status, 1);
                     assert_eq!(
                         e.stderr(),
-                        "\u{1b}[31mError: MAESTRO_STARTUP_BENCHMARK only supports interactive mode\u{1b}[39m\n"
+                        "\u{1b}[31mError: MAESTRO_STARTUP_BENCHMARK requires interactive mode\u{1b}[39m\n"
                     );
                 } else {
                     assert_eq!(status, 0);

@@ -162,7 +162,7 @@ fn a_listing_shows_where_each_row_is_installed() {
 fn update_document(text: &str) {
     assert!(text.contains("Update maestro and installed packages."));
     assert!(text.contains(
-        "  --force                 Reinstall maestro even if the current version is latest"
+        "  --force                 Reinstall maestro even when this version is the newest"
     ));
     assert!(text.contains(
         "  maestro update maestro        Update maestro only (self works as alias to maestro)\n"
@@ -172,7 +172,7 @@ fn update_document(text: &str) {
 /// Check the complete list document.
 fn list_document(text: &str) {
     assert!(text.ends_with(
-        "Usage:\n  maestro list\n\nList installed packages from user and project settings.\n\n"
+        "Usage:\n  maestro list\n\nList installed packages and the settings scope that holds each.\n\n"
     ));
 }
 
@@ -241,7 +241,7 @@ fn package_diagnostics_keep_category_precedence() {
         (
             &["update", "x", "--self"][..],
             diagnostic(
-                "positional update targets cannot be combined with --self or --extensions",
+                "--self and --extensions take no positional update target",
                 &format!("Usage: {}", usage("update")),
             ),
         ),
@@ -298,7 +298,7 @@ fn package_extension_values_keep_missing_and_dash_boundaries() {
     assert!(harness.run(&["update", "--extension", " 123 "]));
     assert_eq!(
         harness.stderr.text(),
-        "Error: No matching package found for  123 \n",
+        "Error: No package matches  123 \n",
         "the authored spelling reaches the manager"
     );
     assert!(harness.runs().is_empty(), "no own update after the failure");
@@ -376,7 +376,7 @@ fn package_update_flags_reject_positional_conflicts() {
         assert_eq!(
             harness.stderr.text(),
             diagnostic(
-                "positional update targets cannot be combined with --self or --extensions",
+                "--self and --extensions take no positional update target",
                 &format!("Usage: {}", usage("update"))
             ),
             "{args:?}"
@@ -391,7 +391,7 @@ fn package_update_flags_reject_positional_conflicts() {
         assert_eq!(
             harness.stderr.text(),
             diagnostic(
-                "--extension cannot be combined with a positional source",
+                "--extension takes no positional source",
                 &format!("Usage: {}", usage("update"))
             ),
             "{args:?}"
@@ -721,7 +721,7 @@ fn package_removal_absence_sets_status_without_exit() {
     assert!(harness.run(&["remove", "npm:@absent/pkg"]));
     assert_eq!(
         harness.stderr.text(),
-        "No matching package found for npm:@absent/pkg\n"
+        "No package matches npm:@absent/pkg\n"
     );
     assert_eq!(harness.exit_code.get(), Some(1));
     assert!(
@@ -927,7 +927,7 @@ fn renamed_release_removal_failure_has_manual_fallback() {
     );
     assert!(
         harness.stderr.text().contains(
-            "If this keeps failing, run this command yourself: npm --global uninstall -g maestro && \
+            "If the failure repeats, run this command yourself: npm --global uninstall -g maestro && \
              npm --global install -g --ignore-scripts maestro-next\n"
         ),
         "{}",
@@ -969,7 +969,7 @@ fn renamed_release_install_failure_has_manual_fallback() {
     );
     assert!(
         harness.stderr.text().contains(
-            "If this keeps failing, run this command yourself: npm --global uninstall -g maestro && \
+            "If the failure repeats, run this command yourself: npm --global uninstall -g maestro && \
              npm --global install -g --ignore-scripts maestro-next\n"
         ),
         "{}",
@@ -1119,10 +1119,7 @@ fn package_output_keeps_visible_styles_and_lines() {
     );
     harness.stderr.clear();
     assert!(harness.run(&["remove", "npm:absent"]));
-    assert_eq!(
-        harness.stderr.text(),
-        "No matching package found for npm:absent\n"
-    );
+    assert_eq!(harness.stderr.text(), "No package matches npm:absent\n");
     harness.stderr.clear();
     harness.stdout.clear();
     assert!(harness.run(&["list"]));
