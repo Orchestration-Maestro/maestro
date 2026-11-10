@@ -9,8 +9,8 @@
       "expected": {
         "filename": "<literal>&.txt",
         "guidance": [
-          "Preview not available for this file type.",
-          "Click the download button above to view it on your computer."
+          "No preview for this file type.",
+          "Open it on your computer with the download button above."
         ],
         "titles": [
           "Download"
@@ -26,8 +26,8 @@
       "expected": {
         "filename": "<literal>&.txt",
         "guidance": [
-          "Vorschau für diesen Dateityp nicht verfügbar.",
-          "Klicken Sie oben auf die Download-Schaltfläche, um die Datei auf Ihrem Computer anzuzeigen."
+          "Für diesen Dateityp gibt es keine Vorschau.",
+          "Die Download-Schaltfläche oben legt die Datei auf Ihrem Rechner ab."
         ],
         "titles": [
           "Herunterladen"

@@ -85,8 +85,8 @@ impl GenericArtifact {
     fn text_values(&self, i18n: &crate::I18n) -> Result<[String; 3], crate::I18nError> {
         Ok([
             self.filename.clone(),
-            i18n.text("Preview not available for this file type.")?,
-            i18n.text("Click the download button above to view it on your computer.")?,
+            i18n.text("No preview for this file type.")?,
+            i18n.text("Open it on your computer with the download button above.")?,
         ])
     }
     /// Update owned text operands and only the changed native nodes.
