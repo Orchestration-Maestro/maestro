@@ -150,7 +150,7 @@ RPC is JSONL with correlated responses, stream events and these 29 commands. Ide
 | Sessions | `get_session_stats`, `export_html`, `switch_session`, `fork`, `clone`, `get_fork_messages`, `get_last_assistant_text`, `set_session_name`, `get_messages` |
 | Discovery | `get_commands` |
 
-Preserve omitted/null field distinctions, empty last-assistant data `{}`, parse failures without IDs and the actual invalid-value/failure boundary; promise neither arbitrary-JSON survival nor universal shutdown drain. RPC UI has exactly the nine established wire methods: `select`, `confirm`, `input`, `editor`, `notify`, `setStatus`, `setWidget`, `setTitle`, `set_editor_text`; unsupported component operations preserve their documented no-op/absent behavior. Dialog response, supplied cancellation and supported caller timeout retain their individual ownership. The stream has exactly 17 session event types plus extension_error: 18 total. Preserve every source flag, --theme/--no-themes and all 13 short aliases. The newer max thinking level is not in this baseline. Also deliver the typed subprocess client with process/stderr/correlation ownership and its own deadlines; the server alone is not client delivery. The client is `maestro-app::rpc_client`, beside the shared session command and response records; it drives its child through `maestro-process`, and `maestro-rpc` stays the server's I/O adapter.
+Preserve omitted/null field distinctions, empty last-assistant data `{}`, parse failures without IDs and the actual invalid-value/failure boundary; promise neither arbitrary-JSON survival nor universal shutdown drain. RPC UI has exactly the nine established wire methods: `select`, `confirm`, `input`, `editor`, `notify`, `setStatus`, `setWidget`, `setTitle`, `set_editor_text`; unsupported component operations preserve their documented no-op/absent behavior. Dialog response, supplied cancellation and supported caller timeout retain their individual ownership. The stream has exactly 17 session event types plus extension_error: 18 total. Preserve every source flag, --theme/--no-themes and all 13 short aliases. The newer max thinking level is not in this baseline. Also deliver the typed subprocess client with process/stderr/correlation ownership and its own deadlines; the server alone is not client delivery. The client is `maestro-app::rpc_transport`, beside the shared session command and response records; it drives its child through `maestro-process`, and `maestro-rpc` stays the server's I/O adapter.
 
 ## R11 — Browser frontend, documents and sandbox tools
 
@@ -1115,7 +1115,7 @@ format and one protocol version on both stdio and daemon sockets. The 29 session
 exact wire bytes, fields, omission/null rules and results. Workspace commands are additive on stdio.
 `maestro-protocol` owns the generic request and response envelopes, the workspace records and
 their schema; `maestro-app::rpc_types` owns the session records and the composed command
-family; `maestro-json::lines` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
+family; `maestro-json::lines` owns JSONL framing. `maestro-app::connection_runner` is the one connection
 runner: it serves workspace operations and an optional local session over a caller's line
 reader and writer, returning how the connection ended. `RpcModeOptions` groups session-only
 facilities in `Option<RpcSessionOptions>`: runtime, process signals, theme and export effects.

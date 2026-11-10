@@ -141,7 +141,7 @@ converts topology rectangles to frame rectangles with free functions.
 - **Paths and names.** `maestro_daemon::locations::DaemonPaths` and `maestro_daemon::variables::NAMES`.
 - **Server.** `maestro_rpc::daemon::run_server` starts the API socket and runs the daemon loop. The
   executable's `daemon` arm and the in-process tests call it.
-- **Daemon client.** `maestro_app::daemon::client::{DaemonClient, ensure_running}`.
+- **Daemon client.** `maestro_app::daemon_api::client::{DaemonClient, ensure_running}`.
 
 ### Libraries
 
