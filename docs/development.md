@@ -1220,11 +1220,11 @@ platform, because the engine keeps its cache below the agent directory. Shared C
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
-compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the engine-reported cache under the modification time that
-copy of the example has, and writes the component paths to
-`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
-below, so they share a compile-cache namespace with the installed code. It runs the example
+compiled-code file, installs the staged example beside the extracted executables and writes
+the component paths to `NEXTEST_ENV`. The setup then gives the executables one modification
+time, as below, and installs the compiled code in the engine-reported cache under that time.
+A copy that keeps an older file time than another executable therefore still lands in the
+namespace the example and the tests read. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
 or compile pass. On every platform that cache belongs to the run alone: the setup uses
 `run-agent` beside the profile directory as the run's agent directory, queries and fills
