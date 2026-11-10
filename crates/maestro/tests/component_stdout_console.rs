@@ -24,13 +24,22 @@ fn shipped(root: &Root, generation: &str) -> Command {
     command
 }
 
-/// Print, JSON and RPC modes keep the guest's inherited bytes in pipes and in files.
+/// Print, JSON and RPC modes keep the guest's `generation` bytes in pipes and in files.
+fn inherited_output(generation: &str) {
+    let root = Root::new();
+    controls(&root, &shipped(&root, generation));
+}
+
+/// The first output generation keeps its inherited bytes in every noninteractive mode.
 #[test]
-fn inherited_output_stays_raw_in_every_noninteractive_mode() {
-    for generation in ["p2", "p3"] {
-        let root = Root::new();
-        controls(&root, &shipped(&root, generation));
-    }
+fn p2_inherited_output_stays_raw_in_every_noninteractive_mode() {
+    inherited_output("p2");
+}
+
+/// The second output generation keeps its inherited bytes in every noninteractive mode.
+#[test]
+fn p3_inherited_output_stays_raw_in_every_noninteractive_mode() {
+    inherited_output("p3");
 }
 
 /// Starts the executable on the console, stops it at once and checks where the guest's
@@ -51,6 +60,7 @@ fn startup_on_a_console(generation: &str) {
     assert!(without_host_frames(&wire).starts_with(INIT));
 }
 
+/// The first output generation's startup bytes reach the console outside host frames.
 #[test]
 fn p2_startup_output_reaches_a_console_run_outside_host_frames() {
     on_console(
@@ -61,6 +71,7 @@ fn p2_startup_output_reaches_a_console_run_outside_host_frames() {
     .unwrap();
 }
 
+/// The second output generation's startup bytes reach the console outside host frames.
 #[test]
 fn p3_startup_output_reaches_a_console_run_outside_host_frames() {
     on_console(
