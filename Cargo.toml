@@ -65,6 +65,7 @@ expect_used = "forbid"
 panic = "forbid"
 
 [profile.dev]
+opt-level = 1
 debug = "line-tables-only"
 
 # Backtraces need file:line for workspace code only; dependency line tables take target space.

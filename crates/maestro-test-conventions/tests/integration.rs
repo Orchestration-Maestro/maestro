@@ -4,6 +4,7 @@
 mod application_exports;
 mod architecture;
 mod boundaries;
+mod build_profile;
 mod child_tests;
 mod comments;
 mod config_scripts;

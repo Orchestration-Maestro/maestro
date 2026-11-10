@@ -8,6 +8,8 @@ use serde_json::Value;
 
 /// Declaration ownership and extension interface checks.
 mod boundaries;
+/// Development build profile.
+mod build_profile;
 /// Exact test-selection ownership.
 mod child_tests;
 /// Rust comment content checks.
@@ -155,6 +157,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     config_scripts::check(root)?;
     handwritten_scripts::check(root)?;
     let (metadata, packages) = graph::check(root)?;
+    build_profile::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
     let checks: &[&(dyn Fn() -> Result<(), String> + Sync)] = &[
