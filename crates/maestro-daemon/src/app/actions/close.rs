@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests;
 
-use crate::app::state::{DaemonState, Mode};
-use maestro_workspace::layout::PaneId;
+use crate::app::model::{DaemonState, Mode};
+use maestro_workspace::tiling::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Retires one non-final tab and its detached pane and terminal records.

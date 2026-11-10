@@ -9,16 +9,16 @@ use crate::{
 use maestro_theme::BrandMode;
 use maestro_web::{
     clear_auth_token,
-    components::input::{Input, InputProps, InputSize, InputType},
+    components::fields::{Input, InputProps, InputSize, InputType},
     dialogs::{
-        dialog::{
-            DialogHeaderProps, DialogProps, dialog, dialog_content, dialog_footer, dialog_header,
-        },
         dialog_base::{DialogBase, MODAL_HEIGHT, MODAL_WIDTH},
         prompt_dialog::PromptDialog,
+        surface::{
+            DialogHeaderProps, DialogProps, dialog, dialog_content, dialog_footer, dialog_header,
+        },
     },
-    dom::DomView,
     get_auth_token,
+    page::DomView,
 };
 use std::{
     cell::{Cell, RefCell},

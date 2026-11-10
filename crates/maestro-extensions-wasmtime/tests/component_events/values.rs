@@ -5,7 +5,7 @@ use super::cases::{
     outcome, text_views, typed, user,
 };
 use maestro_extensions::{
-    ExtensionRunner, Local, runner::BeforeAgentStartCombinedResult as Combined,
+    ExtensionRunner, Local, execution::BeforeAgentStartCombinedResult as Combined,
 };
 use maestro_extensions::{MessageEndEvent, NativeAgentMessage};
 use serde_json::{Value, json};

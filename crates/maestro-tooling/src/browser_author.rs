@@ -441,7 +441,7 @@ mod tests {
     fn bootstrap_builds_select_a_toolchain() {
         let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let pin =
-            maestro_test_process::toolchain::channel().expect("the build records its toolchain");
+            maestro_test_process::compiler::channel().expect("the build records its toolchain");
         for command in bootstrap_commands(Path::new("cargo"), &checkout) {
             let selected = command
                 .get_envs()

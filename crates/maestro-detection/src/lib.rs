@@ -4,9 +4,9 @@
 
 pub mod agents;
 
-pub mod manifest_update;
+pub mod updates;
 
-pub mod manifest;
+pub mod definitions;
 
 #[cfg(test)]
 mod tests;
@@ -14,7 +14,7 @@ mod tests;
 /// Detects state for a recognized foreground agent using retained screen rules.
 #[must_use]
 pub fn detect_agent(
-    cache: &manifest::ManifestCache,
+    cache: &definitions::ManifestCache,
     agent: Option<agents::Agent>,
     screen: &str,
 ) -> agents::AgentDetection {
@@ -24,7 +24,7 @@ pub fn detect_agent(
 /// Detects state with independent screen, title and progress evidence.
 #[must_use]
 pub fn detect_agent_with_osc(
-    cache: &manifest::ManifestCache,
+    cache: &definitions::ManifestCache,
     agent: Option<agents::Agent>,
     screen: &str,
     osc_title: &str,
@@ -33,7 +33,7 @@ pub fn detect_agent_with_osc(
     match agent {
         Some(agent) => cache.detect_with_osc(
             agent,
-            manifest::DetectionInput {
+            definitions::DetectionInput {
                 screen,
                 osc_title,
                 osc_progress,
@@ -50,7 +50,7 @@ pub fn detect_agent_with_osc(
 /// Returns whether a recognized agent's screen suppresses retained-state updates.
 #[must_use]
 pub fn should_skip_state_update(
-    cache: &manifest::ManifestCache,
+    cache: &definitions::ManifestCache,
     agent: Option<agents::Agent>,
     screen: &str,
 ) -> bool {

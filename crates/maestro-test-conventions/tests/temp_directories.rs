@@ -248,7 +248,7 @@ fn models_write_authored_scripts_into_the_platform_directory() {
 fn app_canonicalizes_the_platform_directory() {
     check(
         "maestro-app",
-        "src/configuration/migrations/tests.rs",
+        "src/configuration/conversion/tests.rs",
         "//! Settlement tests.\n\n/// Create an isolated directory for one filesystem witness.\nfn root() -> std::path::PathBuf {\n    std::fs::canonicalize(std::env::temp_dir()).unwrap()\n}\n",
         &[5],
     );

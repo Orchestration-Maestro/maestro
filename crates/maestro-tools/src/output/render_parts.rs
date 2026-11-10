@@ -3,7 +3,7 @@
 use crate::utils::diagnostics::failure;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{Theme, ThemeColor, ThemeError};
-use maestro_tui::{Component, Text, tui::ComponentHandle};
+use maestro_tui::{Component, Text, interface::ComponentHandle};
 use std::{any::Any, rc::Rc};
 
 pub(crate) use super::render_utils::num;

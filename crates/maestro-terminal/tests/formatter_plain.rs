@@ -2,7 +2,7 @@
 
 use maestro_terminal::{
     Page, Terminal,
-    formatter::{Options, PageFormatter, TrailingState},
+    formatting::{Options, PageFormatter, TrailingState},
     point::Tag,
 };
 
@@ -41,7 +41,7 @@ fn page_plain_single_line() {
 fn terminal_formatter_plain_no_selection() {
     let terminal = terminal(80, 24, "hello\r\nworld");
     let formatter =
-        maestro_terminal::formatter::TerminalFormatter::init(&terminal, Options::default());
+        maestro_terminal::formatting::TerminalFormatter::init(&terminal, Options::default());
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
     assert_eq!(output, "hello\nworld");
@@ -656,7 +656,7 @@ fn page_plain_single_line_with_styling() {
 
 #[test]
 fn page_codepoint_map_single_replacement() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     let terminal = terminal(80, 24, "hello world");
     let maps = [CodepointMap {
         range: 'o'..='o',
@@ -732,7 +732,7 @@ fn page_plain_single_wide_char_soft_wrapped_unwrapped() {
     }
 }
 
-fn mapped(text: &str, maps: &[maestro_terminal::formatter::CodepointMap<'_>]) -> String {
+fn mapped(text: &str, maps: &[maestro_terminal::formatting::CodepointMap<'_>]) -> String {
     let terminal = terminal(80, 24, text);
     let formatter = PageFormatter::init(
         page(&terminal),
@@ -748,7 +748,7 @@ fn mapped(text: &str, maps: &[maestro_terminal::formatter::CodepointMap<'_>]) ->
 
 #[test]
 fn page_codepoint_map_conflicting_replacement_prefers_last() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     assert_eq!(
         mapped(
             "hello",
@@ -769,7 +769,7 @@ fn page_codepoint_map_conflicting_replacement_prefers_last() {
 
 #[test]
 fn page_codepoint_map_replace_with_string() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     assert_eq!(
         mapped(
             "hello",
@@ -784,7 +784,7 @@ fn page_codepoint_map_replace_with_string() {
 
 #[test]
 fn page_codepoint_map_range_replacement() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     assert_eq!(
         mapped(
             "abcdefg",
@@ -799,7 +799,7 @@ fn page_codepoint_map_range_replacement() {
 
 #[test]
 fn page_codepoint_map_multiple_ranges() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     assert_eq!(
         mapped(
             "hello world",
@@ -820,7 +820,7 @@ fn page_codepoint_map_multiple_ranges() {
 
 #[test]
 fn page_codepoint_map_unicode_replacement() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     assert_eq!(
         mapped(
             "hello ⚡ world",
@@ -840,7 +840,7 @@ fn page_codepoint_map_empty_map() {
 
 #[test]
 fn page_plain_graphemes_and_replaced_suffix() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     assert_eq!(mapped("e\u{301} 👩‍💻", &[]), "e\u{301} 👩‍💻");
     assert_eq!(
         mapped(
@@ -869,7 +869,7 @@ fn formatter_destination_failure_propagates() {
     }
     let terminal = terminal(80, 24, "hello");
     assert!(
-        maestro_terminal::formatter::TerminalFormatter::init(&terminal, Options::default())
+        maestro_terminal::formatting::TerminalFormatter::init(&terminal, Options::default())
             .format(&mut Refuse)
             .is_err()
     );
@@ -889,7 +889,7 @@ fn screen_pin(terminal: &Terminal, x: u16, y: u32) -> maestro_terminal::Pin {
 #[test]
 fn pagelist_plain_single_line() {
     let terminal = terminal(80, 24, "hello, world");
-    let formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -901,7 +901,7 @@ fn pagelist_plain_single_line() {
 #[test]
 fn pagelist_plain_with_x_offset_on_single_page() {
     let terminal = terminal(80, 24, "hello world\r\ntest case\r\nfoo bar");
-    let mut formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let mut formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -915,7 +915,7 @@ fn pagelist_plain_with_x_offset_on_single_page() {
 #[test]
 fn pagelist_plain_with_start_x_only() {
     let terminal = terminal(80, 24, "hello world");
-    let mut formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let mut formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -928,7 +928,7 @@ fn pagelist_plain_with_start_x_only() {
 #[test]
 fn pagelist_plain_with_end_x_only() {
     let terminal = terminal(80, 24, "hello world\r\ntest");
-    let mut formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let mut formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -957,7 +957,7 @@ fn page_boundary(cols: u16, text: &str) -> (Terminal, u32) {
 #[test]
 fn pagelist_plain_spanning_two_pages() {
     let (terminal, _) = page_boundary(80, "page one\r\npage two");
-    let formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -969,7 +969,7 @@ fn pagelist_plain_spanning_two_pages() {
 #[test]
 fn pagelist_soft_wrapped_line_spanning_two_pages_without_unwrap() {
     let (terminal, _) = page_boundary(10, "hello world test");
-    let formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -981,7 +981,7 @@ fn pagelist_soft_wrapped_line_spanning_two_pages_without_unwrap() {
 #[test]
 fn pagelist_soft_wrapped_line_spanning_two_pages_with_unwrap() {
     let (terminal, _) = page_boundary(10, "hello world test");
-    let formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options {
             unwrap: true,
@@ -996,7 +996,7 @@ fn pagelist_soft_wrapped_line_spanning_two_pages_with_unwrap() {
 #[test]
 fn pagelist_plain_with_x_offset_spanning_two_pages() {
     let (terminal, y) = page_boundary(80, "hello world\r\nfoo bar test");
-    let mut formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let mut formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -1009,7 +1009,7 @@ fn pagelist_plain_with_x_offset_spanning_two_pages() {
 
 fn rectangle(text: &str, rows: u16, start: (u16, u32), end: (u16, u32)) -> String {
     let terminal = terminal(30, rows, text);
-    let mut formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let mut formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -1052,7 +1052,7 @@ fn pagelist_plain_rectangle_more_complex_with_breaks() {
 #[test]
 fn screen_plain_single_line() {
     let terminal = terminal(80, 24, "hello, world");
-    let formatter = maestro_terminal::formatter::ScreenFormatter::init(
+    let formatter = maestro_terminal::formatting::ScreenFormatter::init(
         terminal.screens.active(),
         Options::default(),
     );
@@ -1064,7 +1064,7 @@ fn screen_plain_single_line() {
 #[test]
 fn screen_plain_multiline() {
     let terminal = terminal(80, 24, "hello\r\nworld");
-    let formatter = maestro_terminal::formatter::ScreenFormatter::init(
+    let formatter = maestro_terminal::formatting::ScreenFormatter::init(
         terminal.screens.active(),
         Options::default(),
     );
@@ -1076,11 +1076,11 @@ fn screen_plain_multiline() {
 #[test]
 fn screen_plain_with_selection() {
     let terminal = terminal(80, 24, "line1\r\nline2\r\nline3");
-    let mut formatter = maestro_terminal::formatter::ScreenFormatter::init(
+    let mut formatter = maestro_terminal::formatting::ScreenFormatter::init(
         terminal.screens.active(),
         Options::default(),
     );
-    formatter.content = maestro_terminal::formatter::Content::Selection(Some(
+    formatter.content = maestro_terminal::formatting::Content::Selection(Some(
         maestro_terminal::selection::Selection::init(
             screen_pin(&terminal, 0, 1),
             screen_pin(&terminal, 4, 1),
@@ -1096,8 +1096,8 @@ fn screen_plain_with_selection() {
 fn terminal_formatter_with_selection() {
     let terminal = terminal(80, 24, "line1\r\nline2\r\nline3");
     let mut formatter =
-        maestro_terminal::formatter::TerminalFormatter::init(&terminal, Options::default());
-    formatter.content = maestro_terminal::formatter::Content::Selection(Some(
+        maestro_terminal::formatting::TerminalFormatter::init(&terminal, Options::default());
+    formatter.content = maestro_terminal::formatting::Content::Selection(Some(
         maestro_terminal::selection::Selection::init(
             screen_pin(&terminal, 0, 1),
             screen_pin(&terminal, 4, 1),
@@ -1113,8 +1113,8 @@ fn terminal_formatter_with_selection() {
 fn terminal_formatter_no_content() {
     let terminal = terminal(80, 24, "hello");
     let mut formatter =
-        maestro_terminal::formatter::TerminalFormatter::init(&terminal, Options::default());
-    formatter.content = maestro_terminal::formatter::Content::None;
+        maestro_terminal::formatting::TerminalFormatter::init(&terminal, Options::default());
+    formatter.content = maestro_terminal::formatting::Content::None;
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
     assert!(output.is_empty());
@@ -1123,11 +1123,11 @@ fn terminal_formatter_no_content() {
 #[test]
 fn screen_plain_selection_orders_rectangle_endpoints() {
     let terminal = terminal(80, 24, "hello\r\nworld");
-    let mut formatter = maestro_terminal::formatter::ScreenFormatter::init(
+    let mut formatter = maestro_terminal::formatting::ScreenFormatter::init(
         terminal.screens.active(),
         Options::default(),
     );
-    formatter.content = maestro_terminal::formatter::Content::Selection(Some(
+    formatter.content = maestro_terminal::formatting::Content::Selection(Some(
         maestro_terminal::selection::Selection::init(
             screen_pin(&terminal, 3, 0),
             screen_pin(&terminal, 1, 1),
@@ -1146,7 +1146,7 @@ fn formatter_rejects_invalid_pins() {
         x: 80,
         ..screen_pin(&terminal, 0, 0)
     };
-    let mut formatter = maestro_terminal::formatter::PageListFormatter::init(
+    let mut formatter = maestro_terminal::formatting::PageListFormatter::init(
         &terminal.screens.active().pages,
         Options::default(),
     );
@@ -1154,11 +1154,11 @@ fn formatter_rejects_invalid_pins() {
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
     assert!(output.is_empty());
-    let mut formatter = maestro_terminal::formatter::ScreenFormatter::init(
+    let mut formatter = maestro_terminal::formatting::ScreenFormatter::init(
         terminal.screens.active(),
         Options::default(),
     );
-    formatter.content = maestro_terminal::formatter::Content::Selection(Some(
+    formatter.content = maestro_terminal::formatting::Content::Selection(Some(
         maestro_terminal::selection::Selection::init(invalid, screen_pin(&terminal, 4, 0), false),
     ));
     formatter.format(&mut output).unwrap();
@@ -1167,7 +1167,7 @@ fn formatter_rejects_invalid_pins() {
 
 #[test]
 fn format_plain_reflects_terminal_changes() {
-    use maestro_terminal::formatter::TerminalFormatter;
+    use maestro_terminal::formatting::TerminalFormatter;
     let mut terminal = terminal(80, 24, "Hello");
     let mut output = String::new();
     TerminalFormatter::init(&terminal, Options::default())
@@ -1188,7 +1188,7 @@ fn format_plain_reflects_terminal_changes() {
 #[test]
 fn format_plain_with_selection() {
     use maestro_terminal::{
-        formatter::{Content, TerminalFormatter},
+        formatting::{Content, TerminalFormatter},
         selection::Selection,
     };
     let terminal = terminal(80, 24, "Hello World");

@@ -9,7 +9,7 @@ use maestro_theme::BrandMode;
 use maestro_web::{
     ApiKeysTab, PersistentStorageDialog, ProvidersModelsTab, ProxyTab, SessionListDialog,
     SettingsDialog, SettingsTab,
-    dom::{DomContent, DomView},
+    page::{DomContent, DomView},
 };
 use serde_json::Value;
 use std::{

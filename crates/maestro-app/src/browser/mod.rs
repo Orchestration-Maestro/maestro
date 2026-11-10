@@ -18,4 +18,4 @@ pub mod components;
 pub mod tools;
 
 /// Injected collection storage.
-pub mod storage;
+pub mod persistence;

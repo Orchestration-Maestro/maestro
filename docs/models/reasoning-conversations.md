@@ -2,7 +2,7 @@
 
 `MistralOptions` holds common request settings, tool choice, prompt mode and
 reasoning effort. The options are available from `maestro_models` and
-`maestro_models::providers::reasoning::mistral`, together with `stream_mistral`
+`maestro_models::providers::reasoning::endpoint`, together with `stream_mistral`
 and `stream_simple_mistral`. These operations expose cumulative updates from
 independently owned work: dropping the reader does not cancel the producer.
 Default native calls need a running Tokio runtime.

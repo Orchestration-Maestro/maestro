@@ -2,7 +2,7 @@
 use super::{
     BranchSummaryEntry, CompactionEntry, CompactionOptions, CustomEntry, CustomMessageEntry,
     ModelChangeEntry, SessionEntryBase, SessionInfoEntry, SessionManager, SessionMessageEntry,
-    ThinkingLevelChangeEntry, context::ecma_whitespace, generate_id,
+    ThinkingLevelChangeEntry, generate_id, history::ecma_whitespace,
 };
 use chrono::{SecondsFormat, Utc};
 use maestro_models::UserContent;

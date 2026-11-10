@@ -1,6 +1,6 @@
 //! The session selector presented over supplied discovery loaders.
 
-use super::selector::{Running, SelectorHost, exit_notification, settlement};
+use super::selection::{Running, SelectorHost, exit_notification, settlement};
 use maestro_app::KeybindingsManager as AppKeybindingsManager;
 use maestro_app::presentation_data::input_selectors::{
     SessionSelectorCallbacks, SessionSelectorFactory, SessionSelectorRequest, SessionsLoader,

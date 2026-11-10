@@ -1,6 +1,6 @@
 //! Refresh original record fields without restarting unchanged native documents.
 use super::State;
-use crate::{dom, tools::types::ToolUiError};
+use crate::{page, tools::types::ToolUiError};
 use std::rc::Rc;
 
 impl State {
@@ -26,7 +26,7 @@ impl State {
             .root
             .borrow()
             .as_ref()
-            .and_then(dom::live)
+            .and_then(page::live)
             .ok_or_else(|| ToolUiError::Presentation("Missing overlay root".into()))?;
         if let Some(label) = root
             .query_selector(".maestro-attachment-name")

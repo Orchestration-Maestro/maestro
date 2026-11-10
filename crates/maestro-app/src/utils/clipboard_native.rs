@@ -1,6 +1,6 @@
 //! Native clipboard admission and text/image interface.
 
-use super::clipboard::ClipboardPlatform;
+use super::copying::ClipboardPlatform;
 use futures_util::future::LocalBoxFuture;
 use std::io;
 
@@ -50,9 +50,7 @@ fn default_clipboard<T: ClipboardModule>(
 #[cfg(any(target_os = "macos", target_os = "linux", windows))]
 mod native {
     use super::{ClipboardModule, LocalBoxFuture, default_clipboard, io};
-    use crate::utils::clipboard::{
-        ClipboardOperations as _, NativeClipboardOperations, environment,
-    };
+    use crate::utils::copying::{ClipboardOperations as _, NativeClipboardOperations, environment};
     use clipboard_rs::{Clipboard as _, ClipboardContext, ContentFormat, common::RustImage as _};
 
     /// Stateless bridge: each operation owns its context.

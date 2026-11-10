@@ -3,7 +3,7 @@ use crate::contributions_support::{body, computed, localized_view, rgb, select, 
 use maestro_app::{JsonObject, ToolCall, ToolResultMessage};
 use maestro_web::{
     components::messages::{AbortedMessage, ToolMessage, ToolMessageDebugView},
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::types::{
         ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView, ToolUiError,
     },

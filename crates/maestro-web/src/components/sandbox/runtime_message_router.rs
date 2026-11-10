@@ -13,7 +13,7 @@ pub trait MessageConsumer<V: SandboxValue> {
 #[cfg(any(target_arch = "wasm32", test))]
 mod routing {
     use super::{MessageConsumer, SandboxValue, SharedHandle};
-    use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+    use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
     use std::{cell::RefCell, collections::HashMap, rc::Rc};
     /// Retained providers whose mutations remain visible during dispatch.
     pub(super) type Providers<V> = Rc<RefCell<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>>>;
@@ -154,7 +154,7 @@ impl<V: SandboxValue + Clone, F> SandboxContext<V, F> {
     }
 }
 #[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond;
+use maestro_app::browser::components::sandbox::providers::SandboxRespond;
 #[cfg(any(target_arch = "wasm32", test))]
 use routing::{Providers, Registry, SandboxContext};
 #[cfg(test)]

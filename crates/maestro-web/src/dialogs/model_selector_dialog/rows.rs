@@ -2,8 +2,8 @@
 use super::search::{ModelEntry, format_tokens};
 use crate::{
     browser::attachment_content::browser::{append, element, host_error},
-    dom::{DomView, icon},
     format_model_cost,
+    page::{DomView, icon},
     tools::types::ToolUiError,
 };
 use maestro_app::{Model, ModelInput, models_are_equal};

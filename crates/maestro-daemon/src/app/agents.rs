@@ -2,7 +2,7 @@
 
 use super::App;
 use maestro_protocol::schema::AgentInfo;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 impl<C: FnMut() -> u128> App<C> {
     /// Collects agents in workspace, tab and layout order.

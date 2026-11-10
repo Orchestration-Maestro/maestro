@@ -11,14 +11,14 @@ pub use maestro_resources::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::resources::resource_loader::{
+pub use crate::resources::loading::{
     DefaultEventBus, DefaultResourceLoader, DefaultResourceLoaderOptions, LoadPromptsResult,
     LoadThemesResult, ResourceCollision, ResourceDiagnostic, ResourceExtensionPath,
     ResourceExtensionPaths, ResourceKind, ResourceLoader, ResourceLoaderOptions, ResourceOverride,
     load_project_context_files,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::runtime::agent_session_services::{
+pub use crate::runtime::session_dependencies::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, AgentSessionServices,
     CreateAgentSessionServicesOptions, create_agent_session_services,
 };

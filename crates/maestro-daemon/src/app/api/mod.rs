@@ -17,9 +17,9 @@ mod workspaces;
 use super::{
     App,
     actions::{PaneStateUpdate, notification_context},
-    state::ToastNotification,
+    model::ToastNotification,
 };
-use crate::{events::AppEvent, paths::DaemonPaths, settings::model::ToastDelivery};
+use crate::{events::AppEvent, locations::DaemonPaths, settings::model::ToastDelivery};
 use maestro_protocol::{
     rpc_types::RpcCommand,
     schema::{ErrorBody, ResponseResult},
@@ -42,7 +42,7 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Result<ResponseResult, ErrorBody> {
         self.drain_all_internal_events();
         self.sync_pending_terminal_titles().await;
-        if crate::api::request_changes_ui(&command) {
+        if crate::service::request_changes_ui(&command) {
             self.launch.render_dirty.request_generic();
         }
         match command {
@@ -208,7 +208,7 @@ impl<C: FnMut() -> u128> App<C> {
     pub(super) fn live_notification_context(
         &self,
         workspace: usize,
-        pane: maestro_workspace::layout::PaneId,
+        pane: maestro_workspace::tiling::PaneId,
     ) -> Option<String> {
         let target = self.state.topology.workspaces.get(workspace)?;
         let label = crate::workspace::display_name_from(

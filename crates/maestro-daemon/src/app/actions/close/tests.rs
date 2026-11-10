@@ -2,11 +2,11 @@
 
 use super::*;
 use crate::{
-    app::state::{PaneFocusTarget, PluginPaneRecord},
+    app::model::{PaneFocusTarget, PluginPaneRecord},
     settings::model::Config,
-    terminal::state::TerminalState,
+    terminal::model::TerminalState,
 };
-use maestro_detection::manifest::ManifestCache;
+use maestro_detection::definitions::ManifestCache;
 use std::sync::{Arc, RwLock};
 
 /// Builds two workspaces with two tabs each, without child processes.

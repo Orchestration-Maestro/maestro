@@ -6,9 +6,9 @@ use crate::{
         attachment_content::browser::{append, element},
         event_subscription::EventSubscription,
     },
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{self, DomContent, DomRoot, DomView},
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
     icons::IconSize,
+    page::{self, DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use std::{
@@ -56,7 +56,7 @@ struct Mounted {
 }
 impl DomContent for AttachmentTile {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let node = element(&view.document, "div", "maestro-attachment-tile")?;
         let shell = element(&view.document, "div", "maestro-tile-shell")?;
         let open = element(&view.document, "button", "maestro-tile-open")?;

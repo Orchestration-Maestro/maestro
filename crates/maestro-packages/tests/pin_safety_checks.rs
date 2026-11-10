@@ -1,6 +1,6 @@
 //! Native integrity scope, offline and destructive-target boundaries.
 #![cfg(unix)]
-use crate::native_git::{git, retry::RetryFixture};
+use crate::native_git::{git, reattempts::RetryFixture};
 use maestro_packages::PackageManager;
 
 #[test]

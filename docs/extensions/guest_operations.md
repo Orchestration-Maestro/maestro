@@ -549,7 +549,7 @@ never retained, including on error. Cancellation policy stays with the caller.
 
 ### Metadata
 
-`frontmatter::parse_frontmatter` returns a complete `FrontmatterValue` tree,
+`metadata::parse_frontmatter` returns a complete `FrontmatterValue` tree,
 including scalar and sequence roots, nested nulls, signed zero, NaN and both
 infinities. Numbers cross a typed floating-point boundary, not a JSON number.
 Mappings enumerate canonical array-index keys first, then other keys in insertion
@@ -559,7 +559,7 @@ order. YAML parsing remains entirely native.
 native parser causes and coordinates. Ordinary text is not trimmed; a present
 header selects the native trimmed body and newline normalization.
 
-`frontmatter::parse_yaml(&api, content)` reads one complete YAML document through
+`metadata::parse_yaml(&api, content)` reads one complete YAML document through
 the same native parser. It returns `FrontmatterValue` directly, retains empty/null
 roots and authored mapping order, and accepts scalar and sequence roots. Numbers
 retain signed zero, NaN and infinities without JSON conversion. Multiple documents
@@ -569,30 +569,30 @@ null-to-empty-map normalization apply only to `parse_frontmatter`.
 ### Conversation and output
 
 `convert_to_llm` delegates application-message projection to the native session
-owner. `compaction::utils::serialize_conversation` uses its existing transcript
+owner. `summarization::utils::serialize_conversation` uses its existing transcript
 serializer, including tool-result clipping and argument JSON spelling.
 
-`tools::truncate` provides head and tail selection with complete accounting,
+`registry::limits` provides head and tail selection with complete accounting,
 scalar-aware line clipping and size formatting. Missing limits select the host's
 defaults: 2000 lines, 51200 bytes and 500 line characters. Size formatting accepts
 the native floating-point domain, including signed zero and nonfinite values.
 
 ### Paths and installation identity
 
-`tools::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
+`registry::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
 native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
-`tools::path_utils::basename(&api, path)` returns the final path component using
+`registry::path_utils::basename(&api, path)` returns the final path component using
 the host's path flavor, preserving literal backslashes on POSIX hosts.
-`tools::path_utils::shorten_path(&api, path)` shows the host home as `~` for the
+`registry::path_utils::shorten_path(&api, path)` shows the host home as `~` for the
 home itself and the paths below it, and leaves every other path unchanged.
 
-`tools::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
+`registry::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
 with the host platform's path rules. It reduces `.` and `..` segments and
 trailing separators without filesystem lookup, Unicode-space replacement or
 `~`/`@` expansion.
 
-`tools::path_utils::guest_path(&api, path)` spells a native host path the way the
+`registry::path_utils::guest_path(&api, path)` spells a native host path the way the
 component's standard library opens it. Windows drive and share paths change,
 Unix paths do not; see [the operating environment](host_io.md).
 

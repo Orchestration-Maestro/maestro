@@ -88,22 +88,22 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 
 | Crate | Modules added | Deliveries |
 |---|---|---|
-| `maestro-json` | `jsonl` | 1 |
+| `maestro-json` | `lines` | 1 |
 | `maestro-ipc` | `local_socket`, `socket_paths` | 1 |
-| `maestro-process` | `pty::{fd, actor, foreground}`, `shell` additions, `child_process::native` signal escalation | 2, 19, 29 |
-| `maestro-workspace` | `layout`, `workspace`, `workspace::git`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persist::{snapshot, io}` | 3, 6, 14 |
-| `maestro-detection` | `agents`, `manifest`, `manifest_update`, bundled manifests | 4, 7 |
+| `maestro-process` | `terminal::{fd, channels, jobs}`, `commands` additions, `children::native` signal escalation | 2, 19, 29 |
+| `maestro-workspace` | `tiling`, `spaces`, `spaces::repository`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persist::{records, io}` | 3, 6, 14 |
+| `maestro-detection` | `agents`, `definitions`, `updates`, bundled manifests | 4, 7 |
 | `maestro-lock` | `replace` | 6 |
 | `maestro-protocol` | `KeyModifiers` constants and the underline bit layout in `frames` (additive) | 9, 26 |
 | `maestro-settings` | `SettingsManager::set_global_key` becomes public | 8 |
 | `maestro-packages` | the `actions` resource kind, the subdirectory field, `package_filters::toggle_resource`, `PackageManager::set_prepare_callback` | 19 |
-| `maestro-daemon` | `terminal`, `terminal_theme`, `agent_resume`, `settings`, `paths`, `environment`, `logging`, `instances`, `input`, `selection`, `pane`, `render_prof`, `events`, `render_signal`, `app`, `aggregate`, `git`, `persist`, `platform`, `key_combo`, `api`, `client`, `restore`, `actions`, `commands`, `popup`, `worktree`, `integrations`, `server`, `pane_graphics`, `announcements` | 5, 8–20, 25, 27–31, 34 |
+| `maestro-daemon` | `terminal`, `terminal_theme`, `resume`, `settings`, `locations`, `variables`, `diagnostics`, `instances`, `ingress`, `selection`, `panes`, `render_prof`, `events`, `render_signal`, `app`, `summary`, `git`, `persist`, `platform`, `keys`, `service`, `client`, `restore`, `actions`, `commands`, `popup`, `checkouts`, `integrations`, `server`, `pane_graphics`, `announcements` | 5, 8–20, 25, 27–31, 34 |
 | `maestro-rpc` | `daemon` (socket adapter and graphics stream channel) | 13, 15, 31 |
 | `maestro-cli` | `workspace_commands`, `completion`, `output` | 21–23, 32, 33, 35 |
-| `maestro-tui` | `stdin_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
+| `maestro-tui` | `input_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
 | `maestro-tui-crossterm` | alternate screen, mouse capture and colour-scheme report modes | 32 |
 | `maestro-multiplexer` | `render`, `palette`, `ui`, `view`, `input`, `keybindings`, `surface`, `client`, `sound`, `launch`, `remote` | 26–29, 32, 34, 35 |
-| `maestro-app` | `daemon` and `terminal` re-exports, `utils::clipboard` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
+| `maestro-app` | `daemon` and `terminal` re-exports, `utils::copying` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
 | `maestro` | server, render-surface, attach, monolithic and PTY set-up wiring | 21, 29, 34 |
 
 An inherent `impl` must live in the crate that defines its type. Reference methods on topology types that
@@ -113,7 +113,7 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Daemon state, view state and the render surface
 
-- **Daemon state.** `maestro-daemon::app::state::DaemonState` holds every field that daemon code reads or
+- **Daemon state.** `maestro-daemon::app::model::DaemonState` holds every field that daemon code reads or
   writes, directly or through a state method. Examples are sizes, popup geometry, persisted sidebar values,
   toasts, the mode, copy mode, selection, focus records, notification delivery and the worktree-open dialog.
   It is shared by every client of one daemon.
@@ -132,16 +132,16 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Interfaces
 
-- **JSONL framing.** `maestro_json::jsonl::{serialize_json_line, JsonlLineSplitter}`: synchronous, bytes in
+- **JSONL framing.** `maestro_json::lines::{serialize_json_line, JsonlLineSplitter}`: synchronous, bytes in
   and lines out. Callers own their async glue.
 - **Spawning in topology.** `FnOnce(PaneId, SpawnRequest) -> io::Result<T>` is passed to every topology
   operation that creates a pane. The operation returns `(PaneId, T)` and removes the new leaf when the spawn
   fails.
 - **Recoverable publication.** `maestro_lock::replace(path, bytes, Replace { through_symlinks })`.
-- **Paths and names.** `maestro_daemon::paths::DaemonPaths` and `maestro_daemon::environment::NAMES`.
+- **Paths and names.** `maestro_daemon::locations::DaemonPaths` and `maestro_daemon::variables::NAMES`.
 - **Server.** `maestro_rpc::daemon::run_server` starts the API socket and runs the daemon loop. The
   executable's `daemon` arm and the in-process tests call it.
-- **Daemon client.** `maestro_app::daemon::client::{DaemonClient, ensure_running}`.
+- **Daemon client.** `maestro_app::daemon_api::client::{DaemonClient, ensure_running}`.
 
 ### Libraries
 
@@ -168,7 +168,7 @@ need `unsafe` to hand its descriptor to the async runtime.
   read no variable and name no root.
 - **Dispatch.** Workspace commands reach the daemon through the shared RPC dispatch path, on stdio and on the
   socket. The socket adapter lives in `maestro-rpc::daemon`; daemon state, subscriptions and waits live in
-  `maestro-daemon::api`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
+  `maestro-daemon::service`. `maestro-rpc::daemon::run_server` owns socket bind, accept and
   connection teardown and drives the existing daemon `App::run` loop. Each accepted socket
   uses the application connection runner with no session; supplied sessions remain supported
   by that same runner. Typed requests flow down to daemon-owned handlers, never through a
@@ -196,7 +196,7 @@ need `unsafe` to hand its descriptor to the async runtime.
   identities are allocated afresh. Counters survive workspace removal and are independent between owners.
 - **Runtimes.** The daemon passes the spawn closure and inserts the runtime into its one registry.
 - **Repository identity.** Native discovery belongs to the existing
-  `maestro-workspace::workspace::git` owner. The daemon and application footer use
+  `maestro-workspace::spaces::repository` owner. The daemon and application footer use
   the same directory walk for ordinary, linked, bare and embedded-bare layouts.
   Native path bytes survive traversal and metadata-link resolution. Shared Unicode
   trimming applies to link text. Workspace discovery climbs past markers without a
@@ -209,7 +209,7 @@ need `unsafe` to hand its descriptor to the async runtime.
 
 ### One pane runtime over the concrete emulator
 
-- **Ownership.** `maestro_daemon::pane::PaneRuntime` is the only runtime type for a pane terminal. It owns
+- **Ownership.** `maestro_daemon::panes::PaneRuntime` is the only runtime type for a pane terminal. It owns
   the PTY child, the emulator's `Terminal` and the agent detection task, and it keeps behaviour only.
 - **No forwarding layers.** Types that only delegate are not built. The registry stores `PaneRuntime`
   directly.
@@ -227,7 +227,7 @@ need `unsafe` to hand its descriptor to the async runtime.
 ### One key and mouse vocabulary
 
 - **Vocabulary.** The protocol's key and mouse enums are the vocabulary in every crate.
-- **TerminalKey.** `maestro_daemon::input::TerminalKey` wraps them. It adds the shifted code point and the
+- **TerminalKey.** `maestro_daemon::ingress::TerminalKey` wraps them. It adds the shifted code point and the
   physical key identity, and it has one conversion pair to the protocol's key event.
 - **Emulator boundary.** The emulator's key event is built from `TerminalKey` only where an encoder is
   called.
@@ -243,9 +243,9 @@ The snapshot, the detection catalog and the announcements store use it.
 ### Foreground process facts
 
 - **Location.** Foreground jobs, process trees, argv, working directories and environment values are read in
-  the Linux-only `maestro-process::pty::foreground`. Its `ForegroundJob` and
+  the Linux-only `maestro-process::terminal::jobs`. Its `ForegroundJob` and
   `ForegroundProcess` records live in the platform-independent
-  `maestro-process::foreground` module, with re-exports at their Linux paths.
+  `maestro-process::jobs` module, with re-exports at their Linux paths.
 - **Environment hint.** It is returned as the raw value, and the daemon parses it with the agent catalogue.
   That removes the cycle between process facts and agent recognition.
 
@@ -292,7 +292,7 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 
 | Defect | Fix | Delivery |
 |---|---|---|
-| Six POSIX shell quoters, one with a different safe set, plus five other quoters | one quoter in `maestro-process::shell`; the others become its callers | 2 |
+| Six POSIX shell quoters, one with a different safe set, plus five other quoters | one quoter in `maestro-process::commands`; the others become its callers | 2 |
 | The peer-closed probe consumes a byte and treats data as a disconnect | full-duplex lines and end of input | 1, 13 |
 | Two run loops with duplicated scheduling, deferred requests, repeat plans and key handling | one loop | 12, 29, 34 |
 | Three atomic JSON writers with different durability | one replacement owner | 6, 7, 27 |

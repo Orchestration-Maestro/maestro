@@ -3,10 +3,10 @@
 
 use crate::{
     app::App,
-    pane::{PaneRuntime, terminal::TerminalReadSnapshot},
+    panes::{PaneRuntime, display::TerminalReadSnapshot},
 };
 use maestro_protocol::schema::{PaneReadResult, ReadFormat, ReadSource};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Most lines one read may ask for.
 const MAX_READ_LINES: u32 = 1000;

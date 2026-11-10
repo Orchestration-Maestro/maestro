@@ -2,7 +2,7 @@
 use super::{Call, Handle};
 use crate::lifecycle::replies::Reply;
 use crate::local_resources::Registry;
-use maestro_extensions::widgets::BorderColor;
+use maestro_extensions::presentation::BorderColor;
 use std::{cell::RefCell, rc::Rc};
 
 /// One call of an authored styling or highlighting function.

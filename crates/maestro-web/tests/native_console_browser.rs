@@ -10,7 +10,7 @@ use crate::{
 use maestro_web::{
     ConsoleBlock,
     components::console_block::ConsoleVariant,
-    dom::{DomView, MountedContent},
+    page::{DomView, MountedContent},
 };
 use serde::Deserialize;
 use std::{cell::RefCell, rc::Rc};
@@ -594,7 +594,11 @@ pub async fn console_dom_removal_releases_its_subtree(import_module: js_sys::Fun
 
 /// The console's copy control keeps compact geometry, a muted idle role and an accent
 /// highlight, measured on the painted control.
-async fn assert_compact_control(view: &maestro_web::dom::DomView, root: &Element, cases: &Console) {
+async fn assert_compact_control(
+    view: &maestro_web::page::DomView,
+    root: &Element,
+    cases: &Console,
+) {
     let presentation = view.pack.presentation(view.mode).unwrap();
     let role = |name: &str| rgb(presentation.colors[name]);
     let control = copy_button(root);

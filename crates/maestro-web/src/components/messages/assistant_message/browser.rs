@@ -5,7 +5,7 @@ use crate::{
     components::{
         markdown_block::MarkdownBlock, messages::ToolMessage, thinking_block::ThinkingBlock,
     },
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::{AssistantContent, StopReason, ToolCall, ToolResultMessage};
@@ -39,7 +39,7 @@ struct Placed {
 }
 impl<D: 'static> DomContent for AssistantMessage<D> {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let node = element(&view.document, "div", "maestro-assistant-row")?;
         let body = element(&view.document, "div", "maestro-assistant-parts")?;
         node.append_child(&body)

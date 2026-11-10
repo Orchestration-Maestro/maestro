@@ -18,7 +18,7 @@ use std::{
 };
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 /// The browser message family the sessions hold.
-type Browser = maestro_app::browser::components::messages::CustomAgentMessages;
+type Browser = maestro_app::browser::components::records::CustomAgentMessages;
 use web_sys::{Element, HtmlElement};
 
 /// A session on `model` with `messages` and no request defaults.

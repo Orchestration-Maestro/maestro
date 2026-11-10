@@ -1,6 +1,6 @@
 //! Transcript Markdown with highlighted code blocks, copy controls and math.
-use super::code_block::{self, CodeBlockView, Prepared as Code};
-use crate::components::code_block::ReadingUiError;
+use super::source::{self, CodeBlockView, Prepared as Code};
+use crate::components::source::ReadingUiError;
 use crate::{
     browser::attachment_content::{
         AttachmentHost, AttachmentHostError, ReadingContent,
@@ -58,7 +58,7 @@ enum DocumentLayout {
 /// Markdown content rendered as selectable native text with copy controls.
 ///
 /// [`Default`] content mounts as native page content through
-/// [`DomContent`](crate::dom::DomContent); [`MarkdownBlock::new`] draws on a canvas host.
+/// [`DomContent`](crate::page::DomContent); [`MarkdownBlock::new`] draws on a canvas host.
 pub struct MarkdownBlock {
     /// Markdown source.
     pub content: String,
@@ -211,7 +211,7 @@ impl MarkdownBlock {
             self.published = candidate;
         }
         if let Some(published) = self.published.as_mut() {
-            let responses = code_block::controls(
+            let responses = source::controls(
                 ui,
                 &layout,
                 published.buttons.iter_mut(),

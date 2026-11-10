@@ -2,11 +2,11 @@
 
 pub mod command;
 
-pub mod image;
+pub mod bitmap;
 
-pub mod storage;
+pub mod images;
 
-pub mod render;
+pub mod painting;
 
 pub mod exec;
 

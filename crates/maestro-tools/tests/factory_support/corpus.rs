@@ -192,27 +192,27 @@ fn check_helper(row: &Row) {
     let both = match row.id.as_str() {
         "constants" => [
             json!({"DEFAULT_MAX_LINES":DEFAULT_MAX_LINES,"DEFAULT_MAX_BYTES":DEFAULT_MAX_BYTES}),
-            json!({"DEFAULT_MAX_LINES":tools::DEFAULT_MAX_LINES,"DEFAULT_MAX_BYTES":tools::DEFAULT_MAX_BYTES}),
+            json!({"DEFAULT_MAX_LINES":registry::DEFAULT_MAX_LINES,"DEFAULT_MAX_BYTES":registry::DEFAULT_MAX_BYTES}),
         ],
         "truncate-head" => [
             serde_json::to_value(truncate_head(text, options)).unwrap(),
-            serde_json::to_value(tools::truncate_head(text, options)).unwrap(),
+            serde_json::to_value(registry::truncate_head(text, options)).unwrap(),
         ],
         "truncate-tail" => [
             serde_json::to_value(truncate_tail(text, options)).unwrap(),
-            serde_json::to_value(tools::truncate_tail(text, options)).unwrap(),
+            serde_json::to_value(registry::truncate_tail(text, options)).unwrap(),
         ],
         "truncate-line" => {
             let limit = usize::try_from(row.input["limit"].as_u64().unwrap()).unwrap();
             [
                 truncate_line(text, Some(limit)),
-                tools::truncate_line(text, Some(limit)),
+                registry::truncate_line(text, Some(limit)),
             ]
             .map(|r| json!({"text":r.text,"wasTruncated":r.was_truncated}))
         }
         "format-size" => [
             json!(format_size(row.input["bytes"].as_f64().unwrap())),
-            json!(tools::format_size(row.input["bytes"].as_f64().unwrap())),
+            json!(registry::format_size(row.input["bytes"].as_f64().unwrap())),
         ],
         _ => panic!("unknown helper"),
     };

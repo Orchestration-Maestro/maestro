@@ -42,7 +42,7 @@ Examples of help paths are `maestro pane --help`, `maestro agent start --help` a
 
 ## Completions
 
-`maestro_cli::completion::run_completion` consumes the arguments after `completion`
+`maestro_cli::completions::run_completion` consumes the arguments after `completion`
 and writes a script for exactly one of `bash`, `elvish`, `fish`, `powershell` or
 `zsh`. It renders the same metadata as help. Generation is buffered before the
 caller writes output, so a failed output stream returns its original error.

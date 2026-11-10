@@ -2,10 +2,10 @@
 
 use super::base_external_client::invalid_token;
 use super::{ACQUISITION_FAILED, fixed_error};
-use crate::providers::http::{
+use crate::providers::json_text::{raw_json, try_object_record};
+use crate::providers::transport::{
     Ending, RequestFailure, RequestPolicy, RetryStatuses, buffered, collect_body, send_with_policy,
 };
-use crate::providers::json_text::{raw_json, try_object_record};
 use crate::{Fetch, HttpRequest, HttpResponse};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use google_cloud_auth::errors::CredentialsError;

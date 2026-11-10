@@ -1,6 +1,6 @@
 //! The inputs and result of creating a session.
 use crate::agent_session::{AgentSession, ToolDefinitionHandle};
-use crate::resources::resource_loader::{ResourceLoader, ResourceLoaderOptions};
+use crate::resources::loading::{ResourceLoader, ResourceLoaderOptions};
 use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_credentials::AuthStorage;
 use maestro_extensions::{LoadExtensionsResult, SessionStartEvent};

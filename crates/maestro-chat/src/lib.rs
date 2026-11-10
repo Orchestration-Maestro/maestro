@@ -8,80 +8,80 @@ pub use components::extension_widgets::ExtensionWidgetHost;
 
 pub use components::countdown_timer::CountdownTimer;
 
-pub use components::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
+pub use components::loading::{BorderedLoader, BorderedLoaderOptions};
 
+pub use components::authored::UserMessageComponent;
 pub use components::custom_editor::{ActionHandlers, CustomEditor};
 pub use components::session_selector_search::*;
-pub use components::user_message::UserMessageComponent;
 
-pub use components::assistant_message::{AssistantMessageComponent, AssistantMessageOptions};
+pub use components::response::{AssistantMessageComponent, AssistantMessageOptions};
 
-pub use components::branch_summary_message::BranchSummaryMessageComponent;
+pub use components::history_summary::BranchSummaryMessageComponent;
 
-pub use components::custom_message::CustomMessageComponent;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use components::skill_invocation_message::SkillInvocationMessageComponent;
-
-pub use components::compaction_summary_message::CompactionSummaryMessageComponent;
-
-pub use components::thinking_selector::ThinkingSelectorComponent;
-
-pub use components::show_images_selector::ShowImagesSelectorComponent;
-
-pub use components::theme_selector::ThemeSelectorComponent;
-
-pub use components::user_message_selector::UserMessageSelectorComponent;
+pub use components::custom_content::CustomMessageComponent;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use components::extension_editor::{ExtensionEditorComponent, ExtensionEditorOptions};
+pub use components::invocation::SkillInvocationMessageComponent;
+
+pub use components::context_summary::CompactionSummaryMessageComponent;
+
+pub use components::reasoning::ThinkingSelectorComponent;
+
+pub use components::images::ShowImagesSelectorComponent;
+
+pub use components::appearance::ThemeSelectorComponent;
+
+pub use components::history::UserMessageSelectorComponent;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use components::extension_composer::{ExtensionEditorComponent, ExtensionEditorOptions};
 pub use components::oauth_selector::{
     AuthSelectorProvider, AuthType, OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions,
 };
 
-pub use components::extension_input::{ExtensionInputComponent, ExtensionInputOptions};
-pub use components::extension_selector::{ExtensionSelectorComponent, ExtensionSelectorOptions};
+pub use components::extension_prompt::{ExtensionInputComponent, ExtensionInputOptions};
+pub use components::extensions::{ExtensionSelectorComponent, ExtensionSelectorOptions};
 
-pub use components::model_selector::{
+pub use components::models::{
     ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions,
 };
-pub use components::settings_selector::{
+pub use components::preferences::{
     BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig,
     SettingsSelectorComponent, TerminalDisplaySettings,
 };
-pub use components::tree_selector::{
+pub use components::tree_picker::{
     FilterMode, SessionTreeNode, TreeList, TreeSelectorCallbacks, TreeSelectorComponent,
     TreeSelectorOptions,
 };
 
-pub use components::login_dialog::{
+pub use components::authentication::{
     LoginDialogComponent, LoginDialogError, LoginDialogOptions, LoginDialogPlatform,
     LoginInputFuture,
 };
 
-pub use components::session_selector::*;
+pub use components::session_picker::*;
 
 #[cfg(test)]
-pub(crate) use components::session_selector::list::tests::platform_keys;
+pub(crate) use components::session_picker::list::tests::platform_keys;
 
 #[cfg(test)]
 extern crate self as maestro_chat;
-pub use components::bash_execution::BashExecutionComponent;
+pub use components::shell_output::BashExecutionComponent;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use components::footer::FooterComponent;
+pub use components::status::FooterComponent;
 
-pub use components::tool_execution::{
+pub use components::tool_output::{
     ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams, ToolExecutionResult,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod interactive_mode;
+pub mod interaction;
 #[cfg(not(target_arch = "wasm32"))]
 mod local_dispatch;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use interactive_mode::{InteractiveMode, InteractiveModeOptions};
+pub use interaction::{InteractiveMode, InteractiveModeOptions};
 
 mod environment;
 #[cfg(not(target_arch = "wasm32"))]

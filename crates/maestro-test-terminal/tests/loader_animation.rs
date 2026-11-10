@@ -424,7 +424,7 @@ fn loader_updates_use_the_existing_frame_writer() {
 }
 #[test]
 fn loader_shared_handles_release_animation_without_writer_cycles() {
-    use maestro_tui::tui::ComponentHandle;
+    use maestro_tui::interface::ComponentHandle;
     let (tui, _, runtime) = writer();
     let widget = loader(tui.clone(), None);
     let clone = widget.clone();

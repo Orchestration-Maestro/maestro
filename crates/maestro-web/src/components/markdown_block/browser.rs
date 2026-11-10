@@ -13,7 +13,7 @@ use crate::{
         ReadingRoot,
         browser::{append, element, host_error},
     },
-    components::code_block::browser as code,
+    components::source::browser as code,
 };
 #[cfg(target_arch = "wasm32")]
 use web_sys::Element;

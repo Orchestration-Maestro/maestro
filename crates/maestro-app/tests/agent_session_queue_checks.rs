@@ -12,7 +12,7 @@ use maestro_agent::{AgentEvent, QueueMode, SharedAgentTool};
 use maestro_app::{AgentSessionEvent, PromptOptions};
 use maestro_models::{DiagnosticErrorInfo, Local, UserContent};
 use maestro_session::Presence;
-use maestro_session::messages::{
+use maestro_session::message_records::{
     CustomMessageInput, MessageDelivery, SendMessageOptions, UserMessageDelivery,
 };
 use serde_json::{Value, json};
@@ -150,7 +150,7 @@ fn extension_steering_precedes_the_next_request() {
             .unwrap()
             .send_user_message(
                 UserContent::Text("steer now".into()),
-                Some(maestro_session::messages::SendUserMessageOptions {
+                Some(maestro_session::message_records::SendUserMessageOptions {
                     deliver_as: Some(UserMessageDelivery::Steer),
                 }),
             )

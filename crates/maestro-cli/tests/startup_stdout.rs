@@ -2,7 +2,7 @@
 #![cfg(unix)]
 
 use crate::support::entry::Entry;
-use maestro_cli::startup::main::MainOptions;
+use maestro_cli::startup::entrypoint::MainOptions;
 use maestro_test_process::selection;
 use serde_json::json;
 use std::cell::RefCell;

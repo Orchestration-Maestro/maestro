@@ -2,7 +2,7 @@
 #![cfg(test)]
 use maestro_agent::AgentMessage;
 use maestro_json::compact_json;
-use maestro_session::messages::CustomAgentMessages;
+use maestro_session::message_records::CustomAgentMessages;
 use serde_json::json;
 
 /// The typed history the session agent holds.

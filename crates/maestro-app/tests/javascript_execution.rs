@@ -95,7 +95,7 @@ fn repl_factory_declares_schema_and_exports() {
                 arguments: row["input"].clone(),
                 thought_signature: None,
             };
-            let result = maestro_models::arguments::validate_tool_arguments(&definition, &call);
+            let result = maestro_models::parameters::validate_tool_arguments(&definition, &call);
             if row["expected"]["branch"] == "success" {
                 assert_eq!(result.unwrap(), row["expected"]["arguments"], "{name}");
             } else {
@@ -447,7 +447,7 @@ impl maestro_app::SandboxRuntimeProvider<Payload> for OwnedProvider {
     fn handle_message(
         &self,
         message: Payload,
-        respond: maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond<Payload>,
+        respond: maestro_app::browser::components::sandbox::providers::SandboxRespond<Payload>,
     ) -> maestro_models::BoxFuture<Result<(), DiagnosticErrorInfo>> {
         Box::pin(async move { respond(message) })
     }

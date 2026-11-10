@@ -6,7 +6,7 @@ use maestro_chat::{
     CompactionSummaryMessageComponent, UserMessageComponent,
 };
 use maestro_theme::LiveTheme;
-use maestro_tui::tui::ChildArray;
+use maestro_tui::interface::ChildArray;
 use maestro_tui::{Component, MarkdownTheme, TerminalImage};
 use std::{
     rc::Rc,

@@ -746,10 +746,10 @@ fn guide_proxy_and_raw_loops_run_offline() {
 }
 /// Drive the scenario of `guide_proxy_and_raw_loops_run_offline` on the test runtime.
 async fn guide_proxy_and_raw_loops_run_offline_case() {
-    let (fetch, requests) = support::proxy::replying(support::proxy::Reply::chunks(
-        support::proxy::canonical_lines(),
+    let (fetch, requests) = support::remote::replying(support::remote::Reply::chunks(
+        support::remote::canonical_lines(),
     ));
-    let agent = support::proxy::proxy_agent(support::proxy::proxy_stream_fn(
+    let agent = support::remote::proxy_agent(support::remote::proxy_stream_fn(
         "https://proxy.example".into(),
         Some(fetch),
     ));

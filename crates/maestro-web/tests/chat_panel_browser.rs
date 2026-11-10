@@ -5,8 +5,8 @@ use maestro_app::browser::tools::javascript_repl::RuntimeProvidersFactory;
 use maestro_app::{AgentInitialState, AgentMessage, AgentOptions, JsonObject, get_model};
 use maestro_web::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW, ArtifactsPanel, BrowserSandboxHost, BrowserSession,
-    ChatPanel, ChatPanelConfig, browser::sandbox_value::BrowserSandboxValue,
-    create_javascript_repl_tool, get_tool_renderer,
+    ChatPanel, ChatPanelConfig, browser::values::BrowserSandboxValue, create_javascript_repl_tool,
+    get_tool_renderer,
 };
 use serde_json::{Value, json};
 use std::{
@@ -18,7 +18,7 @@ use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 /// The browser message family the sessions hold.
-type Browser = maestro_app::browser::components::messages::CustomAgentMessages;
+type Browser = maestro_app::browser::components::records::CustomAgentMessages;
 
 /// A session on the controlled model holding `messages`.
 fn session(messages: Vec<Value>) -> Rc<BrowserSession> {

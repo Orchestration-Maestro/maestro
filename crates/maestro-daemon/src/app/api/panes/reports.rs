@@ -2,10 +2,10 @@
 
 use super::super::responses::invalid_agent;
 use crate::{
-    agent_resume::{normalize_session_start_source, session_ref_from_report},
     app::{App, api_helpers::normalize_reported_agent_label},
     events::AppEvent,
-    terminal::state::SessionStartReport,
+    resume::{normalize_session_start_source, session_ref_from_report},
+    terminal::model::SessionStartReport,
 };
 use maestro_detection::agents::normalize_agent_source;
 use maestro_protocol::schema::{

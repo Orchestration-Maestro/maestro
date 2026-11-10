@@ -117,7 +117,7 @@ fn colors(offset: u8) -> Rc<Theme> {
 /// Actual application definitions, not a replacement shortcut table.
 fn manager() -> KeybindingsManager {
     KeybindingsManager::new(
-        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+        maestro_app::presentation_data::bindings::KEYBINDINGS.clone(),
         vec![],
     )
 }
@@ -545,7 +545,7 @@ fn input_group(name: &str) {
             install_editor("vi", b"edited\n", 0);
             bindings::replace(&input.global);
             let application = KeybindingsManager::new(
-                maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+                maestro_app::presentation_data::bindings::KEYBINDINGS.clone(),
                 bindings::bindings(&input.app),
             );
             let host = configured_dialog(
@@ -1303,7 +1303,7 @@ fn external_editor_native_command_roundtrip_and_cleanup() {
         return;
     }
     maestro_tui::set_keybindings(manager());
-    let binding = &maestro_app::presentation_data::keybindings::KEYBINDINGS
+    let binding = &maestro_app::presentation_data::bindings::KEYBINDINGS
         .iter()
         .find(|(id, _)| id == "app.editor.external")
         .unwrap()

@@ -13,7 +13,7 @@ impl maestro_agent::CustomAgentMessages for ForeignRole {
     }
 }
 /// Original native application records, specialized only with the caller's open role.
-type NativeCustom = maestro_session::messages::CustomAgentMessages<Value, ForeignRole>;
+type NativeCustom = maestro_session::message_records::CustomAgentMessages<Value, ForeignRole>;
 /// Original retained native record shape.
 type NativeMessage = maestro_agent::AgentMessage<NativeCustom>;
 /// Runs one native conversation operation.
@@ -25,12 +25,12 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
                 .into_iter()
                 .map(entry)
                 .collect::<Result<Vec<_>, _>>()?;
-            encode(&maestro_session::messages::convert_to_llm(&entries))
+            encode(&maestro_session::message_records::convert_to_llm(&entries))
         }
         "conversation.serialize_conversation" => {
             let (messages,): (Vec<maestro_models::Message>,) = decode(data)?;
             encode(
-                &maestro_session::compaction::utils::serialize_conversation(&messages)
+                &maestro_session::summarization::utils::serialize_conversation(&messages)
                     .map_err(|error| error.to_string())?,
             )
         }

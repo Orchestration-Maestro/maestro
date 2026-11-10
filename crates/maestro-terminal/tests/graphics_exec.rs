@@ -3,8 +3,8 @@
 use maestro_terminal::{
     Terminal,
     kitty::graphics::{
+        bitmap::Limits,
         command::{Parser, Response},
-        image::Limits,
     },
 };
 
@@ -241,7 +241,7 @@ fn ris_clears_images_without_changing_host_policy() {
 
 #[test]
 fn screen_switch_inherits_policy_and_scrolling_and_resize_dirty_images() {
-    use maestro_terminal::{page_list::Scroll, screen_set::Key};
+    use maestro_terminal::{page_list::Scroll, screens::Key};
     let mut terminal = terminal();
     terminal.switch_screen(Key::Alternate);
     assert_eq!(

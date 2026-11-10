@@ -4,7 +4,7 @@ use crate::{
     SharedAttachment,
     browser::attachment_content::browser::{element, host_error},
     components::attachment_tile::AttachmentTile,
-    dom::{DomContent, DomRoot, DomView, MountedContent},
+    page::{DomContent, DomRoot, DomView, MountedContent},
     tools::{
         renderer_registry::ToolHeaderRefs,
         renderers::{

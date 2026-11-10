@@ -61,14 +61,14 @@ fn edit_definition_keeps_schema_and_prompt_metadata() {
     };
     let _: Option<std::sync::Arc<dyn EditOperations>> = None;
     let _: Option<EditToolInput> = None;
-    let _: Option<maestro_tools::edit::EditToolInput> = None;
-    let _: Option<std::sync::Arc<dyn maestro_tools::edit::EditOperations>> = None;
-    let _: maestro_tools::edit::EditToolOptions = EditToolOptions::default();
-    let _: maestro_tools::edit::EditToolDetails = EditToolDetails {
+    let _: Option<maestro_tools::editing::EditToolInput> = None;
+    let _: Option<std::sync::Arc<dyn maestro_tools::editing::EditOperations>> = None;
+    let _: maestro_tools::editing::EditToolOptions = EditToolOptions::default();
+    let _: maestro_tools::editing::EditToolDetails = EditToolDetails {
         diff: "x".into(),
         first_changed_line: None,
     };
-    let _ = maestro_tools::edit::create_edit_tool_definition::<()>(
+    let _ = maestro_tools::editing::create_edit_tool_definition::<()>(
         "/work".into(),
         EditToolOptions::default(),
     );
@@ -79,7 +79,7 @@ fn edit_definition_keeps_schema_and_prompt_metadata() {
         "edit"
     );
     assert_eq!(
-        maestro_tools::edit::create_edit_tool("/work".into(), EditToolOptions::default())
+        maestro_tools::editing::create_edit_tool("/work".into(), EditToolOptions::default())
             .definition
             .name,
         "edit"
@@ -115,7 +115,7 @@ fn edit_definition_keeps_schema_and_prompt_metadata() {
 
 #[test]
 fn edit_arguments_use_preparation_before_shared_validation() {
-    use maestro_models::arguments::validation::validate_schema;
+    use maestro_models::parameters::validation::validate_schema;
     use maestro_models::{ToolCall, validate_tool_arguments};
     use serde::Deserialize;
     use serde_json::{Value, json};

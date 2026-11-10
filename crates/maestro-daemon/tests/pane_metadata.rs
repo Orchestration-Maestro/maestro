@@ -5,7 +5,7 @@ use crate::support::api::{
     TestApp, accepted, daemon_with_workspaces, detect, events_after, pane_record, pilot, request,
     root_pane,
 };
-use maestro_daemon::terminal::state::{DetectedStateUpdate, TerminalState};
+use maestro_daemon::terminal::model::{DetectedStateUpdate, TerminalState};
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
     events::EventData,

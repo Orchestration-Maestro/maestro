@@ -3,8 +3,8 @@
 use crate::contributions_support::{body, select, view};
 use crate::docx_preview_browser::fetch_bytes;
 use maestro_web::{
-    dom::{DomContent, DomRoot, DomView},
-    tools::artifacts::docx_artifact::DocxArtifact,
+    page::{DomContent, DomRoot, DomView},
+    tools::documents::docx_artifact::DocxArtifact,
 };
 use serde::Deserialize;
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
@@ -503,7 +503,7 @@ async fn assert_preserved_pages(
 }
 
 /// Dropping one document cancels its scheduled shape sizing while its sibling still completes.
-async fn assert_cancelled_shapes(view: &maestro_web::dom::DomView) {
+async fn assert_cancelled_shapes(view: &maestro_web::page::DomView) {
     use crate::contributions_support::frames;
     let cases = packages();
     let shapes = cases.iter().find(|case| case.name == "vml-shapes").unwrap();

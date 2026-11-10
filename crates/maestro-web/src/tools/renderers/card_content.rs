@@ -1,6 +1,6 @@
 //! Owned card captions and mutually exclusive retained bodies.
 use super::collapsible_card::{CollapsibleCard, Content};
-use crate::dom::PreparedContent;
+use crate::page::PreparedContent;
 use crate::tools::{
     renderer_registry::ToolHeaderState,
     types::{ToolRenderResult, ToolResultMessageView, ToolUiError},
@@ -14,7 +14,7 @@ pub(in crate::tools) enum Caption {
     /// Localized artifact label followed by an optional captured filename.
     Artifact(
         &'static str,
-        Option<crate::tools::artifacts::artifact_pill::Pill>,
+        Option<crate::tools::documents::artifact_pill::Pill>,
     ),
     /// Translated key followed by a literal suffix.
     Localized(&'static str, String),
@@ -83,7 +83,7 @@ pub(in crate::tools) trait CardOutput: Sized {
     /// Retain renderer `R`'s selected disclosure branch in this representation.
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self;
     /// Retain a selected line difference in this representation.
-    fn diff(props: crate::components::diff::DiffProps) -> Self;
+    fn diff(props: crate::components::changes::DiffProps) -> Self;
 }
 impl CardOutput for PreparedContent {
     fn card(card: CardContent) -> Self {
@@ -92,8 +92,8 @@ impl CardOutput for PreparedContent {
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
         Box::new(Content::<R, Self>::from(card))
     }
-    fn diff(props: crate::components::diff::DiffProps) -> Self {
-        crate::components::diff::diff(props)
+    fn diff(props: crate::components::changes::DiffProps) -> Self {
+        crate::components::changes::diff(props)
     }
 }
 #[cfg(target_arch = "wasm32")]

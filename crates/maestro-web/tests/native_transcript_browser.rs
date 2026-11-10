@@ -1,11 +1,11 @@
 //! Stable transcript history and the streaming message mounted as page content.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, text, view};
-use maestro_app::browser::components::messages::CustomAgentMessages as BrowserMessages;
+use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_app::{AgentMessage, CustomAgentMessages, JsonObject, ToolResultMessage};
 use maestro_web::{
     MessageList, MessageRenderer, StreamingMessageContainer,
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     register_message_renderer, register_tool_renderer,
     tools::types::{
         ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView, ToolUiError,

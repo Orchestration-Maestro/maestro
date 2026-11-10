@@ -5,7 +5,7 @@ branch, extension status texts and a supplied available-provider count.
 `FooterDataProvider` holds them; a frontend reads them through the
 `ReadonlyFooterDataProvider` trait, which is re-exported at the crate root.
 The trait, the live `ExtensionStatuses` view and its iterator are declared in
-`maestro_extensions::footer_data_provider`, because extension footer factories
+`maestro_extensions::footer`, because extension footer factories
 receive them; the application re-exports them at its existing paths.
 Available repository watches refresh Git metadata asynchronously. Frontends
 subscribe to working-directory changes and changed cached branches.
@@ -13,7 +13,7 @@ subscribe to working-directory changes and changed cached branches.
 ```rust
 use std::rc::Rc;
 use maestro_app::ReadonlyFooterDataProvider;
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::presentation_data::status_line::{
     FooterDataProvider, NativeFooterOperations,
 };
 

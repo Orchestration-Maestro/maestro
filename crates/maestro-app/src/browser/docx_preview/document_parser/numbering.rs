@@ -1,6 +1,6 @@
 //! Concrete instance preparation from owned raw numbering.
 use super::super::document::common::integer_prefix;
-use super::super::numbering::parser::{Parsed, PictureSelection, PreparedLevel, ReferenceKey};
+use super::super::lists::parser::{Parsed, PictureSelection, PreparedLevel, ReferenceKey};
 use super::super::{IDomNumbering, NumberingPicBullet};
 use std::collections::HashMap;
 /// Hashable numeric identity with an explicit null value.

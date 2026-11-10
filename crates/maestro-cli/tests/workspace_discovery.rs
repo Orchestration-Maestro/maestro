@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 #![cfg(test)]
 
-use maestro_app::daemon::{Agent, DEFAULTS_TEXT, agent_label};
+use maestro_app::daemon_api::{Agent, DEFAULTS_TEXT, agent_label};
 use maestro_cli::workspace_commands::spec::command;
 
 #[test]
@@ -355,7 +355,7 @@ fn five_shell_completions_include_chat_and_nested_workspace_commands() {
     for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         assert_eq!(
-            maestro_cli::completion::run_completion(&[shell.into()], &mut stdout, &mut stderr)
+            maestro_cli::completions::run_completion(&[shell.into()], &mut stdout, &mut stderr)
                 .unwrap(),
             0
         );
@@ -396,7 +396,7 @@ fn completion_validates_usage_and_propagates_output_failures() {
     ] {
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         assert_eq!(
-            maestro_cli::completion::run_completion(
+            maestro_cli::completions::run_completion(
                 &args.into_iter().map(str::to_owned).collect::<Vec<_>>(),
                 &mut stdout,
                 &mut stderr
@@ -411,7 +411,7 @@ fn completion_validates_usage_and_propagates_output_failures() {
     for help in ["help", "--help", "-h"] {
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         assert_eq!(
-            maestro_cli::completion::run_completion(&[help.into()], &mut stdout, &mut stderr)
+            maestro_cli::completions::run_completion(&[help.into()], &mut stdout, &mut stderr)
                 .unwrap(),
             0
         );
@@ -419,7 +419,7 @@ fn completion_validates_usage_and_propagates_output_failures() {
         assert!(!stderr.is_empty());
     }
     for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
-        let error = maestro_cli::completion::run_completion(
+        let error = maestro_cli::completions::run_completion(
             &[shell.into()],
             &mut BrokenOutput,
             &mut Vec::new(),
@@ -477,7 +477,7 @@ fn settings_defaults_rejects_extra_arguments_and_preserves_output_errors() {
 #[test]
 fn chat_metadata_retains_existing_option_meanings() {
     let mut bytes = Vec::new();
-    maestro_cli::input::args::print_help(&[], &mut bytes, false).unwrap();
+    maestro_cli::input::arguments::print_help(&[], &mut bytes, false).unwrap();
     let document = String::from_utf8(bytes)
         .unwrap()
         .split_whitespace()

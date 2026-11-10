@@ -6,7 +6,7 @@ use maestro_models::Local;
 use maestro_models::{Execution, Threaded};
 use maestro_resources::SourceInfo;
 use maestro_tools::{
-    ToolDefinitionRecord, ToolExecution, renderer_binding::ToolRendererBinding,
+    ToolDefinitionRecord, ToolExecution, renderers::ToolRendererBinding,
     tool_definition_wrapper::ToolDefinitionInput,
 };
 use maestro_tui::KeyId;

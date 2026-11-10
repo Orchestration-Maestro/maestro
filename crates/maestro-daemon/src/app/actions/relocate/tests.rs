@@ -1,9 +1,9 @@
 //! Emptied-workspace removal and recovery of a refused move keep identities and selection.
 
 use super::*;
-use crate::{settings::model::Config, terminal::state::TerminalState};
-use maestro_detection::manifest::ManifestCache;
-use maestro_workspace::layout::PaneId;
+use crate::{settings::model::Config, terminal::model::TerminalState};
+use maestro_detection::definitions::ManifestCache;
+use maestro_workspace::tiling::PaneId;
 use std::sync::{Arc, RwLock};
 
 /// Builds `count` workspaces of one tab and one pane each, without child processes.

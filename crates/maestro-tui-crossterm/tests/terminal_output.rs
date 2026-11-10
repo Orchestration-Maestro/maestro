@@ -990,7 +990,7 @@ fn native_output_writer_keeps_synchronous_destinations() {
 }
 
 /// Verifies closure for ordinary, empty and flush admission without writing more bytes.
-fn assert_closed_writer(writer: &mut maestro_tui_crossterm::terminal::output::OutputWriter) {
+fn assert_closed_writer(writer: &mut maestro_tui_crossterm::adapter::emission::OutputWriter) {
     use std::io::Write;
     assert_eq!(
         writer.write(b"lost").unwrap_err().kind(),
@@ -1104,7 +1104,7 @@ fn standard_output_preserves_partial_progress_and_reports_flush_failure() {
         let _rig = Rig::paused();
         let output = pipe_output();
         fcntl_setfl(stdout(), fcntl_getfl(stdout()).unwrap() | OFlags::NONBLOCK).unwrap();
-        let mut standard = maestro_tui_crossterm::terminal::output::StandardOutput::default();
+        let mut standard = maestro_tui_crossterm::adapter::emission::StandardOutput::default();
         let bytes = vec![b'x'; 2 * 1024 * 1024];
         let written = standard
             .write(&bytes)

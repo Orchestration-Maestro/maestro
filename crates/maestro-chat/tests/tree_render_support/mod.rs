@@ -7,8 +7,7 @@ use crate::registry;
 use crate::tree;
 use filter_mode::mode;
 use maestro_app::{
-    compact_json, format_read_line_range, presentation_data::keybindings::KEYBINDINGS,
-    truncate_utf16,
+    compact_json, format_read_line_range, presentation_data::bindings::KEYBINDINGS, truncate_utf16,
 };
 /// The frontend facade retains the shared JSON signature.
 const _: fn(&serde_json::Value) -> Result<String, serde_json::Error> = compact_json;
@@ -16,7 +15,7 @@ const _: fn(&serde_json::Value) -> Result<String, serde_json::Error> = compact_j
 const _: fn(&str, usize) -> String = truncate_utf16;
 /// The frontend facade retains the shared read-range signature.
 const _: fn(&serde_json::Value) -> String = format_read_line_range;
-use maestro_chat::components::tree_selector::TreeList;
+use maestro_chat::components::tree_picker::TreeList;
 use maestro_tui::{KeybindingsManager, get_keybindings, set_keybindings, visible_width};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet};

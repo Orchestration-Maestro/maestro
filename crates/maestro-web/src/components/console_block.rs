@@ -1,12 +1,12 @@
 //! Literal console output with retained native scrolling and owned copy feedback.
-use crate::components::code_block::ReadingUiError;
+use crate::components::source::ReadingUiError;
 use crate::{
     I18n,
     browser::attachment_content::{
         self, AttachmentHost, AttachmentHostError, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
-    components::{code_block, copy_button::CopyButton},
+    components::{copy_button::CopyButton, source},
 };
 use std::{
     cell::RefCell,
@@ -73,7 +73,7 @@ impl Prepared {
 /// Console body and its independent retained platform lifetime.
 ///
 /// [`ConsoleBlock::default`] mounts as native page content through
-/// [`DomContent`](crate::dom::DomContent); [`ConsoleBlock::new`] draws on a canvas host.
+/// [`DomContent`](crate::page::DomContent); [`ConsoleBlock::new`] draws on a canvas host.
 pub struct ConsoleBlock {
     /// Literal output, never parsed as markup or encoded text.
     pub content: String,
@@ -173,7 +173,7 @@ impl ConsoleBlock {
             .then(|| Rc::new(Prepared::owned(&supplied)));
         let size = copy.size(ui, i18n)?;
         let layout = self.publish(ui, next, (copy.id, size), (presentation, modal))?;
-        let controls = code_block::controls(ui, &layout, [copy], (i18n, presentation))?;
+        let controls = source::controls(ui, &layout, [copy], (i18n, presentation))?;
         let gained = controls.iter().flatten().any(egui::Response::gained_focus);
         if let Some(mounted) = self.mounted.borrow().upgrade().filter(|_| gained) {
             mounted.reveal();

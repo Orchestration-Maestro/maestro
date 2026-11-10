@@ -34,7 +34,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         templates.prompts.len()
     )?;
     let expanded =
-        maestro_resources::prompt_templates::expand_prompt_template("/deploy", &templates.prompts);
+        maestro_resources::prompts::expand_prompt_template("/deploy", &templates.prompts);
     let records: Vec<Value> = templates
         .prompts
         .iter()

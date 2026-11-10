@@ -1,12 +1,12 @@
 //! `layout.apply`: builds a requested tree as a new tab, replacing a tab when one is named.
 
 use super::tree::{first_leaf, leaf_launch, validate_layout_tree};
-use crate::app::{App, api::responses::api_error, creation::RootLaunch, state::Mode};
+use crate::app::{App, api::responses::api_error, creation::RootLaunch, model::Mode};
 use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, LayoutApplyParams, LayoutNode, LayoutPane, ResponseResult},
 };
-use maestro_workspace::layout::{PaneId, SplitRequest};
+use maestro_workspace::tiling::{PaneId, SplitRequest};
 use std::path::PathBuf;
 
 impl<C: FnMut() -> u128> App<C> {

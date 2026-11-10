@@ -6,12 +6,12 @@ use js_sys::Uint8Array;
 use maestro_theme::BrandMode;
 use maestro_web::{
     components::{
-        button::{ButtonSize, ButtonVariant},
+        controls::{ButtonSize, ButtonVariant},
         download_button::dom::{DownloadButtonProps, DownloadContent, download_button},
         preview_code_toggle::{PreviewCodeToggle, ViewMode},
     },
-    dom::{DomContent, DomRoot, DomView},
     icons::IconSize,
+    page::{DomContent, DomRoot, DomView},
 };
 use std::{
     array,

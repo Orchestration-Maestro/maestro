@@ -8,7 +8,7 @@ use maestro_app::SandboxResult;
 use maestro_app::browser::components::sandboxed_iframe::{
     SandboxHost, SandboxIframe, SandboxUrlProvider,
 };
-use maestro_app::browser::tools::artifacts::{
+use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanel, ArtifactsPanelState,
 };
 use maestro_models::test_support::{assert_declaration, producer_case};

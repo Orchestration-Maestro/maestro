@@ -9,8 +9,8 @@ use crate::markdown_support::{
 };
 use maestro_web::{
     components::markdown_block::MarkdownBlock,
-    contributions::ContributionHost,
-    dom::{DomView, MountedContent},
+    page::{DomView, MountedContent},
+    runtime_contributions::ContributionHost,
 };
 use std::{any::Any, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};

@@ -51,10 +51,10 @@ mod native {
     use super::client::Client;
     use maestro_app::{
         CapturedChild, Termination, configuration::config,
-        presentation_data::keybindings::KeybindingsManager, rpc_types::RpcExtensionUIResponse,
+        presentation_data::bindings::KeybindingsManager, rpc_types::RpcExtensionUIResponse,
     };
     use maestro_theme::{LiveTheme, ThemeState};
-    use maestro_tui::{TUI, TerminalImage, tui::InputListenerResult};
+    use maestro_tui::{TUI, TerminalImage, interface::InputListenerResult};
     use maestro_tui_crossterm::{ProcessTerminal, ProcessTuiRuntime};
     use serde_json::Value;
     use std::{

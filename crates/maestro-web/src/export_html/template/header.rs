@@ -64,7 +64,7 @@ fn format_tokens(count: f64) -> String {
             ryu_js::Buffer::new().format_to_fixed(count / 1_000_000., 1)
         )
     } else {
-        crate::utils::format::format_token_count(count)
+        crate::utils::formatting::format_token_count(count)
     }
 }
 #[cfg(test)]

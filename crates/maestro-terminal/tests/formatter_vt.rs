@@ -2,7 +2,7 @@
 
 use maestro_terminal::{
     Terminal,
-    formatter::{Format, Options, PageFormatter, ScreenFormatter, TerminalFormatter},
+    formatting::{Format, Options, PageFormatter, ScreenFormatter, TerminalFormatter},
 };
 
 fn terminal(cols: u16, text: &str) -> Terminal {
@@ -113,7 +113,7 @@ fn page_vt_with_background_and_foreground_colors() {
 
 #[test]
 fn page_codepoint_map_with_styled_formats() {
-    use maestro_terminal::formatter::{CodepointMap, Replacement};
+    use maestro_terminal::formatting::{CodepointMap, Replacement};
     let map = [CodepointMap {
         range: 'e'..='e',
         replacement: Replacement::Codepoint('X'),
@@ -149,7 +149,7 @@ fn page_vt_background_color_on_trailing_blank_cells() {
 
 #[test]
 fn pagelist_vt_spanning_two_pages() {
-    use maestro_terminal::{formatter::PageListFormatter, point::Tag};
+    use maestro_terminal::{formatting::PageListFormatter, point::Tag};
     let mut terminal = terminal(80, "");
     let list = &terminal.screens.active().pages;
     let rows = list
@@ -211,7 +211,7 @@ fn terminal_from_output(output: &str) -> Terminal {
 
 #[test]
 fn terminal_keyboard_extras_follow_content_and_skip_defaults() {
-    use maestro_terminal::formatter::{Content, ScreenExtra, TerminalExtra};
+    use maestro_terminal::formatting::{Content, ScreenExtra, TerminalExtra};
     let terminal = terminal(80, "\x1b[>4;2m\x1b[=3;1uhello");
     let mut formatter = TerminalFormatter::init(&terminal, vt());
     formatter.content = Content::None;
@@ -337,7 +337,7 @@ fn vt_wide_graphemes_and_soft_wrap_preserve_styles() {
 
 #[test]
 fn styled_extraction_replays_background_only_rows() {
-    use maestro_terminal::render::RenderState;
+    use maestro_terminal::painting::RenderState;
     for input in [
         "A\r\n\x1b[44m\x1b[K\x1b[0m\r\nB",
         "A\r\nB\r\n\x1b[44m\x1b[K\x1b[0m",

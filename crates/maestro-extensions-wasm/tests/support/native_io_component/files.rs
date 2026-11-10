@@ -4,7 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionResult, io::NativeIo};
+use maestro_extensions_wasm::{CommandOptions, ExtensionAPI, ExtensionResult, effects::NativeIo};
 use serde_json::{Value, json};
 use std::rc::Rc;
 

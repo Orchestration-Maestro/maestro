@@ -1,10 +1,10 @@
 //! Public identity parsing over the topology owner's stable numbers.
 
-use super::state::DaemonState;
+use super::model::DaemonState;
 use maestro_workspace::{
-    layout::PaneId,
     pane_state::PaneState,
-    workspace::{decode_public_number, public_pane_id_for_number, public_tab_id_for_number},
+    spaces::{decode_public_number, public_pane_id_for_number, public_tab_id_for_number},
+    tiling::PaneId,
 };
 
 impl<C: FnMut() -> u128> DaemonState<C> {

@@ -37,8 +37,8 @@ fn cases() -> Vec<Case> {
 }
 /// Replay the tile corpus through native controls rather than drawing placements.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn native_cases(view: &maestro_web::dom::DomView) {
-    use maestro_web::dom::DomContent as _;
+pub(crate) fn native_cases(view: &maestro_web::page::DomView) {
+    use maestro_web::page::DomContent as _;
     use wasm_bindgen::JsCast as _;
     for case in cases() {
         let attachment = case.input.record();
@@ -109,9 +109,9 @@ fn native_glyph(node: &web_sys::Element, icon: &str) {
 }
 
 /// Attachments remain indivisible fixed-size items when the native row wraps.
-pub(crate) fn user_attachment_tiles_wrap_as_single_fixed_items(view: &maestro_web::dom::DomView) {
+pub(crate) fn user_attachment_tiles_wrap_as_single_fixed_items(view: &maestro_web::page::DomView) {
     use crate::contributions_support::{body, select, text};
-    use maestro_web::dom::DomContent as _;
+    use maestro_web::page::DomContent as _;
     use wasm_bindgen::JsCast as _;
     let records: Vec<_> = (0..14)
         .map(|index| {
@@ -171,9 +171,9 @@ pub(crate) fn user_attachment_tiles_wrap_as_single_fixed_items(view: &maestro_we
 }
 
 /// The badge intercepts pointer clicks while the thumbnail keeps its own hover and opening route.
-pub(crate) async fn tile_badge_keeps_image_pointer_route(view: &maestro_web::dom::DomView) {
+pub(crate) async fn tile_badge_keeps_image_pointer_route(view: &maestro_web::page::DomView) {
     use crate::contributions_support::{body, computed, driver, select};
-    use maestro_web::{AttachmentTile, dom::DomContent as _};
+    use maestro_web::{AttachmentTile, page::DomContent as _};
     use wasm_bindgen::JsCast as _;
     let record = attachment_support::attachment();
     record.write().unwrap().preview = Some("AA==".into());
@@ -229,7 +229,7 @@ pub(crate) async fn tile_badge_keeps_image_pointer_route(view: &maestro_web::dom
 fn wrapped_row(records: &[maestro_web::SharedAttachment]) -> maestro_web::UserMessage {
     use maestro_app::{
         AgentMessage, UserContent,
-        browser::components::messages::{CustomAgentMessages, UserMessageWithAttachments},
+        browser::components::records::{CustomAgentMessages, UserMessageWithAttachments},
     };
     use maestro_web::UserMessage;
     UserMessage::<maestro_app::NoCustomMessages> {

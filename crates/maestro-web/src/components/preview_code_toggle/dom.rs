@@ -3,7 +3,7 @@ use super::{PreviewCodeToggle, ViewMode};
 use crate::{
     browser::attachment_content::AttachmentHostError,
     components::mode_toggle::{Mode, ModeGroup, Options},
-    dom::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
+    page::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
     tools::types::ToolUiError,
 };
 use std::{
@@ -130,7 +130,7 @@ struct ToggleElement {
 }
 impl custom_element::CustomElement for ToggleElement {
     fn connected_callback(&mut self) {
-        let Some(root) = dom::connected(&self.root) else {
+        let Some(root) = page::connected(&self.root) else {
             return;
         };
         // Lifecycle callbacks have no error channel; a failed build leaves the element empty.
@@ -175,7 +175,7 @@ fn property(
         }
     });
     // A valid property name on a live element only fails when it already exists unconfigurably.
-    dom::install(root, "mode", &get, &set);
+    page::install(root, "mode", &get, &set);
     (get, set)
 }
 /// Define the preview/source control once for the page.
@@ -183,7 +183,7 @@ fn property(
 /// Returns the browser's registration failure.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
-    dom::define_element(TAG, Vec::new(), &[], move |root, _| {
+    page::define_element(TAG, Vec::new(), &[], move |root, _| {
         let selection = Rc::new(Cell::new(ViewMode::Preview));
         let mounted = Rc::default();
         let mode = property(&root, &selection, &mounted);

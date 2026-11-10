@@ -7,8 +7,9 @@ use maestro_app::{JsonObject, ToolCall, ToolResultMessage};
 use maestro_web::{
     ArtifactsToolRenderer, AssistantMessage, ToolMessage,
     components::messages::ToolResults,
-    dom::{DomContent, DomView},
-    get_tool_renderer, register_tool_renderer, render_tool, set_show_json_mode,
+    get_tool_renderer,
+    page::{DomContent, DomView},
+    register_tool_renderer, render_tool, set_show_json_mode,
     tools::{
         renderer_registry::TOOL_RENDERERS,
         types::{ToolParams, ToolRenderResult, ToolRenderer, ToolRendererBinding},
@@ -174,7 +175,7 @@ pub(super) fn artifacts(view: &Rc<DomView>) {
     let renderer = Rc::new(ArtifactsToolRenderer::new(None));
     let binding = ToolRendererBinding::from_raw::<JsonObject, Details>(renderer.clone())
         .with_raw::<Value, Details>(renderer.clone())
-        .with_raw::<maestro_app::browser::tools::artifacts::ArtifactsParams, Details>(renderer);
+        .with_raw::<maestro_app::browser::tools::documents::ArtifactsParams, Details>(renderer);
     let names = TOOL_RENDERERS.with(|all| all.borrow().keys().cloned().collect::<Vec<_>>());
     assert!(!names.iter().any(|name| name == "artifacts"));
     register_tool_renderer("artifacts", binding.clone());
@@ -205,7 +206,7 @@ pub(super) fn artifacts(view: &Rc<DomView>) {
 /// are never formatted.
 fn artifact_adapters(view: &DomView, result: &ToolResultMessage<Details>) {
     let params = json!({"command":"create","filename":"literal.rs","content":"literal code"});
-    let typed: maestro_app::browser::tools::artifacts::ArtifactsParams =
+    let typed: maestro_app::browser::tools::documents::ArtifactsParams =
         serde_json::from_value(params.clone()).unwrap();
     let prepared = [
         render_tool(

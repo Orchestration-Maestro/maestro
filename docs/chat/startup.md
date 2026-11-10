@@ -1,6 +1,6 @@
 # Changelog sections
 
-The application holds the changelog utility in `maestro_app::utils::changelog` and
+The application holds the changelog utility in `maestro_app::utils::release_notes` and
 re-exports its items at the crate root. It is available on native targets. The
 [`/changelog` command](commands.md#changelog) reads it. Startup uses the same reader to select unseen sections.
 

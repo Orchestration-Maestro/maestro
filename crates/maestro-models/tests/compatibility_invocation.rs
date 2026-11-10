@@ -3,7 +3,7 @@ mod tests {
     use maestro_models::records::api_registry::{
         ApiProvider, register_api_provider, unregister_api_providers,
     };
-    use maestro_models::records::stream::{stream, stream_simple};
+    use maestro_models::records::invocation::{stream, stream_simple};
     use maestro_models::{AssistantMessageEventStream, Context, Model, SharedHandle};
     use serde_json::{Value, json};
     use std::sync::{Arc, Mutex};

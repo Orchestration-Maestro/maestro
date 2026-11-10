@@ -5,10 +5,10 @@ use crate::{
         attachment_content::browser::{element, host_error, set_text_if_changed},
         event_subscription::EventSubscription,
     },
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
     icons::IconSize,
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::{
-        renderer_registry::header::dom::{Click, glyph},
+        renderer_registry::heading::dom::{Click, glyph},
         types::ToolUiError,
     },
 };
@@ -65,7 +65,7 @@ struct Mounted {
 }
 impl DomContent for ExpandableSection {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let document = &view.document;
         let root = element(document, "div", "maestro-expandable")?;
         let button = element(document, "button", "maestro-expandable-toggle")?;

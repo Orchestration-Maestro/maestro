@@ -2,8 +2,8 @@
 #![cfg(test)]
 use maestro_extensions::{
     ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for, create_extension_runtime,
+    execution::emit_session_shutdown_event,
     load_extension_from_factory,
-    runner::emit_session_shutdown_event,
     types::{ExtensionUIContextPort, NotificationType, SessionShutdownEvent},
 };
 use maestro_session::SessionManager;

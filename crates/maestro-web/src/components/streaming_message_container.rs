@@ -1,5 +1,5 @@
 //! The message being streamed, published at most once per animation frame.
-use maestro_app::browser::components::messages::CustomAgentMessages as BrowserMessages;
+use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages, ToolResultMessage};
 use std::{
     collections::{HashMap, HashSet},

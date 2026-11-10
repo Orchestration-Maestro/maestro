@@ -1,6 +1,6 @@
 # Response endpoints
 
-The standard endpoint lives in `providers::responses::openai_responses`, and the
+The standard endpoint lives in `providers::responses_api::openai`, and the
 package root also exports `OpenAIResponsesOptions`. Conversion and event reduction
 stay internal to the crate.
 
@@ -54,7 +54,7 @@ transport returns a finite response and contacts no external service.
 ```rust,no_run
 use std::sync::Arc;
 use maestro_models::{Context, Fetch, HttpResponse, OpenAIResponsesOptions, StreamOptions, get_model};
-use maestro_models::providers::responses::openai_responses::stream_openai_responses;
+use maestro_models::providers::responses_api::openai::stream_openai_responses;
 
 async fn controlled() {
     let fetch: Fetch = Arc::new(|_| {
@@ -77,7 +77,7 @@ async fn controlled() {
 
 ## Cloud invocation
 
-`providers::responses::azure_openai_responses` provides
+`providers::responses_api::azure_transport` provides
 `stream_azure_openai_responses` and `stream_simple_azure_openai_responses`, and the
 package root also exports `AzureOpenAIResponsesOptions`. Output uses
 `azure-openai-responses` even when the supplied descriptor names another API, and request
@@ -151,7 +151,7 @@ transport contacts no external service.
 ```rust,no_run
 use std::sync::Arc;
 use maestro_models::{AzureOpenAIResponsesOptions, Context, Fetch, HttpResponse, Model, StreamOptions};
-use maestro_models::providers::responses::azure_openai_responses::stream_azure_openai_responses;
+use maestro_models::providers::responses_api::azure_transport::stream_azure_openai_responses;
 
 async fn controlled_cloud(model: Model, context: Context) {
     let fetch: Fetch = Arc::new(|_| {

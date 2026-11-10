@@ -1,9 +1,9 @@
 //! Native download control writing the caller's original bytes.
 use crate::{
     browser::{attachment_content::AttachmentHostError, event_subscription::EventSubscription},
-    components::button::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
-    dom::{DomRoot, DomView},
+    components::controls::{ButtonProps, ButtonSize, ButtonType, ButtonVariant, button},
     icons::{self, IconSize},
+    page::{DomRoot, DomView},
     tools::types::ToolUiError,
     utils::{base64, download::download_bytes},
 };

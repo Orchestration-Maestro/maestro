@@ -71,9 +71,9 @@ fn sequence_special_mods_and_event() {
 #[test]
 fn semantic_extended_modifiers_do_not_collapse_to_plain_text() {
     use crate::input::{
-        key::KeyEvent,
         key_encode::{KeyEncoder, KeyEncoding},
         key_mods::Mods,
+        keyboard::KeyEvent,
     };
     use crate::kitty::key::Flags;
     let encoder = KeyEncoder {
@@ -98,9 +98,9 @@ fn semantic_extended_modifiers_do_not_collapse_to_plain_text() {
 #[test]
 fn semantic_legacy_alt_enter_keeps_escape_prefix() {
     use crate::input::{
-        key::{Key, KeyEvent},
         key_encode::{KeyEncoder, KeyEncoding},
         key_mods::Mods,
+        keyboard::{Key, KeyEvent},
     };
     let encoder = KeyEncoder {
         encoding: KeyEncoding::Semantic,

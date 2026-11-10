@@ -1,7 +1,7 @@
 //! Shared ordered replay of retained daemon events.
 #![cfg(test)]
 
-use maestro_daemon::api::event_hub::EventHub;
+use maestro_daemon::service::event_hub::EventHub;
 use maestro_protocol::events::EventData;
 
 #[test]

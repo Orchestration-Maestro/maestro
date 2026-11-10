@@ -50,7 +50,7 @@ pub(super) fn replay() {
     let _guard = registry::REGISTRY.lock().unwrap();
     let _restore = registry::Restore(maestro_tui::get_keybindings());
     maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+        maestro_app::presentation_data::bindings::KEYBINDINGS.clone(),
         vec![],
     ));
     let cases: Vec<Case> =

@@ -8,9 +8,7 @@ use serde_json::Value;
 
 use super::controlled::Controlled;
 use super::documents::Answer;
-use super::example_support::{
-    Command, assert_registered_command, invoke_command_on_component, release_all, start,
-};
+use super::example_support::{Command, assert_registered_command, invoke_command_on_component, release_all, start};
 use super::host::Harness;
 use super::observed::Observed;
 use super::ui_host::receipts;

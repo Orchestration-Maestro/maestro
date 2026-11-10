@@ -864,7 +864,7 @@ dependencies; this map points to the implementations and their usage guides.
 | Terminal components, input and frame rendering | [`maestro-tui/src`](../crates/maestro-tui/src/lib.rs) | [Components](terminal/components.md) |
 | Interactive chat presentation | [`maestro-chat/src`](../crates/maestro-chat/src/lib.rs) | [Chat](chat/interactive-mode.md) |
 | Native terminal effects | [`maestro-tui-crossterm/src`](../crates/maestro-tui-crossterm/src/lib.rs) | [Native terminal](terminal/native-terminal.md) |
-| Standard-stream RPC adapter | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs); the connection runner belongs to `maestro-app::rpc_mode` | [Daemon protocol](daemon-protocol.md) |
+| Standard-stream RPC adapter | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs); the connection runner belongs to `maestro-app::connection_runner` | [Daemon protocol](daemon-protocol.md) |
 | Extension author API and canonical component interfaces | [`maestro-extensions-wasm/src`](../crates/maestro-extensions-wasm/src/lib.rs) and its `wit/` directory; native execution is adapted by `maestro-extensions-wasmtime` | [Guest authoring](extensions/guest.md) |
 
 ## Debugging
@@ -1407,7 +1407,11 @@ they select every test, or none when the file is Markdown or under `docs/`.
 The conventions check names every test that reads `docs/`, `examples/` or `assets/` at
 run time, through a `../../` path, a join onto the workspace root or a call to
 `get_docs_path`, `get_examples_path` or `get_package_dir`, and fails until
-`test_inputs` routes that directory to the reading package.
+`test_inputs` routes that directory to the reading package. The
+[workspace conventions](architecture.md#workspace-architecture-checks) read every
+crate's manifests and sources, so `crates/` routes to `maestro-test-conventions`: a
+change under any crate selects the conventions suite beside the changed crate and
+its dependents.
 
 ### Test preparation in a consuming workspace
 
@@ -1500,6 +1504,14 @@ The tooling search-setup tests use the same exports to install private programs
 for their preparation and local-setup children. Their runner needs neither
 program on `PATH`; archived-export children also exclude the private directory.
 
+The tool-factory suite in `maestro-tools` and the factory-construction test in
+`maestro-extensions-wasmtime` install the pins the same way, so neither needs `rg` or
+`fd` on `PATH`. The `author-component` filter in `.config/nextest.toml` covers each
+test that receives the exports: add a test to it when the test calls
+`install_search_program`. A chat startup witness that counts requests installs stub
+`fd` and `rg` programs in its binary directory first, so it never downloads a search
+program or depends on one found on `PATH`.
+
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
 `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
@@ -1582,7 +1594,7 @@ directory as their only lane.
 Cargo locks the package cache of its home while it resolves, even with
 `--offline`, so two tests that start `cargo` in one home wait for each other.
 Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
-`toolchain_support::fixture_command` creates beside the fixture. The recipe
+`compiler::fixture_command` creates beside the fixture. The recipe
 tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
@@ -2119,7 +2131,7 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
-| `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
+| `crates/maestro-daemon/src/panes/lifecycle/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
 | `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
 | `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
@@ -2132,7 +2144,7 @@ Run the client corpus with its prepared native peers:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-app -E 'test(/rpc_client/)'
+cargo nextest run --locked -p maestro-app -E 'test(/rpc_transport/)'
 ```
 
 On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer
@@ -2817,7 +2829,7 @@ a hang or runaway memory as a finding.
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
 | `sandbox-lowering` | `maestro_web::components::sandboxed_iframe::lowering::{program, provider}` for supplied bodies and provider expressions |
-| `git-worktrees` | `maestro_daemon::git::worktree::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
+| `git-worktrees` | `maestro_daemon::git::checkouts::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
 
 The text targets skip input that is not UTF-8, because their callers only pass
 decoded text. Seeds come from the existing test fixtures and live in

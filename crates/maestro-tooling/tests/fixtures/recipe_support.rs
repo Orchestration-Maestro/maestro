@@ -174,11 +174,8 @@ impl Workspace {
         };
         let root = workspace.path();
         fs::create_dir_all(root.join("bin")).unwrap();
-        super::toolchain_support::declare_toolchain(
-            &root,
-            include_str!("../../../../rust-toolchain.toml"),
-        )
-        .unwrap();
+        super::compiler::declare_toolchain(&root, include_str!("../../../../rust-toolchain.toml"))
+            .unwrap();
         fs::copy(
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../justfile"),
             root.join("justfile"),
@@ -245,7 +242,7 @@ impl Workspace {
     /// Keeps build output inside the fixture's configured target directory and Cargo state
     /// beside the checkout, so the shared package cache is never locked.
     pub fn toolchain_command(&self, program: impl AsRef<OsStr>) -> Command {
-        let mut command = super::toolchain_support::fixture_command(
+        let mut command = super::compiler::fixture_command(
             program,
             self.parent.path(),
             self.sources.get().map(PathBuf::as_path),

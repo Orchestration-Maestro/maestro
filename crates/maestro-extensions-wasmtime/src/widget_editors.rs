@@ -5,11 +5,11 @@ use crate::keys_reads::KeysEndpoint;
 use crate::local_resources::effects::TuiEndpoint;
 use crate::widget_lists::{Binding, ListRequest, Slot};
 use crate::widget_reads::{Paint, Reply};
-use maestro_extensions::types::{CustomEditorComponent, EditorFactoryOutcome};
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     Editor, EditorComponent, EditorOptions, EditorTheme, ExtensionEditor, ExtensionKeybindings,
     ExtensionWidgets, Focusable, SelectListTheme,
 };
+use maestro_extensions::types::{CustomEditorComponent, EditorFactoryOutcome};
 use maestro_extensions::{Cancellation, ComponentHandle, TUI};
 use std::rc::Rc;
 use wasmtime::component::{ComponentType, Lower};

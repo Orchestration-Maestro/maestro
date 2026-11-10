@@ -1,8 +1,8 @@
 //! The detached-daemon observation follows the native session of the running process.
 #![cfg(unix)]
 #![cfg(test)]
-use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
-use maestro_process::foreground::current_process_is_detached_server_daemon;
+use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_process::jobs::current_process_is_detached_server_daemon;
 use maestro_test_process::TestProcess;
 use std::process::Output;
 

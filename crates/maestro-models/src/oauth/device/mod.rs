@@ -1,2 +1,2 @@
 //! Device-account authorization providers.
-pub mod github_copilot;
+pub mod browser;

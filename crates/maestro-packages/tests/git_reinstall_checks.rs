@@ -1,6 +1,6 @@
 //! Installing again over an existing Git checkout reconciles it with its upstream.
 #![cfg(unix)]
-use crate::native_git::{git, retry::RetryFixture};
+use crate::native_git::{git, reattempts::RetryFixture};
 use maestro_packages::PackageManager;
 
 /// Publishes `text` on branch `name` of the fixture's remote, creating it from `main` when new.

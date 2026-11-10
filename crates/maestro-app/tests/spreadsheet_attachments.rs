@@ -150,7 +150,7 @@ fn workbook_formula_text_decodes_entities_and_function_prefixes() {
 /// Replay complete source results through the injected transport.
 #[cfg(not(target_arch = "wasm32"))]
 fn attachment_suite(name: &str) {
-    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     use maestro_models::{Fetch, HttpResponse};
     use std::sync::{Arc, Mutex};
     let rows: Vec<_> = attachments()
@@ -235,12 +235,12 @@ fn expected_attachment(mut expected: serde_json::Value) -> serde_json::Value {
 #[cfg(not(target_arch = "wasm32"))]
 fn check_failure(
     result: &Result<
-        maestro_app::browser::utils::attachment_utils::Attachment,
-        maestro_app::browser::utils::attachment_utils::AttachmentError,
+        maestro_app::browser::utils::attachments::Attachment,
+        maestro_app::browser::utils::attachments::AttachmentError,
     >,
     id: &str,
 ) {
-    use maestro_app::browser::utils::attachment_utils::AttachmentError;
+    use maestro_app::browser::utils::attachments::AttachmentError;
     use ssf::WorkbookError;
     match id {
         "truncated.xlsx" => assert!(matches!(
@@ -293,7 +293,7 @@ fn spreadsheet_failures_keep_typed_workbook_sources() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn workbook_written_formula_escapes_decode_once() {
-    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     let bytes = include_bytes!("fixtures/spreadsheet/formula-escapes.xlsx");
     let mut format = Ssf::default();
     let mut book = ssf::read(bytes, "escapes.xlsx", &mut format).unwrap();
@@ -390,7 +390,7 @@ fn workbook_shared_unicode_defined_name_suffix_keeps_identity() {
 #[test]
 fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
     use base64::Engine as _;
-    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Case {
@@ -444,10 +444,10 @@ fn extract_workbook(
     bytes: &[u8],
     name: &str,
 ) -> Result<
-    maestro_app::browser::utils::attachment_utils::Attachment,
-    maestro_app::browser::utils::attachment_utils::AttachmentError,
+    maestro_app::browser::utils::attachments::Attachment,
+    maestro_app::browser::utils::attachments::AttachmentError,
 > {
-    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     let fetch: maestro_models::Fetch =
         std::sync::Arc::new(|_| Box::pin(async { panic!("File source must not fetch") }));
     let mut future = Box::pin(load_attachment(
@@ -515,7 +515,7 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
 #[test]
 fn spreadsheet_extracted_output_past_the_bound_fails() {
     use maestro_app::browser::ssf::WorkbookError;
-    use maestro_app::browser::utils::attachment_utils::AttachmentError;
+    use maestro_app::browser::utils::attachments::AttachmentError;
     use std::io::{Cursor, Write};
 
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));

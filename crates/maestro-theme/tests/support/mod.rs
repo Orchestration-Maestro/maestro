@@ -1,6 +1,6 @@
 //! Theme files, environments and documents shared by the theme tests.
-pub mod environment;
 pub mod highlighting;
+pub mod observations;
 
 use maestro_test_directory::Scratch;
 use maestro_theme::{ColorMode, Theme, ThemeColor, ThemeError, load_theme_from_path};

@@ -1,7 +1,7 @@
 //! Fixed-schema package results are checked before reaching author code.
 use super::controlled::Controlled;
 use crate::component_adapter::Exports;
-use crate::package_manager::OperationScope;
+use crate::packages::OperationScope;
 use crate::{DefaultPackageManager, Extension, ExtensionAPI, ExtensionFuture};
 use serde_json::json;
 

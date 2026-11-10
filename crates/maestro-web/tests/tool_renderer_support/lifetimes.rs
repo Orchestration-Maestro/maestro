@@ -2,7 +2,7 @@
 #![cfg(test)]
 use crate::contributions_support::{container, text, view};
 use maestro_web::{
-    dom::{DomContent, DomRoot, DomView, MountedContent},
+    page::{DomContent, DomRoot, DomView, MountedContent},
     tools::types::{ToolRenderResult, ToolResultMessageView, ToolUiError},
 };
 use std::{

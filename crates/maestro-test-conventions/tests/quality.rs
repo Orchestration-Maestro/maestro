@@ -522,6 +522,25 @@ fn private_documentation_lint_cannot_be_downgraded() {
 }
 
 #[test]
+fn module_repetition_lint_cannot_be_weakened() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let manifest = workspace.root.path().join("Cargo.toml");
+    let text = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(
+        &manifest,
+        text.replace("module_name_repetitions = \"forbid\"\n", ""),
+    )
+    .unwrap();
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+    assert!(
+        error.contains("module_name_repetitions must be forbid"),
+        "{error}"
+    );
+}
+
+#[test]
 fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
     let workspace = Workspace::new();
     workspace.member("models", "maestro-models", "");

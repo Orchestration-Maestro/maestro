@@ -2,10 +2,10 @@
 use super::{THEME_KEY, initial_theme, is_dark, next_theme, theme_icon};
 use crate::{
     browser::{attachment_content::browser::host_error, event_subscription::EventSubscription},
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{DomView, report},
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
     icons::IconSize,
-    tools::{renderer_registry::header::dom::glyph, types::ToolUiError},
+    page::{DomView, report},
+    tools::{renderer_registry::heading::dom::glyph, types::ToolUiError},
 };
 use maestro_theme::BrandMode;
 use std::{
@@ -49,7 +49,7 @@ impl ThemeToggle {
     /// # Errors
     /// Returns an icon, brand or native failure.
     pub fn new(view: &Rc<DomView>, include_system: bool) -> Result<Self, ToolUiError> {
-        crate::dom::install_styles(view).map_err(|error| host_error(&error))?;
+        crate::page::install_styles(view).map_err(|error| host_error(&error))?;
         let button = button(
             &view.document,
             &ButtonProps {

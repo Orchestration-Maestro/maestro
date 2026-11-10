@@ -6,10 +6,10 @@ use crate::{
     git::status::{
         GitStatusCacheEntry, git_status_cache_key, git_status_snapshot_for_cwd_with_demand,
     },
-    settings::sidebar::SpaceSidebarToken,
+    settings::navigation::SpaceSidebarToken,
 };
-use maestro_workspace::workspace::{
-    GitStatusRefreshDemand, WorkspaceGitStatus, git::config::ConfigEnvironment,
+use maestro_workspace::spaces::{
+    GitStatusRefreshDemand, WorkspaceGitStatus, repository::tracking::ConfigEnvironment,
 };
 use std::{
     collections::HashMap,

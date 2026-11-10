@@ -1,9 +1,9 @@
 //! A daemon answering workspace commands, with workspaces that need no live process.
 
-use super::{launch::launch_inputs, manifest_cache, populate_terminals, runtime::block_on};
+use super::{manifest_cache, populate_terminals, runtime::block_on, spawning::launch_inputs};
 use maestro_daemon::{
-    api::event_hub::EventHub, app::App, paths::DaemonPaths, settings::model::Config,
-    terminal::state::DetectedStateUpdate,
+    app::App, locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config,
+    terminal::model::DetectedStateUpdate,
 };
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
@@ -13,9 +13,9 @@ use maestro_protocol::{
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use maestro_workspace::{
-    layout::{PaneId, SplitRequest},
+    spaces::WorktreeSpaceMembership,
     terminal_id::TerminalId,
-    workspace::WorktreeSpaceMembership,
+    tiling::{PaneId, SplitRequest},
 };
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Instant};

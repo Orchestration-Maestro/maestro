@@ -48,7 +48,7 @@ fn draw_then_overflow(agent_dir: &Path) {
     );
     let local = Rc::new(tokio::task::LocalSet::new());
     let (_terminal, runtime) =
-        maestro_cli::input::selector::native_terminal(Rc::clone(&local)).unwrap();
+        maestro_cli::input::selection::native_terminal(Rc::clone(&local)).unwrap();
     let terminal = RecordingTerminal::new(10, 3);
     let tui = TUI::new(
         terminal.handle(),

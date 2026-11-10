@@ -57,7 +57,7 @@ pub use clipboard::*;
 pub use configuration::*;
 pub use credentials::*;
 #[cfg(not(target_arch = "wasm32"))]
-pub use daemon_exports::daemon;
+pub use daemon_exports::daemon_api;
 pub use extensions::*;
 pub use json::*;
 pub use markdown_exports::markdown;
@@ -81,6 +81,6 @@ pub use tools::*;
 
 /// Changelog utility re-exports.
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::utils::changelog::{
+pub use crate::utils::release_notes::{
     ChangelogEntry, compare_versions, get_changelog_path, get_new_entries, parse_changelog,
 };

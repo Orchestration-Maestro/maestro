@@ -1,11 +1,11 @@
 //! Input preparation operations shared by the command-line frontend.
 
-pub mod args;
-pub mod config_selector;
+pub mod arguments;
+pub mod configuration;
 pub mod file_processor;
-pub mod initial_message;
-pub mod list_models;
-pub mod selector;
+pub mod messages;
+pub mod model_listing;
+pub mod selection;
 pub mod session_picker;
 
 /// Pad `text` to `width` UTF-16 code units with trailing spaces.

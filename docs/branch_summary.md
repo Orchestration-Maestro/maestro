@@ -51,7 +51,7 @@ is context window minus reserve, without rounding or clamping. Output `maxTokens
 always 2048. Nonempty replacement instructions replace the default branch prompt;
 otherwise nonempty instructions append `Additional focus: ...`. Whitespace is meaningful.
 The serialized conversation is enclosed in `<conversation>` tags and sent with the
-shared `compaction::SUMMARIZATION_SYSTEM_PROMPT`.
+shared `summarization::SUMMARIZATION_SYSTEM_PROMPT`.
 
 `BranchSummaryResult` serializes without a discriminator:
 
@@ -66,7 +66,7 @@ Successful text blocks join with newlines, receive the branch preamble and optio
 file sections. Nontext blocks are omitted. Projection errors fail before invocation;
 thrown adapter failures propagate through the outer `Result`. A shared signal remains
 live, but an aborted signal alone does not override the provider's returned outcome.
-`compaction::BranchSummaryDetails` aliases the built-in two-array details record.
+`summarization::BranchSummaryDetails` aliases the built-in two-array details record.
 
 ## Controlled example
 

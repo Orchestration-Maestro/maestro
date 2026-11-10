@@ -7,7 +7,7 @@ use maestro_app::{
     },
 };
 use maestro_theme::{SyntectHighlighter, ThemeState};
-use maestro_tui::tui::TerminalHandle;
+use maestro_tui::interface::TerminalHandle;
 use std::{error::Error, rc::Rc};
 use tokio::task::LocalSet;
 
@@ -82,10 +82,6 @@ fn interactive(
             )),
         ),
         themes,
-        Rc::new(
-            maestro_app::presentation_data::footer_data_provider::NativeFooterOperations::new(
-                local,
-            ),
-        ),
+        Rc::new(maestro_app::presentation_data::status_line::NativeFooterOperations::new(local)),
     )?)
 }

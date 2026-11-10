@@ -2,7 +2,7 @@
 use crate::guest_calls::paints::{Failure, HighlightFn};
 use crate::local_resources::Registry;
 use crate::widget_reads::{BaseStyle, Highlighting, Paint, Styles};
-use maestro_extensions::widgets::{BorderColor, DefaultTextStyle, MarkdownTheme};
+use maestro_extensions::presentation::{BorderColor, DefaultTextStyle, MarkdownTheme};
 use std::rc::Rc;
 
 /// Markdown styles from their operands.

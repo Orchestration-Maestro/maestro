@@ -80,6 +80,38 @@ fn items(value: &str) -> Vec<String> {
         .collect()
 }
 
+/// Whether `test_inputs` of the CI settings routes `path` to `package`.
+fn routed(declaration: &toml::Table, path: &str, package: &str) -> bool {
+    declaration
+        .get("test_inputs")
+        .and_then(toml::Value::as_table)
+        .and_then(|inputs| inputs.get(path))
+        .and_then(toml::Value::as_array)
+        .is_some_and(|packages| packages.iter().any(|name| name.as_str() == Some(package)))
+}
+
+/// Pull-request selection runs a changed crate and its dependents, and the crate-rules check
+/// reads every crate's manifests and sources, so a change under `crates/` selects it; a change
+/// confined to `docs/` or `fuzz/` still does not.
+#[test]
+fn crate_source_changes_select_the_crate_rules_check() {
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let declaration: toml::Table = std::fs::read_to_string(repository.join(".github/ci.toml"))
+        .expect("the repository declares its CI settings")
+        .parse()
+        .expect("the CI settings read as TOML");
+    assert!(
+        routed(&declaration, "crates/", "maestro-test-conventions"),
+        "a change under crates/ selects the crate-rules check"
+    );
+    for path in ["docs/", "fuzz/"] {
+        assert!(
+            !routed(&declaration, path, "maestro-test-conventions"),
+            "a change under {path} does not select the crate-rules check"
+        );
+    }
+}
+
 /// The released commit each shared workflow call in a workflow file pins.
 fn pins(workflows: &Path, name: &str) -> Vec<String> {
     let text = std::fs::read_to_string(workflows.join(name)).expect("the caller reads");

@@ -1,11 +1,11 @@
 //! Shared public execution witnesses and native effect observations.
 use crate::browser_fixture_support::{Patch, dom_exception, error, get, global, invoke, object};
 use maestro_app::browser::components::{
-    sandbox::sandbox_runtime_provider::{SandboxRespond, SandboxRuntimeProvider},
+    sandbox::providers::{SandboxRespond, SandboxRuntimeProvider},
     sandboxed_iframe::{SandboxEnvironment, SandboxExecution},
 };
 use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, Runtime, SharedHandle};
-use maestro_web::{SandboxIframe, browser::sandbox_value::BrowserSandboxValue};
+use maestro_web::{SandboxIframe, browser::values::BrowserSandboxValue};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast, prelude::*};
 

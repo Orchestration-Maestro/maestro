@@ -10,14 +10,14 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::{
-        button::{ButtonProps, ButtonSize, ButtonVariant, button},
-        input::{Input, InputProps},
+        controls::{ButtonProps, ButtonSize, ButtonVariant, button},
+        fields::{Input, InputProps},
     },
     dialogs::{
-        dialog::{DialogHeaderProps, dialog_header},
         dialog_base::DialogBase,
+        surface::{DialogHeaderProps, dialog_header},
     },
-    dom::{DomView, icon, report},
+    page::{DomView, icon, report},
     tools::types::ToolUiError,
 };
 use maestro_app::{CustomProviderType, Model, Presence, get_app_storage};

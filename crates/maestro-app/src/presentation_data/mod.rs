@@ -1,10 +1,10 @@
 //! Data prepared for presentation, kept apart from any renderer.
 
-pub mod footer_data_provider;
+pub mod status_line;
 
 pub mod input_selectors;
 
-pub mod keybindings;
+pub mod bindings;
 
 pub use maestro_models::{
     OAuthAuthInfo, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderHandle, get_oauth_provider,

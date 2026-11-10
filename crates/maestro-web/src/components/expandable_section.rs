@@ -1,5 +1,5 @@
 //! Expandable literal summary with children captured once by their owner.
-use crate::dom::PreparedContent;
+use crate::page::PreparedContent;
 
 /// Disclosure with a literal summary over children captured once at construction.
 pub struct ExpandableSection {

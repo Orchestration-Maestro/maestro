@@ -3,7 +3,7 @@ use super::{LiveResults, Message, StreamingMessageContainer, Tools};
 use crate::{
     browser::{attachment_content::browser::element, timer::Timer},
     components::messages::{AssistantMessage, ToolResults},
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::{AgentMessage, CustomAgentMessages};
@@ -277,7 +277,7 @@ impl<C: CustomAgentMessages + 'static> DomContent for StreamingMessageContainer<
     /// Mount the container root and show the published message; the root becomes the one
     /// later publications update.
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let node: Node = element(&view.document, "div", "maestro-stream")?.into();
         let token = Rc::new(());
         let previous = self.state.borrow_mut().mounted.replace(Mounted {

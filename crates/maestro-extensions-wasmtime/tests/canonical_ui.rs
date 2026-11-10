@@ -776,17 +776,15 @@ pub(super) struct Metadata {
     /// Current branch.
     branch: RefCell<Option<String>>,
     /// Live extension statuses.
-    statuses: maestro_extensions::footer_data_provider::ExtensionStatuses,
+    statuses: maestro_extensions::footer::ExtensionStatuses,
     /// Branch listeners in registration order.
     listeners: RefCell<Vec<Rc<dyn Fn()>>>,
 }
-impl maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider for Metadata {
+impl maestro_extensions::footer::ReadonlyFooterDataProvider for Metadata {
     fn get_git_branch(&self) -> Option<String> {
         self.branch.borrow().clone()
     }
-    fn get_extension_statuses(
-        &self,
-    ) -> maestro_extensions::footer_data_provider::ExtensionStatuses {
+    fn get_extension_statuses(&self) -> maestro_extensions::footer::ExtensionStatuses {
         self.statuses.clone()
     }
     fn get_available_provider_count(&self) -> f64 {
@@ -1433,7 +1431,7 @@ fn builtin_error_result(
     theme: &LiveTheme,
     context: &ToolRenderContext<'_, ToolRendererState>,
     text: &str,
-) -> maestro_tui::tui::ComponentHandle {
+) -> maestro_tui::interface::ComponentHandle {
     let output: Vec<_> = serde_json::from_value(json!([{"type":"text","text":text}])).unwrap();
     let result = maestro_extensions::ToolRenderResultLike {
         content: &output,

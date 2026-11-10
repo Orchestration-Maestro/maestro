@@ -1,6 +1,6 @@
 //! Default tool content and nested native placement lifetimes.
 use maestro_web::{
-    dom::{DomContent, DomRoot, DomView, MountedContent},
+    page::{DomContent, DomRoot, DomView, MountedContent},
     render_tool,
     tools::types::ToolParams,
 };

@@ -23,7 +23,7 @@ fn registered_guest_streams_reach_the_native_agent() {
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
         let root = super::support::Root::new();
-        let session = super::support::session::component_session(
+        let session = super::support::sdk::component_session(
             &root,
             local.clone(),
             std::env::var("MAESTRO_CONTEXT_COMPONENT").expect("nextest author-component setup"),

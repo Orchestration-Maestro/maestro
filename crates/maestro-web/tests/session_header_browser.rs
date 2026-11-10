@@ -834,7 +834,7 @@ fn clipped_header_controls(header: &mut Header) {
 
 /// The native attachment layer intercepts real pointer input above every offline header control.
 pub(crate) async fn attachment_layer_intercepts_header_controls(
-    view: &Rc<maestro_web::dom::DomView>,
+    view: &Rc<maestro_web::page::DomView>,
 ) {
     let canvas = view.document.create_element("canvas").unwrap();
     for (name, value) in [
@@ -863,13 +863,13 @@ pub(crate) async fn attachment_layer_intercepts_header_controls(
 
 /// Compare one uncovered control with the same real pointer click intercepted by the attachment layer.
 async fn header_overlay_pointer(
-    view: &Rc<maestro_web::dom::DomView>,
+    view: &Rc<maestro_web::page::DomView>,
     header: &Rc<std::cell::RefCell<Header>>,
     canvas: &web_sys::Element,
     index: u32,
 ) {
     use crate::contributions_support::select;
-    use maestro_web::dom::DomContent as _;
+    use maestro_web::page::DomContent as _;
     let slot = select(&panel(), &format!(".control-slot:nth-child({})", index + 1));
     let bounds = slot.get_bounding_client_rect();
     let (x, y) = (

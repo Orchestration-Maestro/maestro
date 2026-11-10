@@ -295,6 +295,9 @@ fn builtin_factories_preserve_membership_and_order() {
 /// Construction closes without effects; releasing another set leaves every owner executable.
 #[test]
 fn builtin_factory_construction_is_lazy_and_fresh() {
+    if !super::builtin_author::with_search_tools("builtin_factory_construction_is_lazy_and_fresh") {
+        return;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

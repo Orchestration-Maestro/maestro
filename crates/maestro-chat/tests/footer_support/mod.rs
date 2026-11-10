@@ -2,16 +2,16 @@
 //! Session, metadata, theme and corpus support for the footer tests.
 use crate::published;
 pub mod corpus;
-pub mod session;
+pub mod harness;
 
-use session::session;
+use harness::session;
 
 use maestro_app::{
     AgentSession, CompactionOptions, ExtensionStatuses, Local, Model, Presence,
     ReadonlyFooterDataProvider, ThinkingLevel,
 };
 use maestro_chat::FooterComponent;
-use maestro_chat::components::footer::Environment;
+use maestro_chat::components::status::Environment;
 
 use maestro_theme::{Collator, LiveTheme, Theme, ThemeColor, ThemeState};
 use serde_json::Value;

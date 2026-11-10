@@ -57,7 +57,7 @@ A custom message can carry a native handle without JSON conversion:
 use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
 use maestro_app::{AgentMessage, CustomAgentMessages};
 use maestro_web::{MessageRenderer, register_message_renderer};
-use maestro_web::dom::{DomContent, DomRoot, DomView};
+use maestro_web::page::{DomContent, DomRoot, DomView};
 use maestro_web::tools::types::ToolUiError;
 
 struct NativeMessage {
@@ -174,7 +174,7 @@ Keyboard activation remains available through the returned response.
 ## Native Markdown and code
 
 `maestro_web::components::markdown_block::MarkdownBlock` and
-`code_block::CodeBlock` retain an `AttachmentHost`; construct each with `new` and
+`source::CodeBlock` retain an `AttachmentHost`; construct each with `new` and
 set its public properties. Markdown starts empty, not thinking and with escaping
 on; code starts with empty code and language. Both render through
 `CodeBlockView`, which borrows one frame's localization, brand presentation,

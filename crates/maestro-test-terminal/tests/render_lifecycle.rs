@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
-use maestro_tui::tui::{ChildArray, ComponentHandle};
+use maestro_tui::interface::{ChildArray, ComponentHandle};
 use maestro_tui::{CURSOR_MARKER, Component, Container, TUI, TerminalImage};
 
 use crate::support::checks::succeeds;

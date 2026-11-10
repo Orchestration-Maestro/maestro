@@ -24,7 +24,7 @@ strings.
 
 ## Raw YAML documents
 
-`maestro_resources::frontmatter::parse_yaml` parses one complete YAML document.
+`maestro_resources::metadata::parse_yaml` parses one complete YAML document.
 It returns `FrontmatterValue` directly: empty documents and null roots stay null,
 and scalar, sequence and mapping roots retain their kinds. Mappings keep authored
 key order. Numbers retain signed zero, NaN and infinities.

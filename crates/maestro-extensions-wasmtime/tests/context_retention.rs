@@ -7,7 +7,7 @@ use maestro_extensions::{
     types::{FlagValue, ReloadHandler, SessionChangeResult},
 };
 use maestro_models::UserContent;
-use maestro_session::messages::{SendMessageOptions, SendUserMessageOptions};
+use maestro_session::message_records::{SendMessageOptions, SendUserMessageOptions};
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},

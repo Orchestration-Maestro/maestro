@@ -16,7 +16,7 @@ commands return a correlated refusal asking the caller to open in a session.
 
 The writer receives each record as an `RpcLine`, already framed. An `RpcOutput` built with
 `RpcOutput::synchronous` writes each line before the write call returns, and
-`rpc_mode::stdout_output` is that output on standard output. `maestro_rpc::run_rpc_mode` is its
+`connection_runner::stdout_output` is that output on standard output. `maestro_rpc::run_rpc_mode` is its
 standard-stream adapter: it reserves standard output for protocol records, serves the
 runtime and exits with the connection's code.
 

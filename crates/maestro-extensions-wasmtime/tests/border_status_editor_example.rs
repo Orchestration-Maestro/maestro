@@ -295,7 +295,7 @@ fn border_status_editor_component_replaces_footer_and_working_row() {
         h.start().await;
         assert_eq!(h.ui.working.get(), Some(false));
         let footer = h.ui.footer.borrow().clone().expect("a footer");
-        let metadata: Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider> =
+        let metadata: Rc<dyn maestro_extensions::footer::ReadonlyFooterDataProvider> =
             Rc::new(super::canonical_ui::Metadata::default());
         let footer = footer.call((h.ui.tui.clone(), h.ui.theme.clone(), metadata));
         assert!(footer.unwrap().component.try_render(80).unwrap().is_empty());
@@ -417,8 +417,8 @@ impl maestro_tui::AutocompleteProvider for Commands {
     fn get_suggestions<'a>(
         &'a self,
         _: &'a [String],
-        _: maestro_tui::autocomplete::CursorPosition,
-        _: maestro_tui::autocomplete::CompletionOptions<'a, maestro_tui::Cancellation>,
+        _: maestro_tui::candidates::CursorPosition,
+        _: maestro_tui::candidates::CompletionOptions<'a, maestro_tui::Cancellation>,
     ) -> super::editor_factories::Pending<'a> {
         let item = |name: &str| maestro_tui::AutocompleteItem {
             value: format!("/{name}"),
@@ -435,11 +435,11 @@ impl maestro_tui::AutocompleteProvider for Commands {
     fn apply_completion(
         &self,
         lines: &[String],
-        cursor: maestro_tui::autocomplete::CursorPosition,
+        cursor: maestro_tui::candidates::CursorPosition,
         _: &maestro_tui::AutocompleteItem,
         _: &str,
-    ) -> maestro_tui::autocomplete::CompletionResult {
-        maestro_tui::autocomplete::CompletionResult {
+    ) -> maestro_tui::candidates::CompletionResult {
+        maestro_tui::candidates::CompletionResult {
             lines: lines.to_vec(),
             cursor_line: cursor.line,
             cursor_col: cursor.col,

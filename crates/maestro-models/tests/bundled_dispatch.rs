@@ -534,21 +534,21 @@ fn dedicated_simple(
     options: Option<SimpleStreamOptions>,
 ) -> TestResult<Result<AssistantMessageEventStream, DiagnosticErrorInfo>> {
     use maestro_models::providers::{
-        chat::openai_completions as chat,
-        messages::anthropic,
-        reasoning::mistral,
-        responses::{azure_openai_responses as cloud, openai_responses},
+        chat::endpoint as chat,
+        messages::endpoint as messages,
+        reasoning::endpoint as conversation,
+        responses_api::{azure_transport as cloud, openai},
     };
     let (model, context) = (bundled::protocol_model(protocol)?, bundled::conversation()?);
     Ok(match protocol.api {
-        "anthropic-messages" => anthropic::stream_simple_anthropic(model, context, options),
+        "anthropic-messages" => messages::stream_simple_anthropic(model, context, options),
         "openai-completions" => chat::stream_simple_openai_completions(model, context, options),
-        "mistral-conversations" => mistral::stream_simple_mistral(model, context, options),
+        "mistral-conversations" => conversation::stream_simple_mistral(model, context, options),
         "openai-responses" => {
-            openai_responses::stream_simple_openai_responses(model, context, options)
+            openai::stream_simple_openai_responses(model, context, options)
         }
         "azure-openai-responses" => cloud::stream_simple_azure_openai_responses(model, context, options),
-        "openai-codex-responses" => maestro_models::providers::response_sessions::openai_codex_responses::stream_simple_openai_codex_responses(model, context, options),
+        "openai-codex-responses" => maestro_models::providers::response_sessions::codex::stream_simple_openai_codex_responses(model, context, options),
         _ => return Err("unknown protocol".into()),
     })
 }

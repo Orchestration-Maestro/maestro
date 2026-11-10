@@ -4,8 +4,8 @@ fn foreground_process(
     pid: u32,
     name: &str,
     argv: &[&str],
-) -> maestro_process::pty::foreground::ForegroundProcess {
-    maestro_process::pty::foreground::ForegroundProcess {
+) -> maestro_process::terminal::jobs::ForegroundProcess {
+    maestro_process::terminal::jobs::ForegroundProcess {
         pid,
         name: name.to_string(),
         argv0: None,
@@ -29,7 +29,7 @@ fn borrowed_process_recognizes_wrapped_agent_without_a_job_copy() {
 
 #[test]
 fn job_selection_recognizes_a_wrapped_agent() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![
             foreground_process(1, "node", &["node", "/path/to/bin/codex"]),
@@ -52,7 +52,7 @@ fn node_script_and_package_entry_identify_the_agent() {
             r"C:\Users\user\AppData\Roaming\npm\node_modules\@qwen-code\qwen-code\dist\index.js",
         ],
     ] {
-        let job = maestro_process::pty::foreground::ForegroundJob {
+        let job = maestro_process::terminal::jobs::ForegroundJob {
             process_group_id: 123,
             processes: vec![foreground_process(123, "MainThread", &argv)],
         };
@@ -66,7 +66,7 @@ fn node_script_and_package_entry_identify_the_agent() {
 
 #[test]
 fn recognized_group_leader_beats_a_wrapped_member() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 42,
         processes: vec![
             foreground_process(42, "claude", &["claude"]),
@@ -82,7 +82,7 @@ fn recognized_group_leader_beats_a_wrapped_member() {
 
 #[test]
 fn unknown_group_leader_allows_member_identification() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 42,
         processes: vec![
             foreground_process(42, "bash", &["bash"]),
@@ -98,7 +98,7 @@ fn unknown_group_leader_allows_member_identification() {
 
 #[test]
 fn versioned_python_recognizes_an_agent_script() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -120,7 +120,7 @@ fn versioned_python_recognizes_an_agent_script() {
 
 #[test]
 fn wrapped_program_uses_argv_executable_identity() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -137,7 +137,7 @@ fn wrapped_program_uses_argv_executable_identity() {
 
 #[test]
 fn wrapped_alias_returns_its_canonical_agent_label() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -154,7 +154,7 @@ fn wrapped_alias_returns_its_canonical_agent_label() {
 
 #[test]
 fn shell_script_path_identifies_the_catalogue_entry() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -171,7 +171,7 @@ fn shell_script_path_identifies_the_catalogue_entry() {
 
 #[test]
 fn bun_script_path_identifies_the_catalogue_entry() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -188,7 +188,7 @@ fn bun_script_path_identifies_the_catalogue_entry() {
 
 #[test]
 fn scoped_package_cli_identifies_the_catalogue_entry() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -208,7 +208,7 @@ fn scoped_package_cli_identifies_the_catalogue_entry() {
 
 #[test]
 fn unscoped_package_cli_identifies_the_catalogue_entry() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -228,7 +228,7 @@ fn unscoped_package_cli_identifies_the_catalogue_entry() {
 
 #[test]
 fn package_build_script_is_not_an_agent_cli() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -245,7 +245,7 @@ fn package_build_script_is_not_an_agent_cli() {
 
 #[test]
 fn command_interpreter_payload_identifies_an_agent() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -268,7 +268,7 @@ fn command_interpreter_payload_identifies_an_agent() {
 
 #[test]
 fn powershell_file_operand_identifies_an_agent() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -290,7 +290,7 @@ fn powershell_file_operand_identifies_an_agent() {
 
 #[test]
 fn powershell_prompt_integration_stays_a_plain_shell() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -309,7 +309,7 @@ fn powershell_prompt_integration_stays_a_plain_shell() {
 
 #[test]
 fn alternate_executable_keeps_its_observed_process_name() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -326,7 +326,7 @@ fn alternate_executable_keeps_its_observed_process_name() {
 
 #[test]
 fn recognized_native_package_process_keeps_its_name() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -343,7 +343,7 @@ fn recognized_native_package_process_keeps_its_name() {
 
 #[test]
 fn argv_package_basename_returns_the_canonical_label() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             123,
@@ -368,7 +368,7 @@ fn plain_shell_flags_do_not_supply_an_agent_script() {
 
 #[test]
 fn python_inline_code_does_not_consume_later_agent_names() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -382,7 +382,7 @@ fn python_inline_code_does_not_consume_later_agent_names() {
 
 #[test]
 fn node_eval_does_not_consume_later_agent_names() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -396,7 +396,7 @@ fn node_eval_does_not_consume_later_agent_names() {
 
 #[test]
 fn shell_inline_command_does_not_consume_later_agent_names() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -410,7 +410,7 @@ fn shell_inline_command_does_not_consume_later_agent_names() {
 
 #[test]
 fn python_file_operand_can_identify_an_agent() {
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 123,
         processes: vec![foreground_process(
             1,
@@ -447,7 +447,7 @@ fn symlinked_executable_resolves_agent_identity() {
     std::os::unix::fs::symlink(&target, &link).expect("symlink should be created");
 
     let argv0 = link.to_string_lossy().into_owned();
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 42,
         processes: vec![foreground_process(
             42,
@@ -464,7 +464,7 @@ fn symlinked_executable_resolves_agent_identity() {
 
 #[test]
 fn job_priority_keeps_first_ties_and_prefers_wrapped_identities() {
-    let mut job = maestro_process::pty::foreground::ForegroundJob {
+    let mut job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 99,
         processes: vec![
             foreground_process(1, "claude", &["claude"]),
@@ -550,7 +550,7 @@ fn supplied_executable_identity_precedes_kernel_name_and_absent_arguments() {
     process.argv0 = Some("claude-code".into());
     process.argv = None;
     process.cmdline = None;
-    let job = maestro_process::pty::foreground::ForegroundJob {
+    let job = maestro_process::terminal::jobs::ForegroundJob {
         process_group_id: 1,
         processes: vec![process],
     };

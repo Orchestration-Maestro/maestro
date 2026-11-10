@@ -5,7 +5,7 @@ use maestro_lock::{read, write};
 /// A returned file whose content and metadata retain their original values.
 pub type DownloadableFile<V = serde_json::Value> = SandboxFile<V, V>;
 
-use super::sandbox_runtime_provider::{
+use super::providers::{
     BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use indexmap::IndexMap;

@@ -2,13 +2,13 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::{self, launch};
+use crate::support::{self, spawning};
 
 use maestro_daemon::{
-    api::event_hub::EventHub,
-    app::{App, state::TabBarStatusSegment},
+    app::{App, model::TabBarStatusSegment},
     events::AppEvent,
-    settings::{model::Config, tab_bar::TabBarRightEntryConfig},
+    service::event_hub::EventHub,
+    settings::{model::Config, tabs::TabBarRightEntryConfig},
 };
 use maestro_test_directory::temporary_root;
 use std::time::Instant;
@@ -19,7 +19,7 @@ type TestApp = App<fn() -> u128>;
 
 /// Supplies a daemon without launching any pane process.
 fn test_app() -> TestApp {
-    let (launch, receiver) = launch::launch_inputs(&[], support::manifest_cache());
+    let (launch, receiver) = spawning::launch_inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &Config::default(),
         (|| 0) as fn() -> u128,

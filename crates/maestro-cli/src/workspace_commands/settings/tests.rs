@@ -1,6 +1,6 @@
 //! Controlled output failures and committed durability warnings.
 use super::*;
-use maestro_app::presentation_data::keybindings::KeybindingsReset;
+use maestro_app::presentation_data::bindings::KeybindingsReset;
 
 /// Writer that preserves an observable failure cause.
 struct Refused;

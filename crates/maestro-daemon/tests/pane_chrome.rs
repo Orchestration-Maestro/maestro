@@ -6,7 +6,7 @@ use maestro_daemon::app::layout::{PaneChrome, apply_pane_chrome, pane_inner_rect
 use maestro_daemon::settings::model::Config;
 use maestro_protocol::schema::SplitDirection;
 use maestro_protocol::shared::Flag;
-use maestro_workspace::layout::{Borders, PaneId, PaneInfo, Rect, SplitRequest, TileLayout};
+use maestro_workspace::tiling::{Borders, PaneId, PaneInfo, Rect, SplitRequest, TileLayout};
 
 /// Allocator-style identity for a fixture pane.
 fn pane(raw: u32) -> PaneId {

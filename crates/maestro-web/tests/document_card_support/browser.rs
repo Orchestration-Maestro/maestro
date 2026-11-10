@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use super::{Row, fixture, prepare};
 use crate::contributions_support::{body, host, select, text, view};
-use maestro_web::dom::{DomView, MountedContent};
+use maestro_web::page::{DomView, MountedContent};
 use std::rc::Rc;
 use wasm_bindgen::JsCast as _;
 use web_sys::{Element, HtmlElement};

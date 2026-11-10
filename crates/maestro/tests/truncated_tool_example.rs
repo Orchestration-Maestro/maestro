@@ -75,7 +75,7 @@ fn run(action: impl AsyncFnOnce(Rc<tokio::task::LocalSet>)) {
 
 /// Loads the prebuilt shipped copy with the application's native effects.
 async fn loaded(root: &Root, local: Rc<tokio::task::LocalSet>) -> Rc<AgentSession> {
-    crate::support::session::component_session(
+    crate::support::sdk::component_session(
         root,
         local,
         std::env::var(COMPONENT).unwrap(),

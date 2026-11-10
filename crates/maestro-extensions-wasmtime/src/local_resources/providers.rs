@@ -6,7 +6,7 @@ use crate::guest_calls::providers::{
 };
 use crate::guest_calls::widget_calls::Item;
 use maestro_extensions::AutocompleteItem;
-use maestro_extensions::widgets::CompletionOptions;
+use maestro_extensions::presentation::CompletionOptions;
 
 impl Registry {
     /// Lends a native completion provider to the guest.
@@ -37,7 +37,9 @@ impl Registry {
 }
 
 /// The canonical form of native suggestions.
-fn suggestions(suggestions: maestro_extensions::widgets::AutocompleteSuggestions) -> Suggestions {
+fn suggestions(
+    suggestions: maestro_extensions::presentation::AutocompleteSuggestions,
+) -> Suggestions {
     Suggestions {
         items: suggestions
             .items

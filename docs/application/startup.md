@@ -2,7 +2,7 @@
 
 `maestro_app::KeybindingsManager` extends the [terminal manager](../terminal/keybindings.md)
 with application defaults. `AppKeybinding` remains an open action identifier.
-The module `presentation_data::keybindings` exports the ordered `KEYBINDINGS`
+The module `presentation_data::bindings` exports the ordered `KEYBINDINGS`
 table, the borrowed toolkit types and `migrate_keybindings_config`.
 
 `new(user_bindings, config_path)` is inert: direct typed overrides are neither
@@ -36,7 +36,7 @@ configuration and raw name conversion are also available on browser targets.
 
 ## Native legacy conversions
 
-`configuration::migrations::migrate_auth_to_auth_json()` reads the call-time
+`configuration::conversion::migrate_auth_to_auth_json()` reads the call-time
 [configuration root](configuration.md#identity-and-roots). Existing `auth.json`
 skips conversion. Otherwise it combines legacy `oauth.json` records with string
 `settings.json` API keys, preferring OAuth providers and retaining open record
@@ -136,6 +136,6 @@ success blank line.
 the stream, resolves success/warning roles from its brand pack, preserves dim decoration
 and appends exactly one LF, including for the final plain empty line. Embedded newlines
 and decoration remain in the payload. No global output stream or palette is installed.
-Unix hosts may supply [`terminal::wait_for_input`](../terminal/native-terminal.md#one-input-wait).
+Unix hosts may supply [`adapter::wait_for_input`](../terminal/native-terminal.md#one-input-wait).
 Frontend startup invocation and manager installation remain separate operations.
 See [ordinary command metadata](commands.md) for the presentation inventory.

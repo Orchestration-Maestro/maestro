@@ -303,7 +303,7 @@ fn assert_piece(text: &str, piece: &Piece) {
 
 #[test]
 fn workbook_shared_operand_attachment_composition() {
-    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     use std::fmt::Write;
     let mut expected = String::new();
     for (i, c) in cases().iter().enumerate() {

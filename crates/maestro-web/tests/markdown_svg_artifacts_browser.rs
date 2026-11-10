@@ -235,7 +235,7 @@ mod tests {
         run("URL.createObjectURL=savedCreate");
         let root = matches!(
             failed.element.connected_callback(),
-            Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
+            Err(maestro_web::tools::documents::ArtifactUiError::Host(_))
         );
         let symptom = js("urlBlobs.size===0").as_bool().unwrap();
         assert!(

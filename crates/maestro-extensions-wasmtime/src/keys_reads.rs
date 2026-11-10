@@ -1,11 +1,11 @@
 //! Keybindings managers and keybinding hints, served on the local owner.
 use crate::local_resources::{Lease, Message, Registry};
 use crate::widget_reads::{Reply, WidgetMessage};
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     ExtensionKeybindings, ExtensionWidgets, KeybindingConflict, KeybindingDefinition,
     KeybindingKeys, KeybindingsConfig, get_keybindings, key_text,
 };
-use maestro_extensions::{KeybindingsManager, widgets};
+use maestro_extensions::{KeybindingsManager, presentation};
 use std::sync::Arc;
 use wasmtime::component::{ComponentType, Lift, Lower};
 
@@ -74,7 +74,7 @@ pub(crate) fn config<A: Into<B>, B>(config: Vec<(String, Option<A>)>) -> Vec<(St
 /// Toolkit definitions from their wire form.
 pub(crate) fn definitions(
     definitions: Vec<(String, Definition)>,
-) -> widgets::KeybindingDefinitions {
+) -> presentation::KeybindingDefinitions {
     definitions
         .into_iter()
         .map(|(id, definition)| {
@@ -94,7 +94,7 @@ pub(crate) enum KeysBuild {
     /// The application's definitions loaded from an agent directory.
     Created(Option<String>),
     /// Supplied definitions with user bindings.
-    Definitions(widgets::KeybindingDefinitions, KeybindingsConfig),
+    Definitions(presentation::KeybindingDefinitions, KeybindingsConfig),
     /// The host's terminal keybindings.
     Global,
 }

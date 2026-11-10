@@ -8,7 +8,7 @@ use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
     ErrorBody, PaneSwapReason, PaneSwapResult, ResponseResult, SplitDirection,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
 
 /// The swap record a swap result holds.

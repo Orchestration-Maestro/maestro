@@ -2,7 +2,7 @@
 #![cfg(test)]
 use super::support::*;
 use maestro_protocol::schema::SplitDirection;
-use maestro_workspace::{layout::PaneId, workspace::*};
+use maestro_workspace::{spaces::*, tiling::PaneId};
 
 #[test]
 fn workspace_handles_use_compact_readable_numbers() {
@@ -202,7 +202,7 @@ fn public_number_decoding_covers_empty_invalid_and_overflow() {
 
 #[test]
 fn git_status_records_use_supplied_identity() {
-    use maestro_workspace::workspace::{
+    use maestro_workspace::spaces::{
         GitSpaceMetadata, GitStatusRefreshDemand, WorkspaceGitStatusSnapshot,
         WorktreeSpaceMembership,
     };

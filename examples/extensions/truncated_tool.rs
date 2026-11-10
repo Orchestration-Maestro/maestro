@@ -10,8 +10,9 @@ use maestro_extensions_wasm::{
     TextContent, Theme, ToolDefinition, ToolMetadata, ToolRenderResultLike,
     ToolRenderResultOptions, UserBlock,
     child_process::{SpawnOptions, Stdio},
+    registry,
     streams::Readable,
-    tools, utils,
+    utils,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -35,7 +36,7 @@ fn result(
     params: &RgParams,
     text: String,
     count: usize,
-    overflow: Option<(tools::TruncationResult, String)>,
+    overflow: Option<(registry::TruncationResult, String)>,
 ) -> ExtensionResult<AgentToolResult> {
     let mut details = serde_json::to_value(params).map_err(|error| error.to_string())?;
     details["matchCount"] = json!(count);
@@ -123,7 +124,7 @@ async fn search_output(
 
 /// Saves complete output in a private directory, awaiting the native file queue.
 async fn save_output(api: &ExtensionAPI, output: String) -> ExtensionResult<String> {
-    let directory = tools::path_utils::make_temp_dir(api, "maestro-rg-")?;
+    let directory = registry::path_utils::make_temp_dir(api, "maestro-rg-")?;
     let path = std::path::Path::new(&directory).join("output.txt");
     let path = path
         .to_str()
@@ -140,17 +141,17 @@ async fn save_output(api: &ExtensionAPI, output: String) -> ExtensionResult<Stri
 /// Describes exactly which lines and bytes were omitted and where they were saved.
 fn notice(
     api: &ExtensionAPI,
-    truncation: &tools::TruncationResult,
+    truncation: &registry::TruncationResult,
     path: &str,
 ) -> ExtensionResult<String> {
     Ok(format!(
         "\n\n[Output truncated: showing {} of {} lines ({} of {}). {} lines ({}) omitted. Full output saved to: {path}]",
         truncation.output_lines,
         truncation.total_lines,
-        tools::format_size(api, truncation.output_bytes)?,
-        tools::format_size(api, truncation.total_bytes)?,
+        registry::format_size(api, truncation.output_bytes)?,
+        registry::format_size(api, truncation.total_bytes)?,
         truncation.total_lines - truncation.output_lines,
-        tools::format_size(api, truncation.total_bytes - truncation.output_bytes)?,
+        registry::format_size(api, truncation.total_bytes - truncation.output_bytes)?,
     ))
 }
 
@@ -176,7 +177,7 @@ async fn execute(
         has_text(&api, line).map(|nonempty| count + usize::from(nonempty))
     })?;
     let truncation =
-        tools::truncate_head(&api, &output.stdout, tools::TruncationOptions::default())?;
+        registry::truncate_head(&api, &output.stdout, registry::TruncationOptions::default())?;
     let mut text = truncation.content.clone();
     let overflow = if truncation.truncated {
         let path = save_output(&api, output.stdout).await?;

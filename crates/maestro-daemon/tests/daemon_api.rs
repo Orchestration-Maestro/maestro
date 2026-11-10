@@ -5,9 +5,9 @@ use crate::support::api::{
     TestApp, daemon, daemon_with_workspaces, events_after, failure, request, settings,
 };
 use crate::support::runtime::block_on;
-use maestro_daemon::api::RequestMessage;
-use maestro_daemon::app::state::{ToastKind, ToastNotification};
-use maestro_daemon::paths::DaemonPaths;
+use maestro_daemon::app::model::{ToastKind, ToastNotification};
+use maestro_daemon::locations::DaemonPaths;
+use maestro_daemon::service::RequestMessage;
 use maestro_daemon::settings::model::ToastDelivery;
 use maestro_protocol::events::EventData;
 use maestro_protocol::rpc_types::RpcCommand;

@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use std::io;
 use std::rc::Rc;
 
-use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
+use maestro_app::presentation_data::status_line::{FooterDataProvider, FooterOperations};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -90,8 +90,8 @@ impl FooterOperations for MetadataEffects {
         _: std::time::Duration,
         _: Rc<
             dyn Fn(
-                maestro_app::presentation_data::footer_data_provider::FooterFileStats,
-                maestro_app::presentation_data::footer_data_provider::FooterFileStats,
+                maestro_app::presentation_data::status_line::FooterFileStats,
+                maestro_app::presentation_data::status_line::FooterFileStats,
             ),
         >,
     ) -> Box<dyn maestro_watch::fs_watch::FsWatcher> {

@@ -6,9 +6,9 @@ use crate::{
 };
 use maestro_web::{
     AbortedMessage, AssistantMessage, UserMessage,
-    components::code_block::ReadingUiError,
+    components::source::ReadingUiError,
     dialogs::attachment_overlay::AttachmentUiError,
-    dom::{DomContent, DomView},
+    page::{DomContent, DomView},
     tools::types::ToolUiError,
 };
 use std::{
@@ -68,11 +68,11 @@ pub fn message_failures_keep_localization_attachment_and_reading_sources(
 /// A reached tile reads its original attachment rather than a detached copy.
 fn attachment_failure(view: &DomView) {
     use maestro_app::{
-        AgentMessage, NoCustomMessages, browser::components::messages::CustomAgentMessages,
+        AgentMessage, NoCustomMessages, browser::components::records::CustomAgentMessages,
     };
     let record = Arc::new(RwLock::new(maestro_web::Attachment {
         id: "original".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "note.txt".into(),
         mime_type: "text/plain".into(),
         size: 3,

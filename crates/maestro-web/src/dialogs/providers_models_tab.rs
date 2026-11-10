@@ -8,7 +8,7 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::{custom_provider_card::ProviderStatus, provider_key_input::ProviderKeyInput},
-    dom::{DomContent, DomRoot, DomView, MountedContent, report},
+    page::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
 };
 use maestro_app::{

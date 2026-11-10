@@ -28,8 +28,8 @@ imports only bindings visible from the importing module and cannot widen their
 visibility through a public relay. Local glob bindings shadow root external-crate
 aliases, including when a later export refers to an earlier alias through `self`.
 
-For example, `pub use maestro_terminal::render::Dirty;` selects one item.
-`pub use maestro_terminal::render;` exposes a whole module and is rejected.
+For example, `pub use maestro_terminal::painting::Dirty;` selects one item.
+`pub use maestro_terminal::painting;` exposes a whole module and is rejected.
 
 The same run checks the credentials crate's public surface. Its root names every
 export: the checker reports a public re-export or module whose name the crate's
@@ -177,10 +177,10 @@ Feature owners retain serialization, symbolic-link policy and scheduling.
 
 The process owner `maestro-process` is declared core below layer 0 and depends only
 on `maestro-text` for POSIX shell operand serialization. Only tools, packages, credentials,
-detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
+detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `children` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
-Linux pane terminals use the separate `pty` module, with setup, foreground facts
+Linux pane terminals use the separate `terminal` module, with setup, foreground facts
 and an owned I/O actor. The `byte_queue` module owns ordered buffers and partial-write
 offsets shared by that actor and native terminal output; callers keep readiness and
 shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).
@@ -341,7 +341,7 @@ scratch workspaces, not certified as delivered capabilities.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in
-`crates/maestro-chat/tests/footer_support/session.rs`. The conventions check rejects
+`crates/maestro-chat/tests/footer_support/harness.rs`. The conventions check rejects
 a second construction of the session configuration anywhere in the chat crate's
 test code, naming its file and line, so every chat test shares one setup, which
 returns a session with its services. The rule covers every chat test source in any
@@ -447,7 +447,7 @@ own method needs another name. It skips test code as the other checks define it:
 test layouts, items inside an inherited `cfg(test)` context and the
 `maestro-test-*` crates.
 
-Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
+Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide. The protected `module_name_repetitions` lint rejects an item whose name starts or ends with its containing module's name; rename the module and keep the exported item name.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
 Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or be below a `tests` directory. A module named `tests` must carry `#[cfg(test)]`, every `#[cfg(test)]` module must be named `tests`, and test module declarations cannot carry `#[path]`. These layout conventions support production line counting; module declarations are validated throughout the syntax tree.

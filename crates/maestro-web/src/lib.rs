@@ -1,28 +1,26 @@
 //! Browser-facing attachments, offline session documents, localization and SVG glyphs.
 
 pub mod browser;
+pub mod components;
 /// The chat screen composing the session view and the artifacts panel.
 #[cfg(target_arch = "wasm32")]
-pub mod chat_panel;
-pub mod components;
-pub mod contributions;
+pub mod conversation;
 pub mod dialogs;
 pub mod docx_preview;
-pub mod dom;
+pub mod page;
+pub mod runtime_contributions;
+pub use components::attachment_tile::AttachmentTile;
 #[cfg(target_arch = "wasm32")]
-pub use chat_panel::{ChatPanel, ChatPanelConfig, ToolsFactory};
+pub use components::composer::MessageEditor;
+pub use components::composer::{EditorControls, MessageEditorProps};
 #[cfg(target_arch = "wasm32")]
-pub use components::agent_interface::AgentInterface;
-pub use components::agent_interface::{
+pub use components::conversation::AgentInterface;
+pub use components::conversation::{
     AgentInterfaceProps, ApiKeyRequired, BeforeSend, BrowserSession,
 };
-pub use components::attachment_tile::AttachmentTile;
 pub use components::custom_provider_card::CustomProviderCard;
 #[cfg(target_arch = "wasm32")]
-pub use components::input::Input;
-#[cfg(target_arch = "wasm32")]
-pub use components::message_editor::MessageEditor;
-pub use components::message_editor::{EditorControls, MessageEditorProps};
+pub use components::fields::Input;
 pub use components::message_list::MessageList;
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
@@ -36,6 +34,8 @@ pub use components::streaming_message_container::StreamingMessageContainer;
 #[cfg(target_arch = "wasm32")]
 pub use components::theme_toggle::ThemeToggle;
 pub use components::thinking_block::ThinkingBlock;
+#[cfg(target_arch = "wasm32")]
+pub use conversation::{ChatPanel, ChatPanelConfig, ToolsFactory};
 #[cfg(target_arch = "wasm32")]
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 #[cfg(target_arch = "wasm32")]
@@ -55,23 +55,21 @@ pub mod storage;
 pub use storage::backends::indexeddb_storage_backend::IndexedDBStorageBackend;
 pub mod utils;
 #[cfg(target_arch = "wasm32")]
-pub use utils::auth_token::{clear_auth_token, get_auth_token};
-pub use utils::format::{format_cost, format_model_cost, format_token_count, format_usage};
+pub use utils::authorization::{clear_auth_token, get_auth_token};
+pub use utils::formatting::{format_cost, format_model_cost, format_token_count, format_usage};
 #[cfg(target_arch = "wasm32")]
-pub use utils::i18n::BrowserLanguageHost;
-pub use utils::i18n::{
+pub use utils::localization::BrowserLanguageHost;
+pub use utils::localization::{
     I18n, I18nDiagnostic, I18nError, I18nMessages, LanguageCode, LanguageHost, TranslationFunction,
     TranslationValue, Translations,
 };
 
-pub use maestro_app::browser::components::messages::{
+pub use maestro_app::browser::components::records::{
     ArtifactMessage, UserMessageWithAttachments, convert_attachments, default_convert_to_llm,
     is_artifact_message, is_user_message_with_attachments,
 };
-pub use maestro_app::browser::utils::attachment_utils::{
-    Attachment, SharedAttachment, load_attachment,
-};
-pub use maestro_app::browser::utils::proxy_utils::{
+pub use maestro_app::browser::utils::attachments::{Attachment, SharedAttachment, load_attachment};
+pub use maestro_app::browser::utils::proxy::{
     apply_proxy_if_needed, create_local_stream_fn, create_stream_fn, is_cors_error,
     should_use_proxy_for_provider,
 };
@@ -83,11 +81,11 @@ pub use maestro_app::{
     Store, StoreConfig, get_app_storage, set_app_storage,
 };
 
-pub use maestro_app::browser::storage::{
+pub use maestro_app::browser::persistence::{
     IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
 };
 
-pub use components::sandbox::runtime_message_bridge::RuntimeMessageBridge;
+pub use components::sandbox::routing::RuntimeMessageBridge;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandbox::runtime_message_router::RUNTIME_MESSAGE_ROUTER;
@@ -100,14 +98,14 @@ pub use maestro_app::browser::components::sandbox::{
 };
 pub use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW;
 pub mod tools;
-pub use tools::artifacts::ArtifactElement;
+pub use tools::documents::ArtifactElement;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
 #[cfg(target_arch = "wasm32")]
-pub use tools::artifacts::HtmlArtifact;
+pub use tools::documents::HtmlArtifact;
 /// Artifact records and tabbed views using the application-selected filename.
-pub use tools::artifacts::{Artifact, ArtifactsPanel, ArtifactsParams};
+pub use tools::documents::{Artifact, ArtifactsPanel, ArtifactsParams};
 
 pub use maestro_app::{
     BuiltinRuntime, Runtime, SandboxFile, SandboxResult, SandboxRuntimeProvider,
@@ -116,10 +114,10 @@ pub use maestro_app::{
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
 
-pub use tools::artifacts::{TextArtifact, image_artifact::ImageArtifact};
+pub use tools::documents::{TextArtifact, image_artifact::ImageArtifact};
 
 /// Editable document artifact views.
-pub use tools::artifacts::{MarkdownArtifact, SvgArtifact};
+pub use tools::documents::{MarkdownArtifact, SvgArtifact};
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub use tools::render_tool;
 #[cfg(target_arch = "wasm32")]
@@ -141,9 +139,9 @@ pub use tools::renderers::calculate_renderer::CalculateRenderer;
 pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
 
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
-pub use tools::artifacts::ArtifactsToolRenderer;
+pub use tools::documents::ArtifactsToolRenderer;
 #[cfg(target_arch = "wasm32")]
-pub use tools::artifacts::artifact_pill::artifact_pill;
+pub use tools::documents::artifact_pill::artifact_pill;
 
 mod ui_error;
 
@@ -152,4 +150,4 @@ mod ui_error;
 pub mod test_support;
 
 #[cfg(target_arch = "wasm32")]
-pub use tools::artifacts::NativeArtifact;
+pub use tools::documents::NativeArtifact;

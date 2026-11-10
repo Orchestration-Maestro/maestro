@@ -3,7 +3,7 @@
 use super::Terminal;
 use crate::{
     Coordinate, Pin, Point,
-    formatter::{Content, Format, Options, ScreenExtra, TerminalExtra, TerminalFormatter},
+    formatting::{Content, Format, Options, ScreenExtra, TerminalExtra, TerminalFormatter},
     page::{CellPosition, cell::Wide},
     selection::Selection,
 };

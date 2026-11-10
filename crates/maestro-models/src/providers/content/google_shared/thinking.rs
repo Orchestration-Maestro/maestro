@@ -1,5 +1,5 @@
 //! Shared thinking selection with independent endpoint family policies.
-use super::super::google::GoogleThinking;
+use super::super::generative::GoogleThinking;
 use super::{GoogleThinkingLevel, ThinkingConfig, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4};
 use crate::{
     Model, ModelThinkingLevel, ThinkingBudgets, ThinkingLevel, clamp_reasoning,

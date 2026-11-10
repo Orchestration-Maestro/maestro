@@ -5,8 +5,8 @@ use crate::{
         attachment_content::browser::{append, element, host_error, set_text_if_changed},
         event_subscription::EventSubscription,
     },
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{DomContent, DomRoot, DomView},
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
+    page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use maestro_app::{AutoDiscoveryProviderType, CustomProviderType, ManualProviderType, Presence};

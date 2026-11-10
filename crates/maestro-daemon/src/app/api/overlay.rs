@@ -1,7 +1,7 @@
 //! Temporary pane exit restores only focus that the overlay still owned.
 
 use crate::{
-    app::{App, OverlayPaneState, state::Mode},
+    app::{App, OverlayPaneState, model::Mode},
     events::AppEvent,
 };
 

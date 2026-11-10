@@ -507,7 +507,7 @@ fn palette_expansion_is_shared_by_theme_and_converter() {
         assert_eq!(actual, expected);
         assert_eq!(color(&colors, &format!("palette{index}")), actual);
         assert_eq!(
-            maestro_theme::theme::ansi256_to_hex(u32::try_from(index).unwrap()),
+            maestro_theme::palette::ansi256_to_hex(u32::try_from(index).unwrap()),
             actual
         );
     }

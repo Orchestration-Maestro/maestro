@@ -7,13 +7,13 @@ use maestro_app::configuration::config::{
     SelfUpdateCommand, SelfUpdateContext, SelfUpdateOperations,
     get_self_update_command_from_settings, get_self_update_unavailable_instruction_from_settings,
 };
-use maestro_app::configuration::version_check::VersionCheckOptions;
+use maestro_app::configuration::releases::VersionCheckOptions;
 use maestro_app::{
     CommandCaptureOptions, CommandOutput, PackageFuture, PackageManager, PackageManagerOptions,
     PackageOperations, Settings, SettingsManager, SettingsScope, SettingsStorage,
     SettingsStorageError, SettingsUpdate, SpawnSyncError,
 };
-use maestro_cli::input::config_selector::ConfigPresentation;
+use maestro_cli::input::configuration::ConfigPresentation;
 use maestro_cli::packages::{PackageCommandContext, handle_config_command, handle_package_command};
 use maestro_test_directory::Scratch;
 use serde_json::Value;

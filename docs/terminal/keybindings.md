@@ -3,7 +3,7 @@
 For shortcut defaults and `keybindings.json` examples, see the
 [user shortcut reference](../keybindings.md).
 
-`maestro_tui::keybindings` resolves open action IDs against key identifiers.
+`maestro_tui::bindings` resolves open action IDs against key identifiers.
 The crate root re-exports its types, `TUI_KEYBINDINGS`, `get_keybindings` and
 `set_keybindings`. Matching delegates to the [key decoder](keys.md), reads the
 current protocol mode and does not filter release events.

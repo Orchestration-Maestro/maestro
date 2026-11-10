@@ -6,10 +6,10 @@ use crate::guest_calls::{
 };
 use crate::guest_component::GuestComponent;
 use crate::local_resources::Registry;
-use maestro_extensions::types::{ActionHandlers, CustomEditorComponent, ExtensionShortcutCallback};
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     AutocompleteProvider, BorderColor, EditorComponent, EditorError, Focusable, TextCallback,
 };
+use maestro_extensions::types::{ActionHandlers, CustomEditorComponent, ExtensionShortcutCallback};
 use maestro_extensions::{Cancellation, Component, EventBus, EventError, InputHandler, Local};
 use std::{cell::RefCell, rc::Rc};
 

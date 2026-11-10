@@ -1,8 +1,8 @@
 //! Tab topology and transactional caller-owned spawning.
 use crate::{
-    layout::{PaneId, SplitRequest, TileLayout},
     pane_state::PaneState,
     terminal_id::TerminalId,
+    tiling::{PaneId, SplitRequest, TileLayout},
 };
 use std::{collections::HashMap, io};
 

@@ -1,9 +1,9 @@
 //! Channel selection and identifier quoting of the injectable runtime script.
 use maestro_web::RuntimeMessageBridge;
-use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
-use maestro_web::components::sandbox::runtime_message_bridge::{
+use maestro_web::components::sandbox::routing::{
     RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
+use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use serde::Deserialize;
 
 /// Complete source-derived input.

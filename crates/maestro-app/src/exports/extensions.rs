@@ -36,7 +36,9 @@ pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecu
 pub use maestro_extensions::MessageRendererCall;
 
 /// The application's bordered loader, as an extension holds it.
-pub use maestro_extensions::widgets::{ExtensionEditor, ExtensionKeybindings, ExtensionLoader};
+pub use maestro_extensions::presentation::{
+    ExtensionEditor, ExtensionKeybindings, ExtensionLoader,
+};
 
 /// Creates an empty shared event bus whose default callbacks use the thread-safe family.
 ///
@@ -55,7 +57,7 @@ pub use maestro_extensions::types::{ExtensionShortcutOptions, RegisteredCommandO
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::discover_and_load_extensions;
 
-pub use maestro_extensions::footer_data_provider::live::Live;
+pub use maestro_extensions::footer::iteration::Live;
 pub use maestro_extensions::types::{
     ActionHandlers, ComponentFactory, CustomClose, CustomComponentFactory, CustomEditorComponent,
     CustomFactoryOutcome, CustomUIOptions, EditorFactory, EditorFactoryOutcome, ExtensionComponent,

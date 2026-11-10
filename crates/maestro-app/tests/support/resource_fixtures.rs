@@ -10,7 +10,7 @@ use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::{
     EventError,
-    runner::ExtensionRunnerSession,
+    execution::ExtensionRunnerSession,
     types::{CommandHandler, ExtensionFlagOptions, FlagType, RegisteredCommandOptions},
 };
 use maestro_models::{Local, Tool};

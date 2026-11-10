@@ -1,6 +1,6 @@
 //! Startup input acquisition through supplied readers and file effects.
 use crate::support::startup;
-use maestro_cli::startup::main::inputs::read_piped_stdin;
+use maestro_cli::startup::entrypoint::inputs::read_piped_stdin;
 use std::{
     io,
     pin::Pin,
@@ -78,7 +78,7 @@ fn piped_input_is_unread_for_tty_and_propagates_io_errors() {
 
 #[test]
 fn initial_preparation_consumes_only_first_message() {
-    use maestro_cli::startup::main::inputs::prepare_initial_message;
+    use maestro_cli::startup::entrypoint::inputs::prepare_initial_message;
     let operations = crate::file_inputs::SuppliedFileOperations::new();
     for (messages, stdin, expected, remaining) in [
         (
@@ -108,7 +108,7 @@ fn initial_preparation_consumes_only_first_message() {
 
 #[test]
 fn file_preparation_forwards_resize_order_and_failures() {
-    use maestro_cli::startup::main::inputs::prepare_initial_message;
+    use maestro_cli::startup::entrypoint::inputs::prepare_initial_message;
     use maestro_test_directory::Scratch;
     let scratch = Scratch::new().unwrap();
     let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/files");

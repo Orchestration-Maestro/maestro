@@ -4,7 +4,7 @@ use super::{SelfUpdateCommand, SelfUpdateCommandStep, SelfUpdateContext, SelfUpd
 use crate::Settings;
 use crate::configuration::{
     config::{PACKAGE_NAME, VERSION},
-    version_check::{VersionCheckOptions, get_latest_maestro_release, is_newer_package_version},
+    releases::{VersionCheckOptions, get_latest_maestro_release, is_newer_package_version},
 };
 use serde::Deserialize;
 use std::{io, process::ExitStatus};

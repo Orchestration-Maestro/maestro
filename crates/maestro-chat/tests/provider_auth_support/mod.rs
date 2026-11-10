@@ -5,7 +5,7 @@ use crate::bindings;
 use maestro_app::{AuthSource, AuthStatus, AuthStorage};
 use maestro_chat::{OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
-use maestro_tui::{Component, Focusable, Input, tui::InputHandler};
+use maestro_tui::{Component, Focusable, Input, interface::InputHandler};
 use records::*;
 use std::{
     cell::{Cell, RefCell},
@@ -87,8 +87,8 @@ fn take_providers(query: &mut Query) -> Vec<Provider> {
 /// One complete transaction, including retained input and child-array aliases.
 struct Replay {
     panel: Rc<OAuthSelectorComponent>,
-    input: maestro_tui::tui::ComponentHandle,
-    children: maestro_tui::tui::ChildArray,
+    input: maestro_tui::interface::ComponentHandle,
+    children: maestro_tui::interface::ChildArray,
     theme: ThemeState,
     caller: Rc<Caller>,
     storage: Arc<AuthStorage>,

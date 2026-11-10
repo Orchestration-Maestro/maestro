@@ -1,7 +1,7 @@
 //! Pane input: right-click routing and the text, key and combined writes to a pane's process.
 
 use super::super::responses::{api_error, pane_not_found};
-use crate::{app::App, input::TerminalKey, key_combo::parse_key_combo, pane::PaneRuntime};
+use crate::{app::App, ingress::TerminalKey, keys::parse_key_combo, panes::PaneRuntime};
 use maestro_protocol::schema::{
     ErrorBody, PaneInputSetParams, PaneRightClickTarget, PaneSendInputParams, PaneSendKeysParams,
     PaneSendTextParams, ResponseResult,

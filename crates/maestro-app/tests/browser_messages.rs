@@ -1,12 +1,12 @@
 //! Recorded browser messages through public conversion boundaries.
 #![cfg(test)]
 use crate::support;
-use maestro_app::browser::components::messages::{
+use maestro_app::browser::components::records::{
     ArtifactAction, ArtifactMessage, CustomAgentMessages, UserMessageWithAttachments,
     convert_attachments, default_convert_to_llm, is_artifact_message,
     is_user_message_with_attachments,
 };
-use maestro_app::browser::utils::attachment_utils::SharedAttachment;
+use maestro_app::browser::utils::attachments::SharedAttachment;
 use maestro_app::{AgentMessage, UserContent};
 use maestro_models::Message;
 use serde::Deserialize;
@@ -264,10 +264,10 @@ fn browser_projection_reads_retained_state_without_mutating_it() {
 
 #[test]
 fn browser_attachment_handles_survive_parent_removal_and_stay_live() {
-    use maestro_app::browser::utils::attachment_utils::Attachment;
+    use maestro_app::browser::utils::attachments::Attachment;
     let original = Arc::new(RwLock::new(Attachment {
         id: "original".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Image,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Image,
         file_name: "before.png".into(),
         mime_type: "image/png".into(),
         size: 3,

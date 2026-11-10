@@ -150,7 +150,7 @@ RPC is JSONL with correlated responses, stream events and these 29 commands. Ide
 | Sessions | `get_session_stats`, `export_html`, `switch_session`, `fork`, `clone`, `get_fork_messages`, `get_last_assistant_text`, `set_session_name`, `get_messages` |
 | Discovery | `get_commands` |
 
-Preserve omitted/null field distinctions, empty last-assistant data `{}`, parse failures without IDs and the actual invalid-value/failure boundary; promise neither arbitrary-JSON survival nor universal shutdown drain. RPC UI has exactly the nine established wire methods: `select`, `confirm`, `input`, `editor`, `notify`, `setStatus`, `setWidget`, `setTitle`, `set_editor_text`; unsupported component operations preserve their documented no-op/absent behavior. Dialog response, supplied cancellation and supported caller timeout retain their individual ownership. The stream has exactly 17 session event types plus extension_error: 18 total. Preserve every source flag, --theme/--no-themes and all 13 short aliases. The newer max thinking level is not in this baseline. Also deliver the typed subprocess client with process/stderr/correlation ownership and its own deadlines; the server alone is not client delivery. The client is `maestro-app::rpc_client`, beside the shared session command and response records; it drives its child through `maestro-process`, and `maestro-rpc` stays the server's I/O adapter.
+Preserve omitted/null field distinctions, empty last-assistant data `{}`, parse failures without IDs and the actual invalid-value/failure boundary; promise neither arbitrary-JSON survival nor universal shutdown drain. RPC UI has exactly the nine established wire methods: `select`, `confirm`, `input`, `editor`, `notify`, `setStatus`, `setWidget`, `setTitle`, `set_editor_text`; unsupported component operations preserve their documented no-op/absent behavior. Dialog response, supplied cancellation and supported caller timeout retain their individual ownership. The stream has exactly 17 session event types plus extension_error: 18 total. Preserve every source flag, --theme/--no-themes and all 13 short aliases. The newer max thinking level is not in this baseline. Also deliver the typed subprocess client with process/stderr/correlation ownership and its own deadlines; the server alone is not client delivery. The client is `maestro-app::rpc_transport`, beside the shared session command and response records; it drives its child through `maestro-process`, and `maestro-rpc` stays the server's I/O adapter.
 
 ## R11 — Browser frontend, documents and sandbox tools
 
@@ -489,11 +489,10 @@ as one portable build dependency and one portable development dependency.
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
-`maestro-cli` is a command-line frontend, not an interactive view. Its `config_selector`
+`maestro-cli` is a command-line frontend, not an interactive view. Its `configuration`
 module is only the wrapper that runs a chat-owned configuration view through a
 supplied presenter; every selector widget class stays chat-owned. The conventions
-check accepts that one module declaration at `src/input/mod.rs` and rejects widget
-declarations or the same module anywhere else in the crate.
+check rejects a selector widget declaration anywhere outside `maestro-chat`.
 
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
 
@@ -596,7 +595,7 @@ It uses `maestro-json` for JSON truthiness.
 
 The read-only footer contract `ReadonlyFooterDataProvider`, its live
 `ExtensionStatuses` view and the one generic insertion-ordered live map behind it
-belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
+belong to the extension consumer layer (`maestro-extensions::footer`),
 because extension footer factories receive it. The application keeps the footer
 metadata owner, its branch, watch, count and status policy and its existing public
 paths, which re-export the moved declarations. The keyed live map reuses
@@ -613,7 +612,7 @@ of a replacement editor (`CustomEditorComponent`), the editor factory result
 application re-exports them; the chat frontend's `CustomEditor` implements the
 capability and keeps the action map alias at its existing path. Extension components
 carry their optional disposal, expansion and overlay width in the same owner.
-Native repository discovery belongs to `maestro-workspace::workspace::git`.
+Native repository discovery belongs to `maestro-workspace::spaces::repository`.
 The daemon and application footer reuse its directory walk, lexical path and drive
 resolution and shared Unicode trimming without replacing native path bytes.
 A typed discovery policy preserves caller-specific metadata rules: the
@@ -902,7 +901,7 @@ projection only after this contract lands.
 ### Terminal child setup entry
 
 `maestro-process` owns the parent-side terminal launch and the child-side setup
-entry. The composition root calls `maestro_process::pty::setup_entry` before
+entry. The composition root calls `maestro_process::terminal::setup_entry` before
 ordinary argument parsing. A setup invocation acquires its terminal session,
 resets signals and replaces itself with the requested command. The parent passes
 an explicit executable and entry arguments; libraries never assume the current
@@ -1116,7 +1115,7 @@ format and one protocol version on both stdio and daemon sockets. The 29 session
 exact wire bytes, fields, omission/null rules and results. Workspace commands are additive on stdio.
 `maestro-protocol` owns the generic request and response envelopes, the workspace records and
 their schema; `maestro-app::rpc_types` owns the session records and the composed command
-family; `maestro-json::jsonl` owns JSONL framing. `maestro-app::rpc_mode` is the one connection
+family; `maestro-json::lines` owns JSONL framing. `maestro-app::connection_runner` is the one connection
 runner: it serves workspace operations and an optional local session over a caller's line
 reader and writer, returning how the connection ended. `RpcModeOptions` groups session-only
 facilities in `Option<RpcSessionOptions>`: runtime, process signals, theme and export effects.

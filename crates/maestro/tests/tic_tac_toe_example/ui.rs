@@ -12,7 +12,7 @@ pub(super) struct Ui {
     /// Controlled frame writer, never a real terminal.
     tui: maestro_tui::TUI,
     /// The actual authored view exposed by the custom factory.
-    view: Rc<RefCell<Option<maestro_tui::tui::ComponentHandle>>>,
+    view: Rc<RefCell<Option<maestro_tui::interface::ComponentHandle>>>,
     /// Announces that input can be delivered without guessing at readiness.
     ready: RefCell<Option<oneshot::Sender<()>>>,
 }

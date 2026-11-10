@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 use crate::child_programs;
-use maestro_process::pty::{self, PtyCommand, PtyEnvironment, PtySize};
+use maestro_process::terminal::{self, PtyCommand, PtyEnvironment, PtySize};
 use maestro_test_process::{TestProcess, run_alone};
 use std::{
     ffi::OsString,
@@ -23,7 +23,7 @@ fn size() -> PtySize {
 /// Carries native launch policy through one checked setup entry.
 fn wrap(mut command: PtyCommand, harness: &[String]) -> io::Result<PtyCommand> {
     let signals = command.args.iter().any(|arg| arg == "case:signals");
-    command = pty::PtySetupEntry {
+    command = terminal::PtySetupEntry {
         executable: std::env::current_exe()?,
         args: harness.iter().map(OsString::from).collect(),
     }
@@ -47,10 +47,10 @@ fn setup_entry() {
         let mut limit = original;
         limit.current = Some(3);
         rustix::process::setrlimit(rustix::process::Resource::Nofile, limit).unwrap();
-        let error = pty::setup_entry().unwrap();
+        let error = terminal::setup_entry().unwrap();
         rustix::process::setrlimit(rustix::process::Resource::Nofile, original).unwrap();
         assert_eq!(error.raw_os_error(), Some(22));
-    } else if pty::setup_entry().is_none() {
+    } else if terminal::setup_entry().is_none() {
         return;
     }
     std::process::exit(1);
@@ -113,7 +113,7 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![]),
             };
-            let (pty, mut child) = pty::spawn(size(), command, |command| wrap(command, harness))?;
+            let (pty, mut child) = terminal::spawn(size(), command, |command| wrap(command, harness))?;
             assert_eq!(descriptor_count(), before + 1);
             assert!(
                 rustix::io::fcntl_getfd(&pty.master_fd)?.contains(rustix::io::FdFlags::CLOEXEC)
@@ -155,14 +155,15 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
 fn checked_target(
     command: PtyCommand,
     size: PtySize,
-    inspect: impl FnOnce(&pty::Pty) -> io::Result<()>,
+    inspect: impl FnOnce(&terminal::Pty) -> io::Result<()>,
 ) -> Output {
     TestProcess::named("pty_children::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
         .output_with(|harness| {
-            let (pty, mut child) = pty::spawn(size, command, |command| wrap(command, harness))?;
+            let (pty, mut child) =
+                terminal::spawn(size, command, |command| wrap(command, harness))?;
             inspect(&pty)?;
             let raw = drain(&mut std::fs::File::from(pty.master_fd))?;
             let status = child.wait()?;
@@ -218,7 +219,7 @@ fn pty_resize_saturates_pixel_dimensions() {
         return;
     }
     let output = checked_target(
-        maestro_process::shell::pane_custom_command_pty_builder("exit 0"),
+        maestro_process::commands::pane_custom_command_pty_builder("exit 0"),
         size(),
         |pty| {
             let initial = rustix::termios::tcgetwinsize(&pty.master_fd)?;
@@ -336,24 +337,24 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
             command.cwd = Some("/no/such/maestro-directory".into());
         }
         let expected = native.spawn().unwrap_err().to_string();
-        let error = pty::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
+        let error = terminal::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
         assert_eq!(error.to_string(), expected);
         assert_eq!(descriptor_count(), before);
     }
     let before = descriptor_count();
-    let mut command = maestro_process::shell::pane_custom_command_pty_builder("exit 0");
+    let mut command = maestro_process::commands::pane_custom_command_pty_builder("exit 0");
     command.environment =
         PtyEnvironment::Inherit(vec![("MAESTRO_PTY_DUP_FAILURE".into(), Some("1".into()))]);
-    let error = pty::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
+    let error = terminal::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
     assert_eq!(
         error.to_string(),
         io::Error::from_raw_os_error(22).to_string()
     );
     assert_eq!(descriptor_count(), before);
-    let command = maestro_process::shell::pane_custom_command_pty_builder(
+    let command = maestro_process::commands::pane_custom_command_pty_builder(
         "printf 'checked failure completion\\n'",
     );
-    let (pty, mut child) = pty::spawn(size(), command, |command| wrap(command, harness))?;
+    let (pty, mut child) = terminal::spawn(size(), command, |command| wrap(command, harness))?;
     let raw = drain(&mut std::fs::File::from(pty.master_fd))?;
     let status = child.wait()?;
     Ok::<_, io::Error>(Output {

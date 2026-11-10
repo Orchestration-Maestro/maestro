@@ -220,7 +220,7 @@ pub fn pdf_native_clear_while_rendering_keeps_completed_pages() {
 fn assert_artifact_error_chrome(view: &mut View) {
     view.element.set_content("Zg==".into());
     let diagnostic =
-        maestro_app::browser::utils::attachment_utils::pdf::PdfDocument::new(vec![102])
+        maestro_app::browser::utils::attachments::portable::PdfDocument::new(vec![102])
             .err()
             .unwrap()
             .to_string();

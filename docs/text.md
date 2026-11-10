@@ -16,7 +16,7 @@ stable sorting and comparator lifetime.
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
   and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
   terminal input, tool output and message framing keep their own BOM policy.
-- **Byte-line framing.** `line_decoder::ByteLineDecoder` retains unfinished bytes and
+- **Byte-line framing.** `line_framing::ByteLineDecoder` retains unfinished bytes and
   ends lines at CR, LF and CRLF, emitting CR immediately and skipping one following
   LF across chunks. `flush` returns a final unterminated line. HTTP and guest
   provider readers share it; each keeps its UTF-8, BOM and event-dispatch policy.
@@ -61,7 +61,7 @@ stable sorting and comparator lifetime.
 
 ## Numbers
 
-The optional `number-format` feature exports `number_format::LocaleNumberFormat`.
+The optional `number-format` feature exports `numbers::LocaleNumberFormat`.
 Its constructor uses the same locale selection as the collator above, retaining
 neither the reader nor later environment changes. `format(f64)` returns locale
 grouping and digits, zero to three fractional digits, half-expand rounding and
@@ -80,7 +80,7 @@ assert_eq!(escape("'", EscapeMode::HtmlDecimal).len(), 5);
 ## Local dates and times
 
 The optional `date-time-format` feature exports
-`date_time_format::LocaleDateTimeFormat`. It captures the same locale observations
+`dates::LocaleDateTimeFormat`. It captures the same locale observations
 as number formatting and accepts Gregorian local `[year, month, day]` and
 `[hour, minute, second]` fields. The caller supplies the clock and time zone.
 Native callers can use the re-export `maestro_theme::LocaleDateTimeFormat`.

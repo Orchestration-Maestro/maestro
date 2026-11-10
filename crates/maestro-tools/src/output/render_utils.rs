@@ -1,6 +1,6 @@
 //! Display strings shared by tool renderers.
 
-use crate::utils::shell::sanitize_binary_output;
+use crate::utils::environment::sanitize_binary_output;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{
     output::render_parts::{paint, themed},

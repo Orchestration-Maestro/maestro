@@ -5,14 +5,14 @@ use crate::{
         message_renderer_registry::render_message,
         messages::{AssistantMessage, ToolResults, UserMessage},
     },
-    dom::PreparedContent,
+    page::PreparedContent,
     tools::types::ToolUiError,
 };
 #[cfg(any(target_arch = "wasm32", test))]
 use maestro_app::ToolResultMessage;
-use maestro_app::browser::components::messages::CustomAgentMessages as BrowserMessages;
+use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 #[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::browser::components::messages::{
+use maestro_app::browser::components::records::{
     is_artifact_message, is_user_message_with_attachments,
 };
 use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages};

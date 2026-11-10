@@ -156,7 +156,7 @@ impl Browser {
 
     pub fn command(&self, recipe: &str) -> Command {
         record(format!("phase: recipe {recipe}"));
-        let mut command = super::toolchain_support::command("just");
+        let mut command = super::compiler::command("just");
         command.arg(recipe);
         self.configure(&mut command);
         command.env("CARGO_BUILD_JOBS", lane_jobs());
@@ -175,7 +175,7 @@ impl Browser {
 
     /// Execute the built native helper without instrumenting its compiler children.
     pub fn native_command(&self, operation: &str) -> Command {
-        let mut command = super::toolchain_support::command(env!("CARGO_BIN_EXE_development"));
+        let mut command = super::compiler::command(env!("CARGO_BIN_EXE_development"));
         command
             .args(["browser-author", operation])
             .env("CARGO_MANIFEST_DIR", self.path("crates/maestro-tooling"))

@@ -25,7 +25,7 @@ pub(super) fn discovery() -> [Command; 4] {
             .args([option("daemon", "NAME"), flag("json")]),
         Command::new("completion")
             .about("Generate shell completion scripts")
-            .arg(required("shell").value_parser(crate::completion::SUPPORTED_SHELLS)),
+            .arg(required("shell").value_parser(crate::completions::SUPPORTED_SHELLS)),
         Command::new("settings")
             .about("Inspect workspace settings")
             .subcommands(

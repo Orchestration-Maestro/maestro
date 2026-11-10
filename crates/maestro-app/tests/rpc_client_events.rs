@@ -5,7 +5,7 @@ use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as re
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
 use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
-use maestro_process::child_process::process_exists;
+use maestro_process::children::process_exists;
 use serde_json::{Value, json};
 use std::{cell::RefCell, pin::pin, rc::Rc, time::Duration};
 

@@ -2,7 +2,7 @@
 
 use super::super::{
     App,
-    state::{ToastKind, ToastNotification},
+    model::{ToastKind, ToastNotification},
 };
 use crate::settings::model::ToastDelivery;
 use maestro_protocol::schema::{

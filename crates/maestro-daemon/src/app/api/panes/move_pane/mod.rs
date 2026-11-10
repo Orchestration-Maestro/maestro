@@ -11,9 +11,9 @@ use maestro_protocol::{
     schema::{ErrorBody, PaneMoveParams, PaneMoveReason, PaneMoveResult, ResponseResult},
 };
 use maestro_workspace::{
-    layout::{PaneId, SplitRequest},
     tab::MovedPane,
     terminal_id::TerminalId,
+    tiling::{PaneId, SplitRequest},
 };
 
 /// A pane about to move, with the handles and state of the place it leaves.
