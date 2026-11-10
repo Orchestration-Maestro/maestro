@@ -70,7 +70,9 @@ impl PersistentStorageDialog {
         }
         let approved = Self::show(view)?.await.unwrap_or(false);
         if !approved {
-            web_sys::console::warn_1(&"⚠ No persistent storage: saved sessions may be lost".into());
+            web_sys::console::warn_1(
+                &"⚠ Persistent storage declined: saved sessions may be lost".into(),
+            );
             return Ok(false);
         }
         if !matches!(storage_support("persist"), Ok(Some(_))) {
@@ -90,7 +92,7 @@ impl PersistentStorageDialog {
             }
             Ok(false) => {
                 web_sys::console::warn_1(
-                    &"⚠ No persistent storage: saved sessions may be lost when space runs short"
+                    &"⚠ Browser refused persistent storage: saved sessions may be lost when space runs short"
                         .into(),
                 );
                 false
