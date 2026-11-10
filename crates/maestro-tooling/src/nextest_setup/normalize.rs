@@ -117,7 +117,7 @@ pub(super) fn normalize(directory: &Path, archived: bool) -> io::Result<Outcome>
     let mut current: Vec<(PathBuf, SystemTime)> = Vec::new();
     for artifact in executables(directory)? {
         found = true;
-        let modified = modified(&artifact)?;
+        let modified = modified_time(&artifact)?;
         let outdated = !archived && outdated(&artifact, modified, &fingerprints, &libraries)?;
         if outdated {
             stale |= is_example(&artifact);
@@ -159,7 +159,7 @@ fn libraries(deps: &Path) -> io::Result<Libraries> {
         {
             all.push(Library {
                 name: file_name(&path),
-                modified: modified(&path)?,
+                modified: modified_time(&path)?,
             });
         }
     }
@@ -168,7 +168,7 @@ fn libraries(deps: &Path) -> io::Result<Libraries> {
 }
 
 /// The time `path` was last modified.
-fn modified(path: &Path) -> io::Result<SystemTime> {
+fn modified_time(path: &Path) -> io::Result<SystemTime> {
     std::fs::metadata(path)
         .and_then(|metadata| metadata.modified())
         .map_err(|error| at(path, error))

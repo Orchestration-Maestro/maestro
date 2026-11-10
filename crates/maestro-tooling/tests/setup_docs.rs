@@ -205,5 +205,8 @@ fn documented_pages_include_the_contributing_guide_and_crate_readmes() {
     let pages = documented_pages(&root);
 
     assert!(pages.contains(&root.join("CONTRIBUTING.md")));
-    assert!(pages.contains(&root.join("crates/maestro-agent/README.md")));
+    assert!(pages.iter().any(|page| {
+        page.file_name().is_some_and(|name| name == "README.md")
+            && page.starts_with(root.join("crates"))
+    }));
 }

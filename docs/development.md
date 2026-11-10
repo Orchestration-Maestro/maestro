@@ -1289,8 +1289,8 @@ The development tool's `nextest-setup` command runs every nextest setup entry:
 `author-component`, `fixture-sources`, `browser-author` and
 `normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
 conventions check rejects a shell script anywhere under `.config/`. The
-`author-component` entry runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
-bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
+`author-component` entry runs the tool from `target/test-setup/development`: a shard
+receives it in the downloaded bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
 When you start nextest by hand on a package the entry serves and the tool is missing,
 nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
