@@ -348,7 +348,7 @@
     },
     "expected": {
       "selector": false,
-      "status": "There are no stored credentials to remove. /logout removes only what /login saved; the environment and models.json stay as they are.          ",
+      "status": "There are no stored credentials to remove. /logout removes only what /login saved; the environment and models.json stay as they are.",
       "ordinary": null
     }
   },
@@ -512,7 +512,7 @@
     },
     "expected": {
       "count": 1.0,
-      "message": "Removed the stored API key for Saved key. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for Saved key. The environment and models.json stay as they are.",
       "error": null,
       "accepted": [
         "a"
@@ -543,7 +543,7 @@
     },
     "expected": {
       "count": 0.0,
-      "message": "Removed the stored API key for Original name. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for Original name. The environment and models.json stay as they are.",
       "error": null,
       "accepted": []
     }
@@ -583,7 +583,7 @@
     },
     "expected": {
       "count": 2.0,
-      "message": "Removed the stored API key for a. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for a. The environment and models.json stay as they are.",
       "error": null,
       "accepted": []
     }
@@ -625,7 +625,7 @@
     },
     "expected": {
       "count": 1.0,
-      "message": "Removed the stored API key for a. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for a. The environment and models.json stay as they are.",
       "error": null,
       "accepted": []
     }
@@ -668,7 +668,7 @@
     },
     "expected": {
       "count": 2.0,
-      "message": "Removed the stored API key for a. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for a. The environment and models.json stay as they are.",
       "error": null,
       "accepted": []
     }
@@ -715,7 +715,7 @@
     },
     "expected": {
       "count": 1.0,
-      "message": "Removed the stored API key for First session. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for First session. The environment and models.json stay as they are.",
       "error": null,
       "accepted": [
         "b"
@@ -824,7 +824,7 @@
     },
     "expected": {
       "count": 0.0,
-      "message": "Removed the stored API key for a. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for a. The environment and models.json stay as they are.",
       "error": null,
       "accepted": []
     }
@@ -856,7 +856,7 @@
     },
     "expected": {
       "count": 0.0,
-      "message": "Removed the stored API key for a. The environment and models.json stay as they are.      ",
+      "message": "Removed the stored API key for a. The environment and models.json stay as they are.",
       "error": null,
       "accepted": [
         "a",

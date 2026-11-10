@@ -8960,7 +8960,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in this folder.\u001b[39m   "
+        "\u001b[38;5;33m  No named sessions in this folder.\u001b[39m"
       ],
       "selected": null
     }

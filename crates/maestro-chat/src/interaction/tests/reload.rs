@@ -217,7 +217,10 @@ fn reload_initial_draw_failure_restores_captured_editor() {
             assert!(errors.is_empty(), "{errors:?}");
             assert!(!world.loader.calls.borrow().contains(&"reload"));
             let output = world.terminal.writes().join("");
-            assert!(output.contains("Reloading keybindings"), "{output}");
+            assert!(
+                output.contains("Reloading every resource: keybindings"),
+                "{output}"
+            );
             let rows = world.mode.chat_container.render(160).join("\n");
             assert!(rows.contains("Reload failed: cursor failure"), "{rows}");
             assert!(!rows.contains("Reloaded every resource"), "{rows}");

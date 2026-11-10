@@ -1573,12 +1573,9 @@ fn tmux_probe_uses_both_options_concurrently() {
             gates.ready(root).await;
             assert!(poll(&mut query).is_none());
             gates.release();
-            assert!(
-                query
-                    .await
-                    .unwrap()
-                    .starts_with("tmux has extended-keys off.")
-            );
+            assert!(query.await.unwrap().starts_with(
+                "tmux has extended-keys off, so modified Enter keys may not reach Maestro."
+            ));
             finish_captures(tasks).await;
             gates.finish();
         },
@@ -1820,7 +1817,7 @@ async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: 
         assert!(rows.contains("- before"), "{rows}");
     }
     assert!(
-        rows.contains("tmux has extended-keys off."),
+        rows.contains("tmux has extended-keys off, so modified Enter keys may not reach Maestro."),
         "the tmux notice is shown: {rows}"
     );
     assert_eq!(root.join("npm-observed").exists(), online);
@@ -1903,7 +1900,7 @@ async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
         let text = [
             "New version 9.8.7 is available.",
             "- before",
-            "tmux has extended-keys off.",
+            "tmux has extended-keys off, so modified Enter keys may not reach Maestro.",
         ][producer];
         until_shown(&world, text, &mut tasks).await;
         let rows = world.mode.chat_container.render(120);

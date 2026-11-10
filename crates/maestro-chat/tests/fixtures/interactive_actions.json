@@ -272,7 +272,7 @@
     "expected": {
       "lines": [
         "",
-        " @dim@The model in use does not support thinking\u001b[39m                                                         "
+        " @dim@The model in use does not support thinking\u001b[39m                                                            "
       ]
     }
   },
@@ -687,7 +687,7 @@
     "expected": {
       "lines": [
         "",
-        " @warning@Warning: No editor is set. Set $VISUAL or $EDITOR.\u001b[39m                                                 "
+        " @warning@Warning: No editor is set. Set $VISUAL or $EDITOR.\u001b[39m                        "
       ]
     }
   },
