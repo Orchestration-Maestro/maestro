@@ -184,7 +184,7 @@ Summary of that branch:
 ";
 
 /// Structured branch instructions.
-const BRANCH_SUMMARY_PROMPT: &str = r#"Write a structured summary of the branch just explored, so its context is on hand when the user returns to it later.
+const BRANCH_SUMMARY_PROMPT: &str = r#"Write a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.
 
 Follow this format EXACTLY:
 
