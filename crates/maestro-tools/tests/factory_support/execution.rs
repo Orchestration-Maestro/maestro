@@ -233,6 +233,16 @@ pub fn manager(root: &read_support::Scratch) -> Arc<ToolsManager> {
     find_support::manager(root.text(), &Arc::new(AtomicUsize::new(0)))
 }
 
+/// A native search manager over a fresh binary directory holding the pinned `rg` and `fd`.
+///
+/// Nextest supplies the pins as `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD`, so a real search never
+/// depends on the runner's `PATH`. The directory lives as long as the returned guard.
+pub fn pinned_manager() -> (read_support::Scratch, Arc<ToolsManager>) {
+    let (bin, manager) = find_support::pinned_manager("fd");
+    maestro_test_process::install_search_program("rg", bin.path()).unwrap();
+    (bin, manager)
+}
+
 /// Compare real routed operations, including exact operand order, with the producing owner.
 pub fn paired(factory: &str, name: &str, cwd: &str, state: &Value) {
     let root = read_support::Scratch::new().unwrap();
@@ -325,13 +335,14 @@ fn controlled_failure(factory: &str, name: &str) {
 /// Native execution is compared on a fresh real file with its producing owner.
 fn native_call(factory: &str, name: &str) {
     let root = read_support::Scratch::new().unwrap();
+    let (_bin, manager) = pinned_manager();
     root.file("f", b"a c\nhit\n");
     let tool = select(
         factory,
         name,
         root.text(),
         ToolsOptions::default(),
-        manager(&root),
+        manager.clone(),
     )
     .unwrap()
     .into_iter()
@@ -343,7 +354,7 @@ fn native_call(factory: &str, name: &str) {
     if name == "write" {
         let _ = std::fs::remove_file(root.path().join("out"));
     }
-    let original = individual(name, root.text(), ToolsOptions::default(), manager(&root));
+    let original = individual(name, root.text(), ToolsOptions::default(), manager);
     assert_eq!(result, execute(&original, arguments(name), None));
     assert!(result.is_ok(), "native {name} failed");
     assert_native_bytes(&root, name);
@@ -422,6 +433,7 @@ pub fn check_corrections() {
 
 /// Zero removes the result-count budget both below and above the default.
 fn unlimited_find(root: &read_support::Scratch) {
+    let (_bin, manager) = pinned_manager();
     root.file("one.txt", b"hit");
     for factory in factories("find") {
         let tool = select(
@@ -429,7 +441,7 @@ fn unlimited_find(root: &read_support::Scratch) {
             "find",
             root.text(),
             ToolsOptions::default(),
-            manager(root),
+            manager.clone(),
         )
         .unwrap()
         .into_iter()
@@ -447,7 +459,7 @@ fn unlimited_find(root: &read_support::Scratch) {
         root.text(),
         ToolsOptions::default(),
         "/unused/bash".into(),
-        manager(root),
+        manager,
     )
     .unwrap();
     let result = execute(&tool, json!({"pattern":"*.txt", "limit":0}), None).unwrap();
@@ -465,6 +477,7 @@ fn unlimited_find(root: &read_support::Scratch) {
 /// Native traversal keeps user hidden/dependency files while respecting scoped ignore rules.
 #[cfg(unix)]
 fn ignored_search() {
+    let (_bin, manager) = pinned_manager();
     for repository in [false, true] {
         let root = grep_support::tree();
         if repository {
@@ -484,7 +497,7 @@ fn ignored_search() {
                     name,
                     root.text(),
                     ToolsOptions::default(),
-                    manager(&root),
+                    manager.clone(),
                 )
                 .unwrap()
                 .into_iter()
