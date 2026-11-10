@@ -98,7 +98,7 @@ numbered file and is reported as oversized.
 `--analyze` runs one child per written file, then one aggregating child in the
 output directory once at least one summary file exists, both with the `read` and
 `write` tools only. A run that finds no summary file prints
-`No summary files created. Nothing to aggregate.` and stops. Each child receives
+`No summary file was written, so there is nothing to combine.` and stops. Each child receives
 the paths of any existing instruction files, the transcript or summary paths and
 the line count. Its JSON event stream is rendered as text. Analysis outcomes are
 reported but do not change the command's successful exit; a rejected operation

@@ -1748,7 +1748,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -1792,7 +1792,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -2915,7 +2915,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -2956,7 +2956,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3019,7 +3019,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3060,7 +3060,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3123,7 +3123,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3164,7 +3164,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3229,7 +3229,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3273,7 +3273,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3337,7 +3337,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3374,7 +3374,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3599,7 +3599,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -3639,7 +3639,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -4228,7 +4228,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Project hooks/ directory found. Hooks have been renamed to extensions."
+                "Project hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4270,7 +4270,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Project hooks/ directory found. Hooks have been renamed to extensions."
+                "Project hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4327,7 +4327,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions."
+                "Global hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4348,7 +4348,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions."
+                "Global hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4383,7 +4383,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions."
+                "Global hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4405,7 +4405,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions."
+                "Global hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4502,7 +4502,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions."
+                "Global hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4529,7 +4529,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions."
+                "Global hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -4730,7 +4730,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -4759,7 +4759,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -4811,10 +4811,10 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions.",
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
-                "Project hooks/ directory found. Hooks have been renamed to extensions.",
-                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global hooks/ directory found. Hooks are now called extensions.",
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions.",
+                "Project hooks/ directory found. Hooks are now called extensions.",
+                "Project tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -4854,10 +4854,10 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions.",
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
-                "Project hooks/ directory found. Hooks have been renamed to extensions.",
-                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global hooks/ directory found. Hooks are now called extensions.",
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions.",
+                "Project hooks/ directory found. Hooks are now called extensions.",
+                "Project tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -4915,10 +4915,10 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions.",
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
-                "Project hooks/ directory found. Hooks have been renamed to extensions.",
-                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global hooks/ directory found. Hooks are now called extensions.",
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions.",
+                "Project hooks/ directory found. Hooks are now called extensions.",
+                "Project tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -4949,10 +4949,10 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions.",
-                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
-                "Project hooks/ directory found. Hooks have been renamed to extensions.",
-                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global hooks/ directory found. Hooks are now called extensions.",
+                "Global tools/ directory holds custom tools. Custom tools now live in extensions.",
+                "Project hooks/ directory found. Hooks are now called extensions.",
+                "Project tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -5126,7 +5126,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Project hooks/ directory found. Hooks have been renamed to extensions."
+                "Project hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -5157,7 +5157,7 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Project hooks/ directory found. Hooks have been renamed to extensions."
+                "Project hooks/ directory found. Hooks are now called extensions."
               ]
             },
             "error": null,
@@ -5343,8 +5343,8 @@
                 "other"
               ],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions.",
-                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global hooks/ directory found. Hooks are now called extensions.",
+                "Project tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -5425,8 +5425,8 @@
             "result": {
               "migratedAuthProviders": [],
               "deprecationWarnings": [
-                "Global hooks/ directory found. Hooks have been renamed to extensions.",
-                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+                "Global hooks/ directory found. Hooks are now called extensions.",
+                "Project tools/ directory holds custom tools. Custom tools now live in extensions."
               ]
             },
             "error": null,
@@ -5526,7 +5526,7 @@
         },
         {
           "name": "scoped-models",
-          "description": "Enable/disable models for Ctrl+P cycling"
+          "description": "Turn models on or off for Ctrl+P cycling"
         },
         {
           "name": "export",
@@ -5534,15 +5534,15 @@
         },
         {
           "name": "import",
-          "description": "Import and resume a session from a JSONL file"
+          "description": "Load a session from a JSONL file and resume it"
         },
         {
           "name": "share",
-          "description": "Share session as a secret GitHub gist"
+          "description": "Publish the session as a secret gist on GitHub"
         },
         {
           "name": "copy",
-          "description": "Copy last agent message to clipboard"
+          "description": "Put the last agent message on the clipboard"
         },
         {
           "name": "name",
@@ -5562,11 +5562,11 @@
         },
         {
           "name": "fork",
-          "description": "Create a new fork from a previous user message"
+          "description": "Open a new session that forks off an earlier user turn"
         },
         {
           "name": "clone",
-          "description": "Duplicate the current session at the current position"
+          "description": "Clone the current session at its present position"
         },
         {
           "name": "tree",
@@ -5594,7 +5594,7 @@
         },
         {
           "name": "reload",
-          "description": "Reload keybindings, extensions, skills, prompts, and themes"
+          "description": "Refresh themes, prompts, skills, extensions and keybindings"
         },
         {
           "name": "quit",
@@ -5874,16 +5874,16 @@
     {
       "input": {
         "warnings": [
-          "Global hooks/ directory found. Hooks have been renamed to extensions."
+          "Global hooks/ directory found. Hooks are now called extensions."
         ]
       },
       "expected": {
         "before": {
-          "output": "\u001b[33mWarning: Global hooks/ directory found. Hooks have been renamed to extensions.\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n",
+          "output": "\u001b[33mWarning: Global hooks/ directory found. Hooks are now called extensions.\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n",
           "done": false
         },
         "after": {
-          "output": "\u001b[33mWarning: Global hooks/ directory found. Hooks have been renamed to extensions.\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n\n",
+          "output": "\u001b[33mWarning: Global hooks/ directory found. Hooks are now called extensions.\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n\n",
           "done": true
         }
       }

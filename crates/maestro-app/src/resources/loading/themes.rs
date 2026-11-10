@@ -70,7 +70,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
                 }
                 Ok(_) => result
                     .diagnostics
-                    .push(warning("theme path is not a json file".into(), &resolved)),
+                    .push(warning("theme path must be a json file".into(), &resolved)),
                 Err(error) => result
                     .diagnostics
                     .push(warning(error.to_string(), &resolved)),

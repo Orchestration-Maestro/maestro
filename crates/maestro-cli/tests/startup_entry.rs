@@ -878,7 +878,8 @@ mod entry {
                 e.commands
                     .stdout
                     .set_hook(Rc::new(move || log.borrow_mut().push("stdout".into())));
-                let notice = "Warning: Project hooks/ directory found. Hooks have been renamed to extensions.";
+                let notice =
+                    "Warning: Project hooks/ directory found. Hooks are now called extensions.";
                 match case {
                     "print" => {
                         let provider = Provider::start(vec![200]);

@@ -19,7 +19,7 @@ use std::{
 pub enum NoTools {
     /// No tool is enabled.
     All,
-    /// The default built-in tools (read, bash, edit, write) are off; extension and SDK tools
+    /// Removes read, bash, edit and write, the default built-in set; extension and SDK tools
     /// stay enabled.
     Builtin,
 }

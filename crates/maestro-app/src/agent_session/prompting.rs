@@ -83,7 +83,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Result<(), DiagnosticErrorInfo> {
         if !self.begin_run() {
             return Err(DiagnosticErrorInfo::error(
-                "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
+                "The agent is still working on a prompt. Queue messages with steer() or followUp(), or wait until it finishes.",
             ));
         }
         let outcome = self.drive_run(input).await;
@@ -188,8 +188,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         if self.is_streaming() {
             let Some(behavior) = options.streaming_behavior else {
                 return Err(DiagnosticErrorInfo::error(
-                    "Agent is already processing. Specify streamingBehavior ('steer' or \
-                     'followUp') to queue the message.",
+                    "The agent is still processing. To queue the message, pass streamingBehavior as \
+                     'steer' or 'followUp'.",
                 ));
             };
             let images = images.as_deref().unwrap_or_default();

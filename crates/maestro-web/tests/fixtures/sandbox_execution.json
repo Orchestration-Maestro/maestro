@@ -113,7 +113,7 @@
       "properties": {
         "title": {
           "type": "string",
-          "description": "Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"
+          "description": "Short title, in active form, saying what the snippet sets out to do, e.g. 'Calculating sum'"
         },
         "code": {
           "type": "string",

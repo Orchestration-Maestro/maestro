@@ -923,7 +923,7 @@
     }
   },
   {
-    "name": "a user message always triggers a turn",
+    "name": "an idle session always starts a turn for a user message",
     "results": [
       {
         "ok": {
@@ -1818,7 +1818,7 @@
     "name": "a user message while streaming without a behaviour is refused",
     "results": [
       {
-        "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message."
+        "error": "The agent is still processing. To queue the message, pass streamingBehavior as 'steer' or 'followUp'."
       },
       {
         "ok": {

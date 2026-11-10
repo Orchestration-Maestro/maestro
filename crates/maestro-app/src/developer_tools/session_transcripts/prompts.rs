@@ -1,58 +1,58 @@
 //! The two prompt templates the analysis children receive.
 
 /// The instruction that opens the analysis prompt.
-const ANALYSIS: &str = "You are analyzing session transcripts to identify recurring user instructions that could be automated.\n\n";
+const ANALYSIS: &str = "You are reviewing session transcripts for recurring user instructions that could be automated.\n\n";
 /// The instruction that opens the aggregation prompt.
 const AGGREGATION: &str =
-    "You are aggregating pattern analysis results from multiple summary files.\n\n";
+    "You are combining the pattern analyses written to several summary files.\n\n";
 /// The analysis instructions that follow any existing instruction files.
-const READING: &str = "READING THE TRANSCRIPT:
-The transcript file is large. Read it in chunks of 1000 lines using offset/limit parameters:
-1. First: read with limit=1000 (lines 1-1000)
-2. Then: read with offset=1001, limit=1000 (lines 1001-2000)
-3. Continue incrementing offset by 1000 until you reach the end
-4. Only after reading the ENTIRE file, perform the analysis and write the summary
+const READING: &str = "HOW TO READ THE TRANSCRIPT:
+The transcript file is large, so read it in 1000-line chunks with the offset and limit parameters:
+1. Start with limit=1000 (lines 1-1000)
+2. Next read with offset=1001, limit=1000 (lines 1001-2000)
+3. Keep adding 1000 to offset until the end of the file is reached
+4. Analyse and write the summary only once the ENTIRE file has been read
 
 ANALYSIS TASK:
-Look for patterns where the user repeatedly gives similar instructions. These could become:
-- AGENTS.md entries: coding style rules, behavior guidelines, project conventions
-- Skills: multi-step workflows with external tools (search, browser, APIs)
-- Prompt templates: reusable prompts for common tasks
+Find patterns where the user keeps giving similar instructions. Each could turn into:
+- AGENTS.md entries: style rules for code, behavioral guidance and project conventions
+- Skills: workflows with several steps that rely on outside tools (browser, search, APIs)
+- Prompt templates: prompts that can be reused for frequent tasks
 
-Compare each pattern against the existing AGENTS.md content to determine if it's NEW or EXISTING.
+Check every pattern against the current AGENTS.md content to decide whether it is NEW or EXISTING.
 
-OUTPUT FORMAT (strict):
-Write a file with exactly this structure. Use --- as separator between patterns.
+REQUIRED OUTPUT FORMAT (strict):
+Produce a file laid out exactly like this, with --- between patterns.
 
-PATTERN: <short descriptive name>
+PATTERN: <brief name>
 STATUS: NEW | EXISTING
 TYPE: agents-md | skill | prompt-template
-FREQUENCY: <number of times observed>
+FREQUENCY: <how many times it occurred>
 EVIDENCE:
-- \"<exact quote 1>\"
-- \"<exact quote 2>\"
-- \"<exact quote 3>\"
+- \"<verbatim quote 1>\"
+- \"<verbatim quote 2>\"
+- \"<verbatim quote 3>\"
 DRAFT:
-<proposed content for AGENTS.md entry, SKILL.md, or prompt template>
+<proposed text for the AGENTS.md entry, SKILL.md or prompt template>
 ---
 
 Rules:
-- Only include patterns that appear 2+ times
-- STATUS is NEW if not in AGENTS.md, EXISTING if already covered
-- EVIDENCE must contain exact quotes from the transcripts
-- DRAFT must be ready-to-use content
-- If no patterns found, write \"NO PATTERNS FOUND\"
-- Do not include any other text outside this format";
+- Report only patterns seen at least 2 times
+- STATUS is NEW when AGENTS.md lacks the pattern, EXISTING when AGENTS.md already covers it
+- EVIDENCE must quote the transcripts exactly
+- DRAFT must be content that can be used as it stands
+- When no pattern is found, write \"NO PATTERNS FOUND\"
+- Add no text outside this format";
 /// The merging instructions that follow the listed summary files.
-const MERGING: &str = "STEP 3: Create a consolidated final summary that:
-1. Merges duplicate patterns (same pattern found in multiple files)
-2. Ranks patterns by total frequency across all files
-3. Groups by status (NEW first, then EXISTING) and type
-4. Provides the best/most complete DRAFT for each unique pattern
-5. Verify STATUS against AGENTS.md content (pattern may be marked NEW in summaries but actually exists)
+const MERGING: &str = "STEP 3: Produce one consolidated final summary that:
+1. Merges duplicates (the same pattern appearing in several files)
+2. Ranks patterns by their combined frequency over all files
+3. Orders by status (NEW before EXISTING), then by type
+4. Keeps the best and most complete DRAFT for each distinct pattern
+5. Re-checks STATUS against AGENTS.md content (a summary may say NEW for something AGENTS.md already holds)
 
-OUTPUT FORMAT (strict):
-Write the final summary with this structure:
+REQUIRED OUTPUT FORMAT (strict):
+Lay the final summary out like this:
 
 # NEW PATTERNS (not yet in AGENTS.md)
 
@@ -61,7 +61,7 @@ Total Frequency: <sum across all files>
 Evidence:
 - \"<best quotes>\"
 Draft:
-<consolidated draft>
+<merged draft>
 
 ## SKILL: <pattern name>
 ...
@@ -71,11 +71,11 @@ Draft:
 
 ---
 
-# EXISTING PATTERNS (already in AGENTS.md, for reference)
+# EXISTING PATTERNS (already covered by AGENTS.md, listed for reference)
 
 ## <pattern name>
 Total Frequency: <N>
-Already covered by: <quote relevant section from AGENTS.md>
+Already covered by: <quote the relevant AGENTS.md section>
 
 ---
 
@@ -90,7 +90,7 @@ pub(super) fn analysis(agents: &[String]) -> String {
         return format!("{ANALYSIS}{READING}");
     }
     format!(
-        "{ANALYSIS}STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{}\n\nSTEP 2: {READING}",
+        "{ANALYSIS}STEP 1: Open the existing AGENTS.md file(s) to learn which patterns they already hold:\n{}\n\nSTEP 2: {READING}",
         agents.join("\n")
     )
 }
@@ -104,6 +104,6 @@ pub(super) fn aggregation(agents: &[String], summaries: &[String], final_path: &
     };
     let listed = summaries.join("\n");
     format!(
-        "{AGGREGATION}STEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{known}\n\nSTEP 2: Read ALL of the following summary files:\n{listed}\n\n{MERGING}\n\nWrite the final summary to {final_path}"
+        "{AGGREGATION}STEP 1: Open the existing AGENTS.md file(s) to learn which patterns they already hold:\n{known}\n\nSTEP 2: Read EVERY summary file listed here:\n{listed}\n\n{MERGING}\n\nWrite the final summary to {final_path}"
     )
 }

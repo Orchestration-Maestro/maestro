@@ -56,8 +56,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
                     aborted: false,
                     will_retry: false,
                     error_message: Some(
-                        "Context overflow recovery failed after one compact-and-retry attempt. \
-                         Try reducing context or switching to a larger-context model."
+                        "Context overflow was not resolved by one compact-and-retry attempt. \
+                         Shrink the context or switch to a model with a larger context window."
                             .to_owned(),
                     ),
                 });

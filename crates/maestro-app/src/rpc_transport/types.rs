@@ -78,7 +78,7 @@ impl fmt::Display for RpcClientError {
                 let code = code.map_or_else(|| "null".to_owned(), |code| code.to_string());
                 write!(
                     formatter,
-                    "Agent process exited immediately with code {code}. Stderr: {stderr}"
+                    "The agent process exited at once with code {code}. Stderr: {stderr}"
                 )
             }
             Self::Response(error) => formatter.write_str(error),
@@ -88,7 +88,7 @@ impl fmt::Display for RpcClientError {
             ),
             Self::IdleTimeout { stderr } => write!(
                 formatter,
-                "Timeout waiting for agent to become idle. Stderr: {stderr}"
+                "Timed out while waiting for the agent to become idle. Stderr: {stderr}"
             ),
             Self::CollectionTimeout { stderr } => {
                 write!(formatter, "Timeout collecting events. Stderr: {stderr}")

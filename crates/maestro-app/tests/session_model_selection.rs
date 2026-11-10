@@ -1,4 +1,4 @@
-//! Model, thinking-level and queue-mode selection compared with the recorded cases.
+//! Selection of model, thinking level and queue mode, checked against the recorded cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
     Harness, HarnessOptions, case, harness, model_view, on_task_set,
