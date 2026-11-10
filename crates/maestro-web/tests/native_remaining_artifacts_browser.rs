@@ -1,10 +1,10 @@
 //! Browser observations of host-free artifact bodies and their independent controls.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, host, select, view};
-use maestro_web::tools::artifacts::excel_artifact::ExcelArtifact;
+use maestro_web::tools::documents::excel_artifact::ExcelArtifact;
 use maestro_web::{
-    dom::{DomContent, DomRoot, DomView},
-    tools::artifacts::{ArtifactElement, TextArtifact},
+    page::{DomContent, DomRoot, DomView},
+    tools::documents::{ArtifactElement, TextArtifact},
 };
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 
@@ -110,7 +110,7 @@ pub async fn image_artifact_dom_source_mime_and_fallback(import: js_sys::Functio
 /// Markdown uses the shared document renderer and keeps source and preview roots across mode changes.
 #[wasm_bindgen]
 pub async fn markdown_artifact_dom_preview_uses_shared_math_and_links(import: js_sys::Function) {
-    use maestro_web::tools::artifacts::MarkdownArtifact;
+    use maestro_web::tools::documents::MarkdownArtifact;
     let view = view();
     let _host = host(&view, &import);
     let mut artifact = MarkdownArtifact::default();
@@ -173,7 +173,7 @@ pub async fn markdown_artifact_dom_preview_uses_shared_math_and_links(import: js
 /// SVG preview is an inert image resource, released on disconnect and restored on reconnect.
 #[wasm_bindgen]
 pub async fn svg_artifact_dom_urls_follow_edits_and_connection(import: js_sys::Function) {
-    use maestro_web::tools::artifacts::SvgArtifact;
+    use maestro_web::tools::documents::SvgArtifact;
     let view = view();
     let _host = host(&view, &import);
     let mut artifact = SvgArtifact::default();
@@ -225,7 +225,7 @@ pub async fn svg_artifact_dom_urls_follow_edits_and_connection(import: js_sys::F
 #[wasm_bindgen]
 pub async fn excel_artifact_dom_tabs_keep_sheet_order_and_scroll(import: js_sys::Function) {
     use base64::Engine as _;
-    use maestro_web::tools::artifacts::excel_artifact::ExcelArtifact;
+    use maestro_web::tools::documents::excel_artifact::ExcelArtifact;
     let view = view();
     let _host = host(&view, &import);
     let bytes = include_bytes!("fixtures/excel/scroll.xlsx");
@@ -340,7 +340,7 @@ fn assert_workbook_recovery(
 pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function) {
     use crate::contributions_support::until;
     use base64::Engine as _;
-    use maestro_web::tools::artifacts::pdf_artifact::PdfArtifact;
+    use maestro_web::tools::documents::pdf_artifact::PdfArtifact;
     let view = view();
     let _host = host(&view, &import);
     let bytes = include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf");
@@ -572,7 +572,7 @@ pub async fn artifacts_panel_dom_retains_views_through_application_commands(
 async fn assert_panel_removal_and_root_release(
     panel: &maestro_web::ArtifactsPanel,
     root: DomRoot,
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     view: &DomView,
 ) {
     (caller.tool().execute)(
@@ -819,7 +819,7 @@ pub async fn artifacts_panel_dom_source_properties_follow_their_controller(
 /// Native property edits survive panel refreshes and reach SDK lookup and new headers.
 fn assert_panel_property_edit(
     panel: &maestro_web::ArtifactsPanel,
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     root: &DomRoot,
     (name, tag): (&str, &str),
     view: &DomView,
@@ -857,7 +857,7 @@ fn assert_panel_property_edit(
 
 /// Native element properties and application records retain the same source bytes.
 fn assert_panel_source_record(
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     root: &DomRoot,
     tag: &str,
     name: &str,
@@ -931,7 +931,7 @@ pub async fn artifacts_panel_dom_errors_clear_after_a_successful_rewrite(import:
 /// Failed source execution still invalidates cached copy and download operands.
 async fn assert_html_rewrite_recovery(
     panel: &maestro_web::ArtifactsPanel,
-    caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     root: &DomRoot,
 ) {
     use maestro_app::{DiagnosticErrorInfo, SharedHandle};
@@ -1072,7 +1072,7 @@ pub async fn artifacts_panel_dom_instances_keep_their_own_operands(import: js_sy
 /// Switching placed panel instances switches the application owner rather than repainting the old session's files.
 #[wasm_bindgen]
 pub async fn artifacts_panel_dom_placements_switch_the_application_owner(import: js_sys::Function) {
-    use maestro_web::dom::MountedContent;
+    use maestro_web::page::MountedContent;
     let view = view();
     let _host = host(&view, &import);
     let first = maestro_web::ArtifactsPanel::default();
@@ -1123,7 +1123,7 @@ pub async fn artifacts_panel_dom_placements_switch_the_application_owner(import:
 /// A retained header selects the currently bound document controller, not a discarded controller's mode.
 #[wasm_bindgen]
 pub fn artifact_dom_mode_changes_follow_the_bound_controller(import: &js_sys::Function) {
-    use maestro_web::tools::artifacts::{MarkdownArtifact, SvgArtifact};
+    use maestro_web::tools::documents::{MarkdownArtifact, SvgArtifact};
     let view = view();
     let _host = host(&view, import);
     for header_first in [false, true] {

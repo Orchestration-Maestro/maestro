@@ -82,10 +82,6 @@ fn interactive(
             )),
         ),
         themes,
-        Rc::new(
-            maestro_app::presentation_data::footer_data_provider::NativeFooterOperations::new(
-                local,
-            ),
-        ),
+        Rc::new(maestro_app::presentation_data::status_line::NativeFooterOperations::new(local)),
     )?)
 }

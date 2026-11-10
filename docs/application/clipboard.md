@@ -31,7 +31,7 @@ The routing, exact bytes, bounds and errors are exercised by
 
 ## Reading images
 
-Use [`utils::clipboard_image::read_clipboard_image`](../../crates/maestro-app/src/utils/clipboard_image/reader.rs)
+Use [`utils::image_clipboard::read_clipboard_image`](../../crates/maestro-app/src/utils/image_clipboard/reader.rs)
 for host defaults, or `read_clipboard_image_with` with a
 `ClipboardImageOperations` adapter. The returned `ClipboardImage` owns its bytes.
 An absent environment or platform option independently uses the process

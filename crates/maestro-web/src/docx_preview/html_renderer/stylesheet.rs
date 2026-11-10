@@ -4,7 +4,7 @@ use super::styles::Styles;
 use super::{HtmlRenderer, process_style_name};
 use crate::docx_preview::PartRecords;
 use crate::docx_preview::html_element::{HtmlElement, contained};
-use maestro_app::browser::docx_preview::font_table::{EmbedFontType, FontDeclaration};
+use maestro_app::browser::docx_preview::typefaces::{EmbedFontType, FontDeclaration};
 use maestro_app::browser::docx_preview::{DmlTheme, enclose_font_family};
 use maestro_app::normalize_to_lf;
 use std::collections::HashMap;

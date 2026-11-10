@@ -40,7 +40,7 @@ the bookmark for a later nonempty filter.
 ## Configurable input
 
 Callers install a `maestro_tui::KeybindingsManager` built from
-[`maestro_app::presentation_data::keybindings::KEYBINDINGS`](../../crates/maestro-app/src/presentation_data/keybindings.rs)
+[`maestro_app::presentation_data::bindings::KEYBINDINGS`](../../crates/maestro-app/src/presentation_data/bindings.rs)
 using `maestro_tui::set_keybindings`. The list reads the active manager on input;
 construction does not install one. The application table extends toolkit defaults
 with seven tree-filter actions, two fold/segment actions, label-edit notification,

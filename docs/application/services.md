@@ -8,7 +8,7 @@ there is no URL normalization or separate viewer-host override.
 
 ## Release checks
 
-Native `version_check::get_latest_maestro_release` performs one GET to
+Native `releases::get_latest_maestro_release` performs one GET to
 `/api/latest-version` with the native user agent and `accept: application/json`.
 It selects a nonempty trimmed string `version` and optional trimmed string
 `packageName`, ignoring other members and wrong-type fields. Duplicate members
@@ -31,7 +31,7 @@ absent selection keeps reading the flag.
 
 ## Install reporting
 
-`telemetry::is_install_telemetry_enabled` resolves the existing settings
+`installation::is_install_telemetry_enabled` resolves the existing settings
 preference, whose default is enabled. A supplied environment value overrides
 it: only `1`, case-insensitive `true` or `yes` enables reporting. Empty or other
 values disable it, without trimming.

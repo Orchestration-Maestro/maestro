@@ -1,6 +1,6 @@
 //! Shared card preparation observed through a recording representation.
 use super::{
-    extract_document::ExtractDocumentRenderer,
+    extraction::ExtractDocumentRenderer,
     javascript_repl::JavaScriptReplRenderer,
     renderer_registry::ToolHeaderState,
     renderers::{
@@ -14,7 +14,7 @@ use crate::components::console_block::ConsoleVariant;
 use maestro_app::{
     JsonObject, TextContent, ToolResultMessage, UserBlock,
     browser::tools::{
-        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
+        extraction::{ExtractDocumentParams, ExtractDocumentResult},
         javascript_repl::{JavaScriptReplFile, JavaScriptReplParams, JavaScriptReplToolResult},
     },
 };
@@ -28,7 +28,7 @@ enum Recorded {
     /// Disclosure recipe and the renderer that prepared it.
     Collapsible(Box<CollapsibleCard<Recorded>>, TypeId),
     /// Selected line difference operands.
-    Diff(crate::components::diff::DiffProps),
+    Diff(crate::components::changes::DiffProps),
 }
 impl CardOutput for Recorded {
     fn card(card: CardContent) -> Self {
@@ -37,7 +37,7 @@ impl CardOutput for Recorded {
     fn collapsible<R: 'static>(card: CollapsibleCard<Self>) -> Self {
         Self::Collapsible(Box::new(card), TypeId::of::<R>())
     }
-    fn diff(props: crate::components::diff::DiffProps) -> Self {
+    fn diff(props: crate::components::changes::DiffProps) -> Self {
         Self::Diff(props)
     }
 }
@@ -391,8 +391,8 @@ fn extraction_metadata() {
 /// Update replacements are read only when reached, and the filename pill keeps its captured panel
 /// and authored name, for raw and validated arguments alike.
 fn artifact_replacements_and_pill() {
-    use crate::tools::artifacts::artifacts_tool_renderer::ArtifactsToolRenderer;
-    use maestro_app::browser::tools::artifacts::{ArtifactCommand, ArtifactsParams};
+    use crate::tools::documents::rendering::ArtifactsToolRenderer;
+    use maestro_app::browser::tools::documents::{ArtifactCommand, ArtifactsParams};
     let replacements = |recorded: Recorded| {
         let card = disclosure::<ArtifactsToolRenderer>(recorded);
         let Caption::Artifact(_, Some(pill)) = &card.caption else {

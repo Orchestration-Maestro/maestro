@@ -6,8 +6,8 @@ use maestro_agent::{Agent, AgentInitialState, AgentOptions};
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::agent_session::ExtensionRunnerRef;
 use maestro_app::agent_session::ToolDefinitionHandle;
-use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::resources::resource_loader::{
+use maestro_app::contribution_files::LoadContributionsResult;
+use maestro_app::resources::loading::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
 };
 use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};

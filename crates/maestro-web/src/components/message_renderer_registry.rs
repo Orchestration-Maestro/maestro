@@ -1,5 +1,5 @@
 //! Role-keyed custom content with typed retained callback ownership.
-use crate::{dom::PreparedContent, tools::types::ToolUiError};
+use crate::{page::PreparedContent, tools::types::ToolUiError};
 use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages, ToolRendererState};
 use std::{collections::HashMap, rc::Rc};
 
@@ -8,7 +8,7 @@ pub type MessageRole = String;
 /// Prepare owned content from the caller's original shared message.
 ///
 /// `T` selects the content representation. By default it is page content
-/// ([`crate::dom::DomContent`]) in the browser and the owned prepared record on native targets.
+/// ([`crate::page::DomContent`]) in the browser and the owned prepared record on native targets.
 pub trait MessageRenderer<C: CustomAgentMessages = NoCustomMessages, T = PreparedContent> {
     /// Prepare content without retaining the message borrow.
     /// # Errors

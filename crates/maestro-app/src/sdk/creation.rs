@@ -11,7 +11,7 @@ use crate::configuration::config::{
     get_agent_dir, get_docs_path,
     paths::{get_auth_path, get_bin_dir, get_models_path},
 };
-use crate::runtime::agent_session_services::{default_resource_loader, native_config_values};
+use crate::runtime::session_dependencies::{default_resource_loader, native_config_values};
 use maestro_catalog::{
     DEFAULT_THINKING_LEVEL, FindInitialModelOptions, ModelRegistry, find_initial_model,
     model_id_comparator, restore_saved_model,
@@ -303,7 +303,7 @@ async fn resources(
     resources: SessionResources,
     offline: Option<bool>,
 ) -> Result<
-    Rc<dyn crate::resources::resource_loader::ResourceLoader<maestro_models::Local>>,
+    Rc<dyn crate::resources::loading::ResourceLoader<maestro_models::Local>>,
     DiagnosticErrorInfo,
 > {
     match resources {

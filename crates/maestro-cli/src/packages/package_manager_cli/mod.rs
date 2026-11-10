@@ -12,7 +12,7 @@ use crate::input::configuration::{ConfigPresentation, ConfigSelectorOptions, sel
 use maestro_app::configuration::config::{
     SelfUpdateCommand, SelfUpdateOperations, get_self_update_plan, run_self_update,
 };
-use maestro_app::configuration::version_check::VersionCheckOptions;
+use maestro_app::configuration::releases::VersionCheckOptions;
 use maestro_app::{
     InstalledSourceScope, PackageManager, PackageManagerOptions, Settings, SettingsManager,
 };

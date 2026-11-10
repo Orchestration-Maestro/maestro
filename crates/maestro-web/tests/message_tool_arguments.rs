@@ -233,7 +233,7 @@ fn native_operands_and_non_object_sdk_values_remain_available() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn default_object_input_keeps_canonical_json_spelling(import_module: &js_sys::Function) {
     use crate::contributions_support::{container, host, select, text, view};
-    use maestro_web::dom::MountedContent;
+    use maestro_web::page::MountedContent;
     reset();
     let object: maestro_app::JsonObject = serde_json::from_str(
         r#"{"b":"雪 <literal>","10":10,"2":2,"zero":-0.0,"large":1e21,"small":1e-7}"#,
@@ -669,7 +669,7 @@ struct Drawn {
 #[cfg(target_arch = "wasm32")]
 fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Drawn {
     use crate::contributions_support::{body, select, text, view};
-    use maestro_web::dom::DomContent as _;
+    use maestro_web::page::DomContent as _;
     use wasm_bindgen::JsCast as _;
     let view = view();
     let root = props.mount(&view).unwrap();

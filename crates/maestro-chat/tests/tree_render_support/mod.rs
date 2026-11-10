@@ -7,8 +7,7 @@ use crate::registry;
 use crate::tree;
 use filter_mode::mode;
 use maestro_app::{
-    compact_json, format_read_line_range, presentation_data::keybindings::KEYBINDINGS,
-    truncate_utf16,
+    compact_json, format_read_line_range, presentation_data::bindings::KEYBINDINGS, truncate_utf16,
 };
 /// The frontend facade retains the shared JSON signature.
 const _: fn(&serde_json::Value) -> Result<String, serde_json::Error> = compact_json;

@@ -2,7 +2,7 @@
 use maestro_app::{Model, Presence};
 use maestro_web::{
     CustomProvider, CustomProviderCard, CustomProviderType,
-    components::custom_provider_card::ProviderStatus, dom::DomView,
+    components::custom_provider_card::ProviderStatus, page::DomView,
 };
 use serde::Deserialize;
 use std::{cell::RefCell, rc::Rc};

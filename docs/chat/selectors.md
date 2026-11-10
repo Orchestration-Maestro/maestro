@@ -268,7 +268,7 @@ Explicit order, duplicates and unavailable identities remain in callback payload
 and counts; unavailable identities do not produce rows. Repeated available
 identities use the last supplied descriptor while retaining row occurrences.
 
-Install the application's `presentation_data::keybindings::KEYBINDINGS` in the
+Install the application's `presentation_data::bindings::KEYBINDINGS` in the
 active key manager. The editor reads live bindings: Enter toggles, Ctrl+A enables,
 Ctrl+X clears, Ctrl+P toggles the selected provider, Alt+Up/Alt+Down reorder,
 and Ctrl+S requests persistence. A nonempty search restricts enable/clear;

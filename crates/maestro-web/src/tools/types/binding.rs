@@ -36,7 +36,7 @@ impl ToolRendererBinding {
     /// Retain a page-content renderer for these native operand types.
     #[must_use]
     pub fn from_dom<P: 'static, D: 'static>(
-        renderer: Rc<dyn ToolRenderer<P, D, Box<dyn crate::dom::DomContent>>>,
+        renderer: Rc<dyn ToolRenderer<P, D, Box<dyn crate::page::DomContent>>>,
     ) -> Self {
         let binding = Self {
             owner: ToolRendererState::default(),
@@ -103,7 +103,7 @@ impl ToolRendererBinding {
     /// Clone the renderer handle for these concrete operand types.
     #[must_use]
     pub fn renderer<P: 'static, D: 'static>(&self) -> Option<Rc<dyn ToolRenderer<P, D>>> {
-        self.renderer_for::<P, D, crate::dom::PreparedContent>()
+        self.renderer_for::<P, D, crate::page::PreparedContent>()
     }
     /// Resolve a concrete content slot, admitting arbitrary details only for output-only callbacks.
     fn renderer_for<P: 'static, D: 'static, C: 'static>(

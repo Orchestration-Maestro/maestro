@@ -27,7 +27,7 @@ table scrolling. Neither format adds a parser, worker or overlay layer.
 
 `ArtifactsPanel::default()` implements `DomContent` as an `artifacts-panel`
 element. `panel.application(&view)` returns its retained
-`maestro_app::browser::tools::artifacts::LocalArtifactsPanel`. Execute tools,
+`maestro_app::browser::tools::documents::LocalArtifactsPanel`. Execute tools,
 reconstruct history, replace runtime providers and read logs through that existing
 application interface. The native adapter owns no second copy of command,
 selection or replay policy.
@@ -56,7 +56,7 @@ native application log readers keep their `Arc` and thread-safety bounds.
 
 ## Retained interfaces
 
-`maestro_web::tools::artifacts::create_artifact_element` constructs an owned
+`maestro_web::tools::documents::create_artifact_element` constructs an owned
 `Box<dyn maestro_web::ArtifactElement>` for text, images, Markdown, SVG, PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
 viewers are installed; they never silently become generic downloads.
@@ -95,7 +95,7 @@ A mounted native body owns its `<section class="maestro-generic-artifact">` node
 so an update rewrites only the changed filename and guidance text. The header owns
 only its controlled row and the download activation behind it: dropping the
 returned root detaches that activation even while the caller keeps the node in the
-document. Both roots take their nodes from `dom::DomView` and reach no host
+document. Both roots take their nodes from `page::DomView` and reach no host
 surface, so mounting them publishes nothing and draws nothing through the retained
 canvas. `dom.rs` installs the artifact header row and generic body rules with the
 page stylesheet for mounted page content.
@@ -159,7 +159,7 @@ behind it while the panel's header, tabs and content stay sharp and interactive.
 
 ## PDF artifacts
 
-`tools::artifacts::pdf_artifact::PdfArtifact` retains original filename/content
+`tools::documents::pdf_artifact::PdfArtifact` retains original filename/content
 and shares the overlay's owned page renderer and native error panel. Its header
 uses the same complete original-byte selector as generic artifacts, with fixed
 `application/pdf` MIME. Download failures propagate independently of body state.
@@ -181,7 +181,7 @@ styles page chrome and error text, not document pixels.
 
 ## Spreadsheet artifacts
 
-`tools::artifacts::excel_artifact::ExcelArtifact` shares modern workbook/table
+`tools::documents::excel_artifact::ExcelArtifact` shares modern workbook/table
 preparation with attachment previews. Sheets keep workbook order; multiple sheets
 have native tabs above selectable tables in direct DOM placement and toolkit tabs
 in retained placement. A failed sheet in a mixed XLSX
@@ -286,7 +286,7 @@ callbacks.
 
 ## Error ownership
 
-`tools::artifacts::ArtifactUiError` composes localization, shared controls, native
+`tools::documents::ArtifactUiError` composes localization, shared controls, native
 host effects, presentation preparation and local view-borrow failures. Native
 reading factories return `browser::attachment_content::AttachmentHostError`.
 Header/save failures remain independent of body-load diagnostics.
@@ -299,7 +299,7 @@ retained views and recovery remain unchanged.
 
 ## Native Word body
 
-On browser targets, `tools::artifacts::docx_artifact::DocxArtifact` implements
+On browser targets, `tools::documents::docx_artifact::DocxArtifact` implements
 `DomContent` directly. Create it with `new` or `default`, set its public `filename`
 and call `set_content` with the original base64 document. Mount its body and its
 independent `get_header_buttons(&DomView)` root separately. This direct interface
@@ -323,7 +323,7 @@ still owns document parsing and safe link output.
 
 ## Native artifact console
 
-On browser targets, `tools::artifacts::console::Console` mounts directly through
+On browser targets, `tools::documents::console::Console` mounts directly through
 `DomContent`. Create it with `new` or `default`, append `LogEntry` records to its
 shared `logs` collection, then call `append` to publish the new lines, or `update`
 after any other change.

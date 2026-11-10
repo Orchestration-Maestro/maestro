@@ -7,7 +7,7 @@ use maestro_app::configuration::config::{
     SelfUpdateCommand, SelfUpdateContext, SelfUpdateOperations,
     get_self_update_command_from_settings, get_self_update_unavailable_instruction_from_settings,
 };
-use maestro_app::configuration::version_check::VersionCheckOptions;
+use maestro_app::configuration::releases::VersionCheckOptions;
 use maestro_app::{
     CommandCaptureOptions, CommandOutput, PackageFuture, PackageManager, PackageManagerOptions,
     PackageOperations, Settings, SettingsManager, SettingsScope, SettingsStorage,

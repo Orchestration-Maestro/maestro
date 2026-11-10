@@ -31,7 +31,7 @@ fn artifact_factory_installs_markdown_and_svg_views() {
         harness.frame.draw(view.as_mut(), false, vec![]).unwrap();
     }
     assert!(
-        maestro_web::tools::artifacts::create_artifact_element("a.html", "", harness.host).is_err()
+        maestro_web::tools::documents::create_artifact_element("a.html", "", harness.host).is_err()
     );
 }
 
@@ -153,7 +153,7 @@ fn header_actions(header: &markdown_svg_support::Header, case: &markdown_svg_sup
     let host = Rc::new(effects_support::Host::default());
     let frame = Frame::default();
     locale(&frame.i18n, &header.language);
-    let mut view = maestro_web::tools::artifacts::create_artifact_element(
+    let mut view = maestro_web::tools::documents::create_artifact_element(
         &case.filename,
         &case.content,
         host.clone(),

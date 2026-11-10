@@ -87,7 +87,7 @@ This example is also checked in the console provider's public rustdoc:
 ```rust
 use maestro_app::browser::components::sandbox::{
     console_runtime_provider::ConsoleRuntimeProvider,
-    sandbox_runtime_provider::SandboxRuntimeProvider,
+    providers::SandboxRuntimeProvider,
 };
 
 let console = ConsoleRuntimeProvider::<serde_json::Value>::new();

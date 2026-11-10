@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use super::{browser::Card, fixture, prepare};
 use crate::contributions_support::{computed, host, rgb, select, view};
-use maestro_web::{dom::DomView, tools::types::ToolUiError};
+use maestro_web::{page::DomView, tools::types::ToolUiError};
 use std::{error::Error as _, rc::Rc, sync::Arc};
 
 /// Both supplied packs and modes color native text and status without a canvas host.

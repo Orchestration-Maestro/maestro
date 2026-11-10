@@ -7,7 +7,7 @@ use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
     CustomProviderCard,
     components::custom_provider_card::ProviderStatus,
-    dom::{DomContent, DomView},
+    page::{DomContent, DomView},
 };
 use std::{cell::Cell, rc::Rc};
 use wasm_bindgen::JsCast as _;

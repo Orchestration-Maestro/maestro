@@ -3,7 +3,7 @@ use crate::contributions_support::{body, select, text};
 use maestro_app::{JsonObject, SharedAssistantMessage, ToolResultMessage};
 use maestro_web::{
     components::messages::{AssistantMessage, ToolResults},
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::types::{
         ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView, ToolUiError,
     },
@@ -233,7 +233,7 @@ fn names(view: &DomView, fixture: &Value, recorder: &Recorder) {
         crate::attachment_support::Host::default(),
     )));
     let panel =
-        maestro_app::browser::tools::artifacts::LocalArtifactsPanel::new_local(presentation);
+        maestro_app::browser::tools::documents::LocalArtifactsPanel::new_local(presentation);
     for case in fixture["assistantNames"].as_array().unwrap() {
         let tools = case["tools"].as_array().map(|names| {
             Rc::new(RwLock::new(

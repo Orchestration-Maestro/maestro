@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 #![cfg(test)]
 
-use maestro_app::daemon::{Agent, DEFAULTS_TEXT, agent_label};
+use maestro_app::daemon_api::{Agent, DEFAULTS_TEXT, agent_label};
 use maestro_cli::workspace_commands::spec::command;
 
 #[test]

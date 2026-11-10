@@ -1,8 +1,8 @@
 //! An opened dialog that keeps itself mounted until closed and restores the focus it took over.
-use super::dialog::{DialogProps, dialog};
+use super::surface::{DialogProps, dialog};
 use crate::{
     browser::attachment_content::browser::host_error,
-    dom::{DomRoot, DomView},
+    page::{DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use std::{any::Any, cell::RefCell, rc::Rc};

@@ -425,7 +425,7 @@ application factories.
 
 ## Word numbering and embedded fonts
 
-`maestro_app::browser::docx_preview::numbering::NumberingPart::parse_xml` returns
+`maestro_app::browser::docx_preview::lists::NumberingPart::parse_xml` returns
 ordered raw definitions, concrete references, overrides and nullable picture
 slots, plus an owned concrete level sequence. Each matching concrete instance
 keeps its identifier; ordered level/start overrides affect that instance only.
@@ -436,7 +436,7 @@ write. Numbering property groups reuse the [raw metadata](#owned-word-element-tr
 and [CSS dispatcher](#word-default-properties-and-conditional-table-styles): raw
 groups replace, CSS accumulates, and `ignore_width` reaches both style maps.
 
-`font_table::FontTablePart::parse_xml` retains nullable font metadata and ordered
+`typefaces::FontTablePart::parse_xml` retains nullable font metadata and ordered
 embedded-face references. `WordDocument::load_font` takes the retained font-table
 `Part`, relationship ID and optional key through the existing
 [resource lookup](#word-package-reader). Missing resources return `None` before

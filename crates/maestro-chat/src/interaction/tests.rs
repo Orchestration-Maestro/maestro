@@ -44,8 +44,8 @@ use crate::components::session_picker::list::tests::session_picker::{
 };
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
-use maestro_app::contributions::LoadContributionsResult;
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::contribution_files::LoadContributionsResult;
+use maestro_app::presentation_data::status_line::{
     FooterFileStats, FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{

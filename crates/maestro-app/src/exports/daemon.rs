@@ -1,7 +1,7 @@
 //! Daemon operations, pane rendering, themes, supported agents and default settings exposed to frontends.
 
 /// The daemon operations and records used by native frontends.
-pub mod daemon {
+pub mod daemon_api {
     #[cfg(target_os = "linux")]
     #[doc(inline)]
     pub use maestro_daemon::app::App;
@@ -55,7 +55,7 @@ pub mod daemon {
     pub use maestro_daemon::{Agent, agent_label};
 
     /// File logging setup and lifecycle events for native daemon roles.
-    pub mod logging {
+    pub mod diagnostics {
         #[doc(inline)]
         pub use maestro_daemon::diagnostics::{init_file_logging, shutdown};
     }

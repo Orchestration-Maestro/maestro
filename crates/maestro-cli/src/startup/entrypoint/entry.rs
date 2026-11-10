@@ -19,10 +19,10 @@ use crate::input::model_listing::{ListModelsOptions, list_models};
 use crate::input::session_picker::SessionPresentation;
 use crate::packages::package_manager_cli::presentation::line;
 use crate::packages::{PackageCommandContext, handle_config_command, handle_package_command};
-use maestro_app::configuration::migrations::{
+use maestro_app::configuration::conversion::{
     MigrationResult, MigrationStyle, run_migrations, show_deprecation_warnings,
 };
-use maestro_app::configuration::{config, timings::Timings, version_check::VersionCheckOptions};
+use maestro_app::configuration::{config, releases::VersionCheckOptions, timings::Timings};
 use maestro_app::presentation_data::mode_dispatch::{InteractiveModeOptions, ModeLaunchers};
 use maestro_app::{
     AgentSessionRuntime, AuthStorage, CreateAgentSessionRuntimeOptions, ExtensionFactory, Local,

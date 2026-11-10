@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 pub use crate::support::browser_storage_records::{Row, equal, provider_equal};
 use futures_util::future::LocalBoxFuture;
-use maestro_app::browser::storage::{
+use maestro_app::browser::persistence::{
     IndexDirection, QuotaInfo, StorageBackend, StorageOperation, StorageTransaction,
     TransactionMode,
 };

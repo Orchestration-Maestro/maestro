@@ -1,6 +1,6 @@
 //! Application exports used by tree navigation.
 #![cfg(test)]
-use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_tui::{KeybindingDefinition, KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS};
 use serde::Deserialize;
 use std::collections::HashSet;

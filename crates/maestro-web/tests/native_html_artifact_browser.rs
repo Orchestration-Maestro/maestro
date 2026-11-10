@@ -11,8 +11,8 @@ use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHa
 use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::{
     HtmlArtifact,
-    browser::sandbox_value::BrowserSandboxValue,
-    dom::{DomContent as _, DomRoot, DomView},
+    browser::values::BrowserSandboxValue,
+    page::{DomContent as _, DomRoot, DomView},
 };
 use std::{cell::Cell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
@@ -451,7 +451,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Editing {
     fn handle_message(
         &self,
         message: BrowserSandboxValue,
-        _: maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond<
+        _: maestro_app::browser::components::sandbox::providers::SandboxRespond<
             BrowserSandboxValue,
         >,
     ) -> maestro_app::BoxFuture<Result<(), DiagnosticErrorInfo>> {

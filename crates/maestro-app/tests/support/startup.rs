@@ -199,7 +199,7 @@ fn operation_child() {
 }
 
 fn operation() {
-    use maestro_app::configuration::migrations::{
+    use maestro_app::configuration::conversion::{
         migrate_auth_to_auth_json, migrate_sessions_from_agent_root,
     };
     use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};

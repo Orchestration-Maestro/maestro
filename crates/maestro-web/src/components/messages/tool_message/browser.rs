@@ -3,7 +3,7 @@ use super::ToolMessage;
 use crate::{
     browser::attachment_content::browser::element,
     components::messages::tool_message::dispatch,
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use std::cell::RefCell;
@@ -20,7 +20,7 @@ struct Placed {
 }
 impl<D: 'static> DomContent for ToolMessage<D> {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let root = DomRoot {
             node: element(&view.document, "div", "maestro-tool-message")?.into(),
             owner: Some(Box::new(RefCell::new(Placed::default()))),

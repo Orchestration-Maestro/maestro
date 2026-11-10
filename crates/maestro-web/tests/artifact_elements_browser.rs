@@ -4,7 +4,7 @@ use crate::support;
 use maestro_web::{
     ArtifactElement, I18n,
     browser::attachment_content::BrowserAttachmentHost,
-    tools::artifacts::{artifact_element::ArtifactView, create_artifact_element},
+    tools::documents::{artifact_element::ArtifactView, create_artifact_element},
 };
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, prelude::*};

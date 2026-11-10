@@ -13,14 +13,14 @@ use maestro_app::{
     JsonObject,
     browser::{
         tools::javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
-        utils::attachment_utils::AttachmentType,
+        utils::attachments::AttachmentType,
     },
 };
 use serde_json::Value;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{
-    browser::sandbox_value::BrowserSandboxValue, components::sandboxed_iframe::BrowserSandboxHost,
+    browser::values::BrowserSandboxValue, components::sandboxed_iframe::BrowserSandboxHost,
 };
 #[cfg(target_arch = "wasm32")]
 thread_local! {

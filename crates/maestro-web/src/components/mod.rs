@@ -1,17 +1,17 @@
 //! Browser attachment components.
-/// The session view composing the transcript and the editor.
-pub mod agent_interface;
 pub mod attachment_tile;
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
+pub mod changes;
+/// Message composer with attachments, reasoning level and model choice.
+pub mod composer;
 /// Native connection callbacks for retained component roots.
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod connection;
-#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
-pub mod diff;
+/// The session view composing the transcript and the editor.
+pub mod conversation;
 /// Native single-line input.
 #[cfg(target_arch = "wasm32")]
-pub mod input;
-/// Message composer with attachments, reasoning level and model choice.
-pub mod message_editor;
+pub mod fields;
 /// Completed transcript history placed by emitted position.
 pub mod message_list;
 /// Open custom-message role callbacks.
@@ -34,14 +34,14 @@ pub mod sandboxed_iframe;
 
 /// Native button element.
 #[cfg(target_arch = "wasm32")]
-pub mod button;
+pub mod controls;
 /// Original-text copy control.
 pub mod copy_button;
 
-/// Native highlighted code listing.
-pub mod code_block;
 /// Native Markdown with highlighted code and math.
 pub mod markdown_block;
+/// Native highlighted code listing.
+pub mod source;
 
 /// Literal native console output with owned copy feedback.
 pub mod console_block;

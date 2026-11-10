@@ -19,8 +19,8 @@ mod utils;
 pub use browser::{RenderedDocument, render_async, render_document};
 pub use html_element::{HtmlContent, HtmlElement, Namespace};
 use html_renderer::{HtmlRenderer, Styles, process_element};
-use maestro_app::browser::docx_preview::font_table::{FontDeclaration, FontTablePart};
-use maestro_app::browser::docx_preview::numbering::NumberingPart;
+use maestro_app::browser::docx_preview::lists::NumberingPart;
+use maestro_app::browser::docx_preview::typefaces::{FontDeclaration, FontTablePart};
 use maestro_app::browser::docx_preview::{
     DmlTheme, DocxError, EndnotesPart, FooterPart, FootnotesPart, HeaderPart, IDomNumbering,
     OpenXmlElementTree, Options as PackageOptions, OwnedXmlElement, Part, PartKind, StylesPart,

@@ -5,7 +5,7 @@ use crate::{
     dialog_support::{Fetch, Prompts, completed_reply, panel, panels, press, until},
 };
 use maestro_app::{AgentMessage, AppStorage, SessionMetadata};
-use maestro_web::dom::DomView;
+use maestro_web::page::DomView;
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement, HtmlInputElement, HtmlTextAreaElement};

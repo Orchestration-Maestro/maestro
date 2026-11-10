@@ -1,14 +1,14 @@
 //! Owned user operands retain their original attachment handles.
 #![cfg(test)]
 use super::UserMessage;
-use maestro_app::{AgentMessage, browser::components::messages::CustomAgentMessages};
+use maestro_app::{AgentMessage, browser::components::records::CustomAgentMessages};
 use std::sync::{Arc, RwLock};
 
 #[test]
 fn user_owned_operand_keeps_content_and_attachment_handles() {
     let attachment = Arc::new(RwLock::new(crate::Attachment {
         id: "original".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "note.txt".into(),
         mime_type: "text/plain".into(),
         size: 1,
@@ -18,7 +18,7 @@ fn user_owned_operand_keeps_content_and_attachment_handles() {
     }));
     let message = AgentMessage::Custom(Arc::new(RwLock::new(
         CustomAgentMessages::UserWithAttachments(
-            maestro_app::browser::components::messages::UserMessageWithAttachments {
+            maestro_app::browser::components::records::UserMessageWithAttachments {
                 content: maestro_app::UserContent::Text("  kept text  ".into()),
                 timestamp: 0.,
                 attachments: Some(vec![Arc::clone(&attachment), Arc::clone(&attachment)]),

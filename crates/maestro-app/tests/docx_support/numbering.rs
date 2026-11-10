@@ -3,7 +3,7 @@
 use crate::body_tree::{common, member, number, paragraph_properties};
 use maestro_app::browser::docx_preview::{
     IDomNumbering, NumberingPicBullet,
-    numbering::{AbstractNumbering, NumberingLevel, NumberingLevelOverride, NumberingPart},
+    lists::{AbstractNumbering, NumberingLevel, NumberingLevelOverride, NumberingPart},
 };
 use serde_json::{Value, json};
 /// Encode nullable numeric attributes without losing signed zero or NaN.

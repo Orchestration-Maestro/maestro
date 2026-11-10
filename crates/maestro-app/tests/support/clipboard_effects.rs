@@ -2,8 +2,8 @@
 
 use futures_util::{FutureExt, future::LocalBoxFuture};
 use maestro_app::utils::{
-    clipboard::{ClipboardOperations, ClipboardPlatform},
     clipboard_native::ClipboardModule,
+    copying::{ClipboardOperations, ClipboardPlatform},
 };
 use maestro_app::{OutputMode, SpawnSyncError, SpawnSyncOptions, copy_to_clipboard_with};
 use serde::Deserialize;

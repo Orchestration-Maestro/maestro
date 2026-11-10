@@ -1,17 +1,17 @@
 //! Artifact storage offered to sandboxed code, online through host messages and
 //! offline through an injected snapshot.
-use super::sandbox_runtime_provider::{
+use super::providers::{
     BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
-use crate::browser::components::messages::{ArtifactAction, ArtifactMessage, CustomAgentMessages};
-use crate::browser::tools::artifacts::{
+use crate::browser::components::records::{ArtifactAction, ArtifactMessage, CustomAgentMessages};
+use crate::browser::tools::documents::{
     ArtifactCommand, ArtifactPresentation, Artifacts, ArtifactsPanel, ArtifactsPanelState,
     ArtifactsParams, Options, SharedArtifactPresentation,
 };
 use crate::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
 };
-use crate::browser::utils::attachment_utils::SharedAttachment;
+use crate::browser::utils::attachments::SharedAttachment;
 use indexmap::IndexMap;
 use maestro_agent::runtime::Native;
 use maestro_agent::{

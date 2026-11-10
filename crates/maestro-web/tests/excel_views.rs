@@ -5,7 +5,7 @@ use crate::attachment_support;
 use crate::session_header_support;
 use maestro_web::{
     ArtifactElement,
-    tools::artifacts::{create_artifact_element, excel_artifact::ExcelArtifact},
+    tools::documents::{create_artifact_element, excel_artifact::ExcelArtifact},
 };
 use std::rc::Rc;
 

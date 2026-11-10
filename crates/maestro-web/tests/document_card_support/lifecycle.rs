@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use super::{Row, browser::Card, fixture};
 use crate::contributions_support::{host, page::seek, select, text, view};
-use maestro_web::dom::DomContent as _;
+use maestro_web::page::DomContent as _;
 use wasm_bindgen::JsCast as _;
 
 /// One original fixture by its stable source identity.

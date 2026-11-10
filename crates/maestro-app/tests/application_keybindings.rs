@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::child;
-use maestro_app::presentation_data::keybindings::migrate_keybindings_config;
-use maestro_app::presentation_data::keybindings::{KeyId, Keybinding, KeybindingsConfig};
+use maestro_app::presentation_data::bindings::migrate_keybindings_config;
+use maestro_app::presentation_data::bindings::{KeyId, Keybinding, KeybindingsConfig};
 use maestro_app::{AppKeybinding, KeybindingsManager};
 use maestro_tui::KeybindingKeys;
 use serde::{Deserialize, de::DeserializeOwned};
@@ -652,7 +652,7 @@ fn effective_snapshots_are_owned_and_inherited_operations_stay_available() {
 
 #[test]
 fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
-    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = scratch.path().join("keybindings.json");
     let original = b"{\n  \"app.exit\": \"ctrl+d\",\n  \"unknown\": {\"kept\":true,\"large\":[9007199254740993,18446744073709551615,-9223372036854775808]},\n  \"multiplexer.focus\": [\"alt+h\"],\n  \"multiplexer.\": null,\n  \"multiplexer\": 42\n}\n";
@@ -682,7 +682,7 @@ fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
 
 #[test]
 fn reset_keys_never_overwrites_a_backup_or_edits_invalid_input() {
-    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     let path = scratch.path().join("keybindings.json");
@@ -705,7 +705,7 @@ fn reset_keys_never_overwrites_a_backup_or_edits_invalid_input() {
 
 #[test]
 fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
-    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let target_dir = scratch.path().join("target");
     std::fs::create_dir(&target_dir).unwrap();
@@ -730,7 +730,7 @@ fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
 
 #[test]
 fn reset_keys_leaves_missing_configuration_untouched() {
-    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let missing = scratch.path().join("missing");
     let reset = reset_multiplexer_keybindings(missing.to_str().unwrap(), 42).unwrap();
@@ -742,7 +742,7 @@ fn reset_keys_leaves_missing_configuration_untouched() {
 
 #[test]
 fn reset_keys_leaves_override_free_configuration_untouched() {
-    use maestro_app::presentation_data::keybindings::reset_multiplexer_keybindings;
+    use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     let path = scratch.path().join("keybindings.json");

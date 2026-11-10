@@ -30,11 +30,11 @@ async fn one_origin_controls_all_three_hosted_operations_run() {
         let origin = case.input["origin"].as_str().unwrap();
         let t = services::Transport::new(200, case.input["releaseBody"].to_string(), "");
         let version = case.input["version"].as_str().unwrap();
-        let options = maestro_app::configuration::version_check::VersionCheckOptions {
+        let options = maestro_app::configuration::releases::VersionCheckOptions {
             fetch: Some(t.fetch.clone()),
             ..Default::default()
         };
-        let release = maestro_app::configuration::version_check::get_latest_maestro_release(
+        let release = maestro_app::configuration::releases::get_latest_maestro_release(
             version, origin, &options,
         )
         .await
@@ -42,7 +42,7 @@ async fn one_origin_controls_all_three_hosted_operations_run() {
         assert_eq!(services::release_value(release), case.output["release"]);
         let settings =
             maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
-        maestro_app::configuration::telemetry::report_install_telemetry(
+        maestro_app::configuration::installation::report_install_telemetry(
             version,
             &settings,
             origin,

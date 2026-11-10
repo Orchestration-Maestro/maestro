@@ -1,8 +1,8 @@
 //! Shared native mode buttons and the authored-label page element.
 use crate::{
     browser::event_subscription::EventSubscription,
-    dom::{self, DomView, Getter, Link, Setter},
     icons,
+    page::{self, DomView, Getter, Link, Setter},
     tools::types::ToolUiError,
 };
 use std::{
@@ -260,7 +260,7 @@ impl State {
     }
     /// Rebind current labels, preserving the group when its labels have not changed.
     fn refresh(&self) {
-        let Some(root) = dom::connected(&self.root) else {
+        let Some(root) = page::connected(&self.root) else {
             return;
         };
         let options = self.options();
@@ -279,7 +279,7 @@ impl State {
             .borrow()
             .as_ref()
             .map(|group| (Rc::clone(&group.options), group.node.clone()));
-        let Some(target) = dom::live(&self.root) else {
+        let Some(target) = page::live(&self.root) else {
             return;
         };
         if let Some((options, group)) = mounted {
@@ -342,7 +342,7 @@ fn properties(root: &HtmlElement, state: &Rc<State>) -> Vec<(Getter, Setter)> {
             write.refresh();
         }),
     );
-    dom::install(root, "modes", &modes.0, &modes.1);
+    page::install(root, "modes", &modes.0, &modes.1);
     let (read, write) = (Rc::clone(&state.selected), Rc::clone(state));
     let selection = (
         Getter::new(move || read.get().into()),
@@ -353,13 +353,13 @@ fn properties(root: &HtmlElement, state: &Rc<State>) -> Vec<(Getter, Setter)> {
             }
         }),
     );
-    dom::install(root, "selectedIndex", &selection.0, &selection.1);
+    page::install(root, "selectedIndex", &selection.0, &selection.1);
     vec![modes, selection]
 }
 /// Register the authored-label light-DOM control.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
-    dom::define_element("mode-toggle", Vec::new(), &[], move |root, _| {
+    page::define_element("mode-toggle", Vec::new(), &[], move |root, _| {
         let state = Rc::new(State {
             modes: Rc::new(RefCell::new(vec!["Mode 1".into(), "Mode 2".into()])),
             selected: Rc::new(Cell::new(0.)),

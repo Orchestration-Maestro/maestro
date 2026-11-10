@@ -3,7 +3,7 @@
 //! input and session commands.
 
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
-use maestro_app::presentation_data::footer_data_provider::{FooterDataProvider, FooterOperations};
+use maestro_app::presentation_data::status_line::{FooterDataProvider, FooterOperations};
 use maestro_app::{
     AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, EventError, KeybindingsManager,
     ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,

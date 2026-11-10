@@ -1,7 +1,7 @@
 # Application resources
 
 `maestro_app::resources` discovers the resources of one working directory and
-assembles the system prompt. `maestro_app::runtime::agent_session_services`
+assembles the system prompt. `maestro_app::runtime::session_dependencies`
 binds credentials, settings, the model catalog and those resources to one
 session directory. Both are native-only. The SDK root exports the loader,
 its options and records, `load_project_context_files` and the services.
@@ -128,7 +128,7 @@ standard error drops the warning; see [diagnostics](../diagnostics.md).
 
 ## System prompt
 
-`resources::system_prompt::build_system_prompt` takes the prompt options. The
+`resources::instructions::build_system_prompt` takes the prompt options. The
 documentation paths come from the running process's package directory (see
 [application configuration](configuration.md#installation-paths)); the examples
 path is `<package>/examples`, which holds the index pages for the extension and

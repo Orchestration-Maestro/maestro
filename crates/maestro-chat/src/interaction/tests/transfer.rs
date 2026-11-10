@@ -6,7 +6,7 @@ use super::transcript::{registering, text, tool};
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
-use maestro_app::presentation_data::footer_data_provider::FooterOperations;
+use maestro_app::presentation_data::status_line::FooterOperations;
 use maestro_app::{
     ExtensionFactory, Local, NativeExportOperations, ReadonlySessionManager, SessionManager,
     ToolRenderEnvironment,

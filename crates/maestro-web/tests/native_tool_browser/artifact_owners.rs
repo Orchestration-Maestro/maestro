@@ -1,10 +1,10 @@
 //! Artifact cards own their prepared inputs and keep their console across body changes.
 use super::optional::Panel;
 use crate::contributions_support::{body, select, text};
-use maestro_app::{JsonObject, browser::tools::artifacts::ArtifactsParams};
+use maestro_app::{JsonObject, browser::tools::documents::ArtifactsParams};
 use maestro_web::{
     ArtifactsToolRenderer,
-    dom::{DomView, MountedContent},
+    page::{DomView, MountedContent},
     tools::types::{ToolRenderResult, ToolRenderer},
 };
 use serde_json::{Value, json};

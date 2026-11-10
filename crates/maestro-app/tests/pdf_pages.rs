@@ -1,5 +1,5 @@
 //! Owned PDF document rendering through the application adapter.
-use maestro_app::browser::utils::attachment_utils::pdf::PdfDocument;
+use maestro_app::browser::utils::attachments::portable::PdfDocument;
 
 #[test]
 fn pdf_pages_keep_scale_order_and_full_precision() {
@@ -82,7 +82,7 @@ fn pdf_page_raster_is_opaque_and_keeps_drawn_content() {
 
 #[test]
 fn pdf_document_failures_preserve_categories() {
-    use maestro_app::browser::utils::attachment_utils::AttachmentError;
+    use maestro_app::browser::utils::attachments::AttachmentError;
     for name in ["empty-data.pdf", "invalid.pdf"] {
         let bytes = std::fs::read(format!(
             "{}/tests/fixtures/pdf/{name}",

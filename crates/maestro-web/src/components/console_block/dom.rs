@@ -6,7 +6,7 @@ use super::{
 use crate::{
     browser::{attachment_content::browser::host_error, timer::Timer},
     components::copy_button::dom::{self as copy_button, Localization},
-    dom::{DomContent, DomRoot, DomView, live},
+    page::{DomContent, DomRoot, DomView, live},
     tools::types::ToolUiError,
 };
 use std::{cell::RefCell, rc::Rc};

@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, host, select, text, view};
 use js_sys::{Array, Function, Reflect};
-use maestro_web::dom::DomContent as _;
+use maestro_web::page::DomContent as _;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};
 use web_sys::{CustomEvent, Element, HtmlElement};
@@ -108,7 +108,7 @@ fn recorder(
     })
 }
 /// Default selection and a nonzero selection retained through reconnection.
-fn mounted(view: &maestro_web::dom::DomView) -> Element {
+fn mounted(view: &maestro_web::page::DomView) -> Element {
     let element = view.document.create_element("mode-toggle").unwrap();
     assert_eq!(selected(&element), JsValue::from(0));
     body().append_child(&element).unwrap();
@@ -274,7 +274,7 @@ fn shared_sheet_selection(document: &web_sys::Document) {
 
 /// Open one overlay and observe its actual already-appended native root.
 fn opened(
-    view: &Rc<maestro_web::dom::DomView>,
+    view: &Rc<maestro_web::page::DomView>,
     record: maestro_web::SharedAttachment,
 ) -> (maestro_web::AttachmentOverlay, Element) {
     let overlay = maestro_web::AttachmentOverlay::open(view, record, None).unwrap();
@@ -330,7 +330,7 @@ fn assert_kind(root: &Element, kind: &str, name: &str) {
     );
 }
 /// All classification and localized mode fixtures select the original first-match branch.
-fn classification_and_labels(view: &Rc<maestro_web::dom::DomView>) {
+fn classification_and_labels(view: &Rc<maestro_web::page::DomView>) {
     use crate::attachment_overlay::{ToggleCase, TypeCase};
     let types: Vec<TypeCase> =
         serde_json::from_str(include_str!("fixtures/attachment_types.json")).unwrap();
@@ -366,7 +366,7 @@ fn classification_and_labels(view: &Rc<maestro_web::dom::DomView>) {
     }
 }
 /// Content cases preserve literal text, original image bytes and extracted-text sizing.
-fn content_cases(view: &Rc<maestro_web::dom::DomView>) {
+fn content_cases(view: &Rc<maestro_web::page::DomView>) {
     let cases = crate::attachment_overlay::content_cases();
     assert_eq!(cases.len(), 26);
     for case in cases {
@@ -407,7 +407,7 @@ fn content_cases(view: &Rc<maestro_web::dom::DomView>) {
     }
 }
 /// A visible file failure stays selected until the existing mode control changes it.
-fn error_modes(view: &Rc<maestro_web::dom::DomView>) {
+fn error_modes(view: &Rc<maestro_web::page::DomView>) {
     let record = crate::attachment_support::attachment();
     {
         let mut a = record.write().unwrap();
@@ -508,7 +508,7 @@ pub async fn overlay_dom_fixed_chrome_modes_text_and_locales() {
     control_names(&view).await;
 }
 /// The icon-only download and close controls carry the selected localization's names.
-async fn control_names(view: &Rc<maestro_web::dom::DomView>) {
+async fn control_names(view: &Rc<maestro_web::page::DomView>) {
     for (language, names) in [
         ("en", ["Download", "Close"]),
         ("de", ["Herunterladen", "Schließen"]),
@@ -528,7 +528,7 @@ async fn control_names(view: &Rc<maestro_web::dom::DomView>) {
 }
 
 /// Progressive native pages preserve identity and release finished documents.
-async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>) {
+async fn overlay_pdf(view: &Rc<maestro_web::page::DomView>) {
     let record = crate::attachment_support::attachment();
     {
         let mut a = record.write().unwrap();
@@ -564,7 +564,7 @@ async fn overlay_pdf(view: &Rc<maestro_web::dom::DomView>) {
     close(&root);
 }
 /// Sheet buttons change only visibility, retaining native bodies and scroll positions.
-fn overlay_sheets(view: &Rc<maestro_web::dom::DomView>) {
+fn overlay_sheets(view: &Rc<maestro_web::page::DomView>) {
     for name in ["two", "scroll"] {
         let record = crate::attachment_support::attachment();
         {
@@ -619,7 +619,7 @@ fn overlay_sheets(view: &Rc<maestro_web::dom::DomView>) {
     }
 }
 /// Each native Word body keeps only its own live image resources until close.
-async fn overlay_word_resources(view: &Rc<maestro_web::dom::DomView>) {
+async fn overlay_word_resources(view: &Rc<maestro_web::page::DomView>) {
     use crate::docx_preview_browser::fetch_bytes;
     let case = crate::native_document_artifacts_browser::packages()
         .into_iter()
@@ -705,7 +705,7 @@ pub async fn overlay_dom_documents_keep_resources_and_sheet_state() {
     close(&root);
 }
 /// Exercise every close route while document work is still pending.
-async fn close_routes(view: &Rc<maestro_web::dom::DomView>, calls: &Rc<std::cell::Cell<u32>>) {
+async fn close_routes(view: &Rc<maestro_web::page::DomView>, calls: &Rc<std::cell::Cell<u32>>) {
     for route in ["[data-close]", ".maestro-attachment-overlay", "Escape"] {
         let record = crate::attachment_support::attachment();
         {
@@ -779,7 +779,7 @@ pub async fn overlay_dom_close_reopen_and_pending_document_release() {
 
 /// Exercise original-byte downloads and each reached native refusal independently.
 async fn download_modes(
-    view: &Rc<maestro_web::dom::DomView>,
+    view: &Rc<maestro_web::page::DomView>,
     download: &crate::session_download_browser::Fixture,
 ) {
     for mode in ["ok", "create", "append", "removed"] {
@@ -841,7 +841,7 @@ pub async fn overlay_dom_downloads_original_bytes_and_reports_failures() {
 
 /// Overlay construction and publication failures return on the synchronous opening route.
 fn refused_overlay_open(
-    view: &Rc<maestro_web::dom::DomView>,
+    view: &Rc<maestro_web::page::DomView>,
     download: &crate::session_download_browser::Fixture,
 ) {
     let refusal = page::refuse_creation();
@@ -949,7 +949,7 @@ pub async fn tile_dom_remove_does_not_open_and_uses_current_callback() {
 }
 /// The opener is a native button named by the filename: Tab reaches it before removal, Enter and
 /// Space each open the current record, and it keeps focus while an update changes its thumbnail.
-async fn opener_keyboard(view: &Rc<maestro_web::dom::DomView>) {
+async fn opener_keyboard(view: &Rc<maestro_web::page::DomView>) {
     use crate::contributions_support::{driver, focused};
     let record = crate::attachment_support::attachment();
     let mut tile = maestro_web::components::attachment_tile::AttachmentTile::from(
@@ -988,7 +988,7 @@ async fn opener_keyboard(view: &Rc<maestro_web::dom::DomView>) {
     before.remove();
 }
 /// Enter and Space on the focused opener each open the current record once.
-async fn keyboard_opens(view: &maestro_web::dom::DomView) {
+async fn keyboard_opens(view: &maestro_web::page::DomView) {
     for key in ["Enter", "Space"] {
         crate::contributions_support::driver("driverPress", key).await;
         let overlay = view.document.query_selector("attachment-overlay").unwrap();
@@ -1009,7 +1009,7 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
     let attachment = crate::attachment_support::attachment();
     attachment.write().unwrap().mime_type = "image/png".into();
     attachment.write().unwrap().r#type =
-        maestro_app::browser::utils::attachment_utils::AttachmentType::Image;
+        maestro_app::browser::utils::attachments::AttachmentType::Image;
     attachment.write().unwrap().content = "YQ==".into();
     attachment.write().unwrap().preview = None;
     let mut tile = AttachmentTile::from(std::sync::Arc::clone(&attachment));
@@ -1031,7 +1031,7 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
     let attachment = std::sync::Arc::clone(&tile.attachment);
     attachment.write().unwrap().mime_type = "image/png".into();
     attachment.write().unwrap().r#type =
-        maestro_app::browser::utils::attachment_utils::AttachmentType::Image;
+        maestro_app::browser::utils::attachments::AttachmentType::Image;
     attachment.write().unwrap().content = "c2Vjb25k".into();
     attachment.write().unwrap().file_name = "changed.txt".into();
     attachment.write().unwrap().preview = Some("PNG".into());
@@ -1064,7 +1064,7 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
 }
 
 /// Hover-capable paint and focused removal remain visible through native pointer input.
-async fn tile_hover(view: &maestro_web::dom::DomView) {
+async fn tile_hover(view: &maestro_web::page::DomView) {
     use crate::contributions_support::{computed, driver};
     let mut tile = maestro_web::components::attachment_tile::AttachmentTile::from(
         crate::attachment_support::attachment(),

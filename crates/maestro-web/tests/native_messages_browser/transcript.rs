@@ -5,7 +5,7 @@ use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
     AbortedMessage, AssistantMessage, ToolMessageDebugView, UserMessage,
     components::messages::ToolResults,
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
 };
 use serde_json::json;
 use std::{collections::HashMap, rc::Rc};

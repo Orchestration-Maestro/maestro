@@ -13,7 +13,7 @@ pub(crate) use maestro_tui::test_support::recording_terminal;
 #[path = "registry.rs"]
 pub(crate) mod registry;
 use bindings::Binding;
-use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_chat::{
     NameFilter, SessionScope, SessionSelectorHeader, SessionSelectorHeaderOptions, SortMode,
 };

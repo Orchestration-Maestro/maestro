@@ -3,7 +3,7 @@
 use crate::recipes;
 use maestro_web::{
     AttachmentTile, ToolMessage, ToolRenderer,
-    dom::{DomContent, DomRoot, DomView, MountedContent},
+    page::{DomContent, DomRoot, DomView, MountedContent},
     tools::{
         renderer_registry::{ToolHeaderState, ToolHeaderText, render_header},
         types::{ToolRenderResult, ToolRendererBinding, ToolUiError},

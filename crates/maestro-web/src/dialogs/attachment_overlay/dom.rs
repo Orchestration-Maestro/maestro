@@ -6,10 +6,10 @@ use crate::{
         attachment_content::browser::append, event_subscription::EventSubscription, timer::Timer,
     },
     components::{
-        button::{ButtonProps, ButtonSize, ButtonVariant, button},
+        controls::{ButtonProps, ButtonSize, ButtonVariant, button},
         mode_toggle::ModeGroup,
     },
-    dom::{self, DomContent, DomRoot, DomView, Link},
+    page::{self, DomContent, DomRoot, DomView, Link},
     tools::types::ToolUiError,
 };
 use std::{
@@ -64,7 +64,7 @@ impl AttachmentOverlay {
         on_close: Option<Rc<dyn Fn()>>,
     ) -> Result<Self, ToolUiError> {
         define(view)?;
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let state = Rc::new(State {
             view: Rc::clone(view),
             attachment,
@@ -245,7 +245,7 @@ impl State {
         if let Some(callback) = callback {
             callback();
         }
-        let root = self.root.borrow().as_ref().and_then(dom::live);
+        let root = self.root.borrow().as_ref().and_then(page::live);
         if let Some(root) = root {
             root.remove();
         }
@@ -297,7 +297,7 @@ fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
         .get("attachment-overlay")
         .is_undefined()
     {
-        dom::define_element("attachment-overlay", Vec::new(), &[], |_, _| {
+        page::define_element("attachment-overlay", Vec::new(), &[], |_, _| {
             AttachmentElement {
                 state: CREATING.take(),
             }
@@ -313,7 +313,7 @@ impl DomContent for AttachmentOverlay {
             .root
             .borrow()
             .as_ref()
-            .and_then(dom::live)
+            .and_then(page::live)
             .ok_or_else(|| ToolUiError::Presentation("Missing overlay root".into()))?;
         Ok(DomRoot {
             node: root.into(),

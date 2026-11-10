@@ -280,7 +280,7 @@ following example is also checked in the generator's public rustdoc:
 ```rust
 use maestro_web::RuntimeMessageBridge;
 use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
-use maestro_web::components::sandbox::runtime_message_bridge::{
+use maestro_web::components::sandbox::routing::{
     RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
 
@@ -330,7 +330,7 @@ hold the registry weakly, and response callbacks retain only the frame slot,
 not the provider graph. Window subscriptions share the browser event-registration
 owner used by native input controls; extension transport stays with the router.
 
-`browser::sandbox_value::BrowserSandboxValue` owns a native JavaScript handle.
+`browser::values::BrowserSandboxValue` owns a native JavaScript handle.
 Clones share that value: callbacks do not JSON-round-trip it. Its application
 formatter uses native two-space JSON display for objects/arrays/null and native
 string conversion otherwise, preserving serializer failures.

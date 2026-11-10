@@ -10,7 +10,7 @@ use maestro_app::{CustomProvider, Model, Presence, get_model};
 use maestro_web::{
     ApiKeyPromptDialog, CustomProviderDialog, ModelSelector, ProviderKeyInput, ProvidersModelsTab,
     SettingsTab,
-    dom::{DomContent, DomView, MountedContent},
+    page::{DomContent, DomView, MountedContent},
 };
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast, JsValue, prelude::wasm_bindgen};
@@ -28,7 +28,7 @@ fn click(element: &Element) {
     element.unchecked_ref::<HtmlElement>().click();
 }
 /// The key entry mounted in a new container.
-fn key_entry(view: &DomView, provider: &str) -> (Element, maestro_web::dom::DomRoot) {
+fn key_entry(view: &DomView, provider: &str) -> (Element, maestro_web::page::DomRoot) {
     let parent = container();
     let root = ProviderKeyInput::new(provider).mount(view).unwrap();
     parent.append_child(&root.node).unwrap();

@@ -5,7 +5,7 @@ use super::{
     select_level, started,
 };
 use crate::components::session_picker::list::tests::session_picker::decode_cases;
-use maestro_app::utils::clipboard_image::ClipboardImage;
+use maestro_app::utils::image_clipboard::ClipboardImage;
 use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
 use maestro_tui::{Component, interface::InputHandler};
 #[cfg(target_os = "linux")]

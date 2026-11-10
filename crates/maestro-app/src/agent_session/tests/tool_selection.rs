@@ -1,7 +1,7 @@
 //! The tool registry, active-tool selection and the rebuilt system prompt, with the SDK
 //! tools replaced before each refresh as the recorded cases did.
 use crate::agent_session::tools::RefreshToolRegistryOptions;
-use crate::resources::system_prompt::build_system_prompt;
+use crate::resources::instructions::build_system_prompt;
 use crate::tests::session_harness::{
     Harness, HarnessOptions, case, harness, on_task_set, sdk_definition, sdk_tools, tool_definition,
 };

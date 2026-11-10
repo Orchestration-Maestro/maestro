@@ -1,6 +1,6 @@
 //! Owned browser tool content and call-scoped native operands.
 mod ui_error;
-use crate::dom::PreparedContent;
+use crate::page::PreparedContent;
 use maestro_app::JsonObject;
 use serde_json::Value;
 pub use ui_error::ToolUiError;
@@ -12,7 +12,7 @@ pub use result_view::ToolResultMessageView;
 /// Rendered content and outer-card choice.
 ///
 /// `C` selects the content representation. By default it is page content
-/// ([`crate::dom::DomContent`]) in the browser and the owned prepared record on native targets.
+/// ([`crate::page::DomContent`]) in the browser and the owned prepared record on native targets.
 pub struct ToolRenderResult<C = PreparedContent> {
     /// Owned content, independent of call-scoped operands.
     pub content: C,

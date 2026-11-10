@@ -3,9 +3,9 @@ use crate::{
     browser::{
         attachment_content::ClipboardMode, event_subscription::EventSubscription, timer::Timer,
     },
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{DomView, Link, Property, Reflected, connected, live},
-    utils::i18n::I18n,
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
+    page::{DomView, Link, Property, Reflected, connected, live},
+    utils::localization::I18n,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -242,8 +242,8 @@ fn render(root: &HtmlElement, view: &DomView, i18n: &I18n, copied: bool) -> Resu
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), JsValue> {
     let view = Rc::clone(view);
     let observed = vec!["title".into(), "show-text".into(), COMPACT.into()];
-    crate::dom::define_element(TAG, observed, PROPERTIES, move |root, properties| {
-        let creating = crate::dom::take_creating::<Creating>();
+    crate::page::define_element(TAG, observed, PROPERTIES, move |root, properties| {
+        let creating = crate::page::take_creating::<Creating>();
         CopyElement {
             root: js_sys::WeakRef::new(&root),
             view: Rc::clone(&view),
@@ -273,7 +273,7 @@ pub(crate) fn create(
     changed: Option<Rc<dyn Fn()>>,
     text: Option<TextSource>,
 ) -> Result<web_sys::Element, JsValue> {
-    crate::dom::create_with(
+    crate::page::create_with(
         document,
         TAG,
         Creating {

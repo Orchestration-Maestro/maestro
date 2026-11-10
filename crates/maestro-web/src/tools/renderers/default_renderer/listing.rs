@@ -1,8 +1,8 @@
 //! Fallible literal listings mounted through the shared code and copy owners.
 use super::Listing;
 use crate::{
-    components::code_block::{Prepared, dom::Listing as MountedListing},
-    dom::{DomContent, DomRoot, DomView},
+    components::source::{Prepared, dom::Listing as MountedListing},
+    page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use wasm_bindgen::JsCast as _;

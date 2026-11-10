@@ -1,8 +1,8 @@
 //! Termination signal delivery of the running process.
 use maestro_app::TerminationSignal;
+use maestro_app::connection_runner::RpcProcessPort;
 #[cfg(unix)]
 use maestro_app::register_signals;
-use maestro_app::rpc_mode::RpcProcessPort;
 use std::{io, rc::Rc};
 
 /// The running process's termination signals: SIGTERM and SIGHUP on Unix, none elsewhere.

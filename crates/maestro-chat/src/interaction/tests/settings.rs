@@ -5,7 +5,7 @@ use super::typed::{poll, recalled, submit};
 use super::{Setup, World, isolated, start};
 use crate::SettingsSelectorComponent;
 use maestro_app::agent_session::PromptOptions;
-use maestro_app::presentation_data::footer_data_provider::FooterOperations;
+use maestro_app::presentation_data::status_line::FooterOperations;
 use maestro_app::{
     AssistantMessageEventStream, MessageDeliveryMode, SettingsManager, Transport, TransportSetting,
     strip_ansi,

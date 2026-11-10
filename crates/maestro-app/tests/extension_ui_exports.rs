@@ -1,7 +1,5 @@
 //! Extension UI and renderer records through the application root.
-use maestro_app::presentation_data::footer_data_provider::{
-    ExtensionStatusIter, ExtensionStatuses,
-};
+use maestro_app::presentation_data::status_line::{ExtensionStatusIter, ExtensionStatuses};
 use maestro_app::{
     AutocompleteProviderFactory, Cancellation, ExtensionUIContext, ExtensionUIDialogOptions,
     ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ReadonlyFooterDataProvider,

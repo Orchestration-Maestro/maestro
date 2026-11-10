@@ -1,7 +1,7 @@
 //! Registered custom messages mounted as native page content.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{contributions_support, message_renderer_support, renderer_recipes};
-use maestro_web::{dom::MountedContent, register_message_renderer, render_message};
+use maestro_web::{page::MountedContent, register_message_renderer, render_message};
 use message_renderer_support::{NativeMessage, Renderer, message};
 use std::{
     rc::Rc,
@@ -66,7 +66,7 @@ pub fn custom_message_content_reaches_the_native_reading_consumer() {
 fn replace_renderer(
     slot: &mut MountedContent,
     input: &maestro_app::AgentMessage<NativeMessage>,
-    (parent, view): (&web_sys::Element, &maestro_web::dom::DomView),
+    (parent, view): (&web_sys::Element, &maestro_web::page::DomView),
     strong: &web_sys::Element,
 ) {
     use contributions_support::{select, text};
@@ -96,7 +96,7 @@ fn show(
     slot: &mut MountedContent,
     input: &maestro_app::AgentMessage<NativeMessage>,
     parent: &web_sys::Element,
-    view: &maestro_web::dom::DomView,
+    view: &maestro_web::page::DomView,
 ) {
     let content = render_message(input).unwrap().unwrap();
     slot.show(content.as_ref(), parent, view).unwrap();

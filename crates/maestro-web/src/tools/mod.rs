@@ -1,10 +1,10 @@
 //! Browser tool views.
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use crate::tools::types::ToolUiError;
-pub mod artifacts;
+pub mod documents;
 /// Document-extraction cards.
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
-pub mod extract_document;
+pub mod extraction;
 /// JavaScript execution cards and browser-local hidden tool registration.
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod javascript_repl;
@@ -92,7 +92,7 @@ fn render_with_binding<P: 'static, D: 'static>(
 /// Returns an operand-type mismatch, decoder, formatter or custom renderer failure.
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn render_call<D: 'static>(
-    view: &crate::dom::DomView,
+    view: &crate::page::DomView,
     tool_name: &str,
     arguments: &serde_json::Value,
     result: Option<&maestro_app::ToolResultMessage<D>>,
