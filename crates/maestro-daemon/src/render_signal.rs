@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Render work accumulated since the last drain.
 #[derive(Debug, Default)]

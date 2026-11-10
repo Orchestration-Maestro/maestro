@@ -1,10 +1,10 @@
 //! Retained pane agent identity and presentation for the workspace daemon.
 
 /// Validated session references and literal resume plans.
-pub mod agent_resume;
+pub mod resume;
 
 /// Owned terminal input and supplied host geometry.
-pub mod input;
+pub mod ingress;
 
 /// Workspace preference values and validation.
 pub mod settings;
@@ -16,13 +16,13 @@ pub mod terminal;
 pub mod terminal_theme;
 
 /// Supplied agent roots and daemon resource paths.
-pub mod paths;
+pub mod locations;
 
 /// Owned named-daemon selection and lifecycle information.
 pub mod instances;
 
 /// Structured workspace events and bounded file logging.
-pub mod logging;
+pub mod diagnostics;
 
 /// Live pane directory observations over topology-owned tabs.
 #[cfg(target_os = "linux")]
@@ -36,10 +36,10 @@ pub mod workspace;
 pub mod persist;
 
 /// Environment names grouped by their runtime consumers.
-pub mod environment;
+pub mod variables;
 
 /// Process pane terminal state.
-pub mod pane;
+pub mod panes;
 
 /// Absolute-row text selections within a pane.
 pub mod selection;
@@ -54,13 +54,13 @@ pub mod render_signal;
 pub mod events;
 
 /// Shared replay history for daemon API consumers.
-pub mod api;
+pub mod service;
 
 /// Native hostname, local calendar and process-session observations.
 pub mod platform;
 
 /// Workspace key-combination grammar.
-pub mod key_combo;
+pub mod keys;
 
 /// Retained daemon state and workspace operations.
 #[cfg(target_os = "linux")]
@@ -71,7 +71,7 @@ mod tests;
 
 /// Native terminal state transferred between workspace servers.
 #[cfg(unix)]
-pub mod handoff_runtime;
+pub mod transfer;
 
 /// Native repository discovery and caller-owned Git process fallbacks.
 pub mod git;

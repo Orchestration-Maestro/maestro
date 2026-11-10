@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
     Style,
-    hyperlink::{Hyperlink, Id},
+    links::{Hyperlink, Id},
 };
 use std::{borrow::Cow, ops::Range};
 
@@ -274,7 +274,7 @@ impl Page {
             }
         }
         let link_capacity =
-            crate::hyperlink::Set::capacity_for_count(ids.len()).max(link_cells.div_ceil(16));
+            crate::links::Set::capacity_for_count(ids.len()).max(link_cells.div_ceil(16));
         super::layout::Capacity {
             cols: self.size.cols,
             rows: rows.end - rows.start,

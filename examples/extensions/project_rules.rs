@@ -15,7 +15,7 @@ use std::{cell::RefCell, io, path::Path, rc::Rc};
 use maestro_extensions_wasm::{
     BeforeAgentStartEventResult, ExtensionAPI, ExtensionContext, ExtensionEvent,
     ExtensionEventResult, ExtensionFuture, ExtensionResult, NotificationType, Presence,
-    tools::path_utils::guest_path,
+    registry::path_utils::guest_path,
 };
 
 /// The folder below the working directory that holds the rule files.

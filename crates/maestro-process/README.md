@@ -9,9 +9,9 @@ have already been delivered.
 
 ## Termination signals
 
-`termination::register_signals` delivers each termination signal of the host to a
+`notifications::register_signals` delivers each termination signal of the host to a
 callback and returns the operation that stops delivery; calling it again changes
-nothing. `termination::signals_for_host` names the signals delivered: termination
+nothing. `notifications::signals_for_host` names the signals delivered: termination
 everywhere and a hangup off Windows. Delivery runs as tasks of the calling thread,
 so a caller drives it from a runtime with the signal driver. A native mode keeps
 its own exit policy. On Unix, removing the last live registration restores native

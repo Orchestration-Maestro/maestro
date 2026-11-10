@@ -1,6 +1,6 @@
 //! Controlled native shell routing and launch behavior.
 #![cfg(not(target_arch = "wasm32"))]
-use super::resolve_config_value::{
+use super::configuration::{
     ConfigValueOperations, clear_config_value_cache,
     native::{Attempt, Launch, Platform, attempt, default_shell, routed},
     resolve_config_value, resolve_config_value_uncached,
@@ -201,8 +201,7 @@ fn helper_launch_preserves_argv_and_stream_policy() {
     );
     #[cfg(unix)]
     {
-        let operations =
-            super::resolve_config_value::ProcessConfigValueOperations::new(|| unreachable!());
+        let operations = super::configuration::ProcessConfigValueOperations::new(|| unreachable!());
         assert_eq!(
             resolve_config_value_uncached(
                 "!if read line; then printf wrong; else printf key; fi; printf noise >&2",

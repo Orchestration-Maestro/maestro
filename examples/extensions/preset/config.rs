@@ -1,6 +1,6 @@
 //! Layered preset files read through the host's authored-path helpers.
 use indexmap::IndexMap;
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, ThinkingLevel, tools::path_utils};
+use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, ThinkingLevel, registry::path_utils};
 use serde::Deserialize;
 
 /// Optional settings supplied by one named preset.

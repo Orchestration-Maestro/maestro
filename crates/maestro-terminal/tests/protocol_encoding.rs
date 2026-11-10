@@ -3,9 +3,9 @@
 use maestro_terminal::input::key_encode::OptionAsAlt;
 use maestro_terminal::{
     input::{
-        key::{Key, KeyAction, KeyEvent},
         key_encode::KeyEncoder,
         key_mods::Mods,
+        keyboard::{Key, KeyAction, KeyEvent},
     },
     kitty::key::Flags,
     modes::Mode,

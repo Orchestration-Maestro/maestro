@@ -2,12 +2,12 @@
 use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
 use std::{ffi::OsStr, path::Path, process::Output};
 
-pub use maestro_workspace::workspace::git::discovery::{
+pub use maestro_workspace::spaces::repository::discovery::{
     GitSpaceMetadata, GitWorktreeInfo, automatic_workspace_label, canonicalize_best_effort_path,
     derive_label_from_cwd, fallback_label_from_cwd, git_repo_root, git_space_metadata,
     git_space_metadata_from_info, git_worktree_info,
 };
-pub use maestro_workspace::workspace::git::native::{
+pub use maestro_workspace::spaces::repository::native::{
     GitPaths, authored_git_dir_for_repo_root, discover_git_paths, git_ref_storage_is_reftable,
     read_text, trim,
 };

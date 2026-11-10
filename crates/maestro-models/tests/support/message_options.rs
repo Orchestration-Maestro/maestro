@@ -4,7 +4,7 @@
 
 #![cfg(not(target_arch = "wasm32"))]
 use crate::{chat::TestResult, messages};
-use maestro_models::providers::messages::anthropic::{AnthropicEffort, stream_simple_anthropic};
+use maestro_models::providers::messages::endpoint::{AnthropicEffort, stream_simple_anthropic};
 use maestro_models::{
     AnthropicOptions, AnthropicThinkingDisplay, HttpResponse, SimpleStreamOptions, StreamOptions,
     ThinkingBudgets, stream_anthropic,

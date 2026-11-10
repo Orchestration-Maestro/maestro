@@ -119,7 +119,7 @@ enum TextDecoration {
     Underline,
 }
 
-impl From<TextDecoration> for maestro_extensions::widgets::TextDecoration {
+impl From<TextDecoration> for maestro_extensions::presentation::TextDecoration {
     fn from(decoration: TextDecoration) -> Self {
         match decoration {
             TextDecoration::Bold => Self::Bold,

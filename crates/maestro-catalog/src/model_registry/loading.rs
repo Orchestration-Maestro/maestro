@@ -3,7 +3,7 @@ use super::{
     ModelFileOperations,
     composition::{self, ProviderConfig},
 };
-use maestro_models::{ModelCompat, arguments::validation::validate_schema};
+use maestro_models::{ModelCompat, parameters::validation::validate_schema};
 use serde_json::Value;
 use std::sync::LazyLock;
 

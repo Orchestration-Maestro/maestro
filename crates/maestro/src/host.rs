@@ -3,7 +3,7 @@ use maestro_app::configuration::{
     config::{self, SelfUpdateContext, installation::Installation},
     version_check::VersionCheckOptions,
 };
-use maestro_cli::{MainOptions, packages::PackageCommandContext, startup::main::MainHost};
+use maestro_cli::{MainOptions, packages::PackageCommandContext, startup::entrypoint::MainHost};
 use maestro_theme::{ThemeState, supports_color};
 use std::{
     cell::{Cell, RefCell},

@@ -3,9 +3,10 @@ use super::{
     harness::{Harness, colors, item_value},
     records::{Detached, Mutation, Operation},
 };
-use maestro_chat::components::config_selector::ResourceItem;
+use maestro_chat::components::configuration::ResourceItem;
 use maestro_tui::{
-    Component, KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS, set_keybindings, tui::Focusable,
+    Component, KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS, interface::Focusable,
+    set_keybindings,
 };
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

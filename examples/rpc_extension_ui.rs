@@ -54,7 +54,7 @@ mod native {
         presentation_data::keybindings::KeybindingsManager, rpc_types::RpcExtensionUIResponse,
     };
     use maestro_theme::{LiveTheme, ThemeState};
-    use maestro_tui::{TUI, TerminalImage, tui::InputListenerResult};
+    use maestro_tui::{TUI, TerminalImage, interface::InputListenerResult};
     use maestro_tui_crossterm::{ProcessTerminal, ProcessTuiRuntime};
     use serde_json::Value;
     use std::{

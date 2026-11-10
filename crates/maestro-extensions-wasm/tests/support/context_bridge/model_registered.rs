@@ -234,10 +234,10 @@ fn http(
     model.api = "component-gated-http".into();
     match options.ok_or("missing original options")? {
         StreamOptionsInput::Raw(options) => {
-            maestro_extensions_wasm::stream::stream(model, context, Some(options))
+            maestro_extensions_wasm::streaming::stream(model, context, Some(options))
         }
         StreamOptionsInput::Simple(options) => {
-            maestro_extensions_wasm::stream::stream_simple(model, context, Some(options))
+            maestro_extensions_wasm::streaming::stream_simple(model, context, Some(options))
         }
     }
 }

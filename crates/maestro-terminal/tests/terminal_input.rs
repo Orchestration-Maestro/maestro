@@ -4,9 +4,7 @@ use super::support::{
     LARGE_PAGES,
     terminal::{assert_text, cell},
 };
-use maestro_terminal::{
-    Coordinate, Mode, Point, Terminal, screen_set::Key, terminal::ScrollViewport,
-};
+use maestro_terminal::{Coordinate, Mode, Point, Terminal, screens::Key, terminal::ScrollViewport};
 
 fn viewport(t: &Terminal) -> String {
     let pages = &t.screens.active().pages;

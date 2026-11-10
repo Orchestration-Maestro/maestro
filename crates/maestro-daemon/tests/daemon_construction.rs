@@ -2,11 +2,11 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::launch;
+use crate::support::spawning;
 
 use maestro_daemon::{
-    api::event_hub::EventHub,
-    app::{App, state::AgentPanelSort},
+    app::{App, model::AgentPanelSort},
+    service::event_hub::EventHub,
     settings::model::{AgentPanelSortConfig, Config},
 };
 use std::sync::{Arc, RwLock};
@@ -14,9 +14,9 @@ use std::sync::{Arc, RwLock};
 /// Constructs the real daemon owner without creating a workspace or native child.
 fn app(config: &Config) -> App<fn() -> u128> {
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     App::new(
         config,
         (|| 0) as fn() -> u128,
@@ -80,7 +80,7 @@ fn pending_workspace_creation_blocks_default_until_cancelled() {
 
 #[test]
 fn pending_creation_follows_navigation_selection_before_active_terminal() {
-    use maestro_daemon::{app::state::Mode, terminal::state::TerminalState};
+    use maestro_daemon::{app::model::Mode, terminal::model::TerminalState};
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
     let mut app = app(&config);
@@ -193,7 +193,7 @@ fn construction_selects_sibling_theme_for_explicit_host_appearance() {
 
 #[test]
 fn construction_retains_custom_overrides_when_selecting_active_theme() {
-    use maestro_daemon::{settings::theme::CustomThemeColors, terminal_theme::HostAppearance};
+    use maestro_daemon::{settings::appearance::CustomThemeColors, terminal_theme::HostAppearance};
     let mut config = Config::default();
     config.theme.name = Some("gruvbox".into());
     config.theme.auto_switch = true;
@@ -238,9 +238,9 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
     let mut config = Config::default();
     config.theme.auto_switch = true;
     let manifests = Arc::new(RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (mut launch, receiver) = launch::launch_inputs(&[], manifests);
+    let (mut launch, receiver) = spawning::launch_inputs(&[], manifests);
     launch.appearance = Some(HostAppearance::Light);
     launch.theme = launch.theme.with_color(
         DefaultColorKind::Background,
@@ -263,7 +263,7 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
 
 #[test]
 fn theme_siblings_preserve_aliases_custom_names_and_authored_pair_overrides() {
-    use maestro_daemon::{app::state::ThemeRuntimeConfig, terminal_theme::HostAppearance};
+    use maestro_daemon::{app::model::ThemeRuntimeConfig, terminal_theme::HostAppearance};
     let mut config = Config::default();
     config.theme.auto_switch = true;
     for (name, dark, light) in [

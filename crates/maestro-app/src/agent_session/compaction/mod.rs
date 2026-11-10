@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use maestro_extensions::{ExtensionExecution, SessionBeforeCompactEvent, SessionCompactEvent};
 use maestro_lock::{read, write};
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
-use maestro_session::compaction::{
+use maestro_session::summarization::{
     CompactionPreparation, CompactionResult, CompactionSettings, SummaryOptions, prepare_compaction,
 };
 use maestro_session::{
@@ -139,7 +139,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         if let Some(base_url) = base_url {
             model.base_url = base_url;
         }
-        maestro_session::compaction::compact(preparation, &model, &options)
+        maestro_session::summarization::compact(preparation, &model, &options)
             .await
             .map(stored_result)
     }

@@ -11,7 +11,7 @@ use maestro_tui::{
     KeybindingsConfig, KeybindingsManager, Loader, Markdown, MarkdownOptions, MarkdownTheme,
     SelectListTheme, SettingsListTheme, TUI, TUI_KEYBINDINGS, TerminalImage,
     editor_component::BorderColor,
-    tui::{ComponentHandle, InputHandler},
+    interface::{ComponentHandle, InputHandler},
 };
 
 use super::editor::CustomEditor;

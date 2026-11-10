@@ -1,14 +1,14 @@
 #![doc = include_str!("../../../../docs/models/oauth.md")]
 pub mod device;
-pub mod oauth_page;
-pub mod pkce;
+pub mod pages;
+pub mod proof_key;
 pub mod responses;
 pub mod subscription;
 pub mod types;
 
 mod callback;
 mod native;
-pub use device::github_copilot::{
+pub use device::browser::{
     GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
     normalize_domain, refresh_github_copilot_token,
 };
@@ -17,10 +17,10 @@ pub(crate) use maestro_text::is_whitespace_scalar as authorization_whitespace;
 
 use crate::SharedHandle;
 use indexmap::IndexMap;
-pub use responses::openai_codex::{
+pub use responses::code_login::{
     OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
 };
-pub use subscription::anthropic::{
+pub use subscription::browser::{
     ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
 };
 pub use types::{
@@ -38,9 +38,9 @@ pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface>;
 /// Original account implementations in their registration order.
 fn builtin_providers() -> IndexMap<OAuthProviderId, OAuthProviderHandle> {
     let providers: [OAuthProviderHandle; 3] = [
-        SharedHandle::new(subscription::anthropic::AnthropicOAuthProvider),
-        SharedHandle::new(device::github_copilot::GitHubCopilotOAuthProvider),
-        SharedHandle::new(responses::openai_codex::OpenAICodexOAuthProvider),
+        SharedHandle::new(subscription::browser::AnthropicOAuthProvider),
+        SharedHandle::new(device::browser::GitHubCopilotOAuthProvider),
+        SharedHandle::new(responses::code_login::OpenAICodexOAuthProvider),
     ];
     providers
         .into_iter()

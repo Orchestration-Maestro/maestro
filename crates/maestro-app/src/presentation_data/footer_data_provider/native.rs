@@ -1,6 +1,6 @@
 //! Native file-system and Git process effects.
 
-use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
 use std::io;
 #[cfg(unix)]

@@ -11,7 +11,7 @@ use content_preparation::assert_rows;
 #[cfg(not(target_arch = "wasm32"))]
 use environment_rows::check_by_environment;
 use indexmap::IndexMap;
-use maestro_models::providers::content::google::{
+use maestro_models::providers::content::generative::{
     GoogleOptions, GoogleThinking, build_params, build_simple_options,
 };
 use maestro_models::{

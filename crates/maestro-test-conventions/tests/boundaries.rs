@@ -343,29 +343,24 @@ fn parameter_schema_records_have_one_owner() {
 
 #[test]
 fn application_selectors_stay_in_chat() {
-    let declarations: Vec<_> = [
-        ("ConfigSelectorComponent", "config_selector"),
-        ("ExtensionSelectorComponent", "extension_selector"),
-        ("ModelSelectorComponent", "model_selector"),
-        ("OAuthSelectorComponent", "oauth_selector"),
-        ("ScopedModelsSelectorComponent", "scoped_models_selector"),
-        ("SessionSelectorComponent", "session_selector"),
-        ("SettingsSelectorComponent", "settings_selector"),
-        ("ShowImagesSelectorComponent", "show_images_selector"),
-        ("ThemeSelectorComponent", "theme_selector"),
-        ("ThinkingSelectorComponent", "thinking_selector"),
-        ("TreeSelectorComponent", "tree_selector"),
-        ("UserMessageSelectorComponent", "user_message_selector"),
-        ("SessionSelectorComponent", "session_selector_search"),
+    let components = [
+        "ConfigSelectorComponent",
+        "ExtensionSelectorComponent",
+        "ModelSelectorComponent",
+        "OAuthSelectorComponent",
+        "ScopedModelsSelectorComponent",
+        "SessionSelectorComponent",
+        "SettingsSelectorComponent",
+        "ShowImagesSelectorComponent",
+        "ThemeSelectorComponent",
+        "ThinkingSelectorComponent",
+        "TreeSelectorComponent",
+        "UserMessageSelectorComponent",
     ]
-    .iter()
-    .flat_map(|(component, module)| {
-        [
-            format!("pub struct {component};"),
-            format!("pub(crate) mod\n{module} {{}}"),
-        ]
-    })
-    .collect();
+    .map(|component| format!("pub struct {component};"));
+    let modules = ["oauth_selector", "session_selector_search"]
+        .map(|module| format!("pub(crate) mod\n{module} {{}}"));
+    let declarations: Vec<_> = components.into_iter().chain(modules).collect();
     for owner in ["maestro-tui", "maestro-app"] {
         let workspace = Workspace::new();
         workspace.foundation(&[owner, "maestro-chat"]);
@@ -884,7 +879,7 @@ fn functions_constants_and_statics_do_not_declare_ownership() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tui"]);
     for declaration in [
-        "pub fn config_selector() {}",
+        "pub fn oauth_selector() {}",
         "pub const ToolDefinition: () = ();",
         "pub static ToolRenderContext: () = ();",
     ] {
@@ -1521,7 +1516,7 @@ fn interactive_session_setup_rejects_bypasses() {
     source(
         &workspace,
         "maestro-chat",
-        "tests/footer_support/session.rs",
+        "tests/footer_support/harness.rs",
         "fn session() -> Result { AgentSession::new(AgentSessionConfig { agent: owner() }) }",
     );
     for relative in [
@@ -1569,7 +1564,7 @@ fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
         panic!("{detail}: {error}");
     };
     assert_eq!(
-        owner, "tests/footer_support/session.rs",
+        owner, "tests/footer_support/harness.rs",
         "{detail}: {error}"
     );
     assert_eq!(
@@ -1577,42 +1572,6 @@ fn assert_setup_rejected(workspace: &Workspace, path: &Path, detail: &str) {
         std::fs::canonicalize(path).unwrap(),
         "{detail}"
     );
-}
-
-#[test]
-fn cli_configuration_wrapper_does_not_own_chat_widgets() {
-    let workspace = Workspace::new();
-    workspace.foundation(&["maestro-chat", "maestro-cli"]);
-    source(
-        &workspace,
-        "maestro-chat",
-        "src/components/mod.rs",
-        "mod config_selector;",
-    );
-    source(
-        &workspace,
-        "maestro-cli",
-        "src/input/mod.rs",
-        "mod config_selector;",
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    for (path, contents) in [
-        (
-            "src/input/config_selector.rs",
-            "pub struct ConfigSelectorComponent;",
-        ),
-        ("src/other/mod.rs", "mod config_selector;"),
-        ("src/input/session_picker.rs", "mod config_selector;"),
-    ] {
-        source(&workspace, "maestro-cli", path, contents);
-        assert!(
-            check_workspace(workspace.root.path())
-                .unwrap_err()
-                .contains("belongs to maestro-chat"),
-            "{path}"
-        );
-        source(&workspace, "maestro-cli", path, "");
-    }
 }
 
 #[test]

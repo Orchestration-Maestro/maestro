@@ -1,6 +1,6 @@
 //! Raw YAML values use the metadata parser without header extraction.
 #![cfg(test)]
-use maestro_resources::frontmatter::{FrontmatterValue as V, parse_frontmatter, parse_yaml};
+use maestro_resources::metadata::{FrontmatterValue as V, parse_frontmatter, parse_yaml};
 
 #[test]
 fn raw_yaml_preserves_document_values() {

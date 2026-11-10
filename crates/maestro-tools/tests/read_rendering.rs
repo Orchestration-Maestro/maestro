@@ -16,7 +16,7 @@ use maestro_tools::{
     ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, ToolRenderResultOptions,
     create_read_tool_definition, output::render_utils::strip_ansi, wrap_tool_definition,
 };
-use maestro_tui::{Component, Text, tui::ComponentHandle};
+use maestro_tui::{Component, Text, interface::ComponentHandle};
 use serde_json::{Value, json};
 use std::{rc::Rc, sync::Arc};
 

@@ -1,8 +1,8 @@
 //! The child's native command and the tasks that own its streams and its lifetime.
 use super::{Inner, RpcClientOptions, Running};
 use crate::rpc_mode::{JsonlLineReader, RpcInput, RpcLineReader};
-use maestro_process::child_process::{CapturedChild, Termination};
-use maestro_text::utf8::Utf8Stream;
+use maestro_process::children::{CapturedChild, Termination};
+use maestro_text::decoding::Utf8Stream;
 use std::{
     io::{self, Write},
     path::Path,

@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_session::SessionManager;
-use maestro_session::session_cwd::{
+use maestro_session::cwd::{
     MissingSessionCwdError, SessionCwdIssue, assert_session_cwd_exists,
     format_missing_session_cwd_error, format_missing_session_cwd_prompt,
     get_missing_session_cwd_issue,

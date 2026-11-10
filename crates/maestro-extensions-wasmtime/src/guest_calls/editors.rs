@@ -10,8 +10,8 @@ use crate::local_resources::{
 use crate::widget_reads::{StyleEndpoint, WidgetEndpoint};
 use maestro_extensions::{
     EventError, ExtensionAPI, Local,
+    presentation::{EditorTheme, ExtensionKeybindings},
     types::{EditorFactory, EditorFactoryOutcome, UIErrorReporter},
-    widgets::{EditorTheme, ExtensionKeybindings},
 };
 use std::rc::Rc;
 use wasmtime::component::{ComponentType, Lift, Lower, Resource, ResourceTable};

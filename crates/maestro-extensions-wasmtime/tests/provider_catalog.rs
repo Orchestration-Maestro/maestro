@@ -888,7 +888,7 @@ fn catalog_local_mutation_does_not_requeue_extension_registration() {
 }
 
 /// A real file catalog whose credentials and command effects remain the supplied owners.
-fn file_session(path: &std::path::Path) -> maestro_extensions::runner::ExtensionRunnerSession {
+fn file_session(path: &std::path::Path) -> maestro_extensions::execution::ExtensionRunnerSession {
     let (mut session, _) = super::session::runner_session("/provider-file");
     let original = session.model_registry.clone();
     session.model_registry = maestro_extensions::SharedHandle::new(

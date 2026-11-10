@@ -309,7 +309,7 @@ enterprise metadata skips modifier normalization. Refresh retains supplied strin
 or null metadata; absent metadata remains absent. Other non-string values fail
 before refresh effects; truthy non-string values fail before model modification
 with a native decoding error. These exports are also available through
-`oauth::device::github_copilot` and `oauth`.
+`oauth::device::browser` and `oauth`.
 
 ### Controlled refresh example
 

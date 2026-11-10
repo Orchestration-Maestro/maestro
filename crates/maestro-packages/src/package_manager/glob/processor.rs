@@ -4,7 +4,7 @@ use super::{
     pattern::Pattern,
 };
 use maestro_pattern::{Minimatch, ParseReturnFiltered};
-use maestro_resources::skills::ResourceFileType;
+use maestro_resources::catalog::ResourceFileType;
 use std::{
     collections::{HashMap, HashSet},
     io,

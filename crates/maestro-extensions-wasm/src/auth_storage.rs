@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::{AuthStatus, DiagnosticErrorInfo, ExtensionFuture, ExtensionResult};
-pub use maestro_request::auth_storage::{
+pub use maestro_request::credentials::{
     ApiKeyCredential, AuthCredential, AuthStorageData, OAuthCredential,
 };
 pub use maestro_request::oauth::OAuthCredentials;

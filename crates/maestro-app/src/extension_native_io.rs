@@ -8,8 +8,8 @@ mod files;
 /// HTTP response and body resource ownership.
 mod http;
 use http::Http;
-use maestro_models::providers::http::{Raced, race};
-use maestro_process::child_process::{RawChild, RawInput, RawOutput};
+use maestro_models::providers::transport::{Raced, race};
+use maestro_process::children::{RawChild, RawInput, RawOutput};
 use std::{
     process::Stdio as NativeStdio,
     rc::{Rc, Weak},
@@ -108,8 +108,7 @@ impl NativeIo for Operations {
         })
     }
     fn kill(&self, pid: i32, signal: Option<String>) -> Result<(), String> {
-        maestro_process::child_process::signal_pid(pid, signal.as_deref())
-            .map_err(|e| e.to_string())
+        maestro_process::children::signal_pid(pid, signal.as_deref()).map_err(|e| e.to_string())
     }
 }
 /// Projects one descriptor selection without supplying a fallback pipe.

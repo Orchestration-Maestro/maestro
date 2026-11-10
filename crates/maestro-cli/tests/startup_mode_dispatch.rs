@@ -3,7 +3,7 @@ use crate::startup_runtime::run;
 use crate::support::mode_dispatch::{
     BENCHMARK_TIMINGS, Harness, PRIOR_TIMINGS, request, scoped, timing,
 };
-use maestro_cli::startup::main::bootstrap::AppMode;
+use maestro_cli::startup::entrypoint::bootstrap::AppMode;
 
 #[test]
 fn benchmark_flags_reject_only_selected_noninteractive_modes() {
@@ -574,7 +574,7 @@ async fn print_child(local: std::rc::Rc<tokio::task::LocalSet>) {
 }
 
 /// Prepared ordered prompts for either print representation.
-fn print_request() -> maestro_cli::startup::main::dispatch::ModeDispatch {
+fn print_request() -> maestro_cli::startup::entrypoint::routing::ModeDispatch {
     use maestro_test_process::selection;
     let mut input = request(
         if selection().runs_case("json-ok") || selection().runs_case("json-error") {

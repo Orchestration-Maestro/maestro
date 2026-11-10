@@ -125,7 +125,7 @@ fn check_converted_timestamps(local: i64) {
         if case.input["timestamp"] == "2025-01-01T01:00:00" {
             expected["messages"][0]["timestamp"] = json!(local);
         }
-        support::value::assert_value(&result, &expected, &case.id);
+        support::assertions::assert_value(&result, &expected, &case.id);
     }
 }
 
@@ -204,6 +204,6 @@ fn conversions(name: &str) {
             )
             .unwrap();
         }
-        support::value::assert_value(&observed, &case.expected["ok"], &case.id);
+        support::assertions::assert_value(&observed, &case.expected["ok"], &case.id);
     }
 }

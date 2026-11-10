@@ -8,7 +8,7 @@ pub mod terminal {
         color::{Palette, Rgb},
         kitty::graphics::unicode::PLACEHOLDER,
         page::cell::{Content, Wide},
-        render::{Dirty, RenderCell, RenderRow, RenderState},
+        painting::{Dirty, RenderCell, RenderRow, RenderState},
         style::{Color, Flags},
     };
 }

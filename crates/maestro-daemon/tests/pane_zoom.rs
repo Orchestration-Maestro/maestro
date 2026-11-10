@@ -4,7 +4,7 @@ use crate::support::api::{
     TestApp, daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
     split_pane,
 };
-use maestro_daemon::app::state::{CopyModeState, Mode};
+use maestro_daemon::app::model::{CopyModeState, Mode};
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
     ErrorBody, PaneZoomReason, PaneZoomResult, ResponseResult, SplitDirection,

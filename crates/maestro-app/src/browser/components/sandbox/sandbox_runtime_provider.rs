@@ -1,7 +1,7 @@
 //! Retained runtime provider interface.
 use super::super::sandboxed_iframe::SandboxValue;
 use super::artifacts_runtime_provider::{ArtifactOperation, ArtifactResponse};
-use maestro_agent::agent::Native;
+use maestro_agent::runtime::Native;
 use maestro_models::SharedHandle;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 

@@ -1,6 +1,6 @@
 //! Typed attachment inputs and complete public observations.
 #![cfg(test)]
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     AutocompleteOperations, CompletionOptions, CursorPosition, DirectoryEntry,
 };
 use maestro_tui::{

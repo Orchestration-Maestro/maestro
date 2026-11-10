@@ -9,7 +9,7 @@ use tokio::task::LocalSet;
 /// Perform terminal child setup before constructing any application effects.
 fn main() {
     #[cfg(target_os = "linux")]
-    if let Some(error) = maestro_process::pty::setup_entry() {
+    if let Some(error) = maestro_process::terminal::setup_entry() {
         maestro_app::diagnostics::write_stderr_line(&format!("Error: {error}"));
         std::process::exit(1);
     }

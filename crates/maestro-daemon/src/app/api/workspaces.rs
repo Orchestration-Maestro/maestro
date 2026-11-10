@@ -56,7 +56,7 @@ impl<C: FnMut() -> u128> App<C> {
         if let Some(label) = params.label {
             let workspace = &mut self.state.topology.workspaces[index];
             workspace.set_custom_name(label);
-            crate::logging::workspace_renamed(&workspace.id);
+            crate::diagnostics::workspace_renamed(&workspace.id);
         }
         self.emit_workspace_open_events(index).await;
         self.workspace_created_result(index)
@@ -79,7 +79,7 @@ impl<C: FnMut() -> u128> App<C> {
         let index = self.target_workspace(&params.workspace_id)?;
         let workspace = &mut self.state.topology.workspaces[index];
         workspace.set_custom_name(params.label.clone());
-        crate::logging::workspace_renamed(&workspace.id);
+        crate::diagnostics::workspace_renamed(&workspace.id);
         let workspace_id = workspace.id.clone();
         self.state.session_dirty = true;
         self.event_hub.push(EventData::WorkspaceRenamed {

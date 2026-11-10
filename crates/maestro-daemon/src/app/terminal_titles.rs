@@ -1,8 +1,8 @@
 //! Raw terminal title synchronization with semantic pane-update publication.
 
 use super::App;
-use crate::settings::sidebar::AgentSidebarToken;
-use maestro_workspace::layout::PaneId;
+use crate::settings::navigation::AgentSidebarToken;
+use maestro_workspace::tiling::PaneId;
 use std::collections::HashSet;
 
 /// Distinguishes spinner-only changes from changes to the displayed title text.

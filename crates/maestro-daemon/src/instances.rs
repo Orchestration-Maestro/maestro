@@ -1,6 +1,6 @@
 //! Owned daemon selection, inventory and local command guidance.
 
-use crate::paths::DaemonPaths;
+use crate::locations::DaemonPaths;
 
 /// Environment input selecting an inherited daemon name.
 pub const SESSION_ENV_VAR: &str = "MAESTRO_DAEMON";

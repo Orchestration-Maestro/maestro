@@ -12,7 +12,7 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use maestro_extensions_wasm::{
     AgentToolResult, CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult,
     NotificationType, Presence, TextContent, ToolDefinition, ToolMetadata, UserBlock, config,
-    tools::path_utils::{guest_path, resolve},
+    registry::path_utils::{guest_path, resolve},
     utils::trim,
 };
 use regex::RegexSet;

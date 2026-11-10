@@ -25,6 +25,8 @@ mod summary_usage;
 mod tool_argument_roots;
 /// Recorded corpus support shared by the test modules.
 mod support {
+    /// Full value comparison.
+    pub mod assertions;
     /// Branch scenarios.
     pub mod branch_summary;
     /// Compaction corpus consumer.
@@ -46,8 +48,6 @@ mod support {
     /// Consuming request controls.
     #[cfg(not(target_arch = "wasm32"))]
     pub mod summary_options;
-    /// Full value comparison.
-    pub mod value;
 }
 
 mod session_storage;

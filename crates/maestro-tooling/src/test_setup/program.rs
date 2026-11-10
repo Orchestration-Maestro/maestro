@@ -318,7 +318,7 @@ mod tests {
     #[ignore = "runs only inside a controlled child"]
     fn install_without_an_inherited_toolchain() {
         let pin =
-            maestro_test_process::toolchain::channel().expect("the build records its toolchain");
+            maestro_test_process::compiler::channel().expect("the build records its toolchain");
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         let cargo = root.join("cargo");
@@ -330,7 +330,7 @@ mod tests {
             format!("tooling-cargo\n{}\n{}\n", env!("CARGO"), root.display()),
         )
         .unwrap();
-        maestro_test_process::toolchain::declare_toolchain(
+        maestro_test_process::compiler::declare_toolchain(
             root,
             &format!("[toolchain]\nchannel = \"{pin}\"\n"),
         )

@@ -1,7 +1,7 @@
 //! Alternate-screen mode ordering and independent retained state.
 
 use super::support::terminal::assert_text;
-use maestro_terminal::{Terminal, screen_set::Key, terminal::SwitchScreenMode};
+use maestro_terminal::{Terminal, screens::Key, terminal::SwitchScreenMode};
 
 fn plain_mode(mode: SwitchScreenMode) {
     let mut t = Terminal::new(5, 5, 0).unwrap();

@@ -1,12 +1,6 @@
 //! Controlled execution of the shipped question tool through registered exports.
-use super::{
-    controlled::Controlled,
-    example_support::{registered, result_value},
-};
-use crate::{
-    Extension, ExtensionAPI, ExtensionFuture,
-    component_adapter::{Exports, ToolCapabilities},
-};
+use super::{controlled::Controlled, example_support::{registered, result_value}};
+use crate::{Extension, ExtensionAPI, ExtensionFuture, component_adapter::{Exports, ToolCapabilities}};
 use serde_json::{Value, json};
 
 #[path = "../../../../examples/extensions/question.rs"]

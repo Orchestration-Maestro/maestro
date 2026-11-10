@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    CommandOptions, ExtensionAPI, ExtensionResult, fs::FsWatcher, io::NativeIo,
+    CommandOptions, ExtensionAPI, ExtensionResult, effects::NativeIo, filesystem::FsWatcher,
 };
 use serde_json::{Value, json};
 use std::{

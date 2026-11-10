@@ -9,7 +9,7 @@ use std::rc::{Rc, Weak};
 use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 
-use crate::tui::{LogContext, RenderCallback, RenderTimer, TuiRuntime};
+use crate::interface::{LogContext, RenderCallback, RenderTimer, TuiRuntime};
 
 /// A callback waiting for its due time.
 struct Pending {
@@ -82,7 +82,7 @@ pub fn ms(value: u64) -> Duration {
 impl ManualRuntime {
     /// Take submitted futures to await them in a controlled order.
     #[must_use]
-    pub fn take_futures(&self) -> Vec<crate::tui::LocalFuture> {
+    pub fn take_futures(&self) -> Vec<crate::interface::LocalFuture> {
         std::mem::take(&mut self.state.borrow_mut().futures)
     }
 

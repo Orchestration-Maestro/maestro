@@ -2,7 +2,7 @@
 
 use crate::support::startup;
 use maestro_app::{Presence, ReadonlySessionManager, SessionManager};
-use maestro_cli::startup::main::sessions::{
+use maestro_cli::startup::entrypoint::sessions::{
     ResolvedSession, SessionOperation, SessionSelection, open_selected_session,
     resolve_session_path, select_session_operation,
 };
@@ -318,7 +318,7 @@ fn operation(tokens: &[&str], here: (&str, &str, &str)) -> SessionOperation {
 
 #[test]
 fn confirmation_keeps_untrimmed_answers_and_eof() {
-    use maestro_cli::startup::main::inputs::prompt_confirm;
+    use maestro_cli::startup::entrypoint::inputs::prompt_confirm;
     for (bytes, expected) in [
         (&b"Y\n"[..], Some(true)),
         (&b"YeS\r\n"[..], Some(true)),
@@ -405,7 +405,7 @@ impl tokio::io::AsyncBufRead for QuestionInput {
 #[test]
 fn missing_cwd_continue_cancel_and_repeat_settle_once() {
     use crate::support::missing_cwd::{Dialog, isolated};
-    use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use maestro_cli::startup::entrypoint::feedback::prompt_for_missing_session_cwd;
     use std::{
         rc::Rc,
         task::{Context, Waker},
@@ -463,7 +463,7 @@ fn missing_cwd_continue_cancel_and_repeat_settle_once() {
 #[test]
 fn missing_cwd_focus_cursor_cleanup_follow_real_writer() {
     use crate::support::missing_cwd::{Dialog, isolated};
-    use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use maestro_cli::startup::entrypoint::feedback::prompt_for_missing_session_cwd;
     use maestro_tui::Component;
     use std::{
         rc::Rc,
@@ -507,7 +507,7 @@ fn missing_cwd_focus_cursor_cleanup_follow_real_writer() {
 #[test]
 fn missing_cwd_failures_release_created_writer() {
     use crate::support::missing_cwd::{Dialog, isolated};
-    use maestro_cli::startup::main::presentation::prompt_for_missing_session_cwd;
+    use maestro_cli::startup::entrypoint::feedback::prompt_for_missing_session_cwd;
     use std::{
         io,
         rc::Rc,

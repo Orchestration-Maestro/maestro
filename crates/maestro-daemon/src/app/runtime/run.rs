@@ -1,7 +1,7 @@
 //! The single daemon event loop and its completion-owned shutdown phase.
 
 use super::super::App;
-use crate::{api::RequestMessage, paths::DaemonPaths};
+use crate::{locations::DaemonPaths, service::RequestMessage};
 use maestro_settings::SettingsManager;
 use maestro_workspace::terminal_id::TerminalId;
 use std::{future::Future, time::Instant};

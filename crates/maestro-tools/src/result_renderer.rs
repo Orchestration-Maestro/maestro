@@ -4,7 +4,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::LiveTheme;
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use serde_json::Value;
 
 /// Draws a borrowed result with its selected details representation.

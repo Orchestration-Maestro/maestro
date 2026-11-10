@@ -1,7 +1,7 @@
 //! Single-line text that is cut to the viewport.
 
+use crate::interface::Component;
 use crate::text::utils::{TruncateOptions, truncate_to_width, visible_width};
-use crate::tui::Component;
 
 /// Shows the first line of a text, truncated to the viewport, with `padding_y` blank rows
 /// above and below.

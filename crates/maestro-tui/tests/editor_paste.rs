@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! Bracketed paste admission through the retained editor.
 use crate::editor_support as support;
-use maestro_tui::{Editor, EditorOptions, tui::InputHandler};
+use maestro_tui::{Editor, EditorOptions, interface::InputHandler};
 use std::{cell::RefCell, rc::Rc};
 #[test]
 fn paste_frames_buffer_until_end() {

@@ -6,9 +6,9 @@ use maestro_app::presentation_data::mode_dispatch::{
     InteractiveModeOptions, InteractiveModeRunner, ModeLaunchers,
 };
 use maestro_app::{AgentSessionRuntime, ModelResolverOutput, ScopedModel};
-use maestro_cli::startup::main::bootstrap::AppMode;
-use maestro_cli::startup::main::dispatch::{DispatchOutput, ModeDispatch, dispatch_mode};
-use maestro_cli::startup::main::runtime::create_runtime;
+use maestro_cli::startup::entrypoint::bootstrap::AppMode;
+use maestro_cli::startup::entrypoint::initialization::create_runtime;
+use maestro_cli::startup::entrypoint::routing::{DispatchOutput, ModeDispatch, dispatch_mode};
 use maestro_theme::ThemeState;
 use std::{
     cell::{Cell, RefCell},
@@ -89,10 +89,10 @@ impl Recorder {
     }
 }
 impl InteractiveModeRunner for Recorder {
-    fn init(self: Rc<Self>) -> maestro_tui::tui::LocalFuture {
+    fn init(self: Rc<Self>) -> maestro_tui::interface::LocalFuture {
         Box::pin(async move { Ok(self.call("init")?) })
     }
-    fn run(self: Rc<Self>) -> maestro_tui::tui::LocalFuture {
+    fn run(self: Rc<Self>) -> maestro_tui::interface::LocalFuture {
         let result = self.call("run");
         Box::pin(async move { Ok(result?) })
     }

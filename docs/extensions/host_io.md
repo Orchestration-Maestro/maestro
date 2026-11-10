@@ -54,8 +54,8 @@ leading `/` as absolute. A native Windows path such as `C:\Users\me\notes.txt`
 is therefore joined to the cwd, and Windows reads its `C:` segment as the
 current directory of that drive, so the call can fail or open a different file.
 Host paths, including `ctx.cwd()`, the agent directory and the results of
-`tools::path_utils::resolve`, keep the native spelling. Convert one with
-`tools::path_utils::guest_path` just before a `std::fs` call and keep the
+`registry::path_utils::resolve`, keep the native spelling. Convert one with
+`registry::path_utils::guest_path` just before a `std::fs` call and keep the
 native text for display and records:
 
 ```rust,ignore

@@ -1,8 +1,5 @@
 //! Tool render callbacks invoked through the same exports as the component host.
-use super::super::super::{
-    self as tests,
-    renderer_host::{Call, Reply},
-};
+use super::super::super::{self as tests, renderer_host::{Call, Reply}};
 use super::Host;
 use super::super::super::example_support::Adapter;
 use serde_json::{Value, json};

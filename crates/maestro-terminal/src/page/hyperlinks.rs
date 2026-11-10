@@ -1,7 +1,7 @@
 //! Hyperlink identity admission, cell maps and last-owner string release.
 
 use super::{CellPosition, Page, StorageError};
-use crate::hyperlink::{Hyperlink, HyperlinkId, Id, PageEntry};
+use crate::links::{Hyperlink, HyperlinkId, Id, PageEntry};
 
 impl Page {
     /// Insert and retain a hyperlink identity, allocating its strings transactionally.

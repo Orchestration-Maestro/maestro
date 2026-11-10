@@ -175,7 +175,7 @@ impl Registry {
     /// Retains the native footer metadata lent to one footer factory.
     pub(crate) fn footer(
         &self,
-        footer: Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>,
+        footer: Rc<dyn maestro_extensions::footer::ReadonlyFooterDataProvider>,
     ) -> Result<crate::footer_data::Endpoint, String> {
         self.insert(Capability::Footer(footer))
             .map(crate::footer_data::Endpoint)

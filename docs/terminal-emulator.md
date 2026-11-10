@@ -11,7 +11,7 @@ script or foreign toolchain. Its full contract is the
 (`CSI O`) report. The caller checks whether focus reporting is enabled before
 sending it to the pane program.
 
-`input::key::KeyEvent` stores a physical `Key`, its `KeyAction`, modifier and
+`input::keyboard::KeyEvent` stores a physical `Key`, its `KeyAction`, modifier and
 consumed-modifier masks, composition state, generated text and the unshifted
 codepoint. `Mods` keeps pressed keys, lock states and observed modifier sides
 separate; Hyper and Meta have their own pressed-key bits. Consumed modifiers are
@@ -45,14 +45,14 @@ ASCII controls and is omitted for releases or modifiers that prevent text.
 Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
 borrowed-buffer defect where changing the caller's text changed a stored event.
 
-`input::mouse::MouseEvent` carries an action, optional button, keyboard modifiers
+`input::pointer::MouseEvent` carries an action, optional button, keyboard modifiers
 and surface-space pixel position. `Pos::from_pixels` retains supplied pixel
 coordinates without narrowing them. `input::mouse_encode::MouseEncoder::new(size)`
 starts with reporting disabled. Its `set_event` and `set_format` methods select
 press-only, normal, button-motion or all-motion reporting and byte, UTF-8, SGR,
 urxvt or SGR pixel output. `encode` returns owned bytes.
 
-The mouse geometry types live in `input::mouse_encode::size`. Cell dimensions
+The mouse geometry types live in `input::mouse_encode::dimensions`. Cell dimensions
 must be nonzero and pixel dimensions must already account for display scaling.
 Coordinate conversion removes padding, clamps grid positions to the visible
 cells and leaves terminal-space pixels unclamped. Off-surface releases remain
@@ -99,7 +99,7 @@ animation parameters. `Response` writes exact protocol replies only when an
 image identifier or number is present. This layer does not execute screen
 operations or animation.
 
-`kitty::graphics::image::LoadingImage` retains first-command metadata across
+`kitty::graphics::bitmap::LoadingImage` retains first-command metadata across
 chunks. Completion inflates zlib data, decodes PNG to RGBA, checks dimensions
 (1 through 10,000), then checks the exact raw pixel length. Direct accumulation,
 file reads, inflated output and decoded pixels each have a 400 MiB limit.
@@ -144,7 +144,7 @@ Content changes receive process-wide generation stamps shared across screens,
 resets and terminals. Geometry-only changes mark storage dirty without changing
 its content generation.
 
-`kitty::graphics::render::PlacementRenderInfo` reports destination pixels,
+`kitty::graphics::painting::PlacementRenderInfo` reports destination pixels,
 occupied cells, viewport-relative position, visibility and a source rectangle
 clamped to the image. Placeholder runs use U+10EEEE cells, foreground image
 identifiers, underline placement identifiers and the constant combining-mark
@@ -163,7 +163,7 @@ off-screen placements still need projection after scrolling or resizing.
 
 ## Host graphics
 
-`kitty::host::HostGraphicsCache` remembers which images the host terminal holds
+`kitty::presentation::HostGraphicsCache` remembers which images the host terminal holds
 and where it shows them, so a frame re-sends the placements that changed and a
 view change or a replay request displays the unchanged ones again.
 `update_terminal` handles a screen that carries no pane layers. `update_layers`
@@ -189,7 +189,7 @@ offset, so the crate holds no workspace, application or rendering record.
 `clipped_placement` crops the visible cells and maps them onto the source
 rectangle, dropping an in-cell offset on a cropped side.
 
-`kitty::host` writes the commands: upload, transmit and display, display, delete
+`kitty::presentation` writes the commands: upload, transmit and display, display, delete
 image, delete placement, the regular-file command wrapped in save and restore
 cursor, and the direct-file command that transmits and displays once at the
 clipped origin. The regular-file command exists on Unix targets only. Payloads
@@ -541,7 +541,7 @@ orders endpoints, finds corners and tests containment against the owning page
 list. Invalid or expired pins return `None` from geometry reads; containment
 returns false. Per-row ranges clamp to each page's stored width.
 
-`formatter::{TerminalFormatter, ScreenFormatter, PageListFormatter, PageFormatter}`
+`formatting::{TerminalFormatter, ScreenFormatter, PageListFormatter, PageFormatter}`
 write plain text or styled VT text to a `std::fmt::Write` destination. Their
 options select soft-wrap joining, trailing-blank trimming and codepoint
 substitutions. The shared walk preserves wide characters and grapheme suffixes.
@@ -577,7 +577,7 @@ flag-stack pushes.
 
 ## Render state
 
-`render::RenderState` retains the viewport's rows, cells, styles and graphemes.
+`painting::RenderState` retains the viewport's rows, cells, styles and graphemes.
 Call `update(&mut Terminal)` to refresh it and consume terminal, page and visible
 row dirty flags. This is the production dirty-bit reader and clearer. The
 snapshot owns its contents; no terminal borrow survives the update.

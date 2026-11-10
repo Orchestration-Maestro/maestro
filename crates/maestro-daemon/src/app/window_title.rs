@@ -1,7 +1,7 @@
 //! Outer terminal title rendering from daemon-owned names and pane metadata.
 
 use super::App;
-use crate::settings::window_title::{WindowTitlePart, WindowTitleTemplate, WindowTitleToken};
+use crate::settings::titles::{WindowTitlePart, WindowTitleTemplate, WindowTitleToken};
 
 impl<C: FnMut() -> u128> App<C> {
     /// Parses the configured template, resolving the server hostname once when used.
@@ -47,7 +47,7 @@ impl<C: FnMut() -> u128> App<C> {
                 .terminals
                 .get(ws.terminal_id(ws.focused_pane_id()?)?)
         });
-        let home = crate::paths::home_directory();
+        let home = crate::locations::home_directory();
         let mut title = String::new();
         for part in template.parts() {
             let value = match part {
@@ -67,12 +67,12 @@ impl<C: FnMut() -> u128> App<C> {
                     )
                 }),
                 WindowTitlePart::Token(WindowTitleToken::Tab) => workspace
-                    .and_then(maestro_workspace::workspace::Workspace::active_tab_display_name),
+                    .and_then(maestro_workspace::spaces::Workspace::active_tab_display_name),
                 WindowTitlePart::Token(WindowTitleToken::Pane) => {
                     terminal.and_then(|terminal| terminal.manual_label.clone())
                 }
                 WindowTitlePart::Token(WindowTitleToken::TerminalTitle) => terminal
-                    .and_then(crate::terminal::state::TerminalState::terminal_title_stripped),
+                    .and_then(crate::terminal::model::TerminalState::terminal_title_stripped),
             };
             if let Some(value) = value {
                 title.push_str(&value);

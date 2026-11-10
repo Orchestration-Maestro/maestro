@@ -1,7 +1,7 @@
 //! Workspace and pane focus navigation with retained logical history.
 
-use crate::app::state::{DaemonState, Mode, PaneFocusTarget};
-use maestro_workspace::layout::PaneId;
+use crate::app::model::{DaemonState, Mode, PaneFocusTarget};
+use maestro_workspace::tiling::PaneId;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Selects a workspace and marks the panes in its active tab seen.

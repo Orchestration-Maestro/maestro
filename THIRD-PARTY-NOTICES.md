@@ -759,7 +759,7 @@ instead of rewriting the source file in place.
 
 Command metadata and completion normalization in
 `crates/maestro-cli/src/workspace_commands/spec/` and
-`crates/maestro-cli/src/completion.rs`, and the shipped workspace skill in
+`crates/maestro-cli/src/completions.rs`, and the shipped workspace skill in
 `docs/skills/workspace/SKILL.md`, derive from the command-line and skill modules
 under the same license. Command grammar uses Maestro's chat inputs and unified
 daemon noun; completion output is buffered before writing to the caller.
@@ -788,12 +788,12 @@ metadata expiry, configuration reload and session scheduling in
 `crates/maestro-daemon/src/app/` derive from the application modules under the
 same license. Workspace attention ordering derives from the workspace aggregate
 module. The daemon's repository queries reuse workspace-owned discovery.
-The branch-tracking reader in `crates/maestro-workspace/src/workspace/git/config.rs`
+The branch-tracking reader in `crates/maestro-workspace/src/spaces/repository/tracking.rs`
 and its submodules derives from the repository configuration module under the same
 license. Changes include one include walk in place of three, wildcard matching with path
 rules in bounded time, and supplied user files and home directory.
 The worktree names, checkout paths and Git operations in
-`crates/maestro-daemon/src/git/worktree.rs` derive from the worktree module under the
+`crates/maestro-daemon/src/git/checkouts.rs` derive from the worktree module under the
 same license. Changes include literal command operands, native path bytes,
 shared home expansion and repository discovery, and link-aware leftover cleanup.
 The status snapshots, fingerprints and cache keys in
@@ -820,34 +820,34 @@ the agent resume, terminal state, terminal metadata, terminal title and terminal
 theme modules under the same license. Retained provenance uses Maestro's
 canonical source spelling; state arbitration retains the source's session and
 process-generation ownership rules.
-The pane terminal policy in `crates/maestro-daemon/src/pane/terminal/` and
-`pane/terminal.rs`, the OSC, cursor, input and capability-query modules under
-`pane/`, `selection.rs`, `render_prof.rs` and their tests derive from the pane
+The pane terminal policy in `crates/maestro-daemon/src/panes/display/` and
+`panes/display.rs`, the OSC, cursor, input and capability-query modules under
+`panes/`, `selection.rs`, `render_prof.rs` and their tests derive from the pane
 terminal, OSC, cursor, input, XTGETTCAP, selection and render profiler sources
 under the same license. Changes include one locked concrete terminal, reuse of
 engine reads and encoders, supplied process facts and time observations, and
 caller-owned rendering and scheduling. Semantic character-key policy in
 `crates/maestro-terminal/src/input/key_encode/` derives from the input encoder;
-keyboard-stack replay in `src/kitty/key.rs` and `src/formatter/vt.rs` derives from
+keyboard-stack replay in `src/kitty/key.rs` and `src/formatting/vt.rs` derives from
 the pane keyboard tracker. The encoder retains Unicode codepoints rather than
 truncating unmapped control characters to a byte.
 Render request coalescing in `crates/maestro-daemon/src/render_signal.rs` and its
 tests derives from the render signal module under the same license.
 The pane runtime, launch environment, shell selection, foreground probing and
-agent detection under `crates/maestro-daemon/src/pane/`, `events.rs`,
-`handoff_runtime.rs` and `terminal/runtime_registry.rs` derive from the pane,
+agent detection under `crates/maestro-daemon/src/panes/`, `events.rs`,
+`transfer.rs` and `terminal/owners.rs` derive from the pane,
 event, handoff-runtime and terminal-runtime-registry modules under the same
-license. The native child setup entry in `crates/maestro-process/src/pty/` uses
+license. The native child setup entry in `crates/maestro-process/src/terminal/` uses
 safe re-execution in place of the source's post-fork setup.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
 conversions derive from the client input and protocol wire modules. The structured
 host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser;
 shared SGR fields and admitted host mouse records in
-`crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from the mouse and raw input
+`crates/maestro-tui/src/input_buffer/mouse.rs` derive from the mouse and raw input
 modules. The retained byte framer, reply windows and mouse-tail handling in
-`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. The daemon projections in
-`crates/maestro-daemon/src/input/{parse,raw_input}.rs` derive from those input
+`crates/maestro-tui/src/input_buffer/` derive from the raw input module. The daemon projections in
+`crates/maestro-daemon/src/ingress/{parse,framing}.rs` derive from those input
 modules and reuse the toolkit decoders. Chat and
 host input share sequence recognition while retaining their different byte and
 paste policies. These reuse the existing protocol vocabulary rather than
@@ -861,17 +861,17 @@ and `settings/io/`, annotated defaults in `settings/defaults.jsonc` and their
 settings tests derive from the configuration, configuration I/O, model, sidebar,
 sound, theme, tab-bar, window-title and default configuration sources under the
 same license.
-The supplied paths and named-daemon operations in `crates/maestro-daemon/src/paths.rs`
+The supplied paths and named-daemon operations in `crates/maestro-daemon/src/locations.rs`
 and `instances.rs` derive from the session, persistence I/O, detection catalog,
 action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
-The retained-endpoint client in `crates/maestro-daemon/src/api/client.rs`,
-the live status in `api/status.rs`, the graceful stop in `instances/stop.rs` and
+The retained-endpoint client in `crates/maestro-daemon/src/service/transport.rs`,
+the live status in `service/health.rs`, the graceful stop in `instances/stop.rs` and
 their tests derive from the API client, API status and session sources under the
 same license. They reuse the shared JSONL framing and caller-supplied daemon
 selection. The status read also treats a Unix receive timeout as no status.
-The detached-daemon check in `crates/maestro-process/src/foreground.rs` derives
+The detached-daemon check in `crates/maestro-process/src/jobs.rs` derives
 from the platform module and uses safe process-id calls.
 
 The environment vocabulary, structured events, synchronized rotating file writer
@@ -886,7 +886,7 @@ and PTY backend, descriptor and actor modules.
 
 The pane launch environment, shell, foreground probe, screen detection policy and
 async detector in
-`crates/maestro-daemon/src/pane/{launch_env,shell,probe,agent_detection,detection_task}.rs`,
+`crates/maestro-daemon/src/panes/{launch,commands,inspection,agent_detection,monitoring}.rs`,
 their submodules and their tests derive from the pane, platform and integration
 environment sources under the same license. Background pane records and delivery
 in `crates/maestro-daemon/src/events.rs` derive from the event and pane sources. Native login argument zero follows the terminal command builder
@@ -1345,7 +1345,7 @@ SOFTWARE.
 
 ## Frontmatter grammar
 
-The owned frontmatter grammar in `crates/maestro-resources/src/frontmatter/`
+The owned frontmatter grammar in `crates/maestro-resources/src/metadata/`
 derives from YAML 2.8.4, licensed under ISC. The package is not a runtime dependency.
 
 ```text

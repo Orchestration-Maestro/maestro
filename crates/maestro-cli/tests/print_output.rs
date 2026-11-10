@@ -5,7 +5,7 @@ use crate::startup_runtime::SHUTDOWN_UNDER_WAY;
 use crate::startup_runtime::{Fixture, run};
 use crate::support::startup;
 use maestro_app::{AgentSessionRuntime, ImageContent, ModelResolverOutput};
-use maestro_cli::startup::main::runtime::create_runtime;
+use maestro_cli::startup::entrypoint::initialization::create_runtime;
 use maestro_cli::{PrintMode, PrintModeOptions, run_print_mode};
 use serde_json::json;
 use std::cell::RefCell;

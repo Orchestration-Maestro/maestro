@@ -4,7 +4,7 @@ mod cadence;
 mod run;
 mod scheduled;
 
-use super::{App, state::AgentNotificationDelivery};
+use super::{App, model::AgentNotificationDelivery};
 use std::time::Instant;
 
 /// Duration of a clipboard acknowledgement, independent of notification toast policy.
@@ -53,7 +53,7 @@ impl<C: FnMut() -> u128> App<C> {
             self.copy_feedback_deadline = None;
             return;
         }
-        self.state.copy_feedback = Some(super::state::CopyFeedback {
+        self.state.copy_feedback = Some(super::model::CopyFeedback {
             message: "copied to clipboard".into(),
         });
         self.copy_feedback_deadline = Some(Instant::now() + COPY_FEEDBACK_DURATION);

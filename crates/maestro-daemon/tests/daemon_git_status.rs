@@ -4,10 +4,9 @@
 
 use crate::support;
 use maestro_daemon::{
-    app::state::DaemonState, settings::model::Config,
-    terminal::runtime_registry::TerminalRuntimeRegistry,
+    app::model::DaemonState, settings::model::Config, terminal::owners::TerminalRuntimeRegistry,
 };
-use maestro_workspace::workspace::{
+use maestro_workspace::spaces::{
     GitSpaceMetadata, GitStatusRefreshDemand, WorkspaceGitStatus, WorktreeSpaceMembership,
 };
 use std::path::PathBuf;

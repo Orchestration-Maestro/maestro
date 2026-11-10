@@ -12,7 +12,7 @@ use content_wire::rows;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::OnPayload;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::content::google::{GoogleOptions, GoogleThinking, build_params};
+use maestro_models::providers::content::generative::{GoogleOptions, GoogleThinking, build_params};
 #[cfg(not(target_arch = "wasm32"))]
 use serde_json::{Value, json};
 

@@ -1,7 +1,7 @@
 //! Recorded message transformation cases.
 #![cfg(test)]
 use chrono::{TimeZone, Timelike};
-use maestro_session::messages::*;
+use maestro_session::message_records::*;
 use serde::Deserialize;
 use serde_json::Value;
 

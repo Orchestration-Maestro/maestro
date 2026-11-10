@@ -22,7 +22,9 @@ pub(super) fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Va
                 serde_json::from_value(request["args"][0].clone())
                     .map_err(|error| error.to_string())?;
             Ok(json!(
-                maestro_extensions_wasm::compaction::utils::serialize_conversation(api, &messages)?
+                maestro_extensions_wasm::summarization::utils::serialize_conversation(
+                    api, &messages
+                )?
             ))
         }
         _ => Err("unknown helper observation".into()),

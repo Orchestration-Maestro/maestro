@@ -5,7 +5,7 @@ use crate::guest_calls::widget_calls::Item;
 use crate::lifecycle::replies::Reply;
 use crate::local_resources::{Lease, Message, Registry, SignalEndpoint, effects::EmitterEndpoint};
 use crate::widget_reads::WidgetMessage;
-use maestro_extensions::widgets::{AutocompleteProvider, CursorPosition};
+use maestro_extensions::presentation::{AutocompleteProvider, CursorPosition};
 use maestro_extensions::{
     Cancellation, EventError, ExtensionAPI, Local, types::AutocompleteProviderFactory,
 };

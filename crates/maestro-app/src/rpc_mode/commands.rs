@@ -9,13 +9,13 @@ use crate::rpc_types::{
     RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcSessionCommand,
     RpcSessionState, RpcThinkingLevel, workspace, workspace_schema,
 };
-use maestro_daemon::{api::request_changes_ui, logging};
+use maestro_daemon::{diagnostics, service::request_changes_ui};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};
 use maestro_lock::read;
 use maestro_models::ImageContent;
 use maestro_session::Presence;
-use maestro_session::messages::UserMessageDelivery;
+use maestro_session::message_records::UserMessageDelivery;
 use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::Cell, io, rc::Rc, sync::Arc};
 
@@ -296,7 +296,7 @@ impl Connection {
         };
         let request_id = id.clone().unwrap_or_default();
         let changes_ui = request_changes_ui(&workspace_command);
-        logging::api_request_started(&request_id, &command, changes_ui);
+        diagnostics::api_request_started(&request_id, &command, changes_ui);
         let connection = Rc::downgrade(self);
         let events = Rc::new(move |event: workspace_schema::EventData| {
             write_to(&connection, RpcRecord::WorkspaceEvent(&event))
@@ -308,8 +308,8 @@ impl Connection {
         let outcome = response_outcome(&result);
         let method = command.clone();
         let receipt = Box::new(move |written: &io::Result<()>| match written {
-            Ok(()) => logging::api_request_completed(&request_id, &method, outcome, changes_ui),
-            Err(error) => logging::api_request_failed(&request_id, &method, &error.to_string()),
+            Ok(()) => diagnostics::api_request_completed(&request_id, &method, outcome, changes_ui),
+            Err(error) => diagnostics::api_request_failed(&request_id, &method, &error.to_string()),
         });
         let response = RpcResponse::Workspace(Box::new(workspace::RpcResponse {
             id,

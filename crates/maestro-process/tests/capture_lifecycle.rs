@@ -3,7 +3,7 @@
 #![cfg(unix)]
 use crate::child_programs::{self, HeldMode, async_command, command};
 use crate::poll::is_pending;
-use maestro_process::child_process::{
+use maestro_process::children::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
 use maestro_test_process::child::{Stream, harness, without_harness};

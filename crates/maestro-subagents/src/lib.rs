@@ -1,7 +1,7 @@
 //! Authored agents running in separate Maestro processes.
 
 /// Authored definitions and directory discovery.
-pub mod agents;
+pub mod discovery;
 /// Tool registration over guest capabilities.
 mod extension;
 /// Child observations and native process isolation.

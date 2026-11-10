@@ -700,7 +700,7 @@ fn page_move_plain_cells() {
 fn page_reinit_clears_owned_tables() {
     use maestro_terminal::{
         Page,
-        hyperlink::{Hyperlink, HyperlinkId},
+        links::{Hyperlink, HyperlinkId},
         page::{CellPosition, layout::Capacity},
     };
     let mut page = Page::init(Capacity {
@@ -733,7 +733,7 @@ fn page_reinit_clears_owned_tables() {
 fn page_swap_preserves_owned_content() {
     use maestro_terminal::{
         Page,
-        hyperlink::{Hyperlink, HyperlinkId},
+        links::{Hyperlink, HyperlinkId},
         page::{CellPosition, layout::Capacity},
     };
     let first = CellPosition { x: 0, y: 0 };
@@ -826,7 +826,7 @@ fn row_flags_and_dirty_sources_match() {
 fn abandoned_hyperlink_releases_string_budget() {
     use maestro_terminal::{
         Page,
-        hyperlink::{Hyperlink, HyperlinkId},
+        links::{Hyperlink, HyperlinkId},
         page::{StorageError, layout::Capacity},
     };
     let mut page = Page::init(Capacity {
@@ -856,7 +856,7 @@ fn abandoned_hyperlink_releases_string_budget() {
 fn refused_hyperlink_releases_string_budget() {
     use maestro_terminal::{
         Page,
-        hyperlink::{Hyperlink, HyperlinkId},
+        links::{Hyperlink, HyperlinkId},
         page::{CellPosition, StorageError, layout::Capacity},
     };
     let mut page = Page::init(Capacity {

@@ -7,7 +7,7 @@ pub use fork::ForkResult;
 
 use super::agent_session_services::{AgentSessionRuntimeDiagnostic, AgentSessionServices};
 use crate::agent_session::{AgentSession, thrown};
-use maestro_extensions::runner::emit_session_shutdown_event;
+use maestro_extensions::execution::emit_session_shutdown_event;
 use maestro_extensions::types::{SessionChangeResult, WithSession};
 use maestro_extensions::{
     CommandContextOperations, EventError, ExtensionCommandContextActions, LoadExtensionsResult,
@@ -17,7 +17,7 @@ use maestro_extensions::{
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
 use maestro_session::{
     Presence, SessionManager,
-    session_cwd::{MissingSessionCwdError, assert_session_cwd_exists},
+    cwd::{MissingSessionCwdError, assert_session_cwd_exists},
 };
 use std::{
     cell::RefCell,

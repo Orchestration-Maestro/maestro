@@ -176,7 +176,7 @@ fn collect(row: &NativeRow) {
         ));
     }
     assert_eq!(row.expected["kind"], "value");
-    super::value::assert_value(
+    super::assertions::assert_value(
         &serde_json::to_value(result).unwrap(),
         &row.expected["value"],
         &row.id,
@@ -190,7 +190,9 @@ fn collect(row: &NativeRow) {
 /// Compare values or the native failure boundary.
 fn compare<E: std::fmt::Debug>(actual: Result<Value, E>, row: &Row) {
     match row.expected["kind"].as_str().unwrap() {
-        "value" => super::value::assert_value(&actual.unwrap(), &row.expected["value"], &row.id),
+        "value" => {
+            super::assertions::assert_value(&actual.unwrap(), &row.expected["value"], &row.id);
+        }
         "error" => assert!(actual.is_err(), "{}", row.id),
         _ => panic!("unknown outcome"),
     }

@@ -1,6 +1,6 @@
 #![cfg(test)]
 //! Word wrapping through the public editor helper.
-use maestro_tui::components::editor::word_wrap_line;
+use maestro_tui::components::composer::word_wrap_line;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

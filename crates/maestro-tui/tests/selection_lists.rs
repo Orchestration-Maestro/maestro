@@ -154,7 +154,7 @@ fn select_column_measurement_includes_hidden_rows() {
     }
 }
 
-use maestro_tui::tui::InputHandler;
+use maestro_tui::interface::InputHandler;
 use maestro_tui::{Component, SelectItem, SelectList, SelectListLayoutOptions};
 use serde_json::json;
 use std::{

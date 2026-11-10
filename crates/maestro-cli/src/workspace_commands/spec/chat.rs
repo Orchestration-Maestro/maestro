@@ -37,7 +37,7 @@ const VALUES: &[(&str, &str)] = &[
 
 /// Describe the chat flags, their values and prompt/file operands.
 pub(super) fn configure(command: Command) -> Command {
-    crate::input::args::describe_options(
+    crate::input::arguments::describe_options(
         command
             .disable_help_flag(true)
             .disable_version_flag(true)

@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use maestro_extensions_wasm::{
-    DefaultPackageManager, ExtensionAPI, ExtensionResult, package_manager::OperationScope,
+    DefaultPackageManager, ExtensionAPI, ExtensionResult, packages::OperationScope,
     settings_manager::SettingsManager,
 };
 use serde_json::{Value, json};

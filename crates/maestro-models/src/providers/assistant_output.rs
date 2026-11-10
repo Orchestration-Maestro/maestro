@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, PoisonError};
 
-use crate::providers::http::RequestFailure;
+use crate::providers::transport::RequestFailure;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
     AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation,
@@ -87,7 +87,7 @@ pub(crate) fn start_producer_for<E: crate::ProviderExecution>(
 
 /// Preserve the existing HTTP runtime's admission policy and failure.
 fn submit_http(task: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
-    crate::records::types::admitted(crate::providers::http::spawn_detached(task))
+    crate::records::types::admitted(crate::providers::transport::spawn_detached(task))
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.

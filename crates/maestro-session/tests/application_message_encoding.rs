@@ -1,5 +1,5 @@
 //! Application message roles retain their authored JSON through native event boundaries.
-use maestro_session::messages::CustomAgentMessages;
+use maestro_session::message_records::CustomAgentMessages;
 use serde_json::json;
 
 #[test]

@@ -165,7 +165,7 @@ impl Ui {
         options: Option<CustomUIOptions>,
         (open, close): (Open, maestro_extensions::types::CustomClose),
     ) -> Result<(), EventError> {
-        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+        let keys = maestro_extensions::presentation::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
             reload: None,
         };
@@ -572,7 +572,7 @@ fn overlay_qa_tests_margins_and_offsets_place_each_configuration() {
         let width = host.ui.shown.borrow()[0].placement.borrow().width.clone();
         assert_eq!(
             width,
-            Some(maestro_extensions::widgets::SizeValue::Cells(35))
+            Some(maestro_extensions::presentation::SizeValue::Cells(35))
         );
     });
 }
@@ -670,7 +670,7 @@ fn overlay_qa_tests_overflow_streams_process_output_within_the_width() {
         let (program, args) = process.launched.borrow()[0].clone();
         assert_eq!((program.as_str(), args[0].as_str()), ("bash", "-c"));
         assert!(args[1].contains("for i in $(seq 1 100); do") && args[1].contains("sleep 0.3"));
-        let link = "\x1b]8;;file:///long/path\x07▶ read: /Users/example/Documents/development/maestro/crates/maestro-chat/src/interactive_mode/components/very-long-component-name-that-exceeds-width-1.rs\x1b]8;;\x07";
+        let link = "\x1b]8;;file:///long/path\x07▶ read: /Users/example/Documents/development/maestro/crates/maestro-chat/src/interaction/components/very-long-component-name-that-exceeds-width-1.rs\x1b]8;;\x07";
         out.send(format!("Starting\nThis simulates\n\n{link}\n").into_bytes())
             .unwrap();
         until(|| received(&host.rows(0, 80)[0]) == 3).await;

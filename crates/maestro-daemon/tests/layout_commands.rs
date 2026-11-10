@@ -18,7 +18,7 @@ use maestro_protocol::{
         LayoutSetSplitRatioParams, ResponseResult, SplitDirection,
     },
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::json;
 
 /// The layout an export answers with.

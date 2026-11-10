@@ -6,7 +6,7 @@ use crate::{
     page::{cell::SemanticContent as CellContent, row::SemanticPrompt},
     page_list::IncreaseCapacityError,
     screen::{InputTermination, SemanticContent},
-    screen_set::Key,
+    screens::Key,
 };
 
 impl Terminal {

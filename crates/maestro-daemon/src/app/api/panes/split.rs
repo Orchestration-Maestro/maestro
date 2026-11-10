@@ -12,7 +12,7 @@ use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, PaneRightClickTarget, PaneSplitParams, ResponseResult},
 };
-use maestro_workspace::layout::{PaneId, SplitRequest};
+use maestro_workspace::tiling::{PaneId, SplitRequest};
 use std::{io, path::PathBuf};
 
 impl<C: FnMut() -> u128> App<C> {

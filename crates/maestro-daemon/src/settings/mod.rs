@@ -4,22 +4,22 @@
 pub mod model;
 
 /// Outer terminal window-title templates.
-pub mod window_title;
+pub mod titles;
 
 #[cfg(test)]
 mod tests;
 
 /// Workspace theme choices and authored color data.
-pub mod theme;
+pub mod appearance;
 
 /// Notification sound selection and authored paths.
-pub mod sound;
+pub mod audio;
 
 /// Ordered right-side tab entries and schedule validation.
-pub mod tab_bar;
+pub mod tabs;
 
 /// Sidebar row composition and styling.
-pub mod sidebar;
+pub mod navigation;
 
 /// Global workspace preference projection and reload.
 pub mod io;

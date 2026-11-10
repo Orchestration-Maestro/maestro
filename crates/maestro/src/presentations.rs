@@ -3,16 +3,16 @@ use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, PresentedSelector,
 };
 use maestro_chat::components::{
-    config_selector::{self, ConfigSelectorComponent},
-    extension_selector::{ExtensionSelectorComponent, ExtensionSelectorOptions},
-    session_selector::{SessionSelectorComponent, SessionSelectorOptions},
+    configuration::{self, ConfigSelectorComponent},
+    extensions::{ExtensionSelectorComponent, ExtensionSelectorOptions},
+    session_picker::{SessionSelectorComponent, SessionSelectorOptions},
 };
 use maestro_cli::{
     input::{
-        config_selector::ConfigPresentation, selector::SelectorHost,
+        configuration::ConfigPresentation, selection::SelectorHost,
         session_picker::SessionPresentation,
     },
-    startup::main::presentation::MissingSessionCwdPresentation,
+    startup::entrypoint::feedback::MissingSessionCwdPresentation,
 };
 use maestro_theme::{Collator, NativeThemeWatchOperations, ThemeState, supports_color};
 use maestro_tui::{TUI, TerminalImage};
@@ -22,7 +22,8 @@ use tokio::task::LocalSet;
 /// The frame-writer factory shared by both selector hosts.
 fn writer(local: Rc<LocalSet>) -> Rc<dyn Fn(Option<bool>) -> io::Result<TUI>> {
     Rc::new(move |cursor| {
-        let (terminal, runtime) = maestro_cli::input::selector::native_terminal(Rc::clone(&local))?;
+        let (terminal, runtime) =
+            maestro_cli::input::selection::native_terminal(Rc::clone(&local))?;
         Ok(TUI::new(
             terminal,
             runtime,
@@ -52,7 +53,7 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
             let component = Rc::new(ConfigSelectorComponent::new(
                 request.resolved_paths,
                 request.settings_manager,
-                config_selector::ComponentOptions {
+                configuration::ComponentOptions {
                     cwd: request.cwd,
                     agent_dir: request.agent_dir,
                     theme: palette.clone(),

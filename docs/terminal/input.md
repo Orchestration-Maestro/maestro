@@ -115,7 +115,7 @@ return the text of a paste in progress, and `clear` discards it.
 
 ## Raw host bytes
 
-`stdin_buffer::RawInputByteFramer` retains original bytes across chunks. It shares
+`input_buffer::RawInputByteFramer` retains original bytes across chunks. It shares
 sequence recognition with `StdinBuffer`, but does not use chat byte decoding or
 suppress duplicate characters. Split UTF-8 scalars wait for continuation bytes;
 invalid lead bytes are dropped at timeout. Default mouse frames consume exactly
@@ -124,7 +124,7 @@ returned with its markers as one frame, even when its terminator arrives in piec
 An incomplete paste is not released by a timeout.
 
 ```rust
-use maestro_tui::stdin_buffer::RawInputByteFramer;
+use maestro_tui::input_buffer::RawInputByteFramer;
 
 let mut input = RawInputByteFramer::default();
 assert!(input.push(&[0xc3]).is_empty());
@@ -156,7 +156,7 @@ changing the process environment. No terminal reader or query writer is started.
 
 ## Shared mouse fields
 
-`stdin_buffer::scan_sgr_mouse_fields` borrows the button, column, row and any
+`input_buffer::scan_sgr_mouse_fields` borrows the button, column, row and any
 extra fields from one complete SGR mouse report. `SgrMouseFields::release` records
 whether its terminator is `m` rather than `M`. The scanner checks the framing and
 field count, leaving numeric admission to each caller.
@@ -171,7 +171,7 @@ button byte and release terminator for projection without a wire dependency.
 
 ## Daemon event projection
 
-`maestro_daemon::input::raw_input::RawInputFramer` projects the toolkit's complete
+`maestro_daemon::ingress::framing::RawInputFramer` projects the toolkit's complete
 frames into the daemon's existing key, paste, mouse, focus and host-reply events.
 `parse_raw_input_bytes_sync` decodes a supplied buffer with one idle flush.
 Neither function reads the terminal. The multiplexer input loop supplies bytes

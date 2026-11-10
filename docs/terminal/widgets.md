@@ -148,7 +148,7 @@ assert!(spacer.render(80).is_empty());
 
 ```rust
 use std::{cell::RefCell, rc::Rc};
-use maestro_tui::{Input, tui::InputHandler};
+use maestro_tui::{Input, interface::InputHandler};
 
 let input = Input::new();
 input.set_value("initial".into());
@@ -187,7 +187,7 @@ rendering cache.
 
 ### Shared editing history
 
-`kill_ring::KillRing` stores deleted text. `push` ignores empty strings, and its
+`clipboard::KillRing` stores deleted text. `push` ignores empty strings, and its
 explicit `KillRingOptions` select prepending or appending to the newest entry when
 accumulating. `peek` borrows that entry; `rotate` moves it to the front only when
 there are at least two entries; `length` counts entries. Ctrl+Y yanks and Alt+Y
@@ -222,7 +222,7 @@ ns. Infinite or unrepresentable positive delays leave the initialized display wi
 a finite tick. The loader uses the writer's existing runtime and ordinary render
 requests. Dropping the last handle cancels its animation timer.
 
-`maestro_tui::tui::RepeatingTimer` owns repeated callbacks on
+`maestro_tui::interface::RepeatingTimer` owns repeated callbacks on
 `TuiRuntime::schedule`. Construction schedules the first callback after the supplied
 interval. Each tick rearms before it invokes caller code; dropping the non-cloneable
 handle cancels the pending continuation, including during its callback. Loader and
@@ -343,8 +343,8 @@ keeps fitting bytes at nonzero widths and otherwise uses no-ellipsis clipping.
 
 ```rust
 use std::rc::Rc;
-use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme, tui::InputHandler};
-use maestro_tui::components::settings_list::SettingsListOptions;
+use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme, interface::InputHandler};
+use maestro_tui::components::preferences::SettingsListOptions;
 
 let settings = SettingsList::new(
     vec![SettingItem {

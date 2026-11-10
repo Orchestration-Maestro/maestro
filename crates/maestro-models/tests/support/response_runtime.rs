@@ -5,11 +5,11 @@ use crate::chat::{context, model};
 #[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::responses::azure_openai_responses::{
+use maestro_models::providers::responses_api::azure_transport::{
     stream_azure_openai_responses, stream_simple_azure_openai_responses,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::responses::openai_responses::{
+use maestro_models::providers::responses_api::openai::{
     stream_openai_responses, stream_simple_openai_responses,
 };
 #[cfg(not(target_arch = "wasm32"))]

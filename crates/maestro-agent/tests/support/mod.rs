@@ -149,7 +149,7 @@ pub mod owned;
 /// Recorded owned-run response and reduction evidence.
 pub mod owner_corpus;
 /// Controlled proxy transport and observations.
-pub mod proxy;
+pub mod remote;
 /// Registered scripted-model fixtures.
 pub mod scripted;
 /// Test-only helper tools.

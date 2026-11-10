@@ -1,7 +1,7 @@
 //! Worktree names, checkout paths and the Git commands that add, remove and list worktrees.
 #![cfg(test)]
 use crate::repository_support::{init_repo_with_commit, run_git};
-use maestro_daemon::git::worktree::{
+use maestro_daemon::git::checkouts::{
     self, ExistingWorktree, WorktreeError, branch_to_path_slug, checkout_has_dirty_files,
     default_checkout_path, generated_branch_slug, local_branch_exists, worktrees_root,
 };
@@ -135,9 +135,9 @@ fn dirty_checkout_error_matches_the_hint_git_gives() {
     let scratch = Scratch::new().unwrap();
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
-    worktree::add(&repo, &checkout, "topic", "HEAD").unwrap();
+    checkouts::add(&repo, &checkout, "topic", "HEAD").unwrap();
     std::fs::write(checkout.join("README.md"), "dirty\n").unwrap();
-    let refusal = worktree::remove(&repo, &checkout, false).unwrap_err();
+    let refusal = checkouts::remove(&repo, &checkout, false).unwrap_err();
 
     let error = WorktreeError::dirty_checkout(&checkout);
 
@@ -204,7 +204,7 @@ fn add_creates_a_new_branch_at_the_base() {
     );
     let checkout = scratch.path().join("trees/topic");
 
-    worktree::add(&repo, &checkout, "feature/topic", &base).unwrap();
+    checkouts::add(&repo, &checkout, "feature/topic", &base).unwrap();
 
     assert!(checkout.join("README.md").exists());
     assert_eq!(
@@ -227,7 +227,7 @@ fn add_checks_out_an_existing_branch_without_moving_it() {
     let tip = git_stdout(&repo, &["rev-parse", "topic"]);
     let checkout = scratch.path().join("trees/topic");
 
-    worktree::add(&repo, &checkout, "topic", &first).unwrap();
+    checkouts::add(&repo, &checkout, "topic", &first).unwrap();
 
     assert_eq!(
         git_stdout(&checkout, &["branch", "--show-current"]),
@@ -242,7 +242,7 @@ fn add_reports_git_message_for_a_branch_checked_out_elsewhere() {
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/main");
 
-    let error = worktree::add(&repo, &checkout, "main", "HEAD").unwrap_err();
+    let error = checkouts::add(&repo, &checkout, "main", "HEAD").unwrap_err();
 
     assert!(error.message().contains("main"), "{error}");
     assert!(!checkout.exists());
@@ -254,7 +254,7 @@ fn add_reports_git_message_for_an_unknown_base() {
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
 
-    let error = worktree::add(&repo, &checkout, "topic", "no-such-base").unwrap_err();
+    let error = checkouts::add(&repo, &checkout, "topic", "no-such-base").unwrap_err();
 
     assert!(error.message().contains("no-such-base"), "{error}");
     assert!(!checkout.exists());
@@ -266,7 +266,7 @@ fn add_reads_a_base_that_looks_like_an_option_as_a_revision() {
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
 
-    let error = worktree::add(&repo, &checkout, "topic", "--no-checkout").unwrap_err();
+    let error = checkouts::add(&repo, &checkout, "topic", "--no-checkout").unwrap_err();
 
     assert!(error.message().contains("--no-checkout"), "{error}");
     assert!(!checkout.exists());
@@ -294,9 +294,9 @@ fn remove_deletes_the_checkout_and_keeps_the_branch() {
     let scratch = Scratch::new().unwrap();
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
-    worktree::add(&repo, &checkout, "topic", "HEAD").unwrap();
+    checkouts::add(&repo, &checkout, "topic", "HEAD").unwrap();
 
-    worktree::remove(&repo, &checkout, false).unwrap();
+    checkouts::remove(&repo, &checkout, false).unwrap();
 
     assert!(!checkout.exists());
     assert!(local_branch_exists(&repo, "topic").unwrap());
@@ -307,14 +307,14 @@ fn remove_refuses_a_dirty_checkout_until_forced() {
     let scratch = Scratch::new().unwrap();
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
-    worktree::add(&repo, &checkout, "topic", "HEAD").unwrap();
+    checkouts::add(&repo, &checkout, "topic", "HEAD").unwrap();
     std::fs::write(checkout.join("README.md"), "dirty\n").unwrap();
 
-    let error = worktree::remove(&repo, &checkout, false).unwrap_err();
+    let error = checkouts::remove(&repo, &checkout, false).unwrap_err();
     assert!(error.is_dirty_checkout(), "{error}");
     assert!(checkout.join("README.md").exists());
 
-    worktree::remove(&repo, &checkout, true).unwrap();
+    checkouts::remove(&repo, &checkout, true).unwrap();
     assert!(!checkout.exists());
 }
 
@@ -324,7 +324,7 @@ fn remove_without_force_reports_a_checkout_git_does_not_list() {
     let repo = repository(&scratch);
     let missing = scratch.path().join("trees/missing");
 
-    let error = worktree::remove(&repo, &missing, false).unwrap_err();
+    let error = checkouts::remove(&repo, &missing, false).unwrap_err();
 
     assert!(error.message().contains("not a working tree"), "{error}");
 }
@@ -343,8 +343,8 @@ fn link_checkout(checkout: &Path, admin: &Path) {
 /// Removes a checkout, then recreates its directory holding a link to a vanished admin folder.
 fn leftover_checkout(scratch: &Scratch, repo: &Path) -> PathBuf {
     let checkout = scratch.path().join("trees/leftover");
-    worktree::add(repo, &checkout, "leftover", "HEAD").unwrap();
-    worktree::remove(repo, &checkout, true).unwrap();
+    checkouts::add(repo, &checkout, "leftover", "HEAD").unwrap();
+    checkouts::remove(repo, &checkout, true).unwrap();
     std::fs::create_dir_all(&checkout).unwrap();
     link_checkout(&checkout, &repo.join(".git/worktrees/stale"));
     std::fs::write(checkout.join("leftover"), "leftover\n").unwrap();
@@ -357,11 +357,11 @@ fn forced_remove_clears_a_leftover_checkout_of_the_repository() {
     let repo = repository(&scratch);
     let checkout = leftover_checkout(&scratch, &repo);
 
-    let error = worktree::remove(&repo, &checkout, false).unwrap_err();
+    let error = checkouts::remove(&repo, &checkout, false).unwrap_err();
     assert!(error.message().contains("not a working tree"), "{error}");
     assert!(checkout.exists());
 
-    worktree::remove(&repo, &checkout, true).unwrap();
+    checkouts::remove(&repo, &checkout, true).unwrap();
     assert!(!checkout.exists());
 }
 
@@ -374,7 +374,7 @@ fn forced_remove_clears_a_leftover_checkout_when_the_repository_is_reached_throu
     let linked = scratch.path().join("linked-repo");
     std::os::unix::fs::symlink(&repo, &linked).unwrap();
 
-    worktree::remove(&linked, &checkout, true).unwrap();
+    checkouts::remove(&linked, &checkout, true).unwrap();
 
     assert!(!checkout.exists());
 }
@@ -387,7 +387,7 @@ fn forced_remove_keeps_an_unrelated_replacement_directory() {
     std::fs::create_dir_all(&checkout).unwrap();
     std::fs::write(checkout.join("unrelated"), "do not delete\n").unwrap();
 
-    let error = worktree::remove(&repo, &checkout, true).unwrap_err();
+    let error = checkouts::remove(&repo, &checkout, true).unwrap_err();
 
     assert!(error.message().contains("not a working tree"), "{error}");
     assert!(checkout.join("unrelated").exists());
@@ -403,7 +403,7 @@ fn forced_remove_keeps_a_directory_linked_to_another_repository() {
         &scratch.path().join("other/.git/worktrees/stale"),
     );
 
-    assert!(worktree::remove(&repo, &checkout, true).is_err());
+    assert!(checkouts::remove(&repo, &checkout, true).is_err());
     assert!(checkout.join("leftover").exists());
 }
 
@@ -417,7 +417,7 @@ fn forced_remove_keeps_a_directory_whose_link_climbs_out_of_the_admin_folders() 
         &repo.join(".git/worktrees/stale/../../../outside"),
     );
 
-    let error = worktree::remove(&repo, &checkout, true).unwrap_err();
+    let error = checkouts::remove(&repo, &checkout, true).unwrap_err();
 
     assert!(error.message().contains("not a working tree"), "{error}");
     assert!(checkout.join("leftover").exists());
@@ -435,7 +435,7 @@ fn forced_remove_keeps_a_directory_whose_link_climbs_out_through_a_symbolic_link
     let checkout = leftover_checkout(&scratch, &repo);
     link_checkout(&checkout, &repo.join(".git/redirect/../worktrees/stale"));
 
-    let error = worktree::remove(&repo, &checkout, true).unwrap_err();
+    let error = checkouts::remove(&repo, &checkout, true).unwrap_err();
 
     assert!(error.message().contains("not a working tree"), "{error}");
     assert!(checkout.join("leftover").exists());
@@ -450,7 +450,7 @@ fn forced_remove_keeps_a_directory_whose_link_climbs_out_through_a_dangling_link
     let checkout = leftover_checkout(&scratch, &repo);
     link_checkout(&checkout, &repo.join(".git/redirect/../worktrees/stale"));
 
-    let error = worktree::remove(&repo, &checkout, true).unwrap_err();
+    let error = checkouts::remove(&repo, &checkout, true).unwrap_err();
 
     assert!(error.message().contains("not a working tree"), "{error}");
     assert!(checkout.join("leftover").exists());
@@ -478,7 +478,7 @@ fn forced_remove_keeps_a_directory_linked_to_a_repository_whose_name_differs_by_
     std::fs::write(checkout.join("leftover"), "leftover\n").unwrap();
     link_checkout(&checkout, &linked.join(".git/worktrees/stale"));
 
-    let error = worktree::remove(&lookalike, &checkout, true).unwrap_err();
+    let error = checkouts::remove(&lookalike, &checkout, true).unwrap_err();
 
     assert!(error.message().contains("not a working tree"), "{error}");
     assert!(checkout.join("leftover").exists());
@@ -490,7 +490,7 @@ fn forced_remove_of_a_checkout_that_is_already_gone_succeeds() {
     let repo = repository(&scratch);
     let missing = scratch.path().join("trees/missing");
 
-    worktree::remove(&repo, &missing, true).unwrap();
+    checkouts::remove(&repo, &missing, true).unwrap();
 
     assert!(!missing.exists());
 }
@@ -500,7 +500,7 @@ fn dirty_detection_reports_clean_modified_and_untracked_checkouts() {
     let scratch = Scratch::new().unwrap();
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
-    worktree::add(&repo, &checkout, "topic", "HEAD").unwrap();
+    checkouts::add(&repo, &checkout, "topic", "HEAD").unwrap();
     assert!(!checkout_has_dirty_files(&checkout).unwrap());
 
     std::fs::create_dir(checkout.join("nested")).unwrap();
@@ -524,9 +524,9 @@ fn list_reports_the_main_and_linked_worktrees_with_their_branches() {
     let scratch = Scratch::new().unwrap();
     let repo = repository(&scratch);
     let checkout = scratch.path().join("trees/topic");
-    worktree::add(&repo, &checkout, "feature/topic", "HEAD").unwrap();
+    checkouts::add(&repo, &checkout, "feature/topic", "HEAD").unwrap();
 
-    let entries = worktree::list(&repo).unwrap();
+    let entries = checkouts::list(&repo).unwrap();
 
     let found: Vec<_> = entries
         .iter()
@@ -562,11 +562,11 @@ fn list_marks_detached_and_prunable_worktrees() {
             detached.to_str().unwrap(),
         ],
     );
-    worktree::add(&repo, &gone, "gone", "HEAD").unwrap();
+    checkouts::add(&repo, &gone, "gone", "HEAD").unwrap();
     let gone_key = canonical(&gone);
     std::fs::remove_dir_all(&gone).unwrap();
 
-    let entries = worktree::list(&repo).unwrap();
+    let entries = checkouts::list(&repo).unwrap();
 
     let detached_entry = entries
         .iter()
@@ -586,7 +586,7 @@ fn list_marks_a_bare_repository() {
         &["init", "--quiet", "--bare", bare.to_str().unwrap()],
     );
 
-    let entries = worktree::list(&bare).unwrap();
+    let entries = checkouts::list(&bare).unwrap();
 
     assert_eq!(entries.len(), 1);
     assert!(entries[0].is_bare);
@@ -609,9 +609,9 @@ fn list_keeps_the_bytes_of_a_checkout_path_that_text_cannot_hold() {
     let checkout = scratch
         .path()
         .join(<std::ffi::OsStr as OsStrExt>::from_bytes(b"trees-\xff"));
-    worktree::add(&repo, &checkout, "bytes", "HEAD").unwrap();
+    checkouts::add(&repo, &checkout, "bytes", "HEAD").unwrap();
 
-    let entries = worktree::list(&repo).unwrap();
+    let entries = checkouts::list(&repo).unwrap();
 
     assert!(
         entries
@@ -623,6 +623,6 @@ fn list_keeps_the_bytes_of_a_checkout_path_that_text_cannot_hold() {
 #[test]
 fn list_reports_git_message_outside_a_repository() {
     let scratch = Scratch::new().unwrap();
-    let error = worktree::list(scratch.path()).unwrap_err();
+    let error = checkouts::list(scratch.path()).unwrap_err();
     assert!(!error.message().is_empty());
 }

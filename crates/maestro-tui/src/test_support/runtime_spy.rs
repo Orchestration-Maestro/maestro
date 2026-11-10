@@ -21,13 +21,13 @@ pub struct Spy {
 /// A counted countdown continuation.
 struct SpyTimer {
     /// Original cancellation handle.
-    timer: Box<dyn crate::tui::RenderTimer>,
+    timer: Box<dyn crate::interface::RenderTimer>,
     /// Whether this callback is still pending.
     active: Rc<Cell<bool>>,
     /// Number of pending countdown callbacks.
     pending: Rc<Cell<usize>>,
 }
-impl crate::tui::RenderTimer for SpyTimer {
+impl crate::interface::RenderTimer for SpyTimer {
     fn cancel(&mut self) {
         if self.active.replace(false) {
             self.pending.set(self.pending.get() - 1);
@@ -35,15 +35,15 @@ impl crate::tui::RenderTimer for SpyTimer {
         self.timer.cancel();
     }
 }
-impl crate::tui::TuiRuntime for Spy {
+impl crate::interface::TuiRuntime for Spy {
     fn now(&self) -> std::time::Duration {
-        crate::tui::TuiRuntime::now(&self.clock)
+        crate::interface::TuiRuntime::now(&self.clock)
     }
     fn schedule(
         &self,
         delay: std::time::Duration,
-        callback: crate::tui::RenderCallback,
-    ) -> Box<dyn crate::tui::RenderTimer> {
+        callback: crate::interface::RenderCallback,
+    ) -> Box<dyn crate::interface::RenderTimer> {
         if delay != ms(1000) {
             self.events.borrow_mut().push(serde_json::json!(["render"]));
             return self.clock.schedule(delay, callback);
@@ -67,10 +67,10 @@ impl crate::tui::TuiRuntime for Spy {
             pending: self.pending.clone(),
         })
     }
-    fn spawn_local(&self, future: crate::tui::LocalFuture) {
+    fn spawn_local(&self, future: crate::interface::LocalFuture) {
         self.clock.spawn_local(future);
     }
-    fn log_context(&self) -> crate::tui::LogContext {
+    fn log_context(&self) -> crate::interface::LogContext {
         self.clock.log_context()
     }
 }

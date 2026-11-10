@@ -1,6 +1,6 @@
 //! Border flag sets compose edge by edge.
 #![cfg(test)]
-use maestro_workspace::layout::Borders;
+use maestro_workspace::tiling::Borders;
 
 #[test]
 fn a_set_contains_a_subset_only_when_every_edge_is_set() {
