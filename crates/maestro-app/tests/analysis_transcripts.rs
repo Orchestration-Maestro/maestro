@@ -661,14 +661,15 @@ fn two_files_with_summaries(base: &str) -> (String, String) {
     (project, output)
 }
 
-/// Install a `maestro` child that waits on `permit`, prints one text event and the end of its
-/// turn, then records `ended` on `ends`.
+/// Install a `maestro` child that records `ready` on `log` when it starts, waits on `permit`,
+/// prints one text event and the end of its turn, then records `ended` on `log`.
 ///
-/// Every child records on the one FIFO, so its contents are the order in which children end.
+/// Every child records on the one FIFO, so its contents are the order in which children start
+/// and end.
 #[cfg(unix)]
 fn held_child(
     base: &str,
-    ends: &maestro_test_process::gate::Gate,
+    log: &maestro_test_process::gate::Gate,
     permit: &maestro_test_process::gate::Gate,
 ) {
     let events = format!(
@@ -681,12 +682,12 @@ fn held_child(
         "maestro",
         &serde_json::json!({
             "scenario": "hold",
-            "ready": null,
+            "ready": log.path(),
             "permit": permit.path(),
             "stdout": events.as_bytes(),
             "stderr": [],
             "append": {
-                "path": ends.path(),
+                "path": log.path(),
                 "cwd": false,
                 "variable": null,
                 "bytes": b"ended",
@@ -695,13 +696,19 @@ fn held_child(
     );
 }
 
+/// Assert the next five bytes any child recorded on `log` are `marker`.
+#[cfg(unix)]
+fn next_marker(log: &maestro_test_process::gate::Gate, marker: [u8; 5]) {
+    assert_eq!(log.take(5).expect("a child records"), marker);
+}
+
 #[cfg(unix)]
 #[test]
-fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
+fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_last() {
     use maestro_test_process::gate::Gate;
     let path = "$BASE/bin";
     with_environment(
-        "analysis_children_end_in_file_order_with_the_aggregating_child_last",
+        "analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_last",
         &[("PATH", path)],
         |base| {
             let (project, output) = two_files_with_summaries(base);
@@ -709,9 +716,9 @@ fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
                 // The gates and the receiver belong to this closure, so a failed assertion
                 // releases every child and the command's blocked print.
                 let (sender, lines) = std::sync::mpsc::sync_channel(0);
-                let ends = Gate::new(&Path::new(base).join("ends")).expect("the ends gate");
+                let log = Gate::new(&Path::new(base).join("log")).expect("the log gate");
                 let permit = Gate::new(&Path::new(base).join("permit")).expect("the permit gate");
-                held_child(base, &ends, &permit);
+                held_child(base, &log, &permit);
                 let arguments = ["--analyze", "--output", &output, &project].map(str::to_owned);
                 let command = scope.spawn(move || {
                     let mut stdout = Lines {
@@ -725,16 +732,20 @@ fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
                         &mut Vec::new(),
                     ))
                 });
-                // Each release lets exactly one child finish, so the end markers arrive in the
-                // order the run completes its children. The child's own output is printed only
-                // after its end, and the next header only after that output.
-                let ended = || {
-                    assert_eq!(ends.take(5).expect("a child ends"), b"ended");
-                };
+                // Each release lets exactly one child finish, so the markers arrive in the
+                // order the run starts and completes its children. A child is held from its
+                // start marker until its release, and the next one starts only after its end
+                // marker: a run that starts every child at once writes a second start marker
+                // before the first end marker. The child's own output is printed only after
+                // its end, and the next header only after that output.
+                let started = || next_marker(&log, *b"ready");
+                let ended = || next_marker(&log, *b"ended");
                 printed_through(&lines, "Analyzing session-transcripts-000.txt");
+                started();
                 permit.release().expect("the first child is released");
                 ended();
                 let second = printed_through(&lines, "Analyzing session-transcripts-001.txt");
+                started();
                 assert!(second.contains(&"  first".to_owned()), "{second:?}");
                 assert!(
                     second.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
@@ -743,6 +754,7 @@ fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
                 permit.release().expect("the second child is released");
                 ended();
                 let third = printed_through(&lines, "Aggregating findings");
+                started();
                 assert!(
                     third.contains(&"  -> session-transcripts-001.summary.txt".to_owned()),
                     "{third:?}"
