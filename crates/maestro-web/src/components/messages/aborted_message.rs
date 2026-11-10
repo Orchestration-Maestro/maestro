@@ -2,7 +2,7 @@
 #[cfg(target_arch = "wasm32")]
 use crate::{
     browser::attachment_content::browser::{element, set_text_if_changed},
-    dom::{DomContent, DomRoot, DomView, install_styles},
+    page::{DomContent, DomRoot, DomView, install_styles},
     tools::types::ToolUiError,
 };
 

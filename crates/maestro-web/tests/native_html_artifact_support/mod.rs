@@ -3,8 +3,8 @@
 use crate::contributions_support::{text, until};
 use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHandle};
 use maestro_web::{
-    I18n, browser::sandbox_value::BrowserSandboxValue, dom::DomRoot,
-    tools::artifacts::html_artifact::HtmlArtifact,
+    I18n, browser::values::BrowserSandboxValue, page::DomRoot,
+    tools::documents::html_artifact::HtmlArtifact,
 };
 use std::{cell::Cell, rc::Rc};
 use wasm_bindgen::JsCast as _;

@@ -2,7 +2,7 @@
 use super::MessageList;
 use crate::{
     browser::attachment_content::browser::element,
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::CustomAgentMessages;

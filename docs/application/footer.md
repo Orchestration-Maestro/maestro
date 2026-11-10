@@ -13,7 +13,7 @@ subscribe to working-directory changes and changed cached branches.
 ```rust
 use std::rc::Rc;
 use maestro_app::ReadonlyFooterDataProvider;
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::presentation_data::status_line::{
     FooterDataProvider, NativeFooterOperations,
 };
 

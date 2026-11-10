@@ -6,7 +6,7 @@ use crate::{
 };
 use maestro_web::{
     AttachmentTile,
-    dom::{DomContent as _, DomView},
+    page::{DomContent as _, DomView},
 };
 use std::{cell::Cell, rc::Rc, sync::Arc};
 use wasm_bindgen::JsCast as _;
@@ -103,7 +103,7 @@ pub(crate) fn attachment_tiles_replace_transactionally_and_release_listeners(vie
 /// callback, here none, and opening reads the current record.
 fn kept_controls_use_current_inputs(
     tile: &AttachmentTile,
-    root: &maestro_web::dom::DomRoot,
+    root: &maestro_web::page::DomRoot,
     [remove, open]: [&Element; 2],
     calls: &Cell<i32>,
     view: &DomView,
@@ -215,7 +215,7 @@ pub(crate) fn attachment_modal_hides_and_restores_existing_surfaces(view: &Rc<Do
 /// Failed preparation leaves the containing root and its prior controls intact.
 fn assert_borrow_keeps_published_tile(
     tile: &AttachmentTile,
-    root: &maestro_web::dom::DomRoot,
+    root: &maestro_web::page::DomRoot,
     view: &DomView,
 ) {
     let target = select(&root.node, "[data-open]");
@@ -273,7 +273,7 @@ fn fallback_paint(root: &web_sys::Node, presentation: &maestro_theme::BrandPrese
 /// A preview-to-fallback update releases the old image without changing the placement root.
 fn replace_preview_with_fallback(
     tile: &mut AttachmentTile,
-    root: &maestro_web::dom::DomRoot,
+    root: &maestro_web::page::DomRoot,
     view: &DomView,
 ) {
     let image = select(&root.node, "img");

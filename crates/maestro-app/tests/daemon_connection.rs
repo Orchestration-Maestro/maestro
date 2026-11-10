@@ -2,7 +2,7 @@
 //! commands, the input's end and the runner's cancellation.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{on_paused_task_set, until_idle};
-use maestro_app::rpc_mode::{
+use maestro_app::connection_runner::{
     JsonlLineReader, RpcFuture, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, WorkspaceEventSink,
     WorkspaceOperations,
 };

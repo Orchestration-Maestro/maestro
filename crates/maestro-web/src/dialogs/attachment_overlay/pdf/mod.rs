@@ -2,7 +2,7 @@
 use crate::browser::attachment_content::{
     AttachmentHost, AttachmentHostError, ReadingContent, reading,
 };
-use maestro_app::browser::utils::attachment_utils::pdf::{PdfDocument, PdfPage};
+use maestro_app::browser::utils::attachments::portable::{PdfDocument, PdfPage};
 use std::{cell::RefCell, rc::Rc};
 /// Completed raster operands and their retained native nodes.
 #[derive(Default)]
@@ -106,10 +106,10 @@ impl Pdf {
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn mount_root(
         &self,
-        view: &crate::dom::DomView,
+        view: &crate::page::DomView,
         padded: bool,
-    ) -> Result<crate::dom::DomRoot, crate::tools::types::ToolUiError> {
-        Ok(crate::dom::DomRoot::new(browser::root(
+    ) -> Result<crate::page::DomRoot, crate::tools::types::ToolUiError> {
+        Ok(crate::page::DomRoot::new(browser::root(
             &view.document,
             &self.pages,
             padded,

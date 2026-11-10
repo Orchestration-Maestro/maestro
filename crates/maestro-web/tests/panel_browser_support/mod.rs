@@ -1,11 +1,11 @@
 //! Shared actual retained-panel browser harness.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::{presentation, support};
-use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
+use maestro_app::browser::tools::documents::LocalArtifactsPanel;
 use maestro_theme::BrandMode;
 use maestro_web::{
     ArtifactsPanel, I18n, browser::attachment_content::BrowserAttachmentHost,
-    tools::artifacts::artifact_element::ArtifactView,
+    tools::documents::artifact_element::ArtifactView,
 };
 use std::rc::Rc;
 use wasm_bindgen::JsCast as _;

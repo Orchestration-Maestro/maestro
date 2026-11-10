@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_app::browser::tools::extract_document::{ExtractDocumentParams, ExtractDocumentResult};
+use maestro_app::browser::tools::extraction::{ExtractDocumentParams, ExtractDocumentResult};
 use maestro_app::{EXTRACT_DOCUMENT_TOOL, Fetch, HttpResponse, create_extract_document_tool};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, FetchError};
 use serde::Deserialize;
@@ -339,8 +339,8 @@ async fn extraction_tool_http_adapter_downloads_controlled_text_case() {
 
 /// Validate declaration and independent slots without retaining a guard across execution.
 fn check_declaration(
-    first: &maestro_app::browser::tools::extract_document::ExtractDocumentTool,
-    second: &maestro_app::browser::tools::extract_document::ExtractDocumentTool,
+    first: &maestro_app::browser::tools::extraction::ExtractDocumentTool,
+    second: &maestro_app::browser::tools::extraction::ExtractDocumentTool,
     metadata: &Value,
 ) -> maestro_agent::ExecuteTool {
     let definition = first.tool.read().unwrap();

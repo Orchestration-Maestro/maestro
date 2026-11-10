@@ -251,7 +251,7 @@ pub async fn message_editor_files_keep_limits_order_failures_and_current_callbac
     let picker: HtmlInputElement = find(editor.root(), "input[type=file]").unchecked_into();
     assert_eq!(
         picker.accept(),
-        maestro_web::components::message_editor::ACCEPTED_TYPES
+        maestro_web::components::composer::ACCEPTED_TYPES
     );
     first_batches(&editor, &prompts).await;
     assert_eq!(*calls.files.borrow(), [vec!["b.txt".to_owned()]]);

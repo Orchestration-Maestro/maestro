@@ -3,7 +3,7 @@ use super::{close, control, opened};
 use crate::contributions_support::{driver, select, text};
 use maestro_web::{
     AttachmentOverlay,
-    dom::{DomContent as _, DomView},
+    page::{DomContent as _, DomView},
 };
 use std::{cell::Cell, rc::Rc, sync::Arc};
 use wasm_bindgen::JsCast as _;
@@ -101,9 +101,9 @@ pub(super) fn live_modes(view: &Rc<DomView>) {
             original.file_name = "changed".into();
             original.mime_type = mime.into();
             original.r#type = if image {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Image
+                maestro_app::browser::utils::attachments::AttachmentType::Image
             } else {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Document
+                maestro_app::browser::utils::attachments::AttachmentType::Document
             };
         }
         refresh(&overlay, view, &root);
@@ -213,9 +213,9 @@ pub(super) fn preserve_error(
             let mut original = record.write().unwrap();
             original.mime_type = mime.into();
             original.r#type = if mime == "image/png" {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Image
+                maestro_app::browser::utils::attachments::AttachmentType::Image
             } else {
-                maestro_app::browser::utils::attachment_utils::AttachmentType::Document
+                maestro_app::browser::utils::attachments::AttachmentType::Document
             };
         }
         refresh(overlay, view, root);

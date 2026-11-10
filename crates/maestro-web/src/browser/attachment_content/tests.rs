@@ -38,7 +38,7 @@ fn native_content_borders_belong_to_visible_owners() {
     }
     let record = std::sync::Arc::new(std::sync::RwLock::new(crate::Attachment {
         id: "id".into(),
-        r#type: maestro_app::browser::utils::attachment_utils::AttachmentType::Document,
+        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
         file_name: "file".into(),
         mime_type: "application/pdf".into(),
         size: 0,

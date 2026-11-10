@@ -27,7 +27,7 @@ table scrolling. Neither format adds a parser, worker or overlay layer.
 
 `ArtifactsPanel::default()` implements `DomContent` as an `artifacts-panel`
 element. `panel.application(&view)` returns its retained
-`maestro_app::browser::tools::artifacts::LocalArtifactsPanel`. Execute tools,
+`maestro_app::browser::tools::documents::LocalArtifactsPanel`. Execute tools,
 reconstruct history, replace runtime providers and read logs through that existing
 application interface. The native adapter owns no second copy of command,
 selection or replay policy.
@@ -56,7 +56,7 @@ native application log readers keep their `Arc` and thread-safety bounds.
 
 ## Retained interfaces
 
-`maestro_web::tools::artifacts::create_artifact_element` constructs an owned
+`maestro_web::tools::documents::create_artifact_element` constructs an owned
 `Box<dyn maestro_web::ArtifactElement>` for text, images, Markdown, SVG, PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
 viewers are installed; they never silently become generic downloads.
@@ -95,7 +95,7 @@ A mounted native body owns its `<section class="maestro-generic-artifact">` node
 so an update rewrites only the changed filename and guidance text. The header owns
 only its controlled row and the download activation behind it: dropping the
 returned root detaches that activation even while the caller keeps the node in the
-document. Both roots take their nodes from `dom::DomView` and reach no host
+document. Both roots take their nodes from `page::DomView` and reach no host
 surface, so mounting them publishes nothing and draws nothing through the retained
 canvas. `dom.rs` installs the artifact header row and generic body rules with the
 page stylesheet for mounted page content.

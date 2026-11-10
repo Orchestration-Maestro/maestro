@@ -1,6 +1,6 @@
 //! Browser conversation components.
 /// Records and model projection.
-pub mod messages;
+pub mod records;
 /// Runtime provider interfaces.
 pub mod sandbox;
 /// Owned sandbox execution boundary.

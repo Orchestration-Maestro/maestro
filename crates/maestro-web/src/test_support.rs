@@ -7,6 +7,6 @@ use std::any::Any;
 #[must_use]
 pub fn prepared_view(content: &dyn Any) -> Option<Value> {
     crate::tools::view::prepared(content)
-        .or_else(|| crate::components::diff::view::prepared(content))
+        .or_else(|| crate::components::changes::view::prepared(content))
         .or_else(|| crate::components::expandable_section::view::prepared(content))
 }

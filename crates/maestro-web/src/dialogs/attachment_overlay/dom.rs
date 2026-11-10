@@ -6,10 +6,10 @@ use crate::{
         attachment_content::browser::append, event_subscription::EventSubscription, timer::Timer,
     },
     components::{
-        button::{ButtonProps, ButtonSize, ButtonVariant, button},
+        controls::{ButtonProps, ButtonSize, ButtonVariant, button},
         mode_toggle::ModeGroup,
     },
-    dom::{self, DomContent, DomRoot, DomView, Link},
+    page::{self as dom, DomContent, DomRoot, DomView, Link},
     tools::types::ToolUiError,
 };
 use std::{

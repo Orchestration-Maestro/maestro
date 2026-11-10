@@ -1,10 +1,10 @@
 //! Rendered values of a prepared disclosure card, projected for native tests.
 use super::{ArtifactTemplate, Body, CollapsibleCard, Content, Download, Phase};
 use crate::{
-    dom::PreparedContent,
+    page::PreparedContent,
     tools::{
-        artifacts::ArtifactsToolRenderer,
-        extract_document::ExtractDocumentRenderer,
+        documents::ArtifactsToolRenderer,
+        extraction::ExtractDocumentRenderer,
         javascript_repl::JavaScriptReplRenderer,
         renderers::card_content::view::{state, variant},
     },

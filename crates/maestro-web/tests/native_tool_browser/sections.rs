@@ -2,7 +2,7 @@
 use crate::contributions_support::{body, select, text};
 use maestro_web::{
     ExpandableSection,
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use serde::Deserialize;

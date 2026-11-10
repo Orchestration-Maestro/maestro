@@ -1,7 +1,7 @@
 //! Rendered values of a prepared status card, projected for native tests.
 use super::{Body, Caption, CardContent};
 use crate::tools::renderer_registry::ToolHeaderState;
-use crate::{components::console_block::ConsoleVariant, tools::artifacts::artifact_pill::Pill};
+use crate::{components::console_block::ConsoleVariant, tools::documents::artifact_pill::Pill};
 use serde_json::{Value, json};
 
 /// The visible status independent of the enum's Rust spelling.

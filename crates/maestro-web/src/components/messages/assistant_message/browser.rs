@@ -5,7 +5,7 @@ use crate::{
     components::{
         markdown_block::MarkdownBlock, messages::ToolMessage, thinking_block::ThinkingBlock,
     },
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::{AssistantContent, StopReason, ToolCall, ToolResultMessage};

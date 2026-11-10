@@ -1,7 +1,7 @@
 //! Frame styles and symbols for emulator cells.
 
 use crate::render::is_halfwidth_katakana_voiced_grapheme;
-use maestro_app::daemon::{PaneRenderView, RgbColor as HostColor};
+use maestro_app::daemon_api::{PaneRenderView, RgbColor as HostColor};
 use maestro_app::terminal::{
     Color as CellColor, Content, Flags, PLACEHOLDER, Palette, RenderCell, Rgb, Wide,
 };

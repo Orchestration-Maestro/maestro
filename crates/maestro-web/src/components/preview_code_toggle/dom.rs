@@ -3,7 +3,7 @@ use super::{PreviewCodeToggle, ViewMode};
 use crate::{
     browser::attachment_content::AttachmentHostError,
     components::mode_toggle::{Mode, ModeGroup, Options},
-    dom::{self, DomContent, DomRoot, DomView, Getter, Link, Setter},
+    page::{self as dom, DomContent, DomRoot, DomView, Getter, Link, Setter},
     tools::types::ToolUiError,
 };
 use std::{

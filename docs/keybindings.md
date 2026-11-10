@@ -44,7 +44,7 @@ clears the draft, and refuses to run during streaming or compaction.
 ### Reset multiplexer overrides
 
 The native application operation
-`presentation_data::keybindings::reset_multiplexer_keybindings(agent_dir, timestamp)`
+`presentation_data::bindings::reset_multiplexer_keybindings(agent_dir, timestamp)`
 reads `keybindings.json` from the supplied agent directory. The timestamp is Unix
 time in seconds. It creates `keybindings.json.bak-<timestamp>` exclusively and
 syncs the exact original bytes before publishing the edited document atomically.

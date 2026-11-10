@@ -2,11 +2,12 @@
 //! until the daemon stops.
 use super::server::Server;
 use maestro_app::SettingsManager;
-use maestro_app::daemon::{
-    App, DaemonPaths, STARTUP_CWD_ENV, current_process_is_detached_server_daemon, logging,
+use maestro_app::connection_runner::DaemonWorkspaceOperations;
+use maestro_app::daemon_api::{
+    App, DaemonPaths, STARTUP_CWD_ENV, current_process_is_detached_server_daemon,
+    diagnostics as logging,
 };
 use maestro_app::diagnostics::write_stderr_line;
-use maestro_app::rpc_mode::DaemonWorkspaceOperations;
 use maestro_app::rpc_types::workspace_schema::ServerCapabilities;
 use std::path::{Path, PathBuf};
 use std::{future::Future, io, rc::Rc};

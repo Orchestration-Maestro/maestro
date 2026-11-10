@@ -112,8 +112,8 @@ pub use comments::{
     WmlCommentRangeStart, WmlCommentReference,
 };
 
-/// Font declarations and embedded resource loading.
-pub mod font_table;
 /// Raw list definitions and concrete preparation.
-pub mod numbering;
+pub mod lists;
+/// Font declarations and embedded resource loading.
+pub mod typefaces;
 pub use document::dom::{IDomNumbering, NumberingPicBullet};

@@ -1,9 +1,7 @@
 //! Live attachment input projected into independent runtime snapshots.
-use super::sandbox_runtime_provider::{
-    BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRuntimeProvider,
-};
+use super::providers::{BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRuntimeProvider};
 use crate::browser::{
-    tools::prompts::ATTACHMENTS_RUNTIME_DESCRIPTION, utils::attachment_utils::SharedAttachment,
+    tools::prompts::ATTACHMENTS_RUNTIME_DESCRIPTION, utils::attachments::SharedAttachment,
 };
 use indexmap::IndexMap;
 use maestro_lock::read;

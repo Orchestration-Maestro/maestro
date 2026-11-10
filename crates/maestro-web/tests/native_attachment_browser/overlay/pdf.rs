@@ -1,7 +1,7 @@
 //! Original PDF admission and replacement through the native overlay.
 use super::{close, control, opened, refresh};
 use crate::contributions_support::{frames, select, text};
-use maestro_web::{SharedAttachment, dom::DomView};
+use maestro_web::{SharedAttachment, page::DomView};
 use std::{rc::Rc, sync::Arc};
 
 /// Original multipage input, with the raw attachment byte domain.

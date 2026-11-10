@@ -6,12 +6,12 @@ use crate::{
 };
 use maestro_app::{
     AgentMessage, AssistantContent, ToolResultMessage,
-    browser::{components::messages::CustomAgentMessages, tools::artifacts::ArtifactsPanel},
+    browser::{components::records::CustomAgentMessages, tools::documents::ArtifactsPanel},
 };
 use maestro_web::{
     AssistantMessage, UserMessage,
     components::messages::ToolResults,
-    dom::{DomContent as _, DomView},
+    page::{DomContent as _, DomView},
 };
 use serde_json::{Value, json};
 use std::{
@@ -258,9 +258,9 @@ fn observe_call(row: &Element, call: &maestro_app::ToolCall, result: &ToolResult
             observe_update(row, call);
         }
         let consoles = texts(row, ".maestro-console pre");
-        if maestro_app::browser::tools::artifacts::get_file_type(
+        if maestro_app::browser::tools::documents::get_file_type(
             call.arguments["filename"].as_str().unwrap(),
-        ) == maestro_app::browser::tools::artifacts::FileType::Html
+        ) == maestro_app::browser::tools::documents::FileType::Html
         {
             assert_eq!(consoles.first(), Some(&output));
         } else {

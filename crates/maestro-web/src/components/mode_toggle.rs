@@ -1,8 +1,8 @@
 //! Shared native mode buttons and the authored-label page element.
 use crate::{
     browser::event_subscription::EventSubscription,
-    dom::{self, DomView, Getter, Link, Setter},
     icons,
+    page::{self as dom, DomView, Getter, Link, Setter},
     tools::types::ToolUiError,
 };
 use std::{

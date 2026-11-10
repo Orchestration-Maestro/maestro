@@ -2,7 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_app::{
-    PathMetadata, ResolvedResource, SourceOrigin, SourceScope, contributions::load_contributions,
+    PathMetadata, ResolvedResource, SourceOrigin, SourceScope,
+    contribution_files::load_contributions,
 };
 use maestro_resources::DiagnosticType;
 use std::{fs, path::Path};
@@ -110,7 +111,7 @@ fn resource_loader_reads_the_contributions_the_browser_receives() {
     use crate::resource_fixtures::{module_loader, on_task_set};
     use maestro_app::{
         DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
-        contributions::BrowserContribution,
+        contribution_files::BrowserContribution,
     };
     use maestro_settings::{Settings, SettingsManager};
     use std::{cell::RefCell, rc::Rc};

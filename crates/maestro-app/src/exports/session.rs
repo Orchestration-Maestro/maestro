@@ -43,7 +43,7 @@ pub use crate::agent_session::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::runtime::agent_session_runtime::{
+pub use crate::runtime::session_engine::{
     AgentSessionRuntime, AgentSessionRuntimeError, BeforeSessionInvalidate,
     CreateAgentSessionRuntimeFactory, CreateAgentSessionRuntimeOptions,
     CreateAgentSessionRuntimeResult, ForkResult, RebindSession, SessionImportFileNotFoundError,
@@ -51,7 +51,7 @@ pub use crate::runtime::agent_session_runtime::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use crate::runtime::agent_session_services::{
+pub use crate::runtime::session_dependencies::{
     CreateAgentSessionFromServicesOptions, create_agent_session_from_services,
 };
 

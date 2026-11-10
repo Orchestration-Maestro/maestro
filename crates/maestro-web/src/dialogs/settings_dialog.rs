@@ -1,14 +1,14 @@
 //! The settings dialog and its built-in tabs.
 mod tabs;
 
-use super::dialog::{DialogHeaderProps, dialog_content, dialog_header};
 use super::dialog_base::DialogBase;
+use super::surface::{DialogHeaderProps, dialog_content, dialog_header};
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error},
         event_subscription::EventSubscription,
     },
-    dom::{DomContent, DomView, MountedContent},
+    page::{DomContent, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use std::{

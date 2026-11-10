@@ -143,9 +143,7 @@ fn javascript_disclosures_keep_code_console_and_decoded_file_tiles() {
 
 #[test]
 fn extraction_disclosures_keep_failed_result_url_and_output() {
-    use maestro_app::browser::tools::extract_document::{
-        ExtractDocumentParams, ExtractDocumentResult,
-    };
+    use maestro_app::browser::tools::extraction::{ExtractDocumentParams, ExtractDocumentResult};
     let extract =
         get_tool_renderer::<ExtractDocumentParams, ExtractDocumentResult>("extract_document")
             .unwrap();

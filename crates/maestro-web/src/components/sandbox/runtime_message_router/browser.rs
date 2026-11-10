@@ -1,11 +1,11 @@
 //! Browser subscriptions, raw responses and registered-window admission.
 use super::{MessageConsumer, Providers, Registry, SandboxContext};
 use crate::browser::event_subscription::EventSubscription;
-use crate::browser::sandbox_value::{BrowserSandboxValue, diagnostic};
+use crate::browser::values::{BrowserSandboxValue, diagnostic};
 use js_sys::{Function, Object, Promise, Reflect};
 use maestro_app::DiagnosticErrorInfo;
 use maestro_app::SharedHandle;
-use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond;
+use maestro_app::browser::components::sandbox::providers::SandboxRespond;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},

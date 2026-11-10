@@ -4,10 +4,10 @@ use crate::{
     ConsoleBlock,
     browser::attachment_content::browser::element,
     components::console_block::ConsoleVariant,
-    dom::{DomContent, DomRoot, DomView, MountedContent},
+    page::{DomContent, DomRoot, DomView, MountedContent},
     tools::{
         renderer_registry::{
-            ToolHeaderRefs, ToolHeaderState, ToolHeaderText, header::dom::glyph,
+            ToolHeaderRefs, ToolHeaderState, ToolHeaderText, heading::dom::glyph,
             render_collapsible_header, render_header,
         },
         types::ToolUiError,
@@ -30,7 +30,7 @@ pub(in crate::tools::renderers) fn header(
     let label = caption.resolve(&view.i18n)?;
     let text = match caption {
         Caption::Artifact(_, Some(pill)) => ToolHeaderText::Content(
-            crate::tools::artifacts::artifact_pill::dom::caption(label, pill),
+            crate::tools::documents::artifact_pill::dom::caption(label, pill),
         ),
         _ => ToolHeaderText::Text(label),
     };

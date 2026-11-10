@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{host, view};
 use maestro_theme::BrandMode;
-use maestro_web::{AgentInterface, AgentInterfaceProps, ThemeToggle, dom::DomView};
+use maestro_web::{AgentInterface, AgentInterfaceProps, ThemeToggle, page::DomView};
 use serde::Deserialize;
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure, prelude::wasm_bindgen};

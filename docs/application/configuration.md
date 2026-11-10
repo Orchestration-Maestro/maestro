@@ -64,7 +64,7 @@ npm, then unknown. Detection never executes a package manager.
 
 ## Runtime observations
 
-`maestro_user_agent::get_maestro_user_agent` formats
+`identification::get_maestro_user_agent` formats
 `maestro/<version> (<platform>; rust; <arch>)`, translating native target aliases
 while retaining the supplied version text.
 

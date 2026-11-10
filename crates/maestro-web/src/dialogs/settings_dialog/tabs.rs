@@ -6,10 +6,10 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::{
-        input::{Input, InputProps},
+        fields::{Input, InputProps},
         provider_key_input::ProviderKeyInput,
     },
-    dom::{DomContent, DomRoot, DomView, MountedContent, report},
+    page::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
 };
 use maestro_app::{get_app_storage, get_providers};
@@ -97,7 +97,7 @@ impl DomContent for ProxyTab {
         caption.set_text_content(Some(&i18n.text("Proxy URL")?));
         let input = Input::new(view, InputProps::default())?;
         let field = input.input();
-        field.set_id(&crate::components::input::unique_id("maestro-proxy-url"));
+        field.set_id(&crate::components::fields::unique_id("maestro-proxy-url"));
         caption
             .set_attribute("for", &field.id())
             .map_err(|e| host_error(&e))?;
@@ -239,7 +239,9 @@ fn switch(view: &DomView, label: &Element) -> Result<HtmlButtonElement, ToolUiEr
     control
         .set_attribute("role", "switch")
         .map_err(|e| host_error(&e))?;
-    label.set_id(&crate::components::input::unique_id("maestro-switch-label"));
+    label.set_id(&crate::components::fields::unique_id(
+        "maestro-switch-label",
+    ));
     control
         .set_attribute("aria-labelledby", &label.id())
         .map_err(|e| host_error(&e))?;

@@ -1,6 +1,6 @@
 # Browser input, timers and dialogs
 
-[`Input`](../../crates/maestro-web/src/components/input.rs) is a native
+[`Input`](../../crates/maestro-web/src/components/fields.rs) is a native
 single-line field. `Input::new(view, props)` mounts a wrapper holding an optional
 label, the `<input>` element and an optional error line; place `root()` where the
 field belongs and read `input()` for focus, selection and live text.
@@ -26,7 +26,7 @@ future delivery; cancelling does not abort asynchronous work its callback starte
 
 ## Dialogs
 
-[`dialog`](../../crates/maestro-web/src/dialogs/dialog.rs) mounts an open dialog
+[`dialog`](../../crates/maestro-web/src/dialogs/surface.rs) mounts an open dialog
 as native page content: a dimmed full-viewport backdrop holding a panel with the
 caller's children and a Close button named by the localized `Close` text. A
 closed `DialogProps` mounts nothing. The backdrop, the Close button and document
@@ -53,7 +53,7 @@ nothing. Each open dialog closes once on one Escape. The standard panel is
 a one-line prompt at once and returns a future of the confirmed text. Enter and
 Confirm return the live text; Cancel, Escape, the backdrop and Close return
 `None`, so the future never stays pending after the prompt closes.
-[`get_auth_token`](../../crates/maestro-web/src/utils/auth_token.rs) returns the
+[`get_auth_token`](../../crates/maestro-web/src/utils/authorization.rs) returns the
 token stored under `auth-token` in local storage, or asks for it through a masked
 prompt and stores the trimmed entry. A blank entry asks again; cancelling
 returns `None` and stores nothing. `clear_auth_token` removes the stored token.
@@ -146,7 +146,7 @@ and a failure each return `false` with their own console message.
 
 ## Message editor
 
-[`MessageEditor::new`](../../crates/maestro-web/src/components/message_editor/browser.rs)
+[`MessageEditor::new`](../../crates/maestro-web/src/components/composer/browser.rs)
 builds the message composer from `MessageEditorProps` and focuses its text field on
 the first frame after the caller shows it. The editor owns its text and attachments:
 `value`, `set_value`, `attachments` and `set_attachments` read and replace them, and
@@ -174,7 +174,7 @@ or level control.
 
 ## Session view
 
-[`AgentInterface::new`](../../crates/maestro-web/src/components/agent_interface/browser.rs)
+[`AgentInterface::new`](../../crates/maestro-web/src/components/conversation/browser.rs)
 shows a `BrowserSession`, a local agent over the browser message records: the
 completed history, the streaming response and the message editor, with the
 summed assistant usage below. Without a session it reads "No session set".
@@ -214,7 +214,7 @@ starts the cycle at light.
 
 ## Chat screen
 
-[`ChatPanel::new`](../../crates/maestro-web/src/chat_panel.rs) registers the built-in
+[`ChatPanel::new`](../../crates/maestro-web/src/conversation.rs) registers the built-in
 elements and styles, then builds the chat screen, which reads "No agent set" until
 `set_agent` gives it a `BrowserSession`.
 `set_agent` builds a new session view with every editor control and no appearance
@@ -304,7 +304,7 @@ input/output listings and literal console output.
 The native field, the dialogs and the provider and settings components return
 `tools::types::ToolUiError`, keeping localization and native failures with their
 causes. Shared code, Markdown and console rendering return
-`components::code_block::ReadingUiError`; highlighting keeps the original theme
+`components::source::ReadingUiError`; highlighting keeps the original theme
 error, and native publication keeps `AttachmentHostError`. Copy buttons and
 preview/source toggles return `components::copy_button::LocalizedControlError`
 for localization, shared control drawing and selected-color I/O errors.

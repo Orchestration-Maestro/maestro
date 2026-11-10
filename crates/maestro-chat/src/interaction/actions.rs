@@ -5,7 +5,7 @@ use crate::components::reasoning::thinking_text;
 use crate::external_editor::{ExternalEditorFile, edit_external_file, external_command};
 use crate::temporary_file::write_temporary_file;
 use maestro_app::agent_session::{CycleDirection, ModelCycleResult};
-use maestro_app::utils::clipboard_image::{
+use maestro_app::utils::image_clipboard::{
     ClipboardImage, extension_for_image_mime_type, read_clipboard_image,
 };
 use maestro_app::{DiagnosticErrorInfo, ThinkingLevel, is_whitespace_scalar};

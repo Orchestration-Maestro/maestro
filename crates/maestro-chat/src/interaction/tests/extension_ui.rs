@@ -7,7 +7,7 @@ mod notifications;
 use super::transcript::tool_params;
 use super::{Setup, World, dark, isolated, light, roles, started};
 use crate::InteractiveMode;
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::presentation_data::status_line::{
     FooterFileStats, FooterOperations, FsWatcher, WatchOperations, WatchTimer,
 };
 use maestro_app::{

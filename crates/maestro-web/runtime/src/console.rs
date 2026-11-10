@@ -1,10 +1,7 @@
 //! Console forwarding, error capture and one-shot completion.
 use crate::js::{call, chain, get, invoke, or, set, text, wait};
 use js_sys::{Array, JSON, Object, Promise, Proxy};
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use std::{cell::{Cell, RefCell}, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use wasm_bindgen_futures::future_to_promise;
 use web_sys::Window;

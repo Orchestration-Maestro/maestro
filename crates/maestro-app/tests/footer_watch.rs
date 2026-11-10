@@ -4,13 +4,11 @@
 #[cfg(unix)]
 use crate::native;
 use crate::watching;
-use maestro_app::presentation_data::footer_data_provider::{
+use maestro_app::presentation_data::status_line::{
     FooterDataProvider, FooterFileStats, ReadonlyFooterDataProvider,
 };
 #[cfg(any(unix, windows))]
-use maestro_app::presentation_data::footer_data_provider::{
-    FooterOperations, NativeFooterOperations,
-};
+use maestro_app::presentation_data::status_line::{FooterOperations, NativeFooterOperations};
 #[cfg(unix)]
 use maestro_process::children::process_exists;
 #[cfg(unix)]

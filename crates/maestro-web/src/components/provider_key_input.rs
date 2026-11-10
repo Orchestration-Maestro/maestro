@@ -6,15 +6,15 @@ use crate::{
         timer::{Timer, native},
     },
     components::{
-        button::{ButtonProps, ButtonSize, button},
-        input::{Input, InputProps, InputType, unique_id},
+        controls::{ButtonProps, ButtonSize, button},
+        fields::{Input, InputProps, InputType, unique_id},
     },
-    dom::{DomContent, DomRoot, DomView, report},
+    page::{DomContent, DomRoot, DomView, report},
     tools::types::ToolUiError,
 };
 use maestro_app::{
     Context, Message, ProviderStreamOptions, StopReason, StreamOptions, UserContent, UserMessage,
-    browser::utils::proxy_utils::apply_proxy_if_needed, complete, get_app_storage, get_model,
+    browser::utils::proxy::apply_proxy_if_needed, complete, get_app_storage, get_model,
 };
 use std::{
     cell::{Cell, RefCell},

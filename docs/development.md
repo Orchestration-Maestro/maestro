@@ -864,7 +864,7 @@ dependencies; this map points to the implementations and their usage guides.
 | Terminal components, input and frame rendering | [`maestro-tui/src`](../crates/maestro-tui/src/lib.rs) | [Components](terminal/components.md) |
 | Interactive chat presentation | [`maestro-chat/src`](../crates/maestro-chat/src/lib.rs) | [Chat](chat/interactive-mode.md) |
 | Native terminal effects | [`maestro-tui-crossterm/src`](../crates/maestro-tui-crossterm/src/lib.rs) | [Native terminal](terminal/native-terminal.md) |
-| Standard-stream RPC adapter | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs); the connection runner belongs to `maestro-app::rpc_mode` | [Daemon protocol](daemon-protocol.md) |
+| Standard-stream RPC adapter | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs); the connection runner belongs to `maestro-app::connection_runner` | [Daemon protocol](daemon-protocol.md) |
 | Extension author API and canonical component interfaces | [`maestro-extensions-wasm/src`](../crates/maestro-extensions-wasm/src/lib.rs) and its `wit/` directory; native execution is adapted by `maestro-extensions-wasmtime` | [Guest authoring](extensions/guest.md) |
 
 ## Debugging
@@ -2136,7 +2136,7 @@ Run the client corpus with its prepared native peers:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-app -E 'test(/rpc_client/)'
+cargo nextest run --locked -p maestro-app -E 'test(/rpc_transport/)'
 ```
 
 On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer

@@ -6,7 +6,7 @@ use crate::{
 use maestro_app::ToolResultMessage;
 use maestro_web::{
     ArtifactsToolRenderer, BashRenderer, CalculateRenderer, GetCurrentTimeRenderer,
-    dom::{DomContent, DomView, MountedContent},
+    page::{DomContent, DomView, MountedContent},
     tools::types::{ToolRenderResult, ToolRenderer, ToolUiError},
 };
 use serde_json::{Value, json};
@@ -373,7 +373,7 @@ fn languages(view: &Rc<DomView>) {
 }
 /// Validated native arguments mount the same card as their raw object.
 fn typed(view: &Rc<DomView>) {
-    use maestro_app::browser::tools::artifacts::{ArtifactCommand, ArtifactsParams};
+    use maestro_app::browser::tools::documents::{ArtifactCommand, ArtifactsParams};
     let params = ArtifactsParams {
         command: ArtifactCommand::Update,
         filename: "page.html".into(),
@@ -533,7 +533,7 @@ pub(super) fn transitions(view: &Rc<DomView>) {
 /// Direct differences keep their title, counts, class and ordered rows when mounted and when
 /// one retained root is updated through every case.
 pub(super) fn diffs(view: &Rc<DomView>) {
-    use maestro_web::components::diff::{DiffProps, diff};
+    use maestro_web::components::changes::{DiffProps, diff};
     crate::diff_factory::diff_factory_identity_uses_normalized_semantics(view);
     let cases = cards::diff_cases();
     assert_eq!(cases.len(), 48);
@@ -576,7 +576,7 @@ pub(super) fn diffs(view: &Rc<DomView>) {
 /// A real panel, with its presentation counting open notifications.
 pub(super) struct Panel {
     /// Application panel the pills capture.
-    pub(super) panel: Rc<maestro_app::browser::tools::artifacts::LocalArtifactsPanel>,
+    pub(super) panel: Rc<maestro_app::browser::tools::documents::LocalArtifactsPanel>,
     /// Test presentation behind the panel.
     pub(super) presentation: Rc<crate::presentation::Presentation>,
 }
@@ -586,7 +586,7 @@ impl Panel {
         let host = Rc::new(crate::attachment_support::Host::default());
         let presentation = Rc::new(crate::presentation::Presentation::new(host));
         let panel = Rc::new(
-            maestro_app::browser::tools::artifacts::LocalArtifactsPanel::new_local(
+            maestro_app::browser::tools::documents::LocalArtifactsPanel::new_local(
                 presentation.clone(),
             ),
         );

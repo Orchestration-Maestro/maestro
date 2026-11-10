@@ -7,7 +7,7 @@ use crate::{
     },
     components::mode_toggle::{Mode, Options},
     dialogs::attachment_overlay::{content::file_type, error, excel::Excel, pdf::Pdf},
-    dom::DomRoot,
+    page::DomRoot,
     tools::types::ToolUiError,
 };
 use std::rc::Rc;
@@ -187,7 +187,7 @@ impl State {
         self.root
             .borrow()
             .as_ref()
-            .and_then(crate::dom::live)
+            .and_then(crate::page::live)
             .and_then(|root| {
                 root.query_selector(".maestro-attachment-body")
                     .ok()

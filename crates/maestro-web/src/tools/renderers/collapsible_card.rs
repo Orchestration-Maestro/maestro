@@ -3,7 +3,7 @@ use super::card_content::{Caption, CardOutput};
 use crate::{
     Attachment,
     components::console_block::ConsoleVariant,
-    dom::PreparedContent,
+    page::PreparedContent,
     tools::{renderer_registry::ToolHeaderState, types::ToolRenderResult},
 };
 

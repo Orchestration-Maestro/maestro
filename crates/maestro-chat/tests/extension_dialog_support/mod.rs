@@ -2,7 +2,7 @@
 use super::{manual_runtime::ms, recording_terminal::RecordingTerminal, runtime_spy::Spy};
 use crate::bindings;
 use bindings::{Binding, bindings};
-use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_chat::{
     ExtensionInputComponent, ExtensionInputOptions, ExtensionSelectorComponent,
     ExtensionSelectorOptions,
@@ -703,7 +703,7 @@ pub struct StartupHost {
 /// Installs the selector bindings the startup host is driven with.
 fn bind_startup_keys() {
     let keys = KeybindingsManager::new(
-        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
+        maestro_app::presentation_data::bindings::KEYBINDINGS.clone(),
         vec![],
     );
     keys.set_user_bindings(vec![

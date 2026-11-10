@@ -30,7 +30,7 @@ pub(crate) use selection::{model_level, saved_level};
 pub(crate) use state::{agent_messages, content_text, thrown};
 pub use types::*;
 
-use crate::resources::resource_loader::{LoadPromptsResult, ResourceLoader};
+use crate::resources::loading::{LoadPromptsResult, ResourceLoader};
 use indexmap::{IndexMap, IndexSet};
 use maestro_agent::Subscription;
 use maestro_agent::{Agent, AgentListener, AgentSpawner, AgentState, QueueMode, SharedAgentTool};
@@ -422,7 +422,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let task = Box::pin(async move {
             drop(sender.send(operation.await));
         });
-        crate::utils::task::start_now(task, |task| (self.spawn)(task));
+        crate::utils::scheduling::start_now(task, |task| (self.spawn)(task));
         receiver
     }
 

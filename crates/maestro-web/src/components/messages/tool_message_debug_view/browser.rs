@@ -3,7 +3,7 @@ use super::ToolMessageDebugView;
 use crate::{
     browser::attachment_content::browser::{append, element, set_text_if_changed},
     components::messages::tool_message_debug_view::pretty,
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
     tools::{renderers::default_renderer::Listing, types::ToolUiError},
 };
 use std::cell::RefCell;

@@ -8,9 +8,9 @@ use crate::native_artifact_console_support::{
     Probe, cases, deduplicated, localized, native_string, operand, rescan,
 };
 use maestro_web::{
-    browser::sandbox_value::BrowserSandboxValue,
-    dom::{DomContent as _, DomRoot, DomView},
-    tools::artifacts::console::{Console, LogEntry, LogType},
+    browser::values::BrowserSandboxValue,
+    page::{DomContent as _, DomRoot, DomView},
+    tools::documents::console::{Console, LogEntry, LogType},
 };
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
@@ -78,7 +78,7 @@ pub fn artifact_console_dom_summaries_and_literal_lines(import_module: &js_sys::
 }
 
 /// All localized count branches recorded from the source component.
-fn assert_summaries(view: &maestro_web::dom::DomView) {
+fn assert_summaries(view: &maestro_web::page::DomView) {
     for case in cases().summaries {
         let console = Console::new();
         console

@@ -2,7 +2,7 @@
 
 use super::{clear_render_dirty, style::CellStyler};
 use crate::render::conversion::color_to_u32;
-use maestro_app::daemon::{PaneRenderView, PaneTerminal, render_prof};
+use maestro_app::daemon_api::{PaneRenderView, PaneTerminal, render_prof};
 use maestro_app::terminal::Dirty;
 use maestro_protocol::frames::CellData;
 use ratatui::style::{Color, Style};

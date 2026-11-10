@@ -1,6 +1,6 @@
 //! The first-line deadline of a socket connection.
 use super::{Admission, INITIAL_REQUEST_TIMEOUT};
-use maestro_app::rpc_mode::{RpcInput, RpcLineReader};
+use maestro_app::connection_runner::{RpcInput, RpcLineReader};
 use std::{
     future::Future,
     io,

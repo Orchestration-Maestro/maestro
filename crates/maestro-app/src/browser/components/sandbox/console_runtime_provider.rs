@@ -3,7 +3,7 @@
 //! ```
 //! use maestro_app::browser::components::sandbox::{
 //!     console_runtime_provider::ConsoleRuntimeProvider,
-//!     sandbox_runtime_provider::SandboxRuntimeProvider,
+//!     providers::SandboxRuntimeProvider,
 //! };
 //!
 //! let console = ConsoleRuntimeProvider::<serde_json::Value>::new();
@@ -13,7 +13,7 @@
 //! assert!(console.get_data()?.is_empty());
 //! # Ok::<(), maestro_models::DiagnosticErrorInfo>(())
 //! ```
-use super::sandbox_runtime_provider::{
+use super::providers::{
     BuiltinRuntime, Runtime, RuntimeProviderValue, SandboxRespond, SandboxRuntimeProvider,
 };
 use crate::browser::components::sandboxed_iframe::{SandboxError, SandboxValue};

@@ -1,6 +1,6 @@
 # Artifact commands
 
-[`ArtifactsPanel`](../../crates/maestro-app/src/browser/tools/artifacts.rs)
+[`ArtifactsPanel`](../../crates/maestro-app/src/browser/tools/documents.rs)
 retains an ordered collection of mutable, dated files. Its `tool()` returns an
 executable `artifacts` declaration that remains usable after the caller releases
 the panel. The application SDK exports `Artifact`, `ArtifactsParams` and

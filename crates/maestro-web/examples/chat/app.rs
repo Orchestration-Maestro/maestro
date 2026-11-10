@@ -13,12 +13,12 @@ use maestro_web::{
     ApiKeyPromptDialog, BrowserSandboxHost, BrowserSession, ChatPanel, ChatPanelConfig,
     IndexedDBStorageBackend, ProvidersModelsTab, ProxyTab, SessionListDialog, SettingsDialog,
     ThemeToggle,
-    components::agent_interface::usage_totals,
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    components::input::Input,
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
+    components::conversation::usage_totals,
+    components::fields::Input,
     create_javascript_repl_tool,
-    dom::DomView,
     icons::{IconSize, icon_dom, icons},
+    page::DomView,
 };
 use std::{
     cell::RefCell,

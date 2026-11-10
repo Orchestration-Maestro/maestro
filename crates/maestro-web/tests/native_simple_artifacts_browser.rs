@@ -6,8 +6,8 @@ use crate::session_download_browser::Fixture;
 use crate::session_header_support::{Event, Host};
 use maestro_web::{
     ArtifactElement,
-    dom::{DomContent, DomRoot, DomView},
-    tools::artifacts::generic_artifact::GenericArtifact,
+    page::{DomContent, DomRoot, DomView},
+    tools::documents::generic_artifact::GenericArtifact,
 };
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};

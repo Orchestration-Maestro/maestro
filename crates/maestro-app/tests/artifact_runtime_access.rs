@@ -5,12 +5,12 @@ use crate::artifact_presentation_support::Recorder;
 use crate::support::run;
 use maestro_agent::{Agent, AgentMessage, AgentOptions};
 use maestro_app::SharedHandle;
-use maestro_app::browser::components::messages::CustomAgentMessages;
+use maestro_app::browser::components::records::CustomAgentMessages;
 use maestro_app::browser::components::sandbox::{
     artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
-    sandbox_runtime_provider::SandboxRuntimeProvider,
+    providers::SandboxRuntimeProvider,
 };
-use maestro_app::browser::tools::artifacts::ArtifactsPanel;
+use maestro_app::browser::tools::documents::ArtifactsPanel;
 use maestro_app::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
 };

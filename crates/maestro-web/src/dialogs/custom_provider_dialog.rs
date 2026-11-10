@@ -4,7 +4,7 @@ mod form;
 use crate::{
     browser::{attachment_content::browser::host_error, discovery::discover},
     dialogs::dialog_base::DialogBase,
-    dom::{DomView, report},
+    page::{DomView, report},
     tools::types::ToolUiError,
 };
 use form::Form;

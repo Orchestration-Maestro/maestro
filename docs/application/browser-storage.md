@@ -70,5 +70,5 @@ Quota and persistence use its own backend. Initialize the realm-local slot with
 handles usable.
 
 Transactions, prefix/index ordering, quota and persistence are
-[adapter contracts](../../crates/maestro-app/src/browser/storage/types.rs),
+[adapter contracts](../../crates/maestro-app/src/browser/persistence/types.rs),
 not platform implementations here. No browser store redirects into native history.

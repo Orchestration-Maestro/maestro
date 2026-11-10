@@ -7,16 +7,17 @@ use crate::contributions_support::{
 use maestro_app::{AgentMessage, JsonObject, SharedHandle};
 use maestro_web::{
     MessageRenderer, RUNTIME_MESSAGE_ROUTER,
-    browser::sandbox_value::BrowserSandboxValue,
+    browser::values::BrowserSandboxValue,
     components::message_renderer_registry::dom::render_message,
     components::sandbox::runtime_message_router::MessageConsumer,
-    contributions::{
+    page::{DomContent, DomRoot, DomView, MountedContent},
+    register_message_renderer, register_tool_renderer,
+    runtime_contributions::{
         BrowserContribution, ContributionDescriptor, ContributionFailure, ContributionHost,
         ContributionView, SlotMount, admit, register_contribution, route_contribution,
         slot_contributions,
     },
-    dom::{DomContent, DomRoot, DomView, MountedContent},
-    register_message_renderer, register_tool_renderer, set_show_json_mode,
+    set_show_json_mode,
     tools::{
         dom::render_tool,
         types::{
@@ -40,7 +41,7 @@ async fn loaded(
 ) -> (
     Rc<DomView>,
     ContributionHost,
-    maestro_web::contributions::ModuleRegistrations,
+    maestro_web::runtime_contributions::ModuleRegistrations,
     Vec<String>,
 ) {
     let view = view();

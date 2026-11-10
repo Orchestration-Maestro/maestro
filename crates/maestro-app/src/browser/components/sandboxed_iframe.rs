@@ -1,5 +1,5 @@
 //! Owned sandbox values and supplied execution effects.
-use super::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+use super::sandbox::providers::SandboxRuntimeProvider;
 use maestro_agent::runtime::Native;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
 use serde_json::Value;

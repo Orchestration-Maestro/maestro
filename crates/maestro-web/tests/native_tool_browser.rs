@@ -2,10 +2,10 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{Text, body, text, view};
 use maestro_web::{
-    dom::DomContent,
+    page::DomContent,
     tools::renderer_registry::{
         ToolHeaderState, ToolHeaderText,
-        header::{ToolHeaderRefs, render_collapsible_header, render_header},
+        heading::{ToolHeaderRefs, render_collapsible_header, render_header},
     },
 };
 use std::{cell::RefCell, rc::Rc};
@@ -382,7 +382,7 @@ pub fn native_defaults_register_once_and_keep_override_json_modes() {
 /// Typed application arguments use the same built-in preparations as raw model objects.
 fn typed_default_captions(caption: &impl Fn(ToolRenderResult) -> String) {
     use maestro_app::browser::tools::{
-        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
+        extraction::{ExtractDocumentParams, ExtractDocumentResult},
         javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
     };
     use maestro_web::render_tool;
@@ -403,16 +403,16 @@ struct CapturedField;
 impl DomContent for CapturedField {
     fn mount(
         &self,
-        view: &maestro_web::dom::DomView,
-    ) -> Result<maestro_web::dom::DomRoot, ToolUiError> {
-        Ok(maestro_web::dom::DomRoot::new(
+        view: &maestro_web::page::DomView,
+    ) -> Result<maestro_web::page::DomRoot, ToolUiError> {
+        Ok(maestro_web::page::DomRoot::new(
             view.document.create_element("input").unwrap(),
         ))
     }
     fn update(
         &self,
-        _: &maestro_web::dom::DomRoot,
-        _: &maestro_web::dom::DomView,
+        _: &maestro_web::page::DomRoot,
+        _: &maestro_web::page::DomView,
     ) -> Result<(), ToolUiError> {
         Ok(())
     }
@@ -475,7 +475,7 @@ pub async fn expandable_section_dom_keeps_captured_child_across_toggles() {
 }
 /// A separately mounted section keeps its own original child and expansion.
 fn independent_section(
-    view: &maestro_web::dom::DomView,
+    view: &maestro_web::page::DomView,
     element: &web_sys::Element,
     input: &web_sys::HtmlInputElement,
     toggle: &HtmlElement,
@@ -554,7 +554,7 @@ pub fn native_binding_reentrant_replacement_and_retained_handle() {
 }
 
 /// The twelve rich/status/default-expansion branches keep their native button and current body.
-async fn collapsible_headers(view: &maestro_web::dom::DomView) {
+async fn collapsible_headers(view: &maestro_web::page::DomView) {
     for state in [
         ToolHeaderState::Inprogress,
         ToolHeaderState::Complete,
@@ -569,7 +569,7 @@ async fn collapsible_headers(view: &maestro_web::dom::DomView) {
 }
 /// Observe one native header branch with a body deliberately opposite to its default icon.
 async fn collapsible_header(
-    view: &maestro_web::dom::DomView,
+    view: &maestro_web::page::DomView,
     state: ToolHeaderState,
     options: (bool, bool),
 ) {
@@ -759,7 +759,7 @@ fn document_card(
     case: &DocumentCase,
 ) -> Result<ToolRenderResult<Box<dyn DomContent>>, ToolUiError> {
     use maestro_web::tools::{
-        extract_document::ExtractDocumentRenderer, javascript_repl::JavaScriptReplRenderer,
+        extraction::ExtractDocumentRenderer, javascript_repl::JavaScriptReplRenderer,
     };
     let (params, streaming) = (case.input.params.as_ref(), case.input.is_streaming);
     let result = case.input.result.as_ref().map(Into::into);
@@ -921,7 +921,7 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
     import_module: &js_sys::Function,
 ) {
     use crate::contributions_support::{container, driver, host, select};
-    use maestro_web::dom::MountedContent;
+    use maestro_web::page::MountedContent;
     let view = view();
     let _elements = host(&view, import_module);
     let parent = container();
@@ -1014,8 +1014,8 @@ fn assert_motion(header: &HtmlElement, body: &web_sys::Element) {
 }
 /// Within the result template, listing, console, copy feedback and unchanged tiles stay mounted.
 async fn assert_result_branch_retains(
-    (slot, parent): (&mut maestro_web::dom::MountedContent, &web_sys::Element),
-    view: &maestro_web::dom::DomView,
+    (slot, parent): (&mut maestro_web::page::MountedContent, &web_sys::Element),
+    view: &maestro_web::page::DomView,
     result: &maestro_app::ToolResultMessage<serde_json::Value>,
 ) {
     use crate::contributions_support::{Clipboard, Recorded, select, until};
@@ -1064,13 +1064,13 @@ async fn assert_result_branch_retains(
 /// Instances toggle independently; a reconnected root keeps its activation and a released one
 /// loses it.
 fn assert_instances_and_release(
-    slot: maestro_web::dom::MountedContent,
+    slot: maestro_web::page::MountedContent,
     card: &web_sys::Element,
     parent: &web_sys::Element,
-    view: &maestro_web::dom::DomView,
+    view: &maestro_web::page::DomView,
 ) {
     use crate::contributions_support::select;
-    let mut other = maestro_web::dom::MountedContent::default();
+    let mut other = maestro_web::page::MountedContent::default();
     other
         .show(execution_card("z", None).as_ref(), parent, view)
         .unwrap();

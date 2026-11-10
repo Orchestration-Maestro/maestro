@@ -1,6 +1,6 @@
 //! JavaScript execution through supplied hidden sandbox effects.
 use super::prompts::javascript_repl_tool_description;
-use crate::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+use crate::browser::components::sandbox::providers::SandboxRuntimeProvider;
 use crate::browser::components::sandboxed_iframe::{
     SandboxEnvironment, SandboxExecution, SandboxFile, SandboxFileContent, SandboxHost,
     SandboxResult, SandboxUrlProvider, SandboxValue,

@@ -1,6 +1,6 @@
 //! Browser display utilities.
-pub mod format;
-pub mod i18n;
+pub mod formatting;
+pub mod localization;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod download;
@@ -12,4 +12,4 @@ pub(crate) mod clipboard;
 
 /// Browser-local token kept in local storage.
 #[cfg(target_arch = "wasm32")]
-pub mod auth_token;
+pub mod authorization;

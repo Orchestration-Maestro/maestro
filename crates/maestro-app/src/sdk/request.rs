@@ -3,7 +3,7 @@
 use super::conversion::convert_to_llm_with_block_images;
 use super::creation::Services;
 use crate::agent_session::{ExtensionRunnerRef, local_spawner, thrown};
-use crate::configuration::telemetry::is_install_telemetry_enabled;
+use crate::configuration::installation::is_install_telemetry_enabled;
 use indexmap::IndexMap;
 use maestro_agent::{
     Agent, AgentExecution, AgentInitialState, AgentOptions, AgentSpawner, QueueMode,

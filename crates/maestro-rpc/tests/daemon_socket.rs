@@ -2,13 +2,13 @@
 //! request adapter under one connection.
 #![cfg(target_os = "linux")]
 use maestro_app::SettingsManager;
-use maestro_app::daemon::{
+use maestro_app::connection_runner::{
+    DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
+};
+use maestro_app::daemon_api::{
     ApiClientError, App, Config, ConnectionTarget, DaemonClient, DaemonPaths, EventHub,
     ManifestCache, NewTerminalCwdConfig, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry,
-    RenderSignal, RequestMessage, RuntimeStatus, TerminalTheme, logging,
-};
-use maestro_app::rpc_mode::{
-    DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
+    RenderSignal, RequestMessage, RuntimeStatus, TerminalTheme, diagnostics as logging,
 };
 use maestro_app::rpc_types::workspace::{Request, RpcResponse};
 use maestro_app::rpc_types::workspace_schema::{
@@ -524,7 +524,8 @@ fn socket_ping_reports_product_and_shared_protocol_versions() {
     });
     let capabilities = ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon: maestro_app::daemon::current_process_is_detached_server_daemon(),
+        detached_server_daemon: maestro_app::daemon_api::current_process_is_detached_server_daemon(
+        ),
     };
     let reply: RpcResponse = serde_json::from_str(&line).unwrap();
     assert_eq!(
@@ -572,7 +573,8 @@ fn socket_first_lines_close_or_answer_by_their_framing() {
     });
     let served_capabilities = ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon: maestro_app::daemon::current_process_is_detached_server_daemon(),
+        detached_server_daemon: maestro_app::daemon_api::current_process_is_detached_server_daemon(
+        ),
     };
     let answered = response("p", "ping", Ok(pong(Some(served_capabilities))));
     let answered = format!("{}\n", serde_json::to_string(&answered).unwrap());
@@ -752,7 +754,7 @@ fn server_startup_announces_only_bound_resources() {
 
 #[test]
 fn setup_entry() {
-    if maestro_app::daemon::setup_entry().is_some() {
+    if maestro_app::daemon_api::setup_entry().is_some() {
         std::process::exit(1);
     }
 }

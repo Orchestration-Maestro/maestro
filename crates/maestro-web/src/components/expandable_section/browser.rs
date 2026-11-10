@@ -5,10 +5,10 @@ use crate::{
         attachment_content::browser::{element, host_error, set_text_if_changed},
         event_subscription::EventSubscription,
     },
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
     icons::IconSize,
+    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
     tools::{
-        renderer_registry::header::dom::{Click, glyph},
+        renderer_registry::heading::dom::{Click, glyph},
         types::ToolUiError,
     },
 };

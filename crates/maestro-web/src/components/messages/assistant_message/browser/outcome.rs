@@ -6,10 +6,10 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::{
-        button::{ButtonProps, ButtonSize, ButtonVariant, button},
+        controls::{ButtonProps, ButtonSize, ButtonVariant, button},
         messages::AbortedMessage,
     },
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use std::{cell::RefCell, rc::Rc};

@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_app::browser::utils::attachment_utils::{
+use maestro_app::browser::utils::attachments::{
     AttachmentError, AttachmentSource, load_attachment,
 };
 use maestro_models::{Fetch, FetchError, HttpResponse};
@@ -173,7 +173,7 @@ fn document_formats_do_not_fall_through_to_images_or_text() {
 
 /// Preserve format precedence without falling through to text or images.
 fn assert_document_failure(
-    result: &Result<maestro_app::browser::utils::attachment_utils::Attachment, AttachmentError>,
+    result: &Result<maestro_app::browser::utils::attachments::Attachment, AttachmentError>,
     name: &str,
     mime: &str,
 ) {

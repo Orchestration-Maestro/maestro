@@ -1,15 +1,15 @@
 //! Asks before requesting persistent browser storage for saved conversations.
 use super::{
-    dialog::{DialogHeaderProps, dialog_content, dialog_header},
     dialog_base::DialogBase,
+    surface::{DialogHeaderProps, dialog_content, dialog_header},
 };
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error},
         event_subscription::EventSubscription,
     },
-    components::button::{ButtonProps, ButtonVariant, button},
-    dom::{DomView, outline_glyph},
+    components::controls::{ButtonProps, ButtonVariant, button},
+    page::{DomView, outline_glyph},
     storage::backends::indexeddb_storage_backend::storage_support,
     tools::types::ToolUiError,
 };

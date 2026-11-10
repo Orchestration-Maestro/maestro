@@ -1,7 +1,7 @@
 //! Document attachment fixture replay through the public loader.
 #![cfg(test)]
 use super::attachment_observation::observed;
-use maestro_app::browser::utils::attachment_utils::{
+use maestro_app::browser::utils::attachments::{
     AttachmentError, AttachmentSource, load_attachment,
 };
 use maestro_models::{Fetch, FetchError, HttpResponse};

@@ -2,8 +2,8 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{container, select};
 use maestro_web::{
-    components::diff::{DiffProps, diff},
-    dom::MountedContent,
+    components::changes::{DiffProps, diff},
+    page::MountedContent,
 };
 use wasm_bindgen::JsCast as _;
 
@@ -87,7 +87,7 @@ fn distinctions() -> [Case; 6] {
 }
 
 /// Equivalent selected content leaves native descendants untouched; distinct input is visible.
-pub fn diff_factory_identity_uses_normalized_semantics(view: &maestro_web::dom::DomView) {
+pub fn diff_factory_identity_uses_normalized_semantics(view: &maestro_web::page::DomView) {
     let parent = container();
     for (name, before, after, equivalent) in equivalences().into_iter().chain(distinctions()) {
         let mut slot = MountedContent::default();

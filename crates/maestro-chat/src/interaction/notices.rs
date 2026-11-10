@@ -163,7 +163,7 @@ impl InteractiveMode {
     /// Captures reporting policy before handing owned work to the terminal host.
     pub(super) fn report_install_telemetry(&self, version: &str) {
         let session = self.runtime_host.session();
-        let work = maestro_app::configuration::telemetry::report_install_telemetry(
+        let work = maestro_app::configuration::installation::report_install_telemetry(
             version,
             &session.settings_manager().borrow(),
             self.options
@@ -275,9 +275,9 @@ impl InteractiveMode {
 /// Starts immediate effects now and transfers pending work to the existing runtime.
 fn start_notice_work(
     runtime: &dyn maestro_tui::interface::TuiRuntime,
-    work: maestro_app::utils::task::LocalTask,
+    work: maestro_app::utils::scheduling::LocalTask,
 ) {
-    maestro_app::utils::task::start_now(work, |work| {
+    maestro_app::utils::scheduling::start_now(work, |work| {
         runtime.spawn_local(Box::pin(async move {
             work.await;
             Ok(())
@@ -407,12 +407,12 @@ impl InteractiveMode {
         start_notice_check(
             self.tool_environment.runtime.as_ref(),
             async move {
-                let options = maestro_app::configuration::version_check::VersionCheckOptions {
+                let options = maestro_app::configuration::releases::VersionCheckOptions {
                     fetch: producer.options.fetch.clone(),
                     offline: producer.runtime_host.services().offline,
                     ..Default::default()
                 };
-                maestro_app::configuration::version_check::check_for_new_maestro_version(
+                maestro_app::configuration::releases::check_for_new_maestro_version(
                     maestro_app::configuration::config::VERSION,
                     producer
                         .options

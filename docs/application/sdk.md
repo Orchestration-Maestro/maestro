@@ -4,7 +4,7 @@ A program embeds Maestro through `maestro_app`. The crate root re-exports the
 session, its creation and replacement operations, and the records of the
 compaction, history, resource, settings, tool and theme owners they use. Frontend
 modes and the interactive components stay with their own crates; the RPC client,
-which drives Maestro as a child process, lives here in `rpc_client`
+which drives Maestro as a child process, lives here in `rpc_transport`
 ([RPC client](../client.md)).
 
 [Session observations](lifecycle.md) describes name publication and finalized

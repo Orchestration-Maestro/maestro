@@ -1,7 +1,7 @@
 //! Browser root reaches application-owned attachment policy.
 #![cfg(test)]
-use maestro_app::browser::components::messages::{ArtifactAction, CustomAgentMessages};
-use maestro_app::browser::utils::attachment_utils::{AttachmentSource, AttachmentType};
+use maestro_app::browser::components::records::{ArtifactAction, CustomAgentMessages};
+use maestro_app::browser::utils::attachments::{AttachmentSource, AttachmentType};
 use maestro_web::{
     ArtifactMessage, Attachment, UserMessageWithAttachments, convert_attachments,
     default_convert_to_llm, is_artifact_message, is_user_message_with_attachments, load_attachment,
@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 
 #[test]
 fn web_attachment_exports_use_application_records() {
-    let attachment: Attachment = maestro_app::browser::utils::attachment_utils::Attachment {
+    let attachment: Attachment = maestro_app::browser::utils::attachments::Attachment {
         id: "id".into(),
         r#type: AttachmentType::Image,
         file_name: "name".into(),

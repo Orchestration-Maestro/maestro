@@ -4,7 +4,7 @@ use super::extension_widgets::with_factories;
 use super::{Setup, World, isolated};
 use crate::CustomEditor;
 use maestro_app::messages::UserMessageDelivery;
-use maestro_app::utils::clipboard_image::ClipboardImage;
+use maestro_app::utils::image_clipboard::ClipboardImage;
 use maestro_app::{
     ActionHandlers, CustomEditorComponent, EditorFactory, EditorFactoryOutcome, ExtensionAPI,
     ExtensionFactory, ExtensionKeybindings, ExtensionShortcutCallback, Local,

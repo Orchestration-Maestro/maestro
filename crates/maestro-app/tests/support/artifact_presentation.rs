@@ -1,7 +1,7 @@
 //! Shared recording presentation for artifact reconstruction tests.
 #![cfg(test)]
 use maestro_app::BoxFuture;
-use maestro_app::browser::tools::artifacts::{
+use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState, FileType,
     get_file_type,
 };

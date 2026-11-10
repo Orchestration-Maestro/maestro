@@ -1,8 +1,6 @@
 //! Presentation of application-owned workspace settings operations.
-use maestro_app::daemon::DEFAULTS_TEXT;
-use maestro_app::presentation_data::keybindings::{
-    KeybindingsReset, reset_multiplexer_keybindings,
-};
+use maestro_app::daemon_api::DEFAULTS_TEXT;
+use maestro_app::presentation_data::bindings::{KeybindingsReset, reset_multiplexer_keybindings};
 use std::io::{self, Write};
 
 /// Validate and present a multiplexer keybinding reset beneath the supplied root.

@@ -1,15 +1,15 @@
 //! A dialog asking for one line of text, settled once by Confirm, Cancel or any close.
 use super::{
-    dialog::{DialogHeaderProps, dialog_content, dialog_footer, dialog_header},
     dialog_base::DialogBase,
+    surface::{DialogHeaderProps, dialog_content, dialog_footer, dialog_header},
 };
 use crate::{
     browser::{attachment_content::browser::host_error, event_subscription::EventSubscription},
     components::{
-        button::{ButtonProps, ButtonVariant, button},
-        input::{Input, InputProps, InputType, unique_id},
+        controls::{ButtonProps, ButtonVariant, button},
+        fields::{Input, InputProps, InputType, unique_id},
     },
-    dom::DomView,
+    page::DomView,
     tools::types::ToolUiError,
 };
 use std::{

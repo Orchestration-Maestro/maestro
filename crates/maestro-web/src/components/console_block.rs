@@ -1,12 +1,12 @@
 //! Literal console output with retained native scrolling and owned copy feedback.
-use crate::components::code_block::ReadingUiError;
+use crate::components::source::ReadingUiError;
 use crate::{
     I18n,
     browser::attachment_content::{
         self, AttachmentHost, AttachmentHostError, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
-    components::{code_block, copy_button::CopyButton},
+    components::{copy_button::CopyButton, source as code_block},
 };
 use std::{
     cell::RefCell,
@@ -73,7 +73,7 @@ impl Prepared {
 /// Console body and its independent retained platform lifetime.
 ///
 /// [`ConsoleBlock::default`] mounts as native page content through
-/// [`DomContent`](crate::dom::DomContent); [`ConsoleBlock::new`] draws on a canvas host.
+/// [`DomContent`](crate::page::DomContent); [`ConsoleBlock::new`] draws on a canvas host.
 pub struct ConsoleBlock {
     /// Literal output, never parsed as markup or encoded text.
     pub content: String,

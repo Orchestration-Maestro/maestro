@@ -13,7 +13,7 @@ mod style;
 mod tests;
 
 use cursor::CursorMemory;
-use maestro_app::daemon::render_prof;
+use maestro_app::daemon_api::render_prof;
 use maestro_protocol::frames::FrameData;
 use ratatui::style::Modifier;
 use redraw::Changes;

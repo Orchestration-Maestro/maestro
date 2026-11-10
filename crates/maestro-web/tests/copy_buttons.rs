@@ -184,7 +184,7 @@ fn copy_reading(
 /// Standalone preparation, replacement and activation retain the decoded clipboard operand.
 #[test]
 fn code_block_copies_decoded_and_replaced_native_input() {
-    use maestro_web::components::code_block::{CodeBlock, CodeBlockView};
+    use maestro_web::components::source::{CodeBlock, CodeBlockView};
     let mut canvas = Canvas::new();
     let mut block = CodeBlock::new(canvas.host.clone());
     assert!(block.code.is_empty() && block.language.is_empty());
@@ -213,7 +213,7 @@ fn code_block_copies_decoded_and_replaced_native_input() {
 /// The retained Markdown consumer publishes new code operands, not stale controls.
 #[test]
 fn markdown_block_copies_current_native_listing_after_replacement() {
-    use maestro_web::components::{code_block::CodeBlockView, markdown_block::MarkdownBlock};
+    use maestro_web::components::{markdown_block::MarkdownBlock, source::CodeBlockView};
     let mut canvas = Canvas::new();
     let mut block = MarkdownBlock::new(canvas.host.clone());
     assert!(block.content.is_empty() && block.escape_html && !block.is_thinking);

@@ -1,6 +1,6 @@
 //! Refresh original record fields without restarting unchanged native documents.
 use super::State;
-use crate::{dom, tools::types::ToolUiError};
+use crate::{page as dom, tools::types::ToolUiError};
 use std::rc::Rc;
 
 impl State {

@@ -1,15 +1,15 @@
 //! Saved conversations: open one or delete them after confirmation.
 use super::{
-    dialog::{DialogHeaderProps, dialog_content, dialog_header},
     dialog_base::DialogBase,
+    surface::{DialogHeaderProps, dialog_content, dialog_header},
 };
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error},
         event_subscription::EventSubscription,
     },
-    dom::{DomView, outline_glyph, report},
     format_usage,
+    page::{DomView, outline_glyph, report},
     tools::types::ToolUiError,
 };
 use maestro_app::{SessionMetadata, get_app_storage};

@@ -2,7 +2,7 @@
 
 `maestro-multiplexer` presents the [workspace daemon](workspace-daemon.md) in a
 host terminal. It reaches the daemon and the terminal emulator only through
-`maestro_app::daemon` and `maestro_app::terminal`, and it is the only crate that
+`maestro_app::daemon_api` and `maestro_app::terminal`, and it is the only crate that
 uses the frame library. The [daemon specification](specs/workspace-daemon.md)
 lists what each delivery adds.
 

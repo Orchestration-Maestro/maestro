@@ -72,7 +72,7 @@ Keep one `MountedContent` per row. Given the caller's `view` and `parent` elemen
 
 ```rust,ignore
 use maestro_web::{DefaultRenderer, ToolRenderer, register_tool_renderer, render_tool};
-use maestro_web::dom::MountedContent;
+use maestro_web::page::MountedContent;
 use maestro_web::tools::types::{ToolParams, ToolRendererBinding};
 use std::rc::Rc;
 
@@ -152,7 +152,7 @@ variants. Reading preparation keeps a typed `ReadingUiError`, including its
 highlighter or outer-style cause; JSON and operand preparation preserve their
 existing literal messages. `Error::source` exposes each typed cause.
 
-Canvas console output shares `components::code_block::ReadingUiError`; its
+Canvas console output shares `components::source::ReadingUiError`; its
 outer-style Presentation variant retains the original I/O error.
 
 ## Command, calculation and time cards
@@ -190,7 +190,7 @@ Dropping the section releases its children.
 
 ```rust,ignore
 use maestro_web::ExpandableSection;
-use maestro_web::dom::DomContent as _;
+use maestro_web::page::DomContent as _;
 
 let mut section = ExpandableSection::new(children);
 section.summary = "Details".into();
@@ -214,7 +214,7 @@ explicit JSON values and native `ArtifactsParams`; it does not read result
 details. Partial JSON arguments are rendered without execution-schema decoding.
 
 ```rust,ignore
-use maestro_app::{JsonObject, browser::tools::artifacts::ArtifactsParams};
+use maestro_app::{JsonObject, browser::tools::documents::ArtifactsParams};
 use maestro_web::{ArtifactsToolRenderer, register_tool_renderer,
     tools::types::ToolRendererBinding};
 use serde_json::Value;

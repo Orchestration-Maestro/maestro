@@ -2,9 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_app::browser::utils::attachment_utils::{
-    AttachmentSource, AttachmentType, load_attachment,
-};
+use maestro_app::browser::utils::attachments::{AttachmentSource, AttachmentType, load_attachment};
 use std::sync::Arc;
 
 #[test]
@@ -146,7 +144,7 @@ fn pdf_url_failures_precede_parsing() {
             })
         });
         assert!(
-            matches!(support::run(load_attachment(AttachmentSource::Url("https://example.test/a.pdf"), None, &fetch)), Err(maestro_app::browser::utils::attachment_utils::AttachmentError::HttpStatus(actual)) if actual == status)
+            matches!(support::run(load_attachment(AttachmentSource::Url("https://example.test/a.pdf"), None, &fetch)), Err(maestro_app::browser::utils::attachments::AttachmentError::HttpStatus(actual)) if actual == status)
         );
     }
     let fetch: maestro_app::Fetch = Arc::new(|_| Box::pin(async { Err(FetchError::Aborted) }));
@@ -156,11 +154,7 @@ fn pdf_url_failures_precede_parsing() {
             None,
             &fetch
         )),
-        Err(
-            maestro_app::browser::utils::attachment_utils::AttachmentError::Fetch(
-                FetchError::Aborted
-            )
-        )
+        Err(maestro_app::browser::utils::attachments::AttachmentError::Fetch(FetchError::Aborted))
     ));
     let fetch: maestro_app::Fetch = Arc::new(|_| {
         Box::pin(async {
@@ -180,11 +174,7 @@ fn pdf_url_failures_precede_parsing() {
             None,
             &fetch
         )),
-        Err(
-            maestro_app::browser::utils::attachment_utils::AttachmentError::Fetch(
-                FetchError::Aborted
-            )
-        )
+        Err(maestro_app::browser::utils::attachments::AttachmentError::Fetch(FetchError::Aborted))
     ));
 }
 

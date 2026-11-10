@@ -2,7 +2,7 @@
 use maestro_app::{AgentMessage, CustomAgentMessages, Message, UserContent, UserMessage};
 use maestro_web::{
     MessageRenderer, default_convert_to_llm,
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     register_message_renderer,
     tools::types::ToolUiError,
 };
@@ -15,7 +15,7 @@ use wasm_bindgen::JsCast as _;
 
 /// The browser records of a session that also holds notifications.
 pub type ExampleMessages =
-    maestro_app::browser::components::messages::CustomAgentMessages<SystemNotificationMessage>;
+    maestro_app::browser::components::records::CustomAgentMessages<SystemNotificationMessage>;
 
 /// How a notification is presented.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

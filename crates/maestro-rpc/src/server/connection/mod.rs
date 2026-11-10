@@ -3,8 +3,8 @@ mod native;
 
 pub use native::NativeRpcProcess;
 
+use maestro_app::connection_runner::{JsonlLineReader, stdout_output};
 use maestro_app::output_guard::take_over_stdout;
-use maestro_app::rpc_mode::{JsonlLineReader, stdout_output};
 use maestro_app::{RpcModeOptions, run_rpc_connection};
 use std::{convert::Infallible, io};
 

@@ -9,7 +9,7 @@ use super::{
 use crate::contributions_support::{container, host, select, text, view};
 use maestro_web::{
     AssistantMessage, ExpandableSection, ToolMessage, UserMessage,
-    dom::{DomContent, DomView, MountedContent},
+    page::{DomContent, DomView, MountedContent},
 };
 use std::{
     cell::Cell,
@@ -128,7 +128,7 @@ pub fn returned_files(import: &js_sys::Function) {
 pub fn user_and_tool(import: &js_sys::Function) {
     use maestro_app::{
         AgentMessage, UserContent,
-        browser::components::messages::{CustomAgentMessages, UserMessageWithAttachments},
+        browser::components::records::{CustomAgentMessages, UserMessageWithAttachments},
     };
     let view = view();
     let _elements = host(&view, import);

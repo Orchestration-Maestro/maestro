@@ -447,7 +447,7 @@ impl maestro_app::SandboxRuntimeProvider<Payload> for OwnedProvider {
     fn handle_message(
         &self,
         message: Payload,
-        respond: maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond<Payload>,
+        respond: maestro_app::browser::components::sandbox::providers::SandboxRespond<Payload>,
     ) -> maestro_models::BoxFuture<Result<(), DiagnosticErrorInfo>> {
         Box::pin(async move { respond(message) })
     }

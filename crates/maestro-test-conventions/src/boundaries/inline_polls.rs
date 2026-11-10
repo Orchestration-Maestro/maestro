@@ -7,7 +7,7 @@ use crate::source::{Member, test_scope};
 const MEMBER: &str = "maestro-app";
 
 /// The file that owns the inline first poll.
-const OWNER: &str = "src/utils/task.rs";
+const OWNER: &str = "src/utils/scheduling.rs";
 
 /// Reject a no-op waker in production code outside the owner of the inline first poll.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {

@@ -1,5 +1,7 @@
 //! Native connection callbacks for retained component roots.
-use crate::{browser::attachment_content::browser::host_error, dom, tools::types::ToolUiError};
+use crate::{
+    browser::attachment_content::browser::host_error, page as dom, tools::types::ToolUiError,
+};
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element};
 

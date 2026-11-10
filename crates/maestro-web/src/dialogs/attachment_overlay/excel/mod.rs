@@ -81,9 +81,9 @@ impl Excel {
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn mount_root(
         &self,
-        view: &crate::dom::DomView,
+        view: &crate::page::DomView,
         padded: bool,
-    ) -> Result<crate::dom::DomRoot, crate::tools::types::ToolUiError> {
+    ) -> Result<crate::page::DomRoot, crate::tools::types::ToolUiError> {
         for (_, content) in &self.sheets.values {
             if let Err(text) = content {
                 text.borrow_mut().values[0] = view.i18n.text("Error loading spreadsheet")?;

@@ -1,12 +1,12 @@
 //! A dialog asking for a provider's key, settled once a key is stored or the dialog closes.
 use super::{
-    dialog::{DialogHeaderProps, dialog_content, dialog_header},
     dialog_base::DialogBase,
+    surface::{DialogHeaderProps, dialog_content, dialog_header},
 };
 use crate::{
     browser::timer::{Timer, native},
     components::provider_key_input::ProviderKeyInput,
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use maestro_app::get_app_storage;

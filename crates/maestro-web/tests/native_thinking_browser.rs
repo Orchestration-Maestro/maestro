@@ -4,7 +4,7 @@ use crate::contributions_support::{body, computed, container, document, driver, 
 use maestro_theme::BrandMode;
 use maestro_web::{
     ThinkingBlock,
-    dom::{DomView, MountedContent},
+    page::{DomView, MountedContent},
 };
 use std::fmt::Write as _;
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};

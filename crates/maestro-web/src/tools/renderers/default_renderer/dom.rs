@@ -2,7 +2,7 @@
 use super::{DefaultContent, Listing, prepare};
 use crate::{
     browser::attachment_content::browser::{element, host_error},
-    dom::{DomContent, DomRoot, DomView},
+    page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use std::cell::RefCell;
@@ -43,7 +43,7 @@ impl DomContent for DefaultContent {
             self.state,
             &no_output,
         )?;
-        let header = crate::tools::renderer_registry::header::dom::render_header_element(
+        let header = crate::tools::renderer_registry::heading::dom::render_header_element(
             view,
             self.state,
             "Code",

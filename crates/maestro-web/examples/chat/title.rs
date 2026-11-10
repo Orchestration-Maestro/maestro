@@ -1,7 +1,7 @@
 //! Generates the session title and shows the header name, title button or title editor.
 use super::{ExampleMessages, NAME, State, element, js, report};
 use maestro_app::{AgentMessage, UserBlock, UserContent};
-use maestro_web::components::input::{Input, InputProps, InputSize};
+use maestro_web::components::fields::{Input, InputProps, InputSize};
 use std::{rc::Rc, sync::PoisonError};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::{Event, HtmlElement};

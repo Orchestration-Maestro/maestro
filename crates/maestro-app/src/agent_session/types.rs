@@ -1,5 +1,5 @@
 //! Session configuration, events and operation results.
-use crate::resources::resource_loader::ResourceLoader;
+use crate::resources::loading::ResourceLoader;
 use indexmap::IndexMap;
 use maestro_agent::SharedAgentTool;
 use maestro_agent::{Agent, AgentEvent};

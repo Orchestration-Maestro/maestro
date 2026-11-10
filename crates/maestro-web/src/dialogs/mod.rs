@@ -7,9 +7,6 @@ pub mod api_key_prompt_dialog;
 /// Custom provider add and edit dialog.
 #[cfg(target_arch = "wasm32")]
 pub mod custom_provider_dialog;
-/// Native modal backdrop, panel and the header, content and footer parts.
-#[cfg(target_arch = "wasm32")]
-pub mod dialog;
 /// Opened dialogs that keep themselves mounted until closed.
 #[cfg(target_arch = "wasm32")]
 pub mod dialog_base;
@@ -31,3 +28,6 @@ pub mod session_list_dialog;
 /// Settings dialog and its tabs.
 #[cfg(target_arch = "wasm32")]
 pub mod settings_dialog;
+/// Native modal backdrop, panel and the header, content and footer parts.
+#[cfg(target_arch = "wasm32")]
+pub mod surface;

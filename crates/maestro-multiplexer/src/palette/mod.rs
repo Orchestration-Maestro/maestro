@@ -6,9 +6,9 @@
 mod tests;
 mod themes;
 
-use maestro_app::daemon::{CustomThemeColors, canonical_theme_name};
+use maestro_app::daemon_api::{CustomThemeColors, canonical_theme_name};
 #[cfg(target_os = "linux")]
-use maestro_app::daemon::{HostAppearance, ThemeRuntimeConfig};
+use maestro_app::daemon_api::{HostAppearance, ThemeRuntimeConfig};
 use ratatui::style::Color;
 
 /// Every colour the multiplexer chrome uses.

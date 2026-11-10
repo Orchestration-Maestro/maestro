@@ -1,5 +1,5 @@
 //! Controlled notifications, completions and closed timer queues.
-use maestro_app::presentation_data::footer_data_provider::{FooterFileStats, FooterOperations};
+use maestro_app::presentation_data::status_line::{FooterFileStats, FooterOperations};
 use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
 use std::{
     cell::{Cell, RefCell},

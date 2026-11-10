@@ -849,11 +849,11 @@ fn early_commands_wait_and_keep_arrival_order() {
 fn workspace_only_connections_refuse_session_commands() {
     on_task_set(|_| async {
         use crate::support::rpc_connection::ClosureWorkspace;
-        use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
+        use maestro_app::connection_runner::{JsonlLineReader, RpcModeOptions};
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output = maestro_app::rpc_mode::RpcOutput::synchronous(Rc::new(
-            move |line: &maestro_app::rpc_mode::RpcLine| {
+        let output = maestro_app::connection_runner::RpcOutput::synchronous(Rc::new(
+            move |line: &maestro_app::connection_runner::RpcLine| {
                 written
                     .borrow_mut()
                     .push(serde_json::from_str::<Value>(line.as_str()).unwrap());
@@ -894,11 +894,11 @@ fn workspace_only_connections_refuse_session_commands() {
 #[test]
 fn workspace_commands_without_provider_are_unknown() {
     on_task_set(|_| async {
-        use maestro_app::rpc_mode::{JsonlLineReader, RpcModeOptions};
+        use maestro_app::connection_runner::{JsonlLineReader, RpcModeOptions};
         let lines = Rc::new(RefCell::new(Vec::new()));
         let written = Rc::clone(&lines);
-        let output = maestro_app::rpc_mode::RpcOutput::synchronous(Rc::new(
-            move |line: &maestro_app::rpc_mode::RpcLine| {
+        let output = maestro_app::connection_runner::RpcOutput::synchronous(Rc::new(
+            move |line: &maestro_app::connection_runner::RpcLine| {
                 written
                     .borrow_mut()
                     .push(serde_json::from_str::<Value>(line.as_str()).unwrap());

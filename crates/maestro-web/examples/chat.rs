@@ -38,7 +38,7 @@ async fn run() -> Result<(), wasm_bindgen::JsValue> {
     let i18n = maestro_web::I18n::new(Rc::new(maestro_web::BrowserLanguageHost))
         .map_err(|error| failure(&error))?;
     let pack = maestro_theme::BrandPack::shipped().map_err(|error| failure(&error))?;
-    let view = Rc::new(maestro_web::dom::DomView {
+    let view = Rc::new(maestro_web::page::DomView {
         document,
         i18n: Rc::new(i18n),
         highlighter: Rc::new(

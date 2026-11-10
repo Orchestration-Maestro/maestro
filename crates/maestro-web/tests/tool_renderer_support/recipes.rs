@@ -29,21 +29,21 @@ pub struct Caption(pub String);
 #[cfg(not(target_arch = "wasm32"))]
 pub type PreparedContent = Box<dyn std::any::Any>;
 #[cfg(target_arch = "wasm32")]
-pub type PreparedContent = Box<dyn maestro_web::dom::DomContent>;
+pub type PreparedContent = Box<dyn maestro_web::page::DomContent>;
 #[cfg(target_arch = "wasm32")]
-impl maestro_web::dom::DomContent for Caption {
+impl maestro_web::page::DomContent for Caption {
     fn mount(
         &self,
-        view: &maestro_web::dom::DomView,
-    ) -> Result<maestro_web::dom::DomRoot, ToolUiError> {
+        view: &maestro_web::page::DomView,
+    ) -> Result<maestro_web::page::DomRoot, ToolUiError> {
         let node = view.document.create_element("span").unwrap();
         node.set_text_content(Some(&self.0));
-        Ok(maestro_web::dom::DomRoot::new(node))
+        Ok(maestro_web::page::DomRoot::new(node))
     }
     fn update(
         &self,
-        root: &maestro_web::dom::DomRoot,
-        _: &maestro_web::dom::DomView,
+        root: &maestro_web::page::DomRoot,
+        _: &maestro_web::page::DomView,
     ) -> Result<(), ToolUiError> {
         root.node.set_text_content(Some(&self.0));
         Ok(())
@@ -87,19 +87,19 @@ pub fn message<D>(details: Option<D>) -> maestro_app::ToolResultMessage<D> {
 #[cfg(target_arch = "wasm32")]
 pub struct RichText(pub String);
 #[cfg(target_arch = "wasm32")]
-impl maestro_web::dom::DomContent for RichText {
+impl maestro_web::page::DomContent for RichText {
     fn mount(
         &self,
-        view: &maestro_web::dom::DomView,
-    ) -> Result<maestro_web::dom::DomRoot, ToolUiError> {
+        view: &maestro_web::page::DomView,
+    ) -> Result<maestro_web::page::DomRoot, ToolUiError> {
         let mut block = maestro_web::components::markdown_block::MarkdownBlock::default();
         block.content.clone_from(&self.0);
         block.mount(view)
     }
     fn update(
         &self,
-        root: &maestro_web::dom::DomRoot,
-        view: &maestro_web::dom::DomView,
+        root: &maestro_web::page::DomRoot,
+        view: &maestro_web::page::DomView,
     ) -> Result<(), ToolUiError> {
         let mut block = maestro_web::components::markdown_block::MarkdownBlock::default();
         block.content.clone_from(&self.0);

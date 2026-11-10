@@ -45,7 +45,7 @@ impl<D> ToolMessage<D> {
 fn dispatch<D: 'static>(
     props: &ToolMessage<D>,
     call: &ToolCall,
-    view: &crate::dom::DomView,
+    view: &crate::page::DomView,
 ) -> Result<ToolRenderResult, ToolUiError> {
     let aborted = if props.aborted {
         let timestamp = js_sys::Date::now();

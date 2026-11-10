@@ -6,10 +6,10 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::{
-        button::{ButtonProps, ButtonVariant, button},
-        input::{Input, InputProps, InputType, unique_id},
+        controls::{ButtonProps, ButtonVariant, button},
+        fields::{Input, InputProps, InputType, unique_id},
     },
-    dom::report,
+    page::report,
     tools::types::ToolUiError,
 };
 use maestro_app::CustomProviderType;

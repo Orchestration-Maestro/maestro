@@ -3,7 +3,7 @@ use super::{LiveResults, Message, StreamingMessageContainer, Tools};
 use crate::{
     browser::{attachment_content::browser::element, timer::Timer},
     components::messages::{AssistantMessage, ToolResults},
-    dom::{self, DomContent, DomRoot, DomView, MountedContent},
+    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::{AgentMessage, CustomAgentMessages};

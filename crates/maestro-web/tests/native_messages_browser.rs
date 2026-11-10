@@ -2,9 +2,9 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, view};
 use maestro_app::{
-    AgentMessage, NoCustomMessages, browser::components::messages::CustomAgentMessages,
+    AgentMessage, NoCustomMessages, browser::components::records::CustomAgentMessages,
 };
-use maestro_web::{components::messages::UserMessage, dom::DomContent as _};
+use maestro_web::{components::messages::UserMessage, page::DomContent as _};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
@@ -87,7 +87,7 @@ pub fn message_dom_reconnect_update_and_drop_keep_independent_roots(
 }
 
 /// A user row keeps its root and last text when its required message goes missing.
-fn user_row_lifecycle(view: &maestro_web::dom::DomView) {
+fn user_row_lifecycle(view: &maestro_web::page::DomView) {
     let mut row = UserMessage::<NoCustomMessages> {
         message: Some(
             serde_json::from_value(
@@ -155,7 +155,7 @@ pub fn user_dom_selects_first_text_and_preserves_attachment_handles() {
 }
 
 /// Observe one source selection and every original attachment at its consuming overlay.
-fn user_case(view: &maestro_web::dom::DomView, row: &mut UserMessage, case: Case) {
+fn user_case(view: &maestro_web::page::DomView, row: &mut UserMessage, case: Case) {
     row.message = Some(serde_json::from_value(case.input).unwrap());
     let attachments = match row.message.as_ref().unwrap() {
         AgentMessage::Custom(message) => match &*message.read().unwrap() {
@@ -206,7 +206,7 @@ fn user_case(view: &maestro_web::dom::DomView, row: &mut UserMessage, case: Case
 }
 
 /// Missing operands and repeated attachment entries remain distinct from an ordinary user row.
-fn optional_attachments(view: &maestro_web::dom::DomView, row: &mut UserMessage) {
+fn optional_attachments(view: &maestro_web::page::DomView, row: &mut UserMessage) {
     let attachment = serde_json::json!({
         "id": "repeated", "type": "document", "fileName": "notes.txt",
         "content": "", "mimeType": "text/plain", "size": 0

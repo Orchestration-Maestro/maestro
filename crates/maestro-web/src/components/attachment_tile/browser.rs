@@ -6,9 +6,9 @@ use crate::{
         attachment_content::browser::{append, element},
         event_subscription::EventSubscription,
     },
-    components::button::{ButtonProps, ButtonSize, ButtonVariant, button},
-    dom::{self, DomContent, DomRoot, DomView},
+    components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
     icons::IconSize,
+    page::{self as dom, DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
 use std::{

@@ -6,7 +6,7 @@ file reads and rendered message components are separate features.
 
 ## Loading
 
-`utils::attachment_utils::load_attachment` accepts a literal URL, already-read
+`utils::attachments::load_attachment` accepts a literal URL, already-read
 file/blob bytes, or a bare byte buffer. Supply a
 [model Fetch transport](../models/chat-completions.md#transport). URL sources issue one GET through
 that port and reject non-success status before consuming the body.
@@ -52,7 +52,7 @@ for small pages. Unrepresentable targets or PNG encoding failures omit the previ
 without losing extracted text. Opening failures return `AttachmentError::Pdf`,
 displaying `Failed to process PDF: ` followed by the native diagnostic; this native
 error has no `Error::source`. Exhaustive SDK matches must handle this variant.
-The public `attachment_utils::pdf::PdfDocument` owns supplied document bytes.
+The public `attachments::portable::PdfDocument` owns supplied document bytes.
 `num_pages` enumerates pages; `render_page` accepts a one-based page number and
 returns application-owned `PdfPage` PNG bytes and raster dimensions at scale 1.5.
 Invalid pages, dimensions and PNG failures return `AttachmentError::Pdf`.

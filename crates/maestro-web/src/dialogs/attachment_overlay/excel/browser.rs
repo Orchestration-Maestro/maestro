@@ -142,11 +142,11 @@ pub(super) fn reveal(sheets: &Sheets, index: usize) -> Result<(), AttachmentHost
 
 /// Mount native tab controls on the shared sheet bodies without a canvas placement owner.
 pub(super) fn native(
-    view: &crate::dom::DomView,
+    view: &crate::page::DomView,
     sheets: &std::rc::Rc<Sheets>,
     selected: &std::rc::Rc<std::cell::Cell<usize>>,
     padded: bool,
-) -> Result<crate::dom::DomRoot, crate::tools::types::ToolUiError> {
+) -> Result<crate::page::DomRoot, crate::tools::types::ToolUiError> {
     use crate::tools::types::ToolUiError;
     let root = root(&view.document, sheets, padded, selected.get())?;
     root.remove_attribute("style")
@@ -165,7 +165,7 @@ pub(super) fn native(
         }
     }
     select(sheets, selected.get())?;
-    Ok(crate::dom::DomRoot {
+    Ok(crate::page::DomRoot {
         node: root.into(),
         owner: Some(Box::new(events)),
     })
@@ -176,7 +176,7 @@ type TabEvent = crate::browser::event_subscription::EventSubscription<
 >;
 /// Prepare one native tab and subscribe through the shared event owner.
 fn tab(
-    view: &crate::dom::DomView,
+    view: &crate::page::DomView,
     sheets: &std::rc::Rc<Sheets>,
     selected: &std::rc::Rc<std::cell::Cell<usize>>,
     index: usize,

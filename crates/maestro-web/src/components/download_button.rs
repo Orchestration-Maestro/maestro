@@ -4,8 +4,8 @@
 pub mod dom;
 
 use crate::browser::attachment_content::{self, AttachmentHost};
-use crate::tools::artifacts::ArtifactUiError;
-use crate::tools::artifacts::artifact_element::ArtifactView;
+use crate::tools::documents::ArtifactUiError;
+use crate::tools::documents::artifact_element::ArtifactView;
 /// Original-byte control extent in logical points.
 pub(crate) const SIZE: egui::Vec2 = egui::vec2(36., 32.);
 

@@ -1,7 +1,7 @@
 //! Recorded summaries and native operands shared by the console browser witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::browser_fixture_support::{construct, global, invoke, object, set};
-use maestro_web::{I18n, dom::DomView};
+use maestro_web::{I18n, page::DomView};
 use serde::Deserialize;
 use std::{cell::Cell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};

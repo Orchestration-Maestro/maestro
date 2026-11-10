@@ -1,6 +1,6 @@
 //! The interactive-mode test session, built over a catalog read from its directory and
 //! in-memory settings and loader.
-use maestro_app::resources::resource_loader::ResourceLoader;
+use maestro_app::resources::loading::ResourceLoader;
 use maestro_app::{
     AgentSession, AgentSessionConfig, AgentSessionServices, AuthStorage, ConfigValues,
     CreateAgentSessionRuntimeResult, DefaultResourceLoader, DefaultResourceLoaderOptions, Local,

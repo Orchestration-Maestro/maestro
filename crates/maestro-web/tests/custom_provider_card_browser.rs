@@ -1,7 +1,7 @@
 //! Native provider-card status, actions and root lifetime.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{container, text, view};
-use maestro_web::{CustomProvider, CustomProviderCard, dom::DomContent};
+use maestro_web::{CustomProvider, CustomProviderCard, page::DomContent};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::Element;
@@ -274,8 +274,8 @@ pub fn provider_card_updates_reconnect_and_release_bindings(import: &js_sys::Fun
 /// A reached translation failure leaves all previously published labels and actions intact.
 fn failed_update(
     card: &CustomProviderCard,
-    root: &maestro_web::dom::DomRoot,
-    view: &maestro_web::dom::DomView,
+    root: &maestro_web::page::DomRoot,
+    view: &maestro_web::page::DomView,
 ) {
     let bad = localized("en");
     bad.i18n.get_translations().borrow()["en"]
@@ -294,9 +294,9 @@ fn failed_update(
     card.update(root, view).unwrap();
 }
 /// An action may replace its own callback through the containing current owner.
-fn reentrant_update(view: &Rc<maestro_web::dom::DomView>) {
+fn reentrant_update(view: &Rc<maestro_web::page::DomView>) {
     let card = Rc::new(RefCell::new(CustomProviderCard::new(provider())));
-    let mounted = Rc::new(RefCell::new(None::<maestro_web::dom::DomRoot>));
+    let mounted = Rc::new(RefCell::new(None::<maestro_web::page::DomRoot>));
     let (current, target, view) = (
         Rc::downgrade(&card),
         Rc::downgrade(&mounted),
@@ -392,7 +392,7 @@ fn record_actions(
 }
 
 /// A sibling root invokes only its own callback.
-fn independent_card(parent: &Element, view: &maestro_web::dom::DomView) {
+fn independent_card(parent: &Element, view: &maestro_web::page::DomView) {
     let second_count = Rc::new(std::cell::Cell::new(0));
     let second = Rc::clone(&second_count);
     let mut sibling = CustomProviderCard::new(provider());
@@ -408,8 +408,8 @@ fn independent_card(parent: &Element, view: &maestro_web::dom::DomView) {
 /// Inserted actions preserve the existing control; retired nodes never revive.
 fn action_updates(
     card: &mut CustomProviderCard,
-    root: &maestro_web::dom::DomRoot,
-    view: &maestro_web::dom::DomView,
+    root: &maestro_web::page::DomRoot,
+    view: &maestro_web::page::DomView,
 ) {
     let element: &Element = root.node.unchecked_ref();
     let edit = buttons(element).remove(0);
@@ -454,8 +454,8 @@ fn action_updates(
 /// Replacing localization updates all current action labels without replacing focus stops.
 fn localized_actions(
     card: &CustomProviderCard,
-    root: &maestro_web::dom::DomRoot,
-    view: &maestro_web::dom::DomView,
+    root: &maestro_web::page::DomRoot,
+    view: &maestro_web::page::DomView,
 ) {
     let element: &Element = root.node.unchecked_ref();
     let before = buttons(element);
