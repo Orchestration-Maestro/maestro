@@ -21,6 +21,6 @@ jobs:
       contents: read
       actions: read
       issues: write
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci-guards.yml@e6ccadeeb263c79dea15eee752069d677ad195dd # v0.19.29
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci-guards.yml@f180cc85f3f6ba3b23f188727b3e73bb8f1c61ed # v0.19.30
     with:
       run-id: ${{ format('{0}', github.event.workflow_run.id) }}

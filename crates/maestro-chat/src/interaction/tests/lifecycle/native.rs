@@ -11,6 +11,13 @@ use std::{
     rc::Rc,
 };
 
+/// The program the tracked command starts.
+const TRACKED: &str = "tracked";
+/// The gate the tracked child waits at.
+const GATE: &str = "tracked-gate";
+/// The pipe the tracked child prints to, which only a child that outlives the process fills.
+const OUTPUT: &str = "tracked-output";
+
 /// Native process effects with a closed, observable operation record at exit.
 struct Native {
     /// The unchanged native registration, child cleanup and exit effects.
@@ -170,12 +177,7 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let directory = scratch.path();
-    super::super::install(
-        directory,
-        "pause",
-        "chat",
-        &serde_json::json!({"scenario": "pause"}),
-    );
+    let gate = install_tracked(directory);
     let mut child = TestProcess::current(test)
         .unwrap()
         .env_clear()
@@ -197,6 +199,9 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     let pid = ready
         .strip_prefix("READY ")
         .unwrap_or_else(|| panic!("initialized with a live tracked child: {ready}"));
+    // The tracked command opens its end of the pipe once it starts, so this opens only once the
+    // child holds the pipe and ends only when it has ended.
+    let survivor = std::fs::File::open(directory.join(OUTPUT)).unwrap();
     if case == "stdout" {
         drop(child.stdout.take());
     }
@@ -214,6 +219,39 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     }
     let output = child.wait_with_output().unwrap();
     verify(&output, directory, case, second);
+    assert_eq!(
+        survivors(gate, survivor),
+        "",
+        "the interactive process left its tracked child running"
+    );
+}
+
+/// Installs the tracked child, which waits at the returned gate and then prints to a pipe, so
+/// only a child that outlives the interactive process prints once the gate is released.
+fn install_tracked(directory: &Path) -> std::os::unix::net::UnixListener {
+    let gate = super::super::gate(&directory.join(GATE));
+    super::super::scripted(
+        directory,
+        TRACKED,
+        &serde_json::json!([{"hold": {"path": directory.join(GATE)}}, {"print": "running"}]),
+    );
+    assert!(
+        std::process::Command::new("mkfifo")
+            .arg(directory.join(OUTPUT))
+            .status()
+            .unwrap()
+            .success()
+    );
+    gate
+}
+
+/// What the tracked child prints once `gate` is released, read until the pipe ends with the
+/// child.
+fn survivors(gate: std::os::unix::net::UnixListener, mut output: std::fs::File) -> String {
+    drop(gate);
+    let mut printed = String::new();
+    output.read_to_string(&mut printed).unwrap();
+    printed
 }
 
 /// Keeps the awaited extension boundary pending when selected.
@@ -229,20 +267,22 @@ async fn wait_disposal(
 /// Starts a tracked detached child and waits for its actual output before readiness.
 async fn tracked(world: &super::super::World, directory: &Path) {
     let (sent, mut chunks) = tokio::sync::mpsc::unbounded_channel();
-    let pause = directory.join("pause");
     let bash = world.host.session().execute_bash(
-        &format!("echo $$; exec '{}'", pause.display()),
+        &format!(
+            "echo $$; exec '{}' > '{}'",
+            directory.join(TRACKED).display(),
+            directory.join(OUTPUT).display()
+        ),
         Some(Box::new(move |chunk| {
             sent.send(chunk.to_owned()).unwrap();
         })),
         maestro_app::agent_session::BashRunOptions::default(),
     );
     drop(bash);
-    let pid = chunks.recv().await.unwrap();
-    std::fs::write(directory.join("tracked"), pid.trim()).unwrap();
+    chunks.recv().await.unwrap();
 }
 
-/// Verifies the native exit and the final tracked-child observation.
+/// Verifies the native exit and its operation record.
 fn verify(output: &std::process::Output, directory: &Path, case: &str, second: Option<&str>) {
     use std::os::unix::process::ExitStatusExt;
     if let Some(second) = second {
@@ -268,18 +308,6 @@ fn verify(output: &std::process::Output, directory: &Path, case: &str, second: O
             }
         );
     }
-    let tracked = std::fs::read_to_string(directory.join("tracked")).unwrap();
-    let status = std::process::Command::new("ps")
-        .args(["-p", tracked.trim(), "-o", "stat="])
-        .output()
-        .unwrap();
-    assert!(
-        status.stdout.is_empty()
-            || String::from_utf8_lossy(&status.stdout)
-                .trim_start()
-                .starts_with('Z'),
-        "tracked child terminated"
-    );
 }
 
 /// Announces readiness before waiting on a separate control socket, never terminal input.

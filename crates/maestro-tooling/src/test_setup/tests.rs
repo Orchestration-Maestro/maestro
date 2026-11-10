@@ -131,7 +131,7 @@ fn bundle_export_installs_the_native_example() {
     let artifacts = root.join("debug");
     let environment = root.join("nextest-env");
 
-    export(cargo, root, &bundle, &artifacts, &environment).unwrap();
+    install_bundle(cargo, root, &bundle, &artifacts, &environment).unwrap();
 
     let installed = artifacts.join("examples").join(native);
     assert_eq!(std::fs::read(&installed).unwrap(), b"native example");
@@ -146,7 +146,7 @@ fn bundle_export_installs_the_native_example() {
         use std::os::unix::fs::MetadataExt;
         // The open handle holds the installed file, so its replacement cannot reuse its identity.
         let earlier = std::fs::File::open(&installed).unwrap();
-        export(cargo, root, &bundle, &artifacts, &environment).unwrap();
+        install_bundle(cargo, root, &bundle, &artifacts, &environment).unwrap();
         assert_ne!(
             std::fs::metadata(&installed).unwrap().ino(),
             earlier.metadata().unwrap().ino()

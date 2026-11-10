@@ -15,7 +15,7 @@ Shared [model invocation options](guest_streams.md) keep native and guest data i
 ## Build a component
 
 ```sh
-mise exec -- just extension-author-component
+just extension-author-component
 ```
 
 The recipe adds the `wasm32-wasip2` target and builds the fixture in

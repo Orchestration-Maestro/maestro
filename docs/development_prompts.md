@@ -36,7 +36,7 @@ paragraphs require manual review; they are not executable workflow tests.
 ```sh
 cargo test -p maestro-resources --test integration --locked -- development_guidance::
 cargo test -p maestro-test-conventions --test integration --locked -- development_guidance::
-mise exec -- just check
+just check
 ```
 
 Use the pinned tools and repository checks described in

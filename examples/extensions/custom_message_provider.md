@@ -5,7 +5,7 @@ reasoning models. Building needs the pinned Rust toolchain and `wasm32-wasip2`
 target. Loading needs a component-enabled native host with HTTP access:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo build --locked \
+cargo build --locked \
   -p maestro-extensions-wasm --example custom_message_provider \
   --target wasm32-wasip2 --release
 maestro --extension target/wasm32-wasip2/release/examples/custom_message_provider.wasm
@@ -65,9 +65,9 @@ endpoint for the compiled component. They need no provider credentials or paid
 service:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped just prepare-tests
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- custom_message_provider_
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- custom_message_provider_
 ```

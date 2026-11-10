@@ -4,13 +4,10 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-#[cfg(target_arch = "x86_64")]
 use super::build::engine;
 use super::build::{compile, warm, warm_with};
 use maestro_test_directory::Scratch;
-#[cfg(target_arch = "x86_64")]
 use std::hash::{DefaultHasher, Hash, Hasher};
-#[cfg(target_arch = "x86_64")]
 use wasmtime::{Config, Engine};
 
 /// Every queued path reaches the worker exactly once, whichever thread takes it.
@@ -54,10 +51,9 @@ fn warming_a_path_that_is_not_a_component_returns_the_compile_error() {
     assert_eq!(warm(&[path]).unwrap_err(), expected);
 }
 
-/// On x86-64 the compiled-code identity of the test engine is the explicit baseline target's,
+/// The compiled-code identity of the test engine is the explicit baseline target's,
 /// so the components a setup compiles load on any host of the architecture.
 #[test]
-#[cfg(target_arch = "x86_64")]
 fn test_engine_matches_an_explicit_baseline_target() {
     let identity = |engine: &Engine| {
         let mut hasher = DefaultHasher::new();
