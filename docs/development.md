@@ -2590,6 +2590,42 @@ A recording notifier names its file in `args` instead, and a Git alias names the
 checkout every query must carry. Point `PATH` at the directory holding either
 alias, so the product finds it by its own program name.
 
+#### Remote client aliases
+
+On Unix, install the same artifact as `ssh` when a test exercises an extension's
+remote operations. Write `ssh` on the first line of `<alias>.fixture`, followed by
+one JSON object. The fixture parses the whole record before any effect and rejects
+an unknown field.
+
+| Field | Fields and behavior |
+| --- | --- |
+| `refusal` | `destination`, `code` and `stderr`. A launch naming that destination writes `stderr` and ends with `code`, so the extension's own failure path runs. |
+| `write` | `limit`, `code` and `stderr`, the largest body the stand-in accepts in bytes. Standard input that is a regular file holding more than `limit` bytes is refused without being read. A pipe reports no length, so a streamed body is never refused this way. |
+| `directory` | The remote session's working directory. Every other command runs there, through `/bin/sh -c`, with the operands after the destination joined by spaces, so remote `pwd`, `cat`, `test` and `mkdir` behave as the extension expects. |
+
+A lone leading option is skipped; an option taking a separate value is not read,
+so pass the destination first.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let directory = maestro_test_directory::Scratch::new()?;
+    let session = directory.path().join("session");
+    std::fs::create_dir(&session)?;
+    let record = serde_json::json!({
+        "refusal": {"destination": "unreachable.invalid", "code": 255, "stderr": "refused\n"},
+        "write": {"limit": 65536, "code": 1, "stderr": "too large\n"},
+        "directory": session,
+    });
+    maestro_test_process::install_family(
+        &directory.path().join("ssh"),
+        "ssh",
+        &record.to_string(),
+    )?;
+    // Put that directory first on the child's PATH, then run the extension operation.
+    Ok(())
+}
+```
+
 #### Checked reruns
 
 A test that re-runs one test in a fresh process starts it through
