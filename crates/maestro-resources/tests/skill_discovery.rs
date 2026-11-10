@@ -474,7 +474,7 @@ fn maestro_skills_render_exact_prompt_instructions() {
         source: "path",
     });
     let expected = format!(
-        "\n\nThese skills hold specialised instructions for particular tasks.\nWhen a task fits a skill's description, load that skill's file with the read tool.\nIf a skill file mentions a relative path, resolve it from the skill's directory (the parent of SKILL.md, i.e. the dirname of its path) and pass the resulting absolute path to tool commands.\n\n<available_skills>\n  <skill>\n    <name>parent</name>\n    <description>Useful</description>\n    <location>{}</location>\n  </skill>\n</available_skills>",
+        "\n\nThese skills hold specialized instructions for particular tasks.\nWhen a task fits a skill's description, load that skill's file with the read tool.\nIf a skill file mentions a relative path, resolve it from the skill's directory (the parent of SKILL.md, i.e. the dirname of its path) and pass the resulting absolute path to tool commands.\n\n<available_skills>\n  <skill>\n    <name>parent</name>\n    <description>Useful</description>\n    <location>{}</location>\n  </skill>\n</available_skills>",
         file.display()
     );
     assert_eq!(
