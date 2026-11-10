@@ -21,7 +21,7 @@ fn record(session: &Path) -> String {
             "stderr": "refused destination\n",
         },
         "write": {
-            "command": "cat > early-write.txt",
+            "command": "early-write.txt",
             "code": 38,
             "stderr": "remote write rejected\n",
         },
@@ -95,6 +95,43 @@ fn stand_in_refuses_a_recorded_write_without_reading_its_body() {
         "the stand-in read the body instead of refusing it"
     );
     assert!(!session.join("early-write.txt").exists());
+}
+
+/// A launch left with no destination is refused with the family's own status, silently.
+#[test]
+fn stand_in_refuses_a_launch_without_a_destination() {
+    let (_root, _session, alias) = prepared();
+
+    let output = Command::new(&alias).arg("-v").output().unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert!(output.stderr.is_empty());
+}
+
+/// A record naming a field the family does not define is rejected before any effect.
+#[test]
+fn stand_in_rejects_a_record_naming_an_unknown_field() {
+    let root = Scratch::new().unwrap();
+    let session = root.path().join("session");
+    std::fs::create_dir(&session).unwrap();
+    let mut record: serde_json::Value = serde_json::from_str(&record(&session)).unwrap();
+    record["body_length"] = serde_json::json!(4);
+    let alias = root.path().join("ssh");
+    install_family(&alias, "ssh", &record.to_string()).unwrap();
+
+    let output = Command::new(&alias)
+        .args(["refused.invalid", "true"])
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("unknown field"),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 /// Every other command runs through the real shell in the recorded session directory.
