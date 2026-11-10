@@ -4,7 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, frontmatter::FrontmatterValue};
+use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, metadata::FrontmatterValue};
 use serde_json::{Value, json};
 /// Reads metadata without serializing a nonfinite number as null.
 pub(super) fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
@@ -12,14 +12,14 @@ pub(super) fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Va
     let result = (|| -> ExtensionResult<Value> {
         match request["operation"].as_str() {
             Some("fm.parseFrontmatter") => {
-                let parsed = maestro_extensions_wasm::frontmatter::parse_frontmatter(api, text)?;
+                let parsed = maestro_extensions_wasm::metadata::parse_frontmatter(api, text)?;
                 Ok(json!({"frontmatter":value(parsed.frontmatter),"body":parsed.body}))
             }
-            Some("fm.parseYaml") => Ok(value(maestro_extensions_wasm::frontmatter::parse_yaml(
+            Some("fm.parseYaml") => Ok(value(maestro_extensions_wasm::metadata::parse_yaml(
                 api, text,
             )?)),
             Some("fm.stripFrontmatter") => Ok(json!(
-                maestro_extensions_wasm::frontmatter::strip_frontmatter(api, text)?
+                maestro_extensions_wasm::metadata::strip_frontmatter(api, text)?
             )),
             _ => Err("unknown helper observation".into()),
         }

@@ -8,7 +8,7 @@ use maestro_app::rpc_types::{
 };
 use maestro_app::{NotificationType, is_whitespace_scalar, serialize_json_line};
 use maestro_theme::{LiveTheme, ThemeColor, paint};
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{
     Container, Editor, EditorOptions, Input, SelectItem, SelectList, SelectListLayoutOptions, TUI,
     Text,

@@ -421,7 +421,7 @@ async fn settle_child(
         && connection.write_all(b"ar").is_err()
         && let Some(pid) = witness.pid
     {
-        maestro_tools::utils::shell::kill_process_tree(pid);
+        maestro_tools::utils::environment::kill_process_tree(pid);
     }
     while witness.settled.is_none() {
         witness.poll(operation);

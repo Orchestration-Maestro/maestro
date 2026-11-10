@@ -7,7 +7,7 @@ use crate::{
     root_routes::body_fetch,
 };
 use futures_util::StreamExt;
-use maestro_models::providers::reasoning::mistral::stream_simple_mistral;
+use maestro_models::providers::reasoning::endpoint::stream_simple_mistral;
 use maestro_models::{
     AssistantContent, AssistantMessageEvent as Event, Cancellation, DiagnosticErrorInfo, Fetch,
     FetchError, HttpBody, HttpResponse, MistralOptions, OnPayload, SharedAssistantMessage,

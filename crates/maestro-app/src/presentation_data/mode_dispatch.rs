@@ -1,6 +1,6 @@
 //! Supplied presentations for the final startup handoff.
 use crate::AgentSessionRuntime;
-use maestro_tui::tui::LocalFuture;
+use maestro_tui::interface::LocalFuture;
 use std::{error::Error, io, rc::Rc};
 /// How the interactive mode starts.
 #[derive(Default)]

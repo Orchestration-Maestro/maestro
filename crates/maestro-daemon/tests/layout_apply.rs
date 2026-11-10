@@ -9,7 +9,7 @@ use crate::support::{
     layouts::{balanced, chain, shell, sleeper, split},
 };
 use maestro_daemon::{
-    app::state::{Mode, PluginPaneRecord},
+    app::model::{Mode, PluginPaneRecord},
     settings::model::NewTerminalCwdConfig,
 };
 use maestro_protocol::{
@@ -19,7 +19,7 @@ use maestro_protocol::{
     },
 };
 use maestro_test_directory::Scratch;
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
 use std::io::{self, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};

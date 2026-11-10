@@ -9,8 +9,8 @@ use maestro_extensions::{
     ExtensionExecution, ExtensionLoadError, ExtensionRunner, ExtensionRuntime, ExtensionWidgets,
     LiveTheme, Local, ModelRegistry, ModuleLoader, ProviderConfig, ProviderModelConfig,
     SessionManager, SharedHandle, create_event_bus_for, create_extension_runtime,
+    execution::ExtensionRunnerSession,
     load_extensions_with_runtime,
-    runner::ExtensionRunnerSession,
     test_support::{
         FauxModelDefinition, FauxProviderRegistration, RegisterFauxProviderOptions, ToolkitWidgets,
         diagnostics, register_faux_provider,

@@ -1,6 +1,6 @@
 //! Workspace ordering with identity-based navigation retention.
 
-use super::super::state::DaemonState;
+use super::super::model::DaemonState;
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Moves one workspace before an insertion position, preserving active identities.

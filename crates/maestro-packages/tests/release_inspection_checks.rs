@@ -1,6 +1,6 @@
 //! Release discovery through the package manager's Git capture boundary.
 #![cfg(unix)]
-use crate::native_git::{git, retry::RetryFixture};
+use crate::native_git::{git, reattempts::RetryFixture};
 use maestro_packages::{GitRelease, PackageManager};
 use std::rc::Rc;
 

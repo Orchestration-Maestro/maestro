@@ -5,7 +5,7 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::ThoughtMetadata;
-use crate::arguments::replay::nullish_default;
+use crate::parameters::replay::nullish_default;
 use crate::providers::json_text::{is_truthy, json_value, member, raw_json};
 use crate::providers::selected_fields::{count, field, native, required};
 use crate::{DiagnosticErrorInfo, JsonObject, Usage, UsageCost};

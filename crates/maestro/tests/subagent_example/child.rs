@@ -40,7 +40,7 @@ pub(super) async fn session(
             io,
             None,
         ));
-    crate::support::session::resource_session(root, resources, Some(maestro_app::NoTools::Builtin))
+    crate::support::sdk::resource_session(root, resources, Some(maestro_app::NoTools::Builtin))
         .await
 }
 

@@ -3,8 +3,8 @@
 use crate::local_support::{LocalBus, Released, Trace, loaded, mark};
 use crate::manual_runtime::ManualRuntime;
 use crate::recording_terminal::RecordingTerminal;
-use maestro_extensions::footer_data_provider::live::Live;
-use maestro_extensions::footer_data_provider::{ExtensionStatuses, ReadonlyFooterDataProvider};
+use maestro_extensions::footer::iteration::Live;
+use maestro_extensions::footer::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use maestro_extensions::types::{
     ComponentFactory, CustomFactory, ExtensionComponent, ExtensionUIContextPort, FooterFactory,
     OverlayHandleCallback, OverlayOptionsResolver, UIUnsubscribe,
@@ -14,10 +14,10 @@ use maestro_extensions::{
 };
 use maestro_models::{Cancellation, Local};
 use maestro_theme::LiveTheme;
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
 };
-use maestro_tui::tui::{InputListener, InputListenerResult};
+use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, TUI, TerminalImage,
 };

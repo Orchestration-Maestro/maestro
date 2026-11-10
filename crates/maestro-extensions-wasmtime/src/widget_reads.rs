@@ -2,7 +2,7 @@
 use crate::guest_calls::Handle;
 use crate::guest_calls::paints::Failure;
 use crate::local_resources::{Lease, Message, Registry};
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     Box as Boxed, Container, ExtensionWidgets, Markdown, MarkdownOptions, Spacer, Text,
     TextDecoration,
 };

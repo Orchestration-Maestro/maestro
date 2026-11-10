@@ -787,7 +787,7 @@ async fn install_message_group(loaded: &support::Loaded) {
 
 /// Native aliases retain complete session-owner preparations and persisted entries.
 fn check_native_session_operands() {
-    let preparation = check::<maestro_session::compaction::CompactionPreparation>(
+    let preparation = check::<maestro_session::summarization::CompactionPreparation>(
         json!({"firstKeptEntryId":"kept","messagesToSummarize":[{"role":"custom","content":"message"}],"turnPrefixMessages":[{"role":"user","content":"prefix"}],"isSplitTurn":false,"tokensBefore":-1.5,"previousSummary":"previous","fileOps":{"read":["r"],"written":["w"],"edited":["e"]},"settings":{"enabled":false,"reserveTokens":2.5,"keepRecentTokens":3.5}}),
     );
     let event = SessionBeforeCompactEvent {
@@ -849,8 +849,8 @@ fn check_native_message_owners() {
         }),
     ));
     let custom = Arc::new(std::sync::RwLock::new(
-        maestro_session::messages::CustomAgentMessages::Custom(
-            maestro_session::messages::CustomMessage {
+        maestro_session::message_records::CustomAgentMessages::Custom(
+            maestro_session::message_records::CustomMessage {
                 custom_type: "notice".into(),
                 content: maestro_models::UserContent::Text("custom".into()),
                 display: false,

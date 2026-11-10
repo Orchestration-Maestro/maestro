@@ -101,7 +101,7 @@ environment. A shell fix does not enable the unsupported native selectors.
 Extensions reach every path the user can open on Windows, through `std::fs`
 and the 0.3 filesystem interfaces alike: any drive, including one mounted after
 the extension loads, any network share, junctions and absolute links. Convert a
-native path with `tools::path_utils::guest_path` before opening it; a share
+native path with `registry::path_utils::guest_path` before opening it; a share
 `\\server\share\x` becomes `/?/UNC/server/share/x`. See the
 [operating environment](extensions/host_io.md) for the spelling and its limits.
 These extension paths are separate from the built-in file tools.

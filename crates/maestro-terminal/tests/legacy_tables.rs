@@ -2,9 +2,9 @@
 
 use maestro_terminal::{
     input::{
-        key::{Key, KeyEvent},
         key_encode::KeyEncoder,
         key_mods::Mods,
+        keyboard::{Key, KeyEvent},
     },
     modes::Mode,
 };

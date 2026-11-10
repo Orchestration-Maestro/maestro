@@ -50,7 +50,7 @@ fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
         explicit_routes().await?;
         maestro_models::set_bedrock_provider_module(pair("replacement"));
         maestro_models::set_bedrock_provider_module(
-            maestro_models::bedrock_provider::bedrock_provider_module(),
+            maestro_models::native::bedrock_provider_module(),
         );
         bedrock::corpus(include_str!("fixtures/cloud_conversation/routes.json")).await?;
         explicit_routes().await
@@ -73,7 +73,7 @@ async fn explicit_routes() -> TestResult {
         common,
         ..SimpleStreamOptions::default()
     };
-    let factory = maestro_models::bedrock_provider::bedrock_provider_module();
+    let factory = maestro_models::native::bedrock_provider_module();
     let streams = [
         stream(
             bedrock::model(ENDPOINT)?,
@@ -127,7 +127,7 @@ struct Restore;
 impl Drop for Restore {
     fn drop(&mut self) {
         maestro_models::set_bedrock_provider_module(
-            maestro_models::bedrock_provider::bedrock_provider_module(),
+            maestro_models::native::bedrock_provider_module(),
         );
         maestro_models::reset_api_providers();
     }

@@ -1,6 +1,6 @@
 # Compaction
 
-`maestro_session::compaction` prepares summary input and generates summaries of
+`maestro_session::summarization` prepares summary input and generates summaries of
 history or of a split turn. It never mutates history and never persists entries.
 [Abandoned-branch generation](branch_summary.md) is a separate interface with its
 own budget and result policy. The [complete guide](sessions/compaction.md) covers

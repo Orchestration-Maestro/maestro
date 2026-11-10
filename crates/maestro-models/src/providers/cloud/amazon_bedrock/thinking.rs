@@ -12,11 +12,11 @@ use super::proxy::Environment;
 #[cfg(not(target_arch = "wasm32"))]
 use super::wire::CachePointBlock;
 use crate::Model;
-use crate::arguments::json_parse::whitespace;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::options::thinking_budget;
+use crate::parameters::json_parse::whitespace;
 #[cfg(not(target_arch = "wasm32"))]
-use crate::providers::messages::anthropic::{
+use crate::providers::messages::endpoint::{
     AnthropicThinkingDisplay, map_thinking_level_to_effort,
 };
 #[cfg(not(target_arch = "wasm32"))]

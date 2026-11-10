@@ -49,7 +49,7 @@ pub(super) async fn loaded_on(
 /// Keeps the original loader runtime bound to the caller's actual session owners.
 pub(super) async fn loaded_in(
     events: EventBus<Local>,
-    session: maestro_extensions::runner::ExtensionRunnerSession,
+    session: maestro_extensions::execution::ExtensionRunnerSession,
 ) -> (
     ExtensionHandle<Local>,
     ExtensionRunner<Local>,
@@ -61,7 +61,7 @@ pub(super) async fn loaded_in(
 /// Supplies the factory's captured directory independently of the callback context.
 pub(super) async fn loaded_at(
     events: EventBus<Local>,
-    session: maestro_extensions::runner::ExtensionRunnerSession,
+    session: maestro_extensions::execution::ExtensionRunnerSession,
     cwd: &str,
 ) -> (
     ExtensionHandle<Local>,
@@ -80,7 +80,7 @@ pub(super) async fn loaded_at(
 /// Loads the real artifact after the caller installed factory-time defaults and flags.
 pub(super) async fn loaded_with_runtime(
     events: EventBus<Local>,
-    session: maestro_extensions::runner::ExtensionRunnerSession,
+    session: maestro_extensions::execution::ExtensionRunnerSession,
     cwd: &str,
     runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
 ) -> (
@@ -96,7 +96,7 @@ pub(super) async fn loaded_with_runtime(
 /// Loads factories without binding so callers can observe individual flush diagnostics.
 pub(super) async fn unbound_with_runtime(
     events: EventBus<Local>,
-    session: maestro_extensions::runner::ExtensionRunnerSession,
+    session: maestro_extensions::execution::ExtensionRunnerSession,
     cwd: &str,
     runtime: Rc<maestro_extensions::ExtensionRuntime<Local>>,
 ) -> (

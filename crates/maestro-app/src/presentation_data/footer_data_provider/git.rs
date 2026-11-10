@@ -2,7 +2,7 @@
 
 use super::operations::FooterOperations;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_workspace::workspace::git::native::trim;
+use maestro_workspace::spaces::repository::native::trim;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::Path;
 
@@ -19,7 +19,7 @@ pub(super) struct GitPaths {
 /// Native metadata uses the shared workspace walk with footer acceptance rules.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn find_git_paths(cwd: &str) -> Option<GitPaths> {
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     let paths = discover_git_paths_with(Path::new(cwd), DiscoveryPolicy::Footer)?;
     Some(GitPaths {
         repo_dir: paths.repo_root.to_string_lossy().into_owned(),
@@ -37,7 +37,7 @@ pub(super) fn find_git_paths(_cwd: &str) -> Option<GitPaths> {
 /// Read lossy native HEAD text without a second filesystem adapter.
 #[cfg(not(target_arch = "wasm32"))]
 fn read_head(path: &str) -> std::io::Result<String> {
-    maestro_workspace::workspace::git::native::read_text(Path::new(path))
+    maestro_workspace::spaces::repository::native::read_text(Path::new(path))
 }
 
 /// Browser builds do not read native files.

@@ -66,7 +66,7 @@ fn run(body: impl AsyncFnOnce(Rc<AgentSession>)) {
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
         let root = super::support::Root::new();
-        let session = super::support::session::component_session(
+        let session = super::support::sdk::component_session(
             &root,
             local.clone(),
             std::env::var("MAESTRO_QNA_COMPONENT").expect("nextest author-component setup"),
@@ -398,7 +398,7 @@ fn qna_loads_exact_completion_into_editor_and_disposes_loader() {
             context["messages"][0]["content"],
             "You are a question extractor. Given text from a conversation, extract any questions that need answering and format them for the user to fill in.\n\nOutput format:\n- List each question on its own line, prefixed with \"Q: \"\n- After each question, add a blank line for the answer prefixed with \"A: \"\n- If no questions are found, output \"No questions found in the last message.\"\n\nExample output:\nQ: What is your preferred database?\nA: \n\nQ: Should we use TypeScript or JavaScript?\nA: \n\nKeep questions in the order they appeared. Be concise."
         );
-        maestro_tui::tui::InputHandler::handle_input(&ui.editor, "SQLite");
+        maestro_tui::interface::InputHandler::handle_input(&ui.editor, "SQLite");
         assert!(ui.editor.get_text().ends_with("Q: Unicode 雪?\nA: SQLite"));
     });
 }

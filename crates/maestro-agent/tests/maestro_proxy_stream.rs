@@ -4,7 +4,7 @@
 use crate::support;
 use maestro_models::FetchError;
 use serde_json::{Value, json};
-use support::proxy::{
+use support::remote::{
     Reply, USAGE, canonical_events, canonical_lines, canonical_message, done, exchange, join, line,
     message, run_chunks, run_lines, zero,
 };
@@ -17,7 +17,7 @@ fn failure(text: &str) -> Value {
     message(&json!([]), "error", Some(text), &zero())
 }
 /// Assert a run ended in one error event whose native diagnostic is not an authored one.
-fn assert_native_error(run: &support::proxy::Run, prefix: usize) {
+fn assert_native_error(run: &support::remote::Run, prefix: usize) {
     assert_eq!(run.events.len(), prefix + 1);
     assert_eq!(
         run.events[prefix],
@@ -292,8 +292,8 @@ fn proxy_transport_failure_retains_partial() {
 }
 /// Drive the scenario of `proxy_transport_failure_retains_partial` on the test runtime.
 async fn proxy_transport_failure_retains_partial_case() {
-    let (fetch, requests) = support::proxy::failing("network failed");
-    let run = support::proxy::run_with(support::proxy::with_fetch(fetch)).await;
+    let (fetch, requests) = support::remote::failing("network failed");
+    let run = support::remote::run_with(support::remote::with_fetch(fetch)).await;
     assert_eq!(
         run.events,
         vec![json!({"type": "error", "reason": "error"})]
@@ -550,7 +550,7 @@ async fn proxy_tool_arguments_parse_on_each_delta_case() {
     gate.send.send(Some(Ok(line(start)))).unwrap();
     gate.reads.recv().await.unwrap();
     let observed = |partial: &maestro_models::SharedAssistantMessage| {
-        support::proxy::snapshot(partial)["content"][0]["arguments"].clone()
+        support::remote::snapshot(partial)["content"][0]["arguments"].clone()
     };
     assert_eq!(observed(&partial), json!({}));
     for (delta, expected) in [
@@ -777,12 +777,12 @@ fn spawn_gated(
 ) -> (
     maestro_models::AssistantMessageEventStream,
     tokio::task::JoinHandle<()>,
-    support::proxy::Gate,
-    support::proxy::Requests,
+    support::remote::Gate,
+    support::remote::Requests,
 ) {
-    let (fetch, requests, gate) = support::proxy::gated();
+    let (fetch, requests, gate) = support::remote::gated();
     options.common.fetch = Some(fetch);
-    let (stream, tasks) = support::proxy::start(options);
+    let (stream, tasks) = support::remote::start(options);
     (stream, tokio::spawn(tasks.take()), gate, requests)
 }
 /// Options carrying a fresh cancellation signal.
@@ -817,7 +817,7 @@ async fn proxy_abort_precedes_premature_eof_case() {
     signal.abort();
     gate.send.send(None).unwrap();
     producer.await.unwrap();
-    let run = support::proxy::collect(&stream).await;
+    let run = support::remote::collect(&stream).await;
     assert_eq!(
         run.events,
         [
@@ -847,7 +847,7 @@ async fn proxy_initial_partial_is_shared_case() {
         panic!("expected the start event first");
     };
     assert_eq!(
-        support::proxy::snapshot(&partial),
+        support::remote::snapshot(&partial),
         message(&json!([]), "stop", None, &zero())
     );
     let stamp = partial.read().unwrap().timestamp;
@@ -857,7 +857,7 @@ async fn proxy_initial_partial_is_shared_case() {
     producer.await.unwrap();
     assert!(std::sync::Arc::ptr_eq(&partial, &stream.result().await));
     assert_eq!(
-        support::proxy::snapshot(&partial)["usage"],
+        support::remote::snapshot(&partial)["usage"],
         serde_json::from_str::<Value>(USAGE).unwrap()
     );
 }
@@ -871,9 +871,9 @@ fn proxy_preabort_and_inflight_abort_settle() {
 async fn proxy_preabort_and_inflight_abort_settle_case() {
     let (mut options, signal) = cancellable();
     signal.abort();
-    let (fetch, requests) = support::proxy::replying(Reply::chunks(canonical_lines()));
+    let (fetch, requests) = support::remote::replying(Reply::chunks(canonical_lines()));
     options.common.fetch = Some(fetch);
-    let run = support::proxy::run_with(options).await;
+    let run = support::remote::run_with(options).await;
     assert_eq!(run.events, [json!({"type": "error", "reason": "aborted"})]);
     assert_eq!(run.message(), aborted_message(&json!([])));
     assert!(
@@ -894,7 +894,7 @@ async fn proxy_preabort_and_inflight_abort_settle_case() {
     signal.abort();
     producer.await.unwrap();
     gate.dropped.await.unwrap();
-    let run = support::proxy::collect(&stream).await;
+    let run = support::remote::collect(&stream).await;
     assert_eq!(
         run.events,
         [
@@ -912,8 +912,8 @@ fn proxy_producer_outlives_dropped_observers() {
 }
 /// Drive the scenario of `proxy_producer_outlives_dropped_observers` on the test runtime.
 async fn proxy_producer_outlives_dropped_observers_case() {
-    let (fetch, requests, gate) = support::proxy::gated();
-    let (stream, tasks) = support::proxy::start(support::proxy::with_fetch(fetch));
+    let (fetch, requests, gate) = support::remote::gated();
+    let (stream, tasks) = support::remote::start(support::remote::with_fetch(fetch));
     assert_eq!(tasks.0.lock().unwrap().len(), 1);
     assert!(requests.lock().unwrap().is_empty());
     drop(stream);
@@ -934,9 +934,9 @@ fn proxy_cancellation_drops_inflight_transport() {
 /// Drive the scenario of `proxy_cancellation_drops_inflight_transport` on the test runtime.
 async fn proxy_cancellation_drops_inflight_transport_case() {
     let (mut options, signal) = cancellable();
-    let (fetch, requests, mut held) = support::proxy::held();
+    let (fetch, requests, mut held) = support::remote::held();
     options.common.fetch = Some(fetch);
-    let (stream, tasks) = support::proxy::start(options);
+    let (stream, tasks) = support::remote::start(options);
     let producer = tokio::spawn(tasks.take());
     held.started.recv().await.unwrap();
     signal.abort();
@@ -950,7 +950,7 @@ async fn proxy_cancellation_drops_inflight_transport_case() {
             .unwrap()
             .is_aborted()
     );
-    let run = support::proxy::collect(&stream).await;
+    let run = support::remote::collect(&stream).await;
     assert_eq!(run.events, [json!({"type": "error", "reason": "aborted"})]);
 
     let (options, signal) = cancellable();
@@ -960,7 +960,7 @@ async fn proxy_cancellation_drops_inflight_transport_case() {
     producer.await.unwrap();
     gate.dropped.await.unwrap();
     assert_eq!(
-        support::proxy::run_lines(&canonical_lines()).await.events,
+        support::remote::run_lines(&canonical_lines()).await.events,
         canonical_events()
     );
 }
@@ -981,11 +981,11 @@ async fn proxy_abort_after_terminal_mutates_retained_result_case() {
     signal.abort();
     producer.await.unwrap();
     gate.dropped.await.unwrap();
-    let run = support::proxy::collect(&stream).await;
+    let run = support::remote::collect(&stream).await;
     assert_eq!(run.events, canonical_events());
     let mut expected = aborted_message(&canonical_message()["content"]);
     expected["usage"] = serde_json::from_str(USAGE).unwrap();
-    assert_eq!(support::proxy::snapshot(&result), expected);
+    assert_eq!(support::remote::snapshot(&result), expected);
     assert!(std::sync::Arc::ptr_eq(&result, &run.result));
 }
 
@@ -1020,7 +1020,7 @@ fn full_options() -> maestro_models::SimpleStreamOptions {
     options
 }
 /// The body a run sent, as text.
-fn body_of(requests: &support::proxy::Requests) -> String {
+fn body_of(requests: &support::remote::Requests) -> String {
     String::from_utf8(requests.lock().unwrap()[0].body.clone()).unwrap()
 }
 
@@ -1037,10 +1037,10 @@ async fn proxy_request_allowlist_preserves_omission_and_wire_order_case() {
         r#""metadata":{"1":1,"2":2,"z":0,"empty":null,"nested":{"z":1e+21,"a":1e-7}},"#,
         r#""transport":"auto","thinkingBudgets":{"minimal":0,"high":128},"maxRetryDelayMs":-7}}"#,
     );
-    let (fetch, requests) = support::proxy::replying(Reply::chunks(canonical_lines()));
+    let (fetch, requests) = support::remote::replying(Reply::chunks(canonical_lines()));
     let mut options = full_options();
     options.common.fetch = Some(fetch);
-    support::proxy::run_with(options).await;
+    support::remote::run_with(options).await;
     let body = body_of(&requests);
     assert!(body.starts_with(r#"{"model":{"#));
     assert!(body.contains(r#","context":{"#));
@@ -1054,14 +1054,14 @@ async fn proxy_request_allowlist_preserves_omission_and_wire_order_case() {
     empty.common.max_tokens = Some(1e21);
     empty.common.max_retry_delay_ms = Some(1e-7);
     empty.thinking_budgets = Some(maestro_models::ThinkingBudgets::default());
-    let (fetch, requests) = support::proxy::replying(Reply::chunks(canonical_lines()));
+    let (fetch, requests) = support::remote::replying(Reply::chunks(canonical_lines()));
     empty.common.fetch = Some(fetch);
-    support::proxy::run_with(empty).await;
+    support::remote::run_with(empty).await;
     let tail = r#","options":{"temperature":0,"maxTokens":1e+21,"sessionId":"","headers":{},"metadata":{},"thinkingBudgets":{},"maxRetryDelayMs":1e-7}}"#;
     assert!(body_of(&requests).ends_with(tail));
 
-    let (fetch, requests) = support::proxy::replying(Reply::chunks(canonical_lines()));
-    support::proxy::run_with(support::proxy::with_fetch(fetch)).await;
+    let (fetch, requests) = support::remote::replying(Reply::chunks(canonical_lines()));
+    support::remote::run_with(support::remote::with_fetch(fetch)).await;
     assert!(body_of(&requests).ends_with(r#","options":{}}"#));
 }
 
@@ -1086,9 +1086,9 @@ async fn proxy_adapter_receives_unmodified_request_and_signal_case() {
         Box::pin(std::future::ready(Ok(())))
     }));
     options.common.api_key = Some("provider-secret".into());
-    let (fetch, requests) = support::proxy::replying(Reply::chunks(canonical_lines()));
+    let (fetch, requests) = support::remote::replying(Reply::chunks(canonical_lines()));
     options.common.fetch = Some(fetch);
-    let run = support::proxy::run_with(options).await;
+    let run = support::remote::run_with(options).await;
     assert_eq!(run.events, canonical_events());
     let seen = requests.lock().unwrap()[0].clone();
     assert_eq!(seen.url, "https://proxy.example//api/stream");
@@ -1292,7 +1292,7 @@ impl Answer {
     }
 }
 /// Run one request against `answer` over `route`.
-async fn exchange_over(route: Route, answer: Answer) -> (support::proxy::Run, Exchange) {
+async fn exchange_over(route: Route, answer: Answer) -> (support::remote::Run, Exchange) {
     match route {
         Route::Controlled => {
             let mut reply = Reply::chunks(answer.pieces);
@@ -1301,8 +1301,8 @@ async fn exchange_over(route: Route, answer: Answer) -> (support::proxy::Run, Ex
             if answer.truncated {
                 reply.body.push(Err(FetchError::Timeout));
             }
-            let (fetch, requests) = support::proxy::replying(reply);
-            let run = support::proxy::run_with(support::proxy::with_fetch(fetch)).await;
+            let (fetch, requests) = support::remote::replying(reply);
+            let run = support::remote::run_with(support::remote::with_fetch(fetch)).await;
             let seen = requests.lock().unwrap()[0].clone();
             let target = seen
                 .url
@@ -1332,11 +1332,11 @@ async fn exchange_over(route: Route, answer: Answer) -> (support::proxy::Run, Ex
             let address = format!("{}/", server.url);
             let proxy = maestro_agent::ProxyStreamOptions {
                 options: maestro_models::SimpleStreamOptions::default(),
-                auth_token: support::proxy::TOKEN.into(),
+                auth_token: support::remote::TOKEN.into(),
                 proxy_url: address,
             };
-            let (stream, tasks) = support::proxy::start_at(proxy);
-            let run = support::proxy::finish(&stream, &tasks).await;
+            let (stream, tasks) = support::remote::start_at(proxy);
+            let run = support::remote::finish(&stream, &tasks).await;
             let received = server.finish().unwrap();
             let target = received.request_line.strip_prefix("POST ").unwrap();
             let target = target.strip_suffix(" HTTP/1.1").unwrap().to_owned();
@@ -1373,7 +1373,7 @@ fn contract_answers() -> Vec<Answer> {
     ]
 }
 /// Abort an exchange whose body is open after one event and return what the stream then holds.
-async fn cancel_over(route: Route) -> support::proxy::Run {
+async fn cancel_over(route: Route) -> support::remote::Run {
     let (options, signal) = cancellable();
     let start = line(r#"{"type":"start"}"#);
     let (stream, producer, release) = match route {
@@ -1388,26 +1388,26 @@ async fn cancel_over(route: Route) -> support::proxy::Run {
             let server = loopback::serve(loopback::EVENT_STREAM_HEAD, steps).unwrap();
             let proxy = maestro_agent::ProxyStreamOptions {
                 options,
-                auth_token: support::proxy::TOKEN.into(),
+                auth_token: support::remote::TOKEN.into(),
                 proxy_url: server.url.clone(),
             };
-            let (stream, tasks) = support::proxy::start_at(proxy);
+            let (stream, tasks) = support::remote::start_at(proxy);
             let producer = tokio::spawn(tasks.take());
             let first = stream.next().await.unwrap();
-            assert_eq!(support::proxy::shape(&first), json!({"type": "start"}));
+            assert_eq!(support::remote::shape(&first), json!({"type": "start"}));
             signal.abort();
             producer.await.unwrap();
             hold.send(()).unwrap();
             server.finish().unwrap();
-            return support::proxy::collect(&stream).await;
+            return support::remote::collect(&stream).await;
         }
     };
     let first = stream.next().await.unwrap();
-    assert_eq!(support::proxy::shape(&first), json!({"type": "start"}));
+    assert_eq!(support::remote::shape(&first), json!({"type": "start"}));
     signal.abort();
     producer.await.unwrap();
     release.unwrap().dropped.await.unwrap();
-    support::proxy::collect(&stream).await
+    support::remote::collect(&stream).await
 }
 
 /// Both transports yield the same requests, results and failures for the same server answers.
@@ -1455,7 +1455,7 @@ fn assert_request_contract(first: &Exchange) {
     assert!(first.body.ends_with(br#","options":{}}"#));
 }
 /// The results every route must have produced for the contract answers.
-fn assert_outcome_contract(outcomes: &[(support::proxy::Run, Exchange)]) {
+fn assert_outcome_contract(outcomes: &[(support::remote::Run, Exchange)]) {
     assert_eq!(outcomes[0].0.message(), canonical_message());
     assert_eq!(outcomes[1].0.message(), failure("Proxy error: specific"));
     assert_eq!(
@@ -1558,7 +1558,7 @@ fn last_assistant(agent: &maestro_agent::Agent) -> (Value, Option<String>, Strin
 /// The server side of one Agent scenario; it ends the body when told to.
 enum Backend {
     /// A gated in-process body.
-    Gate(support::proxy::Gate),
+    Gate(support::remote::Gate),
     /// A loopback server held open until released.
     Server(loopback::Loopback, std::sync::mpsc::Sender<()>),
 }
@@ -1567,7 +1567,7 @@ impl Backend {
     fn start(route: Route, lines: Vec<Vec<u8>>) -> (Self, String, Option<maestro_models::Fetch>) {
         match route {
             Route::Controlled => {
-                let (fetch, _, gate) = support::proxy::gated();
+                let (fetch, _, gate) = support::remote::gated();
                 for bytes in lines {
                     gate.send.send(Some(Ok(bytes))).unwrap();
                 }
@@ -1685,7 +1685,7 @@ async fn agent_scenario(
 ) {
     let abort = expected.0 == "aborted";
     let (backend, url, fetch) = Backend::start(route, lines);
-    let agent = support::proxy::proxy_agent(support::proxy::proxy_stream_fn(url, fetch));
+    let agent = support::remote::proxy_agent(support::remote::proxy_stream_fn(url, fetch));
     let updated = notify_on_update(&agent);
     let lifecycle = record_lifecycle(&agent);
     let done = agent.prompt(support::owned::input("hello"));
@@ -1740,7 +1740,7 @@ async fn recorded_proxy_start(
     use maestro_models::AssistantMessageEvent;
     use std::sync::Arc;
     let tasks = Arc::new(support::owned::Tasks::default());
-    let (fetch, _, mut gate) = support::proxy::gated();
+    let (fetch, _, mut gate) = support::remote::gated();
     let mut model = support::model();
     if row["kind"] == "proxy_initial" {
         model.api = row["input"]["model"]["api"].as_str().unwrap().into();
@@ -1750,8 +1750,8 @@ async fn recorded_proxy_start(
     let before = maestro_models::timestamp_now();
     let proxy = maestro_agent::stream_proxy(
         model,
-        support::proxy::context(),
-        support::proxy::proxy(support::proxy::with_fetch(fetch)),
+        support::remote::context(),
+        support::remote::proxy(support::remote::with_fetch(fetch)),
         tasks.spawner(),
     );
     let producer = tokio::spawn(tasks.take());

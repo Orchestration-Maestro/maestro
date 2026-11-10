@@ -11,7 +11,7 @@ use maestro_protocol::schema::{
     ErrorBody, PaneDirection, PaneResizeParams, PaneResizeReason, PaneResizeResult, ResponseResult,
     SplitDirection,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::json;
 
 /// The resize record a resize result holds.

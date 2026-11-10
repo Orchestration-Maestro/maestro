@@ -1,7 +1,7 @@
 //! Requests: their identifiers, their correlation with answers and their deadline.
 use super::{Inner, RpcClient, RpcClientError, expiry_at};
 use crate::rpc_types::{RpcData, RpcResponse, RpcSessionCommand};
-use maestro_json::jsonl::serialize_json_line;
+use maestro_json::lines::serialize_json_line;
 use maestro_watch::fs_watch::NativeTimer;
 use serde::Deserialize;
 use serde_json::Value;

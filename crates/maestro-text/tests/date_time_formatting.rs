@@ -1,7 +1,7 @@
 //! Recorded local date-time presentation through the public formatter.
 #![cfg(test)]
 #![cfg(feature = "date-time-format")]
-use maestro_text::date_time_format::LocaleDateTimeFormat;
+use maestro_text::dates::LocaleDateTimeFormat;
 
 #[test]
 fn locale_date_times_match_recorded_wall_fields() {

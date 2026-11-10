@@ -22,7 +22,8 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         )?,
     );
     let commands = Arc::new(ProcessConfigValueOperations::new(|| {
-        maestro_tools::utils::shell::get_shell_config(None).map(|shell| (shell.shell, shell.args))
+        maestro_tools::utils::environment::get_shell_config(None)
+            .map(|shell| (shell.shell, shell.args))
     }));
     let custom = custom_registry(&sample, commands.clone())?;
     let mut result = json!({"sessions": 0});

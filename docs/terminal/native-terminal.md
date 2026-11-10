@@ -263,7 +263,7 @@ background tasks cannot be returned where they happen, so the first is kept and 
 
 ## One-input wait
 
-`terminal::wait_for_input()` is a standalone future for a host-owned pause.
+`adapter::wait_for_input()` is a standalone future for a host-owned pause.
 Its first poll checks the caller's Tokio runtime and opens the existing input source
 before acquiring raw/nonblocking stdin through the terminal's restoration guard.
 It completes on one nonempty raw read: no key decoding, Enter requirement, protocol

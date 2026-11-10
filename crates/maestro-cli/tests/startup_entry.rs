@@ -7,7 +7,7 @@ fn native_selector_terminal_drives_the_supplied_local_set() {
     use std::rc::Rc;
     let local = Rc::new(tokio::task::LocalSet::new());
     let (terminal, runtime) =
-        maestro_cli::input::selector::native_terminal(Rc::clone(&local)).unwrap();
+        maestro_cli::input::selection::native_terminal(Rc::clone(&local)).unwrap();
     let (sender, receiver) = tokio::sync::oneshot::channel();
     runtime.spawn_local(Box::pin(async move {
         sender.send(()).unwrap();
@@ -26,7 +26,7 @@ mod entry {
     use crate::support::startup::{set_modified, stored_history};
     use maestro_app::output_guard::is_stdout_taken_over;
     use maestro_app::{ExtensionFactory, Local, ReadonlySessionManager};
-    use maestro_cli::startup::main::MainOptions;
+    use maestro_cli::startup::entrypoint::MainOptions;
     use serde_json::json;
     use std::cell::RefCell;
     use std::path::Path;

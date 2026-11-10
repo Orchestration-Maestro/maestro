@@ -1,13 +1,13 @@
 //! Image command execution against terminal-owned screen storage.
 
 use super::{
+    bitmap::{ImageError, Limits, LoadingImage},
     command::{
         Command, Control, CursorMovement, Display, Format, Medium, Quiet, Response, Transmission,
     },
-    image::{ImageError, Limits, LoadingImage},
-    storage::{Location, Placement},
+    images::{Location, Placement},
 };
-use crate::{Terminal, page_list::TrackedPin, screen_set::Key};
+use crate::{Terminal, page_list::TrackedPin, screens::Key};
 
 impl Terminal {
     /// Enable images for this terminal, including PNG and supported local media.

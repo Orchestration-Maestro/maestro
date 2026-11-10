@@ -4,7 +4,7 @@ use crate::{
     local_resources::{Lease, Message, Registry, effects::SubscriptionEndpoint},
     read_imports::{ReadEndpoint, add_read, resource},
 };
-use maestro_extensions::{ExtensionAPI, Local, footer_data_provider::ReadonlyFooterDataProvider};
+use maestro_extensions::{ExtensionAPI, Local, footer::ReadonlyFooterDataProvider};
 use std::{
     rc::Rc,
     sync::{Arc, mpsc::Sender},

@@ -74,7 +74,7 @@ fn terminal_bytes_charsets() {
 
 #[test]
 fn terminal_bytes_alt_screen() {
-    use maestro_terminal::screen_set::Key;
+    use maestro_terminal::screens::Key;
     let mut t = Terminal::new(10, 5, 0).unwrap();
     t.write(b"Primary");
     assert_eq!(t.active_screen(), Key::Primary);
@@ -444,7 +444,7 @@ fn keyboard_operations_reuse_screen_local_history() {
 }
 
 fn alternate_screen_transitions(t: &mut Terminal) {
-    use maestro_terminal::screen_set::Key;
+    use maestro_terminal::screens::Key;
     t.write(b"P");
     for n in [47, 1047, 1049] {
         t.write(format!("\x1b[?{n}h").as_bytes());

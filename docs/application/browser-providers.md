@@ -31,7 +31,7 @@ used by this simple-stream adapter.
 Call `discover_models` or a specialized discovery function with
 `DiscoveryOptions`: the shared HTTP operation, complete-message socket factory
 and synchronous diagnostic callback. Native callers can supply
-[`default_fetch`](../../crates/maestro-models/src/providers/http/mod.rs) and
+[`default_fetch`](../../crates/maestro-models/src/providers/transport/mod.rs) and
 [`default_web_socket`](../../crates/maestro-models/src/providers/websocket/native.rs).
 Browser callers supply
 [`browser_web_socket`](../../crates/maestro-web/src/browser/websocket/browser.rs).
@@ -63,7 +63,7 @@ positive-integer restriction. Every failure exposes its provider and category; t
 remain available through `Error::source`.
 
 HTTP responses use the shared
-[`decode_utf8`](../../crates/maestro-text/src/utf8.rs); socket JSON does not strip
+[`decode_utf8`](../../crates/maestro-text/src/decoding.rs); socket JSON does not strip
 a leading BOM. Both use
 [JSON object admission](../../crates/maestro-json/src/object.rs).
 Selected duplicate members keep their last value. HTTP discovery leaves unrelated

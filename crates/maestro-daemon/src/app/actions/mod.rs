@@ -22,7 +22,7 @@ pub use relocate::PaneMoveRecovery;
 pub use state_update::{AgentRelease, CompletionPolicy, PaneStateUpdate, pane_agent_status};
 pub use zoom::PaneZoomOutcome;
 
-use maestro_workspace::{layout::PaneId, workspace::Workspace};
+use maestro_workspace::{spaces::Workspace, tiling::PaneId};
 
 /// Formats a resolved workspace label, display position and optional tab label.
 #[must_use]

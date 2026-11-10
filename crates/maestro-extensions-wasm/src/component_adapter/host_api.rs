@@ -198,7 +198,7 @@ impl<I: Imports> ExtensionHost for Host<I> {
         self.0.create_read_tool_definition(cwd, options)
     }
 
-    fn native_io(&self) -> std::rc::Rc<dyn crate::io::NativeIo> {
+    fn native_io(&self) -> std::rc::Rc<dyn crate::effects::NativeIo> {
         std::rc::Rc::new(super::io::Io(self.0.clone()))
     }
     fn native_format_size(&self, bytes: f64) -> ExtensionResult<String> {

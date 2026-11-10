@@ -16,7 +16,7 @@ use maestro_models::{
     Transport,
 };
 use maestro_session::{
-    SessionManager, messages::CustomAgentMessages, session_manager::ReadonlySessionManager,
+    SessionManager, message_records::CustomAgentMessages, session_manager::ReadonlySessionManager,
 };
 use maestro_settings::{MessageDeliveryMode, SettingsManager, TransportSetting};
 use std::{

@@ -1,10 +1,10 @@
 //! Tools that list and search the file system.
 
-pub mod ls;
+pub mod directory;
 
-pub mod tools_manager;
+pub mod acquisition;
 
-pub mod find;
+pub mod discovery;
 mod listing;
 
-pub mod grep;
+pub mod matching;

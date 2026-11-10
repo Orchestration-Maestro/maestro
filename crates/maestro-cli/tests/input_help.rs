@@ -2,7 +2,7 @@
 
 use crate::support;
 use maestro_app::{ExtensionFlag, FlagType};
-use maestro_cli::input::args::print_help;
+use maestro_cli::input::arguments::print_help;
 use std::sync::{Arc, RwLock};
 
 /// Build one retained registration from a recorded flag description.

@@ -12,9 +12,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{
-    Command, invoke_command_on_component, released, released_component, start,
-};
+use super::example_support::{Command, invoke_command_on_component, released, released_component, start};
 use super::host::{Harness, borrow, bus_emit};
 use super::observed::Observed;
 use crate::component_adapter::{Capabilities, Exports, Imports};

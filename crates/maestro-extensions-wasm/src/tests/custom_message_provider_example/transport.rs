@@ -157,10 +157,7 @@ fn check_retry_hint(
 #[test]
 fn custom_message_provider_forwards_cancellation_until_body_consumption_ends() -> ExtensionResult<()>
 {
-    use std::{
-        sync::{Arc, atomic::Ordering},
-        task::{Context as TaskContext, Waker},
-    };
+    use std::{sync::{Arc, atomic::Ordering}, task::{Context as TaskContext, Waker}};
     let host = Controlled::default();
     host.observe().native_http.body = Some(vec![response_events().into_bytes()]);
     let caller = super::super::controlled::Flag::default();

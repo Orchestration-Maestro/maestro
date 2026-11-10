@@ -6,8 +6,8 @@ use crate::widget_reads::{
     HighlighterEndpoint, Lent, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint,
     WidgetMessage,
 };
+use maestro_extensions::presentation::BorderColor;
 use maestro_extensions::types::UIErrorReporter;
-use maestro_extensions::widgets::BorderColor;
 use std::rc::Rc;
 
 impl Registry {
@@ -77,7 +77,7 @@ impl Registry {
     /// Keeps a keybindings manager under a fresh identity.
     pub(crate) fn keep_keybindings(
         &self,
-        keybindings: maestro_extensions::widgets::ExtensionKeybindings,
+        keybindings: maestro_extensions::presentation::ExtensionKeybindings,
     ) -> Result<std::sync::Arc<super::Lease>, String> {
         self.insert(Capability::Keybindings(keybindings))
     }
@@ -86,7 +86,7 @@ impl Registry {
     pub(crate) fn keybindings_manager(
         &self,
         keys: &crate::keys_reads::KeysEndpoint,
-    ) -> Result<maestro_extensions::widgets::ExtensionKeybindings, String> {
+    ) -> Result<maestro_extensions::presentation::ExtensionKeybindings, String> {
         match self.capability(keys.0.id).as_deref() {
             Some(Capability::Keybindings(keys)) => Ok(keys.clone()),
             _ => Err("extension keybindings resource ended".to_owned()),
@@ -101,7 +101,7 @@ impl Registry {
     /// Lends editor styles: the border, then the completion list styles in field order.
     pub(crate) fn lend_editor_theme(
         &self,
-        theme: maestro_extensions::widgets::EditorTheme,
+        theme: maestro_extensions::presentation::EditorTheme,
     ) -> Result<(StyleEndpoint, Vec<StyleEndpoint>), String> {
         let list = Rc::new(theme.select_list);
         let styles = crate::widget_lists::select_roles(&list)
@@ -114,7 +114,7 @@ impl Registry {
     /// Lends a native text callback to an authored editor.
     pub(crate) fn lend_text(
         &self,
-        callback: maestro_extensions::widgets::TextCallback,
+        callback: maestro_extensions::presentation::TextCallback,
     ) -> Result<crate::guest_calls::editors::TextCallbackEndpoint, String> {
         self.insert(Capability::Text(callback))
             .map(crate::guest_calls::editors::TextCallbackEndpoint)

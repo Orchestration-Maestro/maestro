@@ -139,7 +139,7 @@ is inserted literally, without another substitution pass.
 
 ## Parser and loader reference
 
-`maestro_resources::prompt_templates` loads supplied Markdown templates and expands
+`maestro_resources::prompts` loads supplied Markdown templates and expands
 leading slash commands. It does not execute a shell or select application settings.
 
 ```rust

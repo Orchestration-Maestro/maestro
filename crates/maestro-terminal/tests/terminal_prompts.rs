@@ -285,7 +285,7 @@ fn prompt_option_controls(t: &mut Terminal) {
 }
 #[test]
 fn explicit_redraw_policies_reach_primary_resize() {
-    use maestro_terminal::screen_set::Key;
+    use maestro_terminal::screens::Key;
     for redraw in [Redraw::False, Redraw::True, Redraw::Last] {
         let mut t = Terminal::new(10, 5, 0).unwrap();
         t.full_reset();

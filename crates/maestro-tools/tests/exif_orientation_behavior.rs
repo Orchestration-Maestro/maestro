@@ -5,7 +5,7 @@ use support::TestResult;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use image::RgbaImage;
-use maestro_tools::utils::exif_orientation::apply_exif_orientation;
+use maestro_tools::utils::image_metadata::apply_exif_orientation;
 use serde::Deserialize;
 use serde_json::json;
 

@@ -1,8 +1,8 @@
 //! Snapshot effects and their ordered diagnostic events.
 use super::*;
-use crate::logging::tests::capture;
+use crate::diagnostics::tests::capture;
 use maestro_test_directory::{Scratch, temporary_root};
-use maestro_workspace::persist::snapshot::{SNAPSHOT_VERSION, SessionHistorySnapshot};
+use maestro_workspace::persist::records::{SNAPSHOT_VERSION, SessionHistorySnapshot};
 use std::fs;
 
 #[test]

@@ -180,7 +180,7 @@ executable reads them from the `theme` folder in the package directory. See
 
 ## Startup session construction
 
-The command-line `startup::main::runtime::create_runtime` constructs a selected
+The command-line `startup::entrypoint::initialization::create_runtime` constructs a selected
 session over already-created services. It collects service, settings and
 extension diagnostics before applying model, thinking and tool selections. An
 explicit API key needs a selected command-line or scoped model, even when the

@@ -186,7 +186,7 @@ echo "Streaming 100 long lines over 30 seconds."
 echo "Each line carries colour, a hyperlink or a long path."
 echo ""
 for i in $(seq 1 100); do
-	DIR="/Users/example/Documents/development/maestro/crates/maestro-chat/src/interactive_mode"
+	DIR="/Users/example/Documents/development/maestro/crates/maestro-chat/src/interaction"
 	FILE="${DIR}/components/very-long-component-name-that-exceeds-width-${i}.rs"
 	echo -e "\033]8;;file://${FILE}\007▶ read: ${FILE}\033]8;;\007"
 	if [ $((i % 5)) -eq 0 ]; then

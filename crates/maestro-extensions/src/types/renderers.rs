@@ -1,10 +1,10 @@
 //! Custom-message renderer callbacks.
 use crate::{EventBus, EventError, ExtensionExecution};
 use maestro_models::{Execution, Threaded};
-use maestro_session::messages::CustomMessage;
-pub use maestro_session::messages::MessageRenderOptions;
+use maestro_session::message_records::CustomMessage;
+pub use maestro_session::message_records::MessageRenderOptions;
 use maestro_theme::LiveTheme;
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use serde_json::Value;
 
 /// Renders a custom message, or returns no component to keep the host's default.

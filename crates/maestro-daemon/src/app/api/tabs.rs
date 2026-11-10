@@ -1,7 +1,7 @@
 //! Tab commands: list, get, create, focus, rename, move and close.
 
 use super::{
-    super::{App, creation::RootLaunch, state::Mode},
+    super::{App, creation::RootLaunch, model::Mode},
     env::normalize_launch_env,
     responses::{api_error, tab_not_found, workspace_not_found},
 };
@@ -64,7 +64,7 @@ impl<C: FnMut() -> u128> App<C> {
         {
             let target = &mut self.state.topology.workspaces[workspace];
             target.tabs[tab].set_custom_name(label);
-            crate::logging::tab_renamed(&target.id, &tab_id);
+            crate::diagnostics::tab_renamed(&target.id, &tab_id);
         }
         if params.focus {
             self.state.switch_workspace_tab(workspace, tab);
@@ -93,7 +93,7 @@ impl<C: FnMut() -> u128> App<C> {
         let tab_id = self.public_tab_id(workspace, tab, &params.tab_id)?;
         let target = &mut self.state.topology.workspaces[workspace];
         target.tabs[tab].set_custom_name(params.label.clone());
-        crate::logging::tab_renamed(&target.id, &tab_id);
+        crate::diagnostics::tab_renamed(&target.id, &tab_id);
         let workspace_id = target.id.clone();
         self.state.session_dirty = true;
         self.event_hub.push(EventData::TabRenamed {

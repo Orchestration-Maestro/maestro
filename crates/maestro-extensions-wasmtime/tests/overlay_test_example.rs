@@ -4,11 +4,11 @@
 use maestro_extensions::{
     EventError, ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for,
     create_extension_runtime, load_extension_from_factory,
+    presentation::ExtensionKeybindings,
     types::{
         CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionUIContextPort,
         ExtensionUIFuture, NotificationType,
     },
-    widgets::ExtensionKeybindings,
 };
 use maestro_tui::{OverlayOptions, SizeValue, TUI, TerminalImage, extract_ansi_code};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};

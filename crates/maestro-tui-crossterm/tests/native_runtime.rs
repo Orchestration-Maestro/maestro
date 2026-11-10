@@ -9,7 +9,7 @@ use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::runtime_support::{is_child, rerun, run_set};
-use maestro_tui::tui::{LogContext, RenderCallback, TuiRuntime};
+use maestro_tui::interface::{LogContext, RenderCallback, TuiRuntime};
 use maestro_tui_crossterm::ProcessTuiRuntime;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};

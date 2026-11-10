@@ -7,7 +7,7 @@ use maestro_app::{
     },
 };
 use maestro_theme::{SyntectHighlighter, ThemeState};
-use maestro_tui::tui::TerminalHandle;
+use maestro_tui::interface::TerminalHandle;
 use std::{error::Error, rc::Rc};
 use tokio::task::LocalSet;
 

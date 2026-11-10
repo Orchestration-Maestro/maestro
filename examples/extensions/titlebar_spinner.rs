@@ -10,7 +10,7 @@ use std::{rc::Rc, time::Duration};
 
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionContext, ExtensionEventResult, ExtensionFuture, ExtensionResult,
-    HookFuture, Subscription, tools::path_utils,
+    HookFuture, Subscription, registry::path_utils,
 };
 
 /// Frames in display order, one every 80 milliseconds.
@@ -25,7 +25,7 @@ use tail::Tail;
 /// Reads the current name and directory, without caching either between frames.
 fn base_title(api: &ExtensionAPI, context: &ExtensionContext) -> ExtensionResult<String> {
     let basename = path_utils::basename(api, &context.cwd()?)?;
-    // Matches maestro-chat/src/interactive_mode/events.rs:489-497 and configuration/config/mod.rs:24.
+    // Matches maestro-chat/src/interaction/events.rs:489-497 and configuration/config/mod.rs:24.
     Ok(
         match api.get_session_name()?.filter(|name| !name.is_empty()) {
             Some(name) => format!("Maestro - {name} - {basename}"),

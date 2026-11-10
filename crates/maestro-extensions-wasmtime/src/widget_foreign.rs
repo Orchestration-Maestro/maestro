@@ -6,7 +6,7 @@ use crate::local_resources::Lease;
 use crate::widget_editors::{EditorBuild, EditorKind};
 use crate::widget_lists::Binding;
 use crate::widget_reads::{Paint, StyleEndpoint, WidgetEndpoint};
-use maestro_extensions::widgets::EditorError;
+use maestro_extensions::presentation::EditorError;
 use std::{rc::Rc, sync::Arc};
 
 /// One editor operation on an editor another extension's factory built.
@@ -112,7 +112,9 @@ impl EditorKind {
 
 /// Runs one optional operation, answering `Absent` when the editor lacks it.
 fn optional(
-    editor: &dyn maestro_extensions::widgets::EditorComponent<Signal = maestro_extensions::Cancellation>,
+    editor: &dyn maestro_extensions::presentation::EditorComponent<
+        Signal = maestro_extensions::Cancellation,
+    >,
     request: ForeignRequest,
     binding: &Binding<'_>,
 ) -> Result<ForeignAnswered, String> {

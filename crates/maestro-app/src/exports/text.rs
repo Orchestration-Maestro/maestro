@@ -4,7 +4,7 @@ pub use maestro_text::markup;
 
 pub use maestro_text::is_whitespace_scalar;
 
-pub use maestro_text::number_format::LocaleNumberFormat;
+pub use maestro_text::numbers::LocaleNumberFormat;
 
 pub use maestro_text::{decode_utf8, lossy_string};
 

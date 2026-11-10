@@ -3,7 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use maestro_extensions::footer_data_provider::live::Live;
+use maestro_extensions::footer::iteration::Live;
 
 use super::git::{GitPaths, find_git_paths, resolve_branch};
 use super::operations::FooterOperations;

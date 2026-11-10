@@ -1,5 +1,5 @@
 //! Packaged component tools through real SDK session loading and reload.
-use crate::support::{Root, session::component_session};
+use crate::support::{Root, sdk::component_session};
 use maestro_app::AgentSession;
 use serde_json::{Value, json};
 use std::rc::Rc;

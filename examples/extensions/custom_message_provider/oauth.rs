@@ -1,9 +1,10 @@
 //! Subscription sign-in through the host's HTTP and interaction interfaces.
 use maestro_extensions_wasm::{
     AbortSignal, ExtensionAPI, ExtensionFuture, ExtensionResult, Model, OAuthAuthInfo,
-    OAuthCredentials, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderInterface, generate_pkce,
+    OAuthCredentials, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderInterface,
+    effects::NativeIo,
+    generate_pkce,
     http::{Request, Response},
-    io::NativeIo,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};

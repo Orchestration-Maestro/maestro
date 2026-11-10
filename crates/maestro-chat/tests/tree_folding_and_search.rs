@@ -1,7 +1,7 @@
 //! Retained session-tree search and folding behavior.
 #![cfg(test)]
 use maestro_app::SessionTreeNode as InputNode;
-use maestro_chat::components::tree_selector::TreeList;
+use maestro_chat::components::tree_picker::TreeList;
 use serde_json::json;
 
 #[path = "tree_folding_support/mod.rs"]

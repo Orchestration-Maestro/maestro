@@ -5,10 +5,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{
-    Command as CommandRecord, Observation, invoke_command_on_component, release_all,
-    release_component, start,
-};
+use super::example_support::{Command as CommandRecord, Observation, invoke_command_on_component, release_all, release_component, start};
 use super::host::Harness;
 use super::reader_host::Reader;
 use crate::component_adapter::Exports;

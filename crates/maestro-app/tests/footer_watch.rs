@@ -12,7 +12,7 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterOperations, NativeFooterOperations,
 };
 #[cfg(unix)]
-use maestro_process::child_process::process_exists;
+use maestro_process::children::process_exists;
 #[cfg(unix)]
 use maestro_test_process::git_command;
 use serde::Deserialize;
@@ -1303,7 +1303,7 @@ async fn footer_reaping_barrier(pid: rustix::process::Pid) {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn footer_embedded_checkout_retains_branch_and_watch_identity() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     let e = Rc::new(Effects::default());
     e.directory("/container/.bare/objects");
     e.directory("/container/.bare/refs");

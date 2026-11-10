@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use super::{Imports, signals::Binding};
-use crate::{AbortSignal, ExtensionFuture, io::NativeIo};
+use crate::{AbortSignal, ExtensionFuture, effects::NativeIo};
 use std::time::Duration;
 
 /// Independently retained import capability.
@@ -27,8 +27,8 @@ impl<I: Imports> NativeIo for Io<I> {
     fn watch(
         &self,
         path: String,
-        listener: crate::fs::WatchListener,
-    ) -> crate::ExtensionResult<std::rc::Rc<dyn crate::fs::FsWatcher>> {
+        listener: crate::filesystem::WatchListener,
+    ) -> crate::ExtensionResult<std::rc::Rc<dyn crate::filesystem::FsWatcher>> {
         let identity = super::callbacks::Identity::new(&self.0);
         let handle = self.0.watch(path, &identity.handle)?;
         identity.keep(WatchCallback(listener));
@@ -156,7 +156,7 @@ impl<I: Imports> crate::streams::Readable for Body<I> {
 
 /// Owns the original native watch resource, not a separate callback registration.
 struct Watcher<I: Imports>(super::byte_resources::Resource<I, I::Watcher>);
-impl<I: Imports> crate::fs::FsWatcher for Watcher<I> {
+impl<I: Imports> crate::filesystem::FsWatcher for Watcher<I> {
     fn close(&self) -> crate::ExtensionResult<()> {
         self.0.imports.watcher_close(&self.0.handle)
     }
@@ -179,4 +179,4 @@ impl<I: Imports> super::Exports<I> {
 
 /// Distinguishes repeated watch delivery from the same-shaped one-shot abort listener.
 #[derive(Clone)]
-pub(super) struct WatchCallback(pub(super) crate::fs::WatchListener);
+pub(super) struct WatchCallback(pub(super) crate::filesystem::WatchListener);

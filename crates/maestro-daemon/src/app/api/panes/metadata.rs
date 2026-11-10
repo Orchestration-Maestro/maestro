@@ -13,7 +13,7 @@ use crate::{
         },
     },
     events::AppEvent,
-    terminal::state::{AgentMetadataReport, TerminalState},
+    terminal::model::{AgentMetadataReport, TerminalState},
 };
 use maestro_detection::agents::normalize_agent_source;
 use maestro_protocol::schema::{ErrorBody, PaneReportMetadataParams, ResponseResult};

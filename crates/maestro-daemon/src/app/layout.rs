@@ -6,7 +6,7 @@ use maestro_protocol::{
     events::EventData,
     schema::{PaneDirection, PaneLayoutPane, PaneLayoutRect, PaneLayoutSnapshot, PaneLayoutSplit},
 };
-use maestro_workspace::layout::{
+use maestro_workspace::tiling::{
     Borders, NavDirection, PaneId, PaneInfo, Rect, find_in_direction, ranges_overlap,
 };
 

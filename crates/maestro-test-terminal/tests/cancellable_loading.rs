@@ -1,9 +1,9 @@
 //! Cancellation through the shared signal and the actual terminal component.
 
-use maestro_tui::keybindings::{KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS};
+use maestro_tui::bindings::{KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS};
+use maestro_tui::interface::InputHandler;
 use maestro_tui::keys::set_kitty_protocol_active;
 use maestro_tui::set_keybindings;
-use maestro_tui::tui::InputHandler;
 use maestro_tui::{CancellableLoader, Component, Loader, LoaderIndicatorOptions};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;

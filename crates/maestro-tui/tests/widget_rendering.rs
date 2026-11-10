@@ -3,7 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use maestro_tui::tui::ComponentHandle;
+use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{Box, Component, Spacer, Text};
 use serde::Deserialize;
 

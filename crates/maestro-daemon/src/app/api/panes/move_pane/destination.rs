@@ -3,7 +3,7 @@
 use super::{super::super::responses::api_error, Source};
 use crate::app::App;
 use maestro_protocol::schema::{ErrorBody, PaneMoveDestination, PaneMoveReason, SplitDirection};
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// Where a validated move puts the pane.
 #[derive(Debug)]

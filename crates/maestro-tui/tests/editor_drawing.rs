@@ -43,7 +43,7 @@ fn editor_escape_payload_tabs_are_not_display_spaces() {
 
 #[test]
 fn editor_cursor_inside_escape_moves_only_for_display() {
-    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    use maestro_tui::{Component, Editor, EditorOptions, interface::InputHandler};
     support::run("editor_cursor_inside_escape_moves_only_for_display");
     let _guard = support::globals();
     let (tui, _, _) = support::host(24);
@@ -115,7 +115,7 @@ fn editor_border_callback_is_live_before_layout() {
 
 #[test]
 fn editor_narrow_rows_preserve_escape_payloads() {
-    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    use maestro_tui::{Component, Editor, EditorOptions, interface::InputHandler};
     let _guard = support::globals();
     for escape in ["\x1b[31m", "\x1b]0;x\ty\x07"] {
         let (tui, _, _) = support::host(24);
@@ -196,11 +196,11 @@ fn recording_border(
 }
 
 fn check_clipped_case(
-    tui: &maestro_tui::tui::TUI,
+    tui: &maestro_tui::interface::TUI,
     prefix: &'static str,
     case: (usize, usize, &str, bool),
 ) {
-    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    use maestro_tui::{Component, Editor, EditorOptions, interface::InputHandler};
     let (count, width, template, upper) = case;
     let arrow = if upper { "↑" } else { "↓" };
     let editor = Editor::new(tui, support::theme(), EditorOptions::default());

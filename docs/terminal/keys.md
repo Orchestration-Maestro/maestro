@@ -78,7 +78,7 @@ to, such as the Kelvin sign U+212A for `k`. Any other text names no key and neve
 matches.
 
 `maestro_tui::keys::Identifier::parse` implements this grammar. The workspace key
-combinations (`maestro_daemon::key_combo::parse_key_combo`) project its result onto
+combinations (`maestro_daemon::keys::parse_key_combo`) project its result onto
 the protocol's key codes and modifier bits, so both frontends accept and reject the
 same spellings.
 

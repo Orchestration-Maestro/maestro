@@ -4,7 +4,7 @@ use crate::support::api::{
     TestApp, add_tab, daemon_with_workspaces, events_after, failure, join_group, request,
     root_pane, split_pane, workspace_ids,
 };
-use maestro_daemon::app::state::Mode;
+use maestro_daemon::app::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
 use serde_json::json;

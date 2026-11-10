@@ -1,6 +1,6 @@
 //! Public discovery-result formatting without native effects.
 #![cfg(test)]
-use crate::agents::{AgentConfig, format_agent_list};
+use crate::discovery::{AgentConfig, format_agent_list};
 
 /// Supplies literal authored metadata to the public formatting seam.
 fn agent(name: &str, source: &str) -> AgentConfig {

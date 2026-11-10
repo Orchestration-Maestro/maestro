@@ -3,7 +3,9 @@
 
 #[test]
 fn labels_use_supplied_home_checkout_and_path_fallback() {
-    use maestro_workspace::workspace::git::{automatic_workspace_label, fallback_label_from_cwd};
+    use maestro_workspace::spaces::repository::{
+        automatic_workspace_label, fallback_label_from_cwd,
+    };
     use std::path::Path;
     let home = Path::new("/home/member");
     assert_eq!(fallback_label_from_cwd(home, Some(home)), "~");
@@ -37,7 +39,7 @@ fn labels_use_supplied_home_checkout_and_path_fallback() {
 #[test]
 fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
     use super::support::snapshot::Directory;
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     for scenario in ["unspaced", "empty", "unreadable-common", "directory-head"] {
         let dir = Directory::new();
         let root = dir.path().join("repo");
@@ -90,7 +92,7 @@ fn native_discovery_preserves_footer_and_workspace_metadata_rules() {
 #[test]
 fn native_worktree_unreadable_common_metadata_keeps_workspace_identity() {
     use super::support::snapshot::Directory;
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     let dir = Directory::new();
     let root = dir.path().join("repo");
     let metadata = dir.path().join("store");
@@ -119,7 +121,7 @@ fn bare_store(config: &str) -> (super::support::snapshot::Directory, std::path::
 
 #[test]
 fn bare_flag_in_another_section_does_not_make_a_store_bare() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     let (_dir, store) =
         bare_store("[core]\n\tfilemode = true\n[remote \"origin\"]\n\tbare = true\n");
     assert!(discover_git_paths(&store).is_none());
@@ -127,7 +129,7 @@ fn bare_flag_in_another_section_does_not_make_a_store_bare() {
 
 #[test]
 fn last_bare_flag_decides_whether_a_store_is_bare() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     let (_dir, store) = bare_store("[core]\n\tbare = true\n\tbare = false\n");
     assert!(discover_git_paths(&store).is_none());
     let (_dir, store) = bare_store("[core]\n\tbare = false\n\tbare = true\n");
@@ -136,14 +138,14 @@ fn last_bare_flag_decides_whether_a_store_is_bare() {
 
 #[test]
 fn quoted_bare_flag_makes_a_store_bare() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     let (_dir, store) = bare_store("[core]\n\tbare = \"true\"\n");
     assert!(discover_git_paths(&store).is_some());
 }
 
 #[test]
 fn last_ref_storage_value_decides_reftable() {
-    use maestro_workspace::workspace::git::native::git_ref_storage_is_reftable;
+    use maestro_workspace::spaces::repository::native::git_ref_storage_is_reftable;
     let (_dir, store) = bare_store("[extensions]\n\trefStorage = files\n\trefStorage = reftable\n");
     assert!(git_ref_storage_is_reftable(&store));
     let (_dir, store) = bare_store("[extensions]\n\trefStorage = reftable\n\trefStorage = files\n");

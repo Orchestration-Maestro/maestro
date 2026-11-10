@@ -33,7 +33,7 @@ use super::BedrockOptions;
 use super::credentials::default_provider;
 use super::proxy::Environment;
 use super::request::Prepared;
-use crate::providers::http::{
+use crate::providers::transport::{
     Fetch, FetchError, HttpBody, HttpRequest, ProxySelector, RequestFailure, Route,
     configured_fetch,
 };

@@ -1,9 +1,9 @@
 //! Enhanced keyboard protocol fields observed at the public byte boundary.
 use maestro_terminal::{
     input::{
-        key::{Key, KeyAction, KeyEvent},
         key_encode::KeyEncoder,
         key_mods::{Mod, Mods, Side},
+        keyboard::{Key, KeyAction, KeyEvent},
     },
     kitty::key::Flags,
 };

@@ -14,7 +14,7 @@ use maestro_models::{
     FauxResponseStep, ImageContent, Local, TextContent, Tool, UserBlock, UserContent,
 };
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
-use maestro_session::messages::SendUserMessageOptions;
+use maestro_session::message_records::SendUserMessageOptions;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;

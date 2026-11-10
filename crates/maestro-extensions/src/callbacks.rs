@@ -1,7 +1,7 @@
 //! Borrowed emission within a synchronous extension callback.
 use crate::{
     EventError, ExtensionExecution,
-    event_bus::{EventBus, Registration},
+    events::{EventBus, Registration},
 };
 use maestro_models::Threaded;
 use serde_json::Value;

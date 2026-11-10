@@ -6,7 +6,7 @@ use maestro_extensions::{
     SessionBeforeForkEvent, SessionBeforeSwitchEvent, SessionBeforeSwitchReason,
     SessionShutdownEvent, SessionShutdownReason, SessionStartEvent, SessionStartReason,
     create_event_bus_for, create_extension_runtime,
-    runner::emit_session_shutdown_event,
+    execution::emit_session_shutdown_event,
     types::{
         FlagValue, ForkOptions, NewSessionCommandOptions, SessionChangeResult,
         SwitchSessionOptions, WithSession,
@@ -181,7 +181,7 @@ impl Host {
     }
 
     /// Asks the old extensions whether to go on; true when one vetoed.
-    async fn vetoed<E: maestro_extensions::runner::RunnerEmitEvent>(
+    async fn vetoed<E: maestro_extensions::execution::RunnerEmitEvent>(
         &self,
         event: &mut E,
         cancelled: impl Fn(&E::Result) -> bool,

@@ -5,8 +5,8 @@ use std::iter;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::arguments::json_parse::is_blank;
-use crate::arguments::replay::nullish_default;
+use crate::parameters::json_parse::is_blank;
+use crate::parameters::replay::nullish_default;
 use crate::projection::IMAGE_PLACEHOLDER;
 use crate::projection::normalize_tool_call_id;
 use crate::{

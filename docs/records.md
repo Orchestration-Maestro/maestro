@@ -353,7 +353,7 @@ strings, lists, maps and `false` stay as written.
 
 ## Credential records
 
-`maestro-request::oauth::OAuthCredentials` and the `maestro-request::auth_storage`
+`maestro-request::oauth::OAuthCredentials` and the `maestro-request::credentials`
 records (`ApiKeyCredential`, `AuthCredential`, `AuthStorageData`, `AuthSource` and
 `AuthStatus`) are the [credential owner's](credentials.md) typed records, defined
 once here and re-exported by models, credentials and the guest.

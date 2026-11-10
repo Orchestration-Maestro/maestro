@@ -3,7 +3,7 @@
 use super::components::{loader, local, place};
 use maestro_extensions::{
     ExtensionRunner, LoadExtensionsResult, Local, ResourcesDiscoverReason, create_event_bus_for,
-    load_extensions, runner::ResourcePath, types::FlagValue,
+    execution::ResourcePath, load_extensions, types::FlagValue,
 };
 use maestro_test_directory::Scratch;
 use std::{

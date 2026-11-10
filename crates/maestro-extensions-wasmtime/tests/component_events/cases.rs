@@ -9,7 +9,7 @@ use maestro_extensions::{
     BuildSystemPromptOptions, Cancellation, InputSource, Local, ModelSelectEvent,
     ModelSelectSource, Presence, ResourcesDiscoverReason, SessionStartEvent, SessionStartReason,
     ToolCallEvent, ToolResultEvent, TurnStartEvent, UserBashEvent, UserBashEventResult,
-    runner::{RunnerEmitEvent, emit_session_shutdown_event},
+    execution::{RunnerEmitEvent, emit_session_shutdown_event},
 };
 use maestro_models::ImageContent;
 use serde::{Serialize, de::DeserializeOwned};
@@ -341,7 +341,7 @@ async fn resources(harness: &Harness, name: &str, recorded: Value) -> (Value, Va
         .emit_resources_discover("/work".into(), reason)
         .await
         .unwrap();
-    let paths = |paths: Vec<maestro_extensions::runner::ResourcePath>| -> Value {
+    let paths = |paths: Vec<maestro_extensions::execution::ResourcePath>| -> Value {
         paths
             .into_iter()
             .map(|path| json!({ "path": path.path, "extensionPath": path.extension_path }))

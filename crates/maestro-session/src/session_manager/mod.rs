@@ -22,11 +22,11 @@ pub use files::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use storage::rewrite_session_file;
 /// Context projection operations.
-pub mod context;
+pub mod history;
 mod tree;
 /// Session record views.
 pub mod types;
-pub use context::{build_session_context, get_latest_compaction_entry, parse_session_entries};
+pub use history::{build_session_context, get_latest_compaction_entry, parse_session_entries};
 pub use types::*;
 
 use chrono::{SecondsFormat, Utc};
@@ -125,7 +125,7 @@ impl SessionManager {
     /// Propagates reached property errors from context projection.
     pub fn build_session_context(&self) -> Result<SessionContext, serde_json::Error> {
         let leaf = self.get_leaf_id().map_or(Presence::Null, Presence::Present);
-        context::indexed_context(self.get_entries().last().copied(), leaf, |id| {
+        history::indexed_context(self.get_entries().last().copied(), leaf, |id| {
             self.get_entry(id)
         })
     }

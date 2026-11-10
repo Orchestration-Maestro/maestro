@@ -8,7 +8,7 @@ use maestro_extensions::types::{
     NewSessionCommandOptions, SessionChangeResult, SwitchSessionOptions,
 };
 use maestro_extensions::{SessionBeforeSwitchReason, SessionShutdownReason, SessionStartReason};
-use maestro_session::session_cwd::assert_session_cwd_exists;
+use maestro_session::cwd::assert_session_cwd_exists;
 use maestro_session::session_manager::{NewSessionOptions, ReadonlySessionManager};
 use maestro_session::{Presence, SessionManager};
 use std::{cell::RefCell, path::Path, rc::Rc};

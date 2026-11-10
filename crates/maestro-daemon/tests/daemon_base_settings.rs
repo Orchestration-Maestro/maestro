@@ -6,7 +6,7 @@ use std::{path::Path, sync::Arc};
 use maestro_daemon::settings::{
     io::{load_config, project_global_settings},
     model::UpdateChannelConfig,
-    tab_bar::TabBarRightEntryConfig,
+    tabs::TabBarRightEntryConfig,
 };
 use maestro_settings::{
     BaseSettingsLayer, InMemorySettingsStorage, SettingsErrorKind, SettingsManager, SettingsScope,
@@ -501,15 +501,15 @@ fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
 #[test]
 fn daemon_first_reload_retains_startup_area_document() {
     use crate::config_support::put;
-    use maestro_daemon::{api::event_hub::EventHub, app::App};
+    use maestro_daemon::{app::App, service::event_hub::EventHub};
     let storage = Arc::new(InMemorySettingsStorage::new());
     put(&*storage, r#"{"multiplexer":{"mouseCapture":false}}"#);
     let mut manager = SettingsManager::from_storage(storage.clone());
     let loaded = load_config(&mut manager, Path::new(".")).0;
     let manifests = Arc::new(std::sync::RwLock::new(
-        maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = crate::support::launch::launch_inputs(&[], manifests);
+    let (launch, receiver) = crate::support::spawning::launch_inputs(&[], manifests);
     let mut app = App::from_loaded(&loaded, || 0, launch, receiver, EventHub::default());
     storage
         .write_base_layer(

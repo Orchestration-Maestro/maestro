@@ -191,8 +191,8 @@ impl Screen {
         self.cursor_absolute(other.x, other.y);
         if hyperlink && let Some(link) = &other.hyperlink {
             let id = match &link.id {
-                crate::hyperlink::HyperlinkId::Explicit(id) => Some(id.as_slice()),
-                crate::hyperlink::HyperlinkId::Implicit(_) => None,
+                crate::links::HyperlinkId::Explicit(id) => Some(id.as_slice()),
+                crate::links::HyperlinkId::Implicit(_) => None,
             };
             let _ = self.start_hyperlink(&link.uri, id);
         }
@@ -222,7 +222,7 @@ impl Screen {
     }
 
     /// Release page-local cursor owners before storage can move or disappear.
-    pub(super) fn detach_cursor(&mut self) -> (bool, Option<Box<crate::hyperlink::Hyperlink>>) {
+    pub(super) fn detach_cursor(&mut self) -> (bool, Option<Box<crate::links::Hyperlink>>) {
         let styled = self.cursor.style_id != 0;
         if let Ok(pin) = self.cursor_pin()
             && let Some(page) = self.pages.page_mut(pin.node)
@@ -261,8 +261,8 @@ impl Screen {
             };
             if regenerate {
                 let id = match &link.id {
-                    crate::hyperlink::HyperlinkId::Explicit(id) => Some(id.as_slice()),
-                    crate::hyperlink::HyperlinkId::Implicit(_) => None,
+                    crate::links::HyperlinkId::Explicit(id) => Some(id.as_slice()),
+                    crate::links::HyperlinkId::Implicit(_) => None,
                 };
                 let _ = self.start_hyperlink(&link.uri, id);
             } else {
