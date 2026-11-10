@@ -24,12 +24,12 @@ pub(super) struct Refusal {
     stderr: String,
 }
 
-/// The largest body a remote write may carry, and the refusal of a larger one.
+/// The remote command whose body is refused, and the refusal of it.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Write {
-    /// Largest standard input, in bytes, the stand-in accepts.
-    limit: u64,
+    /// The remote command whose standard input the stand-in never reads.
+    command: String,
     /// Status of the refusal.
     code: u8,
     /// Diagnostic of the refusal.
@@ -42,7 +42,7 @@ pub(super) struct Write {
 pub(super) struct Record {
     /// The destination the stand-in refuses.
     refusal: Refusal,
-    /// The body size that ends a write unread.
+    /// The remote write the stand-in refuses unread.
     write: Write,
     /// The remote session's working directory, which every accepted command runs in.
     directory: PathBuf,
@@ -80,14 +80,6 @@ fn refuse(code: u8, stderr: &str) -> io::Result<()> {
     leave(i32::from(code))
 }
 
-/// The bytes standard input already holds when it is a regular file.
-///
-/// A pipe reports no length, so a body streamed through one is never refused this way.
-fn body_length() -> io::Result<Option<u64>> {
-    let metadata = std::fs::metadata("/dev/stdin")?;
-    Ok(metadata.is_file().then_some(metadata.len()))
-}
-
 /// Replace this process with the real shell running `command` in `directory`.
 fn shell(directory: &Path, command: &str) -> io::Result<()> {
     Err(Command::new("/bin/sh")
@@ -97,7 +89,10 @@ fn shell(directory: &Path, command: &str) -> io::Result<()> {
         .exec())
 }
 
-/// Refuse the recorded destination or the oversized body, else run the command in the session.
+/// Refuse the recorded destination or write, else run the command in the session.
+///
+/// A caller streams a write's body through a pipe, which reports no length, so the record
+/// names the command rather than the size it refuses.
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     let Some((destination, command)) = split(operands) else {
         leave(REFUSED);
@@ -105,7 +100,7 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     if destination == record.refusal.destination {
         return refuse(record.refusal.code, &record.refusal.stderr);
     }
-    if body_length()?.is_some_and(|length| length > record.write.limit) {
+    if command.contains(&record.write.command) {
         return refuse(record.write.code, &record.write.stderr);
     }
     shell(&record.directory, &command)

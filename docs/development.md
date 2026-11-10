@@ -2600,7 +2600,7 @@ an unknown field.
 | Field | Fields and behavior |
 | --- | --- |
 | `refusal` | `destination`, `code` and `stderr`. A launch naming that destination writes `stderr` and ends with `code`, so the extension's own failure path runs. |
-| `write` | `limit`, `code` and `stderr`, the largest body the stand-in accepts in bytes. Standard input that is a regular file holding more than `limit` bytes is refused without being read. A pipe reports no length, so a streamed body is never refused this way. |
+| `write` | `command`, `code` and `stderr`. A launch whose remote command contains `command` writes `stderr` and ends with `code` without reading standard input, so the body a caller streams is never consumed. |
 | `directory` | The remote session's working directory. Every other command runs there, through `/bin/sh -c`, with the operands after the destination joined by spaces, so remote `pwd`, `cat`, `test` and `mkdir` behave as the extension expects. |
 
 A lone leading option is skipped; an option taking a separate value is not read,
@@ -2613,7 +2613,7 @@ fn main() -> std::io::Result<()> {
     std::fs::create_dir(&session)?;
     let record = serde_json::json!({
         "refusal": {"destination": "unreachable.invalid", "code": 255, "stderr": "refused\n"},
-        "write": {"limit": 65536, "code": 1, "stderr": "too large\n"},
+        "write": {"command": "cat > early-write.txt", "code": 38, "stderr": "refused\n"},
         "directory": session,
     });
     maestro_test_process::install_family(
