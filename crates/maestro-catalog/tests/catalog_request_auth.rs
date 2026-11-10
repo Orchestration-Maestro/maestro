@@ -640,7 +640,7 @@ const FIELD_CASES: &[FieldCase] = &[
     (
         "{\"providers\": {\"p\": {\"baseUrl\": \"https://fixture.invalid\", \"api\": \"openai-completions\", \"models\": [{\"id\": \"m\"}]}}}",
         Some(
-            "Failed to load models.json: Provider p: \"apiKey\" is required when defining custom models.\n\nFile: models-input.json",
+            "Failed to load models.json: Provider p: \"apiKey\" is required for a custom model.\n\nFile: models-input.json",
         ),
         None,
         &[],
@@ -718,7 +718,7 @@ const FIELD_CASES: &[FieldCase] = &[
     (
         "{\"providers\": {\"p\": {\"baseUrl\": \"https://fixture.invalid\", \"api\": \"openai-completions\", \"models\": [{\"id\": \"m\"}], \"headers\": {}}}}",
         Some(
-            "Failed to load models.json: Provider p: \"apiKey\" is required when defining custom models.\n\nFile: models-input.json",
+            "Failed to load models.json: Provider p: \"apiKey\" is required for a custom model.\n\nFile: models-input.json",
         ),
         None,
         &[],
@@ -726,7 +726,7 @@ const FIELD_CASES: &[FieldCase] = &[
     (
         "{\"providers\": {\"p\": {\"baseUrl\": \"https://fixture.invalid\", \"api\": \"openai-completions\", \"models\": [{\"id\": \"m\"}], \"headers\": {\"X\": \"v\"}}}}",
         Some(
-            "Failed to load models.json: Provider p: \"apiKey\" is required when defining custom models.\n\nFile: models-input.json",
+            "Failed to load models.json: Provider p: \"apiKey\" is required for a custom model.\n\nFile: models-input.json",
         ),
         None,
         &[],
@@ -806,7 +806,7 @@ const FIELD_CASES: &[FieldCase] = &[
     (
         "{\"providers\": {\"p\": {\"baseUrl\": \"https://fixture.invalid\", \"api\": \"openai-completions\", \"models\": [{\"id\": \"m\"}], \"authHeader\": false}}}",
         Some(
-            "Failed to load models.json: Provider p: \"apiKey\" is required when defining custom models.\n\nFile: models-input.json",
+            "Failed to load models.json: Provider p: \"apiKey\" is required for a custom model.\n\nFile: models-input.json",
         ),
         None,
         &[],
@@ -814,7 +814,7 @@ const FIELD_CASES: &[FieldCase] = &[
     (
         "{\"providers\": {\"p\": {\"baseUrl\": \"https://fixture.invalid\", \"api\": \"openai-completions\", \"models\": [{\"id\": \"m\"}], \"authHeader\": true}}}",
         Some(
-            "Failed to load models.json: Provider p: \"apiKey\" is required when defining custom models.\n\nFile: models-input.json",
+            "Failed to load models.json: Provider p: \"apiKey\" is required for a custom model.\n\nFile: models-input.json",
         ),
         None,
         &[],
