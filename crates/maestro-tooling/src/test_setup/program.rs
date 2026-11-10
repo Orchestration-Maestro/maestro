@@ -6,11 +6,11 @@
 
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
 use crate::cargo_lock::Lock;
+use crate::toolchain;
 use crate::workspace::Workspace;
 
 /// One program preparation runs: the package that holds it and one target within that package.
@@ -133,8 +133,7 @@ pub(super) fn install(
             program.package
         )));
     };
-    let status = Command::new(cargo)
-        .current_dir(checkout)
+    let status = toolchain::command(cargo, checkout)
         .args(["install", "--locked", "--git", url, "--rev", rev])
         .arg(program.package)
         .arg(program.target.flag())
@@ -293,6 +292,63 @@ mod tests {
                  --bin maestro --root {}",
                 destination.display()
             )
+        );
+    }
+
+    /// A Cargo started directly installs on the checkout's pinned toolchain, because the process
+    /// carries no selection of its own.
+    #[test]
+    fn installation_runs_cargo_on_the_checkouts_toolchain() {
+        let output =
+            maestro_test_process::TestProcess::child(install_without_an_inherited_toolchain)
+                .unwrap()
+                .env_remove(toolchain::SELECTOR)
+                .output()
+                .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    /// The controlled child of the test above: it starts without an inherited selection.
+    #[test]
+    #[ignore = "runs only inside a controlled child"]
+    fn install_without_an_inherited_toolchain() {
+        let pin =
+            maestro_test_process::toolchain::channel().expect("the build records its toolchain");
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        let cargo = root.join("cargo");
+        let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
+            .expect("nextest native-fixture setup supplies the artifact");
+        maestro_test_process::install_executable(Path::new(&artifact), &cargo).unwrap();
+        std::fs::write(
+            root.join("cargo.fixture"),
+            format!("tooling-cargo\n{}\n{}\n", env!("CARGO"), root.display()),
+        )
+        .unwrap();
+        maestro_test_process::toolchain::declare_toolchain(
+            root,
+            &format!("[toolchain]\nchannel = \"{pin}\"\n"),
+        )
+        .unwrap();
+        let source = Source::Locked {
+            url: "https://example.invalid/maestro".to_owned(),
+            rev: "4d5e6f".to_owned(),
+        };
+        let program = Program {
+            package: "maestro",
+            target: Target::Binary("maestro"),
+        };
+
+        install(&cargo, root, &source, &program, &root.join("installed")).unwrap();
+
+        assert_eq!(
+            std::fs::read_to_string(root.join("install-toolchain")).unwrap(),
+            pin
         );
     }
 

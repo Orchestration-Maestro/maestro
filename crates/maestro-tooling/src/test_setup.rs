@@ -29,6 +29,7 @@ use super::argument;
 use super::copy_assets::copy_tree;
 use super::example_files::{EXAMPLE_PACKAGE, FIXED_COMPONENTS, Fixed, validate_variable};
 use super::nextest_setup::{browser_graph, fixture_sources};
+use super::toolchain;
 use super::workspace::Workspace;
 use base::{Base, Supplied};
 use compiled_code::CompiledCode;
@@ -270,8 +271,7 @@ fn stage_browser(
         return Ok(None);
     }
     // The sources are vendored offline, from the packages a shard's job fetches before its tests.
-    let fetched = Command::new(cargo)
-        .current_dir(checkout)
+    let fetched = toolchain::command(cargo, checkout)
         .args(["fetch", "--locked"])
         .status()?;
     if !fetched.success() {
@@ -300,8 +300,7 @@ pub(crate) fn build_example(
     target: &Path,
     profile: &str,
 ) -> io::Result<()> {
-    let status = Command::new(cargo)
-        .current_dir(checkout)
+    let status = toolchain::command(cargo, checkout)
         .args(["build", "--quiet", "--locked", "-p", EXAMPLE_PACKAGE])
         .args(["--example", EXAMPLE, "--target-dir"])
         .arg(target)

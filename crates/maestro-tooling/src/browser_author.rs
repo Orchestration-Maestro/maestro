@@ -7,6 +7,8 @@ use std::{
     process::{Command, ExitCode},
 };
 
+use crate::toolchain;
+
 /// Authored fixture relative to the checkout, never copied during preparation.
 const FIXTURE: &str = "crates/maestro-tooling/tests/fixtures/browser_author";
 
@@ -218,9 +220,8 @@ pub(crate) fn bootstrap_commands(cargo: &Path, checkout: &Path) -> [Command; 2] 
         ["build", "--locked", "-p", "maestro-tooling", "--bins"].as_slice(),
     ]
     .map(|args| {
-        let mut command = Command::new(cargo);
+        let mut command = toolchain::command(cargo, checkout);
         command
-            .current_dir(checkout)
             .args(args)
             .arg("--manifest-path")
             .arg(checkout.join("Cargo.toml"));
@@ -410,4 +411,47 @@ fn trunk(
         command.arg("--release");
     }
     command.args(args).status().map(super::exit_code)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use maestro_test_process::TestProcess;
+
+    /// Both bootstrap builds name the checkout's toolchain even when the caller inherited none,
+    /// because they compile registry dependencies that may ship their own toolchain file.
+    #[test]
+    fn bootstrap_builds_run_on_the_checkouts_toolchain() {
+        let output = TestProcess::child(bootstrap_builds_select_a_toolchain)
+            .unwrap()
+            .env_remove(toolchain::SELECTOR)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    /// The controlled child of the test above: it starts without an inherited selection.
+    #[test]
+    #[ignore = "runs only inside a controlled child"]
+    fn bootstrap_builds_select_a_toolchain() {
+        let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let pin =
+            maestro_test_process::toolchain::channel().expect("the build records its toolchain");
+        for command in bootstrap_commands(Path::new("cargo"), &checkout) {
+            let selected = command
+                .get_envs()
+                .find(|(name, _)| *name == toolchain::SELECTOR)
+                .and_then(|(_, value)| value);
+            assert_eq!(
+                selected,
+                Some(std::ffi::OsStr::new(pin)),
+                "{command:?} names another toolchain"
+            );
+        }
+    }
 }

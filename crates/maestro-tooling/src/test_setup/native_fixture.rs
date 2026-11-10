@@ -3,7 +3,6 @@
 use std::collections::BTreeSet;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +10,7 @@ use super::inputs::Inputs;
 use super::plan::closure_directories;
 use super::program::{self, Program, Source, Target};
 use super::{SHARED_INPUTS, at, copy, digest, verify};
+use crate::toolchain;
 use crate::workspace::Workspace;
 
 /// The explicit native artifact exported to tests.
@@ -200,8 +200,7 @@ fn stage(output: &Path, name: String, emitted: &Path) -> io::Result<Staged> {
 
 /// Build the one target and accept only Cargo's reported executable, never a directory scan.
 fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
-    let output = Command::new(cargo)
-        .current_dir(checkout)
+    let output = toolchain::command(cargo, checkout)
         .args([
             "build",
             "--locked",
@@ -221,8 +220,7 @@ fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
 
 /// Build the probe with the coverage instrumentation its counters come from.
 fn build_probe(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
-    let output = Command::new(cargo)
-        .current_dir(checkout)
+    let output = toolchain::command(cargo, checkout)
         .args([
             "rustc",
             "--locked",
