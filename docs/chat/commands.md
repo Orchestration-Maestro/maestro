@@ -648,7 +648,7 @@ only.
 Selecting puts the editor back and then removes that one credential from the
 current session, refreshes the catalog, updates the footer's provider count and
 shows `Logged out of <name>` for a subscription or
-`Removed stored API key for <name>. Environment variables and models.json config are unchanged.`
+`Removed the stored API key for <name>. The environment and models.json stay as they are.`
 for a key. The name and the kind are the ones the picker listed, so a record that
 changes while the panel is open still reports what was chosen. Escape closes the
 panel and changes nothing.
