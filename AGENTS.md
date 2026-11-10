@@ -71,7 +71,9 @@ rather than `forbid`, because its generated bindings cannot compile under `forbi
 generated `src/bindings.rs` alone may carry a lint attribute, the single allowance
 `clippy::same_length_and_capacity`. Every handwritten top-level module, test and example of
 that crate restores the three groups with `forbid`, and the workspace conventions enforce it.
-The protected `redundant_clone` lint rejects unnecessary copies.
+The protected `redundant_clone` lint rejects unnecessary copies. The protected
+`module_name_repetitions` lint rejects an item whose name starts or ends with its
+containing module's name; rename the module and keep the exported item name.
 Conventions reject consecutive repeated nonempty physical documentation lines
 within one contiguous run of same-style line documentation comments. An attribute,
 an ordinary comment or code ends the run. Markdown code blocks, even inside lists

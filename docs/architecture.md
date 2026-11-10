@@ -447,7 +447,7 @@ own method needs another name. It skips test code as the other checks define it:
 test layouts, items inside an inherited `cfg(test)` context and the
 `maestro-test-*` crates.
 
-Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
+Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide. The protected `module_name_repetitions` lint rejects an item whose name starts or ends with its containing module's name; rename the module and keep the exported item name.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
 Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or be below a `tests` directory. A module named `tests` must carry `#[cfg(test)]`, every `#[cfg(test)]` module must be named `tests`, and test module declarations cannot carry `#[path]`. These layout conventions support production line counting; module declarations are validated throughout the syntax tree.
