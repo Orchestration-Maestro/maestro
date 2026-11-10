@@ -9,7 +9,7 @@ web components. Its source is the `chat` example of `maestro-web`:
 adds its own message type.
 
 ```sh
-mise exec -- just browser-chat-example --port 9000
+just browser-chat-example --port 9000
 ```
 
 The recipe builds the example for `wasm32-unknown-unknown`, binds it with

@@ -13,9 +13,13 @@ counter checks. When using another toolchain, install it with
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
 mise install
-mise exec -- just setup
-mise exec -- just build
+just setup
+just build
 ```
+
+Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
+and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
+through rustup, not mise.
 
 Tool versions stay caller-owned in `mise.toml`. Generated downloads and checksums
 in `mise.lock` must cover Linux x64 and ARM64, macOS Intel and ARM64, and Windows
@@ -115,7 +119,6 @@ release-mode author test. With the build environment above, run the same consume
 commands from the checkout using the pinned toolchain and checked-in lock:
 
 ```powershell
-$env:CARGO_BUILD_JOBS = '3'
 just prepare-tests
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
@@ -141,7 +144,7 @@ mapfile -t wasm_packages < <(
 )
 wasm_args=()
 for package in "${wasm_packages[@]}"; do wasm_args+=(-p "$package"); done
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
+cargo build \
   --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
   --tests --examples --keep-going --message-format=json
 ```
@@ -151,7 +154,7 @@ library targets only. Lint one crate's test and example targets directly where
 they compile for the browser target:
 
 ```sh
-~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+cargo clippy --locked --target wasm32-unknown-unknown \
   --all-targets -p maestro-models -- -D warnings
 ```
 
@@ -247,7 +250,7 @@ Lint the browser library, examples and complete integration target with the
 pinned toolchain:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
+cargo clippy \
   -p maestro-web --lib --examples --test integration --profile test \
   --target wasm32-unknown-unknown --locked -- \
   -D warnings -D clippy::missing_docs_in_private_items
@@ -258,7 +261,7 @@ Run the retained sandbox assertions with supplied browser tools:
 ```sh
 export CHROMIUM_PATH=/absolute/path/to/chrome
 # Put wasm-bindgen CLI 0.2.129 on PATH.
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
+just browser-test
 ```
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
@@ -448,10 +451,10 @@ name, with the same supplied executable; the `browser-exports` setup runs first
 whenever an export or the report is selected:
 
 ```sh
-~/.local/bin/capped just prepare-tests
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+just prepare-tests
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(/^browser::/)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(=browser::exports::loading::<export>)'
 ```
 
@@ -649,8 +652,8 @@ fallback fonts. See [browser libraries](libraries/browser-frontend.md).
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
 ```sh
-mise exec -- cargo hakari generate
-mise exec -- cargo hakari manage-deps
+cargo hakari generate
+cargo hakari manage-deps
 ```
 
 After adding a member, first add `maestro-dependencies.workspace = true` to its
@@ -663,7 +666,7 @@ generated section is current or that every member declares the dependency; confi
 ## Extension components
 
 ```sh
-mise exec -- just extension-author-component
+just extension-author-component
 ```
 
 Builds the example extension as a `wasm32-wasip2` component and adds that target
@@ -672,9 +675,9 @@ with `rustup` when it is missing. See [writing an extension](extensions/guest.md
 ## Source invocation
 
 ```sh
-mise exec -- just --justfile /path/to/maestro/justfile run-source --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source --no-env --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
+just --justfile /path/to/maestro/justfile run-source --help
+just --justfile /path/to/maestro/justfile run-source --no-env --help
+just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
 ```
 
 The caller's working directory and literal arguments reach the application.
@@ -688,8 +691,8 @@ The separate `maestro-model-account` binary runs the standalone account command.
 ## Compile watches
 
 ```sh
-mise exec -- just dev
-mise exec -- just models-dev-compile
+just dev
+just models-dev-compile
 ```
 
 The pinned external watcher compiles initially and queues a rebuild when input
@@ -797,7 +800,7 @@ changing shipped files. Run this from the checkout root:
 
 ```sh
 scratch=$(mktemp -d)
-mise exec -- cargo run --locked -p maestro-theme --example brand_themes -- \
+cargo run --locked -p maestro-theme --example brand_themes -- \
   assets/brand/packs/signal.json "$scratch"
 test -s "$scratch/dark.json" && test -s "$scratch/light.json"
 ```
@@ -880,9 +883,9 @@ behavior; development commands do not create a replacement logger.
 ## Tests
 
 ```sh
-mise exec -- just test
-mise exec -- just test-offline
-mise exec -- just test -p maestro-tooling maestro_source_without_switch_preserves_environment
+just test
+just test-offline
+just test -p maestro-tooling maestro_source_without_switch_preserves_environment
 ```
 
 The broad test recipes run cargo-nextest, then Cargo doctests only after success.
@@ -1221,11 +1224,11 @@ platform, because the engine keeps its cache below the agent directory. Shared C
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
-compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the engine-reported cache under the modification time that
-copy of the example has, and writes the component paths to
-`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
-below, so they share a compile-cache namespace with the installed code. It runs the example
+compiled-code file, installs the staged example beside the extracted executables and writes
+the component paths to `NEXTEST_ENV`. The setup then gives the executables one modification
+time, as below, and installs the compiled code in the engine-reported cache under that time.
+A copy that keeps an older file time than another executable therefore still lands in the
+namespace the example and the tests read. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
 or compile pass. On every platform that cache belongs to the run alone: the setup uses
 `run-agent` beside the profile directory as the run's agent directory, queries and fills
@@ -1288,9 +1291,9 @@ TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maest
 The development tool's `nextest-setup` command runs every nextest setup entry:
 `author-component`, `fixture-sources`, `browser-author` and
 `normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
-conventions check rejects a shell script under `.config/`. The `author-component` entry
-runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
-bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
+conventions check rejects a shell script anywhere under `.config/`. The
+`author-component` entry runs the tool from `target/test-setup/development`: a shard
+receives it in the downloaded bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
 When you start nextest by hand on a package the entry serves and the tool is missing,
 nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
@@ -2589,6 +2592,43 @@ fn main() -> std::io::Result<()> {
 A recording notifier names its file in `args` instead, and a Git alias names the
 checkout every query must carry. Point `PATH` at the directory holding either
 alias, so the product finds it by its own program name.
+
+#### Remote client aliases
+
+On Unix, install the same artifact as `ssh` when a test exercises an extension's
+remote operations. Write `ssh` on the first line of `<alias>.fixture`, followed by
+one JSON object. The fixture parses the whole record before any effect and rejects
+an unknown field.
+
+| Field | Behavior |
+| --- | --- |
+| `refusal` | `destination`, `code` and `stderr`. A launch naming that destination writes `stderr` and ends with `code`, so the extension's own failure path runs. |
+| `write` | `command`, `code` and `stderr`. A launch whose remote command contains `command` writes `stderr` and ends with `code` without reading standard input, so the body a caller streams is never consumed. The value is a substring, because an extension quotes and resolves the path its command writes. |
+| `directory` | The remote session's working directory. Every other command runs there, through `/bin/sh -c`, with the operands after the destination joined by spaces, so remote `pwd`, `cat`, `test`, `mkdir` and `file` behave as the extension expects. |
+
+A lone leading option is skipped; an option taking a separate value is not read,
+so pass the destination first. A launch left with no destination ends with status
+2 and writes nothing.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let directory = maestro_test_directory::Scratch::new()?;
+    let session = directory.path().join("session");
+    std::fs::create_dir(&session)?;
+    let record = serde_json::json!({
+        "refusal": {"destination": "unreachable.invalid", "code": 255, "stderr": "refused\n"},
+        "write": {"command": "early-write.txt", "code": 38, "stderr": "refused\n"},
+        "directory": session,
+    });
+    maestro_test_process::install_family(
+        &directory.path().join("ssh"),
+        "ssh",
+        &record.to_string(),
+    )?;
+    // Put that directory first on the child's PATH, then run the extension operation.
+    Ok(())
+}
+```
 
 #### Checked reruns
 

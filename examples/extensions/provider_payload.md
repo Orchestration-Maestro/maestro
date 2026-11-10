@@ -19,7 +19,7 @@ filesystem access. Building needs the repository's pinned Rust toolchain and
 
 ```sh
 mkdir -p .maestro
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build --locked \
+cargo build --locked \
   -p maestro-extensions-wasm --example provider_payload \
   --target wasm32-wasip2 --release
 maestro --extension target/wasm32-wasip2/release/examples/provider_payload.wasm
@@ -30,8 +30,8 @@ provider and may incur charges. The controlled test uses only a loopback provide
 cleared credentials and disposable files:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro --test integration -- provider_payload_
 ```
 

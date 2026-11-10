@@ -64,6 +64,6 @@ component and opt-in prerequisites. After those builds, run it from the package
 root:
 
 ```sh
-CARGO_TARGET_DIR=target CARGO_BUILD_JOBS=3 cargo run --locked \
+CARGO_TARGET_DIR=target cargo run --locked \
   -p maestro-chat --example rpc_extension_ui
 ```

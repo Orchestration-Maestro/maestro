@@ -18,9 +18,9 @@ provider credentials or live services, and assert one completion request.
 ## Controlled runs
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- structured_output_
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- structured_output_
 ```

@@ -90,8 +90,8 @@ pub(super) fn render_wrapper(class_name: &str, pages: Vec<HtmlElement>) -> HtmlE
 }
 
 /// Declare the theme's heading and body fonts, then each color slot in source order, as
-/// document variables; a missing font child is `undefined`, a missing typeface or color
-/// value `null`.
+/// document variables; a missing font child is `undefined`, a missing typeface `null`
+/// and a missing color value `#null`.
 pub(super) fn render_theme(theme: &DmlTheme, class_name: &str) -> HtmlElement {
     let mut variables = Vec::new();
     if let Some(fonts) = &theme.font_scheme {

@@ -290,11 +290,11 @@ A successful list operation proves catalog publication, not a successful request
 From a Maestro checkout, run the existing offline component checks:
 
 ```sh
-~/.local/bin/capped just prepare-tests
-~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(provider_catalog::)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(oauth::)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(model_streams::)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(authored_streams::)'
+just prepare-tests
+cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(provider_catalog::)'
+cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(oauth::)'
+cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(model_streams::)'
+cargo nextest run --locked -p maestro-extensions-wasmtime -E 'test(authored_streams::)'
 ```
 
 Nextest runs the repository's component setup before these tests, which
