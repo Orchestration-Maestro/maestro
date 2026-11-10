@@ -6067,11 +6067,11 @@
       "id": "ellipsis",
       "op": "width",
       "input": {
-        "text": "An overlong sample message, cut to fit the given width",
+        "text": "An overlong sample report that is cut to fit the given width",
         "width": 28
       },
       "expected": {
-        "text": "An overlong sample messag\u001b[0m...\u001b[0m",
+        "text": "An overlong sample report\u001b[0m...\u001b[0m",
         "width": 28
       }
     },
