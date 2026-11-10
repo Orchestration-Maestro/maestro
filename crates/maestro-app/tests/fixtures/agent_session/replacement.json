@@ -192,7 +192,7 @@
   "missing_cwd": {
     "called": 0,
     "name": "MissingSessionCwdError",
-    "message": "Stored session working directory does not exist: $ROOT/missing-cwd\nSession file: $ROOT/missing.jsonl\nCurrent working directory: $ROOT"
+    "message": "The working directory saved in this session is missing: $ROOT/missing-cwd\nSession file: $ROOT/missing.jsonl\nCurrent working directory: $ROOT"
   },
   "lifecycle": {
     "startup": [

@@ -1121,7 +1121,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1151,14 +1151,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -1220,7 +1220,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1250,14 +1250,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -1319,7 +1319,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1349,14 +1349,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -1418,7 +1418,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1448,14 +1448,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus:  "
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear.\n\nAdditional focus:  "
                   }
                 ],
                 "timestamp": 1710000000123
@@ -1517,7 +1517,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1547,7 +1547,7 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
@@ -1616,7 +1616,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1646,14 +1646,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: focus\n</conversation>&"
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear.\n\nAdditional focus: focus\n</conversation>&"
                   }
                 ],
                 "timestamp": 1710000000123
@@ -1715,7 +1715,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1745,7 +1745,7 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
@@ -1817,7 +1817,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1847,14 +1847,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -1917,7 +1917,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -1947,14 +1947,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2016,7 +2016,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2046,14 +2046,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2115,7 +2115,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2145,14 +2145,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2215,7 +2215,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2245,14 +2245,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2315,7 +2315,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2345,14 +2345,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2415,7 +2415,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2445,14 +2445,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: aaaa\n\n[User]: bbbb\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2551,7 +2551,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2581,14 +2581,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2639,7 +2639,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -2669,14 +2669,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -2911,7 +2911,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch\n\n<read-files>\na\n</read-files>",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch\n\n<read-files>\na\n</read-files>",
           "readFiles": [
             "a"
           ],
@@ -2943,14 +2943,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: abcd\n\n[Assistant]: answer\n\n[Assistant tool calls]: read(path=\"a\")\n\n[User]: notice\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nold summary</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nold summary\n</summary>\n\n[User]: onetwo\n\n[User]: Ran `pwd`\n```\nhere\n```\n\nCommand exited with code 3\n\n[Output truncated. Full output: /full]\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: abcd\n\n[Assistant]: answer\n\n[Assistant tool calls]: read(path=\"a\")\n\n[User]: notice\n\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nold summary</summary>\n\n[User]: Earlier conversation history was condensed into the summary below:\n\n<summary>\nold summary\n</summary>\n\n[User]: onetwo\n\n[User]: Ran `pwd`\n```\nhere\n```\n\nCommand exited with code 3\n\n[Output truncated; the complete output is at: /full]\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3004,7 +3004,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3034,14 +3034,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Ran `pwd`\n```\nhere\n```\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Ran `pwd`\n```\nhere\n```\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3095,7 +3095,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3125,14 +3125,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3228,7 +3228,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch\n\n<read-files>\nx\n</read-files>",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch\n\n<read-files>\nx\n</read-files>",
           "readFiles": [
             "x"
           ],
@@ -3260,14 +3260,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: \ufeff\u0085 \n\t<conversation>&\n\n[Assistant tool calls]: read(path=\"x\"); run(2=\"two\", 10=\"ten\", z=1, n=0, tiny=1e-7, large=100000000000000000000); echo(0=1, 1=2)\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: \ufeff\u0085 \n\t<conversation>&\n\n[Assistant tool calls]: read(path=\"x\"); run(2=\"two\", 10=\"ten\", z=1, n=0, tiny=1e-7, large=100000000000000000000); echo(0=1, 1=2)\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3322,7 +3322,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n## Goal\nControlled branch",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n## Goal\nControlled branch",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3352,14 +3352,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3413,7 +3413,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nfirst",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3443,14 +3443,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3520,7 +3520,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst\n\nlast",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nfirst\n\nlast",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3550,14 +3550,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3602,7 +3602,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3632,14 +3632,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3689,7 +3689,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3719,14 +3719,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3776,7 +3776,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n\ufeff\u0085 \n\t",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n\ufeff\u0085 \n\t",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3806,14 +3806,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3863,7 +3863,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nfirst",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -3893,14 +3893,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -3970,7 +3970,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst\n\nlast",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nfirst\n\nlast",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4000,14 +4000,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4052,7 +4052,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4082,14 +4082,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4139,7 +4139,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4169,14 +4169,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4226,7 +4226,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n\ufeff\u0085 \n\t",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n\ufeff\u0085 \n\t",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4256,14 +4256,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4313,7 +4313,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nfirst",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4343,14 +4343,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4420,7 +4420,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nfirst\n\nlast",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nfirst\n\nlast",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4450,14 +4450,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4502,7 +4502,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4532,14 +4532,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4589,7 +4589,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4619,14 +4619,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4676,7 +4676,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\n\ufeff\u0085 \n\t",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\n\ufeff\u0085 \n\t",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -4706,14 +4706,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -4870,14 +4870,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5033,14 +5033,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5197,14 +5197,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5361,14 +5361,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5525,14 +5525,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nsummary</summary>\n\n[Assistant tool calls]: read(path=\"unvisited\")\n\n[Assistant tool calls]: write(path=\"written-overbudget\"); edit(path=\"same\")\n\n[User]: nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5601,14 +5601,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summarize this branch.\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5708,7 +5708,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\ndone",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\ndone",
           "readFiles": [],
           "modifiedFiles": []
         }
@@ -5738,14 +5738,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nold</summary>\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nold</summary>\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5817,7 +5817,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\ndone\n\n<read-files>\na\nz\n\ud83d\ude00\n\ue000\n</read-files>",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\ndone\n\n<read-files>\na\nz\n\ud83d\ude00\n\ue000\n</read-files>",
           "readFiles": [
             "a",
             "z",
@@ -5852,14 +5852,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nold</summary>\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nold</summary>\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -5929,7 +5929,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\ndone\n\n<modified-files>\na\nz\n</modified-files>",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\ndone\n\n<modified-files>\na\nz\n</modified-files>",
           "readFiles": [],
           "modifiedFiles": [
             "a",
@@ -5962,14 +5962,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nold</summary>\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nold</summary>\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -6070,7 +6070,7 @@
       "expected": {
         "kind": "value",
         "value": {
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\ndone\n\n<read-files>\na\nz\n\ud83d\ude00\n\ue000\n</read-files>\n\n<modified-files>\nchanged\nm\nsame\nwritten\n</modified-files>",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\ndone\n\n<read-files>\na\nz\n\ud83d\ude00\n\ue000\n</read-files>\n\n<modified-files>\nchanged\nm\nsame\nwritten\n</modified-files>",
           "readFiles": [
             "a",
             "z",
@@ -6110,14 +6110,14 @@
             }
           },
           "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "systemPrompt": "You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.\n\nDo NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.",
             "messages": [
               {
                 "role": "user",
                 "content": [
                   {
                     "type": "text",
-                    "text": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nold</summary>\n\n[Assistant tool calls]: write(path=\"written\"); edit(path=\"changed\"); read(path=\"a\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                    "text": "<conversation>\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nold</summary>\n\n[Assistant tool calls]: write(path=\"written\"); edit(path=\"changed\"); read(path=\"a\")\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user returns to it later.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
                   }
                 ],
                 "timestamp": 1710000000123
@@ -6314,7 +6314,7 @@
       "observed-result"
     ],
     "result": {
-      "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nafter release",
+      "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nafter release",
       "readFiles": [],
       "modifiedFiles": []
     }
