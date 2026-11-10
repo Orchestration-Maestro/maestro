@@ -203,7 +203,7 @@ pub(super) async fn poll_for_github_access_token(
         }
     }
     Err(OAuthError::message(if slow_down {
-        "The sign-in poll gave up after the provider sent repeated slow_down responses. Clock drift in a WSL or VM environment usually causes this. Sync or restart the VM clock, then try again."
+        "The sign-in poll timed out after one or more slow_down responses. Clock drift in a WSL or VM environment usually causes this. Sync or restart the VM clock, then try again."
     } else {
         "Device flow timed out"
     }))
