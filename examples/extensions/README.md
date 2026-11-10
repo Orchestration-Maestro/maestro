@@ -23,8 +23,9 @@ steps.
 
 1. Add the Rust source here, with a `//!` opening paragraph describing it.
 2. Add usage and controlled-run commands in a same-name Markdown page.
-3. Add `src/tests/<name>_example.rs` in `maestro-extensions-wasm`. The build
-   script discovers these files; do not add a `mod` line to `src/tests.rs`.
+3. Add `tests/<name>_example.rs` in `maestro-extensions-wasmtime`, on the
+   [test harness](../../docs/extensions/testing.md), and declare it in that
+   crate's `tests/integration.rs`.
 4. For a prepared test component, add
    `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening docs. The
    file stem names its Cargo target; `<dir>/main.rs` uses the directory name with

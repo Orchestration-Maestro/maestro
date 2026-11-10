@@ -2,8 +2,7 @@
 use serde_json::{Value, json};
 
 use super::controlled::Controlled;
-use super::example_support::{registered, release_all, result_value};
-use super::hello_example::assert_metadata;
+use super::example_support::{registered, registered_metadata, release_all, result_value};
 use crate::component_adapter::{Exports, ToolCapabilities};
 use crate::{Extension, ExtensionAPI, ExtensionFuture};
 
@@ -17,6 +16,12 @@ impl Extension for WithDeps {
     fn load(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
         with_deps::factory(api)
     }
+}
+
+/// Assert the metadata and schema received by the actual host against a recorded document.
+fn assert_metadata(metadata: &[String], expected: &Value) {
+    assert_eq!(metadata.len(), 1);
+    assert_eq!(registered_metadata(&metadata[0]), *expected);
 }
 
 /// Recorded metadata and outcomes consumed by these tests.

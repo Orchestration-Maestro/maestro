@@ -19,7 +19,7 @@ use std::fmt::Write as _;
 mod build;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "../../src/tests/search_tools.rs"]
+#[path = "../../../maestro-tooling/src/search_tools.rs"]
 mod search_tools;
 
 // The preparation module below reaches source discovery through this import, and so does the
@@ -55,13 +55,33 @@ fn main() -> Result<(), String> {
             );
             Ok(())
         }
-        [root, component, package, fixed] => prepare(root, component, package, fixed),
+        [root, component, package, fixed] => {
+            let tools = search_tools::resolve(std::path::Path::new(root))?;
+            prepare(root, component, package, fixed, tools)
+        }
+        [root, component, package, fixed, mode] if mode == "--prepared" => {
+            prepare(root, component, package, fixed, supplied_tools()?)
+        }
         _ => Err(
             "usage: prepare_author_component <workspace> <component crate> <component \
                   package> <fixed components>"
                 .into(),
         ),
     }
+}
+
+/// Read the prepared search paths without resolving any program from PATH.
+#[cfg(not(target_arch = "wasm32"))]
+fn supplied_tools() -> Result<Vec<(&'static str, String)>, String> {
+    search_tools::PROGRAMS
+        .into_iter()
+        .filter_map(|(variable, name, _)| {
+            std::env::var_os(variable).map(|path| {
+                search_tools::resolution::executable_text(name, std::path::Path::new(&path))
+                    .map(|path| (variable, path))
+            })
+        })
+        .collect()
 }
 
 /// The fixed components whose packages the workspace holds, from the names preparation passes.
@@ -94,6 +114,7 @@ fn prepare(
     component: &std::ffi::OsStr,
     package: &std::ffi::OsStr,
     fixed: &std::ffi::OsStr,
+    tools: Vec<(&str, String)>,
 ) -> Result<(), String> {
     let workspace = std::path::Path::new(workspace);
     let root = std::path::Path::new(component);
@@ -117,7 +138,10 @@ fn prepare(
     let Some((supplied, marked)) = built.split_at_checked(fixed.len()) else {
         return Err("the build returned fewer components than requested".to_owned());
     };
-    let mut entries = search_tool_entries(workspace)?;
+    let mut entries = String::new();
+    for (variable, path) in tools {
+        writeln!(entries, "{variable}={path}").map_err(|error| error.to_string())?;
+    }
     for ((_, _, variable), path) in fixed.iter().zip(supplied) {
         writeln!(entries, "{variable}={}", path.display()).map_err(|error| error.to_string())?;
     }
@@ -136,65 +160,4 @@ fn prepare(
         std::fs::write(environment, entries).map_err(|error| error.to_string())?;
     }
     Ok(())
-}
-
-/// Names the pinned `rg` and `fd` executables the native search tests copy.
-///
-/// The pins belong to the workspace's own tool configuration, so a workspace that pins neither
-/// program has no search tests to serve and exports nothing for it.
-///
-/// # Errors
-///
-/// Returns an error if the configuration cannot be read or the search PATH holds no executable
-/// at a pin.
-#[cfg(not(target_arch = "wasm32"))]
-fn search_tool_entries(workspace: &std::path::Path) -> Result<String, String> {
-    let config = workspace.join("mise.toml");
-    if !config.is_file() {
-        return Ok(String::new());
-    }
-    let config = config
-        .to_str()
-        .ok_or("the tool configuration path is not UTF-8")?;
-    // Once the whole file reads, a key lookup fails only for a key the file does not hold.
-    mise_output(&["config", "get", "--file", config])?;
-    let search = std::env::var_os("PATH").ok_or_else(|| "PATH is not set".to_owned())?;
-    let mut entries = String::new();
-    for (variable, name, tool) in [
-        ("MAESTRO_TEST_RG", "rg", "ripgrep"),
-        ("MAESTRO_TEST_FD", "fd", "fd"),
-    ] {
-        let key = format!("tools.{tool}");
-        let Ok(pin) = mise_output(&["config", "get", "--file", config, &key]) else {
-            continue;
-        };
-        let path = search_tools::pinned_search_tool(name, tool, &pin, &search)?;
-        writeln!(entries, "{variable}={path}").map_err(|error| error.to_string())?;
-    }
-    Ok(entries)
-}
-
-/// Reads stored tool pins without evaluating project configuration.
-///
-/// # Errors
-///
-/// Returns an error if mise cannot run, exits unsuccessfully or returns invalid UTF-8.
-#[cfg(not(target_arch = "wasm32"))]
-fn mise_output(args: &[&str]) -> Result<String, String> {
-    let output = std::process::Command::new("mise")
-        // Reading stored pins needs no trust and must not evaluate project hooks.
-        .env("MISE_NO_CONFIG", "1")
-        .args(args)
-        .output()
-        .map_err(|error| format!("mise {}: {error}", args.join(" ")))?;
-    if !output.status.success() {
-        return Err(format!(
-            "mise {}: {}",
-            args.join(" "),
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    String::from_utf8(output.stdout)
-        .map(|value| value.trim().to_owned())
-        .map_err(|error| format!("mise {}: {error}", args.join(" ")))
 }

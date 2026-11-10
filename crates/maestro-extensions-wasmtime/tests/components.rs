@@ -9,10 +9,7 @@ use std::{cell::RefCell, path::Path, rc::Rc};
 
 /// Runs a test body on the local task set the artifact factory requires.
 pub fn local<T>(test: impl Future<Output = T>) -> T {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, test)
+    maestro_extensions_wasmtime::test_support::local(test).unwrap()
 }
 
 /// Copies the component the setup variable `component` names to `artifact`.

@@ -1301,6 +1301,11 @@ resolves that native executable. Preparation also copies, hashes and restores th
 example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
 names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
+Every development command that runs a child exits with that child's status. A child ended by
+a signal has no exit code, so the tool prints the native status on standard error, such as
+`child ended by signal: 9 (SIGKILL)`, then exits with status 1. That line separates a killed
+example from one that failed on its own.
+
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
 artifact directory through its documented platform library search path. It runs
@@ -1472,10 +1477,25 @@ neither holds nor locks it stages nothing.
 
 Two more steps run only where their input exists. The
 [browser graph](#browser-author-build) is built when the workspace holds
-`maestro-web`. The setup example exports `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD`,
-the pinned `rg` and `fd` the native search tests copy, for each program the
-workspace's `mise.toml` pins as `ripgrep` or `fd`; a workspace that pins neither
-exports neither.
+`maestro-web`. For each search program the workspace's `mise.toml` pins as
+`ripgrep` or `fd`, preparation resolves the required version from its full `PATH`
+and copies it into `<TEST_PREPARE_OUTPUT>/search-tools/rg` or `search-tools/fd`,
+with `.exe` on Windows. Missing or wrong-version programs fail preparation.
+`mise.toml` is a bundle-cache input, so a pin change rebuilds the bundle.
+
+The `author-component` setup exports `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD` as
+absolute paths to those copies. The prepared example receives these paths without
+searching `PATH`; archived tests need neither program on `PATH`. A local run
+without a prepared bundle still resolves the pins from `PATH`. A workspace that
+pins neither program exports neither variable.
+
+Native search tests call `maestro_test_process::install_search_program("fd", bin.path())`
+(or `"rg"`) to copy the exported program into their own directory. The helper keeps
+the program's permissions and returns its installed path. The caller retains the
+directory guard and controls its manager, child `PATH` or child variables.
+The tooling search-setup tests use the same exports to install private programs
+for their preparation and local-setup children. Their runner needs neither
+program on `PATH`; archived-export children also exclude the private directory.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
