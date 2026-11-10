@@ -1239,11 +1239,11 @@ platform, because the engine keeps its cache below the agent directory. Shared C
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
-compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the engine-reported cache under the modification time that
-copy of the example has, and writes the component paths to
-`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
-below, so they share a compile-cache namespace with the installed code. It runs the example
+compiled-code file, installs the staged example beside the extracted executables and writes
+the component paths to `NEXTEST_ENV`. The setup then gives the executables one modification
+time, as below, and installs the compiled code in the engine-reported cache under that time.
+A copy that keeps an older file time than another executable therefore still lands in the
+namespace the example and the tests read. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
 or compile pass. On every platform that cache belongs to the run alone: the setup uses
 `run-agent` beside the profile directory as the run's agent directory, queries and fills
@@ -2607,6 +2607,43 @@ fn main() -> std::io::Result<()> {
 A recording notifier names its file in `args` instead, and a Git alias names the
 checkout every query must carry. Point `PATH` at the directory holding either
 alias, so the product finds it by its own program name.
+
+#### Remote client aliases
+
+On Unix, install the same artifact as `ssh` when a test exercises an extension's
+remote operations. Write `ssh` on the first line of `<alias>.fixture`, followed by
+one JSON object. The fixture parses the whole record before any effect and rejects
+an unknown field.
+
+| Field | Behavior |
+| --- | --- |
+| `refusal` | `destination`, `code` and `stderr`. A launch naming that destination writes `stderr` and ends with `code`, so the extension's own failure path runs. |
+| `write` | `command`, `code` and `stderr`. A launch whose remote command contains `command` writes `stderr` and ends with `code` without reading standard input, so the body a caller streams is never consumed. The value is a substring, because an extension quotes and resolves the path its command writes. |
+| `directory` | The remote session's working directory. Every other command runs there, through `/bin/sh -c`, with the operands after the destination joined by spaces, so remote `pwd`, `cat`, `test`, `mkdir` and `file` behave as the extension expects. |
+
+A lone leading option is skipped; an option taking a separate value is not read,
+so pass the destination first. A launch left with no destination ends with status
+2 and writes nothing.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let directory = maestro_test_directory::Scratch::new()?;
+    let session = directory.path().join("session");
+    std::fs::create_dir(&session)?;
+    let record = serde_json::json!({
+        "refusal": {"destination": "unreachable.invalid", "code": 255, "stderr": "refused\n"},
+        "write": {"command": "early-write.txt", "code": 38, "stderr": "refused\n"},
+        "directory": session,
+    });
+    maestro_test_process::install_family(
+        &directory.path().join("ssh"),
+        "ssh",
+        &record.to_string(),
+    )?;
+    // Put that directory first on the child's PATH, then run the extension operation.
+    Ok(())
+}
+```
 
 #### Checked reruns
 
