@@ -124,7 +124,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 aborted: false,
                 will_retry: false,
                 error_message: Some(if reason == CompactionReason::Overflow {
-                    format!("Context overflow recovery failed: {message}")
+                    format!("Recovery from the context overflow failed: {message}")
                 } else {
                     format!("Auto-compaction failed: {message}")
                 }),

@@ -79,7 +79,8 @@ guideline.
 `steer` and `follow_up` queue a user message on the agent after skill and template
 expansion. A registered command's text cannot be queued:
 `Command "/<name>" comes from an extension and cannot be queued. Call prompt(),
-or run the command when nothing is streaming.` Slash text that names no command is queued unchanged.
+or run the command when nothing is streaming.` Slash text that names no command is
+queued unchanged.
 
 The session mirrors the queued texts. Each change emits a `QueueUpdate` event that
 carries both lists. `get_steering_messages`,

@@ -134,7 +134,7 @@ Maestro documentation (consult it only for questions about maestro, including it
 - Additional docs: {docs}
 - Examples: {examples} (extensions, custom tools, SDK)
 - When reading maestro docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
-- Where to look by topic: themes (docs/theme.md), extensions (docs/extensions.md and examples/extensions/), skills (docs/resources/skills.md), prompt templates (see docs/resources/prompt-templates.md), TUI components (see docs/terminal/components.md), keybindings (docs/terminal/keybindings.md), SDK integrations (docs/application/sdk.md), custom providers (docs/extensions/guest_streams.md), adding models (docs/catalog.md), maestro packages (docs/packages.md)
+- Where to look by topic: themes (docs/theme.md), extensions (docs/extensions.md and examples/extensions/), skills (docs/resources/skills.md), prompt templates (docs/resources/prompt-templates.md), TUI components (docs/terminal/components.md), keybindings (docs/terminal/keybindings.md), SDK integrations (docs/application/sdk.md), custom providers (docs/extensions/guest_streams.md), adding models (docs/catalog.md), maestro packages (docs/packages.md)
 - For maestro work, read the docs and examples first and follow .md cross-references before you implement anything
 - Read each maestro .md file in full and follow its links to related docs, such as docs/terminal/components.md for the TUI API"
     ))

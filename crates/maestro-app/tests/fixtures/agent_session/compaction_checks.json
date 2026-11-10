@@ -1057,7 +1057,7 @@
         "reason": "overflow",
         "aborted": false,
         "willRetry": false,
-        "errorMessage": "Context overflow recovery failed: Summarization failed: No more faux responses queued",
+        "errorMessage": "Recovery from the context overflow failed: Summarization failed: No more faux responses queued",
         "result": null
       },
       {
