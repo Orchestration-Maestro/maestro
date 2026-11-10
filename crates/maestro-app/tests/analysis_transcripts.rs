@@ -527,7 +527,7 @@ fn analysis_stream_keeps_text_tool_and_turn_branches() {
             assert!(plain.succeeded(), "{plain:?}");
             assert_eq!(
                 plain.stderr,
-                "controlled stderr\ncontrolled stderr\nThe agent finished without writing final summary\n"
+                "controlled stderr\ncontrolled stderr\nThe agent finished without writing the final summary\n"
             );
             let expected = "  thinking now\n  [read] literal file offset=1 limit=1000\n  tail\n  [write] out\n  [custom] \n  [read] literal file\n  turn tail\n";
             assert_eq!(plain.stdout.matches(expected).count(), 2);
@@ -585,7 +585,7 @@ fn analysis_runs_each_file_before_aggregation() {
             assert_eq!(
                 run.stderr,
                 format!(
-                    "{}The agent finished without writing final summary\n",
+                    "{}The agent finished without writing the final summary\n",
                     "controlled stderr\n".repeat(3)
                 )
             );
@@ -779,7 +779,7 @@ fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[S
         "{prompt:?}"
     );
     assert!(
-        prompt.contains("Analyse and write the summary only once the ENTIRE file has been read")
+        prompt.contains("Analyze and write the summary only once the ENTIRE file has been read")
     );
     assert!(prompt.contains("- Add no text outside this format"));
     assert!(prompt.contains(&format!(

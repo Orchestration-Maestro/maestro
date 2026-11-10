@@ -163,7 +163,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honors .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "parameters": {
           "type": "object",
           "required": [
@@ -212,7 +212,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honors .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "parameters": {
           "type": "object",
           "required": [
@@ -655,7 +655,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honors .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "parameters": {
           "type": "object",
           "required": [
@@ -705,7 +705,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honors .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "parameters": {
           "type": "object",
           "required": [
@@ -754,7 +754,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honors .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "parameters": {
           "type": "object",
           "required": [
@@ -788,7 +788,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honors .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "parameters": {
           "type": "object",
           "required": [

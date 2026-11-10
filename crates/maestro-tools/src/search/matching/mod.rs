@@ -73,7 +73,7 @@ pub fn create_grep_tool_definition<C: 'static $($bound)*>(
         tools_manager,
     });
     ToolDefinition {
-        definition: Tool { name: "grep".into(), description: "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.".into(), parameters: maestro_models::ParameterSchema::authored(json!({"type":"object","required":["pattern"],"properties": {
+        definition: Tool { name: "grep".into(), description: "Find a pattern in file contents. Returns each matching line with its file path and line number. Honors .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.".into(), parameters: maestro_models::ParameterSchema::authored(json!({"type":"object","required":["pattern"],"properties": {
             "pattern":{"type":"string","description":"Search pattern (regex or literal string)"},
             "path":{"type":"string","description":"Directory or file to search (default: current directory)"},
             "glob":{"type":"string","description":"Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"},

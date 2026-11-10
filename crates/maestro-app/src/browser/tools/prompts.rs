@@ -11,7 +11,7 @@ The user points you at a document URL.
 - { url: "https://example.com/document.pdf" } - URL of a PDF, DOCX, XLSX or PPTX file
 
 ## Returns
-Plain text, organised with page, sheet or slide delimiters."#;
+Plain text, organized with page, sheet or slide delimiters."#;
 
 /// Guidance supplied to the model with admitted runtime helper descriptions.
 #[must_use]
@@ -144,9 +144,9 @@ Interactive HTML apps that can chart data held in other artifacts.
 
 ### Requirements
 - One self-contained file
-- Pull in ES modules through esm.sh, for example <script type="module">import * as lib from 'https://esm.sh/some-lib';</script>
+- Pull in ES modules through esm.sh, for example <script type="module">import X from 'https://esm.sh/pkg';</script>
 - Tailwind comes from its CDN: <script src="https://cdn.tailwindcss.com"></script>
-- Embedding images from other domains is allowed: <img src="https://example.com/photo.png">
+- Embedding images from other domains is allowed: <img src="https://example.com/image.jpg">
 - MUST give the page an explicit background color (never transparent)
 - Use inline CSS, or Tailwind's utility classes, for styling
 - Never use localStorage or sessionStorage

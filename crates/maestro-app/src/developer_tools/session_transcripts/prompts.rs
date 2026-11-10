@@ -11,7 +11,7 @@ The transcript file is large, so read it in 1000-line chunks with the offset and
 1. Start with limit=1000 (lines 1-1000)
 2. Next read with offset=1001, limit=1000 (lines 1001-2000)
 3. Keep adding 1000 to offset until the end of the file is reached
-4. Analyse and write the summary only once the ENTIRE file has been read
+4. Analyze and write the summary only once the ENTIRE file has been read
 
 ANALYSIS TASK:
 Find patterns where the user keeps giving similar instructions. Each could turn into:

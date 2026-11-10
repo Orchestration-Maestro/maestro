@@ -410,7 +410,7 @@ async fn aggregate(
             paint(streams.painting, Tone::Done, &line)
         )?;
     } else if success {
-        let line = "The agent finished without writing final summary";
+        let line = "The agent finished without writing the final summary";
         writeln!(
             streams.stderr,
             "{}",

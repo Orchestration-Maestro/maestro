@@ -17,7 +17,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honors .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "promptSnippet": "Search file contents for patterns (respects .gitignore)",
         "parameters": {
           "type": "object",

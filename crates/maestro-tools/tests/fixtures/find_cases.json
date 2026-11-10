@@ -17,7 +17,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honors .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "promptSnippet": "Find files by glob pattern (respects .gitignore)",
         "parameters": {
           "type": "object",

@@ -2,7 +2,7 @@
   "metadata": {
     "label": "Extract Document",
     "name": "extract_document",
-    "description": "# Extract Document\n\nPull plain text out of web documents: PDF, DOCX, XLSX or PPTX.\n\n## Use It When\nThe user points you at a document URL.\n\n## Input\n- { url: \"https://example.com/document.pdf\" } - URL of a PDF, DOCX, XLSX or PPTX file\n\n## Returns\nPlain text, organised with page, sheet or slide delimiters.",
+    "description": "# Extract Document\n\nPull plain text out of web documents: PDF, DOCX, XLSX or PPTX.\n\n## Use It When\nThe user points you at a document URL.\n\n## Input\n- { url: \"https://example.com/document.pdf\" } - URL of a PDF, DOCX, XLSX or PPTX file\n\n## Returns\nPlain text, organized with page, sheet or slide delimiters.",
     "parameters": {
       "type": "object",
       "required": [
