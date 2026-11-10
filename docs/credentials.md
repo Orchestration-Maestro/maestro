@@ -185,7 +185,8 @@ selector. Unix uses the default shell without reading that selector. Windows
 tries the configured shell first and falls back after selection, infrastructure
 or missing-executable failure, not after a completed unsuccessful attempt.
 Native execution uses the [shared synchronous capture](../crates/maestro-process/README.md#synchronous-capture)
-with a 10-second timeout. A timeout completes without a value or fallback.
+with a 10-second timeout; `with_timeout` sets another limit. A timeout completes
+without a value or fallback.
 Command stdout is decoded lossily as UTF-8 and trimmed at its outer boundaries;
 literal and environment values are not trimmed.
 
