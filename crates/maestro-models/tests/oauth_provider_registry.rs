@@ -311,7 +311,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
         .unwrap();
     assert_eq!(
         failure.to_string(),
-        "Failed to refresh OAuth token for controlled"
+        "Could not refresh the OAuth token for controlled"
     );
     assert!(failure.diagnostic.code.is_none());
     assert!(failure.diagnostic.name.is_none());

@@ -17860,15 +17860,15 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "Path to the file to read (relative or absolute)"
+          "description": "File to read, as a relative or absolute path"
         },
         "offset": {
           "type": "number",
-          "description": "Line number to start reading from (1-indexed)"
+          "description": "First line to read, counting from 1"
         },
         "limit": {
           "type": "number",
-          "description": "Maximum number of lines to read"
+          "description": "Largest number of lines to return"
         }
       }
     },
@@ -17899,7 +17899,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "Path to the file to write (relative or absolute)"
+          "description": "File to write, as a relative or absolute path"
         },
         "content": {
           "type": "string",
@@ -17935,7 +17935,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "Path to the file to edit (relative or absolute)"
+          "description": "File to edit, as a relative or absolute path"
         },
         "edits": {
           "type": "array",
@@ -17948,16 +17948,16 @@
             "properties": {
               "oldText": {
                 "type": "string",
-                "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                "description": "Text this replacement matches in the original file. It must appear once and must not overlap another edits[].oldText in the same call."
               },
               "newText": {
                 "type": "string",
-                "description": "Replacement text for this targeted edit."
+                "description": "Text written in place of oldText."
               }
             },
             "additionalProperties": false
           },
-          "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+          "description": "One or more replacements. Each edit matches the original file rather than the result of an earlier edit in the call. Edits must not overlap or nest; merge changes that touch one block or neighbouring lines into a single edit."
         }
       },
       "additionalProperties": false
@@ -18059,7 +18059,7 @@
         },
         "limit": {
           "type": "number",
-          "description": "Maximum number of matches to return (default: 100)"
+          "description": "Largest number of matches returned (default: 100)"
         }
       }
     },
@@ -18101,7 +18101,7 @@
         },
         "limit": {
           "type": "number",
-          "description": "Maximum number of results (default: 1000)"
+          "description": "Largest number of results returned (default: 1000)"
         }
       }
     },
@@ -18132,7 +18132,7 @@
         },
         "limit": {
           "type": "number",
-          "description": "Maximum number of entries to return (default: 500)"
+          "description": "Largest number of entries returned (default: 500)"
         }
       }
     },
@@ -18161,7 +18161,7 @@
       "properties": {
         "url": {
           "type": "string",
-          "description": "URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"
+          "description": "Document to pull text from (PDF, DOCX, XLSX, or PPTX)"
         }
       }
     },
@@ -18190,7 +18190,7 @@
       "properties": {
         "title": {
           "type": "string",
-          "description": "Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"
+          "description": "Short title in active voice naming what the snippet achieves, e.g. 'Calculating sum'"
         },
         "code": {
           "type": "string",

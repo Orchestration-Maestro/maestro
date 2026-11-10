@@ -119,7 +119,7 @@ fn auth_info(pkce: &Pkce, redirect_uri: &str) -> OAuthAuthInfo {
             ("state", pkce.verifier.as_str()),
         ])
         .finish();
-    OAuthAuthInfo { url: format!("https://claude.ai/oauth/authorize?{query}"), instructions: Some("Complete login in your browser. If the browser is on another machine, paste the final redirect URL here.".into()) }
+    OAuthAuthInfo { url: format!("https://claude.ai/oauth/authorize?{query}"), instructions: Some("Finish the login in your browser. If the browser sits on a different machine, paste the redirect URL here.".into()) }
 }
 
 /// Select code from callback/manual input, then use prompt fallback and ordered validation.
@@ -157,7 +157,7 @@ async fn select_code(
     if fields.code.as_deref().unwrap_or_default().is_empty() {
         let input = callbacks
             .on_prompt(OAuthPrompt {
-                message: "Paste the authorization code or full redirect URL:".into(),
+                message: "Paste the authorization code or the full redirect URL:".into(),
                 placeholder: Some(redirect_uri.clone()),
                 allow_empty: None,
             })

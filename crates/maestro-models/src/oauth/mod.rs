@@ -158,7 +158,9 @@ fn get_oauth_api_key_with_clock(
                 .refresh_token(credentials, fetch)
                 .await
                 .map_err(|_| {
-                    OAuthError::message(format!("Failed to refresh OAuth token for {provider_id}"))
+                    OAuthError::message(format!(
+                        "Could not refresh the OAuth token for {provider_id}"
+                    ))
                 })?
         } else {
             credentials

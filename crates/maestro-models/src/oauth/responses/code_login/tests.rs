@@ -322,8 +322,8 @@ async fn check_tokens(cases: Vec<TokenCase>) {
                     wrapped,
                     "{error}"
                 );
-                assert!(!error.contains("response missing fields:"), "{error}");
-                assert!(!error.contains("extract accountId"), "{error}");
+                assert!(!error.contains("response is missing fields:"), "{error}");
+                assert!(!error.contains("carries no accountId"), "{error}");
                 assert!(!error.is_empty());
             }
         }
@@ -541,7 +541,7 @@ impl crate::OAuthLoginCallbacks for Interaction {
     fn on_auth(&self, info: crate::OAuthAuthInfo) -> Result<(), OAuthError> {
         assert_eq!(
             info.instructions.as_deref(),
-            Some("A browser window should open. Complete login to finish.")
+            Some("A browser window opens next. Finish the login there.")
         );
         self.auth.push(());
         if self.fail == "auth" {
@@ -554,7 +554,7 @@ impl crate::OAuthLoginCallbacks for Interaction {
         assert_eq!(
             prompt,
             crate::OAuthPrompt {
-                message: "Paste the authorization code (or full redirect URL):".into(),
+                message: "Paste the authorization code, or the full redirect URL:".into(),
                 placeholder: None,
                 allow_empty: None
             }
@@ -918,7 +918,7 @@ fn response_expiry_uses_unbuffered_completion_clock() {
                     .await
                     .unwrap_err()
                     .to_string()
-                    .contains("response missing fields:")
+                    .contains("response is missing fields:")
             );
         }
     });

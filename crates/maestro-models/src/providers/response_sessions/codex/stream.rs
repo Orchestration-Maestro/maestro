@@ -304,7 +304,7 @@ fn invoke_socket<E: ProviderExecution>(
     _started: &mut bool,
 ) -> std::future::Ready<Result<(), super::CodexError>> {
     std::future::ready(Err(super::CodexError::Transport(diagnostic(
-        "WebSocket transport is not available in this runtime",
+        "This runtime has no WebSocket transport",
     ))))
 }
 

@@ -94,7 +94,7 @@ fn recovers_after(failure: &'static str) {
 
 #[test]
 fn anthropic_stream_ended_before_message_stop_recovers() {
-    recovers_after("Anthropic stream ended before message_stop");
+    recovers_after("The event stream ended before message_stop arrived");
 }
 
 #[test]

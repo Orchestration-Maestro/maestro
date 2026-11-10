@@ -82,7 +82,7 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
         assert_eq!(
             info.instructions.as_deref(),
             Some(
-                "Complete login in your browser. If the browser is on another machine, paste the final redirect URL here."
+                "Finish the login in your browser. If the browser sits on a different machine, paste the redirect URL here."
             )
         );
         Ok(())
@@ -169,7 +169,7 @@ async fn callback_browser(
     )
     .await;
     assert!(accepted.starts_with("HTTP/1.1 200"));
-    assert!(accepted.contains("Anthropic authentication completed. You can close this window."));
+    assert!(accepted.contains("Anthropic sign-in is complete. You can close this window."));
     connection
 }
 

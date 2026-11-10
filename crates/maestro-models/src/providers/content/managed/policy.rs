@@ -83,12 +83,12 @@ pub(super) fn client<E: crate::ProviderExecution>(
             Some(scope(
                 options.project.clone(),
                 &["GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"],
-                "Vertex AI requires a project ID. Set GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT or pass project in options.",
+                "Vertex AI needs a project. Pass project in options, or set GOOGLE_CLOUD_PROJECT or GCLOUD_PROJECT.",
             )?),
             Some(scope(
                 options.location.clone(),
                 &["GOOGLE_CLOUD_LOCATION"],
-                "Vertex AI requires a location. Set GOOGLE_CLOUD_LOCATION or pass location in options.",
+                "Vertex AI needs a location. Pass location in options, or set GOOGLE_CLOUD_LOCATION.",
             )?),
         )
     };

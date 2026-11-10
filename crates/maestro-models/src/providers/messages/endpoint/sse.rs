@@ -18,7 +18,7 @@ use crate::parameters::repair_json;
 use crate::providers::transport::{FetchError, HttpBody, Raced, RequestFailure, race};
 
 /// Text of the failure of a stream that ends before its stop event.
-const UNTERMINATED_TEXT: &str = "Anthropic stream ended before message_stop";
+const UNTERMINATED_TEXT: &str = "The event stream ended before message_stop arrived";
 /// The event names whose data is a message event.
 const MESSAGE_EVENTS: [&str; 6] = [
     "message_start",
