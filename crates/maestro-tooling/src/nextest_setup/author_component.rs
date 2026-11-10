@@ -49,8 +49,8 @@ pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
 }
 
 /// Install the bundle's example, give the executables one time, install the compiled code for
-/// that time and run the example on the bundle's components. The staged example is as new as the archive's executables, so it is
-/// never outdated.
+/// that time and run the example on the bundle's components. The staged example is as new as
+/// the archive's executables, so it is never outdated.
 fn run_prepared(
     cargo: &Path,
     checkout: &Path,
