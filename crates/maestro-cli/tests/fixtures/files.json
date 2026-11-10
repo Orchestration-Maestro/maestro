@@ -131,7 +131,7 @@
       ]
     },
     "expected": {
-      "text": "<file name=\"broken.png\">[Image omitted: it stays larger than the inline image byte limit after resizing.]</file>\n",
+      "text": "<file name=\"broken.png\">[Image omitted: could not be resized below the inline image size limit.]</file>\n",
       "images": []
     }
   },
@@ -227,7 +227,7 @@
       ]
     },
     "expected": {
-      "text": "<file name=\"first.txt\">\nHello, world!\n</file>\n<file name=\"tiny.png\"></file>\n<file name=\"broken.png\">[Image omitted: it stays larger than the inline image byte limit after resizing.]</file>\n<file name=\"last.txt\">\nlast\n\n</file>\n<file name=\"tiny.png\"></file>\n",
+      "text": "<file name=\"first.txt\">\nHello, world!\n</file>\n<file name=\"tiny.png\"></file>\n<file name=\"broken.png\">[Image omitted: could not be resized below the inline image size limit.]</file>\n<file name=\"last.txt\">\nlast\n\n</file>\n<file name=\"tiny.png\"></file>\n",
       "images": [
         {
           "type": "image",

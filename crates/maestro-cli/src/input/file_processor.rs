@@ -111,7 +111,7 @@ fn image_wrapper(path: &str, note: Option<String>) -> String {
 /// The wrapper of an image the fitting could not bring under the limit.
 fn omission_wrapper(path: &str) -> String {
     format!(
-        "<file name=\"{path}\">[Image omitted: it stays larger than the inline image byte limit after resizing.]</file>\n"
+        "<file name=\"{path}\">[Image omitted: could not be resized below the inline image size limit.]</file>\n"
     )
 }
 
