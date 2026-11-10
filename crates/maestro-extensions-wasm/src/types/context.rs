@@ -342,7 +342,7 @@ pub struct NewSessionCommandOptions {
     pub setup: Option<SetupSession>,
     /// Plain data of the new session.
     pub data: NewSessionCommandData,
-    /// The host runs it against a context bound to the replacement session.
+    /// The host runs it with a context for the session that replaced the old one.
     pub with_session: Option<WithSession>,
 }
 
@@ -469,11 +469,11 @@ pub trait ReplacedSessionContextPort {
         options: Option<crate::SendUserMessageOptions>,
     ) -> ExtensionFuture<'_, ()>;
 
-    /// The command context bound to the replacement session.
+    /// The command context for the session that replaced the old one.
     fn command(&self) -> Rc<dyn CommandContextPort>;
 }
 
-/// Fresh command-capable context bound to the replacement session of an operation.
+/// Fresh command-capable context for the session that an operation installed.
 #[derive(Clone)]
 pub struct ReplacedSessionContext {
     /// The command view bound to the replacement session.
