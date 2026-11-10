@@ -1080,7 +1080,7 @@
     },
     {
       "key": "Open it on your computer with the download button above.",
-      "expected": "Die Download-Schaltfläche oben legt die Datei auf Ihrem Rechner ab."
+      "expected": "Öffnen Sie die Datei auf Ihrem Rechner mit der Download-Schaltfläche oben."
     },
     {
       "key": "No content available",
@@ -1476,7 +1476,7 @@
     },
     {
       "key": "This app keeps your conversations only with persistent storage",
-      "expected": "Diese App behält Ihre Gespräche nur mit dauerhaftem Speicher."
+      "expected": "Diese App behält Ihre Gespräche nur mit dauerhaftem Speicher"
     },
     {
       "key": "Why is this needed?",

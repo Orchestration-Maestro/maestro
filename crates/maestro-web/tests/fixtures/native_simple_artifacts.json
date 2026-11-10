@@ -27,7 +27,7 @@
         "filename": "<literal>&.txt",
         "guidance": [
           "Für diesen Dateityp gibt es keine Vorschau.",
-          "Die Download-Schaltfläche oben legt die Datei auf Ihrem Rechner ab."
+          "Öffnen Sie die Datei auf Ihrem Rechner mit der Download-Schaltfläche oben."
         ],
         "titles": [
           "Herunterladen"
