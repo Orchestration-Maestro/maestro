@@ -960,7 +960,7 @@
         "@dim@    \u001b[39m                                                                                                                                                                                                                                            ",
         "@dim@    /\u001b[39m                                                                                                                                                                                                                                           ",
         "@dim@    ///\u001b[39m                                                                                                                                                                                                                                         ",
-        "@dim@    \\\u001b[39m                                                                                                                                                                                                                                           ",
+        "@dim@    \\u001b[39m                                                                                                                                                                                                                                           ",
         "@dim@    ~\u001b[39m                                                                                                                                                                                                                                           ",
         ""
       ],
@@ -4632,17 +4632,17 @@
       "value": [
         {
           "type": "warning",
-          "message": "Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.",
+          "message": "Extension command '/settings' collides with a built-in interactive command. Available as '/settings:1'.",
           "path": "/first"
         },
         {
           "type": "warning",
-          "message": "Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:2'.",
+          "message": "Extension command '/settings' collides with a built-in interactive command. Available as '/settings:2'.",
           "path": "/second"
         },
         {
           "type": "warning",
-          "message": "Extension command '/model' conflicts with built-in interactive command. Skipping in autocomplete.",
+          "message": "Extension command '/model' collides with a built-in interactive command. Skipping in autocomplete.",
           "path": "/third"
         }
       ],
@@ -4838,212 +4838,212 @@
       "value": [
         {
           "type": "warning",
-          "message": "Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.",
+          "message": "Extension command '/settings' collides with a built-in interactive command. Available as '/settings:1'.",
           "path": "/ext/settings"
         },
         {
           "type": "warning",
-          "message": "Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:2'.",
+          "message": "Extension command '/settings' collides with a built-in interactive command. Available as '/settings:2'.",
           "path": "/ext/settings:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/model' conflicts with built-in interactive command. Available as '/model:1'.",
+          "message": "Extension command '/model' collides with a built-in interactive command. Available as '/model:1'.",
           "path": "/ext/model"
         },
         {
           "type": "warning",
-          "message": "Extension command '/model' conflicts with built-in interactive command. Available as '/model:2'.",
+          "message": "Extension command '/model' collides with a built-in interactive command. Available as '/model:2'.",
           "path": "/ext/model:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/scoped-models' conflicts with built-in interactive command. Available as '/scoped-models:1'.",
+          "message": "Extension command '/scoped-models' collides with a built-in interactive command. Available as '/scoped-models:1'.",
           "path": "/ext/scoped-models"
         },
         {
           "type": "warning",
-          "message": "Extension command '/scoped-models' conflicts with built-in interactive command. Available as '/scoped-models:2'.",
+          "message": "Extension command '/scoped-models' collides with a built-in interactive command. Available as '/scoped-models:2'.",
           "path": "/ext/scoped-models:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/export' conflicts with built-in interactive command. Available as '/export:1'.",
+          "message": "Extension command '/export' collides with a built-in interactive command. Available as '/export:1'.",
           "path": "/ext/export"
         },
         {
           "type": "warning",
-          "message": "Extension command '/export' conflicts with built-in interactive command. Available as '/export:2'.",
+          "message": "Extension command '/export' collides with a built-in interactive command. Available as '/export:2'.",
           "path": "/ext/export:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/import' conflicts with built-in interactive command. Available as '/import:1'.",
+          "message": "Extension command '/import' collides with a built-in interactive command. Available as '/import:1'.",
           "path": "/ext/import"
         },
         {
           "type": "warning",
-          "message": "Extension command '/import' conflicts with built-in interactive command. Available as '/import:2'.",
+          "message": "Extension command '/import' collides with a built-in interactive command. Available as '/import:2'.",
           "path": "/ext/import:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/share' conflicts with built-in interactive command. Available as '/share:1'.",
+          "message": "Extension command '/share' collides with a built-in interactive command. Available as '/share:1'.",
           "path": "/ext/share"
         },
         {
           "type": "warning",
-          "message": "Extension command '/share' conflicts with built-in interactive command. Available as '/share:2'.",
+          "message": "Extension command '/share' collides with a built-in interactive command. Available as '/share:2'.",
           "path": "/ext/share:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/copy' conflicts with built-in interactive command. Available as '/copy:1'.",
+          "message": "Extension command '/copy' collides with a built-in interactive command. Available as '/copy:1'.",
           "path": "/ext/copy"
         },
         {
           "type": "warning",
-          "message": "Extension command '/copy' conflicts with built-in interactive command. Available as '/copy:2'.",
+          "message": "Extension command '/copy' collides with a built-in interactive command. Available as '/copy:2'.",
           "path": "/ext/copy:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/name' conflicts with built-in interactive command. Available as '/name:1'.",
+          "message": "Extension command '/name' collides with a built-in interactive command. Available as '/name:1'.",
           "path": "/ext/name"
         },
         {
           "type": "warning",
-          "message": "Extension command '/name' conflicts with built-in interactive command. Available as '/name:2'.",
+          "message": "Extension command '/name' collides with a built-in interactive command. Available as '/name:2'.",
           "path": "/ext/name:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/session' conflicts with built-in interactive command. Available as '/session:1'.",
+          "message": "Extension command '/session' collides with a built-in interactive command. Available as '/session:1'.",
           "path": "/ext/session"
         },
         {
           "type": "warning",
-          "message": "Extension command '/session' conflicts with built-in interactive command. Available as '/session:2'.",
+          "message": "Extension command '/session' collides with a built-in interactive command. Available as '/session:2'.",
           "path": "/ext/session:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/changelog' conflicts with built-in interactive command. Available as '/changelog:1'.",
+          "message": "Extension command '/changelog' collides with a built-in interactive command. Available as '/changelog:1'.",
           "path": "/ext/changelog"
         },
         {
           "type": "warning",
-          "message": "Extension command '/changelog' conflicts with built-in interactive command. Available as '/changelog:2'.",
+          "message": "Extension command '/changelog' collides with a built-in interactive command. Available as '/changelog:2'.",
           "path": "/ext/changelog:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/hotkeys' conflicts with built-in interactive command. Available as '/hotkeys:1'.",
+          "message": "Extension command '/hotkeys' collides with a built-in interactive command. Available as '/hotkeys:1'.",
           "path": "/ext/hotkeys"
         },
         {
           "type": "warning",
-          "message": "Extension command '/hotkeys' conflicts with built-in interactive command. Available as '/hotkeys:2'.",
+          "message": "Extension command '/hotkeys' collides with a built-in interactive command. Available as '/hotkeys:2'.",
           "path": "/ext/hotkeys:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/fork' conflicts with built-in interactive command. Available as '/fork:1'.",
+          "message": "Extension command '/fork' collides with a built-in interactive command. Available as '/fork:1'.",
           "path": "/ext/fork"
         },
         {
           "type": "warning",
-          "message": "Extension command '/fork' conflicts with built-in interactive command. Available as '/fork:2'.",
+          "message": "Extension command '/fork' collides with a built-in interactive command. Available as '/fork:2'.",
           "path": "/ext/fork:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/clone' conflicts with built-in interactive command. Available as '/clone:1'.",
+          "message": "Extension command '/clone' collides with a built-in interactive command. Available as '/clone:1'.",
           "path": "/ext/clone"
         },
         {
           "type": "warning",
-          "message": "Extension command '/clone' conflicts with built-in interactive command. Available as '/clone:2'.",
+          "message": "Extension command '/clone' collides with a built-in interactive command. Available as '/clone:2'.",
           "path": "/ext/clone:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/tree' conflicts with built-in interactive command. Available as '/tree:1'.",
+          "message": "Extension command '/tree' collides with a built-in interactive command. Available as '/tree:1'.",
           "path": "/ext/tree"
         },
         {
           "type": "warning",
-          "message": "Extension command '/tree' conflicts with built-in interactive command. Available as '/tree:2'.",
+          "message": "Extension command '/tree' collides with a built-in interactive command. Available as '/tree:2'.",
           "path": "/ext/tree:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/login' conflicts with built-in interactive command. Available as '/login:1'.",
+          "message": "Extension command '/login' collides with a built-in interactive command. Available as '/login:1'.",
           "path": "/ext/login"
         },
         {
           "type": "warning",
-          "message": "Extension command '/login' conflicts with built-in interactive command. Available as '/login:2'.",
+          "message": "Extension command '/login' collides with a built-in interactive command. Available as '/login:2'.",
           "path": "/ext/login:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/logout' conflicts with built-in interactive command. Available as '/logout:1'.",
+          "message": "Extension command '/logout' collides with a built-in interactive command. Available as '/logout:1'.",
           "path": "/ext/logout"
         },
         {
           "type": "warning",
-          "message": "Extension command '/logout' conflicts with built-in interactive command. Available as '/logout:2'.",
+          "message": "Extension command '/logout' collides with a built-in interactive command. Available as '/logout:2'.",
           "path": "/ext/logout:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/new' conflicts with built-in interactive command. Available as '/new:1'.",
+          "message": "Extension command '/new' collides with a built-in interactive command. Available as '/new:1'.",
           "path": "/ext/new"
         },
         {
           "type": "warning",
-          "message": "Extension command '/new' conflicts with built-in interactive command. Available as '/new:2'.",
+          "message": "Extension command '/new' collides with a built-in interactive command. Available as '/new:2'.",
           "path": "/ext/new:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/compact' conflicts with built-in interactive command. Available as '/compact:1'.",
+          "message": "Extension command '/compact' collides with a built-in interactive command. Available as '/compact:1'.",
           "path": "/ext/compact"
         },
         {
           "type": "warning",
-          "message": "Extension command '/compact' conflicts with built-in interactive command. Available as '/compact:2'.",
+          "message": "Extension command '/compact' collides with a built-in interactive command. Available as '/compact:2'.",
           "path": "/ext/compact:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/resume' conflicts with built-in interactive command. Available as '/resume:1'.",
+          "message": "Extension command '/resume' collides with a built-in interactive command. Available as '/resume:1'.",
           "path": "/ext/resume"
         },
         {
           "type": "warning",
-          "message": "Extension command '/resume' conflicts with built-in interactive command. Available as '/resume:2'.",
+          "message": "Extension command '/resume' collides with a built-in interactive command. Available as '/resume:2'.",
           "path": "/ext/resume:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/reload' conflicts with built-in interactive command. Available as '/reload:1'.",
+          "message": "Extension command '/reload' collides with a built-in interactive command. Available as '/reload:1'.",
           "path": "/ext/reload"
         },
         {
           "type": "warning",
-          "message": "Extension command '/reload' conflicts with built-in interactive command. Available as '/reload:2'.",
+          "message": "Extension command '/reload' collides with a built-in interactive command. Available as '/reload:2'.",
           "path": "/ext/reload:2"
         },
         {
           "type": "warning",
-          "message": "Extension command '/quit' conflicts with built-in interactive command. Available as '/quit:1'.",
+          "message": "Extension command '/quit' collides with a built-in interactive command. Available as '/quit:1'.",
           "path": "/ext/quit"
         },
         {
           "type": "warning",
-          "message": "Extension command '/quit' conflicts with built-in interactive command. Available as '/quit:2'.",
+          "message": "Extension command '/quit' collides with a built-in interactive command. Available as '/quit:2'.",
           "path": "/ext/quit:2"
         }
       ]
@@ -5121,9 +5121,9 @@
         "@error@    load failed\u001b[39m                                                                                                                                                                                                                                 ",
         "@warning@  command diagnostic\u001b[39m                                                                                                                                                                                                                            ",
         "@warning@  project /ext/settings\u001b[39m                                                                                                                                                                                                                         ",
-        "@warning@    Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.\u001b[39m                                                                                                                                      ",
+        "@warning@    Extension command '/settings' collides with a built-in interactive command. Available as '/settings:1'.\u001b[39m                                                                                                                                     ",
         "@warning@  project /ext/settings:2\u001b[39m                                                                                                                                                                                                                       ",
-        "@warning@    Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:2'.\u001b[39m                                                                                                                                      ",
+        "@warning@    Extension command '/settings' collides with a built-in interactive command. Available as '/settings:2'.\u001b[39m                                                                                                                                     ",
         "@warning@  shortcut diagnostic\u001b[39m                                                                                                                                                                                                                           ",
         "",
         "@warning@[Theme conflicts]\u001b[39m                                                                                                                                                                                                                               ",
@@ -5142,9 +5142,9 @@
         "@error@    load failed\u001b[39m                                                                                                                                                                                                                                 ",
         "@warning@  command diagnostic\u001b[39m                                                                                                                                                                                                                            ",
         "@warning@  project /ext/settings\u001b[39m                                                                                                                                                                                                                         ",
-        "@warning@    Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.\u001b[39m                                                                                                                                      ",
+        "@warning@    Extension command '/settings' collides with a built-in interactive command. Available as '/settings:1'.\u001b[39m                                                                                                                                     ",
         "@warning@  project /ext/settings:2\u001b[39m                                                                                                                                                                                                                       ",
-        "@warning@    Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:2'.\u001b[39m                                                                                                                                      ",
+        "@warning@    Extension command '/settings' collides with a built-in interactive command. Available as '/settings:2'.\u001b[39m                                                                                                                                     ",
         "@warning@  shortcut diagnostic\u001b[39m                                                                                                                                                                                                                           ",
         "",
         "@warning@[Theme conflicts]\u001b[39m                                                                                                                                                                                                                               ",
@@ -5163,9 +5163,9 @@
         "@error@    load failed\u001b[39m                                                                                                                                                                                                                                 ",
         "@warning@  command diagnostic\u001b[39m                                                                                                                                                                                                                            ",
         "@warning@  project /ext/settings\u001b[39m                                                                                                                                                                                                                         ",
-        "@warning@    Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.\u001b[39m                                                                                                                                      ",
+        "@warning@    Extension command '/settings' collides with a built-in interactive command. Available as '/settings:1'.\u001b[39m                                                                                                                                     ",
         "@warning@  project /ext/settings:2\u001b[39m                                                                                                                                                                                                                       ",
-        "@warning@    Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:2'.\u001b[39m                                                                                                                                      ",
+        "@warning@    Extension command '/settings' collides with a built-in interactive command. Available as '/settings:2'.\u001b[39m                                                                                                                                     ",
         "@warning@  shortcut diagnostic\u001b[39m                                                                                                                                                                                                                           ",
         "",
         "@warning@[Theme conflicts]\u001b[39m                                                                                                                                                                                                                               ",

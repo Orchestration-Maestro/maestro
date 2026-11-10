@@ -17,11 +17,13 @@ impl InteractiveMode {
         let session = self.runtime_host.session();
         if session.is_streaming() {
             return Ok(
-                self.show_warning("Wait for the current response to finish before reloading.")?
+                self.show_warning("A response is still running; finish it before reloading.")?
             );
         }
         if session.is_compacting() {
-            return Ok(self.show_warning("Wait for compaction to finish before reloading.")?);
+            return Ok(
+                self.show_warning("Compaction is still running; finish it before reloading.")?
+            );
         }
         self.reset_extension_ui()?;
         let reload_box = self.reload_box()?;
@@ -52,7 +54,9 @@ impl InteractiveMode {
             {
                 self.show_error(&format!("models.json error: {error}"))?;
             }
-            self.show_status("Reloaded keybindings, extensions, skills, prompts, themes")?;
+            self.show_status(
+                "Reloaded every resource: keybindings, extensions, skills, prompts, themes",
+            )?;
             Ok(())
         }
         .await;
@@ -73,7 +77,7 @@ impl InteractiveMode {
         container.add_child(Rc::new(Spacer::new(1)));
         let text = self.themes.theme().get()?.fg(
             &ThemeColor::Muted,
-            "Reloading keybindings, extensions, skills, prompts, themes...",
+            "Reloading every resource: keybindings, extensions, skills, prompts, themes...",
         )?;
         container.add_child(Rc::new(Text::new(text, 1, 0, None)));
         container.add_child(Rc::new(Spacer::new(1)));

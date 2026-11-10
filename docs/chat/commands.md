@@ -113,7 +113,7 @@ It then replays the new session and shows `✓ New session started` in the accen
 colour. A shell command from the old session never reappears later.
 
 When the session cannot be created or replayed, the mode shows
-`Error: Failed to create session: <failure>`, stops the terminal and exits with
+`Error: Cannot create the session: <failure>`, stops the terminal and exits with
 status 1.
 
 ## `/compact`
@@ -147,7 +147,7 @@ loading box before awaiting the application reload. It then refreshes the header
 themes, editor and terminal settings, completion, extension shortcuts and the
 transcript, before restoring the current editor with focus. Resource diagnostics
 and model-file errors appear even with quiet startup, followed by
-`Reloaded keybindings, extensions, skills, prompts, themes`.
+`Reloaded every resource: keybindings, extensions, skills, prompts, themes`.
 
 A failure after the box appears restores the editor captured after the UI reset
 and shows `Reload failed: <reason>`. Changes made before the failure stay applied;
@@ -192,7 +192,7 @@ becomes ordinary input.
 
 While a shell command from the same session still runs, a new submission does not
 start a second one. The editor shows
-`A bash command is already running. Press Esc to cancel it first.` as a warning,
+`A bash command is still running. Press Esc to cancel it.` as a warning,
 keeps the typed text so nothing is lost, and records no history entry.
 
 The interrupt key cancels a running shell command when no response streams. A
@@ -258,7 +258,7 @@ directory opens the existing directory confirmation. Declining leaves the
 current session unchanged; accepting retries the same file once with the offered
 working directory. The copied file is not rolled back after cancellation.
 
-A missing input file shows `Failed to import session: <diagnostic>` and leaves
+A missing input file shows `Cannot import the session: <diagnostic>` and leaves
 ordinary input available. Other first-attempt failures use the fatal error path:
 the final error is rendered, the theme watcher and terminal stop, and the process
 exits with status 1. A retry failure instead reaches the terminal runtime's error
@@ -283,8 +283,8 @@ viewer URL. It takes no argument: `/share extra` is prompt text.
 The command runs in four steps:
 
 1. It runs `gh auth status`. A program that is missing or cannot be executed shows
-   `GitHub CLI (gh) is not installed. Install it from https://cli.github.com/`;
-   a nonzero or signalled status shows `GitHub CLI is not logged in. Run 'gh auth
+   `The GitHub CLI (gh) is missing. See https://cli.github.com/`;
+   a nonzero or signalled status shows `The GitHub CLI has no login. Run 'gh auth
    login' first.` Neither starts an export.
 2. It writes the session, through the same HTML export owner `/export` uses, into a
    directory this share operation alone owns.
@@ -294,7 +294,7 @@ The command runs in four steps:
    result: `Share URL: <viewer>` and `Gist: <url>` when a viewer origin is
    configured, `Gist: <url>` when it is not, or `Failed to create gist: <message>`
    in the transcript's error colour. A zero exit whose output holds no identifier
-   shows `Failed to parse gist ID from gh output`; the identifier is the text after
+   shows `Cannot read a gist ID from the gh output`; the identifier is the text after
    the last literal slash, kept exactly as printed.
 
 Cancelling the loader with the cancel key terminates the gist command, restores the
@@ -319,8 +319,8 @@ reads survives.
 The text is the session's last answer, trimmed under the shared whitespace policy
 (U+0085 is kept), with its text blocks joined without a separator and thinking
 omitted. An answer that was aborted with no content is skipped in favour of the
-previous one. With nothing to copy the mode shows `No agent messages to copy yet.`
-A completed copy shows `Copied last agent message to clipboard`; a reached
+previous one. With nothing to copy the mode shows `No agent message to copy yet.`
+A completed copy shows `Last agent message copied to the clipboard`; a reached
 clipboard failure shows its own message in the error colour. The mode reads the
 current session each time, so a replaced session is copied from its own answer.
 
@@ -594,9 +594,10 @@ Choosing a subscription opens its sign-in dialog and starts the provider's sign-
 The dialog shows the authorization link, opens it in the browser, and shows the
 provider's instructions when there are any. A provider with a callback server
 also accepts a pasted redirect under
-`Paste redirect URL below, or complete login in browser:`; empty text is ignored,
-every request for it sees the same answer, and the provider decides which of the
-two arrives first. After an empty submission, another paste or Escape still works.
+`Paste the redirect URL below, or finish the sign-in in your browser:`; empty
+text is ignored, every request for it sees the same answer, and the provider
+decides which of the two arrives first. After an empty submission, another paste
+or Escape still works.
 GitHub Copilot shows `Waiting for browser authentication...`
 while it polls. Questions, progress lines and choices appear in the same dialog; a
 choice replaces the dialog until it is answered, then the same dialog comes back
@@ -620,10 +621,10 @@ line reports
 `Saved API key for <name>`, and the path is `auth.json` in the agent directory. When
 the default model cannot be selected, an error follows with the reason:
 
-- `<action>, but no default model is configured for provider "<id>". Use /model to select a model.`
-- `<action>, but no models are available for that provider. Use /model to select a model.`
-- `<action>, but its default model "<id>" is not available. Use /model to select a model.`
-- `<action>, but selecting its default model failed: <error>. Use /model to select a model.`
+- `<action>, but provider "<id>" has no default model. Run /model to select one.`
+- `<action>, but that provider offers no models. Run /model to select one.`
+- `<action>, but its default model "<id>" is missing from the catalog. Run /model to select one.`
+- `<action>, but its default model could not be selected: <error>. Run /model to select one.`
 
 A failed selection keeps whatever the session already changed. Without such an
 error, the [subscription billing notice](#subscription-billing-notice) is checked
@@ -636,7 +637,7 @@ failure ends the sign-in with its error instead of a status line.
 editor. It lists none of the authentication configured elsewhere: environment
 variables, runtime keys and `models.json` are not choices and are never touched.
 With nothing saved it shows
-`No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.`
+`There are no stored credentials to remove. /logout removes only what /login saved; the environment and models.json stay as they are.`
 
 Choices are ordered by each provider's catalog display name under the current
 locale, and providers whose display names compare equal keep their stored order.
@@ -667,7 +668,7 @@ When the selected model belongs to the `anthropic` provider and a stored sign-in
 or a key starting with `sk-ant-oat` pays for it, the mode shows once:
 
 ```text
-Warning: Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.
+Warning: Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.
 ```
 
 The check runs after a model is applied or cycled. A stored sign-in is enough;

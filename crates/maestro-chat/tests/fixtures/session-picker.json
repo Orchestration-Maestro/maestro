@@ -2355,7 +2355,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -2370,7 +2370,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press ctrl+n to show all, or Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press ctrl+n to show all, or Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -2420,7 +2420,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press ctrl+n to show all, or Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press ctrl+n to show all, or Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -2789,7 +2789,7 @@
       "lines": [
         "> re:[\u001b[7m \u001b[27m                                                                                                                 ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -2827,7 +2827,7 @@
       "lines": [
         "> no-match\u001b[7m \u001b[27m                                                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -3099,7 +3099,7 @@
       "lines": [
         "> re:[\u001b[7m \u001b[27m                                                                                                                 ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -3137,7 +3137,7 @@
       "lines": [
         "> no-match\u001b[7m \u001b[27m                                                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -3409,7 +3409,7 @@
       "lines": [
         "> re:[\u001b[7m \u001b[27m                                                                                                                 ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -3447,7 +3447,7 @@
       "lines": [
         "> no-match\u001b[7m \u001b[27m                                                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -3615,7 +3615,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -3630,7 +3630,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press ctrl+n to show all, or Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press ctrl+n to show all, or Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -5339,7 +5339,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -5354,7 +5354,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -5369,7 +5369,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -5384,7 +5384,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                             ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -6038,7 +6038,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6047,7 +6047,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6056,7 +6056,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6065,7 +6065,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6074,7 +6074,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6083,7 +6083,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6092,7 +6092,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6101,7 +6101,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6110,7 +6110,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": []
@@ -6119,7 +6119,7 @@
           "lines": [
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": [
@@ -6132,7 +6132,7 @@
           "lines": [
             "> z\u001b[7m \u001b[27m                                                                            ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": [
@@ -6354,7 +6354,7 @@
           "lines": [
             "> z\u001b[7m \u001b[27m                                                                            ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": [
@@ -6608,7 +6608,7 @@
           "lines": [
             "> z\u001b[7m \u001b[27m                                                                            ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": [
@@ -6942,7 +6942,7 @@
           "lines": [
             "> z\u001b[7m \u001b[27m                                                                            ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": [
@@ -7169,7 +7169,7 @@
           "lines": [
             "> j\u001b[7m \u001b[27m                                                                            ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
           ],
           "selected": null,
           "events": [
@@ -8621,7 +8621,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press ctrl+x to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press ctrl+x for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -8640,7 +8640,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press ctrl+f to show all, or ctrl+x to view all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press ctrl+f to show all, or ctrl+x for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -8703,7 +8703,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press tab/ctrl+x to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press tab/ctrl+x for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -8728,7 +8728,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press n/ctrl+n to show all, or tab/ctrl+x to view all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press n/ctrl+n to show all, or tab/ctrl+x for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -8796,7 +8796,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder.\u001b[39m"
       ],
       "selected": null
     }
@@ -8814,7 +8814,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press ctrl+n to show all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press ctrl+n to show all.\u001b[39m"
       ],
       "selected": null
     }
@@ -8868,7 +8868,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -8886,7 +8886,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder. Press Tab to view all.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder. Press Tab for all sessions.\u001b[39m"
       ],
       "selected": null
     }
@@ -8941,7 +8941,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No sessions in current folder.\u001b[39m"
+        "\u001b[38;5;33m  No sessions in this folder.\u001b[39m"
       ],
       "selected": null
     }
@@ -8960,7 +8960,7 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[38;5;33m  No named sessions in current folder.\u001b[39m"
+        "\u001b[38;5;33m  No named sessions in this folder.\u001b[39m   "
       ],
       "selected": null
     }

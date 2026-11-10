@@ -87,11 +87,11 @@ impl InteractiveMode {
         dialog.show_info(&[
             theme.fg(
                 &ThemeColor::Text,
-                "Amazon Bedrock uses AWS credentials instead of a single API key.",
+                "Amazon Bedrock reads AWS credentials, not a single API key.",
             )?,
             theme.fg(
                 &ThemeColor::Text,
-                "Configure an AWS profile, IAM keys, bearer token, or role-based credentials.",
+                "Set an AWS profile, IAM keys, a bearer token, or credentials from a role.",
             )?,
             theme.fg(&ThemeColor::Muted, "See:")?,
             theme.fg(&ThemeColor::Accent, &format!("  {}", guide.display()))?,

@@ -170,7 +170,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[48;5;237m\u001b[38;5;32m› \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1m\u001b[38;5;35malpha\u001b[39m\u001b[22m                                                                                                            \u001b[38;5;35m1 now\u001b[39m\u001b[49m",
+          "\u001b[38;5;33m  No sessions in this folder. Press tab/ctrl+x for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -400,7 +400,7 @@
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "",
           "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m◉ Current Folder\u001b[39m\u001b[38;5;33m | ○ All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",
-          "\u001b[38;5;35mCannot delete the currently active session\u001b[39m",
+          "\u001b[38;5;35mThe active session cannot be deleted\u001b[39m      ",
           "",
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
@@ -413,7 +413,7 @@
         "events": [
           [
             "error",
-            "Cannot delete the currently active session"
+            "The active session cannot be deleted      "
           ]
         ]
       },
@@ -423,7 +423,7 @@
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "",
           "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m◉ Current Folder\u001b[39m\u001b[38;5;33m | ○ All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",
-          "\u001b[38;5;35mCannot delete the currently active session\u001b[39m",
+          "\u001b[38;5;35mThe active session cannot be deleted\u001b[39m      ",
           "",
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
@@ -436,7 +436,7 @@
         "events": [
           [
             "error",
-            "Cannot delete the currently active session"
+            "The active session cannot be deleted      "
           ]
         ]
       },
@@ -459,7 +459,7 @@
         "events": [
           [
             "error",
-            "Cannot delete the currently active session"
+            "The active session cannot be deleted      "
           ]
         ]
       },
@@ -480,7 +480,7 @@
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "",
           "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m◉ Current Folder\u001b[39m\u001b[38;5;33m | ○ All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",
-          "\u001b[38;5;35mCannot delete the currently active session\u001b[39m",
+          "\u001b[38;5;35mThe active session cannot be deleted\u001b[39m      ",
           "",
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
@@ -493,7 +493,7 @@
         "events": [
           [
             "error",
-            "Cannot delete the currently active session"
+            "The active session cannot be deleted      "
           ]
         ]
       },
@@ -503,7 +503,7 @@
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "",
           "\u001b[1mResume Session (Current Folder)\u001b[22m                                      \u001b[38;5;32m◉ Current Folder\u001b[39m\u001b[38;5;33m | ○ All\u001b[39m  \u001b[38;5;33mName: \u001b[39m\u001b[38;5;32mAll\u001b[39m  \u001b[38;5;33mSort: \u001b[39m\u001b[38;5;32mThreaded\u001b[39m",
-          "\u001b[38;5;35mCannot delete the currently active session\u001b[39m",
+          "\u001b[38;5;35mThe active session cannot be deleted\u001b[39m      ",
           "",
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
@@ -516,7 +516,7 @@
         "events": [
           [
             "error",
-            "Cannot delete the currently active session"
+            "The active session cannot be deleted      "
           ]
         ]
       },
@@ -539,7 +539,7 @@
         "events": [
           [
             "error",
-            "Cannot delete the currently active session"
+            "The active session cannot be deleted      "
           ]
         ]
       },
@@ -565,7 +565,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -591,7 +591,7 @@
           "",
           "> zzzz\u001b[7m \u001b[27m                                                                                                                 ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],

@@ -235,7 +235,7 @@ reported, and each extension command named like a built-in command, which is
 either skipped in completion or reachable under its numbered name:
 
 ```text
-Extension command '/settings' conflicts with built-in interactive command. Available as '/settings:1'.
+Extension command '/settings' collides with a built-in interactive command. Available as '/settings:1'.
 ```
 
 A path in a diagnostic is shown after the source of the listed resource at that
@@ -627,7 +627,7 @@ covers their selection, dispatch and failure notice.
 The thinking cycle key (`app.thinking.cycle`, Shift+Tab by default) selects the
 session's next thinking level. It shows `Thinking level: <level>` as a status line
 and refreshes the footer and editor border; when the model cannot reason it shows
-`Current model does not support thinking` and changes nothing else. A recording
+`The model in use does not support thinking` and changes nothing else. A recording
 failure goes to the terminal runtime's error route. `/thinking` opens the level
 picker and `/thinking <level>` sets a level directly; see
 [the thinking level command](commands.md#thinking-level).
@@ -665,7 +665,7 @@ The key bound to `app.editor.external` (Ctrl+G by default) edits the editor text
 an external editor. The mode reads the runtime's `VISUAL`, then `EDITOR`, each time
 the key is pressed; an empty value counts as unset, and neither value is trimmed.
 With no editor configured, the transcript shows the warning
-`No editor configured. Set $VISUAL or $EDITOR environment variable.` and nothing
+`No editor is set. Set $VISUAL or $EDITOR.` and nothing
 else happens. On Unix the command splits on ASCII spaces only, and the file path is
 its last argument; Windows runs it through the configured command interpreter, as
 the extension editor dialog does.
@@ -705,7 +705,7 @@ terminal or signalling the group fails, interrupts take their default action aga
 a later continue signal does nothing, and the failure is handed to the terminal's
 runtime host. The continue signal is observed on the terminal's Tokio runtime,
 which must have I/O enabled. On Windows the key only shows
-`Suspend to background is not supported on Windows`.
+`Windows has no suspend to background`.
 
 ## Startup dispatch contract
 
