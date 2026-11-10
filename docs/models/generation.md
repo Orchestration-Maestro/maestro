@@ -1,7 +1,7 @@
 # Catalog generation
 
 ```sh
-mise exec -- just models-generate
+just models-generate
 ```
 
 The native `generate_catalog_data` script at `crates/maestro-models/scripts/`

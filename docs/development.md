@@ -13,8 +13,8 @@ counter checks. When using another toolchain, install it with
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
 mise install
-mise exec -- just setup
-mise exec -- just build
+just setup
+just build
 ```
 
 Tool versions stay caller-owned in `mise.toml`. Generated downloads and checksums
@@ -140,7 +140,7 @@ mapfile -t wasm_packages < <(
 )
 wasm_args=()
 for package in "${wasm_packages[@]}"; do wasm_args+=(-p "$package"); done
-mise exec -- cargo build \
+cargo build \
   --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
   --tests --examples --keep-going --message-format=json
 ```
@@ -246,7 +246,7 @@ Lint the browser library, examples and complete integration target with the
 pinned toolchain:
 
 ```sh
-mise exec -- cargo clippy \
+cargo clippy \
   -p maestro-web --lib --examples --test integration --profile test \
   --target wasm32-unknown-unknown --locked -- \
   -D warnings -D clippy::missing_docs_in_private_items
@@ -648,8 +648,8 @@ fallback fonts. See [browser libraries](libraries/browser-frontend.md).
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
 ```sh
-mise exec -- cargo hakari generate
-mise exec -- cargo hakari manage-deps
+cargo hakari generate
+cargo hakari manage-deps
 ```
 
 After adding a member, first add `maestro-dependencies.workspace = true` to its
@@ -662,7 +662,7 @@ generated section is current or that every member declares the dependency; confi
 ## Extension components
 
 ```sh
-mise exec -- just extension-author-component
+just extension-author-component
 ```
 
 Builds the example extension as a `wasm32-wasip2` component and adds that target
@@ -671,9 +671,9 @@ with `rustup` when it is missing. See [writing an extension](extensions/guest.md
 ## Source invocation
 
 ```sh
-mise exec -- just --justfile /path/to/maestro/justfile run-source --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source --no-env --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
+just --justfile /path/to/maestro/justfile run-source --help
+just --justfile /path/to/maestro/justfile run-source --no-env --help
+just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
 ```
 
 The caller's working directory and literal arguments reach the application.
@@ -687,8 +687,8 @@ The separate `maestro-model-account` binary runs the standalone account command.
 ## Compile watches
 
 ```sh
-mise exec -- just dev
-mise exec -- just models-dev-compile
+just dev
+just models-dev-compile
 ```
 
 The pinned external watcher compiles initially and queues a rebuild when input
@@ -796,7 +796,7 @@ changing shipped files. Run this from the checkout root:
 
 ```sh
 scratch=$(mktemp -d)
-mise exec -- cargo run --locked -p maestro-theme --example brand_themes -- \
+cargo run --locked -p maestro-theme --example brand_themes -- \
   assets/brand/packs/signal.json "$scratch"
 test -s "$scratch/dark.json" && test -s "$scratch/light.json"
 ```
@@ -879,9 +879,9 @@ behavior; development commands do not create a replacement logger.
 ## Tests
 
 ```sh
-mise exec -- just test
-mise exec -- just test-offline
-mise exec -- just test -p maestro-tooling maestro_source_without_switch_preserves_environment
+just test
+just test-offline
+just test -p maestro-tooling maestro_source_without_switch_preserves_environment
 ```
 
 The broad test recipes run cargo-nextest, then Cargo doctests only after success.

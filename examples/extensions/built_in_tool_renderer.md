@@ -19,7 +19,7 @@ supplied render rows. It needs no provider, credentials or extension installatio
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- built_in_tool_renderer_
 ```

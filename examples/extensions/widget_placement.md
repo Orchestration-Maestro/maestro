@@ -17,7 +17,7 @@ host; the controlled run only records the ordered requests.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- widget_placement
 ```

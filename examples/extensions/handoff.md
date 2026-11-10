@@ -25,7 +25,7 @@ credentials and terminal, with no network calls or extension installation.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- handoff_
 ```

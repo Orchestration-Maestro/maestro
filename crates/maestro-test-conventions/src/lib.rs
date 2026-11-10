@@ -104,11 +104,12 @@ mod time_limits;
 /// workspace feature; test feature unification can hide missing normal precision.
 /// The unifier's own direct `serde_json` entries are exempt from member inheritance.
 ///
-/// Documented commands run `cargo` or `just`. Markdown in the checkout, documentation
-/// test fixtures included, may not name a program under a reader's home directory
+/// Documented commands run `cargo` or `just`. No tracked Markdown page, documentation
+/// test fixtures included, may name a program under a reader's home directory
 /// (`~/.local/bin`, `~/bin`, `$HOME/bin` or `${HOME}/bin`): each offending file is
-/// reported once, at its first such line, in name order. Build and version-control
-/// directories are skipped, and `.maestro` settings paths stay accepted.
+/// reported once, at its first such line, in name order. A page version control does
+/// not track never ships, so it stays out of the check, and `.maestro` settings paths
+/// stay accepted.
 ///
 /// Token-identical function bodies with at least 30 interior tokens are
 /// rejected, with every file/signature-line site reported. Production code and

@@ -34,8 +34,8 @@ charges. The controlled tests do not contact a provider or use credentials.
 ## Controlled run
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- inline_bash_
 ```
 

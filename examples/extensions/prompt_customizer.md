@@ -18,7 +18,7 @@ builds and instantiates the component. Both invoke the registered
 `before_agent_start` handler.
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- prompt_guidance
 ```

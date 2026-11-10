@@ -22,9 +22,9 @@ configuration entries.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tools_
-mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- tools_component_changes_native_session_and_restores_branch
 ```

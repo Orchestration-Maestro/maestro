@@ -26,7 +26,7 @@ gates; they need no provider, credentials or installation.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- rainbow_editor_
 ```

@@ -18,7 +18,7 @@ working directory and environment. It needs Bash but no provider or credentials.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- bash_spawn_hook_
 ```

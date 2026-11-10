@@ -16,9 +16,9 @@ is opt-in and needs that application's component runtime.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- model_status_component_runs_selection_hook
-mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- model_status_selection_preserves_literal_identifiers
 ```

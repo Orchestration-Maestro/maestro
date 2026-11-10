@@ -264,12 +264,12 @@ extraction with controlled provider and terminal inputs. No live keys or paid
 calls are required.
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib
-mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- qna_
-mise exec -- cargo test --locked \
+cargo test --locked \
   -p maestro-tui --doc
 ```
 

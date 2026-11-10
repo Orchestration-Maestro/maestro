@@ -26,8 +26,8 @@ No provider, credentials or live service is required.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- interactive_shell_
 ```
 

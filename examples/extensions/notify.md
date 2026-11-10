@@ -18,7 +18,7 @@ The example registers no command and adds no built-in notification setting.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- notify_
 ```

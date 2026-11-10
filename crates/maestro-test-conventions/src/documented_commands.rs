@@ -1,6 +1,7 @@
 //! Rejects a program in the reader's home directory in documented commands.
 
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 /// Directories under a reader's home that hold programs a checkout does not provide.
 const HOME_PROGRAMS: [&str; 4] = ["/.local/bin/", "~/bin/", "$HOME/bin/", "${HOME}/bin/"];
@@ -11,13 +12,11 @@ const SKIPPED: [&str; 2] = [".git", "target"];
 /// Fail when Markdown tells a reader to run a program from their home directory.
 ///
 /// A program there is a directory followed by its name, so a page that names the
-/// directory itself stays accepted. Every Markdown file in the checkout counts,
-/// documentation test fixtures included. Each offending file is reported once, at
-/// its first such line. Build and version-control directories are skipped, and
-/// files are reported in name order so the first diagnostic is stable.
+/// directory itself stays accepted. Version control decides which pages count, so a
+/// page that never ships cannot fail the check. Each offending file is reported once,
+/// at its first such line, in name order so the first diagnostic is stable.
 pub(crate) fn check(root: &Path) -> Result<(), String> {
-    let mut pages = Vec::new();
-    markdown_pages(root, &mut pages)?;
+    let mut pages = tracked_pages(root)?;
     pages.sort();
     let mut offenders = Vec::new();
     for page in pages {
@@ -34,6 +33,30 @@ pub(crate) fn check(root: &Path) -> Result<(), String> {
         return Ok(());
     }
     Err(offenders.join("\n"))
+}
+
+/// Collect the Markdown files version control tracks below `root`.
+///
+/// A tree without version-control metadata holds only documentation, so a fixture
+/// counts every page it holds.
+fn tracked_pages(root: &Path) -> Result<Vec<PathBuf>, String> {
+    let listing = Command::new("git")
+        .args(["ls-files", "-z", "--", "*.md"])
+        .current_dir(root)
+        .output()
+        .map_err(|error| format!("{}: git {error}", root.display()))?;
+    if !listing.status.success() {
+        let mut pages = Vec::new();
+        markdown_pages(root, &mut pages)?;
+        return Ok(pages);
+    }
+    Ok(listing
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+        .filter_map(|path| std::str::from_utf8(path).ok())
+        .map(|path| root.join(path))
+        .collect())
 }
 
 /// Collect every Markdown file below `directory`.

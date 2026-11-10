@@ -375,11 +375,11 @@ the development tool in `maestro-tooling`, which has the type checker, the linte
 
 Documented commands run `cargo` or `just`, so a page may not name a program from a
 directory under the reader's home that a checkout does not provide. Conventions read
-every Markdown file in the checkout, documentation test fixtures included, and
+the Markdown version control tracks, documentation test fixtures included, and
 report each file once at its first line naming a program in `.local/bin`, `~/bin`,
 `$HOME/bin` or `${HOME}/bin`. A page that names the directory itself still passes,
-as do agent directory paths such as `~/.maestro/agent`. Build and version-control
-directories are skipped.
+as do agent directory paths such as `~/.maestro/agent`, and a local page that never
+ships stays out of the check.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
@@ -522,7 +522,7 @@ The 28 browser-library roots are declared in `.github/ci.toml`'s `wasm_crates`,
 including `maestro-path`. Check each declared library locally with:
 
 ```sh
-mise exec -- cargo clippy --no-deps -p <crate> --target wasm32-unknown-unknown --locked -- -D warnings
+cargo clippy --no-deps -p <crate> --target wasm32-unknown-unknown --locked -- -D warnings
 ```
 
 The current shared wasm job builds these roots; it does not yet run this lint

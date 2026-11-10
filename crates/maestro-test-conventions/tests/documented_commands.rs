@@ -16,6 +16,20 @@ fn workspace(path: &str, contents: &str) -> (Workspace, PathBuf) {
     (workspace, page)
 }
 
+/// Run one git command in `root`, failing the test when it refuses.
+fn git(root: &Path, arguments: &[&str]) {
+    let output = std::process::Command::new("git")
+        .args(arguments)
+        .current_dir(root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 /// The diagnostic for a home-directory program at `line` of `page`.
 fn offender(page: &Path, line: usize) -> String {
     format!(
@@ -53,6 +67,25 @@ fn every_home_directory_spelling_of_a_program_is_reported() {
             "{program}"
         );
     }
+}
+
+#[test]
+fn a_page_version_control_does_not_track_is_accepted() {
+    let (workspace, page) = workspace(
+        "plans/local.md",
+        "# Local\n\n```sh\n~/.local/bin/capped cargo build --locked\n```\n",
+    );
+    std::fs::write(workspace.root.path().join(".gitignore"), "plans/\n").unwrap();
+    git(workspace.root.path(), &["init", "-q"]);
+    git(workspace.root.path(), &["add", "-A"]);
+
+    check_workspace(workspace.root.path()).unwrap();
+
+    git(workspace.root.path(), &["add", "-f", "plans/local.md"]);
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err(offender(&page, 4))
+    );
 }
 
 #[test]

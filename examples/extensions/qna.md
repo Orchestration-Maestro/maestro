@@ -22,7 +22,7 @@ input; they require no credentials, paid service or installation.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro --test integration -- qna_
 ```

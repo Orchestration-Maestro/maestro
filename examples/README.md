@@ -62,10 +62,10 @@ shipped `rpc.py` example under Python 3; the component case also needs the targe
 installed above.
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-chat --example rpc_extension_ui
-mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- rpc_demo_companion_
 ```
 

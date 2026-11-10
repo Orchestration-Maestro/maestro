@@ -7,7 +7,7 @@ tests without entering the guest library; only the pinned toolchain and the
 `wasm32-wasip2` target are needed:
 
 ```sh
-mise exec -- cargo build --locked \
+cargo build --locked \
   -p maestro-extensions-wasm --example with_deps --target wasm32-wasip2 --release
 ```
 
@@ -17,7 +17,7 @@ every recorded duration text.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib with_deps_component_uses_its_parsing_dependency
 ```

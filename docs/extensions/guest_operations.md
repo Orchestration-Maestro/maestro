@@ -63,7 +63,7 @@ constructing command returns.
 Build its component with:
 
 ```sh
-mise exec -- cargo build --locked -p maestro-extensions-wasm \
+cargo build --locked -p maestro-extensions-wasm \
   --example context_bridge --target wasm32-wasip2 --release
 ```
 
@@ -482,7 +482,7 @@ Native factories make the same calls with `ExtensionAPI::host_operation` and a
 Build the native-operation witness as a component:
 
 ```sh
-mise exec -- cargo build -p maestro-extensions-wasm --example native_io_component \
+cargo build -p maestro-extensions-wasm --example native_io_component \
   --target wasm32-wasip2 --release --locked
 ```
 

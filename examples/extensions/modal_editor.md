@@ -21,7 +21,7 @@ every session.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked -p maestro-extensions-wasm --lib \
+just prepare-tests
+cargo nextest run --locked -p maestro-extensions-wasm --lib \
   -E 'test(modal_editor_example::)'
 ```

@@ -11,7 +11,7 @@ From the repository root, verify the complete delivered graph without changing
 the lock or contacting a registry:
 
 ```sh
-mise exec -- cargo metadata --offline --locked --format-version 1
+cargo metadata --offline --locked --format-version 1
 ```
 
 Offline resolution requires the existing registry metadata and packages in the
@@ -19,10 +19,10 @@ local Cargo cache. A missing cache is not evidence of a stale lock. For an
 intentional manifest change, let Cargo update only the required resolution:
 
 ```sh
-mise exec -- cargo metadata --format-version 1
-mise exec -- cargo metadata --offline --locked --format-version 1
-mise exec -- cargo hakari generate
-mise exec -- cargo hakari manage-deps
+cargo metadata --format-version 1
+cargo metadata --offline --locked --format-version 1
+cargo hakari generate
+cargo hakari manage-deps
 ```
 
 Review the manifest and lock diffs together, including package versions, sources
@@ -60,7 +60,7 @@ The `dependency_locks` integration module in `maestro-test-conventions` verifies
 Run the focused module:
 
 ```sh
-mise exec -- cargo test -p maestro-test-conventions --locked --test integration -- dependency_locks::
+cargo test -p maestro-test-conventions --locked --test integration -- dependency_locks::
 ```
 
 These tests invoke Cargo metadata, not recursive compilation or package installs.

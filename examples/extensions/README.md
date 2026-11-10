@@ -219,7 +219,7 @@ Authors need the pinned toolchain with the `wasm32-wasip2` target. Each example
 builds to a component library; there is no command-line entry point:
 
 ```sh
-mise exec -- cargo build --locked \
+cargo build --locked \
   -p maestro-extensions-wasm --example <name> --target wasm32-wasip2 --release
 ```
 

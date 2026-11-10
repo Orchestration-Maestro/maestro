@@ -42,9 +42,9 @@ or paid service.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- border_status_editor_
-mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- border_status_editor_
 ```

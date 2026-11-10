@@ -25,7 +25,7 @@ disposable folders. They need no provider, credentials or paid service.
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- project_rules_
 ```

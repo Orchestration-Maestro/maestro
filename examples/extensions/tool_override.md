@@ -27,9 +27,9 @@ contents. The controlled run uses disposable files and no provider or credential
 ## Controlled runs
 
 ```sh
-mise exec -- just prepare-tests
-mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasmtime --test integration -- tool_override_
-mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tool_override_
 ```
