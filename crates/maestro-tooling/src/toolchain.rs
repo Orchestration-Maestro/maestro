@@ -88,9 +88,9 @@ mod tests {
             "pinned",
             "[dependencies]\ndependency = { path = \"../dependency\" }\n[workspace]\n",
         );
-        std::fs::write(
-            workspace.join("rust-toolchain.toml"),
-            format!("[toolchain]\nchannel = \"{pin}\"\n"),
+        maestro_test_process::toolchain::declare_toolchain(
+            &workspace,
+            &format!("[toolchain]\nchannel = \"{pin}\"\n"),
         )
         .unwrap();
         workspace

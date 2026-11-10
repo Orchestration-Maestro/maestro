@@ -439,13 +439,18 @@ mod tests {
     #[test]
     #[ignore = "runs only inside a controlled child"]
     fn bootstrap_builds_select_a_toolchain() {
-        let checkout = Path::new(env!("CARGO_MANIFEST_DIR"));
-        for command in bootstrap_commands(Path::new("cargo"), checkout) {
-            assert!(
-                command
-                    .get_envs()
-                    .any(|(name, value)| name == toolchain::SELECTOR && value.is_some()),
-                "{command:?} names no toolchain"
+        let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let pin =
+            maestro_test_process::toolchain::channel().expect("the build records its toolchain");
+        for command in bootstrap_commands(Path::new("cargo"), &checkout) {
+            let selected = command
+                .get_envs()
+                .find(|(name, _)| *name == toolchain::SELECTOR)
+                .and_then(|(_, value)| value);
+            assert_eq!(
+                selected,
+                Some(std::ffi::OsStr::new(pin)),
+                "{command:?} names another toolchain"
             );
         }
     }

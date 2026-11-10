@@ -302,7 +302,7 @@ mod tests {
         let output =
             maestro_test_process::TestProcess::child(install_without_an_inherited_toolchain)
                 .unwrap()
-                .env_remove("RUSTUP_TOOLCHAIN")
+                .env_remove(toolchain::SELECTOR)
                 .output()
                 .unwrap();
         assert!(
@@ -330,9 +330,9 @@ mod tests {
             format!("tooling-cargo\n{}\n{}\n", env!("CARGO"), root.display()),
         )
         .unwrap();
-        std::fs::write(
-            root.join("rust-toolchain.toml"),
-            format!("[toolchain]\nchannel = \"{pin}\"\n"),
+        maestro_test_process::toolchain::declare_toolchain(
+            root,
+            &format!("[toolchain]\nchannel = \"{pin}\"\n"),
         )
         .unwrap();
         let source = Source::Locked {
