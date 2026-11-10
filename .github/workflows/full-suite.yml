@@ -13,4 +13,4 @@ jobs:
     permissions:
       contents: read
       actions: write # the shared workflow's pruning jobs delete superseded cache entries
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@8f0f3d712d641fec0050f8303f67a3e5cd8f6457 # v0.19.27
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@e6ccadeeb263c79dea15eee752069d677ad195dd # v0.19.29

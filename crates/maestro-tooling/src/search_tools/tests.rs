@@ -1,5 +1,5 @@
 //! The pinned search program resolver accepts only the supplied directories' exact programs.
-use super::search_tools::pinned_search_tool;
+use super::*;
 use maestro_test_directory::Scratch;
 use std::ffi::OsStr;
 use std::path::Path;
@@ -108,7 +108,6 @@ fn pinned_search_rejects_non_utf8_output() {
 #[cfg(unix)]
 #[test]
 fn pinned_search_rejects_non_utf8_path() {
-    use super::search_tools::executable_text;
     use std::os::unix::ffi::OsStrExt;
     let root = Scratch::new().unwrap();
     let directory = root.path().join(OsStr::from_bytes(b"invalid-\xff"));

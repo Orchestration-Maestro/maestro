@@ -17,11 +17,7 @@ pub(crate) fn isolated(body: impl Future<Output = ()>) {
         return;
     }
     let bin = Tree::new().unwrap();
-    let source = std::env::var_os("MAESTRO_TEST_FD").expect("nextest supplies pinned fd");
-    let fd = bin
-        .path()
-        .join(format!("fd{}", std::env::consts::EXE_SUFFIX));
-    std::fs::copy(source, &fd).unwrap();
+    let fd = maestro_test_process::install_search_program("fd", bin.path()).unwrap();
     let ambient = Tree::new().unwrap();
     for name in ["fd", "rg"] {
         maestro_test_process::install_command(

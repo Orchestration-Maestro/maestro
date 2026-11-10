@@ -66,6 +66,9 @@ fn run_prepared(
     let example = directory.join("examples").join(executable_name());
     let mut command = Command::new(example);
     command.env(test_setup::AGENT_DIRECTORY, agent_directory);
+    for (variable, _, _) in crate::search_tools::PROGRAMS {
+        command.env_remove(variable);
+    }
     // The example takes the prepared components from its environment, so it only warms.
     for line in std::fs::read_to_string(&environment)?.lines() {
         if let Some((name, value)) = line.split_once('=') {
@@ -73,7 +76,9 @@ fn run_prepared(
         }
     }
     let workspace = Workspace::read(cargo, checkout)?;
-    command.args(example_arguments(&workspace)?);
+    command
+        .args(example_arguments(&workspace)?)
+        .arg("--prepared");
     Ok(exit_code(command.current_dir(checkout).status()?))
 }
 
@@ -155,6 +160,12 @@ fn fresh(workspace: &Workspace, example: &Path) -> bool {
         tooling
             .as_ref()
             .map(|owner| owner.join("src/example_files.rs")),
+        tooling
+            .as_ref()
+            .map(|owner| owner.join("src/search_tools.rs")),
+        tooling
+            .as_ref()
+            .map(|owner| owner.join("src/search_tools/resolution.rs")),
         Some(workspace.root().join("Cargo.lock")),
     ]
     .into_iter()

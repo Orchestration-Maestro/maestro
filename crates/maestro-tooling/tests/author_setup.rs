@@ -8,6 +8,203 @@ use std::process::{Command, ExitCode, Output};
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 
+/// Search setup tests work when their runner cannot discover either search program.
+#[test]
+fn author_search_setups_are_independent_of_runner_path() {
+    for test in [
+        "archived_author_setup_exports_search_programs_without_path",
+        "local_author_setup_resolves_search_pins_from_path",
+        "preparation_rejects_an_unavailable_search_pin",
+    ] {
+        assert_success(
+            &TestProcess::named(format!("author_setup::{test}"))
+                .unwrap()
+                .env("PATH", path_without_search_programs())
+                .output()
+                .unwrap(),
+        );
+    }
+}
+
+/// Run a setup test with private copies of the prepared search programs on PATH.
+fn with_search_programs(test: &str) -> bool {
+    if selection().case() == Some("search-programs") {
+        return true;
+    }
+    let bin = Scratch::new().unwrap();
+    for name in ["rg", "fd"] {
+        maestro_test_process::install_search_program(name, bin.path()).unwrap();
+    }
+    let path = std::env::join_paths(
+        std::iter::once(bin.path().to_path_buf())
+            .chain(std::env::split_paths(&path_without_search_programs())),
+    )
+    .unwrap();
+    assert_success(
+        &TestProcess::current(test)
+            .unwrap()
+            .case("search-programs")
+            .env("PATH", path)
+            .output()
+            .unwrap(),
+    );
+    false
+}
+
+/// The runner's PATH with every directory containing a search program removed.
+fn path_without_search_programs() -> std::ffi::OsString {
+    std::env::join_paths(
+        std::env::split_paths(&std::env::var_os("PATH").unwrap()).filter(|directory| {
+            !["rg", "fd"].iter().any(|name| {
+                directory
+                    .join(format!("{name}{}", std::env::consts::EXE_SUFFIX))
+                    .is_file()
+            })
+        }),
+    )
+    .unwrap()
+}
+
+/// Preparation carries the pinned programs into a relocated archive without a search PATH.
+#[test]
+fn archived_author_setup_exports_search_programs_without_path() {
+    if !with_search_programs("archived_author_setup_exports_search_programs_without_path") {
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("mise.toml"), include_str!("../../../mise.toml")).unwrap();
+    prepare(root);
+    let moved = root.join("relocated setup");
+    fs::rename(root.join("target/test-setup"), &moved).unwrap();
+
+    let search = path_without_search_programs();
+    let output = export_command(root, &moved, true)
+        .env("PATH", search)
+        .env_remove("MAESTRO_TEST_RG")
+        .env_remove("MAESTRO_TEST_FD")
+        .output()
+        .unwrap();
+
+    assert_success(&output);
+    let environment = fs::read_to_string(root.join("nextest-env")).unwrap();
+    for (name, variable) in [("rg", "MAESTRO_TEST_RG"), ("fd", "MAESTRO_TEST_FD")] {
+        let path = moved.join("search-tools").join(name);
+        assert!(path.is_absolute() && path.is_file(), "{}", path.display());
+        assert!(
+            environment
+                .lines()
+                .any(|line| line == format!("{variable}={}", path.display())),
+            "{environment}"
+        );
+        assert_success(
+            &Command::new(path)
+                .arg("--version")
+                .env("PATH", "")
+                .output()
+                .unwrap(),
+        );
+    }
+}
+
+/// A setup without a prepared bundle keeps resolving the workspace pins from PATH.
+#[test]
+fn local_author_setup_resolves_search_pins_from_path() {
+    if !with_search_programs("local_author_setup_resolves_search_pins_from_path") {
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("mise.toml"), include_str!("../../../mise.toml")).unwrap();
+    let output = export_command(root, &root.join("target/test-setup"), false)
+        .env_remove("TEST_PREPARE_OUTPUT")
+        .env_remove("MAESTRO_TEST_RG")
+        .env_remove("MAESTRO_TEST_FD")
+        .output()
+        .unwrap();
+
+    assert_success(&output);
+    let entries = fs::read_to_string(root.join("nextest-env")).unwrap();
+    for variable in ["MAESTRO_TEST_RG", "MAESTRO_TEST_FD"] {
+        let path = entries
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
+            .unwrap();
+        assert!(Path::new(path).is_absolute() && Path::new(path).is_file());
+        assert!(!Path::new(path).starts_with(root.join("target/test-setup")));
+    }
+}
+
+/// A local setup rebuilds its example when either shared resolver source becomes newer.
+#[test]
+fn local_author_setup_rebuilds_after_search_resolver_edits() {
+    for edited in ["src/search_tools.rs", "src/search_tools/resolution.rs"] {
+        let scratch = Scratch::new().unwrap();
+        let root = scratch.path();
+        resolver_fixture(root);
+        let setup = || {
+            export_command(root, &root.join("target/test-setup"), false)
+                .env_remove("MAESTRO_NATIVE_RECORD")
+                .output()
+                .unwrap()
+        };
+        let exports_component = || {
+            fs::read_to_string(root.join("nextest-env"))
+                .unwrap()
+                .lines()
+                .any(|line| line.starts_with("MAESTRO_COMPONENT="))
+        };
+        assert_success(&setup());
+        assert!(exports_component());
+        fs::write(
+            root.join("example-source"),
+            format!("tooling-author\n{PLAIN_EXAMPLE}\n"),
+        )
+        .unwrap();
+        assert_success(&setup());
+        assert!(
+            exports_component(),
+            "the unchanged example should still be reused"
+        );
+
+        fs::File::options()
+            .write(true)
+            .open(root.join("crates/maestro-tooling").join(edited))
+            .unwrap()
+            .set_modified(at(2_000_000_000))
+            .unwrap();
+        assert_success(&setup());
+
+        assert!(
+            !exports_component(),
+            "the old example was reused after editing {edited}"
+        );
+    }
+}
+
+/// A pin unavailable at its required version fails preparation before publishing a manifest.
+#[test]
+fn preparation_rejects_an_unavailable_search_pin() {
+    if !with_search_programs("preparation_rejects_an_unavailable_search_pin") {
+        return;
+    }
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    fs::write(root.join("mise.toml"), "[tools]\nripgrep = \"0.0.0\"\n").unwrap();
+
+    let result = run_prepare(root);
+
+    let error = result.expect_err("preparation must reject an unavailable pin");
+    assert!(
+        error.to_string().contains("rg: expected ripgrep 0.0.0"),
+        "{error}"
+    );
+    assert!(!root.join("target/test-setup/components.json").exists());
+}
+
 /// Reusable outputs survive a move to another directory and never start a shard build.
 #[test]
 fn archived_author_setup_reuses_relocated_components() {
@@ -1042,6 +1239,30 @@ const MISPLACED_CACHE_EXAMPLE: &str = r#"{"scenario":"misplaced"}"#;
 
 /// A setup example whose compiled code sits in two namespaces.
 const SPLIT_CACHE_EXAMPLE: &str = r#"{"scenario":"split"}"#;
+
+/// A local example whose tracked sources all start older than its controlled build time.
+fn resolver_fixture(root: &Path) {
+    fixture(root);
+    for source in ["src/search_tools.rs", "src/search_tools/resolution.rs"] {
+        let source = root.join("crates/maestro-tooling").join(source);
+        fs::create_dir_all(source.parent().unwrap()).unwrap();
+        fs::write(&source, "// resolver fixture\n").unwrap();
+        fs::File::options()
+            .write(true)
+            .open(source)
+            .unwrap()
+            .set_modified(at(100))
+            .unwrap();
+    }
+    for source in ["Cargo.lock", "crates/maestro-extensions-wasm/Cargo.toml"] {
+        fs::File::options()
+            .write(true)
+            .open(root.join(source))
+            .unwrap()
+            .set_modified(at(100))
+            .unwrap();
+    }
+}
 
 /// Give the standalone command a controlled Cargo boundary and source checkout.
 fn fixture(root: &Path) {

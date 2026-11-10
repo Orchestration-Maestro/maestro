@@ -28,6 +28,9 @@
 //! supplies the harness-free `native_fixture` example through `MAESTRO_NATIVE_FIXTURE`.
 //! [`install_executable`] copies it to caller-owned aliases without opening a writable
 //! executable in the runner. These children have no libtest output or argument parsing.
+//!
+//! [`install_search_program`] copies the pinned `rg` or `fd` exported by test setup into a
+//! caller-owned directory, so native search tests never depend on the runner's search PATH.
 
 mod agent_directory;
 mod alone;
@@ -56,7 +59,7 @@ pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
 pub use console::on_console;
 pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
-pub use executable::{install_command, install_executable, install_family};
+pub use executable::{install_command, install_executable, install_family, install_search_program};
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use selection::test_name;
 #[cfg(unix)]

@@ -56,7 +56,7 @@ pub(super) fn stage(
         ),
         None => (Vec::new(), None),
     };
-    run_example(cargo, workspace, &example, target, &supplied)?;
+    run_example(output, workspace, &example, target, &supplied)?;
     let components = stage_components(checkout, output, target, shared, &supplied)?;
     let reused = supplied.len();
     let built = components.len().checked_sub(reused).ok_or_else(|| {

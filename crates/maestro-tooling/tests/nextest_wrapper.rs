@@ -52,6 +52,36 @@ fn fixed_port_wrapper_holds_lock_while_child_runs() {
     assert_eq!(std::fs::read(path).unwrap(), b"retained");
 }
 
+/// A child that ends by a signal reaches the caller as a failure that names it.
+///
+/// The signalled status carries no exit code, so the command reports the native status text
+/// instead of only a bare failure.
+#[cfg(unix)]
+#[test]
+fn signalled_child_failure_names_its_signal() {
+    if maestro_test_process::selection().is_child() {
+        std::process::abort();
+    }
+    let output = TestProcess::named("nextest_wrapper::signalled_child_failure_names_its_signal")
+        .unwrap()
+        .output_with(|arguments| {
+            Command::new(env!("CARGO_BIN_EXE_development"))
+                .args(["nextest-wrapper", "fixed-port"])
+                .arg(std::env::current_exe()?)
+                .args(arguments)
+                .env(maestro_test_process::CASE, "signalled")
+                .env_remove(LOCK)
+                .output()
+        })
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("child ended by signal: 6 (SIGABRT)"),
+        "{stderr}"
+    );
+}
+
 #[test]
 fn fixed_port_wrapper_runs_without_the_lock_variable() {
     if maestro_test_process::selection().is_child() {

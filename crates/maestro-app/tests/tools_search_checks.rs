@@ -39,15 +39,8 @@ fn search_manager(
         maestro_app::SearchTool::Fd => "fd",
         maestro_app::SearchTool::Rg => "rg",
     };
-    let variable = format!("MAESTRO_TEST_{}", name.to_ascii_uppercase());
-    let source = std::env::var_os(&variable)
-        .unwrap_or_else(|| panic!("{name}: nextest must supply {variable}"));
     let bin = maestro_test_directory::Scratch::new().unwrap();
-    let copy = bin
-        .path()
-        .join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
-    std::fs::copy(source, copy)
-        .unwrap_or_else(|error| panic!("{name}: cannot copy pinned executable: {error}"));
+    maestro_test_process::install_search_program(name, bin.path()).unwrap();
     let manager = std::sync::Arc::new(maestro_tools::ToolsManager::new(
         bin.path().display().to_string(),
         Some(std::sync::Arc::new(|_| {

@@ -11,6 +11,7 @@ mod executor;
 mod gate;
 mod linked_files;
 mod native_aliases;
+mod search_programs;
 mod windows_console;
 
 use std::ffi::OsStr;
