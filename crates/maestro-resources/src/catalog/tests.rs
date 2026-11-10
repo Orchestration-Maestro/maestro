@@ -834,7 +834,12 @@ fn assert_explicit_outcome(f: &Fixture, result: &LoadSkillsResult, expected: Exp
             assert_explicit_warning(f, result, relative, "skill path does not exist");
         }
         ExplicitOutcome::NotMarkdown(relative) => {
-            assert_explicit_warning(f, result, relative, "skill path is not a markdown file");
+            assert_explicit_warning(
+                f,
+                result,
+                relative,
+                "skill path does not point to a markdown file",
+            );
         }
     }
 }

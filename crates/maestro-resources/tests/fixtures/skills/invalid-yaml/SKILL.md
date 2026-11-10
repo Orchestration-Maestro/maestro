@@ -5,4 +5,4 @@ description: [unclosed bracket
 
 # Invalid YAML Skill
 
-This skill has invalid YAML in the frontmatter.
+The frontmatter is not valid YAML.

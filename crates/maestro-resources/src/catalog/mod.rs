@@ -257,7 +257,7 @@ fn explicit_path(
             {
                 return load_file(path, source);
             }
-            Ok(_) => "skill path is not a markdown file".into(),
+            Ok(_) => "skill path does not point to a markdown file".into(),
             Err(cause) => cause.to_string(),
         }
     } else {

@@ -1,8 +1,8 @@
 ---
 name: bad--name
-description: A skill with consecutive hyphens in the name.
+description: Fixture whose name repeats a hyphen.
 ---
 
 # Consecutive Hyphens
 
-This skill has consecutive hyphens in its name.
+The name repeats a hyphen.
