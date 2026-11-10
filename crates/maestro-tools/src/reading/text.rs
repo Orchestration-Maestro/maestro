@@ -31,7 +31,7 @@ fn slice(lines: &[&str], start: f64, end: f64) -> String {
     lines.get(from..to).unwrap_or_default().join("\n")
 }
 
-/// Guide the model to a command when the first selected line alone exceeds the byte limit.
+/// Tell the model which command to run when even the first selected line is larger than the byte limit.
 fn oversized_line_guidance(lines: &[&str], start: f64, path: &str) -> String {
     let line = bound(start, lines.len());
     let size = format_size(float(lines.get(line).map_or(0, |l| l.len())));
@@ -50,7 +50,7 @@ fn truncation_notice(truncation: &TruncationResult, start_display: f64, total: u
         Some(TruncationBy::Lines) | None => String::new(),
     };
     format!(
-        "{}\n\n[Showing lines {}-{} of {total}{limit_note}. Use offset={} to continue.]",
+        "{}\n\n[Showing lines {}-{} of {total}{limit_note}. Continue with offset={}.]",
         truncation.content,
         num(start_display),
         num(end_display),
@@ -106,7 +106,7 @@ pub(super) fn read_text(
     }
     let text = if limit.is_some() && end < total {
         format!(
-            "{}\n\n[{} more lines in file. Use offset={} to continue.]",
+            "{}\n\n[{} more lines remain in the file. Continue with offset={}.]",
             truncation.content,
             num(total - end),
             num(end + 1.0)

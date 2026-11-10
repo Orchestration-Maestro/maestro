@@ -6015,11 +6015,11 @@
       "id": "checkmark",
       "op": "width",
       "input": {
-        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx ./",
+        "text": "\u2714 pipeline step \u203a dev $ run-parallel \"vite\" \"node --import tsx ./",
         "width": 65
       },
       "expected": {
-        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx ./",
+        "text": "\u2714 pipeline step \u203a dev $ run-parallel \"vite\" \"node --import tsx ./",
         "width": 65
       }
     },
@@ -6028,11 +6028,11 @@
       "id": "emoji",
       "op": "width",
       "input": {
-        "text": "\ud83c\udf89 Celebration! \ud83d\ude80 Launch \ud83d\udce6 Package ready for deployment now",
+        "text": "\ud83c\udf89 Hooray! Done \ud83d\ude80 Deploy \ud83d\udce6 Package staged for release, now!",
         "width": 38
       },
       "expected": {
-        "text": "\ud83c\udf89 Celebration! \ud83d\ude80 Launch \ud83d\udce6 Packag\u001b[0m...\u001b[0m",
+        "text": "\ud83c\udf89 Hooray! Done \ud83d\ude80 Deploy \ud83d\udce6 Packag\u001b[0m...\u001b[0m",
         "width": 38
       }
     },
@@ -6067,11 +6067,11 @@
       "id": "ellipsis",
       "op": "width",
       "input": {
-        "text": "This is a very long message that needs to be truncated",
+        "text": "An overlong sample message, cut to fit the given width",
         "width": 28
       },
       "expected": {
-        "text": "This is a very long messa\u001b[0m...\u001b[0m",
+        "text": "An overlong sample messag\u001b[0m...\u001b[0m",
         "width": 28
       }
     },
@@ -6080,11 +6080,11 @@
       "id": "regression",
       "op": "width",
       "input": {
-        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx ./server.ts\"",
+        "text": "\u2714 pipeline step \u203a dev $ run-parallel \"vite\" \"node --import tsx ./server.ts\"",
         "width": 65
       },
       "expected": {
-        "text": "\u2714 script to run \u203a dev $ concurrently \"vite\" \"node --import tsx\u001b[0m...\u001b[0m",
+        "text": "\u2714 pipeline step \u203a dev $ run-parallel \"vite\" \"node --import tsx\u001b[0m...\u001b[0m",
         "width": 65
       }
     },

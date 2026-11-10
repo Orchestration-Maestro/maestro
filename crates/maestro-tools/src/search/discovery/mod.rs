@@ -73,7 +73,7 @@ pub fn create_find_tool_definition<C: 'static $($bound)*>(
         tools_manager,
     });
     ToolDefinition {
-        definition: Tool { name: "find".into(), description: "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).".into(), parameters: maestro_models::ParameterSchema::authored(json!({"type":"object", "required":["pattern"], "properties": {
+        definition: Tool { name: "find".into(), description: "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.".into(), parameters: maestro_models::ParameterSchema::authored(json!({"type":"object", "required":["pattern"], "properties": {
             "pattern": {"type":"string", "description":"Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"},
             "path": {"type":"string", "description":"Directory to search in (default: current directory)"},
             "limit": {"type":"number", "description":"Maximum number of results (default: 1000)"}

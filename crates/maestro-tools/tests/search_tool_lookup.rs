@@ -94,7 +94,7 @@ fn binary_directory_entry_wins_before_any_probe() {
             );
             assert_eq!(
                 output,
-                b"fd not found. Offline mode enabled, skipping download.\n"
+                b"fd is missing. Offline mode is on, so the download is skipped.\n"
             );
         } else {
             existing_entries(&manager, &bin).await;
@@ -269,7 +269,8 @@ fn offline_flag_stops_a_missing_install_with_advice() {
                     .await,
                 None
             );
-            let line = format!("{name} not found. Offline mode enabled, skipping download.");
+            let line =
+                format!("{name} is missing. Offline mode is on, so the download is skipped.");
             let expected = if color {
                 format!("\x1b[33m{line}\x1b[39m\n")
             } else {

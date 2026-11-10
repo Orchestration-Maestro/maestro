@@ -9,7 +9,7 @@
       "expected": {
         "name": "read",
         "label": "read",
-        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "description": "Read a file. Reads text files, plus images in jpg, png, gif or webp format that come back as attachments. Text output is cut at 2000 lines or 50KB, whichever limit is reached first. For large files, page through with offset and limit. When you need the whole file, keep continuing with offset until it is complete.",
         "parameters": {
           "type": "object",
           "required": [
@@ -18,21 +18,21 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to read (relative or absolute)"
+              "description": "File to read, as a relative or absolute path"
             },
             "offset": {
               "type": "number",
-              "description": "Line number to start reading from (1-indexed)"
+              "description": "First line to read, counting from 1"
             },
             "limit": {
               "type": "number",
-              "description": "Maximum number of lines to read"
+              "description": "Upper bound on the lines returned"
             }
           }
         },
         "promptSnippet": "Read file contents",
         "promptGuidelines": [
-          "Use read to examine files instead of cat or sed."
+          "Inspect files with read, not cat or sed."
         ]
       }
     },
@@ -45,7 +45,7 @@
       "expected": {
         "name": "bash",
         "label": "bash",
-        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "description": "Run a bash command; it starts in the current working directory. The result carries stdout and stderr, and output keeps only the last 2000 lines or 50KB, whichever limit is reached first. When output is cut, the full output is saved to a temporary file. Accepts an optional timeout in seconds.",
         "parameters": {
           "type": "object",
           "required": [
@@ -74,7 +74,7 @@
       "expected": {
         "name": "edit",
         "label": "edit",
-        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "description": "Edit one file by replacing exact text. Each edits[].oldText must match exactly one region of the original file, and no two regions may overlap. Changes within one block or on adjacent lines belong in a single edit, not in overlapping edits. Never pad an edit with large unchanged regions just to join distant changes.",
         "parameters": {
           "type": "object",
           "required": [
@@ -84,7 +84,7 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to edit (relative or absolute)"
+              "description": "File to edit, as a relative or absolute path"
             },
             "edits": {
               "type": "array",
@@ -97,26 +97,26 @@
                 "properties": {
                   "oldText": {
                     "type": "string",
-                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                    "description": "Exact text that one targeted edit replaces. It must occur once in the original file and must not overlap any other edits[].oldText in the same call."
                   },
                   "newText": {
                     "type": "string",
-                    "description": "Replacement text for this targeted edit."
+                    "description": "Text that takes the place of oldText in this edit."
                   }
                 },
                 "additionalProperties": false
               },
-              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+              "description": "One or more targeted replacements. Every edit is located in the original file, never in the output of an earlier edit. Overlapping or nested edits are rejected. Changes within one block or on adjacent lines go into a single edit."
             }
           },
           "additionalProperties": false
         },
-        "promptSnippet": "Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
+        "promptSnippet": "Replace exact text in a file, including several disjoint edits in one call",
         "promptGuidelines": [
-          "Use edit for precise changes (edits[].oldText must match exactly)",
-          "When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
-          "Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
-          "Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions."
+          "Edit suits precise changes, and every edits[].oldText has to match the file exactly",
+          "To change several separate places in one file, make a single edit call with one edits[] entry per place rather than several edit calls",
+          "Each edits[].oldText is looked up in the original file, not in what earlier edits leave behind. Never emit overlapping or nested edits; fold nearby changes into one edit.",
+          "Make edits[].oldText as short as it can be while still occurring once in the file. Never pad it with large unchanged regions."
         ],
         "renderShell": "self"
       }
@@ -130,7 +130,7 @@
       "expected": {
         "name": "write",
         "label": "write",
-        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "description": "Write content to a file, creating it when missing and overwriting it when present. Parent directories are created automatically.",
         "parameters": {
           "type": "object",
           "required": [
@@ -140,7 +140,7 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to write (relative or absolute)"
+              "description": "File to write, as a relative or absolute path"
             },
             "content": {
               "type": "string",
@@ -150,7 +150,7 @@
         },
         "promptSnippet": "Create or overwrite files",
         "promptGuidelines": [
-          "Use write only for new files or complete rewrites."
+          "Reserve write for new files and complete rewrites."
         ]
       }
     },
@@ -163,7 +163,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "parameters": {
           "type": "object",
           "required": [
@@ -212,7 +212,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "parameters": {
           "type": "object",
           "required": [
@@ -356,7 +356,7 @@
       "expected": {
         "name": "read",
         "label": "read",
-        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "description": "Read a file. Reads text files, plus images in jpg, png, gif or webp format that come back as attachments. Text output is cut at 2000 lines or 50KB, whichever limit is reached first. For large files, page through with offset and limit. When you need the whole file, keep continuing with offset until it is complete.",
         "parameters": {
           "type": "object",
           "required": [
@@ -365,21 +365,21 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to read (relative or absolute)"
+              "description": "File to read, as a relative or absolute path"
             },
             "offset": {
               "type": "number",
-              "description": "Line number to start reading from (1-indexed)"
+              "description": "First line to read, counting from 1"
             },
             "limit": {
               "type": "number",
-              "description": "Maximum number of lines to read"
+              "description": "Upper bound on the lines returned"
             }
           }
         },
         "promptSnippet": "Read file contents",
         "promptGuidelines": [
-          "Use read to examine files instead of cat or sed."
+          "Inspect files with read, not cat or sed."
         ]
       }
     },
@@ -393,7 +393,7 @@
       "expected": {
         "name": "read",
         "label": "read",
-        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "description": "Read a file. Reads text files, plus images in jpg, png, gif or webp format that come back as attachments. Text output is cut at 2000 lines or 50KB, whichever limit is reached first. For large files, page through with offset and limit. When you need the whole file, keep continuing with offset until it is complete.",
         "parameters": {
           "type": "object",
           "required": [
@@ -402,15 +402,15 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to read (relative or absolute)"
+              "description": "File to read, as a relative or absolute path"
             },
             "offset": {
               "type": "number",
-              "description": "Line number to start reading from (1-indexed)"
+              "description": "First line to read, counting from 1"
             },
             "limit": {
               "type": "number",
-              "description": "Maximum number of lines to read"
+              "description": "Upper bound on the lines returned"
             }
           }
         }
@@ -426,7 +426,7 @@
       "expected": {
         "name": "bash",
         "label": "bash",
-        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "description": "Run a bash command; it starts in the current working directory. The result carries stdout and stderr, and output keeps only the last 2000 lines or 50KB, whichever limit is reached first. When output is cut, the full output is saved to a temporary file. Accepts an optional timeout in seconds.",
         "parameters": {
           "type": "object",
           "required": [
@@ -456,7 +456,7 @@
       "expected": {
         "name": "bash",
         "label": "bash",
-        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "description": "Run a bash command; it starts in the current working directory. The result carries stdout and stderr, and output keeps only the last 2000 lines or 50KB, whichever limit is reached first. When output is cut, the full output is saved to a temporary file. Accepts an optional timeout in seconds.",
         "parameters": {
           "type": "object",
           "required": [
@@ -485,7 +485,7 @@
       "expected": {
         "name": "edit",
         "label": "edit",
-        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "description": "Edit one file by replacing exact text. Each edits[].oldText must match exactly one region of the original file, and no two regions may overlap. Changes within one block or on adjacent lines belong in a single edit, not in overlapping edits. Never pad an edit with large unchanged regions just to join distant changes.",
         "parameters": {
           "type": "object",
           "required": [
@@ -495,7 +495,7 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to edit (relative or absolute)"
+              "description": "File to edit, as a relative or absolute path"
             },
             "edits": {
               "type": "array",
@@ -508,26 +508,26 @@
                 "properties": {
                   "oldText": {
                     "type": "string",
-                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                    "description": "Exact text that one targeted edit replaces. It must occur once in the original file and must not overlap any other edits[].oldText in the same call."
                   },
                   "newText": {
                     "type": "string",
-                    "description": "Replacement text for this targeted edit."
+                    "description": "Text that takes the place of oldText in this edit."
                   }
                 },
                 "additionalProperties": false
               },
-              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+              "description": "One or more targeted replacements. Every edit is located in the original file, never in the output of an earlier edit. Overlapping or nested edits are rejected. Changes within one block or on adjacent lines go into a single edit."
             }
           },
           "additionalProperties": false
         },
-        "promptSnippet": "Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
+        "promptSnippet": "Replace exact text in a file, including several disjoint edits in one call",
         "promptGuidelines": [
-          "Use edit for precise changes (edits[].oldText must match exactly)",
-          "When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
-          "Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
-          "Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions."
+          "Edit suits precise changes, and every edits[].oldText has to match the file exactly",
+          "To change several separate places in one file, make a single edit call with one edits[] entry per place rather than several edit calls",
+          "Each edits[].oldText is looked up in the original file, not in what earlier edits leave behind. Never emit overlapping or nested edits; fold nearby changes into one edit.",
+          "Make edits[].oldText as short as it can be while still occurring once in the file. Never pad it with large unchanged regions."
         ],
         "renderShell": "self"
       }
@@ -542,7 +542,7 @@
       "expected": {
         "name": "edit",
         "label": "edit",
-        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "description": "Edit one file by replacing exact text. Each edits[].oldText must match exactly one region of the original file, and no two regions may overlap. Changes within one block or on adjacent lines belong in a single edit, not in overlapping edits. Never pad an edit with large unchanged regions just to join distant changes.",
         "parameters": {
           "type": "object",
           "required": [
@@ -552,7 +552,7 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to edit (relative or absolute)"
+              "description": "File to edit, as a relative or absolute path"
             },
             "edits": {
               "type": "array",
@@ -565,16 +565,16 @@
                 "properties": {
                   "oldText": {
                     "type": "string",
-                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                    "description": "Exact text that one targeted edit replaces. It must occur once in the original file and must not overlap any other edits[].oldText in the same call."
                   },
                   "newText": {
                     "type": "string",
-                    "description": "Replacement text for this targeted edit."
+                    "description": "Text that takes the place of oldText in this edit."
                   }
                 },
                 "additionalProperties": false
               },
-              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+              "description": "One or more targeted replacements. Every edit is located in the original file, never in the output of an earlier edit. Overlapping or nested edits are rejected. Changes within one block or on adjacent lines go into a single edit."
             }
           },
           "additionalProperties": false
@@ -591,7 +591,7 @@
       "expected": {
         "name": "write",
         "label": "write",
-        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "description": "Write content to a file, creating it when missing and overwriting it when present. Parent directories are created automatically.",
         "parameters": {
           "type": "object",
           "required": [
@@ -601,7 +601,7 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to write (relative or absolute)"
+              "description": "File to write, as a relative or absolute path"
             },
             "content": {
               "type": "string",
@@ -611,7 +611,7 @@
         },
         "promptSnippet": "Create or overwrite files",
         "promptGuidelines": [
-          "Use write only for new files or complete rewrites."
+          "Reserve write for new files and complete rewrites."
         ]
       }
     },
@@ -625,7 +625,7 @@
       "expected": {
         "name": "write",
         "label": "write",
-        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "description": "Write content to a file, creating it when missing and overwriting it when present. Parent directories are created automatically.",
         "parameters": {
           "type": "object",
           "required": [
@@ -635,7 +635,7 @@
           "properties": {
             "path": {
               "type": "string",
-              "description": "Path to the file to write (relative or absolute)"
+              "description": "File to write, as a relative or absolute path"
             },
             "content": {
               "type": "string",
@@ -655,7 +655,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "parameters": {
           "type": "object",
           "required": [
@@ -705,7 +705,7 @@
       "expected": {
         "name": "grep",
         "label": "grep",
-        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "description": "Find a pattern in file contents. Returns each matching line with its file path and line number. Honours .gitignore. Output stops at 100 matches or 50KB, whichever limit is reached first. Lines longer than 500 chars are cut.",
         "parameters": {
           "type": "object",
           "required": [
@@ -754,7 +754,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "parameters": {
           "type": "object",
           "required": [
@@ -788,7 +788,7 @@
       "expected": {
         "name": "find",
         "label": "find",
-        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "description": "Look up files with a glob pattern. Matches come back as paths relative to the directory searched. Honours .gitignore. Output stops at 1000 results or 50KB, whichever limit is reached first.",
         "parameters": {
           "type": "object",
           "required": [
@@ -1201,7 +1201,7 @@
           "content": [
             {
               "type": "text",
-              "text": "Read image file [image/png]\n[Current model does not support images. The image will be omitted from this request.]"
+              "text": "Read image file [image/png]\n[The active model cannot take images, so this request leaves the image out.]"
             },
             {
               "type": "image",

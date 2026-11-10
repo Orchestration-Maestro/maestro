@@ -8,7 +8,7 @@ use crate::changes::text::{Change, diff_lines};
 pub struct EditDiffResult {
     /// The numbered diff.
     pub diff: String,
-    /// The first changed line in the new text.
+    /// Line number, in the new text, of the earliest change.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub first_changed_line: Option<usize>,
 }
